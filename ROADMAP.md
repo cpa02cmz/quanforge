@@ -23,3 +23,9 @@
 - [ ] **Multi-File Projects**: Support generating `.mqh` include files alongside the main `.mq5` file.
 - [ ] **Direct MT5 Integration**: (Conceptual) Use a localized Python script to bridge the web app with a running MetaTrader terminal.
 - [ ] **Version Control**: Save history of code versions for a single robot (Undo/Redo).
+
+## Recent Optimizations (v1.1)
+- [x] **Security Enhancement**: Removed environment variable exposure from client-side bundle
+- [x] **Type Safety**: Improved TypeScript typing across components and services
+- [x] **Performance**: Added React memoization and WebSocket cleanup for better memory management
+- [x] **Code Quality**: Extracted duplicate API key rotation logic into shared utilities

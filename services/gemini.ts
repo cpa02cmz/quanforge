@@ -3,24 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { MQL5_SYSTEM_PROMPT } from "../constants";
 import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
 import { settingsManager } from "./settingsManager";
-
-/**
- * Helper to handle Key Rotation.
- * Parses the apiKey string (which might contain multiple keys separated by newlines or commas)
- * and returns a single random key.
- */
-const getActiveKey = (apiKeyString: string): string => {
-    if (!apiKeyString) return "";
-    
-    // Split by newline or comma, trim whitespace, and filter empty strings
-    const keys = apiKeyString.split(/[\n,]+/).map(k => k.trim()).filter(k => k.length > 0);
-    
-    if (keys.length === 0) return "";
-    
-    // Pick a random key
-    const randomIndex = Math.floor(Math.random() * keys.length);
-    return keys[randomIndex];
-};
+import { getActiveKey } from "../utils/apiKeyUtils";
 
 /**
  * Utility: Retry an async operation with exponential backoff.
@@ -150,7 +133,7 @@ const getEffectiveSystemPrompt = (settings: AISettings): string => {
 /**
  * Executes a call to the Google Gemini API.
  */
-const callGoogleGenAI = async (settings: any, fullPrompt: string, signal?: AbortSignal, temperature?: number) => {
+const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?: AbortSignal, temperature?: number) => {
     return withRetry(async () => {
         const activeKey = getActiveKey(settings.apiKey);
         if (!activeKey) throw new Error("Google API Key missing in settings.");
@@ -178,7 +161,7 @@ const callGoogleGenAI = async (settings: any, fullPrompt: string, signal?: Abort
 /**
  * Executes a call to an OpenAI Compatible API (ChatGPT, DeepSeek, Local LLM).
  */
-const callOpenAICompatible = async (settings: any, fullPrompt: string, signal?: AbortSignal, temperature?: number, jsonMode: boolean = false) => {
+const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, signal?: AbortSignal, temperature?: number, jsonMode: boolean = false) => {
     return withRetry(async () => {
         const activeKey = getActiveKey(settings.apiKey);
 
@@ -340,7 +323,7 @@ Use Markdown formatting (bullet points, bold text) for readability. Do NOT inclu
     }
 };
 
-export const testAIConnection = async (settings: any) => {
+export const testAIConnection = async (settings: AISettings) => {
     return withRetry(async () => {
         const testPrompt = "Ping. Reply with 'Pong'.";
         if (settings.provider === 'openai') {

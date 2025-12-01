@@ -5,9 +5,10 @@ import { supabase } from '../services/supabase';
 import { AISettingsModal } from './AISettingsModal';
 import { DatabaseSettingsModal } from './DatabaseSettingsModal';
 import { useTranslation } from '../services/i18n';
+import { UserSession } from '../types';
 
 interface LayoutProps {
-  session: any;
+  session: UserSession | null;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ session }) => {

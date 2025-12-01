@@ -269,6 +269,27 @@ class MarketDataService {
           subs.forEach(cb => cb(data));
       }
   }
+
+  public cleanup() {
+      // Close WebSocket connections
+      if (this.binanceWs) {
+          this.binanceWs.close();
+          this.binanceWs = null;
+      }
+      if (this.twelveDataWs) {
+          this.twelveDataWs.close();
+          this.twelveDataWs = null;
+      }
+      
+      // Clear all subscriptions and data
+      this.subscribers.clear();
+      this.lastKnownData.clear();
+      this.binanceSubscriptions.clear();
+      this.twelveDataSubscriptions.clear();
+      
+      // Remove event listener
+      window.removeEventListener('ai-settings-changed', this.reconnectTwelveData);
+  }
 }
 
 export const marketService = new MarketDataService();
