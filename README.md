@@ -81,10 +81,13 @@ To deploy to Vercel:
  - **Bundle Optimization**: Tree-shaking and minification for reduced bundle size
  - **Lazy Loading**: Components are loaded on-demand for faster initial load
  - **Performance Monitoring**: Built-in performance metrics collection
- - **Enhanced Security**: Advanced API key encryption with additional obfuscation layers
- - **Input Validation**: Comprehensive XSS protection and input sanitization across all user inputs
- - **Error Handling**: Improved error boundaries and global error capture
- - **Database Performance**: Optimized indexing and caching mechanisms for large datasets
+  - **Enhanced Security**: Advanced API key encryption with additional obfuscation layers
+  - **Input Validation**: Comprehensive XSS protection and input sanitization across all user inputs
+  - **Error Handling**: Improved error boundaries and global error capture
+  - **Database Performance**: Optimized indexing and caching mechanisms for large datasets
+  - **API Key Leak Detection**: Proactive monitoring and alerting for potential API key exposure
+  - **Performance Monitoring**: Built-in metrics collection for API and database operations
+  - **Monte Carlo Simulation Validation**: Enhanced input validation for simulation accuracy
 
 ## Usage
 
