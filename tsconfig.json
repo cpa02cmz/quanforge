@@ -10,10 +10,6 @@
       "DOM.Iterable"
     ],
     "skipLibCheck": true,
-    "types": [
-      "node",
-      "vite/client"
-    ],
     
     "moduleResolution": "bundler",
     "isolatedModules": true,
@@ -21,6 +17,7 @@
     "allowJs": true,
     "jsx": "react-jsx",
     "strict": false,
+    "noImplicitAny": false,
     "paths": {
       "@/*": [
         "./*"
