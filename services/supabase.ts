@@ -6,6 +6,7 @@ import { connectionPool } from './supabaseConnectionPool';
 import { robotCache, queryCache } from './advancedCache';
 import { securityManager } from './securityManager';
 import { withErrorHandling, handleError } from '../utils/errorHandler';
+import { databaseOptimizer } from './databaseOptimizer';
 
 // Connection retry configuration
 const RETRY_CONFIG = {
