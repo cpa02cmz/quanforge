@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect, memo } from 'react';
+import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
 import { Message, MessageRole } from '../types';
 import { SUGGESTED_STRATEGIES } from '../constants';
 import { useTranslation } from '../services/i18n';
@@ -73,8 +73,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
   };
 
   // Lightweight Markdown Formatter
-  // Wrapped in callback (though not strictly necessary as it's passed to memoized component, keeping it pure)
-  const formatMessageContent = (content: string) => {
+  // Memoized to prevent unnecessary re-renders
+  const formatMessageContent = useCallback((content: string) => {
     const lines = content.split('\n');
     return lines.map((line, lineIndex) => {
       // Handle Lists
@@ -95,10 +95,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
 
       return <div key={lineIndex} className="mb-1">{parseInlineStyles(line)}</div>;
     });
-  };
+  }, []);
 
   // Helper to parse **bold** and `code`
-  const parseInlineStyles = (text: string) => {
+  const parseInlineStyles = useCallback((text: string) => {
     // We split by bold markers first
     const boldParts = text.split(/(\*\*.*?\*\*)/g);
     
@@ -119,8 +119,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
         }
         return <span key={`${i}-${j}`}>{subPart}</span>;
       });
-    });
-  };
+});
+  }, []);
 
   // Get strategies based on current language
   const suggestedStrategies = SUGGESTED_STRATEGIES[language] || SUGGESTED_STRATEGIES['en'];
