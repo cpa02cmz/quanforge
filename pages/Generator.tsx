@@ -122,24 +122,26 @@ export const Generator: React.FC = memo(() => {
         </div>
       )}
       
-      {/* Mobile Tab Toggle */}
-      <div className="md:hidden flex bg-dark-surface border-b border-dark-border">
-          <button 
-            onClick={() => setMobileView('setup')}
-            className={`flex-1 py-3 text-sm font-medium ${mobileView === 'setup' ? 'text-brand-400 border-b-2 border-brand-500' : 'text-gray-500'}`}
-          >
-            {t('gen_mobile_setup')}
-          </button>
-          <button 
-            onClick={() => setMobileView('result')}
-            className={`flex-1 py-3 text-sm font-medium ${mobileView === 'result' ? 'text-brand-400 border-b-2 border-brand-500' : 'text-gray-500'}`}
-          >
-            {t('gen_mobile_result')}
-          </button>
-      </div>
+       {/* Mobile Tab Toggle */}
+       <div className="md:hidden flex bg-dark-surface border-b border-dark-border">
+           <button 
+             onClick={() => setMobileView('setup')}
+             className={`flex-1 py-3 text-sm font-medium ${mobileView === 'setup' ? 'text-brand-400 border-b-2 border-brand-500' : 'text-gray-500'}`}
+             aria-selected={mobileView === 'setup'}
+           >
+             {t('gen_mobile_setup')}
+           </button>
+           <button 
+             onClick={() => setMobileView('result')}
+             className={`flex-1 py-3 text-sm font-medium ${mobileView === 'result' ? 'text-brand-400 border-b-2 border-brand-500' : 'text-gray-500'}`}
+             aria-selected={mobileView === 'result'}
+           >
+             {t('gen_mobile_result')}
+           </button>
+       </div>
 
-      {/* Left Panel: Chat & Settings */}
-      <div className={`${mobileView === 'setup' ? 'flex' : 'hidden'} md:flex w-full md:w-[400px] lg:w-[450px] flex-col h-full z-10 shadow-xl border-r border-dark-border`}>
+       {/* Left Panel: Chat & Settings */}
+       <div className={`${mobileView === 'setup' ? 'flex' : 'hidden'} md:flex w-full md:w-[400px] lg:w-[450px] flex-col h-full z-10 shadow-xl border-r border-dark-border flex-shrink-0`}>
         {/* Header Name Input */}
         <div className="p-4 bg-dark-surface border-b border-dark-border flex items-center shrink-0">
              <button 
@@ -209,8 +211,8 @@ export const Generator: React.FC = memo(() => {
         </div>
       </div>
 
-      {/* Right Panel: Editor & Analysis & Simulation */}
-      <div className={`${mobileView === 'result' ? 'flex' : 'hidden'} md:flex flex-1 flex-col h-full overflow-hidden`}>
+       {/* Right Panel: Editor & Analysis & Simulation */}
+       <div className={`${mobileView === 'result' ? 'flex' : 'hidden'} md:flex flex-1 flex-col h-full overflow-hidden min-w-0`}>
         <div className="h-12 bg-dark-surface border-b border-dark-border flex items-center px-4 space-x-6 shrink-0">
             <button 
                 onClick={() => setActiveMainTab('editor')}

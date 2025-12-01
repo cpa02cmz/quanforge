@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useTranslation } from '../services/i18n';
+import { usePerformanceMonitor } from '../utils/performance';
 
 interface CodeEditorProps {
   code: string;
@@ -25,7 +26,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
   useEffect(() => {
     if (!isEditing && codeRef.current && (window as any).Prism) {
         // MQL5 is very similar to C++, so we use the cpp language definition
-        (window as any).Prism.highlightElement(codeRef.current);
+        // Use requestAnimationFrame to ensure highlighting happens after DOM updates
+        requestAnimationFrame(() => {
+          (window as any).Prism.highlightElement(codeRef.current!);
+        });
     }
   }, [code, isEditing]);
 
@@ -79,15 +83,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
     }
   };
 
-   // Generate line numbers - memoized for performance
-   const lineNumbers = useMemo(() => {
-     const lines = code.split('\n');
-     const nums = new Array(lines.length);
-     for (let i = 0; i < lines.length; i++) {
-       nums[i] = i + 1;
-     }
-     return nums;
-   }, [code]);
+// Generate line numbers efficiently - memoized for performance
+    const lineNumbers = useMemo(() => {
+      const lines = code.split('\n');
+      return Array.from({ length: lines.length }, (_, i) => i + 1);
+    }, [code]);
 
   return (
     <div className="flex flex-col h-full bg-[#0d1117] text-gray-300 font-mono text-sm relative">
@@ -149,16 +149,18 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
       {/* Editor Body */}
       <div className="flex flex-1 relative overflow-hidden">
         
-        {/* Line Numbers Gutter */}
-        <div 
-          ref={gutterRef}
-          className="w-12 bg-[#0d1117] border-r border-[#30363d] text-right pr-3 pt-4 text-gray-600 select-none overflow-hidden"
-          style={{ lineHeight: '1.625' }} // match tailwind leading-relaxed
-        >
-          {lineNumbers.map(n => (
-            <div key={n} className="px-0">{n}</div>
-          ))}
-        </div>
+         {/* Line Numbers Gutter */}
+         <div 
+           ref={gutterRef}
+           className="w-12 bg-[#0d1117] border-r border-[#30363d] text-right pr-3 pt-4 text-gray-600 select-none overflow-hidden"
+           style={{ lineHeight: '1.625' }} // match tailwind leading-relaxed
+         >
+           <div style={{ height: `${lineNumbers.length * 26}px` }}>
+             {lineNumbers.map(n => (
+               <div key={n} className="h-6 flex items-center justify-end px-0">{n}</div>
+             ))}
+           </div>
+         </div>
 
         {/* Content Area */}
         <div 

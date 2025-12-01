@@ -76,25 +76,30 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   // Memoized to prevent unnecessary re-renders
   const formatMessageContent = useCallback((content: string) => {
     const lines = content.split('\n');
-    return lines.map((line, lineIndex) => {
+    const elements = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
       // Handle Lists
       if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
         const listContent = line.trim().substring(2);
-        return (
-          <div key={lineIndex} className="flex items-start ml-2 mb-1">
+        elements.push(
+          <div key={i} className="flex items-start ml-2 mb-1">
             <span className="mr-2 text-brand-500">•</span>
             <span>{parseInlineStyles(listContent)}</span>
           </div>
         );
       }
-      
       // Standard Paragraph (with empty line handling)
-      if (line.trim() === '') {
-        return <div key={lineIndex} className="h-2" />;
+      else if (line.trim() === '') {
+        elements.push(<div key={i} className="h-2" />);
       }
-
-      return <div key={lineIndex} className="mb-1">{parseInlineStyles(line)}</div>;
-    });
+      else {
+        elements.push(<div key={i} className="mb-1">{parseInlineStyles(line)}</div>);
+      }
+    }
+    
+    return elements;
   }, []);
 
   // Helper to parse **bold** and `code`
