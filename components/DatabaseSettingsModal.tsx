@@ -4,6 +4,7 @@ import { DBSettings } from '../types';
 import { settingsManager, DEFAULT_DB_SETTINGS } from '../services/settingsManager';
 import { dbUtils } from '../services/supabase';
 import { useToast } from './Toast';
+import { useTranslation } from '../services/i18n';
 
 interface DatabaseSettingsModalProps {
     isOpen: boolean;
@@ -12,6 +13,7 @@ interface DatabaseSettingsModalProps {
 
 export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = ({ isOpen, onClose }) => {
     const { showToast } = useToast();
+    const { t } = useTranslation();
     const [settings, setSettings] = useState<DBSettings>(DEFAULT_DB_SETTINGS);
     const [stats, setStats] = useState<{ count: number; storageType: string } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -135,7 +137,7 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = ({ is
                 <div className="p-4 border-b border-dark-border flex justify-between items-center bg-dark-bg/50">
                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
                         <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
-                        Database Settings
+                        {t('db_title')}
                     </h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -147,11 +149,11 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = ({ is
                     {/* Stats Banner */}
                     <div className="bg-dark-bg rounded-lg p-4 border border-dark-border flex justify-between items-center">
                         <div>
-                            <p className="text-xs text-gray-400 uppercase">Current Storage</p>
+                            <p className="text-xs text-gray-400 uppercase">{t('db_stats_storage')}</p>
                             <p className="text-sm font-medium text-white">{stats?.storageType || 'Unknown'}</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-gray-400 uppercase">Records</p>
+                            <p className="text-xs text-gray-400 uppercase">{t('db_stats_records')}</p>
                             <p className="text-2xl font-bold text-brand-400">{stats?.count || 0}</p>
                         </div>
                     </div>
@@ -159,21 +161,21 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = ({ is
                     {/* Configuration Form */}
                     <form onSubmit={handleSave} className="space-y-4">
                         <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-2">Storage Mode</label>
+                            <label className="block text-xs font-medium text-gray-400 mb-2">{t('db_mode_label')}</label>
                             <div className="flex bg-dark-bg p-1 rounded-lg border border-dark-border">
                                 <button
                                     type="button"
                                     onClick={() => setSettings({ ...settings, mode: 'mock' })}
                                     className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${settings.mode === 'mock' ? 'bg-brand-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                                 >
-                                    Local Mock (Offline)
+                                    {t('db_mode_mock')}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setSettings({ ...settings, mode: 'supabase' })}
                                     className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${settings.mode === 'supabase' ? 'bg-brand-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                                 >
-                                    Supabase Cloud
+                                    {t('db_mode_supabase')}
                                 </button>
                             </div>
                         </div>
@@ -181,7 +183,7 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = ({ is
                         {settings.mode === 'supabase' && (
                             <div className="space-y-4 animate-fade-in">
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1">Project URL</label>
+                                    <label className="block text-xs font-medium text-gray-400 mb-1">{t('db_url')}</label>
                                     <input
                                         type="text"
                                         value={settings.url}
@@ -191,7 +193,7 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = ({ is
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1">Anon Public Key</label>
+                                    <label className="block text-xs font-medium text-gray-400 mb-1">{t('db_key')}</label>
                                     <input
                                         type="password"
                                         value={settings.anonKey}
@@ -203,8 +205,8 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = ({ is
                                 
                                 <div className="p-3 bg-brand-900/10 border border-brand-500/20 rounded-lg flex justify-between items-center">
                                     <div>
-                                        <p className="text-xs text-brand-400 font-bold mb-1">Cloud Migration</p>
-                                        <p className="text-[10px] text-gray-400">Move your local robots to Supabase.</p>
+                                        <p className="text-xs text-brand-400 font-bold mb-1">{t('db_migration_title')}</p>
+                                        <p className="text-[10px] text-gray-400">{t('db_migration_desc')}</p>
                                     </div>
                                     <button
                                         type="button"
@@ -212,7 +214,7 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = ({ is
                                         disabled={isMigrating}
                                         className="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs rounded transition-colors disabled:opacity-50"
                                     >
-                                        {isMigrating ? 'Migrating...' : 'Migrate Local Data'}
+                                        {isMigrating ? t('db_migrating') : t('db_migration_btn')}
                                     </button>
                                 </div>
                             </div>
@@ -225,27 +227,27 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = ({ is
                                 disabled={isLoading}
                                 className="flex-1 px-4 py-2 text-sm border border-dark-border bg-dark-bg hover:bg-dark-surface rounded-lg transition-colors text-gray-300"
                             >
-                                {isLoading ? 'Checking...' : 'Test & Check DB'}
+                                {isLoading ? t('db_testing') : t('db_test_btn')}
                             </button>
                             <button 
                                 type="submit"
                                 className="flex-1 px-4 py-2 text-sm bg-brand-600 hover:bg-brand-500 text-white rounded-lg transition-colors shadow-lg shadow-brand-600/20"
                             >
-                                Save Changes
+                                {t('db_save_btn')}
                             </button>
                         </div>
                     </form>
 
                     {/* Data Tools */}
                     <div className="pt-6 border-t border-dark-border">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Data Management</h3>
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">{t('db_data_mgmt')}</h3>
                         <div className="grid grid-cols-2 gap-3">
                             <button 
                                 onClick={handleExport}
                                 className="px-3 py-2 bg-dark-bg border border-dark-border hover:border-gray-500 rounded-lg text-xs font-medium text-gray-300 flex items-center justify-center gap-2 transition-colors"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                                Export JSON
+                                {t('db_export')}
                             </button>
                             <button 
                                 onClick={handleImport}
@@ -253,7 +255,7 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = ({ is
                                 className="px-3 py-2 bg-dark-bg border border-dark-border hover:border-gray-500 rounded-lg text-xs font-medium text-gray-300 flex items-center justify-center gap-2 transition-colors"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                                {isLoading ? 'Importing...' : 'Import JSON'}
+                                {isLoading ? 'Importing...' : t('db_import')}
                             </button>
                         </div>
                          <p className="text-[10px] text-gray-500 mt-2 text-center">

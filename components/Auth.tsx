@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
 import { supabase } from '../services/supabase';
 import { useToast } from './Toast';
+import { useTranslation } from '../services/i18n';
 
 export const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -8,6 +10,7 @@ export const Auth: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const { showToast } = useToast();
+  const { t } = useTranslation();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,18 +20,16 @@ export const Auth: React.FC = () => {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        showToast('Signed in successfully', 'success');
+        showToast(t('auth_toast_signin'), 'success');
       } else {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        else showToast('Check your email for the login link!', 'success');
+        else showToast(t('auth_toast_check_email'), 'success');
       }
     } catch (error: any) {
       // If we are in mock mode (no API URL), we simulate a successful login for demo purposes
       if (!process.env.SUPABASE_URL && error.message.includes('Auth session missing')) {
          // This block intentionally left empty as the real app needs Env vars.
-         // In a real scenario, we'd handle the error. 
-         // For this generated demo without env vars, we might want to tell the user.
       }
       showToast(error.message || 'Authentication failed', 'error');
     } finally {
@@ -44,13 +45,13 @@ export const Auth: React.FC = () => {
             QuantForge AI
           </h1>
           <p className="text-gray-400 mt-2">
-            {isLogin ? 'Sign in to access your trading bots' : 'Create an account to start generating'}
+            {isLogin ? t('auth_signin_title') : t('auth_signup_title')}
           </p>
         </div>
 
         <form onSubmit={handleAuth} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">{t('auth_email')}</label>
             <input
               type="email"
               required
@@ -61,7 +62,7 @@ export const Auth: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">{t('auth_password')}</label>
             <input
               type="password"
               required
@@ -83,7 +84,7 @@ export const Auth: React.FC = () => {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             ) : (
-              isLogin ? 'Sign In' : 'Create Account'
+              isLogin ? t('auth_btn_signin') : t('auth_btn_signup')
             )}
           </button>
         </form>
@@ -93,7 +94,7 @@ export const Auth: React.FC = () => {
             onClick={() => setIsLogin(!isLogin)}
             className="text-sm text-brand-400 hover:text-brand-300 hover:underline"
           >
-            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+            {isLogin ? t('auth_switch_signup') : t('auth_switch_signin')}
           </button>
         </div>
       </div>

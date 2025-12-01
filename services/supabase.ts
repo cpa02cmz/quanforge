@@ -1,6 +1,6 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { settingsManager } from './settingsManager';
+import { settingsManager, getEnv } from './settingsManager';
 import { Robot } from '../types';
 
 // Mock session storage
@@ -11,7 +11,12 @@ const ROBOTS_KEY = 'mock_robots';
 const safeParse = (data: string | null, fallback: any) => {
     if (!data) return fallback;
     try {
-        return JSON.parse(data);
+        const parsed = JSON.parse(data);
+        // Security: Prevent prototype pollution
+        if (parsed && typeof parsed === 'object' && ('__proto__' in parsed || 'constructor' in parsed)) {
+             return fallback;
+        }
+        return parsed;
     } catch (e) {
         console.error("Failed to parse data from storage:", e);
         return fallback;
@@ -405,6 +410,7 @@ export const dbUtils = {
     /**
      * Migration Utility: Moves data from LocalStorage Mock to Supabase Cloud.
      * Uses batch processing to avoid payload limits.
+     * With Fault Tolerance: If one batch fails, try to continue.
      */
     async migrateMockToSupabase(): Promise<{ success: boolean; count: number; error?: string }> {
         const stored = localStorage.getItem(ROBOTS_KEY);
@@ -422,6 +428,10 @@ export const dbUtils = {
             return { success: false, count: 0, error: "You must be signed in to Supabase to migrate data." };
         }
 
+        let successCount = 0;
+        let failCount = 0;
+        let lastError = "";
+
         try {
             const payload = localRobots.filter(isValidRobot).map((r: Robot) => {
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -435,15 +445,24 @@ export const dbUtils = {
 
             if (payload.length === 0) return { success: false, count: 0, error: "Local data invalid." };
 
-            // Batch Insertion (e.g. 10 records per request) to prevent 413 Payload Too Large
             const BATCH_SIZE = 10;
             for (let i = 0; i < payload.length; i += BATCH_SIZE) {
                 const chunk = payload.slice(i, i + BATCH_SIZE);
                 const { error } = await client.from('robots').insert(chunk);
-                if (error) throw error;
+                if (error) {
+                    console.error("Batch migration failed", error);
+                    failCount += chunk.length;
+                    lastError = error.message;
+                } else {
+                    successCount += chunk.length;
+                }
             }
 
-            return { success: true, count: payload.length };
+            if (successCount === 0 && failCount > 0) {
+                return { success: false, count: 0, error: lastError };
+            }
+
+            return { success: true, count: successCount, error: failCount > 0 ? `Migrated ${successCount}, Failed ${failCount}. Last error: ${lastError}` : undefined };
         } catch (e: any) {
             return { success: false, count: 0, error: e.message };
         }

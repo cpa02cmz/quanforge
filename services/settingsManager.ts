@@ -4,10 +4,36 @@ import { AISettings, DBSettings } from "../types";
 const AI_SETTINGS_KEY = 'quantforge_ai_settings';
 const DB_SETTINGS_KEY = 'quantforge_db_settings';
 
+// Safe Environment Variable Access
+export const getEnv = (key: string): string => {
+    // Check Vite (import.meta.env)
+    // We use try-catch or safe checks to avoid "process is not defined" in pure ESM browsers
+    try {
+        // @ts-ignore
+        if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[`VITE_${key}`]) {
+            // @ts-ignore
+            return import.meta.env[`VITE_${key}`];
+        }
+    } catch (e) {
+        // Ignore
+    }
+
+    // Check Node/CRA (process.env)
+    try {
+        if (typeof process !== 'undefined' && process.env) {
+            return process.env[`REACT_APP_${key}`] || process.env[key] || process.env[`VITE_${key}`] || '';
+        }
+    } catch (e) {
+        // Ignore
+    }
+
+    return '';
+};
+
 // Default settings if nothing is saved
 export const DEFAULT_AI_SETTINGS: AISettings = {
     provider: 'google',
-    apiKey: process.env.API_KEY || '', // Fallback to env var if available
+    apiKey: getEnv('API_KEY'), // Fallback to env var if available
     modelName: 'gemini-3-pro-preview',
     baseUrl: '',
     customInstructions: '',
@@ -16,12 +42,12 @@ export const DEFAULT_AI_SETTINGS: AISettings = {
 };
 
 // Check if env vars are present to default to supabase, otherwise mock
-const hasEnvDb = !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
+const hasEnvDb = !!(getEnv('SUPABASE_URL') && getEnv('SUPABASE_ANON_KEY'));
 
 export const DEFAULT_DB_SETTINGS: DBSettings = {
     mode: hasEnvDb ? 'supabase' : 'mock',
-    url: process.env.SUPABASE_URL || '',
-    anonKey: process.env.SUPABASE_ANON_KEY || ''
+    url: getEnv('SUPABASE_URL'),
+    anonKey: getEnv('SUPABASE_ANON_KEY')
 };
 
 export const settingsManager = {

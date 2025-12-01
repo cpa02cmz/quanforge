@@ -1,6 +1,8 @@
 
 # QuantForge AI - MQL5 Generator
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fproject-name%2Frepo-name)
+
 QuantForge AI is a web-based platform that uses Google's Gemini 3.0/2.5 AI models to generate, analyze, and manage trading robots (Expert Advisors) for the MetaTrader 5 (MQL5) platform.
 
 ## Features
@@ -29,9 +31,9 @@ QuantForge AI is a web-based platform that uses Google's Gemini 3.0/2.5 AI model
 1.  **Clone the repository**.
 2.  **Install dependencies** (if running locally outside of the provided environment).
 3.  **Environment Variables**:
-    *   `API_KEY`: Google Gemini API Key.
-    *   `SUPABASE_URL`: (Optional) Your Supabase Project URL.
-    *   `SUPABASE_ANON_KEY`: (Optional) Your Supabase Anon Key.
+    *   `API_KEY` / `VITE_API_KEY`: Google Gemini API Key.
+    *   `SUPABASE_URL` / `VITE_SUPABASE_URL`: (Optional) Your Supabase Project URL.
+    *   `SUPABASE_ANON_KEY` / `VITE_SUPABASE_ANON_KEY`: (Optional) Your Supabase Anon Key.
     *   *Note: If Supabase keys are missing, the app defaults to a robust LocalStorage mock mode.*
 
 ## Usage

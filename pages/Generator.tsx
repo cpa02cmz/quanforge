@@ -7,9 +7,11 @@ import { StrategyConfig } from '../components/StrategyConfig';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
 import { BacktestPanel } from '../components/BacktestPanel';
+import { useTranslation } from '../services/i18n';
 
 export const Generator: React.FC = () => {
   const { id } = useParams();
+  const { t } = useTranslation();
   
   // Use Custom Hook for Logic
   const {
@@ -64,13 +66,13 @@ export const Generator: React.FC = () => {
             onClick={() => setMobileView('setup')}
             className={`flex-1 py-3 text-sm font-medium ${mobileView === 'setup' ? 'text-brand-400 border-b-2 border-brand-500' : 'text-gray-500'}`}
           >
-            Setup & Chat
+            {t('gen_mobile_setup')}
           </button>
           <button 
             onClick={() => setMobileView('result')}
             className={`flex-1 py-3 text-sm font-medium ${mobileView === 'result' ? 'text-brand-400 border-b-2 border-brand-500' : 'text-gray-500'}`}
           >
-            Code & Result
+            {t('gen_mobile_result')}
           </button>
       </div>
 
@@ -89,14 +91,14 @@ export const Generator: React.FC = () => {
                 value={robotName}
                 onChange={(e) => setRobotName(e.target.value)}
                 className="bg-transparent text-white font-bold text-lg border-none focus:ring-0 outline-none w-full placeholder-gray-500"
-                placeholder="Robot Name"
+                placeholder={t('gen_placeholder_name')}
             />
              <button 
                 onClick={handleSave}
                 disabled={saving || !code}
                 className="ml-2 px-3 py-1.5 text-xs font-medium bg-brand-600 hover:bg-brand-500 text-white rounded transition-colors disabled:opacity-50 whitespace-nowrap"
             >
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('gen_saving') : t('gen_save')}
             </button>
         </div>
 
@@ -106,13 +108,13 @@ export const Generator: React.FC = () => {
                 onClick={() => setActiveSidebarTab('chat')}
                 className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeSidebarTab === 'chat' ? 'border-brand-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
             >
-                AI Chat
+                {t('gen_tab_chat')}
             </button>
             <button 
                 onClick={() => setActiveSidebarTab('settings')}
                 className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeSidebarTab === 'settings' ? 'border-brand-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
             >
-                Settings
+                {t('gen_tab_settings')}
             </button>
         </div>
 
@@ -144,19 +146,19 @@ export const Generator: React.FC = () => {
                 onClick={() => setActiveMainTab('editor')}
                 className={`h-full border-b-2 text-sm font-medium transition-colors ${activeMainTab === 'editor' ? 'border-brand-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
             >
-                Code Editor
+                {t('gen_tab_editor')}
             </button>
             <button 
                 onClick={() => setActiveMainTab('analysis')}
                 className={`h-full border-b-2 text-sm font-medium transition-colors ${activeMainTab === 'analysis' ? 'border-brand-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
             >
-                Analysis
+                {t('gen_tab_analysis')}
             </button>
             <button 
                 onClick={() => setActiveMainTab('simulation')}
                 className={`h-full border-b-2 text-sm font-medium transition-colors flex items-center space-x-1 ${activeMainTab === 'simulation' ? 'border-brand-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
             >
-                <span>Simulation</span>
+                <span>{t('gen_tab_simulation')}</span>
                 <span className="text-[10px] bg-brand-500/20 text-brand-400 px-1 rounded ml-1">Beta</span>
             </button>
         </div>
@@ -186,11 +188,11 @@ export const Generator: React.FC = () => {
             {activeMainTab === 'analysis' && (
                 <div className="p-8 h-full overflow-y-auto bg-dark-bg custom-scrollbar">
                     {!analysis ? (
-                        <div className="text-center text-gray-500 mt-20">Generate some code to see the analysis.</div>
+                        <div className="text-center text-gray-500 mt-20">{t('gen_no_analysis')}</div>
                     ) : (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             <div className="bg-dark-surface p-6 rounded-xl border border-dark-border">
-                                <h3 className="text-lg font-bold text-white mb-4">Risk Profile</h3>
+                                <h3 className="text-lg font-bold text-white mb-4">{t('gen_risk_profile')}</h3>
                                 <div className="h-64">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
@@ -212,17 +214,17 @@ export const Generator: React.FC = () => {
                                         </PieChart>
                                     </ResponsiveContainer>
                                 </div>
-                                <p className="text-center text-sm text-gray-400 mt-2">Risk Score Estimation</p>
+                                <p className="text-center text-sm text-gray-400 mt-2">{t('gen_risk_est')}</p>
                             </div>
 
                             <div className="bg-dark-surface p-6 rounded-xl border border-dark-border">
-                                <h3 className="text-lg font-bold text-white mb-4">AI Summary</h3>
+                                <h3 className="text-lg font-bold text-white mb-4">{t('gen_ai_summary')}</h3>
                                 <p className="text-gray-300 leading-relaxed">
                                     {analysis.description}
                                 </p>
                                 <div className="mt-6 pt-6 border-t border-dark-border">
                                     <div className="flex justify-between items-center mb-2">
-                                        <span className="text-gray-400">Profitability Potential</span>
+                                        <span className="text-gray-400">{t('gen_profitability')}</span>
                                         <span className="text-brand-400 font-bold">{analysis.profitability}/10</span>
                                     </div>
                                     <div className="w-full bg-dark-bg h-2 rounded-full overflow-hidden">

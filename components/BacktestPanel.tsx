@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { BacktestSettings, SimulationResult } from '../types';
 import { NumericInput } from './NumericInput';
+import { useTranslation } from '../services/i18n';
 
 interface BacktestPanelProps {
     settings: BacktestSettings;
@@ -20,6 +22,7 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = ({
     isRunning,
     analysisExists 
 }) => {
+    const { t } = useTranslation();
 
     const handleChange = (field: keyof BacktestSettings, value: number) => {
         onChange({ ...settings, [field]: value });
@@ -52,7 +55,7 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = ({
             <div className="bg-dark-surface border-b border-dark-border p-4">
                 <div className="flex flex-wrap gap-4 items-end">
                     <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Initial Deposit ($)</label>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">{t('bt_deposit')}</label>
                         <NumericInput
                             value={settings.initialDeposit}
                             onChange={(val) => handleChange('initialDeposit', val)}
@@ -60,7 +63,7 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = ({
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Duration (Days)</label>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">{t('bt_duration')}</label>
                         <select 
                             value={settings.days}
                             onChange={(e) => handleChange('days', Number(e.target.value))}
@@ -73,7 +76,7 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = ({
                         </select>
                     </div>
                     <div>
-                         <label className="block text-xs font-medium text-gray-500 mb-1">Leverage</label>
+                         <label className="block text-xs font-medium text-gray-500 mb-1">{t('bt_leverage')}</label>
                          <select 
                             value={settings.leverage}
                             onChange={(e) => handleChange('leverage', Number(e.target.value))}
@@ -95,7 +98,7 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = ({
                         ) : (
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         )}
-                        <span>Run Simulation</span>
+                        <span>{t('bt_run')}</span>
                     </button>
                     
                     {result && (
@@ -105,13 +108,13 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = ({
                             title="Export Results to CSV"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                            <span>Export CSV</span>
+                            <span>{t('bt_export')}</span>
                         </button>
                     )}
                 </div>
                 {!analysisExists && (
                     <p className="text-xs text-yellow-500 mt-2">
-                        * Generate code and wait for AI analysis before running simulation.
+                        {t('bt_warn_analysis')}
                     </p>
                 )}
             </div>
@@ -121,33 +124,33 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = ({
                 {!result ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
                         <svg className="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg>
-                        <p className="text-lg font-medium">No Simulation Run</p>
-                        <p className="text-sm opacity-70">Configure settings and click Run to see AI projections.</p>
+                        <p className="text-lg font-medium">{t('bt_no_run')}</p>
+                        <p className="text-sm opacity-70">{t('gen_no_analysis')}</p>
                     </div>
                 ) : (
                     <>
                         {/* Stats Cards */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                             <div className="bg-dark-surface border border-dark-border p-4 rounded-xl">
-                                <p className="text-xs text-gray-500 uppercase">Final Balance</p>
+                                <p className="text-xs text-gray-500 uppercase">{t('bt_final_bal')}</p>
                                 <p className={`text-xl font-bold font-mono ${result.finalBalance >= settings.initialDeposit ? 'text-green-400' : 'text-red-400'}`}>
                                     ${result.finalBalance.toLocaleString()}
                                 </p>
                             </div>
                             <div className="bg-dark-surface border border-dark-border p-4 rounded-xl">
-                                <p className="text-xs text-gray-500 uppercase">Total Return</p>
+                                <p className="text-xs text-gray-500 uppercase">{t('bt_total_ret')}</p>
                                 <p className={`text-xl font-bold font-mono ${result.totalReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                     {result.totalReturn > 0 ? '+' : ''}{result.totalReturn}%
                                 </p>
                             </div>
                             <div className="bg-dark-surface border border-dark-border p-4 rounded-xl">
-                                <p className="text-xs text-gray-500 uppercase">Max Drawdown</p>
+                                <p className="text-xs text-gray-500 uppercase">{t('bt_max_dd')}</p>
                                 <p className="text-xl font-bold font-mono text-red-400">
                                     {result.maxDrawdown}%
                                 </p>
                             </div>
                             <div className="bg-dark-surface border border-dark-border p-4 rounded-xl">
-                                <p className="text-xs text-gray-500 uppercase">Est. Win Rate</p>
+                                <p className="text-xs text-gray-500 uppercase">{t('bt_win_rate')}</p>
                                 <p className="text-xl font-bold font-mono text-blue-400">
                                     ~{result.winRate.toFixed(1)}%
                                 </p>
@@ -156,7 +159,7 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = ({
 
                         {/* Chart */}
                         <div className="flex-1 min-h-0 bg-dark-surface border border-dark-border rounded-xl p-4">
-                            <h3 className="text-sm font-bold text-gray-400 mb-4">Projected Equity Curve (Monte Carlo)</h3>
+                            <h3 className="text-sm font-bold text-gray-400 mb-4">{t('bt_equity_curve')}</h3>
                             <div className="h-[90%] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={result.equityCurve}>
