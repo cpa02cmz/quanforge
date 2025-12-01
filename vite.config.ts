@@ -10,7 +10,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
-    sourcemap: process.env.NODE_ENV !== 'production',
+    sourcemap: process.env['NODE_ENV'] !== 'production',
     rollupOptions: {
       input: {
         main: './index.html'
@@ -65,6 +65,8 @@ export default defineConfig({
           if (id.includes('utils/')) {
             return 'utils';
           }
+          
+          return 'default';
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
@@ -74,7 +76,7 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: process.env.NODE_ENV === 'production',
+        drop_console: process.env['NODE_ENV'] === 'production',
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.info', 'console.debug'],
         passes: 2
@@ -94,7 +96,7 @@ export default defineConfig({
     }
   },
   define: {
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+    'process.env.NODE_ENV': JSON.stringify(process.env['NODE_ENV'] || 'development'),
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'recharts', '@google/genai', '@supabase/supabase-js', 'react-router-dom', 'react-helmet-async'],
