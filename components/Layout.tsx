@@ -37,23 +37,35 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
   ];
 
   return (
-    <div className="flex h-screen bg-dark-bg text-gray-100 overflow-hidden font-sans">
+    <div className="flex h-screen bg-dark-bg text-gray-100 overflow-hidden font-sans" role="application">
       <AISettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <DatabaseSettingsModal isOpen={isDbSettingsOpen} onClose={() => setIsDbSettingsOpen(false)} />
+      
+      {/* Skip to main content link for accessibility */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-brand-600 text-white px-4 py-2 rounded z-50"
+      >
+        Skip to main content
+      </a>
       
       {/* Mobile Backdrop */}
       {isMobileMenuOpen && (
         <div 
             className="fixed inset-0 bg-black/50 z-20 md:hidden backdrop-blur-sm transition-opacity"
             onClick={closeMobileMenu}
+            aria-hidden="true"
         />
       )}
 
       {/* Sidebar */}
-      <aside className={`
-          fixed md:relative z-30 w-64 h-full bg-dark-surface border-r border-dark-border flex flex-col transition-transform duration-300 ease-in-out
-          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}>
+      <aside 
+        className={`
+            fixed md:relative z-30 w-64 h-full bg-dark-surface border-r border-dark-border flex flex-col transition-transform duration-300 ease-in-out
+            ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+        aria-label="Main navigation"
+      >
         <div className="p-6 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-brand-400 to-blue-500 bg-clip-text text-transparent">
@@ -62,12 +74,16 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
             <p className="text-xs text-gray-500 mt-1">MQL5 Generator v1.0</p>
           </div>
           {/* Close button for mobile */}
-          <button onClick={closeMobileMenu} className="md:hidden text-gray-400 hover:text-white">
+          <button 
+            onClick={closeMobileMenu} 
+            className="md:hidden text-gray-400 hover:text-white"
+            aria-label="Close navigation menu"
+          >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
 
-        <nav className="flex-1 px-4 space-y-2">
+        <nav className="flex-1 px-4 space-y-2" role="navigation" aria-label="Site navigation">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -80,6 +96,7 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
                     ? 'bg-brand-500/10 text-brand-400 border border-brand-500/20' 
                     : 'text-gray-400 hover:bg-dark-border hover:text-white'
                 }`}
+                aria-current={isActive ? 'page' : undefined}
               >
                 {item.icon}
                 <span className="font-medium">{item.name}</span>
@@ -113,9 +130,9 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
           </div>
         </nav>
 
-        <div className="p-4 border-t border-dark-border">
+        <div className="p-4 border-t border-dark-border" aria-label="User profile">
           <div className="flex items-center space-x-3 mb-4">
-            <div className="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-xs font-bold">
+            <div className="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-xs font-bold" aria-hidden="true">
               {session?.user?.email?.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -132,14 +149,22 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative" id="main-content">
         <header className="md:hidden flex items-center justify-between p-4 bg-dark-surface border-b border-dark-border">
           <span className="font-bold text-brand-400">QuantForge</span>
           <div className="flex gap-2">
-             <button onClick={() => setIsSettingsOpen(true)} className="text-gray-300">
+             <button 
+               onClick={() => setIsSettingsOpen(true)} 
+               className="text-gray-300"
+               aria-label="AI settings"
+             >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
              </button>
-             <button onClick={() => setIsMobileMenuOpen(true)} className="text-gray-300">
+             <button 
+               onClick={() => setIsMobileMenuOpen(true)} 
+               className="text-gray-300"
+               aria-label="Open navigation menu"
+             >
                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
              </button>
           </div>

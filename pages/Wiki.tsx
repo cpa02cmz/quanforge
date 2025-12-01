@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { WIKI_CONTENT } from '../constants';
 import { useTranslation } from '../services/i18n';
+import { SEOHead, structuredDataTemplates } from '../utils/seo';
 
 export const Wiki: React.FC = () => {
   const { language } = useTranslation();
@@ -96,17 +97,36 @@ export const Wiki: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-full bg-dark-bg">
-      {/* Sidebar / Navigation */}
-      <div className="w-full md:w-80 bg-dark-surface border-r border-dark-border flex flex-col h-1/3 md:h-full">
-        <div className="p-4 border-b border-dark-border">
-            <h2 className="text-xl font-bold text-white mb-2">{language === 'id' ? 'Wiki & Panduan' : 'Wiki & Guide'}</h2>
-            <div className="relative">
-                <svg className="w-4 h-4 absolute left-3 top-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <input 
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+    <>
+      <SEOHead 
+        title="Documentation & Wiki - QuantForge AI"
+        description="Complete documentation and guides for QuantForge AI. Learn how to create MQL5 trading robots, use AI features, and optimize your trading strategies."
+        keywords="MQL5 documentation, trading robot guide, MetaTrader 5 tutorial, AI trading help, QuantForge wiki"
+        canonicalUrl="https://quanforge.ai/wiki"
+        structuredData={[
+          structuredDataTemplates.softwareApplication,
+          structuredDataTemplates.breadcrumb([
+            { name: 'Home', url: 'https://quanforge.ai/' },
+            { name: 'Wiki', url: 'https://quanforge.ai/wiki' }
+          ]),
+          ...(activeSection ? [structuredDataTemplates.article(
+            activeSection.title,
+            `Documentation for ${activeSection.title}`,
+            `https://quanforge.ai/wiki#${activeSection.id}`
+          )] : [])
+        ]}
+      />
+      <div className="flex flex-col md:flex-row h-full bg-dark-bg">
+        {/* Sidebar / Navigation */}
+        <aside className="w-full md:w-80 bg-dark-surface border-r border-dark-border flex flex-col h-1/3 md:h-full" role="navigation" aria-label="Documentation navigation">
+          <div className="p-4 border-b border-dark-border">
+              <h2 className="text-xl font-bold text-white mb-2">{language === 'id' ? 'Wiki & Panduan' : 'Wiki & Guide'}</h2>
+              <div className="relative">
+                  <svg className="w-4 h-4 absolute left-3 top-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  <input 
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder={language === 'id' ? "Cari dokumentasi..." : "Search documentation..."}
                     className="w-full bg-dark-bg border border-dark-border rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none"
                 />
@@ -140,40 +160,41 @@ export const Wiki: React.FC = () => {
                     {language === 'id' ? 'Tidak ada topik yang cocok.' : 'No matching topics found.'}
                 </div>
             )}
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar relative">
-        {activeSection ? (
-            <div className="max-w-3xl mx-auto animate-fade-in-up">
-                <div className="flex items-center gap-4 mb-8 border-b border-dark-border pb-6">
-                    <span className="text-4xl bg-dark-surface w-16 h-16 rounded-2xl flex items-center justify-center border border-dark-border shadow-lg">
-                        {activeSection.icon}
-                    </span>
-                    <div>
-                        <h1 className="text-3xl font-bold text-white">{activeSection.title}</h1>
-                        <p className="text-gray-400 mt-1">{language === 'id' ? 'Dokumentasi & Tips' : 'Documentation & Tips'}</p>
-                    </div>
-                </div>
-
-                <div className="space-y-10">
-                    {activeSection.articles.map((article, idx) => (
-                        <div key={idx} className="bg-dark-surface border border-dark-border rounded-xl p-6 shadow-sm">
-                            <h3 className="text-xl font-bold text-brand-400 mb-4">{highlightText(article.title, searchTerm)}</h3>
-                            <div className="text-gray-300 leading-relaxed text-sm md:text-base">
-                                {renderContent(article.content)}
-                            </div>
-                        </div>
-                    ))}
-                </div>
             </div>
-        ) : (
-            <div className="flex items-center justify-center h-full text-gray-500">
-                {language === 'id' ? 'Pilih topik untuk melihat panduan.' : 'Select a topic to view guide.'}
-            </div>
-        )}
+        </aside>
+
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar relative" role="main">
+          {activeSection ? (
+              <article className="max-w-3xl mx-auto animate-fade-in-up">
+                  <header className="flex items-center gap-4 mb-8 border-b border-dark-border pb-6">
+                      <span className="text-4xl bg-dark-surface w-16 h-16 rounded-2xl flex items-center justify-center border border-dark-border shadow-lg" aria-hidden="true">
+                          {activeSection.icon}
+                      </span>
+                      <div>
+                          <h1 className="text-3xl font-bold text-white">{activeSection.title}</h1>
+                          <p className="text-gray-400 mt-1">{language === 'id' ? 'Dokumentasi & Tips' : 'Documentation & Tips'}</p>
+                      </div>
+                  </header>
+
+                  <div className="space-y-10">
+                      {activeSection.articles.map((article, idx) => (
+                          <section key={idx} className="bg-dark-surface border border-dark-border rounded-xl p-6 shadow-sm">
+                              <h3 className="text-xl font-bold text-brand-400 mb-4">{highlightText(article.title, searchTerm)}</h3>
+                              <div className="text-gray-300 leading-relaxed text-sm md:text-base">
+                                  {renderContent(article.content)}
+                              </div>
+                          </section>
+                      ))}
+                  </div>
+              </article>
+          ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                  {language === 'id' ? 'Pilih topik untuk melihat panduan.' : 'Select a topic to view guide.'}
+              </div>
+          )}
+        </main>
       </div>
-    </div>
+    </>
   );
 };

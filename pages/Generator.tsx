@@ -8,6 +8,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
 import { BacktestPanel } from '../components/BacktestPanel';
 import { useTranslation } from '../services/i18n';
+import { SEOHead, structuredDataTemplates } from '../utils/seo';
 
 export const Generator: React.FC = memo(() => {
   const { id } = useParams();
@@ -84,7 +85,22 @@ export const Generator: React.FC = memo(() => {
    ] : [], [analysis]);
 
   return (
-    <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] md:h-screen bg-dark-bg relative">
+    <>
+      <SEOHead 
+        title={id ? `Edit Trading Robot - ${robotName || 'Loading...'}` : 'Create New Trading Robot'}
+        description={id ? `Edit and optimize your MQL5 trading robot "${robotName}". Adjust parameters, test strategies, and deploy to MetaTrader 5.` : 'Create a new MQL5 trading robot using AI. Describe your strategy and generate professional Expert Advisors for MetaTrader 5.'}
+        keywords="MQL5 generator, trading robot creator, Expert Advisor builder, AI trading strategy, MetaTrader 5 robot"
+        canonicalUrl={id ? `https://quanforge.ai/generator/${id}` : 'https://quanforge.ai/generator'}
+        structuredData={[
+          structuredDataTemplates.softwareApplication,
+          structuredDataTemplates.breadcrumb([
+            { name: 'Home', url: 'https://quanforge.ai/' },
+            { name: 'Generator', url: 'https://quanforge.ai/generator' }
+          ]),
+          ...(robotName ? [structuredDataTemplates.creativeWork(robotName, 'Generated MQL5 trading strategy')] : [])
+        ]}
+      />
+      <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] md:h-screen bg-dark-bg relative" role="main" aria-label="Strategy generator workspace">
       
       {/* Loading Progress Indicator */}
       {isLoading && loadingProgress && (
@@ -283,5 +299,6 @@ export const Generator: React.FC = memo(() => {
         </div>
       </div>
     </div>
+    </>
   );
 });

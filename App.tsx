@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useState, useEffect, useMemo, Suspense, lazy } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './services/supabase';
 import { ToastProvider } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
+import { SEOHead, structuredDataTemplates } from './utils/seo';
 
 // Lazy load components for better code splitting
 const Auth = lazy(() => import('./components/Auth').then(module => ({ default: module.Auth })));
@@ -56,7 +57,10 @@ export default function App() {
   return (
     <ErrorBoundary>
       <ToastProvider>
-        <HashRouter>
+        <BrowserRouter>
+          <SEOHead 
+            structuredData={[structuredDataTemplates.softwareApplication]}
+          />
           <Suspense fallback={LoadingComponent}>
             <Routes>
               <Route 
@@ -83,7 +87,7 @@ export default function App() {
               </Route>
             </Routes>
           </Suspense>
-        </HashRouter>
+        </BrowserRouter>
       </ToastProvider>
     </ErrorBoundary>
   );

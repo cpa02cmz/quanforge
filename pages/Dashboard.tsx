@@ -5,6 +5,7 @@ import { mockDb } from '../services/supabase';
 import { Robot, UserSession } from '../types';
 import { useToast } from '../components/Toast';
 import { useTranslation } from '../services/i18n';
+import { SEOHead, structuredDataTemplates } from '../utils/seo';
 
 
 
@@ -95,8 +96,22 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
   );
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+    <>
+      <SEOHead 
+        title="Dashboard - Trading Robots Management"
+        description="Manage your MQL5 trading robots and Expert Advisors. View, edit, duplicate, and analyze your automated trading strategies."
+        keywords="trading robot dashboard, MQL5 management, Expert Advisor dashboard, automated trading portfolio"
+        canonicalUrl="https://quanforge.ai/"
+        structuredData={[
+          structuredDataTemplates.softwareApplication,
+          structuredDataTemplates.breadcrumb([
+            { name: 'Home', url: 'https://quanforge.ai/' },
+            { name: 'Dashboard', url: 'https://quanforge.ai/' }
+          ])
+        ]}
+      />
+      <div className="p-8 max-w-7xl mx-auto" role="main" aria-label="Trading robots dashboard">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">{t('dash_title')}</h1>
           <p className="text-gray-400">{t('dash_subtitle')}</p>
@@ -121,6 +136,8 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full bg-dark-bg border border-dark-border rounded-lg pl-10 pr-4 py-2 text-white focus:ring-1 focus:ring-brand-500 outline-none placeholder-gray-600"
+                      aria-label="Search trading robots"
+                      id="robot-search"
                   />
               </div>
               <div className="w-full md:w-48">
@@ -214,6 +231,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 });
