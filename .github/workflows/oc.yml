@@ -42,6 +42,31 @@ jobs:
         run: |
           curl -fsSL https://opencode.ai/install | bash
           echo "$HOME/.opencode/bin" >> $GITHUB_PATH
+      - name: Run OpenCode
+        id: run_oc
+        timeout-minutes: 20
+        run: |
+          opencode run "$(cat <<'PROMPT'
+            Please follow these steps meticulously:
+            - Understand the repository and its existing features in depth.
+            - Read documentation
+            - Discover optimization opportunities and connections between features, focused on vercel deployment and supabase integration.
+            - implement.
+            - test and verify. make sure no error/warning.
+            - make sure build is success locally.
+            - if needed, make/update documentation.
+            - commit and make pr with pr template.
+            - make sure all checks is passed.
+            - merge or set auto merge.
+            Rules:
+            - dont reveal secreet
+            - dont touch github workflows
+            - use repository coding standard
+            - after work is done, always create pr - check passed - merge/set auto merge
+          PROMPT
+          )" \
+            --model iflowcn/glm-4.6 \
+            --share false \
       - name: Run OpenCode1
         id: run_oc1
         timeout-minutes: 20
@@ -72,14 +97,14 @@ jobs:
         timeout-minutes: 20
         run: |
           opencode run "$(cat <<'PROMPT'
-            Tasks:
+            You are in github action environtment. Always update commit and push your work. Your tasks:
             * Study the repository and all existing features thoroughly.
             * Identify optimization opportunities and relationships between features, focused on frontend and user experience.
             * Implement the required changes or new features.
             * Run tests and ensure there are no errors or warnings.
             * Ensure the project builds successfully in the local environment.
             * Create or update documentation if needed.
-            * Commit your work and open a pull request using the required template.
+            * Commit your work, push and update/open a pull request using the required template.
             * Ensure all automated checks pass.
             * Merge the pull request or enable auto-merge.
             Rules:
@@ -95,14 +120,14 @@ jobs:
         timeout-minutes: 20
         run: |
           opencode run "$(cat <<'PROMPT'
-            Tasks:
+            You are in github action environtment. Always update commit and push your work. Your tasks:
             * Study the repository and all existing features thoroughly.
             * Identify backend optimization opportunities and relationships between features.
             * Implement the required changes or new features.
             * Run tests and ensure there are no errors or warnings.
             * Ensure the project builds successfully in the local environment.
             * Create or update documentation if needed.
-            * Commit your work and open a pull request using the required template.
+            * Commit your work, push and update/open a pull request using the required template.
             * Ensure all automated checks pass.
             * Merge the pull request or enable auto-merge.
             Rules:
@@ -118,14 +143,14 @@ jobs:
         timeout-minutes: 20
         run: |
           opencode run "$(cat <<'PROMPT'
-            Tasks:
+            You are in github action environtment. Always update commit and push your work. Your tasks:
             * Study the repository and all existing features thoroughly.
             * Identify optimization opportunities and relationships between features, focused on content and search engine optimization.
             * Implement the required changes or new features.
             * Run tests and ensure there are no errors or warnings.
             * Ensure the project builds successfully in the local environment.
             * Create or update documentation if needed.
-            * Commit your work and open a pull request using the required template.
+            * Commit your work, push and update/open a pull request using the required template.
             * Ensure all automated checks pass.
             * Merge the pull request or enable auto-merge.
             Rules:
@@ -141,14 +166,14 @@ jobs:
         timeout-minutes: 20
         run: |
           opencode run "$(cat <<'PROMPT'
-            Tasks:
+            You are in github action environtment. Always update commit and push your work. Your tasks:
             * Study the repository and all existing features thoroughly.
             * Identify database optimization opportunities and relationships between features, focused.
             * Implement the required changes or new features.
             * Run tests and ensure there are no errors or warnings.
             * Ensure the project builds successfully in the local environment.
             * Create or update documentation if needed.
-            * Commit your work and open a pull request using the required template.
+            * Commit your work, push and update/open a pull request using the required template.
             * Ensure all automated checks pass.
             * Merge the pull request or enable auto-merge.
             Rules:
@@ -164,14 +189,14 @@ jobs:
         timeout-minutes: 20
         run: |
           opencode run "$(cat <<'PROMPT'
-            Tasks:
+            You are in github action environtment. Always update commit and push your work. Your tasks:
             * Study the repository and all existing features thoroughly.
             * Identify optimization opportunities for stability, performance and security.
             * Implement the required changes or new features.
             * Run tests and ensure there are no errors or warnings.
             * Ensure the project builds successfully in the local environment.
             * Create or update documentation if needed.
-            * Commit your work and open a pull request using the required template.
+            * Commit your work, push and update/open a pull request using the required template.
             * Ensure all automated checks pass.
             * Merge the pull request or enable auto-merge.
             Rules:
@@ -187,7 +212,7 @@ jobs:
         timeout-minutes: 20
         run: |
           opencode run "$(cat <<'PROMPT'
-            Tasks:
+            You are in github action environtment. Always update commit and push your work. Your tasks:
             * commit, push, create pr in new branch, merge if all check passed
             * do repository maintenance
             * do documents management, makes sure document up to date with code and fiture 
