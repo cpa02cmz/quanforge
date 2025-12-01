@@ -7,6 +7,7 @@ import { mockDb } from '../services/supabase';
 import { useToast } from '../components/Toast';
 import { DEFAULT_STRATEGY_PARAMS } from '../constants';
 import { runMonteCarloSimulation } from '../services/simulation';
+import { ValidationService } from '../utils/validation';
 
 export const useGeneratorLogic = (id?: string) => {
   const navigate = useNavigate();
@@ -38,28 +39,11 @@ export const useGeneratorLogic = (id?: string) => {
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
   const [isSimulating, setIsSimulating] = useState(false);
 
-   // Validation function for strategy parameters
-   const validateStrategyParams = (params: StrategyParams): string[] => {
-     const errors: string[] = [];
-     
-     if (params.riskPercent <= 0 || params.riskPercent > 100) {
-       errors.push("Risk percentage must be between 0.1 and 100");
-     }
-     
-     if (params.stopLoss < 0) {
-       errors.push("Stop Loss must be a positive number");
-     }
-     
-     if (params.takeProfit < 0) {
-       errors.push("Take Profit must be a positive number");
-     }
-     
-     if (params.magicNumber <= 0) {
-       errors.push("Magic Number must be a positive number");
-     }
-     
-     return errors;
-   };
+   // Enhanced validation using ValidationService
+   const validateStrategyParams = useCallback((params: StrategyParams): string[] => {
+     const errors = ValidationService.validateStrategyParams(params);
+     return errors.map(error => error.message);
+   }, []);
 
    // Reset State Helper
    const resetState = useCallback(() => {
@@ -169,6 +153,16 @@ export const useGeneratorLogic = (id?: string) => {
 
   // Handlers
   const handleSendMessage = async (content: string) => {
+    // Validate input
+    const validationErrors = ValidationService.validateChatMessage(content);
+    if (!ValidationService.isValid(validationErrors)) {
+      showToast(ValidationService.formatErrors(validationErrors), 'error');
+      return;
+    }
+
+    // Sanitize input
+    const sanitizedContent = ValidationService.sanitizeInput(content);
+    
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
@@ -176,7 +170,7 @@ export const useGeneratorLogic = (id?: string) => {
     const newMessage: Message = {
       id: Date.now().toString(),
       role: MessageRole.USER,
-      content,
+      content: sanitizedContent,
       timestamp: Date.now(),
     };
     
@@ -313,9 +307,30 @@ export const useGeneratorLogic = (id?: string) => {
   };
 
   const handleSave = async () => {
+      // Validate robot name
+      const nameErrors = ValidationService.validateRobotName(robotName);
+      if (!ValidationService.isValid(nameErrors)) {
+        showToast(ValidationService.formatErrors(nameErrors), 'error');
+        return;
+      }
+
+      // Validate strategy parameters
+      const strategyErrors = ValidationService.validateStrategyParams(strategyParams);
+      if (!ValidationService.isValid(strategyErrors)) {
+        showToast(ValidationService.formatErrors(strategyErrors), 'error');
+        return;
+      }
+
+      // Validate backtest settings
+      const backtestErrors = ValidationService.validateBacktestSettings(backtestSettings);
+      if (!ValidationService.isValid(backtestErrors)) {
+        showToast(ValidationService.formatErrors(backtestErrors), 'error');
+        return;
+      }
+
       setSaving(true);
       const robotData = {
-          name: robotName,
+          name: ValidationService.sanitizeInput(robotName),
           code: code,
           description: analysis?.description || 'Generated Strategy',
           strategy_type: (analysis?.riskScore || 0) > 7 ? 'Scalping' : 'Trend',

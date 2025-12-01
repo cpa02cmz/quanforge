@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
 import { Message, MessageRole } from '../types';
-import { SUGGESTED_STRATEGIES } from '../constants';
+import { loadSuggestedStrategies } from '../constants';
 import { useTranslation } from '../services/i18n';
 
 interface ChatInterfaceProps {
@@ -123,7 +123,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
   }, []);
 
   // Get strategies based on current language
-  const suggestedStrategies = SUGGESTED_STRATEGIES[language] || SUGGESTED_STRATEGIES['en'];
+  const [suggestedStrategies, setSuggestedStrategies] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadSuggestedStrategies(language).then(strategies => {
+      setSuggestedStrategies(strategies[language] || strategies.en || []);
+    }).catch(err => {
+      console.error('Failed to load suggested strategies:', err);
+      setSuggestedStrategies([]);
+    });
+  }, [language]);
 
   return (
     <div className="flex flex-col h-full bg-dark-surface border-r border-dark-border">

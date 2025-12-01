@@ -1,5 +1,5 @@
 
- import React, { useState, useEffect } from 'react';
+ import React, { useState, useEffect, memo } from 'react';
  import { useParams } from 'react-router-dom';
  import { ChatInterface } from '../components/ChatInterface';
  import { CodeEditor } from '../components/CodeEditor';
@@ -9,7 +9,7 @@
  import { BacktestPanel } from '../components/BacktestPanel';
  import { useTranslation } from '../services/i18n';
 
-export const Generator: React.FC = () => {
+export const Generator: React.FC = memo(() => {
   const { id } = useParams();
   const { t } = useTranslation();
   
@@ -284,4 +284,4 @@ export const Generator: React.FC = () => {
       </div>
     </div>
   );
-};
+});
