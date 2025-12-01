@@ -18,6 +18,16 @@
     - `gemini.ts`: Handles prompt construction, API calls to Google GenAI, and JSON parsing.
     - `supabase.ts`: Abstracted Database layer. Switches between Real Supabase SDK and Mock (LocalStorage) implementation based on env vars.
     - `marketData.ts`: Singleton service using the Observer pattern to publish simulated tick data.
+    - `databaseOptimizer.ts`: Comprehensive database optimization service with advanced features like optimized search, batch operations, and analytics.
+    - `queryOptimizer.ts`: Advanced query optimization with intelligent caching, performance analytics, and batch operations.
+    - `advancedCache.ts`: Multi-tier caching with compression, tag-based invalidation, and cache warming strategies.
+    - `resilientSupabase.ts`: Circuit breaker pattern implementation with retry logic for fault tolerance.
+    - `supabaseConnectionPool.ts`: Connection pooling with health monitoring and automatic cleanup of unhealthy connections.
+    - `realtimeManager.ts`: Real-time data synchronization and event management.
+    - `securityManager.ts`: Input validation and security enforcement with XSS/SQL injection prevention.
+    - `settingsManager.ts`: Application settings and configuration management.
+    - `i18n.ts`: Internationalization and localization service.
+    - `simulation.ts`: Monte Carlo simulation and strategy backtesting engine.
 - **`/` Root**:
     - `App.tsx`: Routing (React Router) and Auth state management.
     - `types.ts`: Central TypeScript definitions.
@@ -51,9 +61,15 @@
   - **Response Caching**: Client-side caching for frequently accessed data with TTL management
   - **Code Splitting**: Automatic chunking for optimal loading performance
   - **Lazy Loading**: Components loaded on-demand to reduce initial bundle size
-  - **Database Pagination**: Efficient pagination for large datasets with `getRobotsPaginated()` function
-  - **Request Deduplication**: AI call deduplication to prevent duplicate API requests
-  - **Query Optimization**: Database-level search and filtering with proper indexing
+ - **Database Pagination**: Efficient pagination for large datasets with `getRobotsPaginated()` function
+ - **Request Deduplication**: AI call deduplication to prevent duplicate API requests
+ - **Query Optimization**: Database-level search and filtering with proper indexing
+ - **Advanced Caching**: Multi-tier caching system with compression and tag-based invalidation in `services/advancedCache.ts`
+ - **Connection Pooling**: Efficient connection management with health monitoring in `services/supabaseConnectionPool.ts`
+ - **Circuit Breaker Pattern**: Fault tolerance implementation with retry logic in `services/resilientSupabase.ts`
+ - **Security Layer**: Input validation and security enforcement in `services/securityManager.ts`
+ - **Performance Monitoring**: Built-in analytics and optimization recommendations in `services/databaseOptimizer.ts`
+ - **Full-Text Search**: Enhanced search capabilities for improved user experience
 - **PrismJS**: Loaded via CDN in `index.html` to avoid heavy build-step configuration for a lightweight demo.
 - **Vercel Optimization**: 
   - Edge-ready configuration for global CDN distribution
