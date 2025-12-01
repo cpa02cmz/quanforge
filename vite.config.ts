@@ -106,16 +106,32 @@ export default defineConfig({
         drop_console: process.env['NODE_ENV'] === 'production',
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.info', 'console.debug'],
-        passes: 2
+        passes: 2,
+        // Additional optimizations for Vercel Edge
+        inline: 2,
+        reduce_funcs: true,
+        reduce_vars: true,
+        sequences: true,
+        dead_code: true
       },
       mangle: {
-        safari10: true
+        safari10: true,
+        // Additional mangling for better compression
+        toplevel: true,
+        properties: {
+          regex: /^_/
+        }
       }
     },
     chunkSizeWarningLimit: 800,
     target: 'esnext',
     reportCompressedSize: true,
-    cssCodeSplit: true
+    cssCodeSplit: true,
+    // Optimize for Vercel Edge
+    assetsInlineLimit: 4096,
+    modulePreload: {
+      polyfill: false
+    }
   },
   resolve: {
     alias: {

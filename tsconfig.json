@@ -33,5 +33,24 @@
     "removeComments": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true
-  }
+  },
+  "include": [
+    "src/**/*",
+    "components/**/*",
+    "pages/**/*",
+    "services/**/*",
+    "utils/**/*",
+    "hooks/**/*",
+    "constants/**/*",
+    "types.ts",
+    "App.tsx",
+    "index.tsx",
+    "vite.config.ts",
+    "vite-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build"
+  ]
 }
