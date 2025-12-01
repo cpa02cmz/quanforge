@@ -10,7 +10,7 @@ import { SEOHead, structuredDataTemplates } from '../utils/seo';
 
 
 interface DashboardProps {
-    session: UserSession | null;
+    session?: UserSession | null;
 }
 
 export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
