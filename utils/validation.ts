@@ -165,22 +165,25 @@ export class ValidationService {
   static validateRobotName(name: string): ValidationError[] {
     const errors: ValidationError[] = [];
 
-    if (!name || !name.trim()) {
-      errors.push({
-        field: 'name',
-        message: 'Robot name is required'
-      });
-    } else if (name.length < 3) {
-      errors.push({
-        field: 'name',
-        message: 'Robot name must be at least 3 characters long'
-      });
-    } else if (name.length > 100) {
-      errors.push({
-        field: 'name',
-        message: 'Robot name must not exceed 100 characters'
-      });
-    }
+     if (!name || !name.trim()) {
+       errors.push({
+         field: 'name',
+         message: 'Robot name is required'
+       });
+       return errors; // Return early if name is empty
+     }
+
+     if (name.length < 3) {
+       errors.push({
+         field: 'name',
+         message: 'Robot name must be at least 3 characters long'
+       });
+     } else if (name.length > 100) {
+       errors.push({
+         field: 'name',
+         message: 'Robot name must not exceed 100 characters'
+       });
+     }
 
     return errors;
   }

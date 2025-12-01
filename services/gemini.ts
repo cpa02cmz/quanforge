@@ -42,20 +42,25 @@ const buildContextPrompt = (prompt: string, currentCode?: string, strategyParams
     // 1. Build Base Context (High Priority)
     let paramsContext = "";
     if (strategyParams) {
-        paramsContext = `
-CONFIGURATION CONSTRAINTS (MUST IMPLEMENT THESE):
-- Symbol: ${strategyParams.symbol}
-- Timeframe: ${strategyParams.timeframe}
-- Risk Percent: ${strategyParams.riskPercent}% per trade
-- Magic Number: ${strategyParams.magicNumber}
-- Stop Loss: ${strategyParams.stopLoss} Pips (IMPORTANT: You must implement logic to convert these Pips to Points in the code. Typically: StopLoss * 10 * _Point)
-- Take Profit: ${strategyParams.takeProfit} Pips (IMPORTANT: You must implement logic to convert these Pips to Points in the code. Typically: TakeProfit * 10 * _Point)
-- Custom Inputs:
-${strategyParams.customInputs.map(i => `  - input ${i.type} ${i.name} = ${i.type === 'string' ? `"${i.value}"` : i.value};`).join('\n')}
+         // Build custom inputs string more efficiently, handling empty arrays
+         const customInputsStr = strategyParams.customInputs.length > 0 
+             ? strategyParams.customInputs.map(i => `  - input ${i.type} ${i.name} = ${i.type === 'string' ? `"${i.value}"` : i.value};`).join('\n')
+             : '// No custom inputs defined';
+             
+         paramsContext = `
+ CONFIGURATION CONSTRAINTS (MUST IMPLEMENT THESE):
+ - Symbol: ${strategyParams.symbol}
+ - Timeframe: ${strategyParams.timeframe}
+ - Risk Percent: ${strategyParams.riskPercent}% per trade
+ - Magic Number: ${strategyParams.magicNumber}
+ - Stop Loss: ${strategyParams.stopLoss} Pips (IMPORTANT: You must implement logic to convert these Pips to Points in the code. Typically: StopLoss * 10 * _Point)
+ - Take Profit: ${strategyParams.takeProfit} Pips (IMPORTANT: You must implement logic to convert these Pips to Points in the code. Typically: TakeProfit * 10 * _Point)
+ - Custom Inputs:
+ ${customInputsStr}
 
-Ensure these inputs are defined at the top of the file as 'input' variables so the user can change them in MetaTrader.
-For Stop Loss and Take Profit, clearly label the input comments as 'Pips'.
-`;
+ Ensure these inputs are defined at the top of the file as 'input' variables so the user can change them in MetaTrader.
+ For Stop Loss and Take Profit, clearly label the input comments as 'Pips'.
+ `;
     }
 
     const currentCodeBlock = currentCode ? `\nCURRENT MQL5 CODE:\n\`\`\`cpp\n${currentCode}\n\`\`\`\n` : '// No code generated yet\n';
@@ -106,23 +111,26 @@ ${footerReminder}
         return !(isLast && isUser && msg.content === prompt);
     });
 
-    // Efficiently add messages from newest to oldest until budget fills
-    // Pre-calculate message strings to avoid repeated concatenation
-    const messageStrings = effectiveHistory.map(msg => 
-        `${msg.role === MessageRole.USER ? 'User' : 'Model'}: ${msg.content}`
-    );
-    
-    let historyContent = '';
-    for (let i = messageStrings.length - 1; i >= 0; i--) {
-        const msgStr = messageStrings[i];
-        if (msgStr.length <= remainingBudget) {
-            historyContent = msgStr + (historyContent ? '\n\n' + historyContent : '');
-            remainingBudget -= msgStr.length;
-        } else {
-            // If remaining budget is very small, don't add any more history
-            break;
-        }
-    }
+     // Efficiently add messages from newest to oldest until budget fills
+     // Pre-calculate message strings to avoid repeated concatenation
+     const messageStrings = effectiveHistory.map(msg => 
+         `${msg.role === MessageRole.USER ? 'User' : 'Model'}: ${msg.content}`
+     );
+     
+     let historyContent = '';
+     let budgetUsed = 0;
+     for (let i = messageStrings.length - 1; i >= 0; i--) {
+         const msgStr = messageStrings[i];
+         // Check if adding this message would exceed budget
+         const newBudgetUsed = budgetUsed + msgStr.length + (historyContent ? 2 : 0); // +2 for \n\n
+         if (newBudgetUsed <= remainingBudget) {
+             historyContent = msgStr + (historyContent ? '\n\n' + historyContent : '');
+             budgetUsed = newBudgetUsed;
+         } else {
+             // If remaining budget is very small, don't add any more history
+             break;
+         }
+     }
 
     return `
 ${paramsContext}
@@ -307,18 +315,20 @@ ${currentCode}
 Output ONLY the improved code in a markdown block. Do not output conversational text.
     `;
 
-    try {
-        let rawResponse = "";
-        if (settings.provider === 'openai') {
-             rawResponse = await callOpenAICompatible(settings, prompt, signal, 0.2); 
-        } else {
-             rawResponse = await callGoogleGenAI(settings, prompt, signal, 0.2) || "";
-        }
-        
-        return extractThinking(rawResponse);
-    } catch (e: any) {
-        throw new Error("Refinement failed: " + e.message);
-    }
+     try {
+         let rawResponse = "";
+         if (settings.provider === 'openai') {
+              rawResponse = await callOpenAICompatible(settings, prompt, signal, 0.2); 
+         } else {
+              rawResponse = await callGoogleGenAI(settings, prompt, signal, 0.2) || "";
+         }
+         
+         return extractThinking(rawResponse);
+     } catch (e: any) {
+         if (e.name === 'AbortError') throw e; // Don't wrap abort errors
+         console.error("Refinement error:", e);
+         throw new Error("Refinement failed: " + e.message);
+     }
 };
 
 /**
@@ -398,19 +408,19 @@ const extractJson = (text: string): any => {
     return JSON.parse(cleanText);
 };
 
-export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promise<StrategyAnalysis> => {
-    const settings = settingsManager.getSettings();
-    const activeKey = getActiveKey(settings.apiKey);
-    
-    // Create a cache key based on the code and settings (use hash for better uniqueness)
-    const codeHash = btoa(encodeURIComponent(code.substring(0, 5000))).substring(0, 20);
-    const cacheKey = `${codeHash}-${settings.provider}-${settings.modelName}`;
-    
-    // Check if we have a valid cached result
-    const cached = analysisCache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
-        return cached.result;
-    }
+ export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promise<StrategyAnalysis> => {
+     const settings = settingsManager.getSettings();
+     const activeKey = getActiveKey(settings.apiKey);
+     
+     // Create a more efficient cache key using a proper hash function
+     const codeHash = createHash(code.substring(0, 5000));
+     const cacheKey = `${codeHash}-${settings.provider}-${settings.modelName}`;
+     
+     // Check if we have a valid cached result
+     const cached = analysisCache.get(cacheKey);
+     if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+         return cached.result;
+     }
     
     if (!activeKey && settings.provider === 'google') return { riskScore: 0, profitability: 0, description: "API Key Missing" };
 

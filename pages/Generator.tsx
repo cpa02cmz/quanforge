@@ -1,13 +1,13 @@
 
- import React, { useState, useEffect, memo } from 'react';
- import { useParams } from 'react-router-dom';
- import { ChatInterface } from '../components/ChatInterface';
- import { CodeEditor } from '../components/CodeEditor';
- import { StrategyConfig } from '../components/StrategyConfig';
- import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
- import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
- import { BacktestPanel } from '../components/BacktestPanel';
- import { useTranslation } from '../services/i18n';
+import React, { useState, useEffect, memo, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
+import { ChatInterface } from '../components/ChatInterface';
+import { CodeEditor } from '../components/CodeEditor';
+import { StrategyConfig } from '../components/StrategyConfig';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
+import { BacktestPanel } from '../components/BacktestPanel';
+import { useTranslation } from '../services/i18n';
 
 export const Generator: React.FC = memo(() => {
   const { id } = useParams();
@@ -78,10 +78,10 @@ export const Generator: React.FC = memo(() => {
        await handleApplySettings();
    };
 
-  const riskData = analysis ? [
-    { name: 'Risk', value: analysis.riskScore, color: '#ef4444' },
-    { name: 'Safety', value: 10 - analysis.riskScore, color: '#22c55e' },
-  ] : [];
+    const riskData = useMemo(() => analysis ? [
+     { name: 'Risk', value: analysis.riskScore, color: '#ef4444' },
+     { name: 'Safety', value: 10 - analysis.riskScore, color: '#22c55e' },
+   ] : [], [analysis]);
 
   return (
     <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] md:h-screen bg-dark-bg relative">

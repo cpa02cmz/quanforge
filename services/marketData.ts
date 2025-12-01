@@ -142,13 +142,13 @@ class MarketDataService {
       };
   }
 
-  private reconnectTwelveData() {
-      if (this.twelveDataWs) {
-          this.twelveDataWs.close();
-          this.twelveDataWs = null;
-      }
-      this.ensureTwelveDataConnection();
-  }
+  private reconnectTwelveData = () => {
+       if (this.twelveDataWs) {
+           this.twelveDataWs.close();
+           this.twelveDataWs = null;
+       }
+       this.ensureTwelveDataConnection();
+   }
 
   private resubscribeTwelveData() {
       if (!this.twelveDataWs || this.twelveDataWs.readyState !== WebSocket.OPEN) return;
@@ -263,12 +263,22 @@ class MarketDataService {
   }
 
   private notifySubscribers(symbol: string, data: MarketData) {
-      this.lastKnownData.set(symbol, data);
-      const subs = this.subscribers.get(symbol);
-      if (subs) {
-          subs.forEach(cb => cb(data));
-      }
-  }
+       this.lastKnownData.set(symbol, data);
+       const subs = this.subscribers.get(symbol);
+       if (subs && subs.size > 0) {
+           // Create a copy of the callbacks set to prevent issues if one callback unsubscribes during execution
+           const callbacks = Array.from(subs);
+           for (const cb of callbacks) {
+               try {
+                   cb(data);
+               } catch (error) {
+                   console.error("Error in market data callback:", error);
+                   // Remove the problematic callback
+                   subs.delete(cb);
+               }
+           }
+       }
+   }
 
   public cleanup() {
       // Close WebSocket connections
