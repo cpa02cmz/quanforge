@@ -2,17 +2,11 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { mockDb } from '../services/supabase';
-import { Robot } from '../types';
+import { Robot, UserSession } from '../types';
 import { useToast } from '../components/Toast';
 import { useTranslation } from '../services/i18n';
 
-interface UserSession {
-  user: {
-    id: string;
-    email: string;
-  };
-  access_token?: string;
-}
+
 
 interface DashboardProps {
     session: UserSession | null;

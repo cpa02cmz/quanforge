@@ -15,6 +15,7 @@ export const useGeneratorLogic = (id?: string) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [code, setCode] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState<{step: string, message: string} | null>(null);
   const [robotName, setRobotName] = useState('Untitled Robot');
   const [analysis, setAnalysis] = useState<StrategyAnalysis | null>(null);
   const [saving, setSaving] = useState(false);
@@ -37,17 +38,40 @@ export const useGeneratorLogic = (id?: string) => {
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
   const [isSimulating, setIsSimulating] = useState(false);
 
-  // Reset State Helper
-  const resetState = useCallback(() => {
-    setMessages([]);
-    setCode('');
-    setRobotName('Untitled Robot');
-    setAnalysis(null);
-    setStrategyParams(DEFAULT_STRATEGY_PARAMS);
-    setMobileView('setup');
-    setSimulationResult(null);
-    setBacktestSettings({ initialDeposit: 10000, days: 90, leverage: 100 });
-  }, []);
+   // Validation function for strategy parameters
+   const validateStrategyParams = (params: StrategyParams): string[] => {
+     const errors: string[] = [];
+     
+     if (params.riskPercent <= 0 || params.riskPercent > 100) {
+       errors.push("Risk percentage must be between 0.1 and 100");
+     }
+     
+     if (params.stopLoss < 0) {
+       errors.push("Stop Loss must be a positive number");
+     }
+     
+     if (params.takeProfit < 0) {
+       errors.push("Take Profit must be a positive number");
+     }
+     
+     if (params.magicNumber <= 0) {
+       errors.push("Magic Number must be a positive number");
+     }
+     
+     return errors;
+   };
+
+   // Reset State Helper
+   const resetState = useCallback(() => {
+     setMessages([]);
+     setCode('');
+     setRobotName('Untitled Robot');
+     setAnalysis(null);
+     setStrategyParams(DEFAULT_STRATEGY_PARAMS);
+     setMobileView('setup');
+     setSimulationResult(null);
+     setBacktestSettings({ initialDeposit: 10000, days: 90, leverage: 100 });
+   }, []);
 
   const stopGeneration = () => {
     if (abortControllerRef.current) {
@@ -159,9 +183,11 @@ export const useGeneratorLogic = (id?: string) => {
     const updatedMessages = [...messages, newMessage];
     setMessages(updatedMessages);
     setIsLoading(true);
+    setLoadingProgress({ step: 'generating', message: 'Generating MQL5 code...' });
 
     try {
       const response = await generateMQL5Code(content, code, strategyParams, updatedMessages, signal);
+      setLoadingProgress({ step: 'processing', message: 'Processing response...' });
       await processAIResponse(response);
     } catch (error: any) {
       if (error.name === 'AbortError') return;
@@ -175,20 +201,32 @@ export const useGeneratorLogic = (id?: string) => {
           timestamp: Date.now()
       }]);
     } finally {
-      if (!signal.aborted) setIsLoading(false);
+      if (!signal.aborted) {
+        setIsLoading(false);
+        setLoadingProgress(null);
+      }
       abortControllerRef.current = null;
     }
   };
 
   const handleApplySettings = async () => {
+      // Validate strategy parameters before applying
+      const validationErrors = validateStrategyParams(strategyParams);
+      if (validationErrors.length > 0) {
+          validationErrors.forEach(error => showToast(error, 'error'));
+          return;
+      }
+      
       if (abortControllerRef.current) abortControllerRef.current.abort();
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
 
       setIsLoading(true);
+      setLoadingProgress({ step: 'applying-settings', message: 'Applying configuration changes...' });
       try {
           const prompt = "Update the code to strictly follow the provided configuration constraints (Timeframe, Risk, Stop Loss, Take Profit, Custom Inputs). Keep the existing strategy logic but ensure inputs are consistent with the config.";
           const response = await generateMQL5Code(prompt, code, strategyParams, messages, signal);
+          setLoadingProgress({ step: 'processing', message: 'Processing updated code...' });
           await processAIResponse(response);
           showToast("Settings applied & code updated", 'success');
       } catch (error: any) {
@@ -196,7 +234,10 @@ export const useGeneratorLogic = (id?: string) => {
           console.error("Failed to apply settings:", error);
           showToast("Failed to apply settings", 'error');
       } finally {
-           if (!signal.aborted) setIsLoading(false);
+           if (!signal.aborted) {
+             setIsLoading(false);
+             setLoadingProgress(null);
+           }
            abortControllerRef.current = null;
       }
   };
@@ -209,8 +250,10 @@ export const useGeneratorLogic = (id?: string) => {
       const signal = abortControllerRef.current.signal;
 
       setIsLoading(true);
+      setLoadingProgress({ step: 'refining', message: 'Refining code...' });
       try {
           const response = await refineCode(code, signal);
+          setLoadingProgress({ step: 'processing', message: 'Processing refined code...' });
           await processAIResponse(response);
           
           setMessages(prev => [...prev, {
@@ -226,7 +269,10 @@ export const useGeneratorLogic = (id?: string) => {
           console.error("Refinement failed:", error);
           showToast("Refinement failed", 'error');
       } finally {
-          if (!signal.aborted) setIsLoading(false);
+          if (!signal.aborted) {
+            setIsLoading(false);
+            setLoadingProgress(null);
+          }
           abortControllerRef.current = null;
       }
   };
@@ -239,6 +285,7 @@ export const useGeneratorLogic = (id?: string) => {
       const signal = abortControllerRef.current.signal;
       
       setIsLoading(true);
+      setLoadingProgress({ step: 'explaining', message: 'Generating code explanation...' });
       try {
           const response = await explainCode(code, signal);
           
@@ -257,7 +304,10 @@ export const useGeneratorLogic = (id?: string) => {
           console.error("Explanation failed:", error);
           showToast("Explanation failed", 'error');
       } finally {
-          if (!signal.aborted) setIsLoading(false);
+          if (!signal.aborted) {
+            setIsLoading(false);
+            setLoadingProgress(null);
+          }
           abortControllerRef.current = null;
       }
   };
@@ -335,6 +385,7 @@ export const useGeneratorLogic = (id?: string) => {
     messages,
     code,
     isLoading,
+    loadingProgress,
     robotName,
     analysis,
     saving,

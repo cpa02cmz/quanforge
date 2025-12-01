@@ -38,4 +38,9 @@
 - **Mock DB**: Implemented to ensure the app is playable immediately without requiring user backend setup.
 - **Hooks Abstraction**: Complex generator state is moved to `useGeneratorLogic` to keep the UI component clean and testable.
 - **Pips vs Points**: The UI exposes "Pips" (user-friendly), but the AI prompt enforces conversion to "Points" (MQL5 standard) to prevent logic errors in generated code.
+- **Performance Optimizations**: 
+  - Token budgeting in AI context building to efficiently manage conversation history
+  - Pre-calculated arrays and optimized loops in Monte Carlo simulation for faster backtesting
+  - Improved caching with validation and better hash generation in strategy analysis
+  - Efficient array operations in database updates to reduce unnecessary iterations
 - **PrismJS**: Loaded via CDN in `index.html` to avoid heavy build-step configuration for a lightweight demo.
