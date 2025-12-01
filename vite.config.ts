@@ -22,7 +22,12 @@ export default defineConfig({
           ai: ['@google/genai'],
           router: ['react-router-dom'],
           db: ['@supabase/supabase-js'],
-          utils: ['react-helmet-async']
+          utils: ['react-helmet-async'],
+          'db-core': ['./services/supabase', './services/settingsManager'],
+          'db-advanced': ['./services/resilientSupabase', './services/queryOptimizer'],
+          'cache': ['./services/advancedCache'],
+          'security': ['./services/securityManager'],
+          'realtime': ['./services/realtimeManager', './services/marketData']
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',

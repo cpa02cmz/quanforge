@@ -2,6 +2,9 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager, getEnv } from './settingsManager';
 import { Robot, UserSession } from '../types';
+import { connectionPool } from './supabaseConnectionPool';
+import { robotCache, queryCache } from './advancedCache';
+import { securityManager } from './securityManager';
 
 // Connection retry configuration
 const RETRY_CONFIG = {
@@ -236,29 +239,17 @@ const withRetry = async <T>(
   throw lastError;
 };
 
-const getClient = () => {
+const getClient = async () => {
     if (activeClient) return activeClient;
 
     const settings = settingsManager.getDBSettings();
 
     if (settings.mode === 'supabase' && settings.url && settings.anonKey) {
         try {
-            activeClient = createClient(settings.url, settings.anonKey, {
-                auth: {
-                    persistSession: true,
-                    autoRefreshToken: true,
-                },
-                db: {
-                    schema: 'public',
-                },
-                global: {
-                    headers: {
-                        'x-application-name': 'quanforge-ai',
-                    },
-                },
-            });
+            // Use connection pool for better performance
+            activeClient = await connectionPool.getClient('default');
         } catch (e) {
-            console.error("Invalid Supabase Config, falling back to mock", e);
+            console.error("Connection pool failed, using mock", e);
             activeClient = mockClient;
         }
     } else {
@@ -398,28 +389,33 @@ export const mockDb = {
          return { data: robots, error: null };
        }
        
-       const cacheKey = 'robots_list';
-       const cached = getCachedData(cacheKey);
-       if (cached) {
-         // Create index for performance
-         robotIndexManager.getIndex(cached);
-         const duration = performance.now() - startTime;
-         performanceMonitor.record('getRobots', duration);
-         return { data: cached, error: null };
-       }
-       
-       return withRetry(async () => {
-         const result = await getClient()
-           .from('robots')
-           .select('*')
-           .order('created_at', { ascending: false })
-           .limit(100); // Add reasonable limit to prevent performance issues
-         
-         if (result.data && !result.error) {
-           // Create index for performance
-           robotIndexManager.getIndex(result.data);
-           setCachedData(cacheKey, result.data);
-         }
+const cacheKey = 'robots_list';
+        const cached = robotCache.get<Robot[]>(cacheKey);
+        if (cached) {
+          // Create index for performance
+          robotIndexManager.getIndex(cached);
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('getRobots', duration);
+          return { data: cached, error: null };
+        }
+        
+        return withRetry(async () => {
+          const client = await getClient();
+          const result = client
+            .from('robots')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(100); // Add reasonable limit to prevent performance issues
+          
+          if (result.data && !result.error) {
+            // Create index for performance
+            robotIndexManager.getIndex(result.data);
+            robotCache.set(cacheKey, result.data, {
+              ttl: 300000,
+              tags: ['robots', 'list'],
+              priority: 'high'
+            });
+          }
          
          const duration = performance.now() - startTime;
          performanceMonitor.record('getRobots', duration);
@@ -445,18 +441,42 @@ export const mockDb = {
     try {
       const settings = settingsManager.getDBSettings();
 
+      // Security validation
+      const validation = securityManager.sanitizeAndValidate(robot, 'robot');
+      if (!validation.isValid) {
+        const duration = performance.now() - startTime;
+        performanceMonitor.record('saveRobot', duration);
+        return { data: null, error: validation.errors.join(', ') };
+      }
+
+      // Rate limiting check (if user ID available)
+      if (robot.user_id) {
+        const rateLimit = securityManager.checkRateLimit(robot.user_id);
+        if (!rateLimit.allowed) {
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('saveRobot', duration);
+          return { data: null, error: 'Rate limit exceeded' };
+        }
+      }
+
+      const sanitizedRobot = validation.sanitizedData;
+
       if (settings.mode === 'mock') {
         try {
             const stored = localStorage.getItem(ROBOTS_KEY);
             const robots = safeParse(stored, []);
             
-            const newRobot = { ...robot, id: generateUUID(), created_at: new Date().toISOString() };
+            const newRobot = { ...sanitizedRobot, id: generateUUID(), created_at: new Date().toISOString() };
             robots.unshift(newRobot);
             
             trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
             const duration = performance.now() - startTime;
             performanceMonitor.record('saveRobot', duration);
             robotIndexManager.clear(); // Clear index since data changed
+            
+            // Clear cache after save
+            robotCache.clearByTags(['robots', 'list']);
+            
             return { data: [newRobot], error: null };
         } catch (e: any) {
             const duration = performance.now() - startTime;
@@ -466,10 +486,11 @@ export const mockDb = {
       }
       
       return withRetry(async () => {
-        const result = await getClient().from('robots').insert([robot]).select();
+        const client = await getClient();
+        const result = client.from('robots').insert([sanitizedRobot]).select();
         
         // Invalidate cache after save
-        cache.delete('robots_list');
+        robotCache.clearByTags(['robots', 'list']);
         
         const duration = performance.now() - startTime;
         performanceMonitor.record('saveRobot', duration);

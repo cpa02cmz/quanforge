@@ -6,6 +6,7 @@ interface CacheEntry<T> {
   lastAccessed: number;
   size: number;
   tags: string[];
+  compressed?: boolean;
 }
 
 interface CacheConfig {
@@ -24,6 +25,8 @@ interface CacheStats {
   evictions: number;
   compressions: number;
 }
+
+import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
 
 class AdvancedCache {
   private cache = new Map<string, CacheEntry<any>>();
@@ -74,6 +77,19 @@ class AdvancedCache {
     this.cache.set(key, entry);
     
     this.stats.hits++;
+    
+    // Decompress if needed
+    if (entry.compressed) {
+      try {
+        return decompressFromUTF16(entry.data as string) as T;
+      } catch (error) {
+        console.warn(`Failed to decompress cache entry: ${key}`, error);
+        this.cache.delete(key);
+        this.stats.misses++;
+        return null;
+      }
+    }
+    
     return entry.data;
   }
 
@@ -98,7 +114,7 @@ class AdvancedCache {
     // Compress large entries
     if (size > this.config.compressionThreshold) {
       try {
-        processedData = this.compressData(serializedData) as T;
+        processedData = compressToUTF16(serializedData) as T;
         compressed = true;
         this.stats.compressions++;
       } catch (error) {
@@ -114,6 +130,7 @@ class AdvancedCache {
       lastAccessed: Date.now(),
       size,
       tags: options?.tags || [],
+      compressed,
     };
 
     // Ensure cache size limits
@@ -260,18 +277,7 @@ class AdvancedCache {
     return lruKey;
   }
 
-  private compressData(data: string): string {
-    // Simple compression - in production, use proper compression library
-    return btoa(data);
-  }
-
-  private decompressData(compressed: string): string {
-    try {
-      return atob(compressed);
-    } catch (error) {
-      throw new Error('Failed to decompress data');
-    }
-  }
+  // Compression methods now use lz-string library
 
   private startCleanup(): void {
     this.cleanupTimer = setInterval(() => {
@@ -331,3 +337,10 @@ export const userCache = CacheFactory.getInstance('users', {
   maxSize: 2 * 1024 * 1024, // 2MB
   defaultTTL: 900000, // 15 minutes
 });
+
+// Cleanup on page unload to prevent memory leaks
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    CacheFactory.destroyAll();
+  });
+}

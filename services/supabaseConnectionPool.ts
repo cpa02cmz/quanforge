@@ -97,12 +97,16 @@ class SupabaseConnectionPool {
   private async testConnection(client: SupabaseClient): Promise<boolean> {
     try {
       const startTime = Date.now();
-      const { error } = await client
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Connection timeout')), this.config.connectionTimeout)
+      );
+      
+      const queryPromise = client
         .from('robots')
         .select('id')
-        .limit(1)
-        .timeout(this.config.connectionTimeout);
+        .limit(1);
       
+      const { error } = await Promise.race([queryPromise, timeoutPromise]) as any;
       const responseTime = Date.now() - startTime;
       
       return !error;
