@@ -202,40 +202,51 @@ export class ValidationService {
     return errors;
   }
 
-  static validateChatMessage(message: string): ValidationError[] {
-    const errors: ValidationError[] = [];
+   static validateChatMessage(message: string): ValidationError[] {
+     const errors: ValidationError[] = [];
 
-    if (!message || !message.trim()) {
-      errors.push({
-        field: 'message',
-        message: 'Message cannot be empty'
-      });
-    } else if (message.length > 10000) {
-      errors.push({
-        field: 'message',
-        message: 'Message is too long (max 10,000 characters)'
-      });
-    }
+     if (!message || !message.trim()) {
+       errors.push({
+         field: 'message',
+         message: 'Message cannot be empty'
+       });
+     } else if (message.length > 10000) {
+       errors.push({
+         field: 'message',
+         message: 'Message is too long (max 10,000 characters)'
+       });
+     }
 
-    // Basic XSS prevention
-    const xssPatterns = [
-      /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-      /javascript:/gi,
-      /on\w+\s*=/gi
-    ];
+     // Enhanced XSS prevention with more patterns
+     const xssPatterns = [
+       /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+       /javascript:/gi,
+       /vbscript:/gi,
+       /on\w+\s*=/gi,
+       /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
+       /<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi,
+       /<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi,
+       /<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi,
+       /eval\s*\(/gi,
+       /expression\s*\(/gi,
+       /<link[^>]+rel=["']stylesheet["']/gi,
+       /<meta[^>]+http-equiv=["']refresh["']/gi,
+       /data:text\/html/gi,
+       /<svg[^>]*onload=/gi,
+     ];
 
-    for (const pattern of xssPatterns) {
-      if (pattern.test(message)) {
-        errors.push({
-          field: 'message',
-          message: 'Message contains potentially unsafe content'
-        });
-        break;
-      }
-    }
+     for (const pattern of xssPatterns) {
+       if (pattern.test(message)) {
+         errors.push({
+           field: 'message',
+           message: 'Message contains potentially unsafe content'
+         });
+         break;
+       }
+     }
 
-    return errors;
-  }
+     return errors;
+   }
 
   static sanitizeInput(input: string): string {
     return input

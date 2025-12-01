@@ -32,15 +32,15 @@ export const getEnv = (key: string): string => {
 };
 
 // Default settings if nothing is saved
-export const DEFAULT_AI_SETTINGS: AISettings = {
-    provider: 'google',
-    apiKey: getEnv('API_KEY'), // Fallback to env var if available
-    modelName: 'gemini-3-pro-preview',
-    baseUrl: '',
-    customInstructions: '',
-    language: 'id', // Default to Indonesian
-    twelveDataApiKey: '' 
-};
+ export const DEFAULT_AI_SETTINGS: AISettings = {
+     provider: 'google',
+     apiKey: getEnv('API_KEY'), // Fallback to env var if available
+     modelName: 'gemini-3-pro-preview',
+     baseUrl: '',
+     customInstructions: '',
+     language: 'en', // Default to English for broader compatibility
+     twelveDataApiKey: '' 
+ };
 
 // Check if env vars are present to default to supabase, otherwise mock
 const hasEnvDb = !!(getEnv('SUPABASE_URL') && getEnv('SUPABASE_ANON_KEY'));

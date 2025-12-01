@@ -166,23 +166,51 @@ class PerformanceMonitor {
      }
    }
 
-   // Enhanced API call timing with error tracking
-   async measureApiCall<T>(name: string, fn: () => Promise<T>): Promise<T> {
-     const start = performance.now();
-     let success = true;
-     
-     try {
-       const result = await fn();
-       return result;
-     } catch (error) {
-       success = false;
-       throw error;
-     } finally {
-       const duration = performance.now() - start;
-       this.recordMetric(`api_${name}_duration`, duration);
-       this.recordMetric(`api_${name}_success`, success ? 1 : 0);
-     }
-   }
+    // Enhanced API call timing with error tracking
+    async measureApiCall<T>(name: string, fn: () => Promise<T>): Promise<T> {
+      const start = performance.now();
+      let success = true;
+      
+      try {
+        const result = await fn();
+        return result;
+      } catch (error) {
+        success = false;
+        throw error;
+      } finally {
+        const duration = performance.now() - start;
+        this.recordMetric(`api_${name}_duration`, duration);
+        this.recordMetric(`api_${name}_success`, success ? 1 : 0);
+        
+        // Log slow API calls for optimization
+        if (duration > 1000) { // More than 1 second
+          console.warn(`Slow API call detected: ${name} took ${duration.toFixed(2)}ms`);
+        }
+      }
+    }
+    
+    // Performance monitoring for database operations
+    async measureDbOperation<T>(name: string, fn: () => Promise<T>): Promise<T> {
+      const start = performance.now();
+      let success = true;
+      
+      try {
+        const result = await fn();
+        return result;
+      } catch (error) {
+        success = false;
+        throw error;
+      } finally {
+        const duration = performance.now() - start;
+        this.recordMetric(`db_${name}_duration`, duration);
+        this.recordMetric(`db_${name}_success`, success ? 1 : 0);
+        
+        // Log slow database operations
+        if (duration > 500) { // More than 0.5 seconds
+          console.warn(`Slow DB operation detected: ${name} took ${duration.toFixed(2)}ms`);
+        }
+      }
+    }
 
    // Memory usage snapshot
    captureMemorySnapshot() {

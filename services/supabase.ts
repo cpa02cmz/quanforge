@@ -383,55 +383,62 @@ class RobotIndexManager {
 const robotIndexManager = new RobotIndexManager();
 
 export const mockDb = {
-  async getRobots() {
-    const startTime = performance.now();
-    try {
-      const settings = settingsManager.getDBSettings();
-      
-      if (settings.mode === 'mock') {
-        const stored = localStorage.getItem(ROBOTS_KEY);
-        const robots = safeParse(stored, []);
-        // Create index for performance
-        robotIndexManager.getIndex(robots);
-        const duration = performance.now() - startTime;
-        performanceMonitor.record('getRobots', duration);
-        return { data: robots, error: null };
-      }
-      
-      const cacheKey = 'robots_list';
-      const cached = getCachedData(cacheKey);
-      if (cached) {
-        // Create index for performance
-        robotIndexManager.getIndex(cached);
-        const duration = performance.now() - startTime;
-        performanceMonitor.record('getRobots', duration);
-        return { data: cached, error: null };
-      }
-      
-      return withRetry(async () => {
-        const result = await getClient()
-          .from('robots')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(100); // Add reasonable limit to prevent performance issues
-        
-        if (result.data && !result.error) {
-          // Create index for performance
-          robotIndexManager.getIndex(result.data);
-          setCachedData(cacheKey, result.data);
-        }
-        
-        const duration = performance.now() - startTime;
-        performanceMonitor.record('getRobots', duration);
-        
-        return result;
-      }, 'getRobots');
-    } catch (error) {
-      const duration = performance.now() - startTime;
-      performanceMonitor.record('getRobots', duration);
-      throw error;
-    }
-  },
+   async getRobots() {
+     const startTime = performance.now();
+     try {
+       const settings = settingsManager.getDBSettings();
+       
+       if (settings.mode === 'mock') {
+         const stored = localStorage.getItem(ROBOTS_KEY);
+         const robots = safeParse(stored, []);
+         // Create index for performance
+         robotIndexManager.getIndex(robots);
+         const duration = performance.now() - startTime;
+         performanceMonitor.record('getRobots', duration);
+         return { data: robots, error: null };
+       }
+       
+       const cacheKey = 'robots_list';
+       const cached = getCachedData(cacheKey);
+       if (cached) {
+         // Create index for performance
+         robotIndexManager.getIndex(cached);
+         const duration = performance.now() - startTime;
+         performanceMonitor.record('getRobots', duration);
+         return { data: cached, error: null };
+       }
+       
+       return withRetry(async () => {
+         const result = await getClient()
+           .from('robots')
+           .select('*')
+           .order('created_at', { ascending: false })
+           .limit(100); // Add reasonable limit to prevent performance issues
+         
+         if (result.data && !result.error) {
+           // Create index for performance
+           robotIndexManager.getIndex(result.data);
+           setCachedData(cacheKey, result.data);
+         }
+         
+         const duration = performance.now() - startTime;
+         performanceMonitor.record('getRobots', duration);
+         
+         // Log slow operations
+         if (duration > 500) {
+           console.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
+         }
+         
+         return result;
+       }, 'getRobots');
+     } catch (error) {
+       const duration = performance.now() - startTime;
+       performanceMonitor.record('getRobots', duration);
+       // Log error for debugging
+       console.error('getRobots error:', error);
+       throw error;
+     }
+   },
 
   async saveRobot(robot: any) {
     const startTime = performance.now();

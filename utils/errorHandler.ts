@@ -79,17 +79,21 @@ export class ErrorHandler {
     }
   }
 
-  private shouldReportError(error: ErrorInfo): boolean {
-    // Don't report certain common errors
-    const ignorePatterns = [
-      /NetworkError/i,
-      /AbortError/i,
-      /ResizeObserver loop limit exceeded/i,
-      /Non-Error promise rejection captured/i,
-    ];
+   private shouldReportError(error: ErrorInfo): boolean {
+     // Don't report certain common errors
+     const ignorePatterns = [
+       /NetworkError/i,
+       /AbortError/i,
+       /ResizeObserver loop limit exceeded/i,
+       /Non-Error promise rejection captured/i,
+       /Failed to fetch/i,
+       /Load failed/i,
+       /Loading chunk.*failed/i,  // Handle dynamic import errors
+       /Script error/i,            // Ignore generic script errors
+     ];
 
-    return !ignorePatterns.some(pattern => pattern.test(error.message));
-  }
+     return !ignorePatterns.some(pattern => pattern.test(error.message));
+   }
 
   private async reportError(error: ErrorInfo): Promise<void> {
     // Placeholder for error reporting service

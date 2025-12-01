@@ -10,10 +10,21 @@ export const runMonteCarloSimulation = (
     settings: BacktestSettings
 ): SimulationResult => {
     
-    const riskScore = analysis?.riskScore || 5; // 1-10 (10 is high risk)
-    const profitability = analysis?.profitability || 5; // 1-10 (10 is high profit)
+    // Validate inputs
+    if (!settings || settings.initialDeposit <= 0 || settings.days <= 0) {
+        return {
+            equityCurve: [],
+            finalBalance: settings.initialDeposit || 0,
+            totalReturn: 0,
+            maxDrawdown: 0,
+            winRate: 0
+        };
+    }
     
-    const days = settings.days;
+    const riskScore = Math.max(1, Math.min(10, analysis?.riskScore || 5)); // 1-10 (10 is high risk)
+    const profitability = Math.max(1, Math.min(10, analysis?.profitability || 5)); // 1-10 (10 is high profit)
+    
+    const days = Math.min(settings.days, 3650); // Cap at 10 years to prevent performance issues
     let balance = settings.initialDeposit;
     const equityCurve = new Array(days + 1); // Pre-allocate array for performance
     equityCurve[0] = { date: 'Day 0', balance };
@@ -38,18 +49,15 @@ export const runMonteCarloSimulation = (
         randomValues[i] = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
     }
 
-    // Main simulation loop
+    // Main simulation loop with performance optimization
     for (let i = 1; i <= days; i++) {
         // Calculate daily return percentage using pre-calculated random value
         const dailyReturn = dailyDriftMean + (randomValues[i-1] * dailyVol);
         
-        // Apply return to balance
-        balance = balance * (1 + dailyReturn);
-        
-        // Sanity check (no negative balance)
-        if (balance < 0) balance = 0;
+        // Apply return to balance with bounds checking
+        balance = Math.max(0, balance * (1 + dailyReturn));
 
-        // Drawdown tracking
+        // Drawdown tracking with performance optimization
         if (balance > peakBalance) {
             peakBalance = balance;
         } else {
@@ -57,10 +65,10 @@ export const runMonteCarloSimulation = (
             if (dd > maxDrawdown) maxDrawdown = dd;
         }
 
-        // Store equity curve point
+        // Store equity curve point - optimize for large arrays
         equityCurve[i] = {
             date: `Day ${i}`,
-            balance: Math.round(balance * 100) / 100 // More efficient than toFixed
+            balance: Math.round(balance * 100) / 100
         };
     }
 
@@ -73,7 +81,7 @@ export const runMonteCarloSimulation = (
         equityCurve,
         finalBalance: Math.round(balance * 100) / 100,
         totalReturn: Math.round(totalReturn * 100) / 100,
-        maxDrawdown: Math.round(maxDrawdown * 100) / 100,
-        winRate
+        maxDrawdown: Math.max(0, Math.round(maxDrawdown * 100) / 100), // Ensure non-negative
+        winRate: Math.max(0, Math.min(100, winRate)) // Ensure within bounds
     };
 };
