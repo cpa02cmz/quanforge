@@ -1,9 +1,10 @@
 
- import { GoogleGenAI, Type } from "@google/genai";
- import { MQL5_SYSTEM_PROMPT } from "../constants";
- import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
- import { settingsManager } from "./settingsManager";
- import { getActiveKey } from "../utils/apiKeyUtils";
+import { GoogleGenAI, Type } from "@google/genai";
+import { MQL5_SYSTEM_PROMPT } from "../constants";
+import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
+import { settingsManager } from "./settingsManager";
+import { getActiveKey } from "../utils/apiKeyUtils";
+import { handleError } from "../utils/errorHandler";
 
 // Advanced cache for strategy analysis to avoid repeated API calls
 // Uses LRU eviction to prevent memory bloat
@@ -48,6 +49,39 @@ class LRUCache<T> {
 }
 
 const analysisCache = new LRUCache<StrategyAnalysis>();
+
+// Request deduplication to prevent duplicate API calls
+class RequestDeduplicator {
+  private pendingRequests = new Map<string, Promise<any>>();
+
+  async deduplicate<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
+    // If request is already in flight, return the existing promise
+    if (this.pendingRequests.has(key)) {
+      return this.pendingRequests.get(key) as Promise<T>;
+    }
+
+    // Create new request and store the promise
+    const promise = requestFn().finally(() => {
+      // Clean up after request completes (whether success or failure)
+      this.pendingRequests.delete(key);
+    });
+
+    this.pendingRequests.set(key, promise);
+    return promise;
+  }
+
+  // Clear all pending requests (useful for cleanup)
+  clear(): void {
+    this.pendingRequests.clear();
+  }
+
+  // Get count of pending requests
+  get pendingCount(): number {
+    return this.pendingRequests.size;
+  }
+}
+
+const requestDeduplicator = new RequestDeduplicator();
 
 /**
  * Utility: Retry an async operation with exponential backoff.
@@ -329,7 +363,7 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
 
   } catch (error: any) {
     if (error.name === 'AbortError') throw error;
-    console.error("Generation error:", error);
+    handleError(error, 'generateMQL5Code', 'gemini');
     return { content: `Error generating response: ${error.message || error}` };
   }
 };
@@ -372,11 +406,11 @@ Output ONLY the improved code in a markdown block. Do not output conversational 
          }
          
          return extractThinking(rawResponse);
-     } catch (e: any) {
-         if (e.name === 'AbortError') throw e; // Don't wrap abort errors
-         console.error("Refinement error:", e);
-         throw new Error("Refinement failed: " + e.message);
-     }
+} catch (e: any) {
+          if (e.name === 'AbortError') throw e; // Don't wrap abort errors
+          handleError(e, 'refineCode', 'gemini');
+          throw new Error("Refinement failed: " + e.message);
+      }
 };
 
 /**
@@ -469,70 +503,73 @@ const extractJson = (text: string): any => {
       if (cached) {
           return cached;
       }
-    
-    if (!activeKey && settings.provider === 'google') return { riskScore: 0, profitability: 0, description: "API Key Missing" };
 
-    const prompt = `Analyze this MQL5 code and return a JSON summary of its potential risk and strategy type. Code: ${code.substring(0, 5000)}...
-    
-    Return strict JSON with this schema:
-    {
-        "riskScore": number (1-10),
-        "profitability": number (1-10),
-        "description": string
-    }
-    
-    IMPORTANT: Do not include comments in the JSON output.
-    `;
+      // Use request deduplication to prevent duplicate API calls
+      return requestDeduplicator.deduplicate(cacheKey, async () => {
+        if (!activeKey && settings.provider === 'google') return { riskScore: 0, profitability: 0, description: "API Key Missing" };
 
-    try {
-        let textResponse = "";
-
-        await withRetry(async () => {
-            if (settings.provider === 'openai') {
-                // Pass jsonMode: true for OpenAI/DeepSeek
-                textResponse = await callOpenAICompatible(settings, prompt, signal, 0.5, true);
-            } else {
-                const ai = new GoogleGenAI({ apiKey: activeKey });
-                
-                if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
-
-                const response = await ai.models.generateContent({
-                    model: settings.modelName || 'gemini-2.5-flash', 
-                    contents: prompt,
-                    config: {
-                        responseMimeType: "application/json",
-                        responseSchema: {
-                            type: Type.OBJECT,
-                            properties: {
-                                riskScore: { type: Type.NUMBER, description: "1-10 risk rating" },
-                                profitability: { type: Type.NUMBER, description: "1-10 potential profit rating" },
-                                description: { type: Type.STRING, description: "Short summary of strategy logic" }
-                            }
-                        }
-                    }
-                });
-                textResponse = response.text || "{}";
-            }
-        });
-
-        const result = extractJson(textResponse);
+        const prompt = `Analyze this MQL5 code and return a JSON summary of its potential risk and strategy type. Code: ${code.substring(0, 5000)}...
         
-        // Validate the result before caching
-        if (result && typeof result === 'object' && 
-            typeof result.riskScore === 'number' && 
-            typeof result.profitability === 'number' && 
-            typeof result.description === 'string') {
-             // Cache the result
-             analysisCache.set(cacheKey, result);
+        Return strict JSON with this schema:
+        {
+            "riskScore": number (1-10),
+            "profitability": number (1-10),
+            "description": string
         }
         
-        return result;
+        IMPORTANT: Do not include comments in the JSON output.
+        `;
 
-    } catch (e: any) {
-        if (e.name === 'AbortError') throw e;
-        console.error("Analysis Parsing Error:", e);
-        return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };
-    }
+        try {
+            let textResponse = "";
+
+            await withRetry(async () => {
+                if (settings.provider === 'openai') {
+                    // Pass jsonMode: true for OpenAI/DeepSeek
+                    textResponse = await callOpenAICompatible(settings, prompt, signal, 0.5, true);
+                } else {
+                    const ai = new GoogleGenAI({ apiKey: activeKey });
+                    
+                    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
+                    const response = await ai.models.generateContent({
+                        model: settings.modelName || 'gemini-2.5-flash', 
+                        contents: prompt,
+                        config: {
+                            responseMimeType: "application/json",
+                            responseSchema: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    riskScore: { type: Type.NUMBER, description: "1-10 risk rating" },
+                                    profitability: { type: Type.NUMBER, description: "1-10 potential profit rating" },
+                                    description: { type: Type.STRING, description: "Short summary of strategy logic" }
+                                }
+                            }
+                        }
+                    });
+                    textResponse = response.text || "{}";
+                }
+            });
+
+            const result = extractJson(textResponse);
+            
+            // Validate the result before caching
+            if (result && typeof result === 'object' && 
+                typeof result.riskScore === 'number' && 
+                typeof result.profitability === 'number' && 
+                typeof result.description === 'string') {
+                 // Cache the result
+                 analysisCache.set(cacheKey, result);
+            }
+            
+            return result;
+
+        } catch (e: any) {
+            if (e.name === 'AbortError') throw e;
+            handleError(e, 'analyzeStrategy', 'gemini');
+            return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };
+        }
+      });
 }
 
 // Helper function for creating hash-like keys for caching

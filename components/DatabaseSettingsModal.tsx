@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { DBSettings } from '../types';
 import { settingsManager, DEFAULT_DB_SETTINGS } from '../services/settingsManager';
 import { dbUtils } from '../services/supabase';
@@ -11,7 +11,7 @@ interface DatabaseSettingsModalProps {
     onClose: () => void;
 }
 
-export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = ({ isOpen, onClose }) => {
+export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(({ isOpen, onClose }) => {
     const { showToast } = useToast();
     const { t } = useTranslation();
     const [settings, setSettings] = useState<DBSettings>(DEFAULT_DB_SETTINGS);
@@ -131,140 +131,138 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = ({ is
 
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">
-            <div className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-fade-in-up">
-                <div className="p-4 border-b border-dark-border flex justify-between items-center bg-dark-bg/50">
-                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                        <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
-                        {t('db_title')}
-                    </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-dark-surface border border-dark-border rounded-lg p-6 w-full max-w-md">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-semibold text-white">{t('settings_db_title')}</h2>
+                    <button
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-white"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
                 </div>
 
-                <div className="p-6 space-y-6 overflow-y-auto max-h-[80vh] custom-scrollbar">
-                    
-                    {/* Stats Banner */}
-                    <div className="bg-dark-bg rounded-lg p-4 border border-dark-border flex justify-between items-center">
-                        <div>
-                            <p className="text-xs text-gray-400 uppercase">{t('db_stats_storage')}</p>
-                            <p className="text-sm font-medium text-white">{stats?.storageType || 'Unknown'}</p>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-xs text-gray-400 uppercase">{t('db_stats_records')}</p>
-                            <p className="text-2xl font-bold text-brand-400">{stats?.count || 0}</p>
+                <div className="space-y-6">
+                    {/* Database Mode */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-3">
+                            {t('settings_db_mode')}
+                        </label>
+                        <div className="space-y-2">
+                            <label className="flex items-center p-3 border border-dark-border rounded-lg cursor-pointer hover:bg-dark-bg/50">
+                                <input
+                                    type="radio"
+                                    name="mode"
+                                    value="mock"
+                                    checked={settings.mode === 'mock'}
+                                    onChange={(e) => setSettings({ ...settings, mode: e.target.value as any })}
+                                    className="mr-3 text-brand-600 focus:ring-brand-500"
+                                />
+                                <div>
+                                    <div className="font-medium text-white">{t('settings_db_mock')}</div>
+                                    <div className="text-sm text-gray-400">{t('settings_db_mock_desc')}</div>
+                                </div>
+                            </label>
+                            <label className="flex items-center p-3 border border-dark-border rounded-lg cursor-pointer hover:bg-dark-bg/50">
+                                <input
+                                    type="radio"
+                                    name="mode"
+                                    value="supabase"
+                                    checked={settings.mode === 'supabase'}
+                                    onChange={(e) => setSettings({ ...settings, mode: e.target.value as any })}
+                                    className="mr-3 text-brand-600 focus:ring-brand-500"
+                                />
+                                <div>
+                                    <div className="font-medium text-white">{t('settings_db_supabase')}</div>
+                                    <div className="text-sm text-gray-400">{t('settings_db_supabase_desc')}</div>
+                                </div>
+                            </label>
                         </div>
                     </div>
 
-                    {/* Configuration Form */}
-                    <form onSubmit={handleSave} className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-2">{t('db_mode_label')}</label>
-                            <div className="flex bg-dark-bg p-1 rounded-lg border border-dark-border">
-                                <button
-                                    type="button"
-                                    onClick={() => setSettings({ ...settings, mode: 'mock' })}
-                                    className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${settings.mode === 'mock' ? 'bg-brand-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
-                                >
-                                    {t('db_mode_mock')}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setSettings({ ...settings, mode: 'supabase' })}
-                                    className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${settings.mode === 'supabase' ? 'bg-brand-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
-                                >
-                                    {t('db_mode_supabase')}
-                                </button>
+                    {/* Supabase Configuration */}
+                    {settings.mode === 'supabase' && (
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    {t('settings_db_url')}
+                                </label>
+                                <input
+                                    type="url"
+                                    value={settings.url}
+                                    onChange={(e) => setSettings({ ...settings, url: e.target.value })}
+                                    className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                    placeholder="https://your-project.supabase.co"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    {t('settings_db_anon_key')}
+                                </label>
+                                <input
+                                    type="password"
+                                    value={settings.anonKey}
+                                    onChange={(e) => setSettings({ ...settings, anonKey: e.target.value })}
+                                    className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                                />
                             </div>
                         </div>
+                    )}
 
-                        {settings.mode === 'supabase' && (
-                            <div className="space-y-4 animate-fade-in">
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1">{t('db_url')}</label>
-                                    <input
-                                        type="text"
-                                        value={settings.url}
-                                        onChange={(e) => setSettings({ ...settings, url: e.target.value })}
-                                        placeholder="https://xyz.supabase.co"
-                                        className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1">{t('db_key')}</label>
-                                    <input
-                                        type="password"
-                                        value={settings.anonKey}
-                                        onChange={(e) => setSettings({ ...settings, anonKey: e.target.value })}
-                                        placeholder="eyJh..."
-                                        className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none"
-                                    />
-                                </div>
-                                
-                                <div className="p-3 bg-brand-900/10 border border-brand-500/20 rounded-lg flex justify-between items-center">
-                                    <div>
-                                        <p className="text-xs text-brand-400 font-bold mb-1">{t('db_migration_title')}</p>
-                                        <p className="text-[10px] text-gray-400">{t('db_migration_desc')}</p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={handleMigration}
-                                        disabled={isMigrating}
-                                        className="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs rounded transition-colors disabled:opacity-50"
-                                    >
-                                        {isMigrating ? t('db_migrating') : t('db_migration_btn')}
-                                    </button>
-                                </div>
+                    {/* Database Statistics */}
+                    {stats && (
+                        <div className="p-4 bg-dark-bg border border-dark-border rounded-lg">
+                            <h3 className="text-sm font-medium text-gray-300 mb-2">{t('settings_db_stats')}</h3>
+                            <div className="text-sm text-gray-400">
+                                <div>{t('settings_db_storage')}: {stats.storageType}</div>
+                                <div>{t('settings_db_records')}: {stats.count}</div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="space-y-3">
+                        <button
+                            onClick={handleTest}
+                            disabled={isLoading}
+                            className="w-full px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isLoading ? t('settings_db_testing') : t('settings_db_test')}
+                        </button>
+
+                        {settings.mode === 'mock' && stats?.count > 0 && (
+                            <button
+                                onClick={handleMigration}
+                                disabled={isMigrating}
+                                className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isMigrating ? t('settings_db_migrating') : t('settings_db_migrate')}
+                            </button>
                         )}
 
-                        <div className="flex gap-2 pt-2">
-                             <button 
-                                type="button" 
-                                onClick={handleTest}
-                                disabled={isLoading}
-                                className="flex-1 px-4 py-2 text-sm border border-dark-border bg-dark-bg hover:bg-dark-surface rounded-lg transition-colors text-gray-300"
+                        <div className="flex space-x-3">
+                            <button
+                                onClick={onClose}
+                                className="flex-1 px-4 py-2 text-gray-400 hover:text-white"
                             >
-                                {isLoading ? t('db_testing') : t('db_test_btn')}
+                                {t('settings_cancel')}
                             </button>
-                            <button 
-                                type="submit"
-                                className="flex-1 px-4 py-2 text-sm bg-brand-600 hover:bg-brand-500 text-white rounded-lg transition-colors shadow-lg shadow-brand-600/20"
+                            <button
+                                onClick={handleSave}
+                                
+                                className="flex-1 px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {t('db_save_btn')}
-                            </button>
-                        </div>
-                    </form>
-
-                    {/* Data Tools */}
-                    <div className="pt-6 border-t border-dark-border">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">{t('db_data_mgmt')}</h3>
-                        <div className="grid grid-cols-2 gap-3">
-                            <button 
-                                onClick={handleExport}
-                                className="px-3 py-2 bg-dark-bg border border-dark-border hover:border-gray-500 rounded-lg text-xs font-medium text-gray-300 flex items-center justify-center gap-2 transition-colors"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                                {t('db_export')}
-                            </button>
-                            <button 
-                                onClick={handleImport}
-                                disabled={isLoading}
-                                className="px-3 py-2 bg-dark-bg border border-dark-border hover:border-gray-500 rounded-lg text-xs font-medium text-gray-300 flex items-center justify-center gap-2 transition-colors"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                                {isLoading ? 'Importing...' : t('db_import')}
+                                {t('settings_save')}
                             </button>
                         </div>
-                         <p className="text-[10px] text-gray-500 mt-2 text-center">
-                            Export creates a backup of your current mode (Mock/Supabase). Import merges data into the currently active mode.
-                        </p>
                     </div>
-
                 </div>
             </div>
         </div>
     );
-};
+});

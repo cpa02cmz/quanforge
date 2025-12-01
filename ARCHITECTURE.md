@@ -51,6 +51,9 @@
   - **Response Caching**: Client-side caching for frequently accessed data with TTL management
   - **Code Splitting**: Automatic chunking for optimal loading performance
   - **Lazy Loading**: Components loaded on-demand to reduce initial bundle size
+  - **Database Pagination**: Efficient pagination for large datasets with `getRobotsPaginated()` function
+  - **Request Deduplication**: AI call deduplication to prevent duplicate API requests
+  - **Query Optimization**: Database-level search and filtering with proper indexing
 - **PrismJS**: Loaded via CDN in `index.html` to avoid heavy build-step configuration for a lightweight demo.
 - **Vercel Optimization**: 
   - Edge-ready configuration for global CDN distribution

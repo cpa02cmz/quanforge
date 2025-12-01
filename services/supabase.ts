@@ -5,6 +5,7 @@ import { Robot, UserSession } from '../types';
 import { connectionPool } from './supabaseConnectionPool';
 import { robotCache, queryCache } from './advancedCache';
 import { securityManager } from './securityManager';
+import { withErrorHandling, handleError } from '../utils/errorHandler';
 
 // Connection retry configuration
 const RETRY_CONFIG = {
@@ -430,9 +431,126 @@ const cacheKey = 'robots_list';
      } catch (error) {
        const duration = performance.now() - startTime;
        performanceMonitor.record('getRobots', duration);
-       // Log error for debugging
-       console.error('getRobots error:', error);
+       handleError(error as Error, 'getRobots', 'mockDb');
        throw error;
+     }
+   },
+
+   /**
+    * Get robots with pagination for better performance with large datasets
+    */
+   async getRobotsPaginated(page: number = 1, limit: number = 20, searchTerm?: string, filterType?: string) {
+     const startTime = performance.now();
+     try {
+       const settings = settingsManager.getDBSettings();
+       const offset = (page - 1) * limit;
+       
+       if (settings.mode === 'mock') {
+         const stored = localStorage.getItem(ROBOTS_KEY);
+         const allRobots = safeParse(stored, []);
+         const index = robotIndexManager.getIndex(allRobots);
+         
+         let results = index.byDate;
+         
+         // Apply search filter if provided
+         if (searchTerm) {
+           const term = searchTerm.toLowerCase();
+           results = results.filter(robot => 
+             robot.name.toLowerCase().includes(term) || 
+             robot.description.toLowerCase().includes(term)
+           );
+         }
+         
+         // Apply type filter if provided
+         if (filterType && filterType !== 'All') {
+           results = results.filter(robot => 
+             (robot.strategy_type || 'Custom') === filterType
+           );
+         }
+         
+         const totalCount = results.length;
+         const paginatedResults = results.slice(offset, offset + limit);
+         
+         const duration = performance.now() - startTime;
+         performanceMonitor.record('getRobotsPaginated', duration);
+         
+         return {
+           data: paginatedResults,
+           pagination: {
+             page,
+             limit,
+             totalCount,
+             totalPages: Math.ceil(totalCount / limit),
+             hasNext: offset + limit < totalCount,
+             hasPrev: page > 1
+           },
+           error: null
+         };
+       }
+       
+       // For Supabase, use database pagination
+       const cacheKey = `robots_paginated_${page}_${limit}_${searchTerm || ''}_${filterType || 'All'}`;
+       const cached = robotCache.get<any>(cacheKey);
+       if (cached) {
+         const duration = performance.now() - startTime;
+         performanceMonitor.record('getRobotsPaginated', duration);
+         return cached;
+       }
+       
+       return withRetry(async () => {
+         const client = await getClient();
+         let query = client
+           .from('robots')
+           .select('*', { count: 'exact' })
+           .order('created_at', { ascending: false })
+           .range(offset, offset + limit - 1);
+         
+         // Apply search filter if provided
+         if (searchTerm) {
+           query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+         }
+         
+         // Apply type filter if provided
+         if (filterType && filterType !== 'All') {
+           query = query.eq('strategy_type', filterType);
+         }
+         
+         const result = await query;
+         
+         if (result.data && !result.error) {
+           const response = {
+             data: result.data,
+             pagination: {
+               page,
+               limit,
+               totalCount: result.count || 0,
+               totalPages: Math.ceil((result.count || 0) / limit),
+               hasNext: offset + limit < (result.count || 0),
+               hasPrev: page > 1
+             },
+             error: null
+           };
+           
+           robotCache.set(cacheKey, response, {
+             ttl: 300000,
+             tags: ['robots', 'paginated'],
+             priority: 'high'
+           });
+           
+           const duration = performance.now() - startTime;
+           performanceMonitor.record('getRobotsPaginated', duration);
+           return response;
+         }
+         
+         const duration = performance.now() - startTime;
+         performanceMonitor.record('getRobotsPaginated', duration);
+         return result;
+       }, 'getRobotsPaginated');
+     } catch (error) {
+       const duration = performance.now() - startTime;
+performanceMonitor.record('getRobotsPaginated', duration);
+        handleError(error as Error, 'getRobotsPaginated', 'mockDb');
+        throw error;
      }
    },
 
@@ -539,7 +657,8 @@ const cacheKey = 'robots_list';
       }
       
       return withRetry(async () => {
-        const result = await getClient()
+        const client = await getClient();
+        const result = await client
           .from('robots')
           .update({ ...updates, updated_at: new Date().toISOString() })
           .match({ id })
@@ -591,7 +710,8 @@ const cacheKey = 'robots_list';
       }
       
       return withRetry(async () => {
-        const result = await getClient().from('robots').delete().match({ id });
+        const client = await getClient();
+        const result = await client.from('robots').delete().match({ id });
         
         // Invalidate cache after delete
         cache.delete('robots_list');
@@ -646,7 +766,7 @@ const cacheKey = 'robots_list';
           }
       }
       
-      const client = getClient();
+      const client = await getClient();
       const { data: original, error } = await client.from('robots').select('*').eq('id', id).single();
       if (error || !original) {
         const duration = performance.now() - startTime;
@@ -690,7 +810,8 @@ export const dbUtils = {
         }
 
         try {
-            const { count, error } = await getClient().from('robots').select('*', { count: 'exact', head: true });
+            const client = await getClient();
+            const { count, error } = await client.from('robots').select('*', { count: 'exact', head: true });
             
             if (error) throw error;
             return { success: true, message: `Connected to Supabase. Found ${count} records.`, mode: 'supabase' };
@@ -706,7 +827,8 @@ export const dbUtils = {
             const robots = safeParse(stored, []);
             return { count: robots.length, storageType: 'Browser Local Storage' };
         } else {
-            const { count } = await getClient().from('robots').select('*', { count: 'exact', head: true });
+            const client = await getClient();
+            const { count } = await client.from('robots').select('*', { count: 'exact', head: true });
             return { count: count || 0, storageType: 'Supabase Cloud DB' };
         }
     },
@@ -719,7 +841,8 @@ export const dbUtils = {
             const stored = localStorage.getItem(ROBOTS_KEY);
             robots = safeParse(stored, []);
         } else {
-            const { data, error } = await getClient().from('robots').select('*');
+            const client = await getClient();
+            const { data, error } = await client.from('robots').select('*');
             if (error) throw error;
             robots = data;
         }
@@ -775,7 +898,7 @@ export const dbUtils = {
                     error: skippedCount > 0 ? `Skipped ${skippedCount} invalid records.` : undefined 
                 };
             } else {
-                const client = getClient();
+                const client = await getClient();
                 const { data: sessionData } = await client.auth.getSession();
                 const userId = sessionData.session?.user?.id;
 
@@ -817,7 +940,7 @@ export const dbUtils = {
             return { success: false, count: 0, error: "No local robots found to migrate." };
         }
 
-        const client = getClient();
+        const client = await getClient();
         const { data: sessionData } = await client.auth.getSession();
         const userId = sessionData.session?.user?.id;
 
@@ -917,7 +1040,8 @@ export const dbUtils = {
                 return results;
             } else {
                 // For Supabase, use database queries
-                let query = getClient().from('robots').select('*');
+                const client = await getClient();
+                let query = client.from('robots').select('*');
                 
                 if (searchTerm) {
                     query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
@@ -963,7 +1087,8 @@ export const dbUtils = {
                 return result;
             } else {
                 // For Supabase, use distinct query
-                const { data, error } = await getClient()
+                const client = await getClient();
+                const { data, error } = await client
                     .from('robots')
                     .select('strategy_type', { distinct: true });
                 
@@ -1036,8 +1161,9 @@ export const dbUtils = {
                     
                     try {
                         // Process each item in the batch individually due to Supabase limitations
+                        const client = await getClient();
                         for (const item of batch) {
-                            const result = await getClient()
+                            const result = await client
                                 .from('robots')
                                 .update({ ...item.updates, updated_at: new Date().toISOString() })
                                 .match({ id: item.id })
@@ -1118,7 +1244,8 @@ export const dbUtils = {
                 };
             } else {
                 // For Supabase, use proper pagination
-                let query = getClient().from('robots').select('*', { count: 'exact' });
+                const client = await getClient();
+                let query = client.from('robots').select('*', { count: 'exact' });
                 
                 // Apply search filter
                 if (searchTerm) {
@@ -1222,7 +1349,8 @@ export const dbUtils = {
             } else {
                 // For Supabase, run VACUUM and ANALYZE equivalent operations
                 // Note: Supabase/PostgreSQL handles these automatically, but we can run ANALYZE
-                const { error } = await getClient().rpc('pg_stat_reset');
+                const client = await getClient();
+                const { error } = await client.rpc('pg_stat_reset');
                 
                 if (error) {
                     console.warn("Could not run database optimization:", error.message);
@@ -1289,14 +1417,15 @@ export const dbUtils = {
             };
         } else {
             // For Supabase, get table statistics
-            const { count, error } = await getClient().from('robots').select('*', { count: 'exact', head: true });
+            const client = await getClient();
+            const { count, error } = await client.from('robots').select('*', { count: 'exact', head: true });
             
             if (error) {
                 throw error;
             }
             
             // Get approximate table size from PostgreSQL
-            const { data: tableSize, error: sizeError } = await getClient()
+            const { data: tableSize, error: sizeError } = await client
                 .from('information_schema.tables')
                 .select('table_schema, table_name')
                 .eq('table_name', 'robots');

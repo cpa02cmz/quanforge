@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { AISettings, AIProvider, Language } from '../types';
 import { settingsManager, DEFAULT_AI_SETTINGS } from '../services/settingsManager';
 import { useToast } from './Toast';
@@ -45,7 +45,7 @@ const PROVIDER_PRESETS: Record<string, Partial<AISettings>> = {
     }
 };
 
-export const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClose }) => {
+export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, onClose }) => {
     const { showToast } = useToast();
     const { t } = useTranslation();
     const [settings, setSettings] = useState<AISettings>(DEFAULT_AI_SETTINGS);
@@ -116,198 +116,204 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClos
 
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">
-            <div className="bg-dark-surface border border-dark-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden animate-fade-in-up max-h-[90vh] overflow-y-auto custom-scrollbar">
-                <div className="p-4 border-b border-dark-border flex justify-between items-center bg-dark-bg/50 sticky top-0 backdrop-blur-md z-10">
-                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                        <svg className="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                        {t('settings_title')}
-                    </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
+return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-dark-surface border border-dark-border rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <form onSubmit={handleSave} className="space-y-6">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-xl font-semibold text-white">{t('settings_title')}</h2>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-white"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
 
-                <div className="flex bg-dark-bg border-b border-dark-border">
-                    <button 
-                        onClick={() => setActiveTab('ai')}
-                        className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === 'ai' ? 'text-brand-400 border-b-2 border-brand-500' : 'text-gray-500 hover:text-white'}`}
-                    >
-                        AI Provider
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('market')}
-                        className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === 'market' ? 'text-brand-400 border-b-2 border-brand-500' : 'text-gray-500 hover:text-white'}`}
-                    >
-                        Market Data
-                    </button>
-                </div>
+                    {/* Tab Navigation */}
+                    <div className="flex space-x-4 border-b border-dark-border">
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('ai')}
+                            className={`pb-2 px-1 ${
+                                activeTab === 'ai'
+                                    ? 'border-b-2 border-brand-500 text-brand-400'
+                                    : 'text-gray-400 hover:text-white'
+                            }`}
+                        >
+                            {t('settings_ai_tab')}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('market')}
+                            className={`pb-2 px-1 ${
+                                activeTab === 'market'
+                                    ? 'border-b-2 border-brand-500 text-brand-400'
+                                    : 'text-gray-400 hover:text-white'
+                            }`}
+                        >
+                            {t('settings_market_tab')}
+                        </button>
+                    </div>
 
-                <form onSubmit={handleSave} className="p-6 space-y-4">
-                    
+                    {/* AI Settings Tab */}
                     {activeTab === 'ai' && (
-                        <>
-                        {/* Language Selector */}
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-2">{t('settings_language')}</label>
-                            <select 
-                                value={settings.language}
-                                onChange={(e) => setSettings({ ...settings, language: e.target.value as Language })}
-                                className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none"
-                            >
-                                <option value="en">English (US)</option>
-                                <option value="id">Bahasa Indonesia</option>
-                            </select>
-                        </div>
-
-                        {/* Quick Presets */}
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-2">{t('settings_provider')}</label>
-                            <div className="grid grid-cols-3 gap-2">
-                                {Object.keys(PROVIDER_PRESETS).map((key) => (
-                                    <button
-                                        key={key}
-                                        type="button"
-                                        onClick={() => handlePresetChange(key)}
-                                        className={`px-2 py-1.5 text-xs font-medium rounded-md border transition-all capitalize ${
-                                            activePreset === key 
-                                            ? 'bg-brand-500/20 border-brand-500 text-brand-400' 
-                                            : 'bg-dark-bg border-dark-border text-gray-400 hover:text-white hover:border-gray-500'
-                                        }`}
-                                    >
-                                        {key}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* API Key (Textarea for Rotation) */}
-                        <div>
-                            <div className="flex justify-between items-center mb-1">
-                                <label className="block text-xs font-medium text-gray-400">{t('settings_api_key')}</label>
-                                <span className="text-[10px] text-brand-400 bg-brand-500/10 px-1.5 rounded">Supports Rotation</span>
-                            </div>
-                            <textarea
-                                value={settings.apiKey}
-                                onChange={(e) => setSettings({ ...settings, apiKey: e.target.value })}
-                                placeholder={
-                                    activePreset === 'google' ? "AIza...\nAIza... (One key per line)" : 
-                                    activePreset === 'local' ? "Not required for Local LLM" :
-                                    "sk-..."
-                                }
-                                className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none font-mono min-h-[80px]"
-                                spellCheck={false}
-                            />
-                            <p className="text-[10px] text-gray-500 mt-1">
-                                {t('settings_api_desc')}
-                            </p>
-                        </div>
-
-                        {/* Model Name */}
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">{t('settings_model')}</label>
-                            <input
-                                type="text"
-                                value={settings.modelName}
-                                onChange={(e) => setSettings({ ...settings, modelName: e.target.value })}
-                                className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none"
-                            />
-                        </div>
-
-                        {/* Base URL (Hidden for Google, Visible for others) */}
-                        {settings.provider === 'openai' && (
+                        <div className="space-y-4">
+                            {/* Provider Selection */}
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1">{t('settings_base_url')}</label>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    {t('settings_provider')}
+                                </label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {Object.entries(PROVIDER_PRESETS).map(([key, preset]) => (
+                                        <button
+                                            key={key}
+                                            type="button"
+                                            onClick={() => handlePresetChange(key)}
+                                            className={`p-2 rounded border text-sm ${
+                                                activePreset === key
+                                                    ? 'border-brand-500 bg-brand-500/20 text-brand-400'
+                                                    : 'border-dark-border text-gray-400 hover:border-gray-500'
+                                            }`}
+                                        >
+                                            {key.charAt(0).toUpperCase() + key.slice(1)}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* API Key */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    {t('settings_api_key')}
+                                </label>
                                 <input
-                                    type="text"
-                                    value={settings.baseUrl || ''}
-                                    onChange={(e) => setSettings({ ...settings, baseUrl: e.target.value })}
-                                    placeholder="https://api.openai.com/v1"
-                                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none font-mono"
+                                    type="password"
+                                    value={settings.apiKey}
+                                    onChange={(e) => setSettings({ ...settings, apiKey: e.target.value })}
+                                    className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                    placeholder={t('settings_api_key_placeholder')}
                                 />
                             </div>
-                        )}
 
-                        {/* Custom Instructions */}
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">{t('settings_custom_instruct')}</label>
-                            <textarea
-                                value={settings.customInstructions || ''}
-                                onChange={(e) => setSettings({ ...settings, customInstructions: e.target.value })}
-                                placeholder="e.g. Always use Japanese comments. Strictly follow snake_case convention."
-                                className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none min-h-[60px]"
-                            />
+                            {/* Base URL (for OpenAI compatible) */}
+                            {settings.provider === 'openai' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                        {t('settings_base_url')}
+                                    </label>
+                                    <input
+                                        type="url"
+                                        value={settings.baseUrl}
+                                        onChange={(e) => setSettings({ ...settings, baseUrl: e.target.value })}
+                                        className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                        placeholder="https://api.openai.com/v1"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Model Name */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    {t('settings_model')}
+                                </label>
+                                <input
+                                    type="text"
+                                    value={settings.modelName}
+                                    onChange={(e) => setSettings({ ...settings, modelName: e.target.value })}
+                                    className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                    placeholder="gemini-2.5-flash"
+                                />
+                            </div>
+
+                            {/* Language */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    {t('settings_language')}
+                                </label>
+                                <select
+                                    value={settings.language}
+                                    onChange={(e) => setSettings({ ...settings, language: e.target.value as Language })}
+                                    className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                >
+                                    <option value="en">English</option>
+                                    <option value="id">Bahasa Indonesia</option>
+                                </select>
+                            </div>
+
+                            {/* Custom Instructions */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    {t('settings_custom_instructions')}
+                                </label>
+                                <textarea
+                                    value={settings.customInstructions || ''}
+                                    onChange={(e) => setSettings({ ...settings, customInstructions: e.target.value })}
+                                    className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                    rows={3}
+                                    placeholder={t('settings_custom_instructions_placeholder')}
+                                />
+                            </div>
+
+                            {/* Test Connection Button */}
+                            <div className="flex items-center space-x-4">
+                                <button
+                                    type="button"
+                                    onClick={handleTestConnection}
+                                    disabled={isTesting || !settings.apiKey}
+                                    className="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isTesting ? t('settings_testing') : t('settings_test_connection')}
+                                </button>
+                                
+                            </div>
                         </div>
-                        </>
                     )}
 
+                    {/* Market Data Tab */}
                     {activeTab === 'market' && (
                         <div className="space-y-4">
-                            <div className="bg-brand-900/10 border border-brand-500/20 p-3 rounded-lg">
-                                <p className="text-xs text-brand-300">
-                                    <strong className="block mb-1">Real-Time Data Sources:</strong>
-                                    - <strong>Crypto:</strong> Binance WebSocket (Free, No Key required).<br/>
-                                    - <strong>Forex/Gold:</strong> Twelve Data (Requires API Key).
-                                </p>
-                            </div>
-                            
+                            {/* Twelve Data API Key */}
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1">Twelve Data API Key</label>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    {t('settings_twelve_data_key')}
+                                </label>
                                 <input
-                                    type="text"
+                                    type="password"
                                     value={settings.twelveDataApiKey || ''}
                                     onChange={(e) => setSettings({ ...settings, twelveDataApiKey: e.target.value })}
-                                    placeholder="Enter Twelve Data API Key..."
-                                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none font-mono"
+                                    className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                    placeholder={t('settings_twelve_data_key_placeholder')}
                                 />
-                                <a 
-                                    href="https://twelvedata.com/pricing" 
-                                    target="_blank" 
-                                    rel="noreferrer"
-                                    className="text-[10px] text-brand-400 hover:underline mt-1 block"
-                                >
-                                    Get a free API Key for Forex/Gold data
-                                </a>
-                            </div>
-
-                            <div className="p-3 bg-dark-bg border border-dark-border rounded-lg">
-                                <p className="text-xs text-gray-400">
-                                    If no API key is provided, Forex symbols (e.g. EUR/USD, XAU/USD) will show as "Disconnected". Crypto symbols (e.g. BTCUSDT) will work automatically via Binance.
+                                <p className="text-xs text-gray-400 mt-1">
+                                    {t('settings_twelve_data_description')}
                                 </p>
                             </div>
                         </div>
                     )}
 
-                    <div className="pt-4 flex items-center justify-between border-t border-dark-border mt-2">
-                        <button 
-                            type="button" 
-                            onClick={handleReset}
-                            className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                    {/* Form Actions */}
+                    <div className="flex justify-end space-x-3 pt-4 border-t border-dark-border">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 text-gray-400 hover:text-white"
                         >
-                            {t('settings_reset')}
+                            {t('settings_cancel')}
                         </button>
-                        <div className="flex gap-2">
-                             {activeTab === 'ai' && (
-                                <button 
-                                    type="button" 
-                                    onClick={handleTestConnection}
-                                    disabled={isTesting}
-                                    className={`px-4 py-2 text-sm border border-dark-border rounded-lg transition-colors flex items-center space-x-2 ${isTesting ? 'text-gray-500' : 'text-gray-300 hover:text-white hover:bg-dark-bg'}`}
-                                >
-                                    {isTesting ? <span>Testing...</span> : <span>{t('settings_test')}</span>}
-                                </button>
-                             )}
-                            <button 
-                                type="submit"
-                                className="px-4 py-2 text-sm bg-brand-600 hover:bg-brand-500 text-white rounded-lg transition-colors shadow-lg shadow-brand-600/20"
-                            >
-                                {t('settings_save')}
-                            </button>
-                        </div>
+                        <button
+                            type="submit"
+                            
+                            className="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {t('settings_save')}
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     );
-};
+});
