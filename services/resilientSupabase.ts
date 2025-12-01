@@ -258,106 +258,152 @@ class ResilientSupabaseClient {
       this.responseTimes.reduce((sum, time) => sum + time, 0) / this.responseTimes.length;
   }
 
-   // Wrapper methods for common Supabase operations
-   from(table: string) {
-     return {
-       select: (columns?: string) => ({
-         order: (column: string, options?: { ascending: boolean }) => ({
-           limit: (limit: number) => ({
-             range: (from: number, to: number) => 
-               this.executeWithResilience(
-                 `${table}_select_range`,
-                 () => this.client.from(table).select(columns).order(column, options).limit(limit).range(from, to)
-               ) as any,
-             eq: (column: string, value: any) => 
-               this.executeWithResilience(
-                 `${table}_select_eq`,
-                 () => this.client.from(table).select(columns).order(column, options).limit(limit).eq(column, value)
-               ) as any,
-             or: (filter: string) => 
-               this.executeWithResilience(
-                 `${table}_select_or`,
-                 () => this.client.from(table).select(columns).order(column, options).limit(limit).or(filter)
-               ) as any,
-             single: () => 
-               this.executeWithResilience(
-                 `${table}_select_single`,
-                 () => this.client.from(table).select(columns).order(column, options).limit(limit).single()
-               ) as any,
-           }),
-           eq: (column: string, value: any) => ({
-             single: () => 
-               this.executeWithResilience(
-                 `${table}_select_eq_single`,
-                 () => this.client.from(table).select(columns).order(column, options).eq(column, value).single()
-               ) as any,
-           }),
-           or: (filter: string) => 
-             this.executeWithResilience(
-               `${table}_select_or`,
-               () => this.client.from(table).select(columns).order(column, options).or(filter)
-             ) as any,
-           single: () => 
-             this.executeWithResilience(
-               `${table}_select_single`,
-               () => this.client.from(table).select(columns).order(column, options).single()
-             ) as any,
-         }),
-         eq: (column: string, value: any) => ({
-           single: () => 
-             this.executeWithResilience(
-               `${table}_select_eq_single`,
-               () => this.client.from(table).select(columns).eq(column, value).single()
-             ) as any,
-         }),
-         or: (filter: string) => 
-           this.executeWithResilience(
-             `${table}_select_or`,
-             () => this.client.from(table).select(columns).or(filter)
-           ) as any,
-         single: () => 
-           this.executeWithResilience(
-             `${table}_select_single`,
-             () => this.client.from(table).select(columns).single()
-           ) as any,
-       }),
-       insert: (data: any) => ({
-         select: (columns?: string) => 
-           this.executeWithResilience(
-             `${table}_insert_select`,
-             () => this.client.from(table).insert(data).select(columns)
-           ) as any,
-       }),
-       update: (data: any) => ({
-         match: (criteria: any) => ({
-           select: (columns?: string) => 
-             this.executeWithResilience(
-               `${table}_update_match_select`,
-               () => this.client.from(table).update(data).match(criteria).select(columns)
-             ) as any,
-         }),
-         eq: (column: string, value: any) => ({
-           select: (columns?: string) => 
-             this.executeWithResilience(
-               `${table}_update_eq_select`,
-               () => this.client.from(table).update(data).eq(column, value).select(columns)
-             ) as any,
-         }),
-       }),
-       delete: () => ({
-         match: (criteria: any) => 
-           this.executeWithResilience(
-             `${table}_delete_match`,
-             () => this.client.from(table).delete().match(criteria)
-           ) as any,
-         eq: (column: string, value: any) => 
-           this.executeWithResilience(
-             `${table}_delete_eq`,
-             () => this.client.from(table).delete().eq(column, value)
-           ) as any,
-       }),
-     };
-   }
+// Wrapper methods for common Supabase operations
+    from(table: string) {
+      const self = this; // Capture 'this' context
+      return {
+        select: (columns?: string) => ({
+          order: (column: string, options?: { ascending: boolean }) => ({
+            limit: (limit: number) => ({
+              range: (from: number, to: number) => 
+                self.executeWithResilience(
+                  `${table}_select_range`,
+                  async () => {
+                    const result = self.client.from(table).select(columns).order(column, options).limit(limit).range(from, to);
+                    return result;
+                  }
+                ),
+              eq: (column: string, value: any) => 
+                self.executeWithResilience(
+                  `${table}_select_eq`,
+                  async () => {
+                    const result = self.client.from(table).select(columns).order(column, options).limit(limit).eq(column, value);
+                    return result;
+                  }
+                ),
+              or: (filter: string) => 
+                self.executeWithResilience(
+                  `${table}_select_or`,
+                  async () => {
+                    const result = self.client.from(table).select(columns).order(column, options).limit(limit).or(filter);
+                    return result;
+                  }
+                ),
+              single: () => 
+                self.executeWithResilience(
+                  `${table}_select_single`,
+                  async () => {
+                    const result = self.client.from(table).select(columns).order(column, options).limit(limit).single();
+                    return result;
+                  }
+                ),
+            }),
+            eq: (column: string, value: any) => ({
+              single: () => 
+                self.executeWithResilience(
+                  `${table}_select_eq_single`,
+                  async () => {
+                    const result = self.client.from(table).select(columns).order(column, options).eq(column, value).single();
+                    return result;
+                  }
+                ),
+            }),
+            or: (filter: string) => 
+              self.executeWithResilience(
+                `${table}_select_or`,
+                async () => {
+                  const result = self.client.from(table).select(columns).order(column, options).or(filter);
+                  return result;
+                }
+              ),
+            single: () => 
+              self.executeWithResilience(
+                `${table}_select_single`,
+                async () => {
+                  const result = self.client.from(table).select(columns).order(column, options).single();
+                  return result;
+                }
+              ),
+          }),
+          eq: (column: string, value: any) => ({
+            single: () => 
+              self.executeWithResilience(
+                `${table}_select_eq_single`,
+                async () => {
+                  const result = self.client.from(table).select(columns).eq(column, value).single();
+                  return result;
+                }
+              ),
+          }),
+          or: (filter: string) => 
+            self.executeWithResilience(
+              `${table}_select_or`,
+              async () => {
+                const result = self.client.from(table).select(columns).or(filter);
+                return result;
+              }
+            ),
+          single: () => 
+            self.executeWithResilience(
+              `${table}_select_single`,
+              async () => {
+                const result = self.client.from(table).select(columns).single();
+                return result;
+              }
+            ),
+        }),
+        insert: (data: any) => ({
+          select: (columns?: string) => 
+            self.executeWithResilience(
+              `${table}_insert_select`,
+              async () => {
+                const result = self.client.from(table).insert(data).select(columns);
+                return result;
+              }
+            ),
+        }),
+        update: (data: any) => ({
+          match: (criteria: any) => ({
+            select: (columns?: string) => 
+              self.executeWithResilience(
+                `${table}_update_match_select`,
+                async () => {
+                  const result = self.client.from(table).update(data).match(criteria).select(columns);
+                  return result;
+                }
+              ),
+          }),
+          eq: (column: string, value: any) => ({
+            select: (columns?: string) => 
+              self.executeWithResilience(
+                `${table}_update_eq_select`,
+                async () => {
+                  const result = self.client.from(table).update(data).eq(column, value).select(columns);
+                  return result;
+                }
+              ),
+          }),
+        }),
+        delete: () => ({
+          match: (criteria: any) => 
+            self.executeWithResilience(
+              `${table}_delete_match`,
+              async () => {
+                const result = self.client.from(table).delete().match(criteria);
+                return result;
+              }
+            ),
+          eq: (column: string, value: any) => 
+            self.executeWithResilience(
+              `${table}_delete_eq`,
+              async () => {
+                const result = self.client.from(table).delete().eq(column, value);
+                return result;
+              }
+            ),
+        }),
+      };
+    }
 
   // Auth operations with resilience
   get auth() {
