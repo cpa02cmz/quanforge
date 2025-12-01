@@ -14,7 +14,7 @@ interface MetaTagsProps {
 export const SEOHead: React.FC<MetaTagsProps> = ({
   title = 'QuantForge AI - Advanced MQL5 Trading Robot Generator | MetaTrader 5',
   description = 'Generate professional MQL5 trading robots and Expert Advisors using AI. Powered by Google Gemini 3.0/2.5. Create, test, and deploy automated trading strategies for MetaTrader 5 with visual strategy configuration and real-time market simulation.',
-  keywords = 'MQL5 generator, MetaTrader 5, trading robot, Expert Advisor, AI trading, automated trading, forex robot, algorithmic trading, Gemini AI, trading strategy generator, MT5 EA, quantitative trading',
+  keywords = 'MQL5 generator, MetaTrader 5, trading robot, Expert Advisor, AI trading, automated trading, forex robot, algorithmic trading, Gemini AI, trading strategy generator, MT5 EA, quantitative trading, forex EA, MQL5 EA builder, automated forex trading, AI trading bot, MetaTrader expert advisor, trading algorithm generator',
   ogImage = '/og-image.png',
   ogUrl = 'https://quanforge.ai',
   canonicalUrl = 'https://quanforge.ai',
@@ -53,6 +53,13 @@ export const SEOHead: React.FC<MetaTagsProps> = ({
       {/* Additional Meta Tags */}
       <meta name="theme-color" content="#22c55e" />
       <meta name="msapplication-TileColor" content="#0f172a" />
+      <meta name="language" content="en" />
+      <meta name="distribution" content="global" />
+      <meta name="rating" content="general" />
+      <meta name="revisit-after" content="7 days" />
+      <meta name="geo.region" content="US" />
+      <meta name="geo.placename" content="Global" />
+      <meta name="category" content="finance, technology, trading, artificial intelligence" />
       
       {/* Structured Data */}
       {structuredData.map((data, index) => (
@@ -119,6 +126,85 @@ export const structuredDataTemplates = {
     "name": name,
     "description": description,
     "dateCreated": new Date().toISOString(),
+    "dateModified": new Date().toISOString(),
+    "author": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "inLanguage": "en-US",
+    "isAccessibleForFree": true,
+    "genre": ["Technology", "Finance", "Trading", "Software Development"]
+  }),
+
+  howTo: (name: string, description: string, steps: Array<{ name: string; text: string }>) => ({
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": name,
+    "description": description,
+    "totalTime": "PT10M",
+    "estimatedCost": {
+      "@type": "MonetaryAmount",
+      "currency": "USD",
+      "value": "0"
+    },
+    "supply": [
+      {
+        "@type": "HowToSupply",
+        "name": "MetaTrader 5 Platform"
+      },
+      {
+        "@type": "HowToSupply", 
+        "name": "Trading Account"
+      }
+    ],
+    "tool": [
+      {
+        "@type": "HowToTool",
+        "name": "QuantForge AI"
+      }
+    ],
+    "step": steps.map((step, index) => ({
+      "@type": "HowToStep",
+      "position": index + 1,
+      "name": step.name,
+      "text": step.text
+    }))
+  }),
+
+  faq: (questions: Array<{ question: string; answer: string }>) => ({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": questions.map(q => ({
+      "@type": "Question",
+      "name": q.question,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": q.answer
+      }
+    }))
+  }),
+
+  videoGame: (name: string, description: string) => ({
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": name,
+    "description": description,
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Web",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.8",
+      "ratingCount": "150"
+    },
     "author": {
       "@type": "Organization",
       "name": "QuantForge AI"

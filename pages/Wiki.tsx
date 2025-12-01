@@ -101,7 +101,7 @@ export const Wiki: React.FC = () => {
       <SEOHead 
         title="Documentation & Wiki - QuantForge AI"
         description="Complete documentation and guides for QuantForge AI. Learn how to create MQL5 trading robots, use AI features, and optimize your trading strategies."
-        keywords="MQL5 documentation, trading robot guide, MetaTrader 5 tutorial, AI trading help, QuantForge wiki"
+        keywords="MQL5 documentation, trading robot guide, MetaTrader 5 tutorial, AI trading help, QuantForge wiki, forex trading guide, expert advisor tutorial, automated trading documentation"
         canonicalUrl="https://quanforge.ai/wiki"
         structuredData={[
           structuredDataTemplates.softwareApplication,
@@ -113,7 +113,21 @@ export const Wiki: React.FC = () => {
             activeSection.title,
             `Documentation for ${activeSection.title}`,
             `https://quanforge.ai/wiki#${activeSection.id}`
-          )] : [])
+          )] : []),
+          structuredDataTemplates.faq([
+            {
+              question: "What is QuantForge AI?",
+              answer: "QuantForge AI is an advanced web-based platform that uses Google's Gemini AI models to generate, analyze, and manage trading robots for MetaTrader 5."
+            },
+            {
+              question: "How do I create a trading robot?",
+              answer: "Simply describe your trading strategy in natural language, and our AI will generate professional MQL5 code that you can deploy to MetaTrader 5."
+            },
+            {
+              question: "Is QuantForge AI free to use?",
+              answer: "Yes, QuantForge AI offers free access to generate and manage trading robots. You only need your own API keys for the AI service."
+            }
+          ])
         ]}
       />
       <div className="flex flex-col md:flex-row h-full bg-dark-bg">

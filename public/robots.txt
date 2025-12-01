@@ -10,13 +10,19 @@ User-agent: AhrefsBot
 Disallow: /
 User-agent: MJ12bot
 Disallow: /
+User-agent: SemrushBot
+Disallow: /
 
 # Block admin and API routes
 Disallow: /api/
 Disallow: /admin/
-Disallow: /login
+Disallow: /*.json$
+Disallow: /_next/
+Disallow: /src/
 
-# Allow static assets
+# Allow important pages
+Allow: /generator
+Allow: /wiki
 Allow: /assets/
 Allow: /images/
 Allow: /css/

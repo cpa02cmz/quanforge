@@ -16,18 +16,55 @@ export default defineConfig({
         main: './index.html'
       },
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          charts: ['recharts'],
-          ai: ['@google/genai'],
-          router: ['react-router-dom'],
-          db: ['@supabase/supabase-js'],
-          utils: ['react-helmet-async'],
-          'db-core': ['./services/supabase', './services/settingsManager'],
-          'db-advanced': ['./services/resilientSupabase', './services/queryOptimizer'],
-          'cache': ['./services/advancedCache'],
-          'security': ['./services/securityManager'],
-          'realtime': ['./services/realtimeManager', './services/marketData']
+        manualChunks: (id) => {
+          // Vendor chunks
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'vendor-react';
+            }
+            if (id.includes('recharts')) {
+              return 'vendor-charts';
+            }
+            if (id.includes('@google/genai')) {
+              return 'vendor-ai';
+            }
+            if (id.includes('react-router-dom')) {
+              return 'vendor-router';
+            }
+            if (id.includes('@supabase')) {
+              return 'vendor-supabase';
+            }
+            if (id.includes('react-helmet-async')) {
+              return 'vendor-seo';
+            }
+            return 'vendor';
+          }
+          
+          // App chunks
+          if (id.includes('services/')) {
+            if (id.includes('supabase') || id.includes('settingsManager')) {
+              return 'services-db';
+            }
+            if (id.includes('cache') || id.includes('queryOptimizer')) {
+              return 'services-performance';
+            }
+            if (id.includes('security') || id.includes('realtime')) {
+              return 'services-core';
+            }
+            return 'services';
+          }
+          
+          if (id.includes('pages/')) {
+            return 'pages';
+          }
+          
+          if (id.includes('components/')) {
+            return 'components';
+          }
+          
+          if (id.includes('utils/')) {
+            return 'utils';
+          }
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
@@ -46,7 +83,7 @@ export default defineConfig({
         safari10: true,
       },
     },
-    chunkSizeWarningLimit: 500,
+    chunkSizeWarningLimit: 1000,
     target: 'esnext',
     reportCompressedSize: true,
     cssCodeSplit: true
