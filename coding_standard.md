@@ -40,6 +40,8 @@
 
 *   **API Keys**: Never hardcode keys in the source. Use `process.env` or user input stored in LocalStorage.
 *   **Output Sanitization**: When rendering AI output, ensure HTML/Scripts are not executed. (The app uses simple text rendering or specific markdown parsers, avoiding `dangerouslySetInnerHTML` where possible).
+*   **Encryption**: Use enhanced obfuscation methods for client-side API key storage and transmission.
+*   **Input Validation**: Always validate user inputs and API responses to prevent injection attacks.
 
 ## 6. AI Prompt Engineering
 

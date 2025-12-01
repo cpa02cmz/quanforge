@@ -45,10 +45,11 @@ You can customize how the AI behaves:
 
 1.  Click the **"AI Settings"** button in the sidebar (bottom left).
 2.  **Provider**: Switch between Google Gemini (Default) or an OpenAI-compatible provider (e.g., Local LLM).
-3.  **Custom System Instructions**: In the textarea provided, you can add global rules.
+3.  **Custom System Instructions**: In the textarea provided, you add global rules.
     *   *Example: "Always add comments in German."*
     *   *Example: "Use 'm_' prefix for member variables."*
-4.  Click **Save Settings**. These rules will apply to all future code generations.
+4.  **Enhanced API Reliability**: The system now includes improved retry logic with network error handling for better API connections.
+5.  Click **Save Settings**. These rules will apply to all future code generations.
 
 ## 6. Managing Your Robots
 

@@ -229,34 +229,40 @@ class DatabaseIndexer {
   /**
    * Full-text search across name and description
    */
-  public search(query: string): Robot[] {
-    if (!query || query.trim().length === 0) {
-      return this.getAllSortedByDate();
-    }
+   public search(query: string): Robot[] {
+     if (!query || query.trim().length === 0) {
+       return this.getAllSortedByDate();
+     }
 
-    const searchTerm = query.toLowerCase().trim();
-    const results = new Set<Robot>();
+     const searchTerm = query.toLowerCase().trim();
+     const results = new Set<Robot>();
 
-    // Search in cached results first
-    const cachedResults = this.indexes.searchIndex.get(searchTerm);
-    if (cachedResults) {
-      cachedResults.forEach(robot => results.add(robot));
-    } else {
-      // Perform search if not cached
-      const allRobots = this.getAllSortedByDate();
-      allRobots.forEach(robot => {
-        if (
-          robot.name.toLowerCase().includes(searchTerm) ||
-          robot.description.toLowerCase().includes(searchTerm) ||
-          (robot.strategy_type && robot.strategy_type.toLowerCase().includes(searchTerm))
-        ) {
-          results.add(robot);
-        }
-      });
-    }
+     // Split search term into individual words for multi-token search
+     const searchTerms = searchTerm.split(/\s+/).filter(term => term.length > 0);
 
-    return Array.from(results);
-  }
+     // Search for each term
+     for (const term of searchTerms) {
+       // Search in cached results first
+       const cachedResults = this.indexes.searchIndex.get(term);
+       if (cachedResults) {
+         cachedResults.forEach(robot => results.add(robot));
+       } else {
+         // Perform search if not cached
+         const allRobots = this.getAllSortedByDate();
+         allRobots.forEach(robot => {
+           if (
+             robot.name.toLowerCase().includes(term) ||
+             robot.description.toLowerCase().includes(term) ||
+             (robot.strategy_type && robot.strategy_type.toLowerCase().includes(term))
+           ) {
+             results.add(robot);
+           }
+         });
+       }
+     }
+
+     return Array.from(results);
+   }
 
   /**
    * Add robot to search index

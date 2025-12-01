@@ -13,7 +13,7 @@ export const runMonteCarloSimulation = (
     const riskScore = analysis?.riskScore || 5; // 1-10 (10 is high risk)
     const profitability = analysis?.profitability || 5; // 1-10 (10 is high profit)
     
-    const days = settings.days;
+     const days = Math.max(1, Math.min(settings.days, 365)); // Cap at 1 year to prevent performance issues
     let balance = settings.initialDeposit;
     const equityCurve = new Array(days + 1); // Pre-allocate array for performance
     equityCurve[0] = { date: 'Day 0', balance };
@@ -29,14 +29,14 @@ export const runMonteCarloSimulation = (
     // Risk 1: 0.5%, Risk 10: 5% daily swings
     const dailyVol = (riskScore * 0.003) + 0.002;
 
-    // Generate all random values at once to avoid repeated Math.random calls
-    const randomValues = new Array(days);
-    for (let i = 0; i < days; i++) {
-        const u = Math.random();
-        const v = Math.random();
-        // Box-Muller transform for normal distribution
-        randomValues[i] = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-    }
+     // Generate all random values at once to avoid repeated Math.random calls
+     const randomValues = new Float64Array(days); // Use typed array for better performance
+     for (let i = 0; i < days; i++) {
+         const u = Math.random();
+         const v = Math.random();
+         // Box-Muller transform for normal distribution
+         randomValues[i] = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+     }
 
     // Main simulation loop
     for (let i = 1; i <= days; i++) {

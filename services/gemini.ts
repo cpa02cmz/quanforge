@@ -21,15 +21,19 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Pr
 
         if (retries === 0) throw error;
         
-        const isRateLimit = error.status === 429 || (error.message && error.message.includes('429'));
-        const isServerErr = error.status >= 500;
+         const isRateLimit = error.status === 429 || (error.message && error.message.includes('429'));
+         const isServerErr = error.status >= 500;
+         const isNetworkErr = error.message?.includes('fetch failed') || 
+                             error.message?.includes('network') || 
+                             error.message?.includes('timeout') ||
+                             error.message?.includes('ETIMEDOUT');
 
-        // Only retry on Rate Limits or Server Errors
-        if (isRateLimit || isServerErr || error.message?.includes('fetch failed')) {
-            console.warn(`API Error (${error.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return withRetry(fn, retries - 1, delay * 2);
-        }
+         // Only retry on Rate Limits, Server Errors, or Network Errors
+         if (isRateLimit || isServerErr || isNetworkErr) {
+             console.warn(`API Error (${error.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
+             await new Promise(resolve => setTimeout(resolve, delay));
+             return withRetry(fn, retries - 1, delay * 2); // Exponential backoff
+         }
         
         throw error;
     }

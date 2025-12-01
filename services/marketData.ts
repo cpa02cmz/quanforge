@@ -34,35 +34,53 @@ class MarketDataService {
 
   // --- Binance Implementation (Crypto) ---
   
-  private ensureBinanceConnection() {
-      if (this.binanceWs && (this.binanceWs.readyState === WebSocket.OPEN || this.binanceWs.readyState === WebSocket.CONNECTING)) {
-          return;
-      }
+   private ensureBinanceConnection() {
+       if (this.binanceWs && (this.binanceWs.readyState === WebSocket.OPEN || this.binanceWs.readyState === WebSocket.CONNECTING)) {
+           return;
+       }
 
-      this.binanceWs = new WebSocket('wss://stream.binance.com:9443/ws');
-      
-      this.binanceWs.onopen = () => {
-          console.log("Binance WS Connected");
-          this.resubscribeBinance();
-      };
+       // Add connection timeout to prevent hanging connections
+       const connectionTimeout = setTimeout(() => {
+           if (this.binanceWs && this.binanceWs.readyState === WebSocket.CONNECTING) {
+               console.warn("Binance WebSocket connection timeout, reconnecting...");
+               this.binanceWs.close();
+               this.binanceWs = null;
+               this.ensureBinanceConnection();
+           }
+       }, 10000); // 10 second timeout
 
-      this.binanceWs.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          // Handle ticker stream payload: { s: "BTCUSDT", b: "64000.00", a: "64001.00", ... }
-          if (data.e === '24hrTicker') {
-              this.processBinanceMessage(data);
-          }
-      };
+       this.binanceWs = new WebSocket('wss://stream.binance.com:9443/ws');
+       
+       this.binanceWs.onopen = () => {
+           clearTimeout(connectionTimeout);
+           console.log("Binance WS Connected");
+           this.resubscribeBinance();
+       };
 
-      this.binanceWs.onclose = () => {
-          console.log("Binance WS Closed. Reconnecting in 5s...");
-          setTimeout(() => this.ensureBinanceConnection(), 5000);
-      };
-      
-      this.binanceWs.onerror = (err) => {
-          console.warn("Binance WS Error", err);
-      };
-  }
+       this.binanceWs.onmessage = (event) => {
+           try {
+               const data = JSON.parse(event.data);
+               // Handle ticker stream payload: { s: "BTCUSDT", b: "64000.00", a: "64001.00", ... }
+               if (data.e === '24hrTicker') {
+                   this.processBinanceMessage(data);
+               }
+           } catch (error) {
+               console.warn("Binance WS message parsing error:", error);
+           }
+       };
+
+       this.binanceWs.onclose = () => {
+           clearTimeout(connectionTimeout);
+           console.log("Binance WS Closed. Reconnecting in 5s...");
+           // Use exponential backoff to avoid overwhelming the server
+           setTimeout(() => this.ensureBinanceConnection(), 5000);
+       };
+       
+       this.binanceWs.onerror = (err) => {
+           clearTimeout(connectionTimeout);
+           console.warn("Binance WS Error", err);
+       };
+   }
 
   private resubscribeBinance() {
       if (!this.binanceWs || this.binanceWs.readyState !== WebSocket.OPEN) return;
@@ -106,41 +124,58 @@ class MarketDataService {
 
   // --- Twelve Data Implementation (Forex/Metals) ---
 
-  private ensureTwelveDataConnection() {
-      const settings = settingsManager.getSettings();
-      const apiKey = settings.twelveDataApiKey;
+   private ensureTwelveDataConnection() {
+       const settings = settingsManager.getSettings();
+       const apiKey = settings.twelveDataApiKey;
 
-      if (!apiKey) return; // Cannot connect without key
+       if (!apiKey) return; // Cannot connect without key
 
-      if (this.twelveDataWs && (this.twelveDataWs.readyState === WebSocket.OPEN || this.twelveDataWs.readyState === WebSocket.CONNECTING)) {
-          return;
-      }
+       if (this.twelveDataWs && (this.twelveDataWs.readyState === WebSocket.OPEN || this.twelveDataWs.readyState === WebSocket.CONNECTING)) {
+           return;
+       }
 
-      this.twelveDataWs = new WebSocket(`wss://ws.twelvedata.com/v1/quotes?apikey=${apiKey}`);
-
-      this.twelveDataWs.onopen = () => {
-          console.log("Twelve Data WS Connected");
-          this.resubscribeTwelveData();
-      };
-
-      this.twelveDataWs.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          if (data.event === 'price') {
-             this.processTwelveDataMessage(data);
-          }
-          if (data.event === 'error') {
-              console.warn("Twelve Data Error:", data.message);
-          }
-      };
-
-      this.twelveDataWs.onclose = () => {
-          // Only reconnect if we still have subscribers needing it
-           if (this.twelveDataSubscriptions.size > 0) {
-               console.log("Twelve Data WS Closed. Reconnecting in 10s...");
-               setTimeout(() => this.ensureTwelveDataConnection(), 10000);
+       // Add connection timeout to prevent hanging connections
+       const connectionTimeout = setTimeout(() => {
+           if (this.twelveDataWs && this.twelveDataWs.readyState === WebSocket.CONNECTING) {
+               console.warn("Twelve Data WebSocket connection timeout, reconnecting...");
+               this.twelveDataWs.close();
+               this.twelveDataWs = null;
+               this.ensureTwelveDataConnection();
            }
-      };
-  }
+       }, 10000); // 10 second timeout
+
+       this.twelveDataWs = new WebSocket(`wss://ws.twelvedata.com/v1/quotes?apikey=${apiKey}`);
+
+       this.twelveDataWs.onopen = () => {
+           clearTimeout(connectionTimeout);
+           console.log("Twelve Data WS Connected");
+           this.resubscribeTwelveData();
+       };
+
+       this.twelveDataWs.onmessage = (event) => {
+           try {
+               const data = JSON.parse(event.data);
+               if (data.event === 'price') {
+                  this.processTwelveDataMessage(data);
+               }
+               if (data.event === 'error') {
+                   console.warn("Twelve Data Error:", data.message);
+               }
+           } catch (error) {
+               console.warn("Twelve Data message parsing error:", error);
+           }
+       };
+
+       this.twelveDataWs.onclose = () => {
+           clearTimeout(connectionTimeout);
+           // Only reconnect if we still have subscribers needing it
+            if (this.twelveDataSubscriptions.size > 0) {
+                console.log("Twelve Data WS Closed. Reconnecting in 10s...");
+                // Use exponential backoff to avoid overwhelming the server
+                setTimeout(() => this.ensureTwelveDataConnection(), 10000);
+            }
+       };
+   }
 
   private reconnectTwelveData() {
       if (this.twelveDataWs) {

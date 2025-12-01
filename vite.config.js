@@ -12,17 +12,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          charts: ['recharts'],
-          ai: ['@google/genai'],
-          router: ['react-router-dom'],
-          db: ['@supabase/supabase-js']
-        }
-      }
-    },
     minify: 'terser',
     terserOptions: {
       compress: {

@@ -1,15 +1,20 @@
-// Simple encryption utilities for API keys
-// Note: This is basic obfuscation, not military-grade encryption
-// For production, consider using more robust solutions
+// Enhanced encryption utilities for API keys
+// Note: This is client-side obfuscation for basic security
+// For production, consider using Web Crypto API for stronger encryption
 
 const ENCRYPTION_KEY = 'QuantForge_AI_Secure_Key_2024';
 
-// Simple XOR cipher for basic obfuscation
+// Improved XOR cipher with additional obfuscation
 const xorCipher = (text: string, key: string): string => {
   let result = '';
-  for (let i = 0; i < text.length; i++) {
+  // Add a simple scrambling to make the XOR harder to reverse
+  const scrambledText = text.split('').map((char, i) => 
+    String.fromCharCode(char.charCodeAt(0) + i % 7)
+  ).join('');
+  
+  for (let i = 0; i < scrambledText.length; i++) {
     result += String.fromCharCode(
-      text.charCodeAt(i) ^ key.charCodeAt(i % key.length)
+      scrambledText.charCodeAt(i) ^ key.charCodeAt(i % key.length)
     );
   }
   return result;
@@ -56,9 +61,12 @@ export const decryptApiKey = (encryptedKey: string): string => {
   }
 };
 
-// Validate API key format (basic validation)
+// Validate API key format with enhanced validation
 export const validateApiKey = (apiKey: string, provider: 'google' | 'openai'): boolean => {
-  if (!apiKey || apiKey.length < 10) return false;
+  if (!apiKey || typeof apiKey !== 'string' || apiKey.length < 10) return false;
+  
+  // Check for common signs of tampering
+  if (apiKey.includes(' ') || apiKey.includes('\t') || apiKey.includes('\n')) return false;
   
   // Basic format validation
   switch (provider) {
@@ -69,7 +77,8 @@ export const validateApiKey = (apiKey: string, provider: 'google' | 'openai'): b
       // OpenAI API keys start with 'sk-' and are typically 51 characters
       return /^sk-[A-Za-z0-9]{48}$/.test(apiKey);
     default:
-      return true; // Allow custom providers
+      // For custom providers, ensure it's a reasonable length and format
+      return /^[A-Za-z0-9._-]{10,100}$/.test(apiKey);
   }
 };
 
