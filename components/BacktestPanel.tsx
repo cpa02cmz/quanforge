@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { BacktestSettings, SimulationResult } from '../types';
 import { NumericInput } from './NumericInput';
@@ -14,7 +14,7 @@ interface BacktestPanelProps {
     analysisExists: boolean;
 }
 
-export const BacktestPanel: React.FC<BacktestPanelProps> = ({ 
+export const BacktestPanel: React.FC<BacktestPanelProps> = React.memo(({ 
     settings, 
     onChange, 
     onRun, 
@@ -24,11 +24,11 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = ({
 }) => {
     const { t } = useTranslation();
 
-    const handleChange = (field: keyof BacktestSettings, value: number) => {
+    const handleChange = useCallback((field: keyof BacktestSettings, value: number) => {
         onChange({ ...settings, [field]: value });
-    };
+    }, [settings, onChange]);
 
-    const handleExportCSV = () => {
+    const handleExportCSV = useCallback(() => {
         if (!result) return;
         
         // CSV Header
@@ -47,7 +47,7 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = ({
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    };
+    }, [result]);
 
     return (
         <div className="flex flex-col h-full bg-dark-bg">
@@ -203,4 +203,4 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = ({
             </div>
         </div>
     );
-};
+});

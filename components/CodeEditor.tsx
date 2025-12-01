@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useTranslation } from '../services/i18n';
 
 interface CodeEditorProps {
@@ -11,7 +11,7 @@ interface CodeEditorProps {
   onExplain?: () => void; // New Prop
 }
 
-export const CodeEditor: React.FC<CodeEditorProps> = ({ code, readOnly = false, filename = "ExpertAdvisor", onChange, onRefine, onExplain }) => {
+export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnly = false, filename = "ExpertAdvisor", onChange, onRefine, onExplain }) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -36,13 +36,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ code, readOnly = false, 
     }
   };
 
-  const handleCopy = () => {
+  const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
+  }, [code]);
 
-  const handleDownload = () => {
+  const handleDownload = useCallback(() => {
     const element = document.createElement("a");
     const file = new Blob([code], {type: 'text/plain'});
     element.href = URL.createObjectURL(file);
@@ -54,7 +54,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ code, readOnly = false, 
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
-  };
+  }, [code, filename]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Tab') {
@@ -79,9 +79,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ code, readOnly = false, 
     }
   };
 
-  // Generate line numbers
-  const lines = code.split('\n');
-  const lineNumbers = lines.map((_, i) => i + 1);
+  // Generate line numbers - memoized for performance
+  const lineNumbers = useMemo(() => {
+    const lines = code.split('\n');
+    return lines.map((_, i) => i + 1);
+  }, [code]);
 
   return (
     <div className="flex flex-col h-full bg-[#0d1117] text-gray-300 font-mono text-sm relative">
@@ -181,4 +183,4 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ code, readOnly = false, 
       </div>
     </div>
   );
-};
+});

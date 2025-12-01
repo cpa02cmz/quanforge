@@ -1,13 +1,21 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { mockDb } from '../services/supabase';
 import { Robot } from '../types';
 import { useToast } from '../components/Toast';
 import { useTranslation } from '../services/i18n';
 
+interface UserSession {
+  user: {
+    id: string;
+    email: string;
+  };
+  access_token?: string;
+}
+
 interface DashboardProps {
-    session: any;
+    session: UserSession | null;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ session }) => {
@@ -39,7 +47,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ session }) => {
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
+  const handleDelete = useCallback(async (id: string, name: string) => {
     if (!window.confirm(t('dash_delete_confirm', { name }))) {
         return;
     }
@@ -57,9 +65,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ session }) => {
     } finally {
         setProcessingId(null);
     }
-  };
+  }, [t, showToast]);
 
-  const handleDuplicate = async (id: string) => {
+  const handleDuplicate = useCallback(async (id: string) => {
       setProcessingId(id);
       try {
           const { data, error } = await mockDb.duplicateRobot(id);
@@ -75,17 +83,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ session }) => {
       } finally {
           setProcessingId(null);
       }
-  };
+  }, [t, showToast]);
 
-  // Filter Logic
-  const filteredRobots = robots.filter(robot => {
+  // Filter Logic - memoized for performance
+  const filteredRobots = useMemo(() => 
+    robots.filter(robot => {
       const matchesSearch = robot.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = filterType === 'All' || (robot.strategy_type || 'Custom') === filterType;
       return matchesSearch && matchesType;
-  });
+    }), [robots, searchTerm, filterType]
+  );
 
-  // Derived list of unique strategy types for the dropdown
-  const availableTypes = ['All', ...Array.from(new Set(robots.map(r => r.strategy_type || 'Custom')))];
+  // Derived list of unique strategy types for the dropdown - memoized
+  const availableTypes = useMemo(() => 
+    ['All', ...Array.from(new Set(robots.map(r => r.strategy_type || 'Custom')))], 
+    [robots]
+  );
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
