@@ -52,7 +52,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!api/|static/|_next/|_vercel/).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
