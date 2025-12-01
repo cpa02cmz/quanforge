@@ -21,9 +21,30 @@ class ErrorBoundaryClass extends Component {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     
-    // Log to external service in production
+    // Enhanced error logging for production
     if (import.meta.env.PROD) {
-      // TODO: Add error logging service (Sentry, LogRocket, etc.)
+      const errorData = {
+        message: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+      };
+      
+      // Log to console in production for debugging
+      console.error('Production Error:', errorData);
+      
+      // Store error in localStorage for debugging
+      try {
+        const errors = JSON.parse(localStorage.getItem('app_errors') || '[]');
+        errors.push(errorData);
+        // Keep only last 10 errors
+        if (errors.length > 10) errors.shift();
+        localStorage.setItem('app_errors', JSON.stringify(errors));
+      } catch (e) {
+        // Ignore storage errors
+      }
     }
   }
 

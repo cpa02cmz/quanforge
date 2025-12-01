@@ -29,12 +29,58 @@ QuantForge AI is a web-based platform that uses Google's Gemini 3.0/2.5 AI model
 ## Getting Started
 
 1.  **Clone the repository**.
-2.  **Install dependencies** (if running locally outside of the provided environment).
+2.  **Install dependencies**:
+    ```bash
+    npm install
+    ```
 3.  **Environment Variables**:
-    *   `API_KEY` / `VITE_API_KEY`: Google Gemini API Key.
-    *   `SUPABASE_URL` / `VITE_SUPABASE_URL`: (Optional) Your Supabase Project URL.
-    *   `SUPABASE_ANON_KEY` / `VITE_SUPABASE_ANON_KEY`: (Optional) Your Supabase Anon Key.
+    Copy `.env.example` to `.env.local` and configure:
+    *   `VITE_API_KEY`: Google Gemini API Key.
+    *   `VITE_SUPABASE_URL`: (Optional) Your Supabase Project URL.
+    *   `VITE_SUPABASE_ANON_KEY`: (Optional) Your Supabase Anon Key.
+    *   `VITE_TWELVE_DATA_API_KEY`: (Optional) Twelve Data API for real-time market data.
     *   *Note: If Supabase keys are missing, the app defaults to a robust LocalStorage mock mode.*
+
+## Development
+
+```bash
+# Start development server
+npm run dev
+
+# Type checking
+npm run typecheck
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+## Deployment
+
+### Vercel Deployment
+
+The application is optimized for Vercel deployment with:
+
+- **Automatic builds** via `vercel.json` configuration
+- **Optimized bundling** with code splitting for better performance
+- **Security headers** for production deployment
+- **Edge-ready** configuration for global CDN distribution
+
+To deploy to Vercel:
+
+1. Connect your repository to Vercel
+2. Configure environment variables in Vercel dashboard
+3. Deploy automatically on push to main branch
+
+### Performance Optimizations
+
+- **Code Splitting**: Automatic chunking of vendor libraries, components, and pages
+- **Caching**: Intelligent caching strategy for Supabase queries and API responses
+- **Bundle Optimization**: Tree-shaking and minification for reduced bundle size
+- **Lazy Loading**: Components are loaded on-demand for faster initial load
+- **Performance Monitoring**: Built-in performance metrics collection
 
 ## Usage
 

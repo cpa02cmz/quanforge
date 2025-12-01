@@ -4,30 +4,44 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Advanced MQL5 Trading Robot Generator powered by AI",
-  "keywords": ["mql5", "metatrader", "trading", "ai", "robot", "expert-advisor", "forex", "algorithmic-trading"],
+  "keywords": [
+    "mql5",
+    "metatrader",
+    "trading",
+    "ai",
+    "robot",
+    "expert-advisor",
+    "forex",
+    "algorithmic-trading"
+  ],
   "author": "QuantForge AI",
   "homepage": "https://quanforge.ai",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:analyze": "vite build && npx vite-bundle-analyzer dist",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "echo 'No linter configured'",
+    "test": "echo 'No tests configured'",
+    "clean": "rm -rf dist node_modules/.vite",
+    "vercel-build": "npm run typecheck && npm run build"
   },
   "dependencies": {
-    "react-dom": "^19.2.0",
-    "recharts": "^3.5.1",
     "@google/genai": "^1.30.0",
     "@supabase/supabase-js": "^2.86.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.6",
-    "react": "^19.2.0"
+    "recharts": "^3.5.1"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
+    "@types/node": "^22.19.1",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "terser": "^5.34.1",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0",
-    "terser": "^5.34.1"
+    "vite": "^6.2.0"
   }
 }

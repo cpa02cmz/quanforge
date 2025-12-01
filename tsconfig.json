@@ -14,6 +14,7 @@
       "node",
       "vite/client"
     ],
+    
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",

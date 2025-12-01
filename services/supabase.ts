@@ -3,6 +3,19 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager, getEnv } from './settingsManager';
 import { Robot, UserSession } from '../types';
 
+// Connection retry configuration
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  retryDelay: 1000,
+  backoffMultiplier: 2,
+};
+
+// Cache configuration
+const CACHE_CONFIG = {
+  ttl: 5 * 60 * 1000, // 5 minutes
+  maxSize: 100, // Max cached items
+};
+
 // Mock session storage
 const STORAGE_KEY = 'mock_session';
 const ROBOTS_KEY = 'mock_robots';
@@ -130,6 +143,53 @@ const mockClient = {
 
 let activeClient: SupabaseClient | any = null;
 
+// Simple cache implementation
+const cache = new Map<string, { data: any; timestamp: number }>();
+
+const getCachedData = (key: string): any | null => {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_CONFIG.ttl) {
+    return cached.data;
+  }
+  cache.delete(key);
+  return null;
+};
+
+const setCachedData = (key: string, data: any): void => {
+  if (cache.size >= CACHE_CONFIG.maxSize) {
+    const firstKey = cache.keys().next().value;
+    cache.delete(firstKey);
+  }
+  cache.set(key, { data, timestamp: Date.now() });
+};
+
+// Retry wrapper for Supabase operations
+const withRetry = async <T>(
+  operation: () => Promise<T>,
+  operationName: string
+): Promise<T> => {
+  let lastError: any;
+  
+  for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      lastError = error;
+      
+      if (attempt === RETRY_CONFIG.maxRetries) {
+        console.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, error);
+        throw error;
+      }
+      
+      // Exponential backoff
+      const delay = RETRY_CONFIG.retryDelay * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError;
+};
+
 const getClient = () => {
     if (activeClient) return activeClient;
 
@@ -137,7 +197,20 @@ const getClient = () => {
 
     if (settings.mode === 'supabase' && settings.url && settings.anonKey) {
         try {
-            activeClient = createClient(settings.url, settings.anonKey);
+            activeClient = createClient(settings.url, settings.anonKey, {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                },
+                db: {
+                    schema: 'public',
+                },
+                global: {
+                    headers: {
+                        'x-application-name': 'quanforge-ai',
+                    },
+                },
+            });
         } catch (e) {
             console.error("Invalid Supabase Config, falling back to mock", e);
             activeClient = mockClient;
@@ -171,7 +244,25 @@ export const mockDb = {
       const stored = localStorage.getItem(ROBOTS_KEY);
       return { data: safeParse(stored, []), error: null };
     }
-    return getClient().from('robots').select('*').order('created_at', { ascending: false });
+    
+    const cacheKey = 'robots_list';
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      return { data: cached, error: null };
+    }
+    
+    return withRetry(async () => {
+      const result = await getClient()
+        .from('robots')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (result.data && !result.error) {
+        setCachedData(cacheKey, result.data);
+      }
+      
+      return result;
+    }, 'getRobots');
   },
 
   async saveRobot(robot: any) {
@@ -191,7 +282,15 @@ export const mockDb = {
           return { data: null, error: e.message };
       }
     }
-    return getClient().from('robots').insert([robot]).select();
+    
+    return withRetry(async () => {
+      const result = await getClient().from('robots').insert([robot]).select();
+      
+      // Invalidate cache after save
+      cache.delete('robots_list');
+      
+      return result;
+    }, 'saveRobot');
   },
 
   async updateRobot(id: string, updates: any) {
@@ -218,7 +317,19 @@ export const mockDb = {
             return { data: null, error: e.message };
         }
     }
-    return getClient().from('robots').update({ ...updates, updated_at: new Date().toISOString() }).match({ id });
+    
+    return withRetry(async () => {
+      const result = await getClient()
+        .from('robots')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .match({ id })
+        .select();
+      
+      // Invalidate cache after update
+      cache.delete('robots_list');
+      
+      return result;
+    }, 'updateRobot');
   },
 
   async deleteRobot(id: string) {
@@ -241,7 +352,15 @@ export const mockDb = {
             return { error: e.message };
         }
     }
-    return getClient().from('robots').delete().match({ id });
+    
+    return withRetry(async () => {
+      const result = await getClient().from('robots').delete().match({ id });
+      
+      // Invalidate cache after delete
+      cache.delete('robots_list');
+      
+      return result;
+    }, 'deleteRobot');
   },
 
   async duplicateRobot(id: string) {

@@ -1,26 +1,33 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Auth } from './components/Auth';
-import { Dashboard } from './pages/Dashboard';
-import { Generator } from './pages/Generator';
-import { Wiki } from './pages/Wiki';
-import { Layout } from './components/Layout';
 import { supabase } from './services/supabase';
 import { ToastProvider } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { UserSession } from './types';
+import { performanceMonitor } from './utils/performance';
+
+// Lazy load components for better code splitting
+const Auth = lazy(() => import('./components/Auth').then(module => ({ default: module.Auth })));
+const Dashboard = lazy(() => import('./pages/Dashboard').then(module => ({ default: module.Dashboard })));
+const Generator = lazy(() => import('./pages/Generator').then(module => ({ default: module.Generator })));
+const Wiki = lazy(() => import('./pages/Wiki').then(module => ({ default: module.Wiki })));
+const Layout = lazy(() => import('./components/Layout').then(module => ({ default: module.Layout })));
 
 export default function App() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const startTime = performance.now();
+    
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      performanceMonitor.recordMetric('auth_init', performance.now() - startTime);
     }).catch((err) => {
       console.warn("Auth initialization failed:", err);
+      performanceMonitor.recordMetric('auth_error', 1);
     }).finally(() => {
       setLoading(false);
     });
@@ -29,48 +36,54 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      performanceMonitor.recordMetric('auth_state_change', 1);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  // Memoize the loading component to prevent re-renders
+  const LoadingComponent = useMemo(() => (
+    <div className="flex items-center justify-center h-screen bg-dark-bg text-white">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500"></div>
+    </div>
+  ), []);
+
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-dark-bg text-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500"></div>
-      </div>
-    );
+    return LoadingComponent;
   }
 
   return (
     <ErrorBoundary>
       <ToastProvider>
         <HashRouter>
-        <Routes>
-          <Route 
-            path="/login" 
-            element={!session ? <Auth /> : <Navigate to="/" replace />} 
-          />
-          <Route element={<Layout session={session} />}>
-            <Route 
-              path="/" 
-              element={session ? <Dashboard session={session} /> : <Navigate to="/login" replace />} 
-            />
-            <Route 
-              path="/generator" 
-              element={session ? <Generator /> : <Navigate to="/login" replace />} 
-            />
-            <Route 
-              path="/generator/:id" 
-              element={session ? <Generator /> : <Navigate to="/login" replace />} 
-            />
-            <Route 
-              path="/wiki" 
-              element={session ? <Wiki /> : <Navigate to="/login" replace />} 
-            />
-          </Route>
-        </Routes>
-      </HashRouter>
+          <Suspense fallback={LoadingComponent}>
+            <Routes>
+              <Route 
+                path="/login" 
+                element={!session ? <Auth /> : <Navigate to="/" replace />} 
+              />
+              <Route element={<Layout session={session} />}>
+                <Route 
+                  path="/" 
+                  element={session ? <Dashboard session={session} /> : <Navigate to="/login" replace />} 
+                />
+                <Route 
+                  path="/generator" 
+                  element={session ? <Generator /> : <Navigate to="/login" replace />} 
+                />
+                <Route 
+                  path="/generator/:id" 
+                  element={session ? <Generator /> : <Navigate to="/login" replace />} 
+                />
+                <Route 
+                  path="/wiki" 
+                  element={session ? <Wiki /> : <Navigate to="/login" replace />} 
+                />
+              </Route>
+            </Routes>
+          </Suspense>
+        </HashRouter>
       </ToastProvider>
     </ErrorBoundary>
   );
