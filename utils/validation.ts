@@ -203,50 +203,78 @@ export class ValidationService {
   }
 
    static validateChatMessage(message: string): ValidationError[] {
-     const errors: ValidationError[] = [];
+      const errors: ValidationError[] = [];
 
-     if (!message || !message.trim()) {
-       errors.push({
-         field: 'message',
-         message: 'Message cannot be empty'
-       });
-     } else if (message.length > 10000) {
-       errors.push({
-         field: 'message',
-         message: 'Message is too long (max 10,000 characters)'
-       });
-     }
+      if (!message || !message.trim()) {
+        errors.push({
+          field: 'message',
+          message: 'Message cannot be empty'
+        });
+      } else if (message.length > 10000) {
+        errors.push({
+          field: 'message',
+          message: 'Message is too long (max 10,000 characters)'
+        });
+      }
 
-     // Enhanced XSS prevention with more patterns
-     const xssPatterns = [
-       /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-       /javascript:/gi,
-       /vbscript:/gi,
-       /on\w+\s*=/gi,
-       /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
-       /<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi,
-       /<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi,
-       /<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi,
-       /eval\s*\(/gi,
-       /expression\s*\(/gi,
-       /<link[^>]+rel=["']stylesheet["']/gi,
-       /<meta[^>]+http-equiv=["']refresh["']/gi,
-       /data:text\/html/gi,
-       /<svg[^>]*onload=/gi,
-     ];
+      // Enhanced XSS prevention with more patterns
+      const xssPatterns = [
+        /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+        /javascript:/gi,
+        /vbscript:/gi,
+        /on\w+\s*=/gi,
+        /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
+        /<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi,
+        /<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi,
+        /<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi,
+        /eval\s*\(/gi,
+        /expression\s*\(/gi,
+        /<link[^>]+rel=["']stylesheet["']/gi,
+        /<meta[^>]+http-equiv=["']refresh["']/gi,
+        /data:text\/html/gi,
+        /<svg[^>]*onload=/gi,
+        /<img[^>]*src[\s]*=[\s]*["'][\s]*(javascript:|data:)/gi,
+        /<a[^>]*href[\s]*=[\s]*["'][\s]*javascript:/gi,
+        /&#x?0*(58|106|0*74|0*42|0*6a);?/gi,  // Hex/decimal encoded chars
+         /\/\*.*\*\/|<%.*%>|<\?php?.*?\?>/gi,  // Comments and server-side code
+        /<style[^>]*>.*?<(?:\/|\\\/)style>/gi,  // Embedded styles
+      ];
 
-     for (const pattern of xssPatterns) {
-       if (pattern.test(message)) {
-         errors.push({
-           field: 'message',
-           message: 'Message contains potentially unsafe content'
-         });
-         break;
+       for (const pattern of xssPatterns) {
+         if (pattern.test(message)) {
+           errors.push({
+             field: 'message',
+             message: 'Message contains potentially unsafe content'
+           });
+           break;
+         }
        }
-     }
 
-     return errors;
-   }
+       // Additional content validation for MQL5-specific security
+       const mql5DangerousPatterns = [
+         /#include\s+<\s*(?!stdlib\.h|stdstring\.h|stdfile\.h|stdstringarray\.h|chart\.h|terminal\.h|trade\.h|fxt\.h|resource\.h)/i,
+         /Import\s+/i,
+         /ResourceCreate/i,
+         /ResourceSave/i,
+         /FileFindFirst|FileFindNext|FileFindClose/i,
+         /WebRequest/i,
+         /ShellExecute|ShellExecuteW/i,
+         /GlobalVariables.*|GlobalVariable.*|GlobalVariableListDelete/i,
+         /TerminalInfo.*|MQLInfo.*|MqlInfoInteger/i,
+       ];
+
+       for (const pattern of mql5DangerousPatterns) {
+         if (pattern.test(message)) {
+           errors.push({
+             field: 'message',
+             message: 'Message contains potentially dangerous MQL5 operations'
+           });
+           break;
+         }
+       }
+
+         return errors;
+       }
 
   static sanitizeInput(input: string): string {
     return input

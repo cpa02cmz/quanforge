@@ -166,51 +166,71 @@ class PerformanceMonitor {
      }
    }
 
-    // Enhanced API call timing with error tracking
-    async measureApiCall<T>(name: string, fn: () => Promise<T>): Promise<T> {
-      const start = performance.now();
-      let success = true;
-      
-      try {
-        const result = await fn();
-        return result;
-      } catch (error) {
-        success = false;
-        throw error;
-      } finally {
-        const duration = performance.now() - start;
-        this.recordMetric(`api_${name}_duration`, duration);
-        this.recordMetric(`api_${name}_success`, success ? 1 : 0);
-        
-        // Log slow API calls for optimization
-        if (duration > 1000) { // More than 1 second
-          console.warn(`Slow API call detected: ${name} took ${duration.toFixed(2)}ms`);
-        }
-      }
-    }
+     // Enhanced API call timing with error tracking
+     async measureApiCall<T>(name: string, fn: () => Promise<T>): Promise<T> {
+       const start = performance.now();
+       let success = true;
+       let errorType: string | undefined;
+       
+       try {
+         const result = await fn();
+         return result;
+       } catch (error) {
+         success = false;
+         errorType = error instanceof Error ? error.constructor.name : typeof error;
+         throw error;
+       } finally {
+         const duration = performance.now() - start;
+         this.recordMetric(`api_${name}_duration`, duration);
+         this.recordMetric(`api_${name}_success`, success ? 1 : 0);
+         if (!success && errorType) {
+           this.recordMetric(`api_${name}_error_${errorType}`, 1);
+         }
+         
+         // Log slow API calls for optimization
+         if (duration > 1000) { // More than 1 second
+           console.warn(`Slow API call detected: ${name} took ${duration.toFixed(2)}ms`);
+         }
+       }
+     }
     
-    // Performance monitoring for database operations
-    async measureDbOperation<T>(name: string, fn: () => Promise<T>): Promise<T> {
-      const start = performance.now();
-      let success = true;
-      
-      try {
-        const result = await fn();
-        return result;
-      } catch (error) {
-        success = false;
-        throw error;
-      } finally {
-        const duration = performance.now() - start;
-        this.recordMetric(`db_${name}_duration`, duration);
-        this.recordMetric(`db_${name}_success`, success ? 1 : 0);
-        
-        // Log slow database operations
-        if (duration > 500) { // More than 0.5 seconds
-          console.warn(`Slow DB operation detected: ${name} took ${duration.toFixed(2)}ms`);
-        }
-      }
-    }
+     // Performance monitoring for database operations
+     async measureDbOperation<T>(name: string, fn: () => Promise<T>): Promise<T> {
+       const start = performance.now();
+       let success = true;
+       let errorType: string | undefined;
+       let resultSize = 0;
+       
+       try {
+         const result = await fn();
+         // Estimate result size if it's an array or object
+         if (Array.isArray(result)) {
+           resultSize = result.length;
+         } else if (result && typeof result === 'object') {
+           resultSize = JSON.stringify(result).length;
+         } else {
+           resultSize = typeof result === 'string' ? result.length : 1;
+         }
+         return result;
+       } catch (error) {
+         success = false;
+         errorType = error instanceof Error ? error.constructor.name : typeof error;
+         throw error;
+       } finally {
+         const duration = performance.now() - start;
+         this.recordMetric(`db_${name}_duration`, duration);
+         this.recordMetric(`db_${name}_success`, success ? 1 : 0);
+         this.recordMetric(`db_${name}_result_size`, resultSize);
+         if (!success && errorType) {
+           this.recordMetric(`db_${name}_error_${errorType}`, 1);
+         }
+         
+         // Log slow database operations
+         if (duration > 500) { // More than 0.5 seconds
+           console.warn(`Slow DB operation detected: ${name} took ${duration.toFixed(2)}ms, result size: ${resultSize}`);
+         }
+       }
+     }
 
    // Memory usage snapshot
    captureMemorySnapshot() {
@@ -248,18 +268,51 @@ class PerformanceMonitor {
      }
    }
 
-  // Memory usage monitoring (if available)
-  getMemoryUsage() {
-    if ('memory' in performance) {
-      const memory = (performance as any).memory;
-      return {
-        used: memory.usedJSHeapSize,
-        total: memory.totalJSHeapSize,
-        limit: memory.jsHeapSizeLimit,
-      };
-    }
-    return null;
-  }
+    // Memory usage monitoring (if available)
+    getMemoryUsage() {
+     if ('memory' in performance) {
+       const memory = (performance as any).memory;
+       return {
+         used: memory.usedJSHeapSize,
+         total: memory.totalJSHeapSize,
+         limit: memory.jsHeapSizeLimit,
+         utilization: memory.usedJSHeapSize / memory.jsHeapSizeLimit * 100,
+       };
+     }
+     return null;
+   }
+   
+   // Track memory usage over time
+   async monitorMemoryUsage(intervalMs: number = 30000): Promise<void> { // Default 30 seconds
+     if (!('memory' in performance)) {
+       console.warn('Memory monitoring not supported in this browser');
+       return;
+     }
+     
+     const memoryInterval = setInterval(() => {
+       const memory = this.getMemoryUsage();
+       if (memory) {
+         this.recordMetric('memory_used_bytes', memory.used);
+         this.recordMetric('memory_utilization_percent', memory.utilization);
+         
+         // Alert if memory usage is high
+         if (memory.utilization > 80) {
+           console.warn(`High memory usage detected: ${memory.utilization.toFixed(2)}%`);
+         }
+       }
+     }, intervalMs);
+     
+     // Store interval for potential cleanup
+     (globalThis as any).__memoryMonitoringInterval = memoryInterval;
+   }
+   
+   // Stop memory monitoring
+   stopMemoryMonitoring(): void {
+     if ((globalThis as any).__memoryMonitoringInterval) {
+       clearInterval((globalThis as any).__memoryMonitoringInterval);
+       delete (globalThis as any).__memoryMonitoringInterval;
+     }
+   }
 }
 
 // Singleton instance

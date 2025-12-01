@@ -79,28 +79,47 @@ export class ErrorHandler {
     }
   }
 
-   private shouldReportError(error: ErrorInfo): boolean {
-     // Don't report certain common errors
-     const ignorePatterns = [
-       /NetworkError/i,
-       /AbortError/i,
-       /ResizeObserver loop limit exceeded/i,
-       /Non-Error promise rejection captured/i,
-       /Failed to fetch/i,
-       /Load failed/i,
-       /Loading chunk.*failed/i,  // Handle dynamic import errors
-       /Script error/i,            // Ignore generic script errors
-     ];
+  private shouldReportError(error: ErrorInfo): boolean {
+      // Don't report certain common errors
+      const ignorePatterns = [
+        /NetworkError/i,
+        /AbortError/i,
+        /ResizeObserver loop limit exceeded/i,
+        /Non-Error promise rejection captured/i,
+        /Failed to fetch/i,
+        /Load failed/i,
+        /Loading chunk.*failed/i,  // Handle dynamic import errors
+        /Script error/i,            // Ignore generic script errors
+        /ChunkLoadError/i,          // Webpack chunk loading errors
+        /ResizeObserver loop limit exceeded/i,  // Browser-specific error
+      ];
 
-     return !ignorePatterns.some(pattern => pattern.test(error.message));
-   }
+      return !ignorePatterns.some(pattern => pattern.test(error.message));
+    }
 
   private async reportError(error: ErrorInfo): Promise<void> {
-    // Placeholder for error reporting service
-    // In a real app, you might send to Sentry, LogRocket, etc.
     try {
-      // Example: await fetch('/api/errors', { method: 'POST', body: JSON.stringify(error) });
-      console.log('Error reported:', error);
+      // Only report to external service in production
+      if (import.meta.env.PROD) {
+        // In a real implementation, you would send to an error reporting service
+        // For now, we'll log to console with additional context
+        console.error('Reporting error to external service:', {
+          message: error.message,
+          operation: error.context.operation,
+          component: error.context.component,
+          timestamp: error.timestamp,
+          userAgent: error.userAgent,
+          url: error.url,
+          stack: error.stack,
+        });
+        
+        // Example of how to send to external service:
+        // await fetch('/api/errors', { 
+        //   method: 'POST', 
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify(error) 
+        // });
+      }
     } catch (e) {
       console.warn('Failed to report error:', e);
     }

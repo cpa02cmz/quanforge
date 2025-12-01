@@ -95,26 +95,33 @@ class SupabaseConnectionPool {
   }
 
   private async testConnection(client: SupabaseClient): Promise<boolean> {
-    try {
-      const startTime = Date.now();
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Connection timeout')), this.config.connectionTimeout)
-      );
-      
-      const queryPromise = client
-        .from('robots')
-        .select('id')
-        .limit(1);
-      
-      const { error } = await Promise.race([queryPromise, timeoutPromise]) as any;
-      const responseTime = Date.now() - startTime;
-      
-      return !error;
-    } catch (error) {
-      console.error('Connection health check failed:', error);
-      return false;
-    }
-  }
+     try {
+       const startTime = Date.now();
+       const timeoutPromise = new Promise((_, reject) => 
+         setTimeout(() => reject(new Error('Connection timeout')), this.config.connectionTimeout)
+       );
+       
+       // Use a lightweight query for connection testing
+       const queryPromise = client
+         .from('robots')
+         .select('id')
+         .limit(1);
+       
+       const result = await Promise.race([queryPromise, timeoutPromise]) as { data?: any[]; error?: any };
+       const responseTime = Date.now() - startTime;
+       
+       // Check if result has error property
+       if (result && result.error) {
+         console.error('Connection health check failed:', result.error);
+         return false;
+       }
+       
+       return true;
+     } catch (error: any) {
+       console.error('Connection health check failed:', error?.message || error);
+       return false;
+     }
+   }
 
   private startHealthChecks(): void {
     this.healthCheckTimer = setInterval(async () => {
