@@ -22,6 +22,8 @@ const MemoizedMessage = memo(({ msg, formatMessageContent }: { msg: Message, for
                     ? 'bg-brand-600 text-white rounded-br-none'
                     : 'bg-dark-bg border border-dark-border text-gray-200 rounded-bl-none'
                 }`}
+                role="article"
+                aria-label={`${msg.role === MessageRole.USER ? 'User' : 'AI'} message`}
             >
                 {/* Thinking Process Visualization */}
                 {msg.thinking && (
@@ -144,9 +146,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+      <div 
+        className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar"
+        role="log"
+        aria-label="Chat messages"
+        aria-live="polite"
+      >
         {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center px-6">
+            <div className="flex flex-col items-center justify-center h-full text-center px-6" role="status" aria-live="polite">
                 <div className="w-16 h-16 bg-dark-bg rounded-full flex items-center justify-center mb-6 text-brand-500 opacity-80">
                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
                 </div>
@@ -178,8 +185,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
             <MemoizedMessage key={msg.id} msg={msg} formatMessageContent={formatMessageContent} />
         ))}
         {isLoading && (
-          <div className="flex justify-start items-center gap-2">
-            <div className="bg-dark-bg border border-dark-border rounded-2xl rounded-bl-none px-4 py-3 flex items-center space-x-2">
+          <div className="flex justify-start items-center gap-2" role="status" aria-label="AI is typing">
+            <div className="bg-dark-bg border border-dark-border rounded-2xl rounded-bl-none px-4 py-3 flex items-center space-x-2" aria-hidden="true">
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
@@ -201,18 +208,23 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
       {/* Input Area */}
       <div className="p-4 border-t border-dark-border bg-dark-surface">
         <form onSubmit={handleSubmit} className="relative">
+          <label htmlFor="chat-input" className="sr-only">{t('chat_placeholder')}</label>
           <input
+            id="chat-input"
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={t('chat_placeholder')}
             className="w-full bg-dark-bg border border-dark-border rounded-xl pl-4 pr-12 py-3 text-sm text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all placeholder-gray-500 shadow-inner"
             disabled={isLoading}
+            aria-describedby={isLoading ? 'typing-indicator' : undefined}
+            autoComplete="off"
           />
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
             className="absolute right-2 top-2 p-1.5 bg-brand-600 rounded-lg text-white hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-brand-600/20"
+            aria-label="Send message"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
           </button>

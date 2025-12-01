@@ -1,5 +1,6 @@
 
 import { AISettings, DBSettings } from "../types";
+import { encryptApiKey, decryptApiKey, validateApiKey } from "../utils/encryption";
 
 const AI_SETTINGS_KEY = 'quantforge_ai_settings';
 const DB_SETTINGS_KEY = 'quantforge_db_settings';
@@ -57,6 +58,20 @@ export const settingsManager = {
             if (!stored) return DEFAULT_AI_SETTINGS;
             
             const parsed = JSON.parse(stored);
+            
+            // Decrypt API key if it's encrypted
+            if (parsed.apiKey) {
+                // Try to decrypt - if it fails, assume it's unencrypted (legacy)
+                try {
+                    const decrypted = decryptApiKey(parsed.apiKey);
+                    if (decrypted && validateApiKey(decrypted, parsed.provider)) {
+                        parsed.apiKey = decrypted;
+                    }
+                } catch (e) {
+                    // Legacy unencrypted key, keep as is
+                }
+            }
+            
             // Merge with defaults to ensure new fields like 'language' exist on old saved data
             return { ...DEFAULT_AI_SETTINGS, ...parsed };
         } catch (e) {
@@ -67,7 +82,13 @@ export const settingsManager = {
 
     saveSettings(settings: AISettings) {
         try {
-            localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settings));
+            // Encrypt API key before saving
+            const settingsToSave = {
+                ...settings,
+                apiKey: encryptApiKey(settings.apiKey)
+            };
+            
+            localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settingsToSave));
             window.dispatchEvent(new Event('ai-settings-changed'));
         } catch (e) {
             console.error("Failed to save AI settings", e);

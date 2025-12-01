@@ -1,7 +1,7 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager, getEnv } from './settingsManager';
-import { Robot } from '../types';
+import { Robot, UserSession } from '../types';
 
 // Mock session storage
 const STORAGE_KEY = 'mock_session';
@@ -67,13 +67,13 @@ const getMockSession = () => {
   return safeParse(localStorage.getItem(STORAGE_KEY), null);
 };
 
-const authListeners: Array<(event: string, session: any) => void> = [];
+const authListeners: Array<(event: string, session: UserSession | null) => void> = [];
 
 const mockAuth = {
   getSession: async () => {
     return { data: { session: getMockSession() }, error: null };
   },
-  onAuthStateChange: (callback: any) => {
+  onAuthStateChange: (callback: (event: string, session: UserSession | null) => void) => {
     authListeners.push(callback);
     return { 
       data: { 
@@ -86,7 +86,7 @@ const mockAuth = {
       } 
     };
   },
-  signInWithPassword: async ({ email }: any) => {
+  signInWithPassword: async ({ email }: { email: string }) => {
     const session = {
       user: { id: generateUUID(), email },
       access_token: 'mock-token-' + Date.now(),
@@ -96,7 +96,7 @@ const mockAuth = {
     authListeners.forEach(cb => cb('SIGNED_IN', session));
     return { data: { session }, error: null };
   },
-  signUp: async ({ email }: any) => {
+  signUp: async ({ email }: { email: string }) => {
     const session = {
       user: { id: generateUUID(), email },
       access_token: 'mock-token-' + Date.now(),

@@ -8,10 +8,11 @@ import { Wiki } from './pages/Wiki';
 import { Layout } from './components/Layout';
 import { supabase } from './services/supabase';
 import { ToastProvider } from './components/Toast';
-import { User } from './types';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { User, UserSession } from './types';
 
 export default function App() {
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,7 +27,7 @@ export default function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
 
@@ -42,8 +43,9 @@ export default function App() {
   }
 
   return (
-    <ToastProvider>
-      <HashRouter>
+    <ErrorBoundary>
+      <ToastProvider>
+        <HashRouter>
         <Routes>
           <Route 
             path="/login" 
@@ -69,6 +71,7 @@ export default function App() {
           </Route>
         </Routes>
       </HashRouter>
-    </ToastProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }

@@ -4,6 +4,14 @@ export interface User {
   email: string;
 }
 
+export interface UserSession {
+  user: User;
+  access_token?: string;
+  expires_in?: number;
+  refresh_token?: string;
+  token_type?: string;
+}
+
 export interface StrategyAnalysis {
   riskScore: number;
   profitability: number;
