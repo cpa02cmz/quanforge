@@ -91,6 +91,18 @@ class CircuitBreaker {
 
 class ResilientSupabaseClient {
   private circuitBreakers = new Map<string, CircuitBreaker>();
+  private retryConfig: RetryConfig = {
+    maxRetries: 3,
+    baseDelay: 1000,
+    maxDelay: 30000,
+    backoffMultiplier: 2,
+    jitter: true,
+  };
+  private circuitBreakerConfig: CircuitBreakerConfig = {
+    failureThreshold: 5,
+    resetTimeout: 60000,
+    monitoringPeriod: 300000,
+  };
   private metrics: ResilienceMetrics = {
     totalRequests: 0,
     successfulRequests: 0,
@@ -104,19 +116,19 @@ class ResilientSupabaseClient {
 
   constructor(
     private client: SupabaseClient,
-    private retryConfig: RetryConfig = {
-      maxRetries: 3,
-      baseDelay: 1000,
-      maxDelay: 30000,
-      backoffMultiplier: 2,
-      jitter: true,
-    },
-    private circuitBreakerConfig: CircuitBreakerConfig = {
-      failureThreshold: 5,
-      resetTimeout: 60000,
-      monitoringPeriod: 300000,
-    }
-  ) {}
+    retryConfig?: Partial<RetryConfig>,
+    circuitBreakerConfig?: Partial<CircuitBreakerConfig>
+  ) {
+    this.retryConfig = {
+      ...this.retryConfig,
+      ...retryConfig
+    };
+    
+    this.circuitBreakerConfig = {
+      ...this.circuitBreakerConfig,
+      ...circuitBreakerConfig
+    };
+  }
 
   // Execute operation with retry and circuit breaker
   async executeWithResilience<T>(
@@ -246,106 +258,106 @@ class ResilientSupabaseClient {
       this.responseTimes.reduce((sum, time) => sum + time, 0) / this.responseTimes.length;
   }
 
-  // Wrapper methods for common Supabase operations
-  async from(table: string) {
-    return {
-      select: (columns?: string) => ({
-        order: (column: string, options?: { ascending: boolean }) => ({
-          limit: (limit: number) => ({
-            range: (from: number, to: number) => 
-              this.executeWithResilience(
-                `${table}_select_range`,
-                () => this.client.from(table).select(columns).order(column, options).limit(limit).range(from, to)
-              ),
-            eq: (column: string, value: any) => 
-              this.executeWithResilience(
-                `${table}_select_eq`,
-                () => this.client.from(table).select(columns).order(column, options).limit(limit).eq(column, value)
-              ),
-            or: (filter: string) => 
-              this.executeWithResilience(
-                `${table}_select_or`,
-                () => this.client.from(table).select(columns).order(column, options).limit(limit).or(filter)
-              ),
-            single: () => 
-              this.executeWithResilience(
-                `${table}_select_single`,
-                () => this.client.from(table).select(columns).order(column, options).limit(limit).single()
-              ),
-          }),
-          eq: (column: string, value: any) => ({
-            single: () => 
-              this.executeWithResilience(
-                `${table}_select_eq_single`,
-                () => this.client.from(table).select(columns).order(column, options).eq(column, value).single()
-              ),
-          }),
-          or: (filter: string) => 
-            this.executeWithResilience(
-              `${table}_select_or`,
-              () => this.client.from(table).select(columns).order(column, options).or(filter)
-            ),
-          single: () => 
-            this.executeWithResilience(
-              `${table}_select_single`,
-              () => this.client.from(table).select(columns).order(column, options).single()
-            ),
-        }),
-        eq: (column: string, value: any) => ({
-          single: () => 
-            this.executeWithResilience(
-              `${table}_select_eq_single`,
-              () => this.client.from(table).select(columns).eq(column, value).single()
-            ),
-        }),
-        or: (filter: string) => 
-          this.executeWithResilience(
-            `${table}_select_or`,
-            () => this.client.from(table).select(columns).or(filter)
-          ),
-        single: () => 
-          this.executeWithResilience(
-            `${table}_select_single`,
-            () => this.client.from(table).select(columns).single()
-          ),
-      }),
-      insert: (data: any) => ({
-        select: (columns?: string) => 
-          this.executeWithResilience(
-            `${table}_insert_select`,
-            () => this.client.from(table).insert(data).select(columns)
-          ),
-      }),
-      update: (data: any) => ({
-        match: (criteria: any) => ({
-          select: (columns?: string) => 
-            this.executeWithResilience(
-              `${table}_update_match_select`,
-              () => this.client.from(table).update(data).match(criteria).select(columns)
-            ),
-        }),
-        eq: (column: string, value: any) => ({
-          select: (columns?: string) => 
-            this.executeWithResilience(
-              `${table}_update_eq_select`,
-              () => this.client.from(table).update(data).eq(column, value).select(columns)
-            ),
-        }),
-      }),
-      delete: () => ({
-        match: (criteria: any) => 
-          this.executeWithResilience(
-            `${table}_delete_match`,
-            () => this.client.from(table).delete().match(criteria)
-          ),
-        eq: (column: string, value: any) => 
-          this.executeWithResilience(
-            `${table}_delete_eq`,
-            () => this.client.from(table).delete().eq(column, value)
-          ),
-      }),
-    };
-  }
+   // Wrapper methods for common Supabase operations
+   from(table: string) {
+     return {
+       select: (columns?: string) => ({
+         order: (column: string, options?: { ascending: boolean }) => ({
+           limit: (limit: number) => ({
+             range: (from: number, to: number) => 
+               this.executeWithResilience(
+                 `${table}_select_range`,
+                 () => this.client.from(table).select(columns).order(column, options).limit(limit).range(from, to)
+               ) as any,
+             eq: (column: string, value: any) => 
+               this.executeWithResilience(
+                 `${table}_select_eq`,
+                 () => this.client.from(table).select(columns).order(column, options).limit(limit).eq(column, value)
+               ) as any,
+             or: (filter: string) => 
+               this.executeWithResilience(
+                 `${table}_select_or`,
+                 () => this.client.from(table).select(columns).order(column, options).limit(limit).or(filter)
+               ) as any,
+             single: () => 
+               this.executeWithResilience(
+                 `${table}_select_single`,
+                 () => this.client.from(table).select(columns).order(column, options).limit(limit).single()
+               ) as any,
+           }),
+           eq: (column: string, value: any) => ({
+             single: () => 
+               this.executeWithResilience(
+                 `${table}_select_eq_single`,
+                 () => this.client.from(table).select(columns).order(column, options).eq(column, value).single()
+               ) as any,
+           }),
+           or: (filter: string) => 
+             this.executeWithResilience(
+               `${table}_select_or`,
+               () => this.client.from(table).select(columns).order(column, options).or(filter)
+             ) as any,
+           single: () => 
+             this.executeWithResilience(
+               `${table}_select_single`,
+               () => this.client.from(table).select(columns).order(column, options).single()
+             ) as any,
+         }),
+         eq: (column: string, value: any) => ({
+           single: () => 
+             this.executeWithResilience(
+               `${table}_select_eq_single`,
+               () => this.client.from(table).select(columns).eq(column, value).single()
+             ) as any,
+         }),
+         or: (filter: string) => 
+           this.executeWithResilience(
+             `${table}_select_or`,
+             () => this.client.from(table).select(columns).or(filter)
+           ) as any,
+         single: () => 
+           this.executeWithResilience(
+             `${table}_select_single`,
+             () => this.client.from(table).select(columns).single()
+           ) as any,
+       }),
+       insert: (data: any) => ({
+         select: (columns?: string) => 
+           this.executeWithResilience(
+             `${table}_insert_select`,
+             () => this.client.from(table).insert(data).select(columns)
+           ) as any,
+       }),
+       update: (data: any) => ({
+         match: (criteria: any) => ({
+           select: (columns?: string) => 
+             this.executeWithResilience(
+               `${table}_update_match_select`,
+               () => this.client.from(table).update(data).match(criteria).select(columns)
+             ) as any,
+         }),
+         eq: (column: string, value: any) => ({
+           select: (columns?: string) => 
+             this.executeWithResilience(
+               `${table}_update_eq_select`,
+               () => this.client.from(table).update(data).eq(column, value).select(columns)
+             ) as any,
+         }),
+       }),
+       delete: () => ({
+         match: (criteria: any) => 
+           this.executeWithResilience(
+             `${table}_delete_match`,
+             () => this.client.from(table).delete().match(criteria)
+           ) as any,
+         eq: (column: string, value: any) => 
+           this.executeWithResilience(
+             `${table}_delete_eq`,
+             () => this.client.from(table).delete().eq(column, value)
+           ) as any,
+       }),
+     };
+   }
 
   // Auth operations with resilience
   get auth() {
@@ -377,13 +389,16 @@ class ResilientSupabaseClient {
     };
   }
 
-  // RPC operations with resilience
-  rpc(fnName: string, params?: any) {
-    return this.executeWithResilience(
-      `rpc_${fnName}`,
-      () => this.client.rpc(fnName, params)
-    );
-  }
+   // RPC operations with resilience
+   async rpc(fnName: string, params?: any) {
+     return this.executeWithResilience(
+       `rpc_${fnName}`,
+       async () => {
+         const result = await this.client.rpc(fnName, params);
+         return result;
+       }
+     );
+   }
 
   // Get resilience metrics
   getMetrics(): ResilienceMetrics {
@@ -420,43 +435,45 @@ class ResilientSupabaseClient {
     }
   }
 
-  // Health check
-  async healthCheck(): Promise<{ healthy: boolean; details: any }> {
-    try {
-      const startTime = Date.now();
-      await this.executeWithResilience(
-        'health_check',
-        () => this.client.from('robots').select('id').limit(1),
-        { skipRetry: true, maxRetries: 1 }
-      );
-      
-      const responseTime = Date.now() - startTime;
-      const metrics = this.getMetrics();
-      const circuitBreakers = this.getCircuitBreakerStates();
+   // Health check
+   async healthCheck(): Promise<{ healthy: boolean; details: any }> {
+     try {
+       const startTime = Date.now();
+       await this.executeWithResilience(
+         'health_check',
+         async () => {
+           const result = await this.client.from('robots').select('id').limit(1);
+           return result;
+         }
+       );
+       
+       const responseTime = Date.now() - startTime;
+       const metrics = this.getMetrics();
+       const circuitBreakers = this.getCircuitBreakerStates();
 
-      return {
-        healthy: true,
-        details: {
-          responseTime,
-          successRate: metrics.totalRequests > 0 
-            ? (metrics.successfulRequests / metrics.totalRequests) * 100 
-            : 0,
-          averageResponseTime: metrics.averageResponseTime,
-          openCircuitBreakers: circuitBreakers.filter(cb => cb.state === CircuitState.OPEN).length,
-          totalCircuitBreakers: circuitBreakers.length,
-        },
-      };
-    } catch (error) {
-      return {
-        healthy: false,
-        details: {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          metrics: this.getMetrics(),
-          circuitBreakers: this.getCircuitBreakerStates(),
-        },
-      };
-    }
-  }
+       return {
+         healthy: true,
+         details: {
+           responseTime,
+           successRate: metrics.totalRequests > 0 
+             ? (metrics.successfulRequests / metrics.totalRequests) * 100 
+             : 0,
+           averageResponseTime: metrics.averageResponseTime,
+           openCircuitBreakers: circuitBreakers.filter(cb => cb.state === CircuitState.OPEN).length,
+           totalCircuitBreakers: circuitBreakers.length,
+         },
+       };
+     } catch (error) {
+       return {
+         healthy: false,
+         details: {
+           error: error instanceof Error ? error.message : 'Unknown error',
+           metrics: this.getMetrics(),
+           circuitBreakers: this.getCircuitBreakerStates(),
+         },
+       };
+     }
+   }
 }
 
 // Factory function to create resilient client

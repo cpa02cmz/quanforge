@@ -25,11 +25,18 @@ interface SyncStatus {
   isOnline: boolean;
 }
 
+interface SyncChange {
+  type: string;
+  data: any;
+  timestamp: number;
+  retryCount?: number;
+}
+
 class RealtimeManager {
   private static instance: RealtimeManager;
   private subscriptions = new Map<string, RealtimeSubscription>();
   private client: SupabaseClient | null = null;
-  private syncQueue: Array<{ type: string; data: any; timestamp: number }> = [];
+  private syncQueue: Array<SyncChange> = [];
   private config: SyncConfig = {
     batchSize: 50,
     syncInterval: 30000, // 30 seconds
@@ -161,11 +168,11 @@ class RealtimeManager {
         console.error('Failed to sync change:', error);
         failCount++;
         
-        // Re-queue failed changes for retry
-        if (change.retryCount < this.config.maxRetries) {
-          change.retryCount = (change.retryCount || 0) + 1;
-          this.syncQueue.unshift(change);
-        }
+       // Re-queue failed changes for retry
+         if (change.retryCount < this.config.maxRetries) {
+           (change as any).retryCount = ((change as any).retryCount || 0) + 1;
+           this.syncQueue.unshift(change);
+         }
       }
     }
 
@@ -246,9 +253,9 @@ class RealtimeManager {
     try {
       let channel = this.client.channel(`public:${subscription.table}`);
 
-      if (subscription.filter) {
-        channel = channel.filter(subscription.filter);
-      }
+      // Supabase Realtime doesn't have a direct filter method on channels
+      // Instead, we need to specify the filter in the subscription options
+      // The filter is already applied in the subscription options below
 
       channel
         .on('postgres_changes', 
@@ -305,24 +312,24 @@ class RealtimeManager {
     }
   }
 
-  // Setup realtime client
-  private setupRealtimeClient(): void {
-    if (!this.client) return;
+   // Setup realtime client
+   private setupRealtimeClient(): void {
+     if (!this.client) return;
 
-    this.client.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
-        // Re-activate all subscriptions
-        for (const subscription of this.subscriptions.values()) {
-          this.activateSubscription(subscription);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        // Deactivate all subscriptions
-        for (const subscription of this.subscriptions.values()) {
-          this.deactivateSubscription(subscription);
-        }
-      }
-    });
-  }
+     (this.client.auth as any).onAuthStateChange((event, session) => {
+       if (event === 'SIGNED_IN') {
+         // Re-activate all subscriptions
+         for (const subscription of this.subscriptions.values()) {
+           this.activateSubscription(subscription);
+         }
+       } else if (event === 'SIGNED_OUT') {
+         // Deactivate all subscriptions
+         for (const subscription of this.subscriptions.values()) {
+           this.deactivateSubscription(subscription);
+         }
+       }
+     });
+   }
 
   // Setup network listeners
   private setupNetworkListeners(): void {

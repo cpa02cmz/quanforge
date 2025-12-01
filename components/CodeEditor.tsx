@@ -79,11 +79,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
     }
   };
 
-  // Generate line numbers - memoized for performance
-  const lineNumbers = useMemo(() => {
-    const lines = code.split('\n');
-    return lines.map((_, i) => i + 1);
-  }, [code]);
+   // Generate line numbers - memoized for performance
+   const lineNumbers = useMemo(() => {
+     const lines = code.split('\n');
+     const nums = new Array(lines.length);
+     for (let i = 0; i < lines.length; i++) {
+       nums[i] = i + 1;
+     }
+     return nums;
+   }, [code]);
 
   return (
     <div className="flex flex-col h-full bg-[#0d1117] text-gray-300 font-mono text-sm relative">

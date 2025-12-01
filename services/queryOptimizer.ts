@@ -48,34 +48,32 @@ class QueryOptimizer {
       };
       
       this.recordMetrics(metrics);
-      return { data: cached.data, error: null, metrics };
+      return { data: cached.data as T[], error: null, metrics };
     }
 
-    // Build query with optimizations
-    let query = client.from(table);
+    // Build query with optimizations - need to cast properly to handle Supabase types
+    let queryBuilder = client.from(table);
 
-    // Select specific fields for better performance
-    if (optimization.selectFields && optimization.selectFields.length > 0) {
-      query = query.select(optimization.selectFields.join(', '));
-    } else {
-      query = query.select('*');
-    }
+    // Start building the query with select
+    let query = queryBuilder.select(optimization.selectFields && optimization.selectFields.length > 0 
+      ? optimization.selectFields.join(', ') 
+      : '*');
 
     // Apply filters efficiently
     if (optimization.filters) {
-      Object.entries(optimization.filters).forEach(([key, value]) => {
+      for (const [key, value] of Object.entries(optimization.filters)) {
         if (value !== undefined && value !== null) {
           if (Array.isArray(value)) {
             query = query.in(key, value);
-          } else if (typeof value === 'object' && value.ilike) {
+          } else if (typeof value === 'object' && 'ilike' in value) {
             query = query.ilike(key, value.ilike);
-          } else if (typeof value === 'object' && value.or) {
+          } else if (typeof value === 'object' && 'or' in value) {
             query = query.or(value.or);
           } else {
             query = query.eq(key, value);
           }
         }
-      });
+      }
     }
 
     // Apply ordering
@@ -95,7 +93,8 @@ class QueryOptimizer {
     }
 
     // Execute query
-    const { data, error } = await query;
+    const result = await query as any;
+    const { data, error } = result;
 
     // Cache successful results
     if (!error && data) {
