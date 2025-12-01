@@ -1,30 +1,37 @@
-
 import { AISettings, DBSettings } from "../types";
 
 const AI_SETTINGS_KEY = 'quantforge_ai_settings';
 const DB_SETTINGS_KEY = 'quantforge_db_settings';
 
-// Safe Environment Variable Access
+// Safe Environment Variable Access for Vite/Production
 export const getEnv = (key: string): string => {
-    // Check Vite (import.meta.env)
-    // We use try-catch or safe checks to avoid "process is not defined" in pure ESM browsers
+    // 1. Try Vite standard (import.meta.env)
     try {
         // @ts-ignore
-        if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[`VITE_${key}`]) {
+        if (typeof import.meta !== 'undefined' && import.meta.env) {
+            // Check for VITE_ prefixed key
             // @ts-ignore
-            return import.meta.env[`VITE_${key}`];
+            const viteKey = import.meta.env[`VITE_${key}`];
+            if (viteKey) return viteKey;
+            
+            // Fallback: check exact key if somehow exposed
+            // @ts-ignore
+            if (import.meta.env[key]) return import.meta.env[key];
         }
     } catch (e) {
-        // Ignore
+        // Ignore errors in environments where import.meta is not supported
     }
 
-    // Check Node/CRA (process.env)
+    // 2. Try Node/CRA standard (process.env) - Safe Access
     try {
         if (typeof process !== 'undefined' && process.env) {
-            return process.env[`REACT_APP_${key}`] || process.env[key] || process.env[`VITE_${key}`] || '';
+             return process.env[`REACT_APP_${key}`] || 
+                    process.env[`VITE_${key}`] || 
+                    process.env[key] || 
+                    '';
         }
     } catch (e) {
-        // Ignore
+        // Ignore ReferenceError if process is not defined
     }
 
     return '';
@@ -33,15 +40,15 @@ export const getEnv = (key: string): string => {
 // Default settings if nothing is saved
 export const DEFAULT_AI_SETTINGS: AISettings = {
     provider: 'google',
-    apiKey: getEnv('API_KEY'), // Fallback to env var if available
+    apiKey: getEnv('API_KEY'), 
     modelName: 'gemini-3-pro-preview',
     baseUrl: '',
     customInstructions: '',
-    language: 'id', // Default to Indonesian
+    language: 'id', 
     twelveDataApiKey: '' 
 };
 
-// Check if env vars are present to default to supabase, otherwise mock
+// Check if env vars are present to default to supabase
 const hasEnvDb = !!(getEnv('SUPABASE_URL') && getEnv('SUPABASE_ANON_KEY'));
 
 export const DEFAULT_DB_SETTINGS: DBSettings = {
@@ -57,7 +64,6 @@ export const settingsManager = {
             if (!stored) return DEFAULT_AI_SETTINGS;
             
             const parsed = JSON.parse(stored);
-            // Merge with defaults to ensure new fields like 'language' exist on old saved data
             return { ...DEFAULT_AI_SETTINGS, ...parsed };
         } catch (e) {
             console.error("Failed to load AI settings", e);
@@ -79,8 +85,6 @@ export const settingsManager = {
         return DEFAULT_AI_SETTINGS;
     },
 
-    // --- DB Settings ---
-
     getDBSettings(): DBSettings {
         try {
             const stored = localStorage.getItem(DB_SETTINGS_KEY);
@@ -96,7 +100,6 @@ export const settingsManager = {
     saveDBSettings(settings: DBSettings) {
         try {
             localStorage.setItem(DB_SETTINGS_KEY, JSON.stringify(settings));
-            // Dispatch event to notify Supabase service to re-init
             window.dispatchEvent(new Event('db-settings-changed'));
         } catch (e) {
             console.error("Failed to save DB settings", e);
