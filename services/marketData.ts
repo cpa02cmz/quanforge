@@ -20,10 +20,16 @@ class MarketDataService {
   // Binance WebSocket
   private binanceWs: WebSocket | null = null;
   private binanceSubscriptions: Set<string> = new Set();
+  private binanceReconnectAttempts: number = 0;
+  private binanceReconnectTimer: NodeJS.Timeout | null = null;
+  private readonly maxReconnectAttempts = 10;
+  private readonly baseReconnectDelay = 1000; // 1 second
   
   // Twelve Data WebSocket
   private twelveDataWs: WebSocket | null = null;
   private twelveDataSubscriptions: Set<string> = new Set();
+  private twelveDataReconnectAttempts: number = 0;
+  private twelveDataReconnectTimer: NodeJS.Timeout | null = null;
 
   constructor() {
     // Listen for setting changes to reconnect Twelve Data if API key changes
@@ -39,10 +45,17 @@ class MarketDataService {
           return;
       }
 
+      // Clear any existing reconnect timer
+      if (this.binanceReconnectTimer) {
+          clearTimeout(this.binanceReconnectTimer);
+          this.binanceReconnectTimer = null;
+      }
+
       this.binanceWs = new WebSocket('wss://stream.binance.com:9443/ws');
       
       this.binanceWs.onopen = () => {
           console.log("Binance WS Connected");
+          this.binanceReconnectAttempts = 0; // Reset on successful connection
           this.resubscribeBinance();
       };
 
@@ -54,14 +67,34 @@ class MarketDataService {
           }
       };
 
-      this.binanceWs.onclose = () => {
-          console.log("Binance WS Closed. Reconnecting in 5s...");
-          setTimeout(() => this.ensureBinanceConnection(), 5000);
+      this.binanceWs.onclose = (event) => {
+          console.log(`Binance WS Closed. Code: ${event.code}, Reason: ${event.reason}`);
+          this.scheduleBinanceReconnect();
       };
       
       this.binanceWs.onerror = (err) => {
           console.warn("Binance WS Error", err);
       };
+  }
+
+  private scheduleBinanceReconnect() {
+      if (this.binanceReconnectAttempts >= this.maxReconnectAttempts) {
+          console.error("Binance WS: Max reconnect attempts reached. Giving up.");
+          return;
+      }
+
+      // Exponential backoff with jitter
+      const delay = Math.min(
+          this.baseReconnectDelay * Math.pow(2, this.binanceReconnectAttempts) + Math.random() * 1000,
+          30000 // Max 30 seconds
+      );
+
+      console.log(`Binance WS: Reconnecting in ${Math.round(delay / 1000)}s... (Attempt ${this.binanceReconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+      
+      this.binanceReconnectTimer = setTimeout(() => {
+          this.binanceReconnectAttempts++;
+          this.ensureBinanceConnection();
+      }, delay);
   }
 
   private resubscribeBinance() {
@@ -116,30 +149,70 @@ class MarketDataService {
           return;
       }
 
+      // Clear any existing reconnect timer
+      if (this.twelveDataReconnectTimer) {
+          clearTimeout(this.twelveDataReconnectTimer);
+          this.twelveDataReconnectTimer = null;
+      }
+
       this.twelveDataWs = new WebSocket(`wss://ws.twelvedata.com/v1/quotes?apikey=${apiKey}`);
 
       this.twelveDataWs.onopen = () => {
           console.log("Twelve Data WS Connected");
+          this.twelveDataReconnectAttempts = 0; // Reset on successful connection
           this.resubscribeTwelveData();
       };
 
       this.twelveDataWs.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          if (data.event === 'price') {
-             this.processTwelveDataMessage(data);
-          }
-          if (data.event === 'error') {
-              console.warn("Twelve Data Error:", data.message);
+          try {
+              const data = JSON.parse(event.data);
+              if (data.event === 'price') {
+                 this.processTwelveDataMessage(data);
+              }
+              if (data.event === 'error') {
+                  console.warn("Twelve Data Error:", data.message);
+                  // Handle authentication errors
+                  if (data.message?.includes('apikey')) {
+                      console.error("Twelve Data API key invalid. Stopping reconnection attempts.");
+                      this.twelveDataReconnectAttempts = this.maxReconnectAttempts;
+                  }
+              }
+          } catch (error) {
+              console.error("Twelve Data: Failed to parse message:", error);
           }
       };
 
-      this.twelveDataWs.onclose = () => {
-          // Only reconnect if we still have subscribers needing it
-           if (this.twelveDataSubscriptions.size > 0) {
-               console.log("Twelve Data WS Closed. Reconnecting in 10s...");
-               setTimeout(() => this.ensureTwelveDataConnection(), 10000);
+      this.twelveDataWs.onclose = (event) => {
+          console.log(`Twelve Data WS Closed. Code: ${event.code}, Reason: ${event.reason}`);
+          // Only reconnect if we still have subscribers needing it and haven't exceeded max attempts
+           if (this.twelveDataSubscriptions.size > 0 && this.twelveDataReconnectAttempts < this.maxReconnectAttempts) {
+               this.scheduleTwelveDataReconnect();
            }
       };
+
+      this.twelveDataWs.onerror = (err) => {
+          console.warn("Twelve Data WS Error", err);
+      };
+  }
+
+  private scheduleTwelveDataReconnect() {
+      if (this.twelveDataReconnectAttempts >= this.maxReconnectAttempts) {
+          console.error("Twelve Data WS: Max reconnect attempts reached. Giving up.");
+          return;
+      }
+
+      // Exponential backoff with jitter
+      const delay = Math.min(
+          this.baseReconnectDelay * Math.pow(2, this.twelveDataReconnectAttempts) + Math.random() * 1000,
+          30000 // Max 30 seconds
+      );
+
+      console.log(`Twelve Data WS: Reconnecting in ${Math.round(delay / 1000)}s... (Attempt ${this.twelveDataReconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+      
+      this.twelveDataReconnectTimer = setTimeout(() => {
+          this.twelveDataReconnectAttempts++;
+          this.ensureTwelveDataConnection();
+      }, delay);
   }
 
   private reconnectTwelveData = () => {
@@ -281,6 +354,16 @@ class MarketDataService {
    }
 
   public cleanup() {
+      // Clear reconnect timers
+      if (this.binanceReconnectTimer) {
+          clearTimeout(this.binanceReconnectTimer);
+          this.binanceReconnectTimer = null;
+      }
+      if (this.twelveDataReconnectTimer) {
+          clearTimeout(this.twelveDataReconnectTimer);
+          this.twelveDataReconnectTimer = null;
+      }
+
       // Close WebSocket connections
       if (this.binanceWs) {
           this.binanceWs.close();
@@ -296,6 +379,10 @@ class MarketDataService {
       this.lastKnownData.clear();
       this.binanceSubscriptions.clear();
       this.twelveDataSubscriptions.clear();
+      
+      // Reset reconnect attempts
+      this.binanceReconnectAttempts = 0;
+      this.twelveDataReconnectAttempts = 0;
       
       // Remove event listener
       window.removeEventListener('ai-settings-changed', this.reconnectTwelveData);

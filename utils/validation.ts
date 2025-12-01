@@ -250,39 +250,242 @@ export class ValidationService {
          }
        }
 
-       // Additional content validation for MQL5-specific security
-       const mql5DangerousPatterns = [
-         /#include\s+<\s*(?!stdlib\.h|stdstring\.h|stdfile\.h|stdstringarray\.h|chart\.h|terminal\.h|trade\.h|fxt\.h|resource\.h)/i,
-         /Import\s+/i,
-         /ResourceCreate/i,
-         /ResourceSave/i,
-         /FileFindFirst|FileFindNext|FileFindClose/i,
-         /WebRequest/i,
-         /ShellExecute|ShellExecuteW/i,
-         /GlobalVariables.*|GlobalVariable.*|GlobalVariableListDelete/i,
-         /TerminalInfo.*|MQLInfo.*|MqlInfoInteger/i,
-       ];
+// Enhanced MQL5-specific security validation with more sophisticated patterns
+        const mql5DangerousPatterns = [
+          // File system operations
+          /FileFind\s*\(|FileOpen\s*\(|FileClose\s*\(|FileDelete\s*\(|FileCopy\s*\(|FileMove\s*\(/i,
+          /FileIsExist\s*\(|FileIsLineEnding\s*\(|FileIsEnding\s*\(/i,
+          /FileRead\s*\(|FileWrite\s*\(|FileFlush\s*\(/i,
+          
+          // Network operations
+          /WebRequest\s*\(|SocketCreate\s*\(|SocketConnect\s*\(|SocketSend\s*\(|SocketReceive\s*\(/i,
+          /InternetOpen\s*\(|InternetConnect\s*\(|HttpOpenRequest\s*\(/i,
+          
+          // System operations
+          /ShellExecute\s*\(|WinExec\s*\(|CreateProcess\s*\(/i,
+          /System\s*\(|Exec\s*\(|Popen\s*\(/i,
+          
+          // Memory operations
+          /memcpy\s*\(|memset\s*\(|malloc\s*\(|free\s*\(/i,
+          /GetMemory\s*\(|FreeMemory\s*\(/i,
+          
+          // Registry operations
+          /RegOpenKey\s*\(|RegCreateKey\s*\(|RegSetValue\s*\(|RegGetValue\s*\(/i,
+          
+          // Dangerous imports
+          /#import\s+["\']?(?!user32\.dll|kernel32\.dll|gdi32\.dll|msvcrt\.dll)[^"\']*["\']?/i,
+          /Import\s+["\']?(?!user32\.dll|kernel32\.dll|gdi32\.dll|msvcrt\.dll)[^"\']*["\']?/i,
+          
+          // Resource operations
+          /ResourceCreate\s*\(|ResourceSave\s*\(|ResourceRead\s*\(/i,
+          
+          // Global variable manipulation
+          /GlobalVariableSet\s*\(|GlobalVariableGet\s*\(|GlobalVariableDel\s*\(/i,
+          /GlobalVariablesFlush\s*\(|GlobalVariableTemp\s*\(/i,
+          
+          // Terminal information access
+          /TerminalInfoInteger\s*\(|TerminalInfoString\s*\(/i,
+          /AccountInfo\s*\(|AccountInfoInteger\s*\(|AccountInfoDouble\s*\(/i,
+          
+          // Dangerous MQL5 functions
+          /SendNotification\s*\(|SendMail\s*\(|SendFTP\s*\(/i,
+          /Alert\s*\(|Comment\s*\(|Print\s*\(/i, // Can be used for social engineering
+          
+          // Chart manipulation
+          /ChartApplyTemplate\s*\(|ChartSave\s*\(|ChartScreenShot\s*\(/i,
+          
+          // Trade operations that could be exploited
+          /OrderSend\s*\(|OrderClose\s*\(|OrderModify\s*\(/i,
+          /PositionOpen\s*\(|PositionClose\s*\(|PositionModify\s*\(/i,
+          
+          // String operations that could lead to code injection
+          /StringConcatenate\s*\(|StringTrimLeft\s*\(|StringTrimRight\s*\(/i,
+          
+          // Array operations that could lead to memory issues
+          /ArrayCopy\s*\(|ArrayFill\s*\(|ArraySort\s*\(/i,
+          
+          // Time functions that could be used for timing attacks
+          /GetTickCount\s*\(|TimeCurrent\s*\(|TimeLocal\s*\(/i,
+          
+          // Math functions that could be used for computational attacks
+          /MathRand\s*\(|MathSrand\s*\(/i,
+        ];
 
-       for (const pattern of mql5DangerousPatterns) {
-         if (pattern.test(message)) {
-           errors.push({
-             field: 'message',
-             message: 'Message contains potentially dangerous MQL5 operations'
-           });
-           break;
-         }
-       }
+        // Check for obfuscated patterns (base64, hex encoding, etc.)
+        const obfuscationPatterns = [
+          /0x[0-9a-fA-F]+/g,  // Hex encoded content
+          /[A-Za-z0-9+\/]{20,}={0,2}/g,  // Potential base64
+          /\\u[0-9a-fA-F]{4}/g,  // Unicode escapes
+          /\\x[0-9a-fA-F]{2}/g,  // Hex escapes
+        ];
+
+        // First check for obfuscation
+        for (const pattern of obfuscationPatterns) {
+          const matches = message.match(pattern);
+          if (matches && matches.length > 3) { // Allow a few legitimate uses
+            errors.push({
+              field: 'message',
+              message: 'Message contains potentially obfuscated content'
+            });
+            break;
+          }
+        }
+
+        // Then check for dangerous MQL5 patterns
+        for (const pattern of mql5DangerousPatterns) {
+          if (pattern.test(message)) {
+            errors.push({
+              field: 'message',
+              message: 'Message contains potentially dangerous MQL5 operations'
+            });
+            break;
+          }
+        }
+
+        // Additional heuristic checks
+        const suspiciousKeywords = [
+          'password', 'secret', 'key', 'token', 'auth', 'credential',
+          'exploit', 'hack', 'crack', 'bypass', 'inject', 'payload',
+          'malware', 'virus', 'trojan', 'backdoor', 'rootkit'
+        ];
+
+        const lowerMessage = message.toLowerCase();
+        let suspiciousCount = 0;
+        for (const keyword of suspiciousKeywords) {
+          if (lowerMessage.includes(keyword)) {
+            suspiciousCount++;
+          }
+        }
+
+        if (suspiciousCount > 2) { // Allow some false positives
+          errors.push({
+            field: 'message',
+            message: 'Message contains suspicious content'
+          });
+        }
 
          return errors;
        }
 
-  static sanitizeInput(input: string): string {
-    return input
-      .trim()
-      .replace(/[<>]/g, '') // Remove potential HTML tags
-      .replace(/javascript:/gi, '') // Remove javascript: protocol
-      .replace(/on\w+\s*=/gi, ''); // Remove event handlers
-  }
+static sanitizeInput(input: string): string {
+     if (!input) return '';
+     
+     return input
+       .trim()
+       // Remove HTML tags more comprehensively
+       .replace(/<[^>]*>/g, '')
+       // Remove dangerous protocols
+       .replace(/javascript:/gi, '')
+       .replace(/vbscript:/gi, '')
+       .replace(/data:/gi, '')
+       // Remove event handlers
+       .replace(/on\w+\s*=/gi, '')
+       // Remove potentially dangerous attributes
+       .replace(/href\s*=\s*["']?javascript:/gi, '')
+       .replace(/src\s*=\s*["']?javascript:/gi, '')
+       // Remove encoded characters that could be used for injection
+       .replace(/&#x?0*[0-9a-fA-F]+;?/g, '')
+       // Remove CSS expressions
+       .replace(/expression\s*\(/gi, '')
+       // Remove eval and similar functions
+       .replace(/eval\s*\(/gi, '')
+       .replace(/setTimeout\s*\(/gi, '')
+       .replace(/setInterval\s*\(/gi, '')
+       // Limit length to prevent DoS
+       .substring(0, 10000);
+   }
+
+   static validateApiKey(apiKey: string): ValidationError[] {
+     const errors: ValidationError[] = [];
+
+     if (!apiKey || !apiKey.trim()) {
+       errors.push({
+         field: 'apiKey',
+         message: 'API key is required'
+       });
+       return errors;
+     }
+
+     // Basic format validation for common API key patterns
+     const apiKeyPatterns = [
+       /^[A-Za-z0-9_-]{20,}$/,  // Generic API key pattern
+       /^[A-Za-z0-9]{32}$/,     // 32-character keys
+       /^[A-Za-z0-9_-]{40}$/,   // 40-character keys (like some Google keys)
+     ];
+
+     const isValidFormat = apiKeyPatterns.some(pattern => pattern.test(apiKey.trim()));
+     
+     if (!isValidFormat) {
+       errors.push({
+         field: 'apiKey',
+         message: 'Invalid API key format'
+       });
+     }
+
+     // Check for common placeholder/fake keys
+     const placeholderKeys = [
+       'your-api-key-here',
+       '1234567890',
+       'abcdefghijk',
+       'test-key',
+       'demo-key',
+       'sample-key'
+     ];
+
+     const lowerKey = apiKey.toLowerCase();
+     if (placeholderKeys.some(placeholder => lowerKey.includes(placeholder))) {
+       errors.push({
+         field: 'apiKey',
+         message: 'Please use a valid API key, not a placeholder'
+       });
+     }
+
+     return errors;
+   }
+
+   static validateSymbol(symbol: string): ValidationError[] {
+     const errors: ValidationError[] = [];
+
+     if (!symbol || !symbol.trim()) {
+       errors.push({
+         field: 'symbol',
+         message: 'Symbol is required'
+       });
+       return errors;
+     }
+
+     const trimmedSymbol = symbol.trim().toUpperCase();
+     
+     // Enhanced symbol validation
+     const validSymbolPatterns = [
+       /^[A-Z]{6}$/,                    // Standard forex pairs without slash (EURUSD)
+       /^[A-Z]{3}\/[A-Z]{3}$/,         // Forex pairs with slash (EUR/USD)
+       /^[A-Z]{3,6}[A-Z]{3}$/,         // Commodity pairs (XAUUSD)
+       /^[A-Z]{2,5}[-_][A-Z]{2,5}$/,   // Pairs with dash/underscore
+       /^[A-Z]{3,6}USDT$/,             // Crypto pairs with USDT
+       /^[A-Z]{3,6}BUSD$/,             // Crypto pairs with BUSD
+     ];
+
+     const isValidSymbol = validSymbolPatterns.some(pattern => pattern.test(trimmedSymbol));
+     
+     if (!isValidSymbol) {
+       errors.push({
+         field: 'symbol',
+         message: 'Invalid symbol format. Use formats like: EURUSD, EUR/USD, XAUUSD, BTCUSDT'
+       });
+     }
+
+     // Check for blacklisted symbols
+     const blacklistedSymbols = ['TEST', 'DEMO', 'FAKE', 'INVALID'];
+     if (blacklistedSymbols.includes(trimmedSymbol)) {
+       errors.push({
+         field: 'symbol',
+         message: 'Invalid symbol for trading'
+       });
+     }
+
+     return errors;
+   }
 
   static isValid(errors: ValidationError[]): boolean {
     return errors.length === 0;

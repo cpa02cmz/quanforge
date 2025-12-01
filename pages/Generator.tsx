@@ -1,14 +1,16 @@
 
-import React, { useState, useEffect, memo, useMemo } from 'react';
+import React, { useState, useEffect, memo, useMemo, lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import { ChatInterface } from '../components/ChatInterface';
 import { CodeEditor } from '../components/CodeEditor';
 import { StrategyConfig } from '../components/StrategyConfig';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
 import { BacktestPanel } from '../components/BacktestPanel';
 import { useTranslation } from '../services/i18n';
 import { SEOHead, structuredDataTemplates } from '../utils/seo';
+
+// Lazy load chart components to reduce initial bundle size
+const ChartComponents = lazy(() => import('../components/ChartComponents').then(module => ({ default: module.ChartComponents })));
 
 export const Generator: React.FC = memo(() => {
   const { id } = useParams();
@@ -258,52 +260,26 @@ export const Generator: React.FC = memo(() => {
                     {!analysis ? (
                         <div className="text-center text-gray-500 mt-20">{t('gen_no_analysis')}</div>
                     ) : (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <div className="bg-dark-surface p-6 rounded-xl border border-dark-border">
-                                <h3 className="text-lg font-bold text-white mb-4">{t('gen_risk_profile')}</h3>
-                                <div className="h-64">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={riskData}
-                                                innerRadius={60}
-                                                outerRadius={80}
-                                                paddingAngle={5}
-                                                dataKey="value"
-                                            >
-                                                {riskData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }} itemStyle={{ color: '#fff' }} />
-                                            <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="24" fontWeight="bold">
-                                                {analysis.riskScore}/10
-                                            </text>
-                                        </PieChart>
-                                    </ResponsiveContainer>
+                        <Suspense fallback={
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                <div className="bg-dark-surface p-6 rounded-xl border border-dark-border animate-pulse">
+                                    <div className="h-64 bg-dark-bg rounded-lg mb-4"></div>
+                                    <div className="h-4 bg-dark-bg rounded w-3/4 mx-auto"></div>
                                 </div>
-                                <p className="text-center text-sm text-gray-400 mt-2">{t('gen_risk_est')}</p>
-                            </div>
-
-                            <div className="bg-dark-surface p-6 rounded-xl border border-dark-border">
-                                <h3 className="text-lg font-bold text-white mb-4">{t('gen_ai_summary')}</h3>
-                                <p className="text-gray-300 leading-relaxed">
-                                    {analysis.description}
-                                </p>
-                                <div className="mt-6 pt-6 border-t border-dark-border">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="text-gray-400">{t('gen_profitability')}</span>
-                                        <span className="text-brand-400 font-bold">{analysis.profitability}/10</span>
-                                    </div>
-                                    <div className="w-full bg-dark-bg h-2 rounded-full overflow-hidden">
-                                        <div 
-                                            className="bg-brand-500 h-full rounded-full" 
-                                            style={{ width: `${analysis.profitability * 10}%` }}
-                                        />
+                                <div className="bg-dark-surface p-6 rounded-xl border border-dark-border animate-pulse">
+                                    <div className="h-4 bg-dark-bg rounded w-1/2 mb-4"></div>
+                                    <div className="space-y-2">
+                                        <div className="h-3 bg-dark-bg rounded"></div>
+                                        <div className="h-3 bg-dark-bg rounded w-5/6"></div>
+                                        <div className="h-3 bg-dark-bg rounded w-4/6"></div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        }>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                <ChartComponents riskData={riskData} analysis={analysis} t={t} />
+                            </div>
+                        </Suspense>
                     )}
                 </div>
             )}

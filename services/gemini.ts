@@ -117,19 +117,46 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
     }
 }
 
-/**
- * Builds the full context prompt string with Token Budgeting.
- */
-const buildContextPrompt = (prompt: string, currentCode?: string, strategyParams?: StrategyParams, history: Message[] = []) => {
-    // 1. Build Base Context (High Priority)
-    let paramsContext = "";
-    if (strategyParams) {
-         // Build custom inputs string more efficiently, handling empty arrays
-         const customInputsStr = strategyParams.customInputs.length > 0 
-             ? strategyParams.customInputs.map(i => `  - input ${i.type} ${i.name} = ${i.type === 'string' ? `"${i.value}"` : i.value};`).join('\n')
-             : '// No custom inputs defined';
-             
-         paramsContext = `
+// Enhanced token budgeting with incremental history management
+class TokenBudgetManager {
+    private static readonly MAX_CONTEXT_CHARS = 80000;
+    private static readonly TOKEN_RATIO = 4; // 1 token ~= 4 characters
+    private static readonly MIN_HISTORY_CHARS = 1000; // Keep minimum history for context
+    
+    // Cache for frequently used context parts
+    private contextCache = new Map<string, { content: string, length: number, timestamp: number }>();
+    private static readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+    
+    private getCachedContext(key: string, builder: () => string): string {
+        const cached = this.contextCache.get(key);
+        const now = Date.now();
+        
+        if (cached && (now - cached.timestamp) < TokenBudgetManager.CACHE_TTL) {
+            return cached.content;
+        }
+        
+        const content = builder();
+        this.contextCache.set(key, { content, length: content.length, timestamp: now });
+        
+        // Cleanup old cache entries
+        if (this.contextCache.size > 50) {
+            const oldestKey = this.contextCache.keys().next().value;
+            this.contextCache.delete(oldestKey);
+        }
+        
+        return content;
+    }
+    
+    private buildParamsContext(strategyParams?: StrategyParams): string {
+        if (!strategyParams) return '';
+        
+        const cacheKey = `params-${strategyParams.symbol}-${strategyParams.timeframe}-${strategyParams.riskPercent}`;
+        return this.getCachedContext(cacheKey, () => {
+            const customInputsStr = strategyParams.customInputs.length > 0 
+                ? strategyParams.customInputs.map(i => `  - input ${i.type} ${i.name} = ${i.type === 'string' ? `"${i.value}"` : i.value};`).join('\n')
+                : '// No custom inputs defined';
+                
+            return `
  CONFIGURATION CONSTRAINTS (MUST IMPLEMENT THESE):
  - Symbol: ${strategyParams.symbol}
  - Timeframe: ${strategyParams.timeframe}
@@ -143,84 +170,128 @@ const buildContextPrompt = (prompt: string, currentCode?: string, strategyParams
  Ensure these inputs are defined at the top of the file as 'input' variables so the user can change them in MetaTrader.
  For Stop Loss and Take Profit, clearly label the input comments as 'Pips'.
  `;
+        });
     }
-
-    const currentCodeBlock = currentCode ? `\nCURRENT MQL5 CODE:\n\`\`\`cpp\n${currentCode}\n\`\`\`\n` : '// No code generated yet\n';
     
-    const footerReminder = `
+    private buildCodeContext(currentCode?: string, maxLength?: number): string {
+        if (!currentCode) return '// No code generated yet\n';
+        
+        const cacheKey = `code-${currentCode.substring(0, 100)}-${maxLength || 'full'}`;
+        return this.getCachedContext(cacheKey, () => {
+            if (maxLength && currentCode.length > maxLength) {
+                return `\nCURRENT MQL5 CODE (truncated to ${maxLength} chars):\n\`\`\`cpp\n${currentCode.substring(0, maxLength)}\n\`\`\`\n`;
+            }
+            return `\nCURRENT MQL5 CODE:\n\`\`\`cpp\n${currentCode}\n\`\`\`\n`;
+        });
+    }
+    
+    // Optimized history management with diff-based updates
+    private buildHistoryContext(history: Message[], currentPrompt: string, remainingBudget: number): string {
+        // Filter out duplicate immediate prompt more efficiently
+        const effectiveHistory = history.filter((msg, index) => {
+            const isLast = index === history.length - 1;
+            const isUser = msg.role === MessageRole.USER;
+            return !(isLast && isUser && msg.content === currentPrompt);
+        });
+
+        if (effectiveHistory.length === 0) return '';
+        
+        // Pre-calculate message sizes and sort by importance
+        const messageData = effectiveHistory.map((msg, index) => ({
+            msg,
+            index,
+            content: `${msg.role === MessageRole.USER ? 'User' : 'Model'}: ${msg.content}`,
+            length: 0,
+            importance: 0
+        }));
+        
+        // Calculate lengths and importance scores
+        messageData.forEach(data => {
+            data.length = data.content.length;
+            // More recent messages are more important
+            data.importance = (data.index / effectiveHistory.length) * 10;
+            // User messages are slightly more important
+            if (data.msg.role === MessageRole.USER) {
+                data.importance += 1;
+            }
+            // Longer messages might contain more context
+            if (data.length > 500) {
+                data.importance += 0.5;
+            }
+        });
+        
+        // Sort by importance (descending) then by recency
+        messageData.sort((a, b) => {
+            if (Math.abs(a.importance - b.importance) > 0.1) {
+                return b.importance - a.importance;
+            }
+            return b.index - a.index;
+        });
+        
+        // Greedy selection based on importance and budget
+        const selectedMessages = [];
+        let usedBudget = 0;
+        
+        for (const data of messageData) {
+            const requiredBudget = data.length + (selectedMessages.length > 0 ? 2 : 0); // +2 for \n\n
+            
+            if (usedBudget + requiredBudget <= remainingBudget) {
+                selectedMessages.push(data);
+                usedBudget += requiredBudget;
+            } else if (selectedMessages.length === 0 && remainingBudget > TokenBudgetManager.MIN_HISTORY_CHARS) {
+                // If we haven't selected anything and have reasonable budget, truncate this message
+                const truncatedLength = Math.max(remainingBudget - 10, 100); // Keep at least 100 chars
+                const truncatedContent = data.content.substring(0, truncatedLength) + '...';
+                selectedMessages.push({
+                    ...data,
+                    content: truncatedContent,
+                    length: truncatedContent.length
+                });
+                break;
+            } else {
+                break;
+            }
+        }
+        
+        // Sort back to chronological order
+        selectedMessages.sort((a, b) => a.index - b.index);
+        
+        return selectedMessages.map(data => data.content).join('\n\n');
+    }
+    
+    buildContext(prompt: string, currentCode?: string, strategyParams?: StrategyParams, history: Message[] = []): string {
+        const footerReminder = `
 FINAL REMINDERS:
 1. Output COMPLETE code. No placeholders like "// ... rest of code".
 2. Ensure strict MQL5 syntax correctness.
 3. If changing logic, rewrite the full file.
 `;
 
-    // 2. Token Budgeting for History
-    // More efficient token estimation: 1 token ~= 4 characters. 
-    // Safe limit for context part ~80k chars to leave room for output and system prompt.
-    const MAX_CONTEXT_CHARS = 80000; 
-    const baseLength = paramsContext.length + currentCodeBlock.length + prompt.length + footerReminder.length;
-    
-    // Early return if base context is already too large
-    if (baseLength > MAX_CONTEXT_CHARS) {
-        console.warn("Base context exceeds token budget, truncating code block");
-        const availableForCode = MAX_CONTEXT_CHARS - paramsContext.length - prompt.length - footerReminder.length - 500; // Reserve for history header
-        const truncatedCode = currentCode ? 
-            `\nCURRENT MQL5 CODE (truncated):\n\`\`\`cpp\n${currentCode.substring(0, Math.max(0, availableForCode))}\n\`\`\`\n` : 
-            '// No code generated yet\n';
+        // Build base components
+        const paramsContext = this.buildParamsContext(strategyParams);
+        let codeContext = this.buildCodeContext(currentCode);
+        
+        const baseLength = paramsContext.length + codeContext.length + prompt.length + footerReminder.length;
+        
+        // Early truncation if base context is too large
+        if (baseLength > TokenBudgetManager.MAX_CONTEXT_CHARS) {
+            console.warn("Base context exceeds token budget, truncating code block");
+            const availableForCode = TokenBudgetManager.MAX_CONTEXT_CHARS - paramsContext.length - prompt.length - footerReminder.length - 1000;
+            codeContext = this.buildCodeContext(currentCode, Math.max(availableForCode, 1000));
+        }
+        
+        const currentBaseLength = paramsContext.length + codeContext.length + prompt.length + footerReminder.length;
+        const remainingBudget = TokenBudgetManager.MAX_CONTEXT_CHARS - currentBaseLength;
+        
+        // Build history with remaining budget
+        const historyContent = this.buildHistoryContext(history, prompt, Math.max(remainingBudget, 0));
         
         return `
 ${paramsContext}
 
-${truncatedCode}
+${codeContext}
 
-NEW USER REQUEST: 
-${prompt}
-
-Please respond based on the request. 
-If code changes are needed, output the FULL updated code in a code block. 
-If it's just a question, answer with text only.
-
-${footerReminder}
-`;
-    }
-    
-    let remainingBudget = MAX_CONTEXT_CHARS - baseLength;
-
-    // Filter out duplicate immediate prompt
-    const effectiveHistory = history.filter((msg, index) => {
-        const isLast = index === history.length - 1;
-        const isUser = msg.role === MessageRole.USER;
-        return !(isLast && isUser && msg.content === prompt);
-    });
-
-     // Efficiently add messages from newest to oldest until budget fills
-     // Pre-calculate message strings to avoid repeated concatenation
-     const messageStrings = effectiveHistory.map(msg => 
-         `${msg.role === MessageRole.USER ? 'User' : 'Model'}: ${msg.content}`
-     );
-     
-     let historyContent = '';
-     let budgetUsed = 0;
-     for (let i = messageStrings.length - 1; i >= 0; i--) {
-         const msgStr = messageStrings[i];
-         // Check if adding this message would exceed budget
-         const newBudgetUsed = budgetUsed + msgStr.length + (historyContent ? 2 : 0); // +2 for \n\n
-         if (newBudgetUsed <= remainingBudget) {
-             historyContent = msgStr + (historyContent ? '\n\n' + historyContent : '');
-             budgetUsed = newBudgetUsed;
-         } else {
-             // If remaining budget is very small, don't add any more history
-             break;
-         }
-     }
-
-    return `
-${paramsContext}
-
-${currentCodeBlock}
-
-CONVERSATION HISTORY:
-${historyContent}
+${historyContent ? `CONVERSATION HISTORY:\n${historyContent}\n` : ''}
 
 NEW USER REQUEST: 
 ${prompt}
@@ -231,6 +302,22 @@ If it's just a question, answer with text only.
 
 ${footerReminder}
 `;
+    }
+    
+    // Clear cache when needed
+    clearCache(): void {
+        this.contextCache.clear();
+    }
+}
+
+// Global instance
+const tokenBudgetManager = new TokenBudgetManager();
+
+/**
+ * Builds the full context prompt string with enhanced Token Budgeting.
+ */
+const buildContextPrompt = (prompt: string, currentCode?: string, strategyParams?: StrategyParams, history: Message[] = []) => {
+    return tokenBudgetManager.buildContext(prompt, currentCode, strategyParams, history);
 };
 
 /**
@@ -353,11 +440,17 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
     const fullPrompt = buildContextPrompt(prompt, currentCode, strategyParams, history);
     let rawResponse = "";
 
-    if (settings.provider === 'openai') {
-        rawResponse = await callOpenAICompatible(settings, fullPrompt, signal);
-    } else {
-        rawResponse = await callGoogleGenAI(settings, fullPrompt, signal) || "";
-    }
+    // Create deduplication key for this specific request
+    const requestKey = createHash(`${prompt}-${currentCode?.substring(0, 100)}-${strategyParams?.symbol}-${history.length}`);
+    
+    // Use request deduplication to prevent duplicate API calls
+    rawResponse = await requestDeduplicator.deduplicate(requestKey, async () => {
+      if (settings.provider === 'openai') {
+          return await callOpenAICompatible(settings, fullPrompt, signal);
+      } else {
+          return await callGoogleGenAI(settings, fullPrompt, signal) || "";
+      }
+    });
     
     return extractThinking(rawResponse);
 
