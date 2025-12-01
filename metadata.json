@@ -1,0 +1,5 @@
+{
+  "name": "QuantForge AI",
+  "description": "A native AI-powered platform for generating, backtesting, and managing MQL5 trading robots using Gemini 2.5/3.0 and Supabase.",
+  "requestFramePermissions": []
+}
