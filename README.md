@@ -51,4 +51,5 @@ QuantForge AI is a web-based platform that uses Google's Gemini 3.0/2.5 AI model
 - **KISS**: Keep components simple. Complex logic (like AI parsing) is separated into services.
 - **Separation of Concerns**: Business logic for the generator is encapsulated in `hooks/useGeneratorLogic.ts`.
 - **Offline First**: The `services/supabase.ts` module ensures the app is fully functional without a backend connection for demo purposes.
+- **Performance Optimized**: Services are optimized for performance with efficient token budgeting, caching, and array operations.
 - **Type Safety**: strict TypeScript interfaces are defined in `types.ts`.

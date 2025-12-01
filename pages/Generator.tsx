@@ -1,13 +1,13 @@
 
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { ChatInterface } from '../components/ChatInterface';
-import { CodeEditor } from '../components/CodeEditor';
-import { StrategyConfig } from '../components/StrategyConfig';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
-import { BacktestPanel } from '../components/BacktestPanel';
-import { useTranslation } from '../services/i18n';
+ import React, { useState, useEffect } from 'react';
+ import { useParams } from 'react-router-dom';
+ import { ChatInterface } from '../components/ChatInterface';
+ import { CodeEditor } from '../components/CodeEditor';
+ import { StrategyConfig } from '../components/StrategyConfig';
+ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+ import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
+ import { BacktestPanel } from '../components/BacktestPanel';
+ import { useTranslation } from '../services/i18n';
 
 export const Generator: React.FC = () => {
   const { id } = useParams();
@@ -18,6 +18,7 @@ export const Generator: React.FC = () => {
     messages,
     code,
     isLoading,
+    loadingProgress,
     robotName,
     analysis,
     saving,
@@ -43,14 +44,39 @@ export const Generator: React.FC = () => {
     stopGeneration
   } = useGeneratorLogic(id);
 
-  // Local UI State
-  const [activeMainTab, setActiveMainTab] = useState<'editor' | 'analysis' | 'simulation'>('editor');
-  const [activeSidebarTab, setActiveSidebarTab] = useState<'chat' | 'settings'>('chat');
-  
-  const onApplySettings = async () => {
-      setActiveMainTab('editor'); // Switch to editor to see changes
-      await handleApplySettings();
-  };
+   // Local UI State
+   const [activeMainTab, setActiveMainTab] = useState<'editor' | 'analysis' | 'simulation'>('editor');
+   const [activeSidebarTab, setActiveSidebarTab] = useState<'chat' | 'settings'>('chat');
+   
+   // Keyboard shortcuts
+   useEffect(() => {
+     const handleKeyDown = (e: KeyboardEvent) => {
+       // Ctrl/Cmd + S to save
+       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+         e.preventDefault();
+         handleSave();
+       }
+       
+       // Ctrl/Cmd + Enter to send message if on chat tab
+       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && activeSidebarTab === 'chat') {
+         // We can't trigger the chat send directly from here
+         // This would require accessing the ChatInterface's send function
+       }
+       
+       // Escape to stop generation
+       if (e.key === 'Escape' && isLoading) {
+         stopGeneration();
+       }
+     };
+     
+     window.addEventListener('keydown', handleKeyDown);
+     return () => window.removeEventListener('keydown', handleKeyDown);
+   }, [handleSave, isLoading, stopGeneration, activeSidebarTab]);
+   
+   const onApplySettings = async () => {
+       setActiveMainTab('editor'); // Switch to editor to see changes
+       await handleApplySettings();
+   };
 
   const riskData = analysis ? [
     { name: 'Risk', value: analysis.riskScore, color: '#ef4444' },
@@ -59,6 +85,13 @@ export const Generator: React.FC = () => {
 
   return (
     <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] md:h-screen bg-dark-bg relative">
+      
+      {/* Loading Progress Indicator */}
+      {isLoading && loadingProgress && (
+        <div className="absolute top-0 left-0 right-0 h-1 bg-dark-surface z-50">
+          <div className="h-full bg-brand-500 animate-pulse"></div>
+        </div>
+      )}
       
       {/* Mobile Tab Toggle */}
       <div className="md:hidden flex bg-dark-surface border-b border-dark-border">
@@ -101,6 +134,14 @@ export const Generator: React.FC = () => {
                 {saving ? t('gen_saving') : t('gen_save')}
             </button>
         </div>
+        
+        {/* Loading Progress Indicator */}
+        {isLoading && loadingProgress && (
+          <div className="bg-dark-surface border-b border-dark-border py-2 px-4 flex items-center">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-500 mr-2"></div>
+            <span className="text-sm text-gray-300">{loadingProgress.message}</span>
+          </div>
+        )}
 
         {/* Sidebar Tabs */}
         <div className="flex border-b border-dark-border bg-dark-surface shrink-0">

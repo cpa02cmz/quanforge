@@ -1,9 +1,13 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
-import { MQL5_SYSTEM_PROMPT } from "../constants";
-import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
-import { settingsManager } from "./settingsManager";
-import { getActiveKey } from "../utils/apiKeyUtils";
+ import { GoogleGenAI, Type } from "@google/genai";
+ import { MQL5_SYSTEM_PROMPT } from "../constants";
+ import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
+ import { settingsManager } from "./settingsManager";
+ import { getActiveKey } from "../utils/apiKeyUtils";
+
+ // Simple cache for strategy analysis to avoid repeated API calls
+ const analysisCache = new Map<string, { result: StrategyAnalysis, timestamp: number }>();
+ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
 
 /**
  * Utility: Retry an async operation with exponential backoff.
@@ -64,9 +68,35 @@ FINAL REMINDERS:
 `;
 
     // 2. Token Budgeting for History
-    // Estimate: 1 token ~= 4 characters. Safe limit for 'context' part ~100k chars to leave room for output and system prompt.
-    const MAX_CONTEXT_CHARS = 100000; 
+    // More efficient token estimation: 1 token ~= 4 characters. 
+    // Safe limit for context part ~80k chars to leave room for output and system prompt.
+    const MAX_CONTEXT_CHARS = 80000; 
     const baseLength = paramsContext.length + currentCodeBlock.length + prompt.length + footerReminder.length;
+    
+    // Early return if base context is already too large
+    if (baseLength > MAX_CONTEXT_CHARS) {
+        console.warn("Base context exceeds token budget, truncating code block");
+        const availableForCode = MAX_CONTEXT_CHARS - paramsContext.length - prompt.length - footerReminder.length - 500; // Reserve for history header
+        const truncatedCode = currentCode ? 
+            `\nCURRENT MQL5 CODE (truncated):\n\`\`\`cpp\n${currentCode.substring(0, Math.max(0, availableForCode))}\n\`\`\`\n` : 
+            '// No code generated yet\n';
+        
+        return `
+${paramsContext}
+
+${truncatedCode}
+
+NEW USER REQUEST: 
+${prompt}
+
+Please respond based on the request. 
+If code changes are needed, output the FULL updated code in a code block. 
+If it's just a question, answer with text only.
+
+${footerReminder}
+`;
+    }
+    
     let remainingBudget = MAX_CONTEXT_CHARS - baseLength;
 
     // Filter out duplicate immediate prompt
@@ -76,21 +106,23 @@ FINAL REMINDERS:
         return !(isLast && isUser && msg.content === prompt);
     });
 
-    // Add messages from newest to oldest until budget fills
-    const historyMessages: string[] = [];
-    for (let i = effectiveHistory.length - 1; i >= 0; i--) {
-        const msg = effectiveHistory[i];
-        const msgStr = `${msg.role === MessageRole.USER ? 'User' : 'Model'}: ${msg.content}`;
-        
-        if (msgStr.length < remainingBudget) {
-            historyMessages.unshift(msgStr);
+    // Efficiently add messages from newest to oldest until budget fills
+    // Pre-calculate message strings to avoid repeated concatenation
+    const messageStrings = effectiveHistory.map(msg => 
+        `${msg.role === MessageRole.USER ? 'User' : 'Model'}: ${msg.content}`
+    );
+    
+    let historyContent = '';
+    for (let i = messageStrings.length - 1; i >= 0; i--) {
+        const msgStr = messageStrings[i];
+        if (msgStr.length <= remainingBudget) {
+            historyContent = msgStr + (historyContent ? '\n\n' + historyContent : '');
             remainingBudget -= msgStr.length;
         } else {
-            break; // Stop adding history if full
+            // If remaining budget is very small, don't add any more history
+            break;
         }
     }
-
-    const recentHistory = historyMessages.join('\n\n');
 
     return `
 ${paramsContext}
@@ -98,7 +130,7 @@ ${paramsContext}
 ${currentCodeBlock}
 
 CONVERSATION HISTORY:
-${recentHistory}
+${historyContent}
 
 NEW USER REQUEST: 
 ${prompt}
@@ -370,6 +402,16 @@ export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promi
     const settings = settingsManager.getSettings();
     const activeKey = getActiveKey(settings.apiKey);
     
+    // Create a cache key based on the code and settings (use hash for better uniqueness)
+    const codeHash = btoa(encodeURIComponent(code.substring(0, 5000))).substring(0, 20);
+    const cacheKey = `${codeHash}-${settings.provider}-${settings.modelName}`;
+    
+    // Check if we have a valid cached result
+    const cached = analysisCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+        return cached.result;
+    }
+    
     if (!activeKey && settings.provider === 'google') return { riskScore: 0, profitability: 0, description: "API Key Missing" };
 
     const prompt = `Analyze this MQL5 code and return a JSON summary of its potential risk and strategy type. Code: ${code.substring(0, 5000)}...
@@ -415,11 +457,33 @@ export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promi
             }
         });
 
-        return extractJson(textResponse);
+        const result = extractJson(textResponse);
+        
+        // Validate the result before caching
+        if (result && typeof result === 'object' && 
+            typeof result.riskScore === 'number' && 
+            typeof result.profitability === 'number' && 
+            typeof result.description === 'string') {
+            // Cache the result
+            analysisCache.set(cacheKey, { result, timestamp: Date.now() });
+        }
+        
+        return result;
 
     } catch (e: any) {
         if (e.name === 'AbortError') throw e;
         console.error("Analysis Parsing Error:", e);
         return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };
     }
+}
+
+// Helper function for creating hash-like keys for caching
+function createHash(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash).toString(36);
 }

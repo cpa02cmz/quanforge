@@ -9,7 +9,7 @@ import { Layout } from './components/Layout';
 import { supabase } from './services/supabase';
 import { ToastProvider } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { User, UserSession } from './types';
+import { UserSession } from './types';
 
 export default function App() {
   const [session, setSession] = useState<UserSession | null>(null);

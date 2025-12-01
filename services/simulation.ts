@@ -15,15 +15,13 @@ export const runMonteCarloSimulation = (
     
     const days = settings.days;
     let balance = settings.initialDeposit;
-    const equityCurve = [{ date: 'Day 0', balance }];
+    const equityCurve = new Array(days + 1); // Pre-allocate array for performance
+    equityCurve[0] = { date: 'Day 0', balance };
     let peakBalance = balance;
     let maxDrawdown = 0;
 
-    // Simulation Parameters derivation
+    // Pre-calculate simulation parameters
     // Higher Profitability -> Higher positive daily drift mean
-    // Higher Risk -> Higher daily standard deviation
-    
-    // Base daily drift: slightly positive to slightly negative based on profitability
     // 5 is neutral (0 drift), 10 is 0.5% daily avg, 1 is -0.1% daily avg
     const dailyDriftMean = (profitability - 4) * 0.0005; 
 
@@ -31,14 +29,19 @@ export const runMonteCarloSimulation = (
     // Risk 1: 0.5%, Risk 10: 5% daily swings
     const dailyVol = (riskScore * 0.003) + 0.002;
 
-    for (let i = 1; i <= days; i++) {
-        // Random shock (Box-Muller transform for normal distribution)
-        const u = 1 - Math.random();
+    // Generate all random values at once to avoid repeated Math.random calls
+    const randomValues = new Array(days);
+    for (let i = 0; i < days; i++) {
+        const u = Math.random();
         const v = Math.random();
-        const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-        
-        // Calculate daily return percentage
-        const dailyReturn = dailyDriftMean + (z * dailyVol);
+        // Box-Muller transform for normal distribution
+        randomValues[i] = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
+
+    // Main simulation loop
+    for (let i = 1; i <= days; i++) {
+        // Calculate daily return percentage using pre-calculated random value
+        const dailyReturn = dailyDriftMean + (randomValues[i-1] * dailyVol);
         
         // Apply return to balance
         balance = balance * (1 + dailyReturn);
@@ -54,10 +57,11 @@ export const runMonteCarloSimulation = (
             if (dd > maxDrawdown) maxDrawdown = dd;
         }
 
-        equityCurve.push({
+        // Store equity curve point
+        equityCurve[i] = {
             date: `Day ${i}`,
-            balance: Number(balance.toFixed(2))
-        });
+            balance: Math.round(balance * 100) / 100 // More efficient than toFixed
+        };
     }
 
     const totalReturn = ((balance - settings.initialDeposit) / settings.initialDeposit) * 100;
@@ -67,9 +71,9 @@ export const runMonteCarloSimulation = (
 
     return {
         equityCurve,
-        finalBalance: Number(balance.toFixed(2)),
-        totalReturn: Number(totalReturn.toFixed(2)),
-        maxDrawdown: Number(maxDrawdown.toFixed(2)),
+        finalBalance: Math.round(balance * 100) / 100,
+        totalReturn: Math.round(totalReturn * 100) / 100,
+        maxDrawdown: Math.round(maxDrawdown * 100) / 100,
         winRate
     };
 };

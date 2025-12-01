@@ -200,15 +200,25 @@ export const mockDb = {
     if (settings.mode === 'mock') {
         try {
             const stored = localStorage.getItem(ROBOTS_KEY);
-            let robots = safeParse(stored, []);
-            robots = robots.map((r: any) => r.id === id ? { ...r, ...updates } : r);
+            const robots = safeParse(stored, []);
+            
+            // Find and update the robot in place for better performance
+            const robotIndex = robots.findIndex((r: any) => r.id === id);
+            if (robotIndex === -1) {
+                return { data: null, error: "Robot not found" };
+            }
+            
+            // Create updated robot object
+            const updatedRobot = { ...robots[robotIndex], ...updates, updated_at: new Date().toISOString() };
+            robots[robotIndex] = updatedRobot;
+            
             trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
-            return { data: robots.find((r:any) => r.id === id), error: null };
+            return { data: updatedRobot, error: null };
         } catch (e: any) {
             return { data: null, error: e.message };
         }
     }
-    return getClient().from('robots').update(updates).match({ id });
+    return getClient().from('robots').update({ ...updates, updated_at: new Date().toISOString() }).match({ id });
   },
 
   async deleteRobot(id: string) {

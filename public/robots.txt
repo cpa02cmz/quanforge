@@ -1,0 +1,26 @@
+# Sitemap for QuantForge AI
+Sitemap: https://quanforge.ai/sitemap.xml
+
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Block unnecessary crawlers
+User-agent: AhrefsBot
+Disallow: /
+User-agent: MJ12bot
+Disallow: /
+
+# Block admin and API routes
+Disallow: /api/
+Disallow: /admin/
+Disallow: /login
+
+# Allow static assets
+Allow: /assets/
+Allow: /images/
+Allow: /css/
+Allow: /js/
+
+# Crawl delay for respectful crawling
+Crawl-delay: 1
