@@ -1,0 +1,201 @@
+name: oc researcher
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  actions: read
+
+concurrency:
+  group: global
+  cancel-in-progress: false
+
+jobs:
+  opencode:
+    name: oc researcher
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 100
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: write
+      
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      IFLOW_API_KEY: ${{ secrets.IFLOW_API_KEY }}
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+      - name: Install OpenCode CLI
+        run: |
+          curl -fsSL https://opencode.ai/install | bash
+          echo "$HOME/.opencode/bin" >> $GITHUB_PATH
+      - name: Run OpenCode1
+        id: run_oc1
+        timeout-minutes: 20
+        run: |
+          opencode run "$(cat <<'PROMPT'
+            Please follow these steps meticulously:
+            - Understand the repository and its existing features in depth.
+            - Read documentation
+            - Discover optimization opportunities and connections between features.
+            - implement.
+            - test and verify. make sure no error/warning.
+            - make sure build is success locally.
+            - if needed, make/update documentation.
+            - commit and make pr with pr template.
+            - make sure all checks is passed.
+            - merge or set auto merge.
+            Rules:
+            - dont reveal secreet
+            - dont touch github workflows
+            - use repository coding standard
+            - after work is done, always create pr - check passed - merge/set auto merge
+          PROMPT
+          )" \
+            --model iflowcn/glm-4.6 \
+            --share false \
+      - name: Run OpenCode2
+        id: run_oc2
+        timeout-minutes: 20
+        run: |
+          opencode run "$(cat <<'PROMPT'
+            Tasks:
+            * Study the repository and all existing features thoroughly.
+            * Identify optimization opportunities and relationships between features, focused on frontend and user experience.
+            * Implement the required changes or new features.
+            * Run tests and ensure there are no errors or warnings.
+            * Ensure the project builds successfully in the local environment.
+            * Create or update documentation if needed.
+            * Commit your work and open a pull request using the required template.
+            * Ensure all automated checks pass.
+            * Merge the pull request or enable auto-merge.
+            Rules:
+            * Do not disclose any secrets.
+            * Do not modify GitHub workflows.
+            * Follow the repository’s coding standards.
+          PROMPT
+          )" \
+            --model iflowcn/qwen3-coder-plus \
+            --share false \
+      - name: Run OpenCode3
+        id: run_oc3
+        timeout-minutes: 20
+        run: |
+          opencode run "$(cat <<'PROMPT'
+            Tasks:
+            * Study the repository and all existing features thoroughly.
+            * Identify backend optimization opportunities and relationships between features.
+            * Implement the required changes or new features.
+            * Run tests and ensure there are no errors or warnings.
+            * Ensure the project builds successfully in the local environment.
+            * Create or update documentation if needed.
+            * Commit your work and open a pull request using the required template.
+            * Ensure all automated checks pass.
+            * Merge the pull request or enable auto-merge.
+            Rules:
+            * Do not disclose any secrets.
+            * Do not modify GitHub workflows.
+            * Follow the repository’s coding standards.
+          PROMPT
+          )" \
+            --model iflowcn/qwen3-coder-plus \
+            --share false \
+      - name: Run OpenCode4
+        id: run_oc4
+        timeout-minutes: 20
+        run: |
+          opencode run "$(cat <<'PROMPT'
+            Tasks:
+            * Study the repository and all existing features thoroughly.
+            * Identify optimization opportunities and relationships between features, focused on content and search engine optimization.
+            * Implement the required changes or new features.
+            * Run tests and ensure there are no errors or warnings.
+            * Ensure the project builds successfully in the local environment.
+            * Create or update documentation if needed.
+            * Commit your work and open a pull request using the required template.
+            * Ensure all automated checks pass.
+            * Merge the pull request or enable auto-merge.
+            Rules:
+            * Do not disclose any secrets.
+            * Do not modify GitHub workflows.
+            * Follow the repository’s coding standards.
+          PROMPT
+          )" \
+            --model iflowcn/glm-4.6 \
+            --share false \
+      - name: Run OpenCode5
+        id: run_oc5
+        timeout-minutes: 20
+        run: |
+          opencode run "$(cat <<'PROMPT'
+            Tasks:
+            * Study the repository and all existing features thoroughly.
+            * Identify database optimization opportunities and relationships between features, focused.
+            * Implement the required changes or new features.
+            * Run tests and ensure there are no errors or warnings.
+            * Ensure the project builds successfully in the local environment.
+            * Create or update documentation if needed.
+            * Commit your work and open a pull request using the required template.
+            * Ensure all automated checks pass.
+            * Merge the pull request or enable auto-merge.
+            Rules:
+            * Do not disclose any secrets.
+            * Do not modify GitHub workflows.
+            * Follow the repository’s coding standards.
+          PROMPT
+          )" \
+            --model iflowcn/qwen3-coder-plus \
+            --share false \
+      - name: Run OpenCode6
+        id: run_oc6
+        timeout-minutes: 20
+        run: |
+          opencode run "$(cat <<'PROMPT'
+            Tasks:
+            * Study the repository and all existing features thoroughly.
+            * Identify optimization opportunities for stability, performance and security.
+            * Implement the required changes or new features.
+            * Run tests and ensure there are no errors or warnings.
+            * Ensure the project builds successfully in the local environment.
+            * Create or update documentation if needed.
+            * Commit your work and open a pull request using the required template.
+            * Ensure all automated checks pass.
+            * Merge the pull request or enable auto-merge.
+            Rules:
+            * Do not disclose any secrets.
+            * Do not modify GitHub workflows.
+            * Follow the repository’s coding standards.
+          PROMPT
+          )" \
+            --model iflowcn/qwen3-coder-plus \
+            --share false \
+      - name: Run OpenCode7
+        id: run_oc7
+        timeout-minutes: 20
+        run: |
+          opencode run "$(cat <<'PROMPT'
+            Tasks:
+            * commit, push, create pr in new branch, merge if all check passed
+            * do repository maintenance
+            * do documents management, makes sure document up to date with code and fiture 
+            Rules:
+            * Do not disclose any secrets.
+            * Do not modify GitHub workflows.
+            * Follow the repository’s coding standards.
+          PROMPT
+          )" \
+            --model iflowcn/qwen3-coder-plus \
+            --share false \
