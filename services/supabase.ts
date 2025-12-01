@@ -268,7 +268,7 @@ window.addEventListener('db-settings-changed', () => {
 export const supabase = new Proxy({}, {
     get: (target, prop) => {
         const client = getClient();
-        return client[prop];
+        return (client as any)[prop];
     }
 }) as SupabaseClient;
 
@@ -1213,14 +1213,14 @@ export const dbUtils = {
                 let filteredRobots = allRobots;
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
-                    filteredRobots = filteredRobots.filter(robot => 
+                    filteredRobots = filteredRobots.filter((robot: any) => 
                         robot.name.toLowerCase().includes(term) || 
                         robot.description.toLowerCase().includes(term)
                     );
                 }
                 
                 if (filterType && filterType !== 'All') {
-                    filteredRobots = filteredRobots.filter(robot => 
+                    filteredRobots = filteredRobots.filter((robot: any) => 
                         (robot.strategy_type || 'Custom') === filterType
                     );
                 }
@@ -1320,7 +1320,7 @@ export const dbUtils = {
                 
                 // Remove any potential duplicates by ID
                 const seenIds = new Set<string>();
-                const uniqueRobots = robots.filter(robot => {
+                const uniqueRobots = robots.filter((robot: any) => {
                     if (seenIds.has(robot.id)) {
                         return false; // Duplicate, remove
                     }
@@ -1329,7 +1329,7 @@ export const dbUtils = {
                 });
                 
                 // Clean up any invalid robots
-                const validRobots = uniqueRobots.filter(robot => 
+                const validRobots = uniqueRobots.filter((robot: any) => 
                     robot && 
                     typeof robot === 'object' && 
                     robot.id && 

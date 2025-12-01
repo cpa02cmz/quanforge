@@ -10,15 +10,17 @@ interface State {
   error?: Error;
 }
 
-class ErrorBoundaryClass extends Component {
-  props!: Props;
-  state: State = { hasError: false };
+class ErrorBoundaryClass extends Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
   static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     
     // Enhanced error logging for production
@@ -29,13 +31,9 @@ class ErrorBoundaryClass extends Component {
         componentStack: errorInfo.componentStack,
         timestamp: new Date().toISOString(),
         userAgent: navigator.userAgent,
-        url: window.location.href,
+        url: window.location.href
       };
       
-      // Log to console in production for debugging
-      console.error('Production Error:', errorData);
-      
-      // Store error in localStorage for debugging
       try {
         const errors = JSON.parse(localStorage.getItem('app_errors') || '[]');
         errors.push(errorData);
@@ -48,7 +46,7 @@ class ErrorBoundaryClass extends Component {
     }
   }
 
-  render(): ReactNode {
+  override render(): ReactNode {
     if (this.state.hasError) {
       return this.props.fallback || (
         <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">

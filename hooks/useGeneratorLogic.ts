@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useReducer, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Message, MessageRole, Robot, StrategyParams, StrategyAnalysis, BacktestSettings, SimulationResult } from '../types';
 import { generateMQL5Code, analyzeStrategy, refineCode, explainCode } from '../services/gemini';
@@ -9,35 +9,110 @@ import { DEFAULT_STRATEGY_PARAMS } from '../constants';
 import { runMonteCarloSimulation } from '../services/simulation';
 import { ValidationService } from '../utils/validation';
 
+interface GeneratorState {
+  messages: Message[];
+  code: string;
+  isLoading: boolean;
+  loadingProgress: { step: string; message: string } | null;
+  robotName: string;
+  analysis: StrategyAnalysis | null;
+  saving: boolean;
+  mobileView: 'setup' | 'result';
+  strategyParams: StrategyParams;
+  backtestSettings: BacktestSettings;
+  simulationResult: SimulationResult | null;
+  isSimulating: boolean;
+}
+
+type GeneratorAction =
+  | { type: 'SET_MESSAGES'; payload: Message[] }
+  | { type: 'ADD_MESSAGE'; payload: Message }
+  | { type: 'SET_CODE'; payload: string }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_LOADING_PROGRESS'; payload: { step: string; message: string } | null }
+  | { type: 'SET_ROBOT_NAME'; payload: string }
+  | { type: 'SET_ANALYSIS'; payload: StrategyAnalysis | null }
+  | { type: 'SET_SAVING'; payload: boolean }
+  | { type: 'SET_MOBILE_VIEW'; payload: 'setup' | 'result' }
+  | { type: 'SET_STRATEGY_PARAMS'; payload: StrategyParams }
+  | { type: 'SET_BACKTEST_SETTINGS'; payload: BacktestSettings }
+  | { type: 'SET_SIMULATION_RESULT'; payload: SimulationResult | null }
+  | { type: 'SET_SIMULATING'; payload: boolean }
+  | { type: 'RESET_STATE' }
+  | { type: 'LOAD_ROBOT'; payload: Robot };
+
+const initialState: GeneratorState = {
+  messages: [],
+  code: '',
+  isLoading: false,
+  loadingProgress: null,
+  robotName: 'Untitled Robot',
+  analysis: null,
+  saving: false,
+  mobileView: 'setup',
+  strategyParams: DEFAULT_STRATEGY_PARAMS,
+  backtestSettings: {
+    initialDeposit: 10000,
+    days: 90,
+    leverage: 100
+  },
+  simulationResult: null,
+  isSimulating: false
+};
+
+const generatorReducer = (state: GeneratorState, action: GeneratorAction): GeneratorState => {
+  switch (action.type) {
+    case 'SET_MESSAGES':
+      return { ...state, messages: action.payload };
+    case 'ADD_MESSAGE':
+      return { ...state, messages: [...state.messages, action.payload] };
+    case 'SET_CODE':
+      return { ...state, code: action.payload };
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.payload };
+    case 'SET_LOADING_PROGRESS':
+      return { ...state, loadingProgress: action.payload };
+    case 'SET_ROBOT_NAME':
+      return { ...state, robotName: action.payload };
+    case 'SET_ANALYSIS':
+      return { ...state, analysis: action.payload };
+    case 'SET_SAVING':
+      return { ...state, saving: action.payload };
+    case 'SET_MOBILE_VIEW':
+      return { ...state, mobileView: action.payload };
+    case 'SET_STRATEGY_PARAMS':
+      return { ...state, strategyParams: action.payload };
+    case 'SET_BACKTEST_SETTINGS':
+      return { ...state, backtestSettings: action.payload };
+    case 'SET_SIMULATION_RESULT':
+      return { ...state, simulationResult: action.payload };
+    case 'SET_SIMULATING':
+      return { ...state, isSimulating: action.payload };
+    case 'RESET_STATE':
+      return initialState;
+    case 'LOAD_ROBOT':
+      return {
+        ...state,
+        robotName: action.payload.name,
+        code: action.payload.code,
+        strategyParams: action.payload.strategy_params || DEFAULT_STRATEGY_PARAMS,
+        backtestSettings: action.payload.backtest_settings || initialState.backtestSettings,
+        messages: action.payload.chat_history || [],
+        analysis: action.payload.analysis_result || null
+      };
+    default:
+      return state;
+  }
+};
+
 export const useGeneratorLogic = (id?: string) => {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [code, setCode] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState<{step: string, message: string} | null>(null);
-  const [robotName, setRobotName] = useState('Untitled Robot');
-  const [analysis, setAnalysis] = useState<StrategyAnalysis | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [state, dispatch] = useReducer(generatorReducer, initialState);
   
   // Abort Controller for AI Requests
   const abortControllerRef = useRef<AbortController | null>(null);
-  
-  // Mobile View State
-  const [mobileView, setMobileView] = useState<'setup' | 'result'>('setup');
-
-  // Strategy Params State
-  const [strategyParams, setStrategyParams] = useState<StrategyParams>(DEFAULT_STRATEGY_PARAMS);
-
-  // Simulation State
-  const [backtestSettings, setBacktestSettings] = useState<BacktestSettings>({
-      initialDeposit: 10000,
-      days: 90,
-      leverage: 100
-  });
-  const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
-  const [isSimulating, setIsSimulating] = useState(false);
 
    // Enhanced validation using ValidationService
    const validateStrategyParams = useCallback((params: StrategyParams): string[] => {
@@ -47,57 +122,37 @@ export const useGeneratorLogic = (id?: string) => {
 
    // Reset State Helper
    const resetState = useCallback(() => {
-     setMessages([]);
-     setCode('');
-     setRobotName('Untitled Robot');
-     setAnalysis(null);
-     setStrategyParams(DEFAULT_STRATEGY_PARAMS);
-     setMobileView('setup');
-     setSimulationResult(null);
-     setBacktestSettings({ initialDeposit: 10000, days: 90, leverage: 100 });
+     dispatch({ type: 'RESET_STATE' });
    }, []);
 
-  const stopGeneration = () => {
+const stopGeneration = () => {
     if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
-        setIsLoading(false);
+        dispatch({ type: 'SET_LOADING', payload: false });
         showToast("Generation stopped by user", "info");
     }
-  };
+};
 
   // Handle Logic: Load existing robot OR Reset for new robot
   useEffect(() => {
     if (id) {
-        setIsLoading(true);
+        dispatch({ type: 'SET_LOADING', payload: true });
         mockDb.getRobots().then(({ data }) => {
             const found = data.find((r: Robot) => r.id === id);
             if (found) {
-                setRobotName(found.name);
-                setCode(found.code);
+                dispatch({ type: 'LOAD_ROBOT', payload: found });
                 
-                if (found.strategy_params) {
-                    setStrategyParams(found.strategy_params);
-                }
-
-                if (found.backtest_settings) {
-                    setBacktestSettings(found.backtest_settings);
-                }
-
-                if (found.chat_history && Array.isArray(found.chat_history)) {
-                    setMessages(found.chat_history);
-                }
-                
-                if (found.analysis_result) {
-                    setAnalysis(found.analysis_result);
-                } else if (found.code) {
-                    analyzeStrategy(found.code).then(setAnalysis);
+                if (!found.analysis_result && found.code) {
+                    analyzeStrategy(found.code).then(analysis => 
+                        dispatch({ type: 'SET_ANALYSIS', payload: analysis })
+                    );
                 }
             } else {
                 showToast("Robot not found", "error");
                 navigate('/generator'); // Redirect to new if not found
             }
-        }).finally(() => setIsLoading(false));
+        }).finally(() => dispatch({ type: 'SET_LOADING', payload: false }));
     } else {
         resetState();
     }
@@ -123,18 +178,20 @@ export const useGeneratorLogic = (id?: string) => {
       const extractedCode = extractCode(rawResponse);
       
       if (extractedCode) {
-          setCode(extractedCode);
+          dispatch({ type: 'SET_CODE', payload: extractedCode });
           
           // Trigger analysis in background, cancellable
           const analysisController = new AbortController();
-          analyzeStrategy(extractedCode, analysisController.signal).then(setAnalysis).catch(err => {
+          analyzeStrategy(extractedCode, analysisController.signal).then(analysis => 
+              dispatch({ type: 'SET_ANALYSIS', payload: analysis })
+          ).catch(err => {
              if (err.name !== 'AbortError') console.error("Analysis failed", err);
           });
 
-          setSimulationResult(null); 
+          dispatch({ type: 'SET_SIMULATION_RESULT', payload: null }); 
           
           if (window.innerWidth < 768) {
-              setMobileView('result');
+              dispatch({ type: 'SET_MOBILE_VIEW', payload: 'result' });
           }
       }
 
@@ -148,7 +205,7 @@ export const useGeneratorLogic = (id?: string) => {
         thinking: thinking 
       };
 
-      setMessages((prev) => [...prev, aiMessage]);
+      dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
   }, []);
 
   // Handlers
@@ -174,30 +231,30 @@ export const useGeneratorLogic = (id?: string) => {
       timestamp: Date.now(),
     };
     
-    const updatedMessages = [...messages, newMessage];
-    setMessages(updatedMessages);
-    setIsLoading(true);
-    setLoadingProgress({ step: 'generating', message: 'Generating MQL5 code...' });
+    const updatedMessages = [...state.messages, newMessage];
+    dispatch({ type: 'SET_MESSAGES', payload: updatedMessages });
+    dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'generating', message: 'Generating MQL5 code...' } });
 
     try {
-      const response = await generateMQL5Code(content, code, strategyParams, updatedMessages, signal);
-      setLoadingProgress({ step: 'processing', message: 'Processing response...' });
+      const response = await generateMQL5Code(content, state.code, state.strategyParams, updatedMessages, signal);
+      dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'processing', message: 'Processing response...' } });
       await processAIResponse(response);
     } catch (error: any) {
       if (error.name === 'AbortError') return;
       
       console.error(error);
       showToast(error.message || "Error generating response", 'error');
-      setMessages((prev) => [...prev, {
+      dispatch({ type: 'ADD_MESSAGE', payload: {
           id: Date.now().toString(),
           role: MessageRole.MODEL,
           content: "Sorry, I encountered an error generating the response.",
           timestamp: Date.now()
-      }]);
+      }});
     } finally {
       if (!signal.aborted) {
-        setIsLoading(false);
-        setLoadingProgress(null);
+        dispatch({ type: 'SET_LOADING', payload: false });
+        dispatch({ type: 'SET_LOADING_PROGRESS', payload: null });
       }
       abortControllerRef.current = null;
     }
@@ -205,7 +262,7 @@ export const useGeneratorLogic = (id?: string) => {
 
   const handleApplySettings = async () => {
       // Validate strategy parameters before applying
-      const validationErrors = validateStrategyParams(strategyParams);
+      const validationErrors = validateStrategyParams(state.strategyParams);
       if (validationErrors.length > 0) {
           validationErrors.forEach(error => showToast(error, 'error'));
           return;
@@ -215,12 +272,12 @@ export const useGeneratorLogic = (id?: string) => {
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
 
-      setIsLoading(true);
-      setLoadingProgress({ step: 'applying-settings', message: 'Applying configuration changes...' });
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'applying-settings', message: 'Applying configuration changes...' } });
       try {
           const prompt = "Update the code to strictly follow the provided configuration constraints (Timeframe, Risk, Stop Loss, Take Profit, Custom Inputs). Keep the existing strategy logic but ensure inputs are consistent with the config.";
-          const response = await generateMQL5Code(prompt, code, strategyParams, messages, signal);
-          setLoadingProgress({ step: 'processing', message: 'Processing updated code...' });
+          const response = await generateMQL5Code(prompt, state.code, state.strategyParams, state.messages, signal);
+          dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'processing', message: 'Processing updated code...' } });
           await processAIResponse(response);
           showToast("Settings applied & code updated", 'success');
       } catch (error: any) {
@@ -229,33 +286,33 @@ export const useGeneratorLogic = (id?: string) => {
           showToast("Failed to apply settings", 'error');
       } finally {
            if (!signal.aborted) {
-             setIsLoading(false);
-             setLoadingProgress(null);
+             dispatch({ type: 'SET_LOADING', payload: false });
+             dispatch({ type: 'SET_LOADING_PROGRESS', payload: null });
            }
            abortControllerRef.current = null;
       }
   };
 
   const handleRefineCode = async () => {
-      if (!code) return;
+      if (!state.code) return;
       
       if (abortControllerRef.current) abortControllerRef.current.abort();
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
 
-      setIsLoading(true);
-      setLoadingProgress({ step: 'refining', message: 'Refining code...' });
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'refining', message: 'Refining code...' } });
       try {
-          const response = await refineCode(code, signal);
-          setLoadingProgress({ step: 'processing', message: 'Processing refined code...' });
+          const response = await refineCode(state.code, signal);
+          dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'processing', message: 'Processing refined code...' } });
           await processAIResponse(response);
           
-          setMessages(prev => [...prev, {
+          dispatch({ type: 'ADD_MESSAGE', payload: {
               id: Date.now().toString(),
               role: MessageRole.SYSTEM,
               content: "Auto-Refinement completed. Code optimized for efficiency and robustness.",
               timestamp: Date.now()
-          }]);
+          }});
 
           showToast("Code optimized & refined", 'success');
       } catch (error: any) {
@@ -264,33 +321,33 @@ export const useGeneratorLogic = (id?: string) => {
           showToast("Refinement failed", 'error');
       } finally {
           if (!signal.aborted) {
-            setIsLoading(false);
-            setLoadingProgress(null);
+            dispatch({ type: 'SET_LOADING', payload: false });
+            dispatch({ type: 'SET_LOADING_PROGRESS', payload: null });
           }
           abortControllerRef.current = null;
       }
   };
 
   const handleExplainCode = async () => {
-      if (!code) return;
+      if (!state.code) return;
       
       if (abortControllerRef.current) abortControllerRef.current.abort();
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
       
-      setIsLoading(true);
-      setLoadingProgress({ step: 'explaining', message: 'Generating code explanation...' });
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'explaining', message: 'Generating code explanation...' } });
       try {
-          const response = await explainCode(code, signal);
+          const response = await explainCode(state.code, signal);
           
           // Inject explanation into chat
-          setMessages(prev => [...prev, {
+          dispatch({ type: 'ADD_MESSAGE', payload: {
               id: Date.now().toString(),
               role: MessageRole.MODEL,
               content: response.content || "Could not generate explanation.",
               thinking: response.thinking,
               timestamp: Date.now()
-          }]);
+          }});
           
           showToast("Code explanation generated", 'success');
       } catch (error: any) {
@@ -299,8 +356,8 @@ export const useGeneratorLogic = (id?: string) => {
           showToast("Explanation failed", 'error');
       } finally {
           if (!signal.aborted) {
-            setIsLoading(false);
-            setLoadingProgress(null);
+            dispatch({ type: 'SET_LOADING', payload: false });
+            dispatch({ type: 'SET_LOADING_PROGRESS', payload: null });
           }
           abortControllerRef.current = null;
       }
@@ -308,36 +365,36 @@ export const useGeneratorLogic = (id?: string) => {
 
   const handleSave = async () => {
       // Validate robot name
-      const nameErrors = ValidationService.validateRobotName(robotName);
+      const nameErrors = ValidationService.validateRobotName(state.robotName);
       if (!ValidationService.isValid(nameErrors)) {
         showToast(ValidationService.formatErrors(nameErrors), 'error');
         return;
       }
 
       // Validate strategy parameters
-      const strategyErrors = ValidationService.validateStrategyParams(strategyParams);
+      const strategyErrors = ValidationService.validateStrategyParams(state.strategyParams);
       if (!ValidationService.isValid(strategyErrors)) {
         showToast(ValidationService.formatErrors(strategyErrors), 'error');
         return;
       }
 
       // Validate backtest settings
-      const backtestErrors = ValidationService.validateBacktestSettings(backtestSettings);
+      const backtestErrors = ValidationService.validateBacktestSettings(state.backtestSettings);
       if (!ValidationService.isValid(backtestErrors)) {
         showToast(ValidationService.formatErrors(backtestErrors), 'error');
         return;
       }
 
-      setSaving(true);
+      dispatch({ type: 'SET_SAVING', payload: true });
       const robotData = {
-          name: ValidationService.sanitizeInput(robotName),
-          code: code,
-          description: analysis?.description || 'Generated Strategy',
-          strategy_type: (analysis?.riskScore || 0) > 7 ? 'Scalping' : 'Trend',
-          strategy_params: strategyParams, 
-          backtest_settings: backtestSettings,
-          analysis_result: analysis, 
-          chat_history: messages, 
+          name: ValidationService.sanitizeInput(state.robotName),
+          code: state.code,
+          description: state.analysis?.description || 'Generated Strategy',
+          strategy_type: (state.analysis?.riskScore || 0) > 7 ? 'Scalping' : 'Trend',
+          strategy_params: state.strategyParams, 
+          backtest_settings: state.backtestSettings,
+          analysis_result: state.analysis, 
+          chat_history: state.messages, 
           updated_at: new Date().toISOString()
       };
 
@@ -355,7 +412,7 @@ export const useGeneratorLogic = (id?: string) => {
         console.error(e);
         showToast('Failed to save robot', 'error');
       } finally {
-        setSaving(false);
+        dispatch({ type: 'SET_SAVING', payload: false });
       }
   };
 
@@ -368,53 +425,53 @@ export const useGeneratorLogic = (id?: string) => {
 
   const clearChat = () => {
       if (window.confirm("Clear chat history?")) {
-          setMessages([]);
+          dispatch({ type: 'SET_MESSAGES', payload: [] });
           showToast("Chat history cleared", 'info');
       }
   };
 
   const resetConfig = () => {
       if (window.confirm("Reset configuration?")) {
-          setStrategyParams(DEFAULT_STRATEGY_PARAMS);
+          dispatch({ type: 'SET_STRATEGY_PARAMS', payload: DEFAULT_STRATEGY_PARAMS });
           showToast("Configuration reset", 'info');
       }
   };
 
   const runSimulation = () => {
-      setIsSimulating(true);
+      dispatch({ type: 'SET_SIMULATING', payload: true });
       setTimeout(() => {
           try {
-              const res = runMonteCarloSimulation(analysis, backtestSettings);
-              setSimulationResult(res);
+              const res = runMonteCarloSimulation(state.analysis, state.backtestSettings);
+              dispatch({ type: 'SET_SIMULATION_RESULT', payload: res });
               showToast("Simulation completed", 'success');
           } catch (e) {
               console.error(e);
               showToast("Simulation failed", 'error');
           } finally {
-              setIsSimulating(false);
+              dispatch({ type: 'SET_SIMULATING', payload: false });
           }
       }, 500);
   };
 
   return {
-    messages,
-    code,
-    isLoading,
-    loadingProgress,
-    robotName,
-    analysis,
-    saving,
-    strategyParams,
-    mobileView,
-    backtestSettings,
-    simulationResult,
-    isSimulating,
+    messages: state.messages,
+    code: state.code,
+    isLoading: state.isLoading,
+    loadingProgress: state.loadingProgress,
+    robotName: state.robotName,
+    analysis: state.analysis,
+    saving: state.saving,
+    strategyParams: state.strategyParams,
+    mobileView: state.mobileView,
+    backtestSettings: state.backtestSettings,
+    simulationResult: state.simulationResult,
+    isSimulating: state.isSimulating,
     
-    setRobotName,
-    setCode,
-    setStrategyParams,
-    setMobileView,
-    setBacktestSettings,
+    setRobotName: (name: string) => dispatch({ type: 'SET_ROBOT_NAME', payload: name }),
+    setCode: (code: string) => dispatch({ type: 'SET_CODE', payload: code }),
+    setStrategyParams: (params: StrategyParams) => dispatch({ type: 'SET_STRATEGY_PARAMS', payload: params }),
+    setMobileView: (view: 'setup' | 'result') => dispatch({ type: 'SET_MOBILE_VIEW', payload: view }),
+    setBacktestSettings: (settings: BacktestSettings) => dispatch({ type: 'SET_BACKTEST_SETTINGS', payload: settings }),
 
     handleSendMessage,
     handleApplySettings,

@@ -235,7 +235,7 @@ return (
                             {isLoading ? t('settings_db_testing') : t('settings_db_test')}
                         </button>
 
-                        {settings.mode === 'mock' && stats?.count > 0 && (
+                        {settings.mode === 'mock' && (stats?.count ?? 0) > 0 && (
                             <button
                                 onClick={handleMigration}
                                 disabled={isMigrating}

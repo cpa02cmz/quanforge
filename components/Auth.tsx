@@ -28,7 +28,7 @@ export const Auth: React.FC = () => {
       }
     } catch (error: any) {
       // If we are in mock mode (no API URL), we simulate a successful login for demo purposes
-      if (!process.env.SUPABASE_URL && error.message.includes('Auth session missing')) {
+      if (!process.env['SUPABASE_URL'] && error.message.includes('Auth session missing')) {
          // This block intentionally left empty as the real app needs Env vars.
       }
       showToast(error.message || 'Authentication failed', 'error');

@@ -48,7 +48,7 @@ const MemoizedMessage = memo(({ msg, formatMessageContent }: { msg: Message, for
 
 MemoizedMessage.displayName = 'MemoizedMessage';
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, isLoading, onClear, onStop }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ messages, onSendMessage, isLoading, onClear, onStop }) => {
   const { t, language } = useTranslation();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -241,4 +241,4 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
       </div>
     </div>
   );
-};
+});

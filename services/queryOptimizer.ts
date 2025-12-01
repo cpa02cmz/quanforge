@@ -142,16 +142,16 @@ class QueryOptimizer {
     const filters: Record<string, any> = {};
 
     if (options.userId) {
-      filters.user_id = options.userId;
+      filters['user_id'] = options.userId;
     }
 
     if (options.strategyType && options.strategyType !== 'All') {
-      filters.strategy_type = options.strategyType;
+      filters['strategy_type'] = options.strategyType;
     }
 
     if (options.searchTerm) {
       // Use full-text search optimization
-      filters.or = `name.ilike.%${options.searchTerm}%,description.ilike.%${options.searchTerm}%`;
+      filters['or'] = `name.ilike.%${options.searchTerm}%,description.ilike.%${options.searchTerm}%`;
     }
 
     optimization.filters = filters;
@@ -225,19 +225,19 @@ class QueryOptimizer {
 
     // Use text search for better performance
     if (searchTerm) {
-      queryFilters.or = `name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`;
+      queryFilters['or'] = `name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`;
     }
 
     if (filters.strategyType && filters.strategyType !== 'All') {
-      queryFilters.strategy_type = filters.strategyType;
+      queryFilters['strategy_type'] = filters.strategyType;
     }
 
     if (filters.userId) {
-      queryFilters.user_id = filters.userId;
+      queryFilters['user_id'] = filters.userId;
     }
 
     if (filters.dateRange) {
-      queryFilters.and = `created_at.gte.${filters.dateRange.start},created_at.lte.${filters.dateRange.end}`;
+      queryFilters['and'] = `created_at.gte.${filters.dateRange.start},created_at.lte.${filters.dateRange.end}`;
     }
 
     optimization.filters = queryFilters;

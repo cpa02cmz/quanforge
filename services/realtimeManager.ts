@@ -168,11 +168,11 @@ class RealtimeManager {
         console.error('Failed to sync change:', error);
         failCount++;
         
-       // Re-queue failed changes for retry
-         if (change.retryCount < this.config.maxRetries) {
-           (change as any).retryCount = ((change as any).retryCount || 0) + 1;
-           this.syncQueue.unshift(change);
-         }
+// Re-queue failed changes for retry
+          if ((change.retryCount ?? 0) < this.config.maxRetries) {
+            change.retryCount = (change.retryCount ?? 0) + 1;
+            this.syncQueue.unshift(change);
+          }
       }
     }
 
@@ -316,7 +316,7 @@ class RealtimeManager {
    private setupRealtimeClient(): void {
      if (!this.client) return;
 
-     (this.client.auth as any).onAuthStateChange((event, session) => {
+     (this.client.auth as any).onAuthStateChange((event: string, session: any) => {
        if (event === 'SIGNED_IN') {
          // Re-activate all subscriptions
          for (const subscription of this.subscriptions.values()) {

@@ -149,8 +149,12 @@ class PerformanceMonitor {
     return vitals;
   }
 
+private recordInteraction(name: string, duration: number) {
+     this.recordMetric(`interaction_${name}`, duration);
+   }
+
    // Custom timing for user interactions
-   measureInteraction(name: string, fn: () => void | Promise<void>) {
+   measureInteraction(name: string, fn: () => void | Promise<void>): Promise<void> | void {
      const start = performance.now();
      
      const result = fn();
@@ -158,11 +162,11 @@ class PerformanceMonitor {
      if (result instanceof Promise) {
        return result.finally(() => {
          const duration = performance.now() - start;
-         this.recordMetric(`interaction_${name}`, duration);
+         this.recordInteraction(name, duration);
        });
      } else {
        const duration = performance.now() - start;
-       this.recordMetric(`interaction_${name}`, duration);
+       this.recordInteraction(name, duration);
      }
    }
 
