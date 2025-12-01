@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { AISettingsModal } from './AISettingsModal';
@@ -11,7 +11,7 @@ interface LayoutProps {
   session: UserSession | null;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ session }) => {
+export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
   const location = useLocation();
   const { t } = useTranslation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -150,4 +150,4 @@ export const Layout: React.FC<LayoutProps> = ({ session }) => {
       </main>
     </div>
   );
-};
+});

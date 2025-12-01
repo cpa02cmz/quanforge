@@ -29,3 +29,11 @@
 - [x] **Type Safety**: Improved TypeScript typing across components and services
 - [x] **Performance**: Added React memoization and WebSocket cleanup for better memory management
 - [x] **Code Quality**: Extracted duplicate API key rotation logic into shared utilities
+
+## Performance Optimizations (v1.2)
+- [x] **React Performance**: Added React.memo to Layout, Generator, Dashboard, MarketTicker, and StrategyConfig components
+- [x] **Error Boundaries**: Enhanced error handling with comprehensive error logging and user-friendly fallbacks
+- [x] **Input Validation**: Implemented comprehensive validation service for all user inputs with XSS protection
+- [x] **Bundle Optimization**: Modularized constants and implemented lazy loading for translations and strategies
+- [x] **Error Handling**: Created unified error handling utility with global error capture and reporting
+- [x] **Code Splitting**: Optimized bundle size with proper chunk separation and lazy loading

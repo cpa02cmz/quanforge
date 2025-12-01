@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, memo } from 'react';
 import { marketService, MarketData } from '../services/marketData';
 import { useTranslation } from '../services/i18n';
 
@@ -7,7 +7,7 @@ interface MarketTickerProps {
   symbol: string;
 }
 
-export const MarketTicker: React.FC<MarketTickerProps> = ({ symbol }) => {
+export const MarketTicker: React.FC<MarketTickerProps> = memo(({ symbol }) => {
   const { t } = useTranslation();
   const [data, setData] = useState<MarketData | null>(null);
   const prevBidRef = useRef<number>(0);
@@ -100,4 +100,4 @@ export const MarketTicker: React.FC<MarketTickerProps> = ({ symbol }) => {
       </div>
     </div>
   );
-};
+});

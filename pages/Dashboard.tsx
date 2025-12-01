@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { mockDb } from '../services/supabase';
 import { Robot, UserSession } from '../types';
@@ -12,7 +12,7 @@ interface DashboardProps {
     session: UserSession | null;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ session }) => {
+export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
   const { t } = useTranslation();
   const [robots, setRobots] = useState<Robot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -216,4 +216,4 @@ export const Dashboard: React.FC<DashboardProps> = ({ session }) => {
       )}
     </div>
   );
-};
+});
