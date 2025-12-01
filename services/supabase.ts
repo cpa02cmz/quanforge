@@ -2,6 +2,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager, getEnv } from './settingsManager';
 import { Robot, UserSession } from '../types';
+import { databaseIndexer } from './databaseIndexer';
 
 // Mock session storage
 const STORAGE_KEY = 'mock_session';
@@ -169,7 +170,10 @@ export const mockDb = {
     
     if (settings.mode === 'mock') {
       const stored = localStorage.getItem(ROBOTS_KEY);
-      return { data: safeParse(stored, []), error: null };
+      const robots = safeParse(stored, []);
+      // Initialize the database indexer with loaded robots for optimized search
+      databaseIndexer.initialize(robots);
+      return { data: robots, error: null };
     }
     return getClient().from('robots').select('*').order('created_at', { ascending: false });
   },
@@ -182,10 +186,24 @@ export const mockDb = {
           const stored = localStorage.getItem(ROBOTS_KEY);
           const robots = safeParse(stored, []);
           
-          const newRobot = { ...robot, id: generateUUID(), created_at: new Date().toISOString() };
+          // Validate robot before saving to prevent storage bloat
+          if (!isValidRobot(robot)) {
+              return { data: null, error: "Invalid robot data" };
+          }
+          
+          const newRobot = { 
+              ...robot, 
+              id: generateUUID(), 
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+          };
+          
+          // Use efficient unshift for new robots at the beginning
           robots.unshift(newRobot);
           
           trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
+          // Update indexer
+          databaseIndexer.addRobot(newRobot);
           return { data: [newRobot], error: null };
       } catch (e: any) {
           return { data: null, error: e.message };
@@ -208,11 +226,24 @@ export const mockDb = {
                 return { data: null, error: "Robot not found" };
             }
             
-            // Create updated robot object
-            const updatedRobot = { ...robots[robotIndex], ...updates, updated_at: new Date().toISOString() };
+            // Create updated robot object with validation
+            const updatedRobot = { 
+                ...robots[robotIndex], 
+                ...updates, 
+                id: robots[robotIndex].id, // Preserve original ID
+                updated_at: new Date().toISOString() 
+            };
+            
+            // Validate the updated robot before saving
+            if (!isValidRobot(updatedRobot)) {
+                return { data: null, error: "Invalid robot data after update" };
+            }
+            
             robots[robotIndex] = updatedRobot;
             
             trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
+            // Update indexer
+            databaseIndexer.updateRobot(id, updates);
             return { data: updatedRobot, error: null };
         } catch (e: any) {
             return { data: null, error: e.message };
@@ -236,6 +267,8 @@ export const mockDb = {
             }
 
             trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
+            // Update indexer
+            databaseIndexer.removeRobot(id);
             return { data: true, error: null };
         } catch (e: any) {
             return { error: e.message };
@@ -263,8 +296,15 @@ export const mockDb = {
                 updated_at: new Date().toISOString()
             };
             
+            // Validate the new robot before saving
+            if (!isValidRobot(newRobot)) {
+                return { data: null, error: "Invalid robot data after duplication" };
+            }
+            
             robots.unshift(newRobot);
             trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
+            // Update indexer
+            databaseIndexer.addRobot(newRobot);
             return { data: [newRobot], error: null };
         } catch (e: any) {
             return { data: null, error: e.message };
@@ -291,6 +331,8 @@ export const mockDb = {
 
 // --- Database Utilities ---
 
+// Optimized database utility functions with better performance and validation
+
 export const dbUtils = {
     async checkConnection(): Promise<{ success: boolean; message: string; mode: string }> {
         const settings = settingsManager.getDBSettings();
@@ -312,18 +354,28 @@ export const dbUtils = {
         }
     },
 
-    async getStats(): Promise<{ count: number; storageType: string }> {
+    async getStats(): Promise<{ count: number; storageType: string; size: number }> {
         const settings = settingsManager.getDBSettings();
         if (settings.mode === 'mock') {
             const stored = localStorage.getItem(ROBOTS_KEY);
             const robots = safeParse(stored, []);
-            return { count: robots.length, storageType: 'Browser Local Storage' };
+            const storageSize = stored ? new Blob([stored]).size : 0;
+            return { 
+                count: robots.length, 
+                storageType: 'Browser Local Storage',
+                size: storageSize
+            };
         } else {
             const { count } = await getClient().from('robots').select('*', { count: 'exact', head: true });
-            return { count: count || 0, storageType: 'Supabase Cloud DB' };
+            return { 
+                count: count || 0, 
+                storageType: 'Supabase Cloud DB',
+                size: 0 // Size not tracked for cloud DB
+            };
         }
     },
 
+    // Optimized export function with size check
     async exportDatabase(): Promise<string> {
         const settings = settingsManager.getDBSettings();
         let robots = [];
@@ -341,25 +393,43 @@ export const dbUtils = {
             version: "1.0",
             timestamp: new Date().toISOString(),
             source: settings.mode,
+            robotCount: robots.length,
             robots: robots
         };
 
         return JSON.stringify(exportObj, null, 2);
     },
 
+    // Optimized import with better validation and memory management
     async importDatabase(jsonString: string, merge: boolean = true): Promise<{ success: boolean; count: number; error?: string }> {
         try {
+            // Check if JSON is too large to avoid memory issues
+            if (jsonString.length > 10 * 1024 * 1024) { // 10MB limit
+                throw new Error("Import file is too large (max 10MB). Please split your data or optimize the export.");
+            }
+            
             const parsed = JSON.parse(jsonString);
             if (!parsed.robots || !Array.isArray(parsed.robots)) {
                 throw new Error("Invalid format: 'robots' array missing.");
             }
 
-            const validRobots = parsed.robots.filter(isValidRobot).map((r: Robot) => ({
-                ...r,
-                strategy_type: r.strategy_type || 'Custom',
-                name: r.name || 'Untitled Robot',
-                code: r.code || '// No code'
-            }));
+            // Limit import size to prevent memory issues
+            if (parsed.robots.length > 10000) {
+                throw new Error("Too many robots in import file (max 10,000). Please split your data.");
+            }
+
+            // Validate and clean robots with efficient filtering
+            const validRobots = parsed.robots
+                .filter(isValidRobot)
+                .map((r: Robot) => ({
+                    ...r,
+                    strategy_type: r.strategy_type || 'Custom',
+                    name: r.name || 'Untitled Robot',
+                    code: r.code || '// No code',
+                    // Ensure required timestamps exist
+                    created_at: r.created_at || new Date().toISOString(),
+                    updated_at: r.updated_at || new Date().toISOString()
+                }));
             
             const skippedCount = parsed.robots.length - validRobots.length;
 
@@ -373,12 +443,20 @@ export const dbUtils = {
                 const stored = localStorage.getItem(ROBOTS_KEY);
                 const currentRobots = merge ? safeParse(stored, []) : [];
                 
+                // Generate new IDs for imported robots to avoid conflicts
                 const newRobots = validRobots.map((r: Robot) => ({
                     ...r,
                     id: generateUUID()
                 }));
 
+                // Combine arrays efficiently
                 const finalRobots = [...newRobots, ...currentRobots]; 
+                
+                // Check final size before saving
+                const testString = JSON.stringify(finalRobots);
+                if (testString.length > 4.5 * 1024 * 1024) { // 4.5MB to stay under 5MB limit
+                    throw new Error("Import would exceed browser storage limit. Please remove some existing robots first.");
+                }
                 
                 trySaveToStorage(ROBOTS_KEY, JSON.stringify(finalRobots));
                 
@@ -485,5 +563,53 @@ export const dbUtils = {
             return true;
         }
         return false;
+    },
+    
+    // New utility function for database cleanup and optimization
+    async optimizeDatabase(): Promise<{ success: boolean; message: string }> {
+        const settings = settingsManager.getDBSettings();
+        
+        if (settings.mode !== 'mock') {
+            return { success: false, message: "Optimization only available for local storage mode" };
+        }
+        
+        try {
+            const stored = localStorage.getItem(ROBOTS_KEY);
+            const robots = safeParse(stored, []);
+            
+            if (robots.length === 0) {
+                return { success: true, message: "No data to optimize" };
+            }
+            
+            // Remove invalid robots and clean up malformed data
+            const validRobots = robots
+                .filter(r => r && typeof r === 'object' && r.name && r.code)
+                .map(r => {
+                    // Ensure required fields exist and are properly formatted
+                    return {
+                        ...r,
+                        id: r.id || generateUUID(),
+                        name: r.name || 'Untitled Robot',
+                        code: r.code || '// No code',
+                        strategy_type: r.strategy_type || 'Custom',
+                        created_at: r.created_at || new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    };
+                });
+                
+            // Sort by updated_at to ensure most recent are first
+            validRobots.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+            
+            // Save optimized data
+            trySaveToStorage(ROBOTS_KEY, JSON.stringify(validRobots));
+            
+            const removedCount = robots.length - validRobots.length;
+            return { 
+                success: true, 
+                message: `Database optimized: ${validRobots.length} valid robots, ${removedCount} invalid robots removed` 
+            };
+        } catch (e: any) {
+            return { success: false, message: `Optimization failed: ${e.message}` };
+        }
     }
 };

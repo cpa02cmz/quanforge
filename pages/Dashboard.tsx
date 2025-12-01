@@ -5,11 +5,12 @@ import { mockDb } from '../services/supabase';
 import { Robot, UserSession } from '../types';
 import { useToast } from '../components/Toast';
 import { useTranslation } from '../services/i18n';
+import { databaseIndexer } from '../services/databaseIndexer';
 
 
 
 interface DashboardProps {
-    session: UserSession | null;
+    session?: UserSession | null;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ session }) => {
@@ -32,7 +33,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ session }) => {
     try {
       const { data, error } = await mockDb.getRobots();
       if (error) throw error;
-      if (data) setRobots(data);
+      if (data) {
+        setRobots(data);
+        // Initialize the database indexer with loaded robots for optimized search
+        databaseIndexer.initialize(data);
+      }
     } catch (err) {
       console.error('Failed to load robots', err);
       showToast('Failed to load robots', 'error');
@@ -79,20 +84,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ session }) => {
       }
   }, [t, showToast]);
 
-  // Filter Logic - memoized for performance
-  const filteredRobots = useMemo(() => 
-    robots.filter(robot => {
-      const matchesSearch = robot.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = filterType === 'All' || (robot.strategy_type || 'Custom') === filterType;
-      return matchesSearch && matchesType;
-    }), [robots, searchTerm, filterType]
-  );
+  // Filter Logic - using database indexer for better performance
+  const filteredRobots = useMemo(() => {
+    let results: Robot[] = [];
+    
+    if (searchTerm) {
+      // Use search indexer
+      results = databaseIndexer.search(searchTerm);
+    } else {
+      // If no search term, get all robots
+      results = databaseIndexer.getAllSortedByDate();
+    }
+    
+    // Apply strategy type filter if needed
+    if (filterType !== 'All') {
+      results = results.filter(robot => (robot.strategy_type || 'Custom') === filterType);
+    }
+    
+    return results;
+  }, [searchTerm, filterType]);
 
   // Derived list of unique strategy types for the dropdown - memoized
-  const availableTypes = useMemo(() => 
-    ['All', ...Array.from(new Set(robots.map(r => r.strategy_type || 'Custom')))], 
-    [robots]
-  );
+  const availableTypes = useMemo(() => {
+    const allRobots = databaseIndexer.getAllSortedByDate();
+    const uniqueTypes = Array.from(new Set(allRobots.map(r => r.strategy_type || 'Custom')));
+    return ['All', ...uniqueTypes];
+  }, [robots]); // robots is still needed as dependency since it triggers reinitialization
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
