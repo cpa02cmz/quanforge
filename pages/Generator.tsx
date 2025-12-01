@@ -93,25 +93,30 @@ export const Generator: React.FC = memo(() => {
         description={id ? `Edit and optimize your MQL5 trading robot "${robotName}". Adjust parameters, test strategies, and deploy to MetaTrader 5.` : 'Create a new MQL5 trading robot using AI. Describe your strategy and generate professional Expert Advisors for MetaTrader 5.'}
         keywords="MQL5 generator, trading robot creator, Expert Advisor builder, AI trading strategy, MetaTrader 5 robot, forex EA builder, automated trading bot, MT5 expert advisor, algorithmic trading platform"
         canonicalUrl={id ? `https://quanforge.ai/generator/${id}` : 'https://quanforge.ai/generator'}
-        structuredData={[
-          structuredDataTemplates.softwareApplication,
-          structuredDataTemplates.breadcrumb([
-            { name: 'Home', url: 'https://quanforge.ai/' },
-            { name: 'Generator', url: 'https://quanforge.ai/generator' }
-          ]),
-          ...(robotName ? [structuredDataTemplates.creativeWork(robotName, 'Generated MQL5 trading strategy')] : []),
-          structuredDataTemplates.howTo(
-            'Create a Trading Robot with QuantForge AI',
-            'Learn how to generate professional MQL5 trading robots using AI in just a few simple steps.',
-            [
-              { name: 'Describe Your Strategy', text: 'Explain your trading strategy in natural language to the AI assistant.' },
-              { name: 'Configure Parameters', text: 'Set risk management, timeframes, symbols, and other trading parameters.' },
-              { name: 'Generate Code', text: 'AI generates professional MQL5 code based on your requirements.' },
-              { name: 'Test & Optimize', text: 'Run simulations and analysis to validate your strategy.' },
-              { name: 'Deploy to MT5', text: 'Download the .mq5 file and deploy to your MetaTrader 5 platform.' }
-            ]
-          )
-        ]}
+structuredData={[
+           structuredDataTemplates.softwareApplication,
+           structuredDataTemplates.breadcrumb([
+             { name: 'Home', url: 'https://quanforge.ai/' },
+             { name: 'Generator', url: 'https://quanforge.ai/generator' }
+           ]),
+           ...(robotName ? [structuredDataTemplates.creativeWork(robotName, 'Generated MQL5 trading strategy')] : []),
+           structuredDataTemplates.howTo(
+             'Create a Trading Robot with QuantForge AI',
+             'Learn how to generate professional MQL5 trading robots using AI in just a few simple steps.',
+             [
+               { name: 'Describe Your Strategy', text: 'Explain your trading strategy in natural language to the AI assistant.' },
+               { name: 'Configure Parameters', text: 'Set risk management, timeframes, symbols, and other trading parameters.' },
+               { name: 'Generate Code', text: 'AI generates professional MQL5 code based on your requirements.' },
+               { name: 'Test & Optimize', text: 'Run simulations and analysis to validate your strategy.' },
+               { name: 'Deploy to MT5', text: 'Download the .mq5 file and deploy to your MetaTrader 5 platform.' }
+             ]
+           ),
+           structuredDataTemplates.webPage(
+             id ? `Edit Trading Robot - ${robotName}` : 'Create New Trading Robot',
+             id ? `Edit and optimize your MQL5 trading robot "${robotName}" with advanced AI-powered tools.` : 'Create new MQL5 trading robots using advanced AI technology with visual configuration and real-time testing.',
+             id ? `https://quanforge.ai/generator/${id}` : 'https://quanforge.ai/generator'
+           )
+         ]}
       />
       <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] md:h-screen bg-dark-bg relative" role="main" aria-label="Strategy generator workspace">
       

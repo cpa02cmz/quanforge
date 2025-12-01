@@ -102,17 +102,22 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
         description="Manage your MQL5 trading robots and Expert Advisors. View, edit, duplicate, and analyze your automated trading strategies."
         keywords="trading robot dashboard, MQL5 management, Expert Advisor dashboard, automated trading portfolio, forex robot management, MT5 EA portfolio, trading algorithm dashboard, quantitative trading portfolio"
         canonicalUrl="https://quanforge.ai/"
-        structuredData={[
-          structuredDataTemplates.softwareApplication,
-          structuredDataTemplates.breadcrumb([
-            { name: 'Home', url: 'https://quanforge.ai/' },
-            { name: 'Dashboard', url: 'https://quanforge.ai/' }
-          ]),
-          structuredDataTemplates.videoGame(
-            'Trading Robot Portfolio Manager',
-            'Manage and monitor your automated trading strategies with advanced analytics and performance tracking.'
-          )
-        ]}
+structuredData={[
+           structuredDataTemplates.softwareApplication,
+           structuredDataTemplates.breadcrumb([
+             { name: 'Home', url: 'https://quanforge.ai/' },
+             { name: 'Dashboard', url: 'https://quanforge.ai/' }
+           ]),
+           structuredDataTemplates.videoGame(
+             'Trading Robot Portfolio Manager',
+             'Manage and monitor your automated trading strategies with advanced analytics and performance tracking.'
+           ),
+           structuredDataTemplates.webPage(
+             'Trading Robot Dashboard',
+             'Comprehensive dashboard for managing MQL5 trading robots and Expert Advisors with performance analytics.',
+             'https://quanforge.ai/'
+           )
+         ]}
       />
       <div className="p-8 max-w-7xl mx-auto" role="main" aria-label="Trading robots dashboard">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">

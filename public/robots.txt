@@ -12,6 +12,10 @@ User-agent: MJ12bot
 Disallow: /
 User-agent: SemrushBot
 Disallow: /
+User-agent: BLEXBot
+Disallow: /
+User-agent: BacklinkCrawler
+Disallow: /
 
 # Block admin and API routes
 Disallow: /api/
@@ -19,14 +23,36 @@ Disallow: /admin/
 Disallow: /*.json$
 Disallow: /_next/
 Disallow: /src/
+Disallow: /private/
+Disallow: /internal/
 
 # Allow important pages
 Allow: /generator
 Allow: /wiki
+Allow: /faq
+Allow: /features
+Allow: /pricing
 Allow: /assets/
 Allow: /images/
 Allow: /css/
 Allow: /js/
 
+# Enhanced crawling instructions
+User-agent: Googlebot
+Crawl-delay: 1
+Allow: /
+
+User-agent: Bingbot
+Crawl-delay: 1
+Allow: /
+
+User-agent: Slurp
+Crawl-delay: 1
+Allow: /
+
 # Crawl delay for respectful crawling
 Crawl-delay: 1
+
+# Additional SEO directives
+# Host directive for Yandex
+Host: https://quanforge.ai

@@ -209,5 +209,60 @@ export const structuredDataTemplates = {
       "@type": "Organization",
       "name": "QuantForge AI"
     }
+  }),
+
+  localBusiness: {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "QuantForge AI",
+    "description": "Advanced MQL5 Trading Robot Generator powered by AI",
+    "url": "https://quanforge.ai",
+    "logo": "https://quanforge.ai/logo.png",
+    "sameAs": [
+      "https://twitter.com/quanforge",
+      "https://github.com/quanforge"
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer service",
+      "availableLanguage": ["English"]
+    }
+  },
+
+  webPage: (name: string, description: string, url: string) => ({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": name,
+    "description": description,
+    "url": url,
+    "dateModified": new Date().toISOString(),
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "QuantForge AI",
+      "url": "https://quanforge.ai"
+    },
+    "about": {
+      "@type": "Thing",
+      "name": "MQL5 Trading Robot Generation"
+    }
+  }),
+
+  course: (name: string, description: string) => ({
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": name,
+    "description": description,
+    "provider": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "hasCourseInstance": {
+      "@type": "CourseInstance",
+      "courseMode": "online",
+      "instructor": {
+        "@type": "Organization",
+        "name": "QuantForge AI"
+      }
+    }
   })
 };

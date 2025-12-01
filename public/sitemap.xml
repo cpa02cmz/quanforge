@@ -10,23 +10,56 @@
       <image:title>QuantForge AI - MQL5 Trading Robot Generator</image:title>
       <image:caption>Generate professional MQL5 trading robots with AI</image:caption>
     </image:image>
+    <image:image>
+      <image:loc>https://quanforge.ai/logo.png</image:loc>
+      <image:title>QuantForge AI Logo</image:title>
+      <image:caption>QuantForge AI - Advanced Trading Robot Generator</image:caption>
+    </image:image>
   </url>
   <url>
     <loc>https://quanforge.ai/generator</loc>
     <lastmod>2025-12-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/generator-preview.png</image:loc>
+      <image:title>Trading Robot Generator Interface</image:title>
+      <image:caption>Create MQL5 trading robots with AI-powered code generation</image:caption>
+    </image:image>
   </url>
   <url>
     <loc>https://quanforge.ai/wiki</loc>
     <lastmod>2025-12-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/wiki-preview.png</image:loc>
+      <image:title>Documentation and Wiki</image:title>
+      <image:caption>Comprehensive guides for MQL5 trading robot development</image:caption>
+    </image:image>
   </url>
   <url>
     <loc>https://quanforge.ai/login</loc>
     <lastmod>2025-12-01</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/faq</loc>
+    <lastmod>2025-12-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/features</loc>
+    <lastmod>2025-12-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/pricing</loc>
+    <lastmod>2025-12-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>
