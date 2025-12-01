@@ -172,10 +172,32 @@ class PerformanceMonitor {
     return JSON.stringify(this.getPerformanceReport(), null, 2);
   }
 
-  // Get performance score (0-100)
-  getPerformanceScore(): number {
-    const report = this.getPerformanceReport();
-    if (report.totalOperations === 0) return 100;
+   // Web performance API integration
+   getWebVitals(): any {
+     if (typeof performance !== 'undefined' && 'getEntriesByType' in performance) {
+       // Use any type to avoid strict typing issues with performance entries
+       const performanceAPI: any = performance;
+       const navigationEntries = performanceAPI.getEntriesByType?.('navigation') || [];
+       const paintEntries = performanceAPI.getEntriesByType?.('paint') || [];
+       const resourceEntries = performanceAPI.getEntriesByType?.('resource') || [];
+       
+       return {
+         navigation: navigationEntries.length > 0 ? navigationEntries[0] : null,
+         paint: {
+           firstPaint: Array.isArray(paintEntries) ? paintEntries.find((entry: any) => entry.name === 'first-paint') : null,
+           firstContentfulPaint: Array.isArray(paintEntries) ? paintEntries.find((entry: any) => entry.name === 'first-contentful-paint') : null,
+         },
+         resourcesCount: resourceEntries.length,
+         domContentLoaded: typeof document !== 'undefined' && (document.readyState === 'interactive' || document.readyState === 'complete')
+       };
+     }
+     return null;
+   }
+
+   // Get performance score (0-100)
+   getPerformanceScore(): number {
+     const report = this.getPerformanceReport();
+     if (report.totalOperations === 0) return 100;
 
     let score = 100;
     

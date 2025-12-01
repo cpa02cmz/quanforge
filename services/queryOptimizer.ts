@@ -23,9 +23,43 @@ class QueryOptimizer {
   private readonly DEFAULT_TTL = 60000; // 1 minute
   private readonly MAX_METRICS = 1000;
 
+  // Calculate size of data in bytes
+  private calculateSize(data: any): number {
+    try {
+      return new Blob([JSON.stringify(data)]).size;
+    } catch {
+      return 0;
+    }
+  }
+
   // Generate query hash for caching
   private generateQueryHash(optimization: QueryOptimization): string {
     return btoa(JSON.stringify(optimization)).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+  }
+
+  // Check and maintain cache size limits
+  private maintainCacheSize(newEntrySize: number): void {
+    const maxCacheSize = 50 * 1024 * 1024; // 50MB
+    let currentSize = 0;
+    
+    // Calculate current size
+    for (const entry of this.queryCache.values()) {
+      currentSize += this.calculateSize(entry.data);
+    }
+    
+    // If adding the new entry would exceed the limit, remove oldest entries
+    if (currentSize + newEntrySize > maxCacheSize) {
+      // Sort entries by timestamp (oldest first) and remove until within limit
+      const sortedEntries = Array.from(this.queryCache.entries())
+        .map(([key, entry]) => ({ key, entry, size: this.calculateSize(entry.data) }))
+        .sort((a, b) => a.entry.timestamp - b.entry.timestamp);
+      
+      for (const { key, size } of sortedEntries) {
+        if (currentSize + newEntrySize <= maxCacheSize) break;
+        this.queryCache.delete(key);
+        currentSize -= size;
+      }
+    }
   }
 
   // Build optimized query
@@ -96,8 +130,11 @@ class QueryOptimizer {
     const result = await query as any;
     const { data, error } = result;
 
-    // Cache successful results
+    // Cache successful results with size management
     if (!error && data) {
+      const dataSize = this.calculateSize(data);
+      this.maintainCacheSize(dataSize);
+      
       this.queryCache.set(queryHash, {
         data,
         timestamp: Date.now(),
@@ -129,6 +166,7 @@ class QueryOptimizer {
       orderDirection?: 'asc' | 'desc';
     } = {}
   ): Promise<{ data: Robot[] | null; error: any; metrics: QueryMetrics }> {
+    // Create optimization object for this specific query
     const optimization: QueryOptimization = {
       selectFields: ['id', 'name', 'description', 'strategy_type', 'created_at', 'updated_at', 'user_id'],
       limit: options.limit || 20,
@@ -155,7 +193,8 @@ class QueryOptimizer {
     }
 
     optimization.filters = filters;
-
+    
+    // Use the existing executeQuery method which handles caching
     return this.executeQuery<Robot>(client, 'robots', optimization);
   }
 

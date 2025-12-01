@@ -260,146 +260,122 @@ class ResilientSupabaseClient {
 
 // Wrapper methods for common Supabase operations
     from(table: string) {
-      const self = this; // Capture 'this' context
       return {
         select: (columns?: string) => ({
           order: (column: string, options?: { ascending: boolean }) => ({
             limit: (limit: number) => ({
               range: (from: number, to: number) => 
-                self.executeWithResilience(
-                  `${table}_select_range`,
-                  async () => {
-                    const result = self.client.from(table).select(columns).order(column, options).limit(limit).range(from, to);
-                    return result;
-                  }
+                this.executeWithResilience(
+                  `${table}_select_order_limit_range`,
+                  async () => this.client.from(table).select(columns).order(column, options).limit(limit).range(from, to)
                 ),
-              eq: (column: string, value: any) => 
-                self.executeWithResilience(
-                  `${table}_select_eq`,
-                  async () => {
-                    const result = self.client.from(table).select(columns).order(column, options).limit(limit).eq(column, value);
-                    return result;
-                  }
+              eq: (col: string, value: any) => 
+                this.executeWithResilience(
+                  `${table}_select_order_limit_eq`,
+                  async () => this.client.from(table).select(columns).order(column, options).limit(limit).eq(col, value)
                 ),
               or: (filter: string) => 
-                self.executeWithResilience(
-                  `${table}_select_or`,
-                  async () => {
-                    const result = self.client.from(table).select(columns).order(column, options).limit(limit).or(filter);
-                    return result;
-                  }
+                this.executeWithResilience(
+                  `${table}_select_order_limit_or`,
+                  async () => this.client.from(table).select(columns).order(column, options).limit(limit).or(filter)
                 ),
               single: () => 
-                self.executeWithResilience(
-                  `${table}_select_single`,
-                  async () => {
-                    const result = self.client.from(table).select(columns).order(column, options).limit(limit).single();
-                    return result;
-                  }
+                this.executeWithResilience(
+                  `${table}_select_order_limit_single`,
+                  async () => this.client.from(table).select(columns).order(column, options).limit(limit).single()
                 ),
             }),
-            eq: (column: string, value: any) => ({
+            eq: (col: string, value: any) => ({
               single: () => 
-                self.executeWithResilience(
-                  `${table}_select_eq_single`,
-                  async () => {
-                    const result = self.client.from(table).select(columns).order(column, options).eq(column, value).single();
-                    return result;
-                  }
+                this.executeWithResilience(
+                  `${table}_select_order_eq_single`,
+                  async () => this.client.from(table).select(columns).order(column, options).eq(col, value).single()
                 ),
             }),
             or: (filter: string) => 
-              self.executeWithResilience(
-                `${table}_select_or`,
-                async () => {
-                  const result = self.client.from(table).select(columns).order(column, options).or(filter);
-                  return result;
-                }
+              this.executeWithResilience(
+                `${table}_select_order_or`,
+                async () => this.client.from(table).select(columns).order(column, options).or(filter)
               ),
             single: () => 
-              self.executeWithResilience(
-                `${table}_select_single`,
-                async () => {
-                  const result = self.client.from(table).select(columns).order(column, options).single();
-                  return result;
-                }
+              this.executeWithResilience(
+                `${table}_select_order_single`,
+                async () => this.client.from(table).select(columns).order(column, options).single()
               ),
           }),
-          eq: (column: string, value: any) => ({
+          limit: (limit: number) => ({
+            range: (from: number, to: number) => 
+              this.executeWithResilience(
+                `${table}_select_limit_range`,
+                async () => this.client.from(table).select(columns).limit(limit).range(from, to)
+              ),
+            eq: (col: string, value: any) => 
+              this.executeWithResilience(
+                `${table}_select_limit_eq`,
+                async () => this.client.from(table).select(columns).limit(limit).eq(col, value)
+              ),
+            or: (filter: string) => 
+              this.executeWithResilience(
+                `${table}_select_limit_or`,
+                async () => this.client.from(table).select(columns).limit(limit).or(filter)
+              ),
             single: () => 
-              self.executeWithResilience(
+              this.executeWithResilience(
+                `${table}_select_limit_single`,
+                async () => this.client.from(table).select(columns).limit(limit).single()
+              ),
+          }),
+          eq: (col: string, value: any) => ({
+            single: () => 
+              this.executeWithResilience(
                 `${table}_select_eq_single`,
-                async () => {
-                  const result = self.client.from(table).select(columns).eq(column, value).single();
-                  return result;
-                }
+                async () => this.client.from(table).select(columns).eq(col, value).single()
               ),
           }),
           or: (filter: string) => 
-            self.executeWithResilience(
+            this.executeWithResilience(
               `${table}_select_or`,
-              async () => {
-                const result = self.client.from(table).select(columns).or(filter);
-                return result;
-              }
+              async () => this.client.from(table).select(columns).or(filter)
             ),
           single: () => 
-            self.executeWithResilience(
+            this.executeWithResilience(
               `${table}_select_single`,
-              async () => {
-                const result = self.client.from(table).select(columns).single();
-                return result;
-              }
+              async () => this.client.from(table).select(columns).single()
             ),
         }),
         insert: (data: any) => ({
           select: (columns?: string) => 
-            self.executeWithResilience(
+            this.executeWithResilience(
               `${table}_insert_select`,
-              async () => {
-                const result = self.client.from(table).insert(data).select(columns);
-                return result;
-              }
+              async () => this.client.from(table).insert(data).select(columns)
             ),
         }),
         update: (data: any) => ({
           match: (criteria: any) => ({
             select: (columns?: string) => 
-              self.executeWithResilience(
+              this.executeWithResilience(
                 `${table}_update_match_select`,
-                async () => {
-                  const result = self.client.from(table).update(data).match(criteria).select(columns);
-                  return result;
-                }
+                async () => this.client.from(table).update(data).match(criteria).select(columns)
               ),
           }),
-          eq: (column: string, value: any) => ({
+          eq: (col: string, value: any) => ({
             select: (columns?: string) => 
-              self.executeWithResilience(
+              this.executeWithResilience(
                 `${table}_update_eq_select`,
-                async () => {
-                  const result = self.client.from(table).update(data).eq(column, value).select(columns);
-                  return result;
-                }
+                async () => this.client.from(table).update(data).eq(col, value).select(columns)
               ),
           }),
         }),
         delete: () => ({
           match: (criteria: any) => 
-            self.executeWithResilience(
+            this.executeWithResilience(
               `${table}_delete_match`,
-              async () => {
-                const result = self.client.from(table).delete().match(criteria);
-                return result;
-              }
+              async () => this.client.from(table).delete().match(criteria)
             ),
-          eq: (column: string, value: any) => 
-            self.executeWithResilience(
+          eq: (col: string, value: any) => 
+            this.executeWithResilience(
               `${table}_delete_eq`,
-              async () => {
-                const result = self.client.from(table).delete().eq(column, value);
-                return result;
-              }
+              async () => this.client.from(table).delete().eq(col, value)
             ),
         }),
       };

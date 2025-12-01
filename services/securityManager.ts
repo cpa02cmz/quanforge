@@ -326,30 +326,74 @@ class SecurityManager {
       }
     }
 
-    // Basic syntax validation
-    if (!sanitizedCode.includes('OnTick') && !sanitizedCode.includes('OnStart')) {
-      errors.push('MQL5 code must contain OnTick or OnStart function');
-    }
+     // Basic syntax validation
+     if (!sanitizedCode.includes('OnTick') && !sanitizedCode.includes('OnStart')) {
+       errors.push('MQL5 code must contain OnTick or OnStart function');
+     }
+     
+     // Additional MQL5 security validations
+     const mqlSecurityPatterns = [
+       { pattern: /import\s+|^#import/gi, message: 'Import directives detected' },
+       { pattern: /resourceadd/gi, message: 'Resource addition detected' },
+       { pattern: /filefindfirst|filefindnext|filefindclose/gi, message: 'File system search functions detected' },
+       { pattern: /terminalinfostring|terminalinfointeger|terminalinfodouble/gi, message: 'Terminal information access detected' },
+       { pattern: /webrequest/gi, message: 'Web request functions detected' },
+       { pattern: /resourcecreate/gi, message: 'Resource creation detected' },
+       { pattern: /resourcefree/gi, message: 'Resource management detected' },
+       { pattern: /sendftp/gi, message: 'FTP operations detected' },
+       { pattern: /sendmail/gi, message: 'Email operations detected' },
+       { pattern: /sendnotification/gi, message: 'Notification operations detected' },
+       { pattern: /globalvariable/gi, message: 'Global variable operations detected' },
+       { pattern: /window/gi, message: 'Window operations detected' },
+       { pattern: /chart/gi, message: 'Chart operations detected' },
+       { pattern: /trade/gi, message: 'Direct trade operations detected' },
+       { pattern: /order/gi, message: 'Order operations detected' },
+     ];
+     
+     for (const { pattern, message } of mqlSecurityPatterns) {
+       if (pattern.test(sanitizedCode)) {
+         errors.push(message);
+         // Remove dangerous patterns
+         sanitizedCode = sanitizedCode.replace(pattern, `// SECURITY_BLOCKED: ${message}`);
+       }
+     }
 
-    return {
-      isValid: errors.length === 0,
-      errors,
-      sanitizedCode,
-    };
+     return {
+       isValid: errors.length === 0,
+       errors,
+       sanitizedCode,
+     };
   }
 
-  private preventXSS(data: any): { hasXSS: boolean; sanitizedData: any } {
-    let hasXSS = false;
-    const sanitized = Array.isArray(data) ? [...data] : { ...data };
+   private preventXSS(data: any): { hasXSS: boolean; sanitizedData: any } {
+     let hasXSS = false;
+     const sanitized = Array.isArray(data) ? [...data] : { ...data };
 
-    const xssPatterns = [
-      /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-      /javascript:/gi,
-      /on\w+\s*=/gi,
-      /<iframe\b[^>]*>/gi,
-      /<object\b[^>]*>/gi,
-      /<embed\b[^>]*>/gi,
-    ];
+     const xssPatterns = [
+       /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+       /javascript:/gi,
+       /on\w+\s*=/gi,
+       /<iframe\b[^>]*>/gi,
+       /<object\b[^>]*>/gi,
+       /<embed\b[^>]*>/gi,
+       /<link\b[^>]*>/gi,
+       /<meta\b[^>]*>/gi,
+       /<form\b[^>]*>/gi,
+       /vbscript:/gi,
+       /data:/gi,
+       /about:/gi,
+       /document\.cookie/gi,
+       /window\.location/gi,
+       /document\.write/gi,
+       /eval\(/gi,
+       /expression\(/gi,
+       /alert\(/gi,
+       /confirm\(/gi,
+       /prompt\(/gi,
+       /decodeURIComponent/gi,
+       /escape\(/gi,
+       /unescape\(/gi,
+     ];
 
     const sanitizeValue = (value: any): any => {
       if (typeof value === 'string') {
@@ -454,12 +498,27 @@ class SecurityManager {
     return this.config.allowedOrigins.includes(origin);
   }
 
-  // Get security metrics
-  getSecurityMetrics(): {
-    rateLimitEntries: number;
-    averageRiskScore: number;
-    blockedRequests: number;
-  } {
+   // Validate API key format
+   validateAPIKey(key: string): boolean {
+     if (!key) return false;
+     
+     // Basic format validation for common API key patterns
+     const patterns = [
+       /^[a-zA-Z0-9_-]{20,}$/,  // Generic API key format
+       /^sk-[a-zA-Z0-9_-]{20,}$/,  // OpenAI-style
+       /^AI[0-9a-zA-Z]{20,}$/,  // Google-style
+       /^[\w-]{20,40}$/,  // General API key format
+     ];
+     
+     return patterns.some(pattern => pattern.test(key));
+   }
+   
+   // Get security metrics
+   getSecurityMetrics(): {
+     rateLimitEntries: number;
+     averageRiskScore: number;
+     blockedRequests: number;
+   } {
     const rateLimitEntries = this.rateLimitMap.size;
     const blockedRequests = Array.from(this.rateLimitMap.values())
       .reduce((sum, record) => sum + Math.max(0, record.count - this.config.rateLimiting.maxRequests), 0);
