@@ -5,15 +5,55 @@
  import { settingsManager } from "./settingsManager";
  import { getActiveKey } from "../utils/apiKeyUtils";
 
- // Simple cache for strategy analysis to avoid repeated API calls
- const analysisCache = new Map<string, { result: StrategyAnalysis, timestamp: number }>();
- const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
+// Advanced cache for strategy analysis to avoid repeated API calls
+// Uses LRU eviction to prevent memory bloat
+class LRUCache<T> {
+  private cache = new Map<string, { result: T, timestamp: number }>();
+  private readonly ttl: number;
+  private readonly maxSize: number;
+
+  constructor(ttl: number = 5 * 60 * 1000, maxSize: number = 100) { // 5 min TTL, max 100 items
+    this.ttl = ttl;
+    this.maxSize = maxSize;
+  }
+
+  get(key: string): T | undefined {
+    const item = this.cache.get(key);
+    if (!item) return undefined;
+
+    if (Date.now() - item.timestamp > this.ttl) {
+      this.cache.delete(key);
+      return undefined;
+    }
+
+    // Move to end (most recently used)
+    this.cache.delete(key);
+    this.cache.set(key, item);
+    return item.result;
+  }
+
+  set(key: string, value: T): void {
+    // Evict oldest if at max size
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
+    
+    this.cache.set(key, { result: value, timestamp: Date.now() });
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+const analysisCache = new LRUCache<StrategyAnalysis>();
 
 /**
  * Utility: Retry an async operation with exponential backoff.
  * Useful for handling API rate limits (429) or transient network errors.
  */
-async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, maxDelay = 10000): Promise<T> {
     try {
         return await fn();
     } catch (error: any) {
@@ -23,12 +63,20 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Pr
         
         const isRateLimit = error.status === 429 || (error.message && error.message.includes('429'));
         const isServerErr = error.status >= 500;
+        const isNetworkErr = error.message?.includes('fetch failed') || 
+                             error.message?.includes('network') || 
+                             error.message?.includes('timeout') ||
+                             error.message?.includes('ETIMEDOUT') ||
+                             error.message?.includes('ECONNRESET');
 
-        // Only retry on Rate Limits or Server Errors
-        if (isRateLimit || isServerErr || error.message?.includes('fetch failed')) {
+        // Only retry on Rate Limits, Server Errors, or Network Issues
+        if (isRateLimit || isServerErr || isNetworkErr) {
             console.warn(`API Error (${error.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return withRetry(fn, retries - 1, delay * 2);
+            // Add jitter to prevent thundering herd
+            const jitter = Math.random() * 0.1 * delay;
+            const nextDelay = Math.min(delay * 1.5 + jitter, maxDelay); // Use 1.5 multiplier instead of 2 for gentler backoff
+            await new Promise(resolve => setTimeout(resolve, nextDelay));
+            return withRetry(fn, retries - 1, nextDelay, maxDelay);
         }
         
         throw error;
@@ -416,11 +464,11 @@ const extractJson = (text: string): any => {
      const codeHash = createHash(code.substring(0, 5000));
      const cacheKey = `${codeHash}-${settings.provider}-${settings.modelName}`;
      
-     // Check if we have a valid cached result
-     const cached = analysisCache.get(cacheKey);
-     if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
-         return cached.result;
-     }
+      // Check if we have a valid cached result
+      const cached = analysisCache.get(cacheKey);
+      if (cached) {
+          return cached;
+      }
     
     if (!activeKey && settings.provider === 'google') return { riskScore: 0, profitability: 0, description: "API Key Missing" };
 
@@ -474,8 +522,8 @@ const extractJson = (text: string): any => {
             typeof result.riskScore === 'number' && 
             typeof result.profitability === 'number' && 
             typeof result.description === 'string') {
-            // Cache the result
-            analysisCache.set(cacheKey, { result, timestamp: Date.now() });
+             // Cache the result
+             analysisCache.set(cacheKey, result);
         }
         
         return result;

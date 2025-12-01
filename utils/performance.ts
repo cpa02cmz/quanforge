@@ -149,22 +149,76 @@ class PerformanceMonitor {
     return vitals;
   }
 
-  // Custom timing for user interactions
-  measureInteraction(name: string, fn: () => void | Promise<void>) {
-    const start = performance.now();
-    
-    const result = fn();
-    
-    if (result instanceof Promise) {
-      return result.finally(() => {
-        const duration = performance.now() - start;
-        this.recordMetric(`interaction_${name}`, duration);
-      });
-    } else {
-      const duration = performance.now() - start;
-      this.recordMetric(`interaction_${name}`, duration);
-    }
-  }
+   // Custom timing for user interactions
+   measureInteraction(name: string, fn: () => void | Promise<void>) {
+     const start = performance.now();
+     
+     const result = fn();
+     
+     if (result instanceof Promise) {
+       return result.finally(() => {
+         const duration = performance.now() - start;
+         this.recordMetric(`interaction_${name}`, duration);
+       });
+     } else {
+       const duration = performance.now() - start;
+       this.recordMetric(`interaction_${name}`, duration);
+     }
+   }
+
+   // Enhanced API call timing with error tracking
+   async measureApiCall<T>(name: string, fn: () => Promise<T>): Promise<T> {
+     const start = performance.now();
+     let success = true;
+     
+     try {
+       const result = await fn();
+       return result;
+     } catch (error) {
+       success = false;
+       throw error;
+     } finally {
+       const duration = performance.now() - start;
+       this.recordMetric(`api_${name}_duration`, duration);
+       this.recordMetric(`api_${name}_success`, success ? 1 : 0);
+     }
+   }
+
+   // Memory usage snapshot
+   captureMemorySnapshot() {
+     if ('memory' in performance) {
+       const memory = (performance as any).memory;
+       if (memory) {
+         this.recordMetric('memory_used', memory.usedJSHeapSize);
+         this.recordMetric('memory_total', memory.totalJSHeapSize);
+         this.recordMetric('memory_limit', memory.jsHeapSizeLimit);
+       }
+     }
+   }
+
+   // Track specific performance marks
+   startMark(name: string) {
+     if (this.isSupported) {
+       performance.mark(`start_${name}`);
+     }
+   }
+
+   endMark(name: string) {
+     if (this.isSupported) {
+       performance.mark(`end_${name}`);
+       performance.measure(name, `start_${name}`, `end_${name}`);
+       
+       const measure = performance.getEntriesByName(name)[0];
+       if (measure) {
+         this.recordMetric(`measure_${name}`, measure.duration);
+       }
+       
+       // Clean up marks to prevent memory bloat
+       performance.clearMarks(`start_${name}`);
+       performance.clearMarks(`end_${name}`);
+       performance.clearMeasures(name);
+     }
+   }
 
   // Memory usage monitoring (if available)
   getMemoryUsage() {

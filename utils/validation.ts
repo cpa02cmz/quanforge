@@ -24,113 +24,127 @@ export class ValidationService {
   private static readonly MAX_LEVERAGE = 1000;
   private static readonly MIN_LEVERAGE = 1;
 
-  static validateStrategyParams(params: StrategyParams): ValidationError[] {
-    const errors: ValidationError[] = [];
+   static validateStrategyParams(params: StrategyParams): ValidationError[] {
+     const errors: ValidationError[] = [];
 
-    // Validate timeframe
-    if (!this.TIMEFRAMES.includes(params.timeframe)) {
-      errors.push({
-        field: 'timeframe',
-        message: `Invalid timeframe. Must be one of: ${this.TIMEFRAMES.join(', ')}`
-      });
-    }
+     // Validate timeframe - use Set for O(1) lookup
+     const TIMEFRAMES_SET = new Set(this.TIMEFRAMES);
+     if (!TIMEFRAMES_SET.has(params.timeframe)) {
+       errors.push({
+         field: 'timeframe',
+         message: `Invalid timeframe. Must be one of: ${this.TIMEFRAMES.join(', ')}`
+       });
+     }
 
-    // Validate symbol
-    if (!params.symbol || !this.SYMBOL_REGEX.test(params.symbol.replace('USDT', '').replace('BUSD', ''))) {
-      errors.push({
-        field: 'symbol',
-        message: 'Invalid symbol format. Use format like BTCUSDT, EUR/USD, XAUUSD'
-      });
-    }
+     // Validate symbol
+     if (!params.symbol) {
+       errors.push({
+         field: 'symbol',
+         message: 'Symbol is required'
+       });
+     } else {
+       // Optimize regex by pre-processing the string
+       const cleanSymbol = params.symbol.replace('USDT', '').replace('BUSD', '');
+       if (!this.SYMBOL_REGEX.test(cleanSymbol)) {
+         errors.push({
+           field: 'symbol',
+           message: 'Invalid symbol format. Use format like BTCUSDT, EUR/USD, XAUUSD'
+         });
+       }
+     }
 
-    // Validate risk percent
-    if (params.riskPercent < this.MIN_RISK_PERCENT || params.riskPercent > this.MAX_RISK_PERCENT) {
-      errors.push({
-        field: 'riskPercent',
-        message: `Risk percent must be between ${this.MIN_RISK_PERCENT} and ${this.MAX_RISK_PERCENT}`
-      });
-    }
+     // Validate risk percent - single check with bounds
+     if (params.riskPercent < this.MIN_RISK_PERCENT || params.riskPercent > this.MAX_RISK_PERCENT) {
+       errors.push({
+         field: 'riskPercent',
+         message: `Risk percent must be between ${this.MIN_RISK_PERCENT} and ${this.MAX_RISK_PERCENT}`
+       });
+     }
 
-    // Validate stop loss
-    if (params.stopLoss < this.MIN_STOP_LOSS || params.stopLoss > this.MAX_STOP_LOSS) {
-      errors.push({
-        field: 'stopLoss',
-        message: `Stop loss must be between ${this.MIN_STOP_LOSS} and ${this.MAX_STOP_LOSS} pips`
-      });
-    }
+     // Validate stop loss
+     if (params.stopLoss < this.MIN_STOP_LOSS || params.stopLoss > this.MAX_STOP_LOSS) {
+       errors.push({
+         field: 'stopLoss',
+         message: `Stop loss must be between ${this.MIN_STOP_LOSS} and ${this.MAX_STOP_LOSS} pips`
+       });
+     }
 
-    // Validate take profit
-    if (params.takeProfit < this.MIN_TAKE_PROFIT || params.takeProfit > this.MAX_TAKE_PROFIT) {
-      errors.push({
-        field: 'takeProfit',
-        message: `Take profit must be between ${this.MIN_TAKE_PROFIT} and ${this.MAX_TAKE_PROFIT} pips`
-      });
-    }
+     // Validate take profit
+     if (params.takeProfit < this.MIN_TAKE_PROFIT || params.takeProfit > this.MAX_TAKE_PROFIT) {
+       errors.push({
+         field: 'takeProfit',
+         message: `Take profit must be between ${this.MIN_TAKE_PROFIT} and ${this.MAX_TAKE_PROFIT} pips`
+       });
+     }
 
-    // Validate magic number
-    if (params.magicNumber < this.MIN_MAGIC_NUMBER || params.magicNumber > this.MAX_MAGIC_NUMBER) {
-      errors.push({
-        field: 'magicNumber',
-        message: `Magic number must be between ${this.MIN_MAGIC_NUMBER} and ${this.MAX_MAGIC_NUMBER}`
-      });
-    }
+     // Validate magic number
+     if (params.magicNumber < this.MIN_MAGIC_NUMBER || params.magicNumber > this.MAX_MAGIC_NUMBER) {
+       errors.push({
+         field: 'magicNumber',
+         message: `Magic number must be between ${this.MIN_MAGIC_NUMBER} and ${this.MAX_MAGIC_NUMBER}`
+       });
+     }
 
-    // Validate custom inputs
-    params.customInputs.forEach((input, index) => {
-      const prefix = `customInputs[${index}]`;
-      
-      if (!input.name || !input.name.trim()) {
-        errors.push({
-          field: `${prefix}.name`,
-          message: 'Custom input name is required'
-        });
-      } else if (!this.NAME_REGEX.test(input.name)) {
-        errors.push({
-          field: `${prefix}.name`,
-          message: 'Invalid name format. Use letters, numbers, and underscores only, starting with a letter or underscore'
-        });
-      }
+     // Validate custom inputs - optimize duplicate checking
+     const seenNames = new Set<string>();
+     for (let index = 0; index < params.customInputs.length; index++) {
+       const input = params.customInputs[index];
+       const prefix = `customInputs[${index}]`;
+       
+       if (!input.name || !input.name.trim()) {
+         errors.push({
+           field: `${prefix}.name`,
+           message: 'Custom input name is required'
+         });
+         continue; // Skip further validation for invalid names
+       }
+       
+       if (!this.NAME_REGEX.test(input.name)) {
+         errors.push({
+           field: `${prefix}.name`,
+           message: 'Invalid name format. Use letters, numbers, and underscores only, starting with a letter or underscore'
+         });
+       }
 
-      // Check for duplicate names
-      const duplicates = params.customInputs.filter((other, otherIndex) => 
-        other.name === input.name && index !== otherIndex
-      );
-      if (duplicates.length > 0) {
-        errors.push({
-          field: `${prefix}.name`,
-          message: `Duplicate input name: "${input.name}"`
-        });
-      }
+       // Check for duplicate names using Set for O(1) lookup
+       if (seenNames.has(input.name)) {
+         errors.push({
+           field: `${prefix}.name`,
+           message: `Duplicate input name: "${input.name}"`
+         });
+       } else {
+         seenNames.add(input.name);
+       }
 
-      // Validate value based on type
-      if (input.type === 'int') {
-        const value = parseInt(input.value);
-        if (isNaN(value) || value < -2147483648 || value > 2147483647) {
-          errors.push({
-            field: `${prefix}.value`,
-            message: 'Invalid integer value'
-          });
-        }
-      } else if (input.type === 'double') {
-        const value = parseFloat(input.value);
-        if (isNaN(value) || !isFinite(value)) {
-          errors.push({
-            field: `${prefix}.value`,
-            message: 'Invalid number value'
-          });
-        }
-      } else if (input.type === 'bool') {
-        if (input.value !== 'true' && input.value !== 'false') {
-          errors.push({
-            field: `${prefix}.value`,
-            message: 'Boolean value must be "true" or "false"'
-          });
-        }
-      }
-    });
+       // Validate value based on type
+       if (input.type === 'int') {
+         const value = parseInt(input.value, 10);
+         if (isNaN(value) || value < -2147483648 || value > 2147483647) {
+           errors.push({
+             field: `${prefix}.value`,
+             message: 'Invalid integer value'
+           });
+         }
+       } else if (input.type === 'double') {
+         const value = parseFloat(input.value);
+         if (isNaN(value) || !isFinite(value)) {
+           errors.push({
+             field: `${prefix}.value`,
+             message: 'Invalid number value'
+           });
+         }
+       } else if (input.type === 'bool') {
+         if (input.value !== 'true' && input.value !== 'false') {
+           errors.push({
+             field: `${prefix}.value`,
+             message: 'Boolean value must be "true" or "false"'
+           });
+         }
+       }
+     }
 
-    return errors;
-  }
+     return errors;
+   }
 
   static validateBacktestSettings(settings: BacktestSettings): ValidationError[] {
     const errors: ValidationError[] = [];

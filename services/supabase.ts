@@ -143,24 +143,70 @@ const mockClient = {
 
 let activeClient: SupabaseClient | any = null;
 
-// Simple cache implementation
-const cache = new Map<string, { data: any; timestamp: number }>();
+// LRU Cache implementation for better performance and memory management
+class LRUCache<T> {
+  private cache = new Map<string, { data: T; timestamp: number }>();
+  private readonly ttl: number;
+  private readonly maxSize: number;
+
+  constructor(ttl: number, maxSize: number) {
+    this.ttl = ttl;
+    this.maxSize = maxSize;
+  }
+
+  get(key: string): T | null {
+    const item = this.cache.get(key);
+    if (!item) return null;
+
+    if (Date.now() - item.timestamp > this.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    // Move to end (most recently used)
+    this.cache.delete(key);
+    this.cache.set(key, item);
+    return item.data;
+  }
+
+  set(key: string, data: T): void {
+    // Evict oldest if at max size
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
+    
+    this.cache.set(key, { data, timestamp: Date.now() });
+  }
+
+  delete(key: string): boolean {
+    return this.cache.delete(key);
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+
+  has(key: string): boolean {
+    const item = this.cache.get(key);
+    if (!item) return false;
+    
+    if (Date.now() - item.timestamp > this.ttl) {
+      this.cache.delete(key);
+      return false;
+    }
+    return true;
+  }
+}
+
+const cache = new LRUCache<any>(CACHE_CONFIG.ttl, CACHE_CONFIG.maxSize);
 
 const getCachedData = (key: string): any | null => {
-  const cached = cache.get(key);
-  if (cached && Date.now() - cached.timestamp < CACHE_CONFIG.ttl) {
-    return cached.data;
-  }
-  cache.delete(key);
-  return null;
+  return cache.get(key);
 };
 
 const setCachedData = (key: string, data: any): void => {
-  if (cache.size >= CACHE_CONFIG.maxSize) {
-    const firstKey = cache.keys().next().value;
-    cache.delete(firstKey);
-  }
-  cache.set(key, { data, timestamp: Date.now() });
+  cache.set(key, data);
 };
 
 // Retry wrapper for Supabase operations
@@ -255,7 +301,8 @@ export const mockDb = {
       const result = await getClient()
         .from('robots')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100); // Add reasonable limit to prevent performance issues
       
       if (result.data && !result.error) {
         setCachedData(cacheKey, result.data);
