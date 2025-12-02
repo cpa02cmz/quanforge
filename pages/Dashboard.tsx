@@ -21,7 +21,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
   const { t } = useTranslation();
   
   // Log session for debugging (remove the warning about unused parameter)
-  console.debug('Dashboard session:', !!session);
+  logger.debug('Dashboard session:', !!session);
   const [robots, setRobots] = useState<Robot[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -88,7 +88,8 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
   }, [t, showToast]);
 
   // Determine if virtual scrolling should be used (for large lists)
-  const shouldUseVirtualScroll = robots.length > 20;
+  // Lowered threshold for better performance with medium-sized lists
+  const shouldUseVirtualScroll = robots.length > 10;
 
   // Filter Logic - memoized for performance
   const filteredRobots = useMemo(() => 

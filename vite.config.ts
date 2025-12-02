@@ -155,7 +155,7 @@ plugins: [react()],
         reserved: ['React', 'useState', 'useEffect']
       }
     },
-    chunkSizeWarningLimit: 300, // Stricter for edge
+    chunkSizeWarningLimit: 250, // Even stricter for better edge optimization
     target: 'esnext',
     reportCompressedSize: true,
     cssCodeSplit: true,
@@ -185,7 +185,9 @@ plugins: [react()],
     exclude: [
       '@supabase/supabase-js', // Load dynamically
       '@google/genai', // Load dynamically
-      'recharts' // Load dynamically for charts
+      'recharts', // Load dynamically for charts
+      'dompurify', // Load dynamically for security
+      'lz-string' // Load dynamically for compression
     ]
   },
   experimental: {

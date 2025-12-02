@@ -195,7 +195,9 @@ export class AdvancedCache {
         const data = await loader();
         this.set(key, data, { ttl, tags });
       } catch (error) {
-        console.warn(`Failed to preload cache entry: ${key}`, error);
+        if (import.meta.env.DEV) {
+          console.warn(`Failed to preload cache entry: ${key}`, error);
+        }
       }
     });
 
@@ -263,6 +265,38 @@ export class AdvancedCache {
     }
   }
 
+  private enforceMaxSize(): void {
+    // Check total size
+    let totalSize = Array.from(this.cache.values())
+      .reduce((sum, entry) => sum + entry.size, 0);
+    
+    // Remove entries if over size limit
+    while (totalSize > this.config.maxSize && this.cache.size > 0) {
+      const lruKey = this.getLRUKey();
+      if (lruKey) {
+        const entry = this.cache.get(lruKey);
+        if (entry) {
+          totalSize -= entry.size;
+          this.cache.delete(lruKey);
+          this.stats.evictions++;
+        }
+      } else {
+        break;
+      }
+    }
+    
+    // Remove entries if over count limit
+    while (this.cache.size > this.config.maxEntries) {
+      const lruKey = this.getLRUKey();
+      if (lruKey) {
+        this.cache.delete(lruKey);
+        this.stats.evictions++;
+      } else {
+        break;
+      }
+    }
+  }
+
   private getLRUKey(): string | null {
     let lruKey: string | null = null;
     let oldestAccess = Date.now();
@@ -282,6 +316,7 @@ export class AdvancedCache {
   private startCleanup(): void {
     this.cleanupTimer = setInterval(() => {
       this.removeExpiredEntries();
+      this.enforceMaxSize();
     }, this.config.cleanupInterval);
   }
 
@@ -297,7 +332,10 @@ export class AdvancedCache {
       }
     });
     
-    console.log(`Invalidated ${deletedCount} cache entries for region: ${region}`);
+    // Use logger instead of console.log for production safety
+    if (import.meta.env.DEV) {
+      console.log(`Invalidated ${deletedCount} cache entries for region: ${region}`);
+    }
     return deletedCount;
   }
 
