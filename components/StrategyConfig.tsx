@@ -230,7 +230,7 @@ const sanitizeInput = (input: string): string => {
                <NumericInput
                  value={params.riskPercent}
                  onChange={(val) => handleChange('riskPercent', val)}
-                 step="0.1"
+                 _step="0.1"
                  className="w-full bg-dark-surface border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none"
                />
              </div>

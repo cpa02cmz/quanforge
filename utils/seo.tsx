@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async';
+import React, { useEffect } from 'react';
 
 interface MetaTagsProps {
   title?: string;
@@ -24,51 +24,80 @@ export const SEOHead: React.FC<MetaTagsProps> = ({
   const siteTitle = 'QuantForge AI';
   const fullTitle = title.includes(siteTitle) ? title : `${title} | ${siteTitle}`;
 
-  return (
-    <Helmet>
-      {/* Basic Meta Tags */}
-      <title>{fullTitle}</title>
-      <meta name="description" content={description} />
-      <meta name="keywords" content={keywords} />
-      <meta name="author" content="QuantForge AI" />
-      <meta name="robots" content="index, follow" />
+  useEffect(() => {
+    // Update document title
+    document.title = fullTitle;
+
+    // Update or create meta tags
+    const updateMetaTag = (name: string, content: string, property?: string) => {
+      let meta: HTMLMetaElement | null = document.querySelector(
+        property ? `meta[property="${property}"]` : `meta[name="${name}"]`
+      );
       
-      {/* Canonical URL */}
-      <link rel="canonical" href={canonicalUrl} />
-      
-      {/* Open Graph Tags */}
-      <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
-      <meta property="og:type" content={type} />
-      <meta property="og:image" content={ogImage} />
-      <meta property="og:url" content={ogUrl} />
-      <meta property="og:site_name" content={siteTitle} />
-      
-      {/* Twitter Card Tags */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={ogImage} />
-      
-      {/* Additional Meta Tags */}
-      <meta name="theme-color" content="#22c55e" />
-      <meta name="msapplication-TileColor" content="#0f172a" />
-      <meta name="language" content="en" />
-      <meta name="distribution" content="global" />
-      <meta name="rating" content="general" />
-      <meta name="revisit-after" content="7 days" />
-      <meta name="geo.region" content="US" />
-      <meta name="geo.placename" content="Global" />
-      <meta name="category" content="finance, technology, trading, artificial intelligence" />
-      
-      {/* Structured Data */}
-      {structuredData.map((data, index) => (
-        <script key={index} type="application/ld+json">
-          {JSON.stringify(data)}
-        </script>
-      ))}
-    </Helmet>
-  );
+      if (!meta) {
+        meta = document.createElement('meta');
+        if (property) {
+          meta.setAttribute('property', property);
+        } else {
+          meta.setAttribute('name', name);
+        }
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
+
+    // Basic Meta Tags
+    updateMetaTag('description', description);
+    updateMetaTag('keywords', keywords);
+    updateMetaTag('author', 'QuantForge AI');
+    updateMetaTag('robots', 'index, follow');
+    
+    // Canonical URL
+    let canonical: HTMLLinkElement | null = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', canonicalUrl);
+    
+    // Open Graph Tags
+    updateMetaTag('og:title', fullTitle, 'og:title');
+    updateMetaTag('og:description', description, 'og:description');
+    updateMetaTag('og:type', type, 'og:type');
+    updateMetaTag('og:image', ogImage, 'og:image');
+    updateMetaTag('og:url', ogUrl, 'og:url');
+    updateMetaTag('og:site_name', siteTitle, 'og:site_name');
+    
+    // Twitter Card Tags
+    updateMetaTag('twitter:card', 'summary_large_image');
+    updateMetaTag('twitter:title', fullTitle);
+    updateMetaTag('twitter:description', description);
+    updateMetaTag('twitter:image', ogImage);
+    
+    // Additional Meta Tags
+    updateMetaTag('theme-color', '#22c55e');
+    updateMetaTag('language', 'en');
+    
+    // Clean up existing structured data
+    const existingScripts = document.querySelectorAll('script[type="application/ld+json"]');
+    existingScripts.forEach(script => script.remove());
+    
+    // Add structured data
+    structuredData.forEach((data) => {
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.textContent = JSON.stringify(data);
+      document.head.appendChild(script);
+    });
+
+    return () => {
+      // Cleanup function if needed
+    };
+  }, [fullTitle, description, keywords, canonicalUrl, type, ogImage, ogUrl, siteTitle, structuredData]);
+
+  // This component doesn't render anything visible
+  return null;
 };
 
 // Predefined structured data templates

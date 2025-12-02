@@ -34,14 +34,14 @@ class SupabaseConnectionPool {
   private readReplicas: Map<string, ReadReplicaConfig> = new Map();
   private healthStatus: Map<string, ConnectionHealth> = new Map();
   private config: ConnectionPoolConfig = {
-    minConnections: 2, // Increase for better warm start
-    maxConnections: 8, // Increase for better concurrency
-    idleTimeout: 300000, // 5 minutes (increase for edge)
-    healthCheckInterval: 10000, // 10 seconds (more frequent)
-    connectionTimeout: 3000, // 3 seconds (faster failover)
-    acquireTimeout: 2000, // 2 seconds
-    retryAttempts: 3,
-    retryDelay: 1000,
+    minConnections: 3, // Optimized for Vercel Edge
+    maxConnections: 12, // Increased for better concurrency
+    idleTimeout: 180000, // 3 minutes (optimized for serverless)
+    healthCheckInterval: 8000, // 8 seconds (more frequent health checks)
+    connectionTimeout: 2000, // 2 seconds (faster failover for edge)
+    acquireTimeout: 1500, // 1.5 seconds (quicker acquisition)
+    retryAttempts: 4, // More retries for edge reliability
+    retryDelay: 500, // Faster retry for edge environments
   };
   private healthCheckTimer: NodeJS.Timeout | null = null;
   private readReplicaIndex = 0;
@@ -192,12 +192,39 @@ class SupabaseConnectionPool {
       return existingClient;
     }
 
-    // Create new replica connection
+    // Create new replica connection with edge optimizations
     const client = createClient(replica.url, replica.anonKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: false,
+      },
+      db: {
+        schema: 'public',
+      },
+      global: {
+        headers: {
+          'x-connection-pool': 'true',
+          'x-edge-optimized': 'true',
+          'x-connection-id': replicaConnectionId,
+        },
+      },
+      // Edge-specific optimizations
+      ...(typeof window === 'undefined' && {
+        // Server-side/edge specific options
+        fetch: (url, options) => {
+          // Add connection pooling headers for edge requests
+          return fetch(url, {
+            ...options,
+            headers: {
+              ...options?.headers,
+              'Connection': 'keep-alive',
+              'Keep-Alive': 'timeout=60',
+              'x-edge-client': 'vercel',
+            },
+          });
+        },
+      }),
       },
       db: {
         schema: 'public',
@@ -292,10 +319,13 @@ class SupabaseConnectionPool {
      }
    }
 
-  private startHealthChecks(): void {
-    this.healthCheckTimer = setInterval(async () => {
-      await this.performHealthChecks();
+private startHealthChecks(): void {
+    this.healthCheckTimer = setInterval(() => {
+      this.performHealthChecks();
     }, this.config.healthCheckInterval);
+    
+    // Perform initial health check for warm connections
+    this.performHealthChecks();
   }
 
   private async performHealthChecks(): Promise<void> {
