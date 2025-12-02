@@ -114,4 +114,62 @@
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
+  <url>
+    <loc>https://quanforge.ai/academy</loc>
+    <lastmod>2025-12-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/academy-preview.png</image:loc>
+      <image:title>QuantForge AI Academy</image:title>
+      <image:caption>Learn algorithmic trading and MQL5 development with comprehensive courses</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/tools</loc>
+    <lastmod>2025-12-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/tools-preview.png</image:loc>
+      <image:title>Trading Tools and Calculators</image:title>
+      <image:caption>Free trading tools including risk calculators and position sizing tools</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/community</loc>
+    <lastmod>2025-12-01</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/careers</loc>
+    <lastmod>2025-12-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/press</loc>
+    <lastmod>2025-12-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/partners</loc>
+    <lastmod>2025-12-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/security</loc>
+    <lastmod>2025-12-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/status</loc>
+    <lastmod>2025-12-01</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.4</priority>
+  </url>
 </urlset>

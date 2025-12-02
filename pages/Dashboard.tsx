@@ -10,7 +10,7 @@ import { SEOHead, structuredDataTemplates } from '../utils/seo';
 
 
 interface DashboardProps {
-    session?: UserSession | null;
+    session: UserSession | null;
 }
 
 export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
@@ -21,7 +21,17 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
   
   // Filter States
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
+  
+  // Debounce search term to improve performance
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300); // 300ms debounce delay
+    
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const { showToast } = useToast();
 
@@ -80,13 +90,13 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
       }
   }, [t, showToast]);
 
-  // Filter Logic - memoized for performance
+  // Filter Logic - memoized for performance with debounced search
   const filteredRobots = useMemo(() => 
     robots.filter(robot => {
-      const matchesSearch = robot.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = robot.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       const matchesType = filterType === 'All' || (robot.strategy_type || 'Custom') === filterType;
       return matchesSearch && matchesType;
-    }), [robots, searchTerm, filterType]
+    }), [robots, debouncedSearchTerm, filterType]
   );
 
   // Derived list of unique strategy types for the dropdown - memoized

@@ -62,16 +62,34 @@ CREATE INDEX IF NOT EXISTS idx_robots_updated_at ON robots(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_robots_user_type_created ON robots(user_id, strategy_type, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_robots_active_public ON robots(is_active, is_public) WHERE is_active = true;
 
+-- Additional indexes for better query performance
+CREATE INDEX IF NOT EXISTS idx_robots_name_trgm ON robots USING gin(name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_robots_description_trgm ON robots USING gin(description gin_trgm_ops);
+
 -- Full-text search index
 CREATE INDEX IF NOT EXISTS idx_robots_search_vector ON robots USING GIN(search_vector);
 
--- JSONB indexes for strategy parameters
-CREATE INDEX IF NOT EXISTS idx_robots_strategy_params ON robots USING GIN(strategy_params);
-CREATE INDEX IF NOT EXISTS idx_robots_backtest_settings ON robots USING GIN(backtest_settings);
+-- JSONB indexes for strategy parameters with more specific paths
+CREATE INDEX IF NOT EXISTS idx_robots_strategy_params_gin ON robots USING GIN(strategy_params);
+CREATE INDEX IF NOT EXISTS idx_robots_backtest_settings_gin ON robots USING GIN(backtest_settings);
+CREATE INDEX IF NOT EXISTS idx_robots_analysis_result_gin ON robots USING GIN(analysis_result);
 
 -- Partial indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_robots_active ON robots(created_at DESC) WHERE is_active = true;
 CREATE INDEX IF NOT EXISTS idx_robots_public ON robots(view_count DESC, created_at DESC) WHERE is_public = true;
+
+-- Indexes for frequently queried JSONB fields
+CREATE INDEX IF NOT EXISTS idx_robots_symbol ON robots USING gin((strategy_params->>'symbol'));
+CREATE INDEX IF NOT EXISTS idx_robots_timeframe ON robots USING gin((strategy_params->>'timeframe'));
+CREATE INDEX IF NOT EXISTS idx_robots_risk_percent ON robots USING gin((strategy_params->'riskPercent'));
+
+-- Indexes for analytics queries
+CREATE INDEX IF NOT EXISTS idx_robots_view_count ON robots(view_count DESC) WHERE is_active = true AND is_public = true;
+CREATE INDEX IF NOT EXISTS idx_robots_copy_count ON robots(copy_count DESC) WHERE is_active = true AND is_public = true;
+
+-- Indexes for backtest settings
+CREATE INDEX IF NOT EXISTS idx_robots_initial_deposit ON robots USING gin((backtest_settings->'initialDeposit'));
+CREATE INDEX IF NOT EXISTS idx_robots_backtest_days ON robots USING gin((backtest_settings->'days'));
 
 -- =====================================================
 -- 3. TRIGGERS FOR AUTOMATIC UPDATES

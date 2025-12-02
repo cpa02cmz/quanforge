@@ -8,6 +8,7 @@ import { useToast } from '../components/Toast';
 import { DEFAULT_STRATEGY_PARAMS } from '../constants';
 import { runMonteCarloSimulation } from '../services/simulation';
 import { ValidationService } from '../utils/validation';
+import { optimizationManager } from '../services/optimizationManager';
 
 interface GeneratorState {
   messages: Message[];
@@ -257,7 +258,10 @@ const stopGeneration = () => {
     dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'generating', message: 'Generating MQL5 code...' } });
 
     try {
-      const response = await generateMQL5Code(content, state.code, state.strategyParams, updatedMessages, signal);
+      // Use optimization manager to handle the API call with performance optimization
+      const response = await optimizationManager.optimizeForUserInteraction(() => 
+        generateMQL5Code(content, state.code, state.strategyParams, updatedMessages, signal)
+      );
       dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'processing', message: 'Processing response...' } });
       await processAIResponse(response);
     } catch (error: any) {
@@ -296,7 +300,10 @@ const stopGeneration = () => {
       dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'applying-settings', message: 'Applying configuration changes...' } });
       try {
           const prompt = "Update the code to strictly follow the provided configuration constraints (Timeframe, Risk, Stop Loss, Take Profit, Custom Inputs). Keep the existing strategy logic but ensure inputs are consistent with the config.";
-          const response = await generateMQL5Code(prompt, state.code, state.strategyParams, state.messages, signal);
+          // Use optimization manager to handle the API call with performance optimization
+          const response = await optimizationManager.optimizeForUserInteraction(() => 
+            generateMQL5Code(prompt, state.code, state.strategyParams, state.messages, signal)
+          );
           dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'processing', message: 'Processing updated code...' } });
           await processAIResponse(response);
           showToast("Settings applied & code updated", 'success');
@@ -323,7 +330,10 @@ const stopGeneration = () => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'refining', message: 'Refining code...' } });
       try {
-          const response = await refineCode(state.code, signal);
+          // Use optimization manager to handle the API call with performance optimization
+          const response = await optimizationManager.optimizeForUserInteraction(() => 
+            refineCode(state.code, signal)
+          );
           dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'processing', message: 'Processing refined code...' } });
           await processAIResponse(response);
           
@@ -358,7 +368,10 @@ const stopGeneration = () => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'explaining', message: 'Generating code explanation...' } });
       try {
-          const response = await explainCode(state.code, signal);
+          // Use optimization manager to handle the API call with performance optimization
+          const response = await optimizationManager.optimizeForUserInteraction(() => 
+            explainCode(state.code, signal)
+          );
           
           // Inject explanation into chat
           dispatch({ type: 'ADD_MESSAGE', payload: {
