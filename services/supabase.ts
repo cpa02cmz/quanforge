@@ -10,15 +10,15 @@ import { smartCache } from './smartCache';
 
 // Connection retry configuration
 const RETRY_CONFIG = {
-  maxRetries: 3,
-  retryDelay: 1000,
-  backoffMultiplier: 2,
+  maxRetries: 5,
+  retryDelay: 500,
+  backoffMultiplier: 1.5,
 };
 
 // Cache configuration
 const CACHE_CONFIG = {
-  ttl: 5 * 60 * 1000, // 5 minutes
-  maxSize: 100, // Max cached items
+  ttl: 15 * 60 * 1000, // 15 minutes for better edge performance
+  maxSize: 200, // Max cached items
 };
 
 // Mock session storage

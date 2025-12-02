@@ -10,12 +10,12 @@ export const Wiki: React.FC = () => {
   // Dynamic content based on language
   const content = WIKI_CONTENT[language] || WIKI_CONTENT['en'];
 
-  const [activeSectionId, setActiveSectionId] = useState(content[0].id);
+  const [activeSectionId, setActiveSectionId] = useState(content[0]?.id || 'getting-started');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Reset active section if language changes
   useEffect(() => {
-      setActiveSectionId(content[0].id);
+      setActiveSectionId(content[0]?.id || 'getting-started');
   }, [language, content]);
 
   // Helper to highlight text if searching
