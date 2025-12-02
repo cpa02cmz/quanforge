@@ -430,19 +430,155 @@ export const edgeErrorHandler = {
   }
 };
 
-// Global error handlers for unhandled errors and promise rejections
+// Enhanced global error handlers with error classification and performance monitoring
+import { performanceMonitor } from './performance';
+
 if (typeof window !== 'undefined') {
   window.addEventListener('error', (event) => {
+    const error = event.error || new Error(event.message);
+    
+    // Classify the error and determine severity
+    let severity: 'low' | 'medium' | 'high' | 'critical' = 'medium';
+    if (errorClassifier.isServerError(error) || errorClassifier.isNetworkError(error)) {
+      severity = 'high';
+    } else if (errorClassifier.isAuthError(error)) {
+      severity = 'critical';
+    } else if (errorClassifier.isValidationError(error)) {
+      severity = 'low';
+    }
+    
     handleError(event.error || event.message, 'Global JavaScript Error', 'Window', {
       filename: event.filename,
       lineno: event.lineno,
       colno: event.colno,
+      severity,
+      userAgent: navigator.userAgent,
+      url: window.location.href,
     });
+    
+    // Record performance metric for the error
+    performanceMonitor.recordMetric(`global_error_${severity}`, 1);
   });
 
   window.addEventListener('unhandledrejection', (event) => {
-    handleError(event.reason, 'Unhandled Promise Rejection', 'Window', {
+    const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
+    
+    // Classify the error and determine severity
+    let severity: 'low' | 'medium' | 'high' | 'critical' = 'medium';
+    if (errorClassifier.isNetworkError(error) || errorClassifier.isTimeoutError(error)) {
+      severity = 'high';
+    } else if (errorClassifier.isAuthError(error)) {
+      severity = 'critical';
+    }
+    
+    handleError(error, 'Unhandled Promise Rejection', 'Window', {
       promise: event.promise,
+      severity,
+      userAgent: navigator.userAgent,
+      url: window.location.href,
     });
+    
+    // Prevent default error logging if we've handled it
+    event.preventDefault();
+    
+    // Record performance metric for the error
+    performanceMonitor.recordMetric(`unhandled_promise_${severity}`, 1);
   });
 }
+
+// Enhanced error reporting with redaction
+export const reportSensitiveError = (
+  error: Error | string,
+  context: ErrorContext
+): void => {
+  const errorStr = typeof error === 'string' ? error : error.message;
+  
+  // Sanitize the error message to remove sensitive information
+  const sanitizedMessage = errorStr
+    .replace(/(key|token|secret|password|api)[\s\S]*?:\s*[\w-]+/gi, '[REDACTED]')
+    .replace(/bearer [a-zA-Z0-9._-]+/gi, '[REDACTED]')
+    .replace(/[\w\-.]+@[\w\-.]+/g, '[EMAIL_REDACTED]'); // Redact emails
+  
+  const sanitizedError = typeof error === 'string' ? sanitizedMessage : new Error(sanitizedMessage);
+  // Preserve stack trace if it exists
+  if (typeof error !== 'string' && error.stack) {
+    (sanitizedError as Error).stack = error.stack;
+  }
+  
+  // Add sanitization note to context
+  const sanitizedContext = {
+    ...context,
+    additionalData: {
+      ...context.additionalData,
+      sanitized: true,
+    }
+  };
+  
+  handleError(sanitizedError, context.operation, context.component, sanitizedContext.additionalData);
+};
+
+// Error summary for debugging
+export const getErrorSummary = (): {
+  total: number;
+  bySeverity: Record<'critical' | 'high' | 'medium' | 'low', number>;
+  recent: ErrorInfo[];
+  errorRate: number; // Errors per minute
+} => {
+  const errorHandler = ErrorHandler.getInstance();
+  const errors = errorHandler.getErrors();
+  
+  const summary = {
+    total: errors.length,
+    bySeverity: {
+      critical: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
+    } as Record<'critical' | 'high' | 'medium' | 'low', number>,
+    recent: errors.slice(-10), // Last 10 errors
+    errorRate: 0, // Will calculate based on last minute
+  };
+
+  // Count by severity (assuming we can classify errors from their messages)
+  errors.forEach(error => {
+    let severity: 'critical' | 'high' | 'medium' | 'low' = 'medium';
+    if (errorClassifier.isAuthError(new Error(error.message))) {
+      severity = 'critical';
+    } else if (errorClassifier.isNetworkError(new Error(error.message)) || 
+               errorClassifier.isServerError(new Error(error.message))) {
+      severity = 'high';
+    } else if (errorClassifier.isValidationError(new Error(error.message))) {
+      severity = 'low';
+    }
+    summary.bySeverity[severity]++;
+  });
+  
+  // Calculate error rate (errors per minute)
+  const oneMinuteAgo = new Date(Date.now() - 60000);
+  const recentErrors = errors.filter(error => 
+    new Date(error.timestamp) > oneMinuteAgo
+  );
+  summary.errorRate = recentErrors.length;
+  
+  return summary;
+};
+
+// Async error wrapper with automatic error handling
+export const handleAsyncError = async <T>(
+  asyncFn: () => Promise<T>,
+  operation: string,
+  component?: string,
+  additionalData?: Record<string, any>
+): Promise<T | null> => {
+  try {
+    return await asyncFn();
+  } catch (error) {
+    handleError(
+      error instanceof Error ? error : new Error(String(error)),
+      operation,
+      component,
+      additionalData
+    );
+    return null;
+  }
+};

@@ -594,7 +594,7 @@ class SecurityManager {
     return this.config.allowedOrigins.includes(origin);
   }
 
-// Validate API key format
+// Enhanced API key validation with additional security checks
     validateAPIKey(key: string): boolean {
       if (!key) return false;
       
@@ -614,9 +614,118 @@ class SecurityManager {
       
       // Additional checks for common placeholder patterns
       const lowerKey = key.toLowerCase();
-      const placeholders = ['your-', 'api-', 'key-', 'test', 'demo', 'sample', '123', 'xxx'];
+      const placeholders = ['your-', 'api-', 'key-', 'test', 'demo', 'sample', '123', 'xxx', 'secret', 'sk-', 'pk-', 'api_key'];
       
-      return !placeholders.some(placeholder => lowerKey.includes(placeholder));
+      if (placeholders.some(placeholder => lowerKey.includes(placeholder))) {
+        return false;
+      }
+      
+      // Check for common insecure patterns
+      const insecurePatterns = [
+        /123456789/,
+        /abcdef/,
+        /000000/,
+        /aaaaaa/,
+        /qwerty/,
+        /password/,
+        /admin/,
+        /root/,
+      ];
+      
+      if (insecurePatterns.some(pattern => pattern.test(key))) {
+        return false;
+      }
+      
+      // Additional entropy check to ensure randomness
+      return this.hasSufficientEntropy(key);
+    }
+    
+    // Check if a string has sufficient entropy/randomness
+    private hasSufficientEntropy(str: string): boolean {
+      if (str.length < 20) return false;
+      
+      // Calculate Shannon entropy
+      const charMap: { [key: string]: number } = {};
+      for (const char of str) {
+        charMap[char] = (charMap[char] || 0) + 1;
+      }
+      
+      let entropy = 0;
+      const len = str.length;
+      for (const count of Object.values(charMap)) {
+        const p = count / len;
+        entropy -= p * Math.log2(p);
+      }
+      
+      // Require entropy > 3.0 for sufficient randomness
+      return entropy > 3.0;
+    }
+    
+    // Enhanced API key encryption for additional security
+    async encryptAPIKey(key: string): Promise<string> {
+      if (!key) return '';
+      
+      try {
+        // In a real implementation, we'd use a more robust encryption
+        // For now, we'll use a simple obfuscation method
+        const encoder = new TextEncoder();
+        const data = encoder.encode(key);
+        
+        // Apply a basic transformation (in production, use proper crypto)
+        const transformed = Array.from(data).map(byte => byte ^ 0x5A).join(',');
+        
+        // Add a timestamp to prevent replay attacks
+        const timestamp = Date.now();
+        const combined = `${transformed}|${timestamp}`;
+        
+        // Base64 encode for safe storage/transmission
+        return btoa(combined);
+      } catch (error) {
+        console.error('API key encryption failed:', error);
+        return '';
+      }
+    }
+    
+    async decryptAPIKey(encryptedKey: string): Promise<string> {
+      if (!encryptedKey) return '';
+      
+      try {
+        const decoded = atob(encryptedKey);
+        const [dataStr, timestampStr] = decoded.split('|');
+        
+        // Verify timestamp is not too old (prevent replay attacks)
+        const timestamp = parseInt(timestampStr);
+        if (isNaN(timestamp) || Date.now() - timestamp > 24 * 60 * 60 * 1000) { // 24 hours
+          throw new Error('Encrypted key expired');
+        }
+        
+        const bytes = dataStr.split(',').map(Number).map(byte => byte ^ 0x5A);
+        const decoder = new TextDecoder();
+        return decoder.decode(new Uint8Array(bytes));
+      } catch (error) {
+        console.error('API key decryption failed:', error);
+        return '';
+      }
+    }
+    
+    // API key rotation with enhanced security
+    async rotateAPIKey(currentKey: string): Promise<{ oldKey: string; newKey: string; encryptedNewKey: string; expiresAt: number }> {
+      const newKey = await this.generateSecureAPIKey();
+      const encryptedNewKey = await this.encryptAPIKey(newKey);
+      const expiresAt = Date.now() + this.config.encryption.keyRotationInterval;
+      
+      return {
+        oldKey: currentKey,
+        newKey,
+        encryptedNewKey,
+        expiresAt
+      };
+    }
+    
+    private async generateSecureAPIKey(): Promise<string> {
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
     }
    
    // Get security metrics
@@ -908,38 +1017,32 @@ class SecurityManager {
   }
 
   // Advanced API key rotation
-  rotateAPIKeys(): { oldKey: string; newKey: string; expiresAt: number } {
-    const oldKey = this.getCurrentAPIKey();
-    const newKey = this.generateSecureAPIKey();
-    const expiresAt = Date.now() + this.config.encryption.keyRotationInterval;
+   async rotateAPIKeys(): Promise<{ oldKey: string; newKey: string; expiresAt: number }> {
+     const oldKey = this.getCurrentAPIKey();
+     const newKey = await this.generateSecureAPIKey();
+     const expiresAt = Date.now() + this.config.encryption.keyRotationInterval;
 
-    // Store new key with expiration
-    this.storeAPIKey(newKey, expiresAt);
+     // Store new key with expiration
+     this.storeAPIKey(newKey, expiresAt);
 
-    return {
-      oldKey,
-      newKey,
-      expiresAt
-    };
-  }
+     return {
+       oldKey,
+       newKey,
+       expiresAt
+     };
+   }
 
-  private getCurrentAPIKey(): string {
-    // Retrieve current API key from secure storage
-    return localStorage.getItem('current_api_key') || '';
-  }
+   private getCurrentAPIKey(): string {
+     // Retrieve current API key from secure storage
+     return localStorage.getItem('current_api_key') || '';
+   }
 
-  private generateSecureAPIKey(): string {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-  }
+   private storeAPIKey(key: string, expiresAt: number): void {
+     localStorage.setItem('current_api_key', key);
+     localStorage.setItem('api_key_expires', expiresAt.toString());
+   }
 
-  private storeAPIKey(key: string, expiresAt: number): void {
-    localStorage.setItem('current_api_key', key);
-    localStorage.setItem('api_key_expires', expiresAt.toString());
-  }
-
-  // Content Security Policy monitoring
+   // Content Security Policy monitoring
   monitorCSPViolations(): void {
     // Listen for CSP violation reports
     document.addEventListener('securitypolicyviolation', (event) => {
