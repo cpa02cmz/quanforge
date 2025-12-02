@@ -118,10 +118,10 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
 }
 
 // Enhanced token budgeting with incremental history management
- class TokenBudgetManager {
-     private static readonly MAX_CONTEXT_CHARS = 100000; // Increased to handle more complex requests
-     private static readonly TOKEN_RATIO = 4; // 1 token ~= 4 characters
-     private static readonly MIN_HISTORY_CHARS = 1000; // Keep minimum history for context
+  class TokenBudgetManager {
+      private static readonly MAX_CONTEXT_CHARS = 150000; // Increased to handle more complex requests
+      private static readonly TOKEN_RATIO = 4; // 1 token ~= 4 characters
+      private static readonly MIN_HISTORY_CHARS = 1000; // Keep minimum history for context
     
     // Cache for frequently used context parts
     private contextCache = new Map<string, { content: string, length: number, timestamp: number }>();
@@ -434,32 +434,37 @@ const extractThinking = (rawText: string): { thinking?: string, content: string 
 };
 
 export const generateMQL5Code = async (prompt: string, currentCode?: string, strategyParams?: StrategyParams, history: Message[] = [], signal?: AbortSignal) => {
-  const settings = settingsManager.getSettings();
+   const settings = settingsManager.getSettings();
 
-  try {
-    const fullPrompt = buildContextPrompt(prompt, currentCode, strategyParams, history);
-    let rawResponse = "";
+   try {
+     // Early return for empty prompts
+     if (!prompt || prompt.trim().length === 0) {
+       return { content: "Please provide a strategy description or request." };
+     }
 
-    // Create deduplication key for this specific request
-    const requestKey = createHash(`${prompt}-${currentCode?.substring(0, 100)}-${strategyParams?.symbol}-${history.length}`);
-    
-    // Use request deduplication to prevent duplicate API calls
-    rawResponse = await requestDeduplicator.deduplicate(requestKey, async () => {
-      if (settings.provider === 'openai') {
-          return await callOpenAICompatible(settings, fullPrompt, signal);
-      } else {
-          return await callGoogleGenAI(settings, fullPrompt, signal) || "";
-      }
-    });
-    
-    return extractThinking(rawResponse);
+     const fullPrompt = buildContextPrompt(prompt, currentCode, strategyParams, history);
+     let rawResponse = "";
 
-  } catch (error: any) {
-    if (error.name === 'AbortError') throw error;
-    handleError(error, 'generateMQL5Code', 'gemini');
-    return { content: `Error generating response: ${error.message || error}` };
-  }
-};
+     // Create deduplication key for this specific request with more comprehensive parameters
+     const requestKey = createHash(`${prompt}-${currentCode?.substring(0, 200)}-${JSON.stringify(strategyParams)}-${history.length}-${settings.provider}-${settings.modelName}`);
+     
+     // Use request deduplication to prevent duplicate API calls
+     rawResponse = await requestDeduplicator.deduplicate(requestKey, async () => {
+       if (settings.provider === 'openai') {
+           return await callOpenAICompatible(settings, fullPrompt, signal);
+       } else {
+           return await callGoogleGenAI(settings, fullPrompt, signal) || "";
+       }
+     });
+     
+     return extractThinking(rawResponse);
+
+   } catch (error: any) {
+     if (error.name === 'AbortError') throw error;
+     handleError(error, 'generateMQL5Code', 'gemini');
+     return { content: `Error generating response: ${error.message || error}` };
+   }
+ };
 
 /**
  * Self-Refining Agent: Analyzes current code and improves it.
@@ -583,86 +588,107 @@ const extractJson = (text: string): any => {
     return JSON.parse(cleanText);
 };
 
- export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promise<StrategyAnalysis> => {
-     const settings = settingsManager.getSettings();
-     const activeKey = getActiveKey(settings.apiKey);
-     
-     // Create a more efficient cache key using a proper hash function
-     const codeHash = createHash(code.substring(0, 5000));
-     const cacheKey = `${codeHash}-${settings.provider}-${settings.modelName}`;
-     
-      // Check if we have a valid cached result
-      const cached = analysisCache.get(cacheKey);
-      if (cached) {
-          return cached;
+export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promise<StrategyAnalysis> => {
+      // Early return for empty or invalid code
+      if (!code || code.trim().length === 0) {
+        return { riskScore: 0, profitability: 0, description: "No code provided for analysis." };
       }
+      
+      const settings = settingsManager.getSettings();
+      const activeKey = getActiveKey(settings.apiKey);
+      
+      // Create a more efficient cache key using a proper hash function
+      const codeHash = createHash(code.substring(0, 5000));
+      const cacheKey = `${codeHash}-${settings.provider}-${settings.modelName}`;
+      
+       // Check if we have a valid cached result
+       const cached = analysisCache.get(cacheKey);
+       if (cached) {
+           return cached;
+       }
+ 
+       // Use request deduplication to prevent duplicate API calls
+       return requestDeduplicator.deduplicate(cacheKey, async () => {
+         if (!activeKey && settings.provider === 'google') return { riskScore: 0, profitability: 0, description: "API Key Missing" };
+ 
+         // Limit code length to prevent token budget issues
+         const maxCodeLength = 30000; // Reduced from 50000 to be more conservative
+         const truncatedCode = code.length > maxCodeLength ? code.substring(0, maxCodeLength) + "..." : code;
+         
+         const prompt = `Analyze this MQL5 code and return a JSON summary of its potential risk and strategy type. Code: ${truncatedCode}
+         
+         Return strict JSON with this schema:
+         {
+             "riskScore": number (1-10),
+             "profitability": number (1-10),
+             "description": string
+         }
+         
+         IMPORTANT: Do not include comments in the JSON output.
+         `;
 
-      // Use request deduplication to prevent duplicate API calls
-      return requestDeduplicator.deduplicate(cacheKey, async () => {
-        if (!activeKey && settings.provider === 'google') return { riskScore: 0, profitability: 0, description: "API Key Missing" };
+         try {
+             let textResponse = "";
 
-        const prompt = `Analyze this MQL5 code and return a JSON summary of its potential risk and strategy type. Code: ${code.substring(0, 5000)}...
-        
-        Return strict JSON with this schema:
-        {
-            "riskScore": number (1-10),
-            "profitability": number (1-10),
-            "description": string
-        }
-        
-        IMPORTANT: Do not include comments in the JSON output.
-        `;
+             await withRetry(async () => {
+                 if (settings.provider === 'openai') {
+                     // Pass jsonMode: true for OpenAI/DeepSeek
+                     textResponse = await callOpenAICompatible(settings, prompt, signal, 0.5, true);
+                 } else {
+                     const ai = new GoogleGenAI({ apiKey: activeKey });
+                     
+                     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
-        try {
-            let textResponse = "";
+                     const response = await ai.models.generateContent({
+                         model: settings.modelName || 'gemini-2.5-flash', 
+                         contents: prompt,
+                         config: {
+                             responseMimeType: "application/json",
+                             responseSchema: {
+                                 type: Type.OBJECT,
+                                 properties: {
+                                     riskScore: { type: Type.NUMBER, description: "1-10 risk rating" },
+                                     profitability: { type: Type.NUMBER, description: "1-10 potential profit rating" },
+                                     description: { type: Type.STRING, description: "Short summary of strategy logic" }
+                                 }
+                             }
+                         }
+                     });
+                     textResponse = response.text || "{}";
+                 }
+             });
 
-            await withRetry(async () => {
-                if (settings.provider === 'openai') {
-                    // Pass jsonMode: true for OpenAI/DeepSeek
-                    textResponse = await callOpenAICompatible(settings, prompt, signal, 0.5, true);
-                } else {
-                    const ai = new GoogleGenAI({ apiKey: activeKey });
-                    
-                    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+             const result = extractJson(textResponse);
+             
+             // Validate the result before caching
+             if (result && typeof result === 'object' && 
+                 typeof result.riskScore === 'number' && 
+                 typeof result.profitability === 'number' && 
+                 typeof result.description === 'string') {
+                  // Ensure values are within expected ranges
+                  result.riskScore = Math.min(10, Math.max(1, Number(result.riskScore) || 0));
+                  result.profitability = Math.min(10, Math.max(1, Number(result.profitability) || 0));
+                  
+                  // Cache the result
+                  analysisCache.set(cacheKey, result);
+                  
+                  // Also cache by shorter code snippet for similar code detection
+                  const shortCodeHash = createHash(code.substring(0, 1000));
+                  const shortCacheKey = `short-${shortCodeHash}-${settings.provider}`;
+                  analysisCache.set(shortCacheKey, result);
+             } else {
+                 // Return a default response if parsing fails
+                 return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };
+             }
+             
+             return result;
 
-                    const response = await ai.models.generateContent({
-                        model: settings.modelName || 'gemini-2.5-flash', 
-                        contents: prompt,
-                        config: {
-                            responseMimeType: "application/json",
-                            responseSchema: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    riskScore: { type: Type.NUMBER, description: "1-10 risk rating" },
-                                    profitability: { type: Type.NUMBER, description: "1-10 potential profit rating" },
-                                    description: { type: Type.STRING, description: "Short summary of strategy logic" }
-                                }
-                            }
-                        }
-                    });
-                    textResponse = response.text || "{}";
-                }
-            });
-
-            const result = extractJson(textResponse);
-            
-            // Validate the result before caching
-            if (result && typeof result === 'object' && 
-                typeof result.riskScore === 'number' && 
-                typeof result.profitability === 'number' && 
-                typeof result.description === 'string') {
-                 // Cache the result
-                 analysisCache.set(cacheKey, result);
-            }
-            
-            return result;
-
-        } catch (e: any) {
-            if (e.name === 'AbortError') throw e;
-            handleError(e, 'analyzeStrategy', 'gemini');
-            return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };
-        }
-      });
+         } catch (e: any) {
+             if (e.name === 'AbortError') throw e;
+             handleError(e, 'analyzeStrategy', 'gemini');
+             return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };
+         }
+       });
 }
 
 // Helper function for creating hash-like keys for caching
