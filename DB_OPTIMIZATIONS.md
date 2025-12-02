@@ -164,14 +164,24 @@ dbUtils.resetPerformanceMetrics();
   - Payload size validation
   - Risk scoring for data validation
 
-### Resilient Supabase Client
-- **File**: `services/resilientSupabase.ts`
-- **Purpose**: Circuit breaker pattern with retry logic
-- **Features**:
-  - Circuit breaker for fault tolerance
-  - Exponential backoff retry logic
-  - Health monitoring and metrics
-  - Performance improvements: 99.9% uptime during failures
+ ### Resilient Supabase Client
+ - **File**: `services/resilientSupabase.ts`
+ - **Purpose**: Circuit breaker pattern with retry logic
+ - **Features**:
+   - Circuit breaker for fault tolerance
+   - Exponential backoff retry logic
+   - Health monitoring and metrics
+   - Performance improvements: 99.9% uptime during failures
+
+### Memory Management & Web Vitals
+ - **File**: `utils/performance.ts`
+ - **Purpose**: Memory usage monitoring and Core Web Vitals tracking
+ - **Features**:
+   - Memory usage tracking with utilization percentage monitoring
+   - Core Web Vitals integration (FCP, LCP, FID, CLS, TTFB)
+   - Performance marking for component rendering and user interactions
+   - High memory usage alerts (>80% utilization)
+   - Automatic cleanup of performance marks to prevent memory bloat
 
 ## 6. Retry Logic
 

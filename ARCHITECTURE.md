@@ -38,22 +38,25 @@
 - **Mock DB**: Implemented to ensure the app is playable immediately without requiring user backend setup.
 - **Hooks Abstraction**: Complex generator state is moved to `useGeneratorLogic` to keep the UI component clean and testable.
 - **Pips vs Points**: The UI exposes "Pips" (user-friendly), but the AI prompt enforces conversion to "Points" (MQL5 standard) to prevent logic errors in generated code.
-- **Performance Optimizations**: 
-  - Token budgeting in AI context building to efficiently manage conversation history
-  - Pre-calculated arrays and optimized loops in Monte Carlo simulation for faster backtesting
-  - Improved caching with validation and better hash generation in strategy analysis
-  - Efficient array operations in database updates to reduce unnecessary iterations
-  - **React Memoization**: All major components wrapped in React.memo to prevent unnecessary re-renders
-  - **Input Validation**: Comprehensive validation service with XSS protection and sanitization
-  - **Error Handling**: Unified error handling system with global capture and reporting
-  - **Bundle Optimization**: Modular constants with lazy loading for translations and strategies
-  - **Supabase Connection Pooling**: Retry logic with exponential backoff for resilient database connections
-  - **Response Caching**: Client-side caching for frequently accessed data with TTL management
-  - **Code Splitting**: Automatic chunking for optimal loading performance
-  - **Lazy Loading**: Components loaded on-demand to reduce initial bundle size
-  - **Database Pagination**: Efficient pagination for large datasets with `getRobotsPaginated()` function
-  - **Request Deduplication**: AI call deduplication to prevent duplicate API requests
-  - **Query Optimization**: Database-level search and filtering with proper indexing
+ - **Performance Optimizations**: 
+   - Token budgeting in AI context building to efficiently manage conversation history
+   - Pre-calculated arrays and optimized loops in Monte Carlo simulation for faster backtesting
+   - Improved caching with validation and better hash generation in strategy analysis
+   - Efficient array operations in database updates to reduce unnecessary iterations
+   - **React Memoization**: All major components wrapped in React.memo to prevent unnecessary re-renders
+   - **Input Validation**: Comprehensive validation service with XSS protection and sanitization
+   - **Error Handling**: Unified error handling system with global capture and reporting
+   - **Bundle Optimization**: Modular constants with lazy loading for translations and strategies
+   - **Supabase Connection Pooling**: Connection pooling with health checks and automatic failover
+   - **Response Caching**: Client-side caching for frequently accessed data with TTL management
+   - **Code Splitting**: Automatic chunking for optimal loading performance
+   - **Lazy Loading**: Components loaded on-demand to reduce initial bundle size
+   - **Database Pagination**: Efficient pagination for large datasets with `getRobotsPaginated()` function
+   - **Request Deduplication**: AI call deduplication to prevent duplicate API requests
+   - **Query Optimization**: Database-level search and filtering with proper indexing
+   - **Performance Monitoring**: Core Web Vitals tracking and performance metrics collection
+   - **Memory Management**: Optimized memory usage with monitoring and leak detection
+   - **Security Validation**: Enhanced MQL5 code validation to prevent dangerous operations
 - **PrismJS**: Loaded via CDN in `index.html` to avoid heavy build-step configuration for a lightweight demo.
 - **Vercel Optimization**: 
   - Edge-ready configuration for global CDN distribution

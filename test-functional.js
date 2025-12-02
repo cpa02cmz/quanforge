@@ -86,22 +86,22 @@ if (allSrcFilesExist) {
 
 // Check that TypeScript compilation would pass (by verifying no obvious syntax errors)
 try {
-  // Basic check for syntax issues by looking for unclosed brackets/quotes in a sample file
-  const sampleFile = fs.readFileSync('components/CodeEditor.tsx', 'utf8');
-  const openBraces = (sampleFile.match(/\{/g) || []).length;
-  const closeBraces = (sampleFile.match(/\}/g) || []).length;
-  const openParens = (sampleFile.match(/\(/g) || []).length;
-  const closeParens = (sampleFile.match(/\)/g) || []).length;
-  
-  if (openBraces !== closeBraces) {
-    console.error('❌ Unbalanced braces in CodeEditor.tsx');
-    process.exit(1);
-  }
-  
-  if (openParens !== closeParens) {
-    console.error('❌ Unbalanced parentheses in CodeEditor.tsx');
-    process.exit(1);
-  }
+   // Basic check for syntax issues by looking for unclosed brackets/quotes in a sample file
+   const sampleFile = fs.readFileSync('components/CodeEditor.tsx', 'utf8');
+   const openBraces = (sampleFile.match(/[{}]/g) || []).filter(char => char === '{').length;
+   const closeBraces = (sampleFile.match(/[{}]/g) || []).filter(char => char === '}').length;
+   const openParens = (sampleFile.match(/[()]/g) || []).filter(char => char === '(').length;
+   const closeParens = (sampleFile.match(/[()]/g) || []).filter(char => char === ')').length;
+   
+   if (openBraces !== closeBraces) {
+     console.error('❌ Unbalanced braces in CodeEditor.tsx');
+     process.exit(1);
+   }
+   
+   if (openParens !== closeParens) {
+     console.error('❌ Unbalanced parentheses in CodeEditor.tsx');
+     process.exit(1);
+   }
   
   console.log('✅ Basic syntax check passed');
 } catch (error) {
@@ -131,21 +131,21 @@ for (const module of optimizationModules) {
   try {
     const moduleContent = fs.readFileSync(module, 'utf8');
     
-    // Basic syntax validation by counting brackets
-    const openBraces = (moduleContent.match(/\{/g) || []).length;
-    const closeBraces = (moduleContent.match(/\}/g) || []).length;
-    const openParens = (moduleContent.match(/\(/g) || []).length;
-    const closeParens = (moduleContent.match(/\)/g) || []).length;
-    
-    if (openBraces !== closeBraces) {
-      console.error(`❌ Unbalanced braces in ${module}`);
-      allModulesValid = false;
-    } else if (openParens !== closeParens) {
-      console.error(`❌ Unbalanced parentheses in ${module}`);
-      allModulesValid = false;
-    } else {
-      console.log(`   ✅ ${module} syntax is valid`);
-    }
+   // Basic syntax validation by counting brackets (excluding angle brackets which are used in TypeScript generics)
+   const openBraces = (moduleContent.match(/[{}]/g) || []).filter(char => char === '{').length;
+   const closeBraces = (moduleContent.match(/[{}]/g) || []).filter(char => char === '}').length;
+   const openParens = (moduleContent.match(/[()]/g) || []).filter(char => char === '(').length;
+   const closeParens = (moduleContent.match(/[()]/g) || []).filter(char => char === ')').length;
+   
+   if (openBraces !== closeBraces) {
+     console.error(`❌ Unbalanced braces in ${module}`);
+     allModulesValid = false;
+   } else if (openParens !== closeParens) {
+     console.error(`❌ Unbalanced parentheses in ${module}`);
+     allModulesValid = false;
+   } else {
+     console.log(`   ✅ ${module} syntax is valid`);
+   }
   } catch (error) {
     console.error(`❌ Error reading ${module}:`, error.message);
     allModulesValid = false;

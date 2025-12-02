@@ -80,11 +80,15 @@ To deploy to Vercel:
  - **Caching**: Intelligent caching strategy for Supabase queries and API responses
  - **Bundle Optimization**: Tree-shaking and minification for reduced bundle size
  - **Lazy Loading**: Components are loaded on-demand for faster initial load
- - **Performance Monitoring**: Built-in performance metrics collection
+ - **Performance Monitoring**: Built-in performance metrics collection with Core Web Vitals tracking
  - **Enhanced Security**: Advanced API key encryption with additional obfuscation layers
  - **Input Validation**: Comprehensive XSS protection and input sanitization across all user inputs
  - **Error Handling**: Improved error boundaries and global error capture
  - **Database Performance**: Optimized indexing and caching mechanisms for large datasets
+ - **Connection Pooling**: Supabase connection pooling with health checks and automatic failover
+ - **Memory Management**: Optimized memory usage with monitoring and leak detection
+ - **API Call Optimization**: Deduplication and efficient request handling to reduce latency
+ - **MQL5 Code Security**: Enhanced validation to prevent dangerous operations in generated code
 
 ## Usage
 
