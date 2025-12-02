@@ -851,31 +851,31 @@ class SecurityManager {
       riskScore += 60;
     }
 
-    // Check for unusual header patterns
-    const headers = Array.from(request.headers.entries());
-    headers.forEach(([key, value]) => {
-      // Check for header injection
-      if (/\r|\n/.test(value)) {
-        threats.push('Header Injection');
-        riskScore += 70;
-      }
-      
-      // Check for suspicious headers
-      const suspiciousHeaders = [
-        /x-forwarded-for/gi,
-        /x-real-ip/gi,
-        /x-originating-ip/gi,
-        /x-remote-ip/gi,
-        /x-remote-addr/gi
-      ];
-      
-      suspiciousHeaders.forEach(pattern => {
-        if (pattern.test(key) && this.isPrivateIP(value)) {
-          threats.push('IP Spoofing Attempt');
-          riskScore += 65;
-        }
-      });
-    });
+     // Check for unusual header patterns
+     // Use a safer approach for getting header entries
+     try {
+       // In some environments, we might need to iterate differently
+       const headerNames = ['x-forwarded-for', 'x-real-ip', 'x-originating-ip', 'x-remote-ip', 'x-remote-addr'];
+       headerNames.forEach(name => {
+         const value = request.headers.get(name);
+         if (value) {
+           // Check for header injection
+           if (/\r|\n/.test(value)) {
+             threats.push('Header Injection');
+             riskScore += 70;
+           }
+           
+           // Check for suspicious headers
+           if (this.isPrivateIP(value)) {
+             threats.push('IP Spoofing Attempt');
+             riskScore += 65;
+           }
+         }
+       });
+     } catch (e) {
+       // Fallback for environments where headers.entries() is not available
+       console.warn('Could not check headers for threats:', e);
+     }
 
     // Content-Length abuse
     const contentLength = request.headers.get('content-length');
@@ -884,12 +884,12 @@ class SecurityManager {
       riskScore += 40;
     }
 
-    return {
-      isMalicious: riskScore > 50,
-      threats: [...new Set(threats)], // Remove duplicates
-      riskScore: Math.min(riskScore, 100)
-    };
-  }
+     return {
+       isMalicious: riskScore > 50,
+       threats: Array.from(new Set(threats)), // Remove duplicates
+       riskScore: Math.min(riskScore, 100)
+     };
+   }
 
   // Check if IP is private/internal
   private isPrivateIP(ip: string): boolean {

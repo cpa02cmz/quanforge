@@ -99,7 +99,7 @@ class EdgeMetricsCollector {
   }
 
   private checkThresholds(metric: EdgeMetrics): void {
-    const alerts = [];
+    const alerts: string[] = [];
 
     if (metric.responseTime > this.thresholds.maxResponseTime) {
       alerts.push(`High response time: ${metric.responseTime}ms in ${metric.region}`);
@@ -176,7 +176,8 @@ class EdgeMetricsCollector {
     if (total === 0) return { hit: 0, miss: 0, stale: 0, revalidated: 0 };
 
     const counts = recent.reduce((acc, m) => {
-      acc[m.cacheStatus] = (acc[m.cacheStatus] || 0) + 1;
+      const status = m.cacheStatus as string;
+      acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {} as { [key: string]: number });
 

@@ -88,13 +88,22 @@
   "installCommand": "npm ci",
   "devCommand": "npm run dev",
   "functions": {
+    "api/**/*.ts": {
+      "runtime": "edge",
+      "regions": ["hkg1", "iad1", "sin1"]
+    },
     "app/**/*.ts": {
       "runtime": "nodejs20.x"
     }
   },
   "build": {
     "env": {
-      "NODE_ENV": "production"
+      "NODE_ENV": "production",
+      "VITE_ENABLE_EDGE_RUNTIME": "true",
+      "VITE_ENABLE_SERVICE_WORKER": "true",
+      "VITE_ENABLE_COMPRESSION": "true",
+      "VITE_ENABLE_WEB_VITALS": "true",
+      "VITE_ENABLE_PERFORMANCE_MONITORING": "true"
     }
   }
 }

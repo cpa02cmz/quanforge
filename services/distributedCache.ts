@@ -1,5 +1,20 @@
 import { AdvancedCache, CacheConfig } from './advancedCache';
 
+// Extended config for distributed cache
+interface DistributedCacheConfig {
+  regions: string[];
+  replicationFactor: number;
+  consistencyLevel: 'eventual' | 'strong';
+  syncInterval: number;
+  conflictResolution: 'last-write-wins' | 'merge' | 'custom';
+  // Base cache config
+  maxSize: number;
+  maxEntries: number;
+  defaultTTL: number;
+  cleanupInterval: number;
+  compressionThreshold: number;
+}
+
 interface CachePattern {
   url: string;
   method: string;
@@ -53,6 +68,11 @@ export class DistributedCache extends AdvancedCache {
       consistencyLevel: 'eventual',
       syncInterval: 30000, // 30 seconds
       conflictResolution: 'last-write-wins',
+      maxSize: 50 * 1024 * 1024, // 50MB
+      maxEntries: 10000,
+      defaultTTL: 300000, // 5 minutes
+      cleanupInterval: 60000, // 1 minute
+      compressionThreshold: 1024, // 1KB
       ...config
     };
 
@@ -155,9 +175,9 @@ export class DistributedCache extends AdvancedCache {
 
   // Select target regions for replication
   private selectTargetRegions(): string[] {
-    const availableRegions = this.config.regions.filter(r => r !== this.currentRegion);
+    const availableRegions = this.distributedConfig.regions.filter(r => r !== this.currentRegion);
     const shuffled = availableRegions.sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, this.config.replicationFactor);
+    return shuffled.slice(0, this.distributedConfig.replicationFactor);
   }
 
   // Send data to specific region
@@ -191,7 +211,7 @@ export class DistributedCache extends AdvancedCache {
     // Periodic sync for consistency
     this.syncTimer = setInterval(() => {
       this.performPeriodicSync();
-    }, this.config.syncInterval);
+    }, this.distributedConfig.syncInterval);
   }
 
   // Handle sync messages from other regions
@@ -225,7 +245,7 @@ export class DistributedCache extends AdvancedCache {
       console.log(`🔄 Accepted remote update for ${key} from ${region} (v${version})`);
     } else if (version === currentVersion) {
       // Same version - check conflict resolution strategy
-      if (this.config.conflictResolution === 'merge') {
+      if (this.distributedConfig.conflictResolution === 'merge') {
         this.mergeData(key, data, region);
       }
     }
@@ -284,7 +304,7 @@ export class DistributedCache extends AdvancedCache {
     const currentVersion = this.versionMap.get(key) || 0;
     
     // Request updates from other regions
-    this.config.regions.forEach(region => {
+    this.distributedConfig.regions.forEach(region => {
       if (region !== this.currentRegion) {
         this.sendToRegion(region, {
           type: 'sync-request',
@@ -305,7 +325,7 @@ export class DistributedCache extends AdvancedCache {
       this.pendingInvalidations.clear();
 
       invalidations.forEach(key => {
-        this.config.regions.forEach(region => {
+        this.distributedConfig.regions.forEach(region => {
           if (region !== this.currentRegion) {
             this.sendToRegion(region, {
               type: 'invalidate',
@@ -391,7 +411,7 @@ export class DistributedCache extends AdvancedCache {
   // Check if current region is coordinator
   private isCoordinatorRegion(): boolean {
     // Simple coordinator selection - first region in list
-    return this.currentRegion === this.config.regions[0];
+    return this.currentRegion === this.distributedConfig.regions[0];
   }
 
   // Get distributed cache statistics
@@ -399,9 +419,9 @@ export class DistributedCache extends AdvancedCache {
     const baseStats = this.getStats();
     const regionStats = {
       currentRegion: this.currentRegion,
-      totalRegions: this.config.regions.length,
-      replicationFactor: this.config.replicationFactor,
-      consistencyLevel: this.config.consistencyLevel,
+      totalRegions: this.distributedConfig.regions.length,
+      replicationFactor: this.distributedConfig.replicationFactor,
+      consistencyLevel: this.distributedConfig.consistencyLevel,
       pendingInvalidations: this.pendingInvalidations.size,
       syncQueueSize: this.syncQueue.length,
       versionedEntries: this.versionMap.size
