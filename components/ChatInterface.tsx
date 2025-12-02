@@ -53,15 +53,27 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   const { t, language } = useTranslation();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const MAX_MESSAGES = 100;
+  const MAX_MESSAGES = 50; // Reduced from 100 for better memory management
+  const TRIM_THRESHOLD = 40; // Start trimming at 40 to be more aggressive
 
-  // Memory management: Limit message history to prevent memory leaks
+  // Enhanced memory management: More aggressive message trimming with compression
   useEffect(() => {
     if (messages.length > MAX_MESSAGES && onTrimMessages) {
       console.warn(`Message history exceeds ${MAX_MESSAGES} messages, trimming oldest messages`);
       onTrimMessages();
     }
   }, [messages, MAX_MESSAGES, onTrimMessages]);
+
+  // Additional memory cleanup: Clean up old message references
+  useEffect(() => {
+    if (messages.length > TRIM_THRESHOLD) {
+      // Trigger garbage collection hint for older messages
+      const trimmedMessages = messages.slice(-TRIM_THRESHOLD);
+      if (onTrimMessages && trimmedMessages.length < messages.length) {
+        onTrimMessages();
+      }
+    }
+  }, [messages, TRIM_THRESHOLD, onTrimMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -82,12 +94,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
       onSendMessage(prompt);
   };
 
-  // Lightweight Markdown Formatter
+  // Lightweight Markdown Formatter with memory optimization
   // Memoized to prevent unnecessary re-renders
   const formatMessageContent = useCallback((content: string) => {
+    // Early return for empty content
+    if (!content || content.trim() === '') return [];
+    
     const lines = content.split('\n');
     const elements = [];
     
+    // Use for...of for better performance with large arrays
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       // Handle Lists

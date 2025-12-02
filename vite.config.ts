@@ -3,11 +3,16 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-plugins: [react()],
+  plugins: [react()],
   build: {
     outDir: 'dist',
     sourcemap: process.env['NODE_ENV'] !== 'production',
     rollupOptions: {
+      treeshake: {
+        moduleSideEffects: false,
+        propertyReadSideEffects: false,
+        tryCatchDeoptimization: false
+      },
       input: {
         main: './index.html'
       },
@@ -118,7 +123,7 @@ plugins: [react()],
         drop_console: process.env['NODE_ENV'] === 'production',
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.info', 'console.debug'],
-        passes: 3, // Increased passes for better compression
+        passes: 4, // Increased passes for better compression
         // Additional optimizations for Vercel Edge and Brotli
         inline: 2,
         reduce_funcs: true,
@@ -172,6 +177,7 @@ plugins: [react()],
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'recharts', '@google/genai', '@supabase/supabase-js', 'react-router-dom', 'react-helmet-async'],
+    exclude: ['dompurify'] // Exclude heavy dependency that's minimally used
   },
   experimental: {
     renderBuiltUrl(filename, { hostType }) {
