@@ -90,6 +90,48 @@ Yes, you own the generated code and can use it for personal or commercial tradin
 ### Do you offer enterprise solutions?
 Yes, we offer custom solutions for trading firms and financial institutions. Contact us for details.
 
+### What programming languages are supported?
+QuantForge AI specializes in MQL5 (MetaQuotes Language 5) for MetaTrader 5 Expert Advisors and custom indicators.
+
+### Can I use the generated robots with any broker?
+Yes, the generated MQL5 robots work with any broker that supports MetaTrader 5 platform.
+
+### How accurate are the trading strategies?
+The AI generates strategies based on your requirements and market analysis. However, all strategies should be thoroughly tested on demo accounts before live trading.
+
+### What types of trading strategies can I create?
+You can create various strategies including trend following, mean reversion, breakout, scalping, and custom indicator-based strategies.
+
+### Is my data secure?
+Yes, all data is encrypted and stored securely. You can also use local storage mode for complete privacy.
+
+### Can I integrate custom indicators?
+Yes, you can request custom indicators in your strategy description, and the AI will incorporate them into the generated code.
+
+### Does it support multiple timeframes?
+Yes, you can create strategies that analyze multiple timeframes for better trading decisions and market analysis.
+
+### Can I create portfolio strategies?
+Yes, you can generate multiple robots and manage them as a portfolio from your dashboard with advanced analytics.
+
+### What markets are supported?
+QuantForge AI supports forex, commodities, indices, and cryptocurrency markets through MetaTrader 5 compatible brokers.
+
+### How do I optimize my strategies?
+Use our built-in Monte Carlo simulation, risk analysis tools, and performance metrics to optimize and validate your strategies.
+
+### Can I backtest my strategies?
+Yes, we provide comprehensive backtesting tools with historical data analysis and performance metrics.
+
+### What if I need help with strategy development?
+Our AI assistant can help refine your strategies, and we offer comprehensive documentation and support resources.
+
+### Are there any limitations on robot generation?
+Free plan users have generous limits, while paid plans offer unlimited generation and advanced features.
+
+### How often are the AI models updated?
+We continuously update our AI models to incorporate the latest trading strategies and market analysis techniques.
+
 ---
 
 *Last updated: December 2025*

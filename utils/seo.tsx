@@ -264,5 +264,96 @@ export const structuredDataTemplates = {
         "name": "QuantForge AI"
       }
     }
+  }),
+
+  review: (author: string, reviewBody: string, rating: number) => ({
+    "@context": "https://schema.org",
+    "@type": "Review",
+    "author": {
+      "@type": "Person",
+      "name": author
+    },
+    "reviewRating": {
+      "@type": "Rating",
+      "ratingValue": rating.toString(),
+      "bestRating": "5"
+    },
+    "reviewBody": reviewBody
+  }),
+
+  aggregateRating: (ratingValue: number, reviewCount: number) => ({
+    "@context": "https://schema.org",
+    "@type": "AggregateRating",
+    "ratingValue": ratingValue.toString(),
+    "reviewCount": reviewCount.toString(),
+    "bestRating": "5",
+    "worstRating": "1"
+  }),
+
+  event: (name: string, description: string, startDate: string, endDate: string) => ({
+    "@context": "https://schema.org",
+    "@type": "Event",
+    "name": name,
+    "description": description,
+    "startDate": startDate,
+    "endDate": endDate,
+    "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "location": {
+      "@type": "VirtualLocation",
+      "url": "https://quanforge.ai"
+    },
+    "organizer": {
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "url": "https://quanforge.ai"
+    }
+  }),
+
+  product: (name: string, description: string, price: string, priceCurrency: string = "USD") => ({
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": name,
+    "description": description,
+    "brand": {
+      "@type": "Brand",
+      "name": "QuantForge AI"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": price,
+      "priceCurrency": priceCurrency,
+      "availability": "https://schema.org/InStock",
+      "seller": {
+        "@type": "Organization",
+        "name": "QuantForge AI"
+      }
+    }
+  }),
+
+  service: (name: string, description: string, provider: string = "QuantForge AI") => ({
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "name": name,
+    "description": description,
+    "provider": {
+      "@type": "Organization",
+      "name": provider
+    },
+    "serviceType": "Financial Services",
+    "areaServed": "Worldwide",
+    "hasOfferCatalog": {
+      "@type": "OfferCatalog",
+      "name": "Trading Robot Generation Services",
+      "itemListElement": [
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Service",
+            "name": "MQL5 Robot Generation"
+          }
+        }
+      ]
+    }
   })
 };

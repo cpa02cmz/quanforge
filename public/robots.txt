@@ -56,3 +56,83 @@ Crawl-delay: 1
 # Additional SEO directives
 # Host directive for Yandex
 Host: https://quanforge.ai
+
+# Enhanced security directives
+Disallow: /.env
+Disallow: /.env.local
+Disallow: /.env.production
+Disallow: /config.js
+Disallow: /api-keys
+Disallow: /admin-panel
+Disallow: /debug
+Disallow: /test
+
+# Allow common static resources
+Allow: /css/
+Allow: /js/
+Allow: /images/
+Allow: /assets/
+Allow: /fonts/
+Allow: /favicon.ico
+Allow: /manifest.json
+Allow: /robots.txt
+Allow: /sitemap.xml
+
+# Enhanced crawler instructions for better SEO
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+Request-rate: 1/1s
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Slurp
+Allow: /
+Crawl-delay: 1
+
+User-agent: DuckDuckBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 2
+
+# Block aggressive crawlers more comprehensively
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: BacklinkCrawler
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: GPTBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
