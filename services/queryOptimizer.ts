@@ -98,98 +98,98 @@ class QueryOptimizer {
        const controller = new AbortController();
        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-    // Build query with optimizations - need to cast properly to handle Supabase types
-    let queryBuilder = client.from(table);
+     // Build query with optimizations - need to cast properly to handle Supabase types
+     let queryBuilder = client.from(table);
 
-    // Start building the query with select - optimize field selection
-    let query = queryBuilder.select(optimization.selectFields && optimization.selectFields.length > 0 
-      ? optimization.selectFields.join(', ') 
-      : '*');
+     // Start building the query with select - optimize field selection
+     let query = queryBuilder.select(optimization.selectFields && optimization.selectFields.length > 0 
+       ? optimization.selectFields.join(', ') 
+       : '*');
 
-       // Apply filters efficiently
-       if (optimization.filters) {
-         for (const [key, value] of Object.entries(optimization.filters)) {
-           if (value !== undefined && value !== null) {
-             if (Array.isArray(value)) {
-               query = query.in(key, value);
-             } else if (typeof value === 'object' && 'ilike' in value) {
-               query = query.ilike(key, value.ilike);
-             } else if (typeof value === 'object' && 'or' in value) {
-               query = query.or(value.or);
-             } else if (typeof value === 'object' && 'gte' in value) {
-               query = query.gte(key, value.gte);
-             } else if (typeof value === 'object' && 'lte' in value) {
-               query = query.lte(key, value.lte);
-             } else {
-               query = query.eq(key, value);
-             }
-           }
-         }
-       }
+        // Apply filters efficiently
+        if (optimization.filters) {
+          for (const [key, value] of Object.entries(optimization.filters)) {
+            if (value !== undefined && value !== null) {
+              if (Array.isArray(value)) {
+                query = query.in(key, value);
+              } else if (typeof value === 'object' && 'ilike' in value) {
+                query = query.ilike(key, value.ilike);
+              } else if (typeof value === 'object' && 'or' in value) {
+                query = query.or(value.or);
+              } else if (typeof value === 'object' && 'gte' in value) {
+                query = query.gte(key, value.gte);
+              } else if (typeof value === 'object' && 'lte' in value) {
+                query = query.lte(key, value.lte);
+              } else {
+                query = query.eq(key, value);
+              }
+            }
+          }
+        }
 
-       // Apply ordering
-       if (optimization.orderBy) {
-         query = query.order(optimization.orderBy.column, { 
-           ascending: optimization.orderBy.ascending 
-         });
-       }
+        // Apply ordering
+        if (optimization.orderBy) {
+          query = query.order(optimization.orderBy.column, { 
+            ascending: optimization.orderBy.ascending 
+          });
+        }
 
-       // Apply pagination
-       if (optimization.limit) {
-         query = query.limit(optimization.limit);
-       }
+        // Apply pagination
+        if (optimization.limit) {
+          query = query.limit(optimization.limit);
+        }
 
-       if (optimization.offset) {
-         query = query.range(optimization.offset, optimization.offset + (optimization.limit || 10) - 1);
-       }
+        if (optimization.offset) {
+          query = query.range(optimization.offset, optimization.offset + (optimization.limit || 10) - 1);
+        }
 
-       // Execute query with timeout
-       const result = await query.abortSignal(controller.signal) as any;
-       clearTimeout(timeoutId);
-       
-       const { data, error } = result;
+        // Execute query with timeout
+        const result = await query.abortSignal(controller.signal) as any;
+        clearTimeout(timeoutId);
+        
+        const { data, error } = result;
 
-       // Cache successful results with size management
-       if (!error && data) {
-         const dataSize = this.calculateSize(data);
-         this.maintainCacheSize(dataSize);
-         
-         this.queryCache.set(queryHash, {
-           data,
-           timestamp: Date.now(),
-           ttl: this.DEFAULT_TTL,
-         });
-       }
+        // Cache successful results with size management
+        if (!error && data) {
+          const dataSize = this.calculateSize(data);
+          this.maintainCacheSize(dataSize);
+          
+          this.queryCache.set(queryHash, {
+            data,
+            timestamp: Date.now(),
+            ttl: this.DEFAULT_TTL,
+          });
+        }
 
-       const metrics: QueryMetrics = {
-         executionTime: performance.now() - startTime,
-         resultCount: Array.isArray(data) ? data.length : 0,
-         cacheHit: false,
-         queryHash,
-       };
+        const metrics: QueryMetrics = {
+          executionTime: performance.now() - startTime,
+          resultCount: Array.isArray(data) ? data.length : 0,
+          cacheHit: false,
+          queryHash,
+        };
 
-       this.recordMetrics(metrics);
-       return { data, error, metrics };
-     } catch (error: any) {
-       clearTimeout(setTimeout(() => {}, 0)); // Clear timeout if it exists
-       
-       // Handle timeout and other errors
-       const metrics: QueryMetrics = {
-         executionTime: performance.now() - startTime,
-         resultCount: 0,
-         cacheHit: false,
-         queryHash,
-       };
-       
-       this.recordMetrics(metrics);
-       
-       return { 
-         data: null, 
-         error: error.name === 'AbortError' ? new Error('Query timeout exceeded (30s)') : error, 
-         metrics 
-       };
-     }
-   }
+        this.recordMetrics(metrics);
+        return { data, error, metrics };
+      } catch (error: any) {
+        clearTimeout(setTimeout(() => {}, 0)); // Clear timeout if it exists
+        
+        // Handle timeout and other errors
+        const metrics: QueryMetrics = {
+          executionTime: performance.now() - startTime,
+          resultCount: 0,
+          cacheHit: false,
+          queryHash,
+        };
+        
+        this.recordMetrics(metrics);
+        
+        return { 
+          data: null, 
+          error: error.name === 'AbortError' ? new Error('Query timeout exceeded (30s)') : error, 
+          metrics 
+        };
+      }
+    }
 
   // Optimized robot queries
   async getRobotsOptimized(
@@ -252,15 +252,15 @@ class QueryOptimizer {
       const batch = records.slice(i, i + batchSize);
       
       try {
-        const { data, error } = await client
+        const result = await client
           .from(table)
           .insert(batch)
           .select();
 
-        if (error) {
-          errors.push(error);
-        } else if (data) {
-          results.push(...data);
+        if (result.error) {
+          errors.push(result.error);
+        } else if (result.data) {
+          results.push(...result.data);
         }
       } catch (error) {
         errors.push(error);
