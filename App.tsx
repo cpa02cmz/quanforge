@@ -6,6 +6,7 @@ import { ToastProvider } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
+import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seo';
 import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
 import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
@@ -30,8 +31,8 @@ export default function App() {
      vercelEdgeOptimizer.enableEdgeSSR();
      vercelEdgeOptimizer.setupEdgeErrorHandling();
      
-     // Initialize Frontend Optimizer
-     frontendOptimizer.warmUp().catch(console.warn);
+// Initialize Frontend Optimizer
+      frontendOptimizer.warmUp().catch(err => logger.warn('Frontend optimizer warmup failed:', err));
     
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -39,7 +40,7 @@ export default function App() {
       performanceMonitor.recordMetric('auth_init', performance.now() - startTime);
       databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, true);
     }).catch((err) => {
-      console.warn("Auth initialization failed:", err);
+      logger.warn("Auth initialization failed:", err);
       performanceMonitor.recordMetric('auth_error', 1);
       databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, false);
     }).finally(() => {
@@ -53,7 +54,11 @@ export default function App() {
       performanceMonitor.recordMetric('auth_state_change', 1);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      // Cleanup performance monitor on app unmount
+      performanceMonitor.cleanup();
+    };
   }, []);
 
   // Memoize the loading component to prevent re-renders

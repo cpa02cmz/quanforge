@@ -1,4 +1,5 @@
 import React from 'react';
+import { logger } from './logger';
 
 // Performance monitoring utilities for production optimization
 
@@ -75,7 +76,7 @@ class PerformanceMonitor {
         this.observers.push(observerFID);
       } catch (e) {
         if (import.meta.env.DEV) {
-          console.warn('Performance monitoring not fully supported:', e);
+          logger.warn('Performance monitoring not fully supported:', e);
         }
       }
     }
@@ -112,7 +113,7 @@ class PerformanceMonitor {
 
     // Log in production for monitoring
     if (import.meta.env.PROD) {
-      console.log(`Performance Metric [${name}]:`, value);
+      logger.log(`Performance Metric [${name}]:`, value);
     }
 
     // Store critical metrics in localStorage
@@ -198,10 +199,10 @@ private recordInteraction(name: string, duration: number) {
            this.recordMetric(`api_${name}_error_${errorType}`, 1);
          }
          
-         // Log slow API calls for optimization
-         if (duration > 1000) { // More than 1 second
-           console.warn(`Slow API call detected: ${name} took ${duration.toFixed(2)}ms`);
-         }
+// Log slow API calls for optimization
+          if (duration > 1000) { // More than 1 second
+            logger.warn(`Slow API call detected: ${name} took ${duration.toFixed(2)}ms`);
+          }
        }
      }
     
@@ -236,10 +237,10 @@ private recordInteraction(name: string, duration: number) {
            this.recordMetric(`db_${name}_error_${errorType}`, 1);
          }
          
-         // Log slow database operations
-         if (duration > 500) { // More than 0.5 seconds
-           console.warn(`Slow DB operation detected: ${name} took ${duration.toFixed(2)}ms, result size: ${resultSize}`);
-         }
+// Log slow database operations
+          if (duration > 500) { // More than 0.5 seconds
+            logger.warn(`Slow DB operation detected: ${name} took ${duration.toFixed(2)}ms, result size: ${resultSize}`);
+          }
        }
      }
 
@@ -295,12 +296,12 @@ private recordInteraction(name: string, duration: number) {
     
  // Track memory usage over time
      async monitorMemoryUsage(intervalMs: number = 30000): Promise<void> { // Default 30 seconds
-       if (!('memory' in performance)) {
-         if (import.meta.env.DEV) {
-           console.warn('Memory monitoring not supported in this browser');
-         }
-         return;
-       }
+if (!('memory' in performance)) {
+          if (import.meta.env.DEV) {
+            logger.warn('Memory monitoring not supported in this browser');
+          }
+          return;
+        }
       
       const memoryInterval = setInterval(() => {
         const memory = this.getMemoryUsage();
@@ -308,14 +309,14 @@ private recordInteraction(name: string, duration: number) {
           this.recordMetric('memory_used_bytes', memory.used);
           this.recordMetric('memory_utilization_percent', memory.utilization);
           
-          // Alert if memory usage is high
-           if (memory.utilization > 80) {
-             if (import.meta.env.DEV) {
-               console.warn(`High memory usage detected: ${memory.utilization.toFixed(2)}%`);
-             }
-             // Record high memory usage event
-             this.recordMetric('high_memory_event', 1);
-           }
+// Alert if memory usage is high
+            if (memory.utilization > 80) {
+              if (import.meta.env.DEV) {
+                logger.warn(`High memory usage detected: ${memory.utilization.toFixed(2)}%`);
+              }
+              // Record high memory usage event
+              this.recordMetric('high_memory_event', 1);
+            }
         }
       }, intervalMs);
       
@@ -329,13 +330,13 @@ private recordInteraction(name: string, duration: number) {
       const result = renderFn();
       const duration = performance.now() - start;
       
-      // Only record if render was slow (indicating potential performance issue)
-      if (duration > 10) { // More than 10ms is considered slow for a render
-        this.recordMetric(`component_render_${componentName}`, duration);
-        if (duration > 100) { // Very slow render
-          console.warn(`Slow component render detected: ${componentName} took ${duration.toFixed(2)}ms`);
-        }
-      }
+// Only record if render was slow (indicating potential performance issue)
+       if (duration > 10) { // More than 10ms is considered slow for a render
+         this.recordMetric(`component_render_${componentName}`, duration);
+         if (duration > 100) { // Very slow render
+           logger.warn(`Slow component render detected: ${componentName} took ${duration.toFixed(2)}ms`);
+         }
+       }
       
       return result;
     }

@@ -74,7 +74,7 @@ export default async function handler(req: Request) {
     });
 
   } catch (error) {
-    console.error('Edge function error:', error);
+    // Keep console.error for edge function debugging (acceptable in edge functions)
     return new Response(JSON.stringify({
       error: 'Internal Server Error',
       message: 'An error occurred while processing your request'
