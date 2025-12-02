@@ -1,4 +1,4 @@
-import { StrategyParams, CustomInput, BacktestSettings } from '../types';
+import { StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
 
 export interface ValidationError {
@@ -8,6 +8,7 @@ export interface ValidationError {
 
 export class ValidationService {
   private static readonly TIMEFRAMES = ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'];
+  private static readonly TIMEFRAMES_SET = new Set(this.TIMEFRAMES);
   private static readonly SYMBOL_REGEX = /^[A-Z]{3,6}[\/]?[A-Z]{3,6}$/;
   private static readonly NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
   private static readonly MAX_RISK_PERCENT = 100;
@@ -25,12 +26,24 @@ export class ValidationService {
   private static readonly MAX_LEVERAGE = 1000;
   private static readonly MIN_LEVERAGE = 1;
 
+  // Pre-compiled patterns for better performance
+  private static readonly COMPILED_PATTERNS = {
+    xss: /javascript:/gi,
+    sqlInjection: /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b)/gi,
+    mql5Dangerous: /FileFind\s*\(/i,
+    scriptTag: /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi
+  };
+
+  // Use Set for O(1) lookups instead of Array.includes
+  private static readonly SUSPICIOUS_KEYWORDS = new Set([
+    'password', 'secret', 'key', 'token', 'admin', 'root', 'exploit', 'hack'
+  ]);
+
    static validateStrategyParams(params: StrategyParams): ValidationError[] {
      const errors: ValidationError[] = [];
 
-     // Validate timeframe - use Set for O(1) lookup
-     const TIMEFRAMES_SET = new Set(this.TIMEFRAMES);
-     if (!TIMEFRAMES_SET.has(params.timeframe)) {
+// Validate timeframe - use Set for O(1) lookup
+      if (!this.TIMEFRAMES_SET.has(params.timeframe)) {
        errors.push({
          field: 'timeframe',
          message: `Invalid timeframe. Must be one of: ${this.TIMEFRAMES.join(', ')}`

@@ -176,11 +176,13 @@ class LRUCache<T> {
   }
 
   set(key: string, data: T): void {
-    // Evict oldest if at max size
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
-    }
+// Evict oldest if at max size
+      if (this.cache.size >= this.maxSize) {
+        const firstKey = this.cache.keys().next().value;
+        if (firstKey) {
+          this.cache.delete(firstKey);
+        }
+      }
     
     this.cache.set(key, { data, timestamp: Date.now() });
   }
