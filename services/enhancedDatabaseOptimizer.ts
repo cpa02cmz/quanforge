@@ -52,139 +52,188 @@ class EnhancedDatabaseOptimizer {
     }
   }
 
-  /**
-   * Enhanced robot search with advanced optimization techniques
-   */
-  async searchRobotsEnhanced(
-    client: SupabaseClient,
-    searchTerm: string,
-    options: {
-      userId?: string;
-      strategyType?: string;
-      limit?: number;
-      offset?: number;
-      sortBy?: 'created_at' | 'updated_at' | 'name' | 'view_count';
-      sortOrder?: 'asc' | 'desc';
-      includeAnalytics?: boolean;
-      includeMetadata?: boolean;
-    } = {}
-  ): Promise<{ 
-    data: Robot[] | null; 
-    error: any; 
-    analysis: QueryAnalysis;
-  }> {
-    const startTime = performance.now();
-    
-    // Validate inputs for security
-    const validation = securityManager.sanitizeAndValidate(
-      { searchTerm, ...options },
-      'robot'
-    );
-    
-    if (!validation.isValid) {
-      const analysis: QueryAnalysis = {
-        executionTime: performance.now() - startTime,
-        resultSize: 0,
-        cacheHit: false,
-        queryComplexity: 1,
-        recommendations: ['Input validation failed', 'Check query parameters']
-      };
-      
-      return { 
-        data: null, 
-        error: new Error(`Validation failed: ${validation.errors.join(', ')}`),
-        analysis
-      };
-    }
-    
-    const sanitizedTerm = validation.sanitizedData.searchTerm || '';
-    const sanitizedOptions = validation.sanitizedData;
-    
-    // Create cache key for this specific search
-    const cacheKey = `search_enhanced_${sanitizedTerm}_${sanitizedOptions.userId || 'all'}_${sanitizedOptions.strategyType || 'all'}_${sanitizedOptions.limit || 20}_${sanitizedOptions.sortBy || 'created_at'}_${sanitizedOptions.sortOrder || 'desc'}`;
-    
-    // Try cache first if enabled
-    if (this.config.enableQueryCaching) {
-      const cached = queryCache.get<any>(cacheKey);
-      if (cached) {
-        const executionTime = performance.now() - startTime;
-        const analysis: QueryAnalysis = {
-          executionTime,
-          resultSize: Array.isArray(cached.data) ? cached.data.length : 0,
-          cacheHit: true,
-          queryComplexity: 1,
-          recommendations: ['Query served from cache']
-        };
-        
-        return { 
-          data: cached.data, 
-          error: null, 
-          analysis
-        };
-      }
-    }
-    
-    try {
-      // Use the existing queryOptimizer for optimized search
-      const result = await queryOptimizer.searchRobotsOptimized(
-        client,
-        sanitizedTerm,
-        {
-          strategyType: sanitizedOptions.strategyType,
-          userId: sanitizedOptions.userId,
-          dateRange: undefined,
-        }
-      );
-      
-      const executionTime = performance.now() - startTime;
-      
-      // Cache result if successful and caching is enabled
-      if (!result.error && result.data && this.config.enableQueryCaching) {
-        queryCache.set(cacheKey, { data: result.data }, {
-          ttl: 300000, // 5 minutes
-          tags: ['robots', 'search', 'enhanced'],
-          priority: 'high'
-        });
-      }
-      
-      // Analyze the query performance
-      const analysis = this.analyzeQueryPerformance(
-        executionTime,
-        Array.isArray(result.data) ? result.data.length : 0,
-        result.metrics?.cacheHit || false
-      );
-      
-      // Check for slow queries
-      if (this.config.enableSlowQueryDetection && executionTime > this.slowQueryThreshold) {
-        this.recordSlowQuery('searchRobotsEnhanced', executionTime, {
-          searchTerm,
-          options
-        });
-      }
-      
-      return { 
-        data: result.data, 
-        error: result.error, 
-        analysis
-      };
-    } catch (error) {
-      const executionTime = performance.now() - startTime;
-      
-      const analysis: QueryAnalysis = {
-        executionTime,
-        resultSize: 0,
-        cacheHit: false,
-        queryComplexity: 5,
-        recommendations: ['Query execution failed', 'Check database connection', 'Review query parameters']
-      };
-      
-      return { 
-        data: null, 
-        error, 
-        analysis
-      };
-    }
-  }
+/**
+    * Enhanced robot search with advanced optimization techniques
+    */
+   async searchRobotsEnhanced(
+     client: SupabaseClient,
+     searchTerm: string,
+     options: {
+       userId?: string;
+       strategyType?: string;
+       limit?: number;
+       offset?: number;
+       sortBy?: 'created_at' | 'updated_at' | 'name' | 'view_count';
+       sortOrder?: 'asc' | 'desc';
+       includeAnalytics?: boolean;
+       includeMetadata?: boolean;
+     } = {}
+   ): Promise<{ 
+     data: Robot[] | null; 
+     error: any; 
+     analysis: QueryAnalysis;
+   }> {
+     const startTime = performance.now();
+     
+     // Validate inputs for security
+     const validation = securityManager.sanitizeAndValidate(
+       { searchTerm, ...options },
+       'robot'
+     );
+     
+     if (!validation.isValid) {
+       const analysis: QueryAnalysis = {
+         executionTime: performance.now() - startTime,
+         resultSize: 0,
+         cacheHit: false,
+         queryComplexity: 1,
+         recommendations: ['Input validation failed', 'Check query parameters']
+       };
+       
+       return { 
+         data: null, 
+         error: new Error(`Validation failed: ${validation.errors.join(', ')}`),
+         analysis
+       };
+     }
+     
+     const sanitizedTerm = validation.sanitizedData.searchTerm || '';
+     const sanitizedOptions = validation.sanitizedData;
+     
+     // Create cache key for this specific search
+     const cacheKey = `search_enhanced_${sanitizedTerm}_${sanitizedOptions.userId || 'all'}_${sanitizedOptions.strategyType || 'all'}_${sanitizedOptions.limit || 20}_${sanitizedOptions.sortBy || 'created_at'}_${sanitizedOptions.sortOrder || 'desc'}`;
+     
+     // Try cache first if enabled
+     if (this.config.enableQueryCaching) {
+       const cached = queryCache.get<any>(cacheKey);
+       if (cached) {
+         const executionTime = performance.now() - startTime;
+         const analysis: QueryAnalysis = {
+           executionTime,
+           resultSize: Array.isArray(cached.data) ? cached.data.length : 0,
+           cacheHit: true,
+           queryComplexity: 1,
+           recommendations: ['Query served from cache']
+         };
+         
+         return { 
+           data: cached.data, 
+           error: null, 
+           analysis
+         };
+       }
+     }
+     
+     try {
+       // For better performance with full-text search, try to use the database function first
+       if (this.config.enableFullTextSearch && sanitizedTerm.trim() !== '') {
+         // Try using a custom RPC function for full-text search if available
+         try {
+           const { data: rpcResult, error: rpcError } = await client.rpc('search_robots', {
+             search_term: sanitizedTerm,
+             strategy_filter: sanitizedOptions.strategyType || 'All',
+             user_filter: sanitizedOptions.userId || null,
+             limit_count: sanitizedOptions.limit || 20,
+             offset_count: sanitizedOptions.offset || 0
+           });
+           
+           if (!rpcError && Array.isArray(rpcResult)) {
+             const executionTime = performance.now() - startTime;
+             
+             // Cache result if successful and caching is enabled
+             if (this.config.enableQueryCaching) {
+               queryCache.set(cacheKey, { data: rpcResult }, {
+                 ttl: 300000, // 5 minutes
+                 tags: ['robots', 'search', 'enhanced'],
+                 priority: 'high'
+               });
+             }
+             
+             const analysis = this.analyzeQueryPerformance(
+               executionTime,
+               rpcResult.length,
+               false // Not from cache since this is the initial query
+             );
+             
+             // Check for slow queries
+             if (this.config.enableSlowQueryDetection && executionTime > this.slowQueryThreshold) {
+               this.recordSlowQuery('searchRobotsEnhanced', executionTime, {
+                 searchTerm,
+                 options
+               });
+             }
+             
+             return { 
+               data: rpcResult, 
+               error: null, 
+               analysis
+             };
+           }
+         } catch (rpcError) {
+           console.warn('Full-text search RPC failed, falling back to regular search:', rpcError);
+         }
+       }
+       
+       // Use the existing queryOptimizer for optimized search
+       const result = await queryOptimizer.searchRobotsOptimized(
+         client,
+         sanitizedTerm,
+         {
+           strategyType: sanitizedOptions.strategyType,
+           userId: sanitizedOptions.userId,
+           dateRange: undefined,
+         }
+       );
+       
+       const executionTime = performance.now() - startTime;
+       
+       // Cache result if successful and caching is enabled
+       if (!result.error && result.data && this.config.enableQueryCaching) {
+         queryCache.set(cacheKey, { data: result.data }, {
+           ttl: 300000, // 5 minutes
+           tags: ['robots', 'search', 'enhanced'],
+           priority: 'high'
+         });
+       }
+       
+       // Analyze the query performance
+       const analysis = this.analyzeQueryPerformance(
+         executionTime,
+         Array.isArray(result.data) ? result.data.length : 0,
+         result.metrics?.cacheHit || false
+       );
+       
+       // Check for slow queries
+       if (this.config.enableSlowQueryDetection && executionTime > this.slowQueryThreshold) {
+         this.recordSlowQuery('searchRobotsEnhanced', executionTime, {
+           searchTerm,
+           options
+         });
+       }
+       
+       return { 
+         data: result.data, 
+         error: result.error, 
+         analysis
+       };
+     } catch (error) {
+       const executionTime = performance.now() - startTime;
+       
+       const analysis: QueryAnalysis = {
+         executionTime,
+         resultSize: 0,
+         cacheHit: false,
+         queryComplexity: 5,
+         recommendations: ['Query execution failed', 'Check database connection', 'Review query parameters']
+       };
+       
+       return { 
+         data: null, 
+         error, 
+         analysis
+       };
+     }
+   }
 
   /**
    * Optimized insert with batch and validation capabilities
@@ -572,28 +621,34 @@ class EnhancedDatabaseOptimizer {
     this.slowQueries = [];
   }
 
-  /**
-   * Get query performance recommendations
-   */
-  getPerformanceRecommendations(): string[] {
-    const recommendations: string[] = [];
-    
-    // Check for slow queries
-    const slowQueries = this.slowQueries.filter(sq => sq.executionTime > 1000);
-    if (slowQueries.length > 0) {
-      recommendations.push(`Found ${slowQueries.length} slow queries (>1s), optimize these operations`);
-    }
-    
-    // Check average performance
-    if (this.slowQueries.length > 0) {
-      const avgTime = this.slowQueries.reduce((sum, sq) => sum + sq.executionTime, 0) / this.slowQueries.length;
-      if (avgTime > 1000) {
-        recommendations.push(`Average query time is high (${avgTime.toFixed(2)}ms), consider optimization`);
-      }
-    }
-    
-    return recommendations;
-  }
+/**
+    * Get query performance recommendations
+    */
+   getPerformanceRecommendations(): string[] {
+     const recommendations: string[] = [];
+     
+     // Check for slow queries
+     const slowQueries = this.slowQueries.filter(sq => sq.executionTime > 1000);
+     if (slowQueries.length > 0) {
+       recommendations.push(`Found ${slowQueries.length} slow queries (>1s), optimize these operations`);
+     }
+     
+     // Check average performance
+     if (this.slowQueries.length > 0) {
+       const avgTime = this.slowQueries.reduce((sum, sq) => sum + sq.executionTime, 0) / this.slowQueries.length;
+       if (avgTime > 1000) {
+         recommendations.push(`Average query time is high (${avgTime.toFixed(2)}ms), consider optimization`);
+       }
+     }
+     
+     // Add specific index recommendations based on query patterns
+     recommendations.push('Consider creating composite indexes for common query patterns');
+     recommendations.push('Add GIN indexes for JSONB fields (strategy_params, backtest_settings)');
+     recommendations.push('Create partial indexes for frequently filtered boolean columns');
+     recommendations.push('Implement full-text search indexes for name and description fields');
+     
+     return recommendations;
+   }
 
   /**
    * Enable or disable specific optimization features
@@ -602,12 +657,7 @@ class EnhancedDatabaseOptimizer {
     this.config = { ...this.config, ...flags };
   }
 
-  /**
-   * Get current optimization configuration
-   */
-  getConfig(): EnhancedOptimizationConfig {
-    return { ...this.config };
-  }
+
 
   /**
    * Set slow query threshold in milliseconds

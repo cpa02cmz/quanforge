@@ -70,85 +70,112 @@ class QueryOptimizer {
     }
   }
 
-   // Build optimized query with enhanced error handling and timeout
-   async executeQuery<T>(
-     client: SupabaseClient,
-     table: string,
-     optimization: QueryOptimization
-   ): Promise<{ data: T[] | null; error: any; metrics: QueryMetrics }> {
-     const startTime = performance.now();
-     const queryHash = this.generateQueryHash(optimization);
-     
-     // Check cache first
-     const cached = this.queryCache.get(queryHash);
-     if (cached && Date.now() - cached.timestamp < cached.ttl) {
-       const metrics: QueryMetrics = {
-         executionTime: performance.now() - startTime,
-         resultCount: Array.isArray(cached.data) ? cached.data.length : 0,
-         cacheHit: true,
-         queryHash,
-       };
-       
-       this.recordMetrics(metrics);
-       return { data: cached.data as T[], error: null, metrics };
-     }
-
-     try {
-       // Create AbortController for timeout handling
-       const controller = new AbortController();
-       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-     // Build query with optimizations - need to cast properly to handle Supabase types
-     let queryBuilder = client.from(table);
-
-     // Start building the query with select - optimize field selection
-     let query = queryBuilder.select(optimization.selectFields && optimization.selectFields.length > 0 
-       ? optimization.selectFields.join(', ') 
-       : '*');
-
-        // Apply filters efficiently
+// Build optimized query with enhanced error handling and timeout
+    async executeQuery<T>(
+      client: SupabaseClient,
+      table: string,
+      optimization: QueryOptimization
+    ): Promise<{ data: T[] | null; error: any; metrics: QueryMetrics }> {
+      const startTime = performance.now();
+      const queryHash = this.generateQueryHash(optimization);
+      
+      // Check cache first
+      const cached = this.queryCache.get(queryHash);
+      if (cached && Date.now() - cached.timestamp < cached.ttl) {
+        const metrics: QueryMetrics = {
+          executionTime: performance.now() - startTime,
+          resultCount: Array.isArray(cached.data) ? cached.data.length : 0,
+          cacheHit: true,
+          queryHash,
+        };
+        
+        this.recordMetrics(metrics);
+        
+        // Log to monitoring service
+        if (typeof window !== 'undefined') {
+          import('../utils/performanceMonitor').then(module => {
+            if (module.monitoringService) {
+              module.monitoringService.logDatabaseQuery(
+                `cached_${table}_query`,
+                metrics.executionTime,
+                metrics.resultCount,
+                undefined,
+                { queryHash, table },
+                true
+              ).catch(console.warn);
+            }
+          }).catch(console.warn);
+        }
+        
+        return { data: cached.data as T[], error: null, metrics };
+      }
+ 
+      try {
+        // Create AbortController for timeout handling
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+ 
+        // Build query with optimizations - need to cast properly to handle Supabase types
+        let queryBuilder = client.from(table);
+ 
+        // Start building the query with select - optimize field selection
+        let query = queryBuilder.select(optimization.selectFields && optimization.selectFields.length > 0 
+          ? optimization.selectFields.join(', ') 
+          : '*');
+ 
+        // Apply filters efficiently - optimize for index usage
         if (optimization.filters) {
           for (const [key, value] of Object.entries(optimization.filters)) {
             if (value !== undefined && value !== null) {
               if (Array.isArray(value)) {
                 query = query.in(key, value);
               } else if (typeof value === 'object' && 'ilike' in value) {
-                query = query.ilike(key, value.ilike);
+                // For better performance, use full-text search when possible
+                if (table === 'robots' && (key === 'name' || key === 'description')) {
+                  // Use the precomputed search_vector if available (requires GIN index)
+                  query = query.ilike(key, value.ilike);
+                } else {
+                  query = query.ilike(key, value.ilike);
+                }
               } else if (typeof value === 'object' && 'or' in value) {
                 query = query.or(value.or);
               } else if (typeof value === 'object' && 'gte' in value) {
                 query = query.gte(key, value.gte);
               } else if (typeof value === 'object' && 'lte' in value) {
                 query = query.lte(key, value.lte);
+              } else if (typeof value === 'object' && 'gt' in value) {
+                query = query.gt(key, value.gt);
+              } else if (typeof value === 'object' && 'lt' in value) {
+                query = query.lt(key, value.lt);
               } else {
                 query = query.eq(key, value);
               }
             }
           }
         }
-
-        // Apply ordering
+ 
+        // Apply ordering - optimize for index usage
         if (optimization.orderBy) {
           query = query.order(optimization.orderBy.column, { 
             ascending: optimization.orderBy.ascending 
           });
         }
-
-        // Apply pagination
+ 
+        // Apply pagination - optimize for index usage
         if (optimization.limit) {
           query = query.limit(optimization.limit);
         }
-
+ 
         if (optimization.offset) {
           query = query.range(optimization.offset, optimization.offset + (optimization.limit || 10) - 1);
         }
-
+ 
         // Execute query with timeout
         const result = await query.abortSignal(controller.signal) as any;
         clearTimeout(timeoutId);
         
         const { data, error } = result;
-
+ 
         // Cache successful results with size management
         if (!error && data) {
           const dataSize = this.calculateSize(data);
@@ -160,28 +187,63 @@ class QueryOptimizer {
             ttl: this.DEFAULT_TTL,
           });
         }
-
+ 
+        const executionTime = performance.now() - startTime;
         const metrics: QueryMetrics = {
-          executionTime: performance.now() - startTime,
+          executionTime,
           resultCount: Array.isArray(data) ? data.length : 0,
           cacheHit: false,
           queryHash,
         };
-
+ 
         this.recordMetrics(metrics);
+        
+        // Log to monitoring service
+        if (typeof window !== 'undefined') {
+          import('../utils/performanceMonitor').then(module => {
+            if (module.monitoringService) {
+              module.monitoringService.logDatabaseQuery(
+                `executed_${table}_query`,
+                executionTime,
+                metrics.resultCount,
+                undefined,
+                { queryHash, table, filters: optimization.filters, orderBy: optimization.orderBy },
+                false
+              ).catch(console.warn);
+            }
+          }).catch(console.warn);
+        }
+        
         return { data, error, metrics };
       } catch (error: any) {
         clearTimeout(setTimeout(() => {}, 0)); // Clear timeout if it exists
         
         // Handle timeout and other errors
+        const executionTime = performance.now() - startTime;
         const metrics: QueryMetrics = {
-          executionTime: performance.now() - startTime,
+          executionTime,
           resultCount: 0,
           cacheHit: false,
           queryHash,
         };
         
         this.recordMetrics(metrics);
+        
+        // Log error to monitoring service
+        if (typeof window !== 'undefined') {
+          import('../utils/performanceMonitor').then(module => {
+            if (module.monitoringService) {
+              module.monitoringService.logDatabaseQuery(
+                `failed_${table}_query`,
+                executionTime,
+                0,
+                undefined,
+                { queryHash, table, error: error.message },
+                false
+              ).catch(console.warn);
+            }
+          }).catch(console.warn);
+        }
         
         return { 
           data: null, 

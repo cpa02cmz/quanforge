@@ -508,6 +508,122 @@ class MonitoringService {
     }
   }
 
+  // Database-specific monitoring methods
+  async logDatabaseQuery(
+    queryType: string, 
+    executionTime: number, 
+    resultCount: number, 
+    userId?: string,
+    parameters?: Record<string, any>,
+    isCached: boolean = false
+  ): Promise<void> {
+    const context = {
+      queryType,
+      executionTime,
+      resultCount,
+      isCached,
+      parameters: parameters ? JSON.stringify(parameters) : undefined,
+      userId
+    };
+
+    // Log slow queries as warnings
+    if (executionTime > 1000) { // More than 1 second
+      this.logger.warn(`Slow database query detected: ${queryType}`, context);
+    } else if (executionTime > 500) { // More than 0.5 seconds
+      this.logger.info(`Moderate database query: ${queryType}`, context);
+    } else {
+      this.logger.debug(`Database query executed: ${queryType}`, context);
+    }
+  }
+
+  // Database performance analysis
+  getDatabasePerformanceAnalysis(): {
+    averageQueryTime: number;
+    slowQueryCount: number;
+    cacheHitRate: number;
+    topSlowQueries: Array<{ queryType: string; avgTime: number; count: number }>;
+  } {
+    // Extract database-related logs
+    const dbLogs = this.getLogs().filter(log => 
+      log.message.includes('Database query') || 
+      log.message.includes('Slow database query') ||
+      log.message.includes('Moderate database query')
+    );
+
+    if (dbLogs.length === 0) {
+      return {
+        averageQueryTime: 0,
+        slowQueryCount: 0,
+        cacheHitRate: 0,
+        topSlowQueries: []
+      };
+    }
+
+    const queryTimes: Record<string, number[]> = {};
+    const queryCounts: Record<string, number> = {};
+    const cachedQueries: Record<string, number> = {};
+    let totalQueries = 0;
+    let slowQueries = 0;
+
+    for (const log of dbLogs) {
+      if (log.context && log.context['queryType']) {
+        const queryType = log.context['queryType'];
+        const executionTime = log.context['executionTime'];
+        
+        if (!queryTimes[queryType]) {
+          queryTimes[queryType] = [];
+          queryCounts[queryType] = 0;
+          cachedQueries[queryType] = 0;
+        }
+
+        queryTimes[queryType].push(executionTime);
+        queryCounts[queryType]++;
+        totalQueries++;
+
+        if (log.context['isCached']) {
+          cachedQueries[queryType]++;
+        }
+
+        if (executionTime > 1000) {
+          slowQueries++;
+        }
+      }
+    }
+
+    // Calculate average times
+    const queryAverages: Array<{ queryType: string; avgTime: number; count: number }> = [];
+    for (const [queryType, times] of Object.entries(queryTimes)) {
+      const avgTime = times.reduce((sum, time) => sum + time, 0) / times.length;
+      queryAverages.push({
+        queryType,
+        avgTime,
+        count: queryCounts[queryType]
+      });
+    }
+
+    // Sort by average time to get top slow queries
+    const topSlowQueries = queryAverages
+      .sort((a, b) => b.avgTime - a.avgTime)
+      .slice(0, 5);
+
+    // Calculate overall average
+    const allTimes = dbLogs
+      .filter(log => log.context && typeof log.context['executionTime'] === 'number')
+      .map(log => log.context['executionTime'] as number);
+    const averageQueryTime = allTimes.reduce((sum, time) => sum + time, 0) / allTimes.length;
+
+    // Calculate cache hit rate
+    const totalCached = dbLogs.filter(log => log.context && log.context['isCached']).length;
+    const cacheHitRate = totalQueries > 0 ? (totalCached / totalQueries) * 100 : 0;
+
+    return {
+      averageQueryTime,
+      slowQueryCount: slowQueries,
+      cacheHitRate,
+      topSlowQueries
+    };
+  }
+
   // Public API
   getLogger(): Logger {
     return this.logger;
