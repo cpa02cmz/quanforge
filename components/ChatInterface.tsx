@@ -64,24 +64,24 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     }
   }, [messages]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading]);
+  }, [messages, isLoading, scrollToBottom]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
     onSendMessage(input);
     setInput('');
-  };
+  }, [input, isLoading, onSendMessage]);
 
-  const handleSuggestionClick = (prompt: string) => {
+  const handleSuggestionClick = useCallback((prompt: string) => {
       onSendMessage(prompt);
-  };
+  }, [onSendMessage]);
 
   // Lightweight Markdown Formatter
   // Memoized to prevent unnecessary re-renders
@@ -90,7 +90,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     const elements = [];
     
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+      const line = lines[i] ?? '';
       // Handle Lists
       if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
         const listContent = line.trim().substring(2);

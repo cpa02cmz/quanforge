@@ -6,6 +6,65 @@ import { settingsManager } from "./settingsManager";
 import { getActiveKey } from "../utils/apiKeyUtils";
 import { handleError } from "../utils/errorHandler";
 
+// Circuit Breaker Pattern for API resilience
+class CircuitBreaker {
+  private failureCount = 0;
+  private lastFailureTime = 0;
+  private state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';
+  
+  constructor(
+    private readonly failureThreshold: number = 5,
+    private readonly resetTimeout: number = 30000
+  ) {}
+
+  async execute<T>(operation: () => Promise<T>): Promise<T> {
+    if (this.state === 'OPEN') {
+      if (Date.now() - this.lastFailureTime > this.resetTimeout) {
+        this.state = 'HALF_OPEN';
+      } else {
+        throw new Error('Circuit breaker is OPEN');
+      }
+    }
+
+    try {
+      const result = await operation();
+      this.onSuccess();
+      return result;
+    } catch (error) {
+      this.onFailure();
+      throw error;
+    }
+  }
+
+  private onSuccess() {
+    this.failureCount = 0;
+    this.state = 'CLOSED';
+  }
+
+  private onFailure() {
+    this.failureCount++;
+    this.lastFailureTime = Date.now();
+    
+    if (this.failureCount >= this.failureThreshold) {
+      this.state = 'OPEN';
+    }
+  }
+
+  getState() {
+    return this.state;
+  }
+
+  reset() {
+    this.failureCount = 0;
+    this.state = 'CLOSED';
+    this.lastFailureTime = 0;
+  }
+}
+
+// Create circuit breaker instances
+const apiCircuitBreaker = new CircuitBreaker();
+const codeGenerationCircuitBreaker = new CircuitBreaker();
+
 // Advanced cache for strategy analysis to avoid repeated API calls
 // Uses LRU eviction to prevent memory bloat
 class LRUCache<T> {
@@ -37,7 +96,9 @@ class LRUCache<T> {
     // Evict oldest if at max size
     if (this.cache.size >= this.maxSize) {
       const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
+      if (firstKey) {
+        this.cache.delete(firstKey);
+      }
     }
     
     this.cache.set(key, { result: value, timestamp: Date.now() });
@@ -120,7 +181,6 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
 // Enhanced token budgeting with incremental history management
   class TokenBudgetManager {
       private static readonly MAX_CONTEXT_CHARS = 150000; // Increased to handle more complex requests
-      private static readonly TOKEN_RATIO = 4; // 1 token ~= 4 characters
       private static readonly MIN_HISTORY_CHARS = 1000; // Keep minimum history for context
     
     // Cache for frequently used context parts
@@ -141,7 +201,9 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
         // Cleanup old cache entries
         if (this.contextCache.size > 50) {
             const oldestKey = this.contextCache.keys().next().value;
-            this.contextCache.delete(oldestKey);
+            if (oldestKey) {
+                this.contextCache.delete(oldestKey);
+            }
         }
         
         return content;
@@ -352,13 +414,17 @@ const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?
         
         if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
+        const config: any = {
+          systemInstruction: systemInstruction
+        };
+        if (temperature !== undefined) {
+          config.temperature = temperature;
+        }
+
         const response = await ai.models.generateContent({
           model: settings.modelName || 'gemini-3-pro-preview',
           contents: fullPrompt,
-          config: {
-            systemInstruction: systemInstruction,
-            temperature: temperature
-          }
+          config
         });
 
         if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
@@ -392,7 +458,7 @@ const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, si
             ...(jsonMode ? { response_format: { type: "json_object" } } : {})
         };
 
-        const response = await fetch(url, {
+        const fetchOptions: RequestInit = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -402,9 +468,14 @@ const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, si
                     'X-Title': 'QuantForge AI'
                 } : {})
             },
-            body: JSON.stringify(body),
-            signal // Pass AbortSignal to fetch
-        });
+            body: JSON.stringify(body)
+        };
+
+        if (signal) {
+            fetchOptions.signal = signal;
+        }
+
+        const response = await fetch(url, fetchOptions);
 
         if (!response.ok) {
             const err = await response.text();
@@ -424,7 +495,7 @@ const extractThinking = (rawText: string): { thinking?: string, content: string 
     const thinkRegex = /<think(?:ing)?>(.*?)<\/think(?:ing)?>/si;
     const match = rawText.match(thinkRegex);
     
-    if (match) {
+    if (match && match[1]) {
         const thinking = match[1].trim();
         const content = rawText.replace(thinkRegex, '').trim();
         return { thinking, content };
@@ -448,13 +519,16 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
      // Create deduplication key for this specific request with more comprehensive parameters
      const requestKey = createHash(`${prompt}-${currentCode?.substring(0, 200)}-${JSON.stringify(strategyParams)}-${history.length}-${settings.provider}-${settings.modelName}`);
      
-     // Use request deduplication to prevent duplicate API calls
-     rawResponse = await requestDeduplicator.deduplicate(requestKey, async () => {
-       if (settings.provider === 'openai') {
-           return await callOpenAICompatible(settings, fullPrompt, signal);
-       } else {
-           return await callGoogleGenAI(settings, fullPrompt, signal) || "";
-       }
+     // Use circuit breaker for API resilience
+     rawResponse = await codeGenerationCircuitBreaker.execute(async () => {
+       // Use request deduplication to prevent duplicate API calls
+       return await requestDeduplicator.deduplicate(requestKey, async () => {
+         if (settings.provider === 'openai') {
+             return await callOpenAICompatible(settings, fullPrompt, signal);
+         } else {
+             return await callGoogleGenAI(settings, fullPrompt, signal) || "";
+         }
+       });
      });
      
      return extractThinking(rawResponse);

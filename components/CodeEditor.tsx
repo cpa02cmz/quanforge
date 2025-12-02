@@ -33,11 +33,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
   }, [code, isEditing]);
 
   // Sync scrolling between content and gutter
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     if (contentRef.current && gutterRef.current) {
       gutterRef.current.scrollTop = contentRef.current.scrollTop;
     }
-  };
+  }, []);
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(code);
@@ -59,7 +59,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
     document.body.removeChild(element);
   }, [code, filename]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Tab') {
       e.preventDefault();
       const start = e.currentTarget.selectionStart;
@@ -80,7 +80,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
         }, 0);
       }
     }
-  };
+  }, [onChange]);
 
 // Generate line numbers efficiently - memoized for performance
     const lineNumbers = useMemo(() => {
