@@ -2,7 +2,6 @@
 import { useReducer, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Message, MessageRole, Robot, StrategyParams, StrategyAnalysis, BacktestSettings, SimulationResult } from '../types';
-import { generateMQL5Code, analyzeStrategy, refineCode, explainCode } from '../services/gemini';
 import { mockDb } from '../services/supabase';
 import { useToast } from '../components/Toast';
 import { DEFAULT_STRATEGY_PARAMS } from '../constants';
@@ -10,6 +9,7 @@ import { runMonteCarloSimulation } from '../services/simulation';
 import { ValidationService } from '../utils/validation';
 import { createScopedLogger } from '../utils/logger';
 import { useMessageBuffer } from '../utils/messageBuffer';
+import { loadGeminiService, preloadGeminiService } from '../services/aiServiceLoader';
 
 const logger = createScopedLogger('useGeneratorLogic');
 
@@ -113,6 +113,11 @@ export const useGeneratorLogic = (id?: string) => {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
+  // Preload AI service for better UX
+  useEffect(() => {
+    preloadGeminiService();
+  }, []);
+
   const [state, dispatch] = useReducer(generatorReducer, initialState);
   
   // Abort Controller for AI Requests
@@ -154,13 +159,22 @@ const stopGeneration = () => {
              if (found) {
                  dispatch({ type: 'LOAD_ROBOT', payload: found });
                  
-                 if (!found.analysis_result && found.code) {
-                     analyzeStrategy(found.code).then(analysis => {
-                         if (!controller.signal.aborted) {
-                             dispatch({ type: 'SET_ANALYSIS', payload: analysis });
-                         }
-                     });
-                 }
+if (!found.analysis_result && found.code) {
+                      loadGeminiService().then(({ analyzeStrategy }) => {
+                          if (!controller.signal.aborted) {
+                              return analyzeStrategy(found.code);
+                          }
+                          return Promise.reject(new Error('Aborted'));
+                      }).then(analysis => {
+                          if (!controller.signal.aborted && analysis) {
+                              dispatch({ type: 'SET_ANALYSIS', payload: analysis });
+                          }
+                      }).catch((err: any) => {
+                          if (!controller.signal.aborted) {
+                              logger.error('Error analyzing strategy:', err);
+                          }
+                      });
+                  }
              } else {
                  showToast("Robot not found", "error");
                  navigate('/generator'); // Redirect to new if not found
@@ -209,10 +223,17 @@ const stopGeneration = () => {
           
           // Trigger analysis in background, cancellable
           const analysisController = new AbortController();
-          analyzeStrategy(extractedCode, analysisController.signal).then(analysis => 
-              dispatch({ type: 'SET_ANALYSIS', payload: analysis })
-          ).catch(err => {
-             if (err.name !== 'AbortError') logger.error("Analysis failed", err);
+          loadGeminiService().then(({ analyzeStrategy }) => {
+              if (!analysisController.signal.aborted) {
+                  return analyzeStrategy(extractedCode, analysisController.signal);
+              }
+              return Promise.reject(new Error('Aborted'));
+          }).then(analysis => {
+              if (!analysisController.signal.aborted && analysis) {
+                  dispatch({ type: 'SET_ANALYSIS', payload: analysis });
+              }
+          }).catch((err: any) => {
+              if (err.name !== 'AbortError') logger.error("Analysis failed", err);
           });
 
           dispatch({ type: 'SET_SIMULATION_RESULT', payload: null }); 
@@ -266,6 +287,7 @@ const stopGeneration = () => {
     dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'generating', message: 'Generating MQL5 code...' } });
 
     try {
+      const { generateMQL5Code } = await loadGeminiService();
       const response = await generateMQL5Code(content, state.code, state.strategyParams, updatedMessages, signal);
       dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'processing', message: 'Processing response...' } });
       await processAIResponse(response);
@@ -304,6 +326,7 @@ const stopGeneration = () => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'applying-settings', message: 'Applying configuration changes...' } });
       try {
+          const { generateMQL5Code } = await loadGeminiService();
           const prompt = "Update the code to strictly follow the provided configuration constraints (Timeframe, Risk, Stop Loss, Take Profit, Custom Inputs). Keep the existing strategy logic but ensure inputs are consistent with the config.";
           const response = await generateMQL5Code(prompt, state.code, state.strategyParams, state.messages, signal);
           dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'processing', message: 'Processing updated code...' } });
@@ -332,6 +355,7 @@ const stopGeneration = () => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'refining', message: 'Refining code...' } });
       try {
+          const { refineCode } = await loadGeminiService();
           const response = await refineCode(state.code, signal);
           dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'processing', message: 'Processing refined code...' } });
           await processAIResponse(response);
@@ -367,6 +391,7 @@ const stopGeneration = () => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'explaining', message: 'Generating code explanation...' } });
       try {
+          const { explainCode } = await loadGeminiService();
           const response = await explainCode(state.code, signal);
           
           // Inject explanation into chat

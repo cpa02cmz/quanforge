@@ -99,10 +99,11 @@ class PerformanceMonitor {
     );
 
     const operationsByType = this.metrics.reduce((acc, metric) => {
-      if (!acc[metric.operation]) {
-        acc[metric.operation] = [];
+      const operation = metric.operation;
+      if (!acc[operation]) {
+        acc[operation] = [];
       }
-      acc[metric.operation].push(metric);
+      acc[operation].push(metric);
       return acc;
     }, {} as Record<string, PerformanceMetrics[]>);
 
@@ -468,6 +469,10 @@ class MonitoringService {
   constructor() {
     this.logger = new Logger();
     this.perfMonitor = performanceMonitor; // Use existing instance
+  }
+
+  getPerformanceMonitor(): PerformanceMonitor {
+    return this.perfMonitor;
   }
 
   init(userId?: string): void {

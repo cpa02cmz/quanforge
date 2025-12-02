@@ -6,8 +6,8 @@ export const NumericInput: React.FC<{
     value: number;
     onChange: (val: number) => void;
     className?: string;
-    step?: string;
-}> = memo(({ value, onChange, className, step = "1" }) => {
+    _step?: string;
+}> = memo(({ value, onChange, className, _step = "1" }) => {
     const [localValue, setLocalValue] = useState(value.toString());
 
     // Sync local state if external value changes significantly (e.g. reset or load)

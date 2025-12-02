@@ -119,7 +119,7 @@ class MarketDataService {
       // For crypto, let's assume standard 2 decimals for USD pairs usually.
       // But Binance sends strings, so we can detect precision.
       const bidStr = data.b as string;
-      const decimals = bidStr.includes('.') ? bidStr.split('.')[1].length : 0;
+      const decimals = bidStr.includes('.') ? (bidStr.split('.')[1]?.length || 0) : 0;
       
       const multiplier = Math.pow(10, decimals);
       const spread = Math.round((ask - bid) * multiplier);
