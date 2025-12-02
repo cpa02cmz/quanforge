@@ -183,9 +183,11 @@ class VercelEdgeOptimizer {
       try {
         // Monitor Largest Contentful Paint
         const lcpObserver = new PerformanceObserver((list) => {
-          const entries = list.getEntries();
-          const lastEntry = entries[entries.length - 1];
+const entries = list.getEntries();
+        const lastEntry = entries[entries.length - 1];
+        if (lastEntry) {
           this.recordMetric('lcp', lastEntry.startTime);
+        }
         });
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
 
@@ -265,10 +267,10 @@ class VercelEdgeOptimizer {
     // Detect edge region from request headers or performance timing
     // This is a simplified detection - in production, use more sophisticated methods
     const regions = this.config.edgeRegions;
-    return regions[Math.floor(Math.random() * regions.length)];
+    return regions[Math.floor(Math.random() * regions.length)] || 'iad1';
   }
 
-  private recordApiMetrics(url: string, responseTime: number, success: boolean): void {
+  private recordApiMetrics(_url: string, responseTime: number, _success: boolean): void {
     const region = this.detectEdgeRegion();
     const existing = this.metrics.get(region) || {
       region,
