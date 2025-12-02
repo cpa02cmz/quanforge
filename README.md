@@ -17,6 +17,10 @@ QuantForge AI is a web-based platform that uses Google's Gemini 3.0/2.5 AI model
 - **Strategy Analysis**: Automatic risk scoring and profitability assessment with visual charts.
 - **Data Persistence**: Save your robots, including chat history, configuration, and simulation settings using Supabase (or LocalStorage fallback).
 - **Project Lifecycle**: Easily create new projects, duplicate existing ones, and manage versions with automated state resets.
+- **Database Optimization**: Advanced caching, query optimization, and connection pooling for improved performance.
+- **Security Management**: Enhanced input validation, XSS protection, and API key security with comprehensive code sanitization.
+- **Performance Optimization**: Vercel/Edge deployment with optimized bundling, lazy loading, and caching strategies.
+- **Supabase Integration**: Advanced connection pooling, resilient connections, and real-time data synchronization.
 
 ## Tech Stack
 
