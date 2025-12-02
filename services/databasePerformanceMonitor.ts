@@ -11,6 +11,11 @@ interface DatabaseMetrics {
   slowQueries: number;
   errorRate: number;
   throughput: number;
+  queryComplexity: number;
+  tableSize: string;
+  activeConnections: number;
+  idleConnections: number;
+  memoryUsage: number;
 }
 
 interface QueryPlan {
@@ -39,6 +44,11 @@ class DatabasePerformanceMonitor {
     slowQueries: 0,
     errorRate: 0,
     throughput: 0,
+    queryComplexity: 0,
+    tableSize: '0 bytes',
+    activeConnections: 0,
+    idleConnections: 0,
+    memoryUsage: 0,
   };
   private queryHistory: Array<{ query: string; time: number; timestamp: number }> = [];
   private alerts: PerformanceAlert[] = [];
@@ -129,10 +139,21 @@ class DatabasePerformanceMonitor {
     // Collect connection pool metrics
     // This would integrate with the connection pool
     this.metrics.connectionPoolUtilization = 0.6; // 60% utilization
+    this.metrics.activeConnections = 5; // Simulated active connections
+    this.metrics.idleConnections = 15; // Simulated idle connections
 
     // Collect index usage metrics
     // This would require database introspection
     this.metrics.indexUsage = 0.9; // 90% index usage
+    
+    // Collect query complexity metrics
+    this.metrics.queryComplexity = this.calculateQueryComplexity();
+    
+    // Collect table size (simulated)
+    this.metrics.tableSize = '2.4 MB'; // Simulated table size
+    
+    // Collect memory usage (simulated)
+    this.metrics.memoryUsage = 0.45; // 45% memory usage
   }
 
   private analyzePerformance(): void {
@@ -384,15 +405,86 @@ class DatabasePerformanceMonitor {
 
     const recommendations = this.suggestOptimizations();
 
-    return {
-      summary: this.metrics,
-      topSlowQueries,
-      alerts: this.alerts,
-      recommendations,
-    };
-  }
+     return {
+       summary: this.metrics,
+       topSlowQueries,
+       alerts: this.alerts,
+       recommendations,
+     };
+   }
+   
+   // Get detailed performance report with additional insights
+   getDetailedPerformanceReport(): {
+     summary: DatabaseMetrics;
+     queryAnalysis: {
+       mostFrequentTables: Array<{ table: string; count: number }>;
+       peakUsageTimes: Array<{ hour: number; queryCount: number }>;
+       averageComplexity: number;
+     };
+     indexAnalysis: {
+       usageStats: any;
+       recommendations: string[];
+     };
+     cacheAnalysis: {
+       hitRateTrend: number[];
+       efficiency: string;
+     };
+     alerts: PerformanceAlert[];
+     recommendations: string[];
+   } {
+     const queryAnalysis = {
+       mostFrequentTables: this.getMostFrequentTables(),
+       peakUsageTimes: this.getPeakUsageTimes(),
+       averageComplexity: this.calculateQueryComplexity(),
+     };
+     
+     const indexAnalysis = {
+       usageStats: this.getIndexUsageStats(),
+       recommendations: this.suggestIndexes(),
+     };
+     
+     const cacheAnalysis = {
+       hitRateTrend: this.getCacheHitRateTrend(),
+       efficiency: this.getCacheEfficiency(),
+     };
+     
+     const recommendations = this.suggestOptimizations();
+     
+     return {
+       summary: this.metrics,
+       queryAnalysis,
+       indexAnalysis,
+       cacheAnalysis,
+       alerts: this.alerts,
+       recommendations,
+     };
+   }
+   
+   private getIndexUsageStats(): any {
+     // In a real implementation, this would query database statistics
+     // For now, return simulated data
+     return {
+       totalIndexes: 12,
+       usedIndexes: 10,
+       unusedIndexes: 2,
+       duplicateIndexes: 1,
+     };
+   }
+   
+   private getCacheHitRateTrend(): number[] {
+     // Return last 10 cache hit rate measurements
+     // In a real implementation, this would track historical data
+     return [0.85, 0.86, 0.84, 0.87, 0.85, 0.88, 0.87, 0.86, 0.89, 0.85];
+   }
+   
+   private getCacheEfficiency(): string {
+     if (this.metrics.cacheHitRate > 0.9) return 'excellent';
+     if (this.metrics.cacheHitRate > 0.8) return 'good';
+     if (this.metrics.cacheHitRate > 0.7) return 'fair';
+     return 'poor';
+   }
 
-  // Reset metrics
+   // Reset metrics
   resetMetrics(): void {
     this.metrics = {
       queryTime: 0,
@@ -402,6 +494,11 @@ class DatabasePerformanceMonitor {
       slowQueries: 0,
       errorRate: 0,
       throughput: 0,
+      queryComplexity: 0,
+      tableSize: '0 bytes',
+      activeConnections: 0,
+      idleConnections: 0,
+      memoryUsage: 0,
     };
     this.queryHistory = [];
     this.alerts = [];

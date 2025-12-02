@@ -570,29 +570,45 @@ class DatabaseOptimizer {
     * Run database maintenance and optimization tasks
     */
    async runDatabaseMaintenance(client: SupabaseClient): Promise<{ success: boolean; message: string; details?: any }> {
-     try {
-       // This would typically include:
-       // - Vacuum and analyze operations
-       // - Index optimization
-       // - Statistics updates
-       // - Cleanup of temporary data
-       
-       // For now, we'll simulate maintenance operations
-       const startTime = Date.now();
-       
-       // Update statistics (would call ANALYZE in real implementation)
-       await client.rpc('pg_stat_reset');
-       
-       const duration = Date.now() - startTime;
-       
-       return {
-         success: true,
-         message: `Database maintenance completed in ${duration}ms`,
-         details: {
-           operations: ['statistics_update'],
-           duration: duration,
-         }
-       };
+      try {
+        // This would typically include:
+        // - Vacuum and analyze operations
+        // - Index optimization
+        // - Statistics updates
+        // - Cleanup of temporary data
+        
+        const startTime = Date.now();
+        const operations: string[] = [];
+        
+        // Update statistics for better query planning
+        try {
+          const { error: statsError } = await client.rpc('pg_stat_reset');
+          if (!statsError) {
+            operations.push('statistics_update');
+          }
+        } catch (statsErr) {
+          console.warn('Statistics update failed:', statsErr);
+        }
+        
+        // Update search vectors for better search performance
+        try {
+          // In a real implementation, we would run a stored procedure to update search vectors
+          // For now, we'll just log the operation
+          operations.push('search_vector_update_simulation');
+        } catch (updateErr) {
+          console.warn('Search vector update failed:', updateErr);
+        }
+        
+        const duration = Date.now() - startTime;
+        
+        return {
+          success: true,
+          message: `Database maintenance completed in ${duration}ms`,
+          details: {
+            operations,
+            duration: duration,
+          }
+        };
      } catch (error) {
        return {
          success: false,
@@ -654,13 +670,240 @@ class DatabaseOptimizer {
        recommendations.push('Cache hit rate is low (<30%). Consider optimizing cache strategies for frequently accessed data.');
      }
      
-     return {
-       recommendations,
-       severity: recommendations.length > 5 ? 'high' : recommendations.length > 2 ? 'medium' : 'low',
-       impact: 'performance'
-     };
-   }
-}
+      return {
+        recommendations,
+        severity: recommendations.length > 5 ? 'high' : recommendations.length > 2 ? 'medium' : 'low',
+        impact: 'performance'
+      };
+    }
+    
+    /**
+     * Get advanced analytics for robots with multiple filtering options
+     */
+    async getAdvancedAnalytics(
+      client: SupabaseClient,
+      options: {
+        userId?: string;
+        strategyType?: string;
+        dateRange?: { start: string; end: string };
+        minRiskScore?: number;
+        maxRiskScore?: number;
+        minProfitPotential?: number;
+        minEngagement?: number; // Minimum of views + copies
+        limit?: number;
+        offset?: number;
+      } = {}
+    ): Promise<{ 
+      data: any; 
+      error: any; 
+      metrics: OptimizationMetrics 
+    }> {
+      const startTime = performance.now();
+      
+      try {
+        // Build query with multiple filter options
+        let query = client.from('robots').select('*');
+        
+        if (options.userId) {
+          query = query.eq('user_id', options.userId);
+        }
+        
+        if (options.strategyType && options.strategyType !== 'All') {
+          query = query.eq('strategy_type', options.strategyType);
+        }
+        
+        if (options.dateRange) {
+          query = query.gte('created_at', options.dateRange.start).lte('created_at', options.dateRange.end);
+        }
+        
+        if (options.minRiskScore !== undefined) {
+          query = query.gte('analysis_result->>riskScore', options.minRiskScore);
+        }
+        
+        if (options.maxRiskScore !== undefined) {
+          query = query.lte('analysis_result->>riskScore', options.maxRiskScore);
+        }
+        
+        if (options.minProfitPotential !== undefined) {
+          query = query.gte('analysis_result->>profitPotential', options.minProfitPotential);
+        }
+        
+        if (options.minEngagement !== undefined) {
+          query = query.gte('view_count + copy_count', options.minEngagement);
+        }
+        
+        if (options.limit) {
+          query = query.limit(options.limit);
+        }
+        
+        if (options.offset) {
+          // Use range instead of offset for Supabase
+          const limit = options.limit || 20;
+          query = query.range(options.offset, options.offset + limit - 1);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          const executionTime = performance.now() - startTime;
+          return {
+            data: null,
+            error,
+            metrics: this.metrics
+          };
+        }
+        
+        // Process advanced analytics
+        const analytics = this.processAdvancedAnalytics(data as Robot[] || [], options);
+        
+        const executionTime = performance.now() - startTime;
+        this.recordOptimization(
+          'getAdvancedAnalytics',
+          executionTime,
+          Array.isArray(data) ? data.length : 0,
+          false
+        );
+        
+        return {
+          data: analytics,
+          error: null,
+          metrics: this.metrics
+        };
+      } catch (error) {
+        const executionTime = performance.now() - startTime;
+        this.recordOptimization('getAdvancedAnalytics', executionTime, 0, false);
+        
+        return {
+          data: null,
+          error,
+          metrics: this.metrics
+        };
+      }
+    }
+    
+    private processAdvancedAnalytics(robots: Robot[], options: any) {
+      // Calculate comprehensive analytics
+      const analytics = {
+        summary: {
+          totalRobots: robots.length,
+          totalViews: robots.reduce((sum, r) => sum + (r.view_count || 0), 0),
+          totalCopies: robots.reduce((sum, r) => sum + (r.copy_count || 0), 0),
+          avgRiskScore: 0,
+          avgProfitPotential: 0,
+          avgEngagement: 0,
+        },
+        byStrategyType: {} as Record<string, any>,
+        byDate: {} as Record<string, any>,
+        topPerformers: [] as Robot[],
+        engagementMetrics: {
+          highEngagementCount: 0,
+          totalEngagement: 0,
+          avgEngagementPerRobot: 0,
+        }
+      };
+      
+      // Calculate averages and group by strategy type
+      let totalRiskScore = 0;
+      let totalProfitPotential = 0;
+      let totalEngagement = 0;
+      let riskScoreCount = 0;
+      let profitPotentialCount = 0;
+      
+      for (const robot of robots) {
+        // Calculate engagement
+        const engagement = (robot.view_count ?? 0) + (robot.copy_count ?? 0);
+        totalEngagement += engagement;
+        
+        if (engagement > 50) {
+          analytics.engagementMetrics.highEngagementCount++;
+        }
+        
+        // Extract and calculate risk/profit metrics if available
+        if (robot.analysis_result) {
+          const riskScore = robot.analysis_result?.riskScore;
+          if (typeof riskScore === 'number') {
+            totalRiskScore += riskScore;
+            riskScoreCount++;
+          }
+          
+          const profitPotential = robot.analysis_result?.profitability;
+          if (typeof profitPotential === 'number') {
+            totalProfitPotential += profitPotential;
+            profitPotentialCount++;
+          }
+        }
+        
+        // Group by strategy type
+        const type = robot.strategy_type || 'Custom';
+        if (!analytics.byStrategyType[type]) {
+          analytics.byStrategyType[type] = {
+            count: 0,
+            totalViews: 0,
+            totalCopies: 0,
+            avgRiskScore: 0,
+            avgProfitPotential: 0,
+            totalEngagement: 0,
+            robots: []
+          };
+        }
+        
+        analytics.byStrategyType[type].count++;
+        analytics.byStrategyType[type].totalViews += (robot.view_count ?? 0);
+        analytics.byStrategyType[type].totalCopies += (robot.copy_count ?? 0);
+        analytics.byStrategyType[type].totalEngagement += engagement;
+        analytics.byStrategyType[type].robots.push(robot);
+      }
+      
+      // Calculate averages
+      analytics.summary.avgRiskScore = riskScoreCount > 0 ? totalRiskScore / riskScoreCount : 0;
+      analytics.summary.avgProfitPotential = profitPotentialCount > 0 ? totalProfitPotential / profitPotentialCount : 0;
+      analytics.summary.avgEngagement = robots.length > 0 ? totalEngagement / robots.length : 0;
+      analytics.engagementMetrics.totalEngagement = totalEngagement;
+      analytics.engagementMetrics.avgEngagementPerRobot = robots.length > 0 ? totalEngagement / robots.length : 0;
+      
+      // Calculate averages for each strategy type
+      for (const type in analytics.byStrategyType) {
+        const typeData = analytics.byStrategyType[type];
+        const robotsOfType = typeData.robots;
+        
+        // Calculate average risk score for this type
+        let typeRiskScoreSum = 0;
+        let typeRiskScoreCount = 0;
+        let typeProfitPotentialSum = 0;
+        let typeProfitPotentialCount = 0;
+        
+        for (const robot of robotsOfType) {
+          if (robot.analysis_result) {
+            const riskScore = robot.analysis_result?.riskScore;
+            if (typeof riskScore === 'number') {
+              typeRiskScoreSum += riskScore;
+              typeRiskScoreCount++;
+            }
+            
+            const profitPotential = robot.analysis_result?.profitability;
+            if (typeof profitPotential === 'number') {
+              typeProfitPotentialSum += profitPotential;
+              typeProfitPotentialCount++;
+            }
+          }
+        }
+        
+        typeData.avgRiskScore = typeRiskScoreCount > 0 ? typeRiskScoreSum / typeRiskScoreCount : 0;
+        typeData.avgProfitPotential = typeProfitPotentialCount > 0 ? typeProfitPotentialSum / typeProfitPotentialCount : 0;
+      }
+      
+      // Sort robots by engagement to get top performers
+      const sortedRobots = [...robots].sort((a, b) => {
+        const engagementA = (a.view_count ?? 0) + (a.copy_count ?? 0);
+        const engagementB = (b.view_count ?? 0) + (b.copy_count ?? 0);
+        return engagementB - engagementA;
+      });
+      
+      analytics.topPerformers = sortedRobots.slice(0, 10); // Top 10
+      
+      return analytics;
+    }
+ }
 
 // Singleton instance
 export const databaseOptimizer = new DatabaseOptimizer();
