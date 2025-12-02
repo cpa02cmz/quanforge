@@ -72,7 +72,6 @@
       ]
     }
   ],
-  "regions": ["hkg1", "iad1", "sin1"],
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
