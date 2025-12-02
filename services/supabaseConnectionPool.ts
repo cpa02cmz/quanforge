@@ -190,10 +190,19 @@ class SupabaseConnectionPool {
 
   // Add connection warming for edge regions
   async warmEdgeConnections(): Promise<void> {
-    const regions = ['hkg1', 'iad1', 'sin1'];
-    await Promise.allSettled(
-      regions.map(region => this.getClient(`edge_${region}`))
-    );
+    const regions = ['hkg1', 'iad1', 'sin1', 'cle1', 'fra1'];
+    const warmPromises = regions.map(async (region) => {
+      try {
+        const client = await this.getClient(`edge_${region}`);
+        // Pre-warm with a lightweight query
+        await client.from('robots').select('id').limit(1);
+        console.log(`Edge connection warmed for region: ${region}`);
+      } catch (error) {
+        console.warn(`Failed to warm edge connection for ${region}:`, error);
+      }
+    });
+    
+    await Promise.allSettled(warmPromises);
   }
 
   // Edge-optimized connection acquisition
@@ -204,11 +213,61 @@ class SupabaseConnectionPool {
     const existingClient = this.clients.get(edgeConnectionId);
     const health = this.healthStatus.get(edgeConnectionId);
     
-    if (existingClient && health?.isHealthy && (Date.now() - health.lastCheck) < 60000) {
+    if (existingClient && health?.isHealthy && (Date.now() - health.lastCheck) < 30000) {
       return existingClient;
     }
 
-    return this.getClient(edgeConnectionId);
+    try {
+      return await this.getClient(edgeConnectionId);
+    } catch (error) {
+      // Fallback to default connection if edge connection fails
+      if (region) {
+        console.warn(`Edge connection failed for ${region}, falling back to default:`, error);
+        return this.getClient(connectionId);
+      }
+      throw error;
+    }
+  }
+
+  // Enhanced connection metrics with edge-specific data
+  getDetailedConnectionMetrics(): {
+    totalConnections: number;
+    healthyConnections: number;
+    averageResponseTime: number;
+    totalErrors: number;
+    edgeConnections: { [region: string]: number };
+    connectionUtilization: number;
+    uptime: number;
+  } {
+    const healthArray = Array.from(this.healthStatus.values());
+    const healthyConnections = healthArray.filter(h => h.isHealthy).length;
+    const averageResponseTime = healthArray.length > 0 
+      ? healthArray.reduce((sum, h) => sum + h.responseTime, 0) / healthArray.length 
+      : 0;
+    const totalErrors = healthArray.reduce((sum, h) => sum + h.errorCount, 0);
+
+    // Count edge connections by region
+    const edgeConnections: { [region: string]: number } = {};
+    for (const [connectionId] of this.clients) {
+      if (connectionId.startsWith('edge_')) {
+        const region = connectionId.split('_')[1];
+        edgeConnections[region] = (edgeConnections[region] || 0) + 1;
+      }
+    }
+
+    const connectionUtilization = this.config.maxConnections > 0 
+      ? (this.clients.size / this.config.maxConnections) * 100 
+      : 0;
+
+    return {
+      totalConnections: this.clients.size,
+      healthyConnections,
+      averageResponseTime,
+      totalErrors,
+      edgeConnections,
+      connectionUtilization,
+      uptime: Date.now() - (this.healthCheckTimer ? 0 : Date.now()),
+    };
   }
 
   // Get connection metrics for monitoring
