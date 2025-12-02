@@ -1,5 +1,5 @@
 
-import { StrategyParams, Language, WikiSection } from "./types";
+import { Language, WikiSection } from "./types";
 
 // Re-export from new modular structure for backward compatibility
 export * from './constants/index';
