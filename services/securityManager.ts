@@ -280,90 +280,160 @@ class SecurityManager {
     };
   }
 
-  private validateMQL5Code(code: string): { isValid: boolean; errors: string[]; sanitizedCode: string } {
-    const errors: string[] = [];
-    let sanitizedCode = code;
+    private validateMQL5Code(code: string): { isValid: boolean; errors: string[]; sanitizedCode: string } {
+     const errors: string[] = [];
+     let sanitizedCode = code;
 
-    // Check for dangerous functions
-    const dangerousFunctions = [
-      'SendFTP', 'SendMail', 'SendNotification', 'WebRequest',
-      'ShellExecute', 'Import', 'CustomIndicator', 'WindowFind',
-      'WindowScreenShot', 'GlobalVariableTemp', 'ResourceCreate'
-    ];
-
-    for (const func of dangerousFunctions) {
-      if (sanitizedCode.includes(func)) {
-        errors.push(`Dangerous function detected: ${func}`);
-        // Remove or comment out dangerous functions
-        sanitizedCode = sanitizedCode.replace(
-          new RegExp(`\\b${func}\\s*\\(`, 'g'),
-          `// REMOVED_${func}(`
-        );
-      }
-    }
-
-    // Check for file operations
-    const fileOperations = ['FileOpen', 'FileWrite', 'FileRead', 'FileDelete'];
-    for (const op of fileOperations) {
-      if (sanitizedCode.includes(op)) {
-        errors.push(`File operation detected: ${op}`);
-        sanitizedCode = sanitizedCode.replace(
-          new RegExp(`\\b${op}\\s*\\(`, 'g'),
-          `// REMOVED_${op}(`
-        );
-      }
-    }
-
-    // Check for network operations
-    const networkOps = ['InternetOpen', 'InternetConnect', 'HttpOpenRequest'];
-    for (const op of networkOps) {
-      if (sanitizedCode.includes(op)) {
-        errors.push(`Network operation detected: ${op}`);
-        sanitizedCode = sanitizedCode.replace(
-          new RegExp(`\\b${op}\\s*\\(`, 'g'),
-          `// REMOVED_${op}(`
-        );
-      }
-    }
-
-     // Basic syntax validation
-     if (!sanitizedCode.includes('OnTick') && !sanitizedCode.includes('OnStart')) {
-       errors.push('MQL5 code must contain OnTick or OnStart function');
-     }
-     
-     // Additional MQL5 security validations
-     const mqlSecurityPatterns = [
-       { pattern: /import\s+|^#import/gi, message: 'Import directives detected' },
-       { pattern: /resourceadd/gi, message: 'Resource addition detected' },
-       { pattern: /filefindfirst|filefindnext|filefindclose/gi, message: 'File system search functions detected' },
-       { pattern: /terminalinfostring|terminalinfointeger|terminalinfodouble/gi, message: 'Terminal information access detected' },
-       { pattern: /webrequest/gi, message: 'Web request functions detected' },
-       { pattern: /resourcecreate/gi, message: 'Resource creation detected' },
-       { pattern: /resourcefree/gi, message: 'Resource management detected' },
-       { pattern: /sendftp/gi, message: 'FTP operations detected' },
-       { pattern: /sendmail/gi, message: 'Email operations detected' },
-       { pattern: /sendnotification/gi, message: 'Notification operations detected' },
-       { pattern: /globalvariable/gi, message: 'Global variable operations detected' },
-       { pattern: /window/gi, message: 'Window operations detected' },
-       { pattern: /chart/gi, message: 'Chart operations detected' },
-       { pattern: /trade/gi, message: 'Direct trade operations detected' },
-       { pattern: /order/gi, message: 'Order operations detected' },
+     // Check for dangerous functions with more comprehensive patterns
+     const dangerousFunctions = [
+       'SendFTP', 'SendMail', 'SendNotification', 'WebRequest',
+       'ShellExecute', 'Import', 'CustomIndicator', 'WindowFind',
+       'WindowScreenShot', 'GlobalVariableTemp', 'ResourceCreate',
+       'WinExec', 'CreateProcess', 'System', 'Exec', 'Popen',
+       'FileFindFirst', 'FileFindNext', 'FileFindClose', 'FileFlush',
+       'ResourceSave', 'ResourceRead', 'GlobalVariablesFlush',
+       'OrderSend', 'OrderClose', 'OrderModify', 'OrderDelete',
+       'PositionOpen', 'PositionClose', 'PositionModify',
+       'TerminalInfoInteger', 'TerminalInfoString', 'TerminalInfoDouble',
+       'AccountInfo', 'AccountInfoInteger', 'AccountInfoDouble',
+       'ChartApplyTemplate', 'ChartSave', 'ChartScreenShot',
+       'Alert', 'Comment', 'Print', 'MessageBox', 'Sleep'
      ];
-     
-     for (const { pattern, message } of mqlSecurityPatterns) {
-       if (pattern.test(sanitizedCode)) {
-         errors.push(message);
-         // Remove dangerous patterns
-         sanitizedCode = sanitizedCode.replace(pattern, `// SECURITY_BLOCKED: ${message}`);
+
+     for (const func of dangerousFunctions) {
+       const regex = new RegExp(`\\b${func}\\s*\\(`, 'gi');
+       if (regex.test(sanitizedCode)) {
+         errors.push(`Dangerous function detected: ${func}`);
+         // Remove or comment out dangerous functions
+         sanitizedCode = sanitizedCode.replace(regex, `// REMOVED_${func}(`);
        }
      }
 
-     return {
-       isValid: errors.length === 0,
-       errors,
-       sanitizedCode,
-     };
-  }
+     // Check for file operations
+     const fileOperations = ['FileOpen', 'FileWrite', 'FileRead', 'FileDelete', 'FileCopy', 'FileMove', 'FileIsExist'];
+     for (const op of fileOperations) {
+       const regex = new RegExp(`\\b${op}\\s*\\(`, 'gi');
+       if (regex.test(sanitizedCode)) {
+         errors.push(`File operation detected: ${op}`);
+         sanitizedCode = sanitizedCode.replace(regex, `// REMOVED_${op}(`);
+       }
+     }
+
+     // Check for network operations
+     const networkOps = ['InternetOpen', 'InternetConnect', 'HttpOpenRequest', 'SocketCreate', 'SocketConnect', 'SocketSend', 'SocketReceive'];
+     for (const op of networkOps) {
+       const regex = new RegExp(`\\b${op}\\s*\\(`, 'gi');
+       if (regex.test(sanitizedCode)) {
+         errors.push(`Network operation detected: ${op}`);
+         sanitizedCode = sanitizedCode.replace(regex, `// REMOVED_${op}(`);
+       }
+     }
+
+     // Check for memory operations
+     const memoryOps = ['memcpy', 'memset', 'malloc', 'free', 'GetMemory', 'FreeMemory'];
+     for (const op of memoryOps) {
+       const regex = new RegExp(`\\b${op}\\s*\\(`, 'gi');
+       if (regex.test(sanitizedCode)) {
+         errors.push(`Memory operation detected: ${op}`);
+         sanitizedCode = sanitizedCode.replace(regex, `// REMOVED_${op}(`);
+       }
+     }
+
+     // Check for registry operations
+     const registryOps = ['RegOpenKey', 'RegCreateKey', 'RegSetValue', 'RegGetValue'];
+     for (const op of registryOps) {
+       const regex = new RegExp(`\\b${op}\\s*\\(`, 'gi');
+       if (regex.test(sanitizedCode)) {
+         errors.push(`Registry operation detected: ${op}`);
+         sanitizedCode = sanitizedCode.replace(regex, `// REMOVED_${op}(`);
+       }
+     }
+
+      // Basic syntax validation
+      if (!sanitizedCode.includes('OnTick') && !sanitizedCode.includes('OnStart') && !sanitizedCode.includes('OnInit') && !sanitizedCode.includes('OnDeinit')) {
+        errors.push('MQL5 code should contain standard functions like OnTick, OnInit, OnDeinit');
+      }
+      
+      // Additional MQL5 security validations with more comprehensive patterns
+      const mqlSecurityPatterns = [
+        { pattern: /import\s+|^#import/gi, message: 'Import directives detected' },
+        { pattern: /resourceadd/gi, message: 'Resource addition detected' },
+        { pattern: /filefindfirst|filefindnext|filefindclose/gi, message: 'File system search functions detected' },
+        { pattern: /terminalinfostring|terminalinfointeger|terminalinfodouble/gi, message: 'Terminal information access detected' },
+        { pattern: /webrequest/gi, message: 'Web request functions detected' },
+        { pattern: /resourcecreate/gi, message: 'Resource creation detected' },
+        { pattern: /resourcefree/gi, message: 'Resource management detected' },
+        { pattern: /sendftp/gi, message: 'FTP operations detected' },
+        { pattern: /sendmail/gi, message: 'Email operations detected' },
+        { pattern: /sendnotification/gi, message: 'Notification operations detected' },
+        { pattern: /globalvariable/gi, message: 'Global variable operations detected' },
+        { pattern: /window/gi, message: 'Window operations detected' },
+        { pattern: /chart/gi, message: 'Chart operations detected' },
+        { pattern: /trade/gi, message: 'Direct trade operations detected' },
+        { pattern: /order/gi, message: 'Order operations detected' },
+        { pattern: /alert\(/gi, message: 'Alert function detected' },
+        { pattern: /comment\(/gi, message: 'Comment function detected' },
+        { pattern: /print\(/gi, message: 'Print function detected' },
+        { pattern: /printf\(/gi, message: 'Printf function detected' },
+        { pattern: /eval\(/gi, message: 'Eval-like function detected' },
+        { pattern: /exec\(/gi, message: 'Exec function detected' },
+        { pattern: /system\(/gi, message: 'System function detected' },
+        { pattern: /shell/i, message: 'Shell command detected' },
+        { pattern: /process/i, message: 'Process command detected' },
+        { pattern: /command/i, message: 'Command detected' },
+        { pattern: /system\./gi, message: 'System access detected' },
+        { pattern: /process\./gi, message: 'Process access detected' },
+      ];
+      
+      for (const { pattern, message } of mqlSecurityPatterns) {
+        if (pattern.test(sanitizedCode)) {
+          errors.push(message);
+          // Remove dangerous patterns
+          sanitizedCode = sanitizedCode.replace(pattern, `// SECURITY_BLOCKED: ${message}`);
+        }
+      }
+      
+      // Check for potentially dangerous patterns
+      const dangerousPatterns = [
+        // String concatenation that might lead to code injection
+        { pattern: /string\.concat|StringConcatenate/gi, message: 'String concatenation function detected' },
+        // Potentially unsafe array operations
+        { pattern: /arraycopy|ArrayCopy/gi, message: 'Array copy function detected' },
+        // Potentially unsafe memory access
+        { pattern: /char.*\[|uchar.*\[|int.*\[|long.*\[/gi, message: 'Direct memory access detected' },
+        // Potentially unsafe casting
+        { pattern: /char\(|uchar\(|int\(|long\(/gi, message: 'Direct casting detected' },
+      ];
+      
+      for (const { pattern, message } of dangerousPatterns) {
+        if (pattern.test(sanitizedCode)) {
+          errors.push(message);
+          sanitizedCode = sanitizedCode.replace(pattern, `// SECURITY_CAUTION: ${message}`);
+        }
+      }
+
+      // Check for obfuscated code patterns
+      const obfuscatedPatterns = [
+        /[^a-zA-Z0-9\s\(\)\[\]\{\}\.\,\;\:\+\-\*\/\=\>\<\!\&\|\^\~\%]+/g, // Non-alphanumeric characters
+        /0x[0-9a-fA-F]+/g, // Hex numbers
+        /\\u[0-9a-fA-F]{4}/g, // Unicode escapes
+        /\\x[0-9a-fA-F]{2}/g, // Hex escapes
+      ];
+      
+      for (const pattern of obfuscatedPatterns) {
+        const matches = sanitizedCode.match(pattern);
+        if (matches && matches.length > 5) { // Allow some legitimate uses
+          errors.push('Code contains potentially obfuscated content');
+          break;
+        }
+      }
+
+      return {
+        isValid: errors.length === 0,
+        errors,
+        sanitizedCode,
+      };
+   }
 
    private preventXSS(data: any): { hasXSS: boolean; sanitizedData: any } {
      let hasXSS = false;
