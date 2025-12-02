@@ -8,7 +8,7 @@ import { securityManager } from './securityManager';
 import { withErrorHandling, handleError } from '../utils/errorHandler';
 import { databaseOptimizer } from './databaseOptimizer';
 import { dataCompression } from './dataCompression';
-// import { requestThrottler } from './requestThrottler';
+import { requestThrottler } from './requestThrottler';
 
 // Connection retry configuration
 const RETRY_CONFIG = {
