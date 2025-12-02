@@ -13,6 +13,10 @@ const Auth = lazy(() => import('./components/Auth').then(module => ({ default: m
 const Dashboard = lazy(() => import('./pages/Dashboard').then(module => ({ default: module.Dashboard })));
 const Generator = lazy(() => import('./pages/Generator').then(module => ({ default: module.Generator })));
 const Wiki = lazy(() => import('./pages/Wiki').then(module => ({ default: module.Wiki })));
+const About = lazy(() => import('./pages/About').then(module => ({ default: module.About })));
+const Features = lazy(() => import('./pages/Features').then(module => ({ default: module.Features })));
+const FAQ = lazy(() => import('./pages/FAQ').then(module => ({ default: module.FAQ })));
+const Blog = lazy(() => import('./pages/Blog').then(module => ({ default: module.Blog })));
 const Layout = lazy(() => import('./components/Layout').then(module => ({ default: module.Layout })));
 
 
@@ -22,8 +26,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const startTime = performance.now();
-    
     // Initialize Vercel Edge Optimizer
     vercelEdgeOptimizer.optimizeBundleForEdge();
     vercelEdgeOptimizer.enableEdgeSSR();
@@ -95,6 +97,22 @@ export default function App() {
                 <Route 
                   path="/wiki" 
                   element={session ? <Wiki /> : <Navigate to="/login" replace />} 
+                />
+                <Route 
+                  path="/about" 
+                  element={<About />} 
+                />
+                <Route 
+                  path="/features" 
+                  element={<Features />} 
+                />
+                <Route 
+                  path="/faq" 
+                  element={<FAQ />} 
+                />
+                <Route 
+                  path="/blog" 
+                  element={<Blog />} 
                 />
               </Route>
             </Routes>
