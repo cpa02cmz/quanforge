@@ -373,6 +373,34 @@ class RobotIndexManager {
     this.index = null;
     this.lastUpdated = 0;
   }
+  
+  search(robots: Robot[], searchTerm: string): Robot[] {
+    const index = this.getIndex(robots);
+    const term = searchTerm.toLowerCase();
+    const results: Robot[] = [];
+    
+    // Search by name
+    for (const [name, robotList] of index.byName) {
+      if (name.includes(term)) {
+        results.push(...robotList);
+      }
+    }
+    
+    // Search by description if no name matches
+    if (results.length === 0) {
+      for (const robot of index.byDate) {
+        if (robot.description && robot.description.toLowerCase().includes(term)) {
+          results.push(robot);
+        }
+      }
+    }
+    
+    // Remove duplicates and sort by date
+    const uniqueResults = Array.from(new Map(results.map(r => [r.id, r])).values());
+    return uniqueResults.sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }
 }
 
 const robotIndexManager = new RobotIndexManager();
@@ -440,58 +468,193 @@ const cacheKey = 'robots_list';
    },
 
 /**
-     * Batch update multiple robots for better performance
+      * Batch update multiple robots for better performance
+      */
+    async batchUpdateRobots(updates: Array<{id: string, data: Partial<Robot>}>) {
+      const startTime = performance.now();
+      try {
+        const settings = settingsManager.getDBSettings();
+        
+        if (settings.mode === 'mock') {
+          const stored = localStorage.getItem(ROBOTS_KEY);
+          const robots = safeParse(stored, []);
+          
+          // Optimized batch update for mock mode
+          updates.forEach(update => {
+            const index = robots.findIndex((r: Robot) => r.id === update.id);
+            if (index !== -1) {
+              robots[index] = { ...robots[index], ...update.data, updated_at: new Date().toISOString() };
+            }
+          });
+          
+          trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
+          robotIndexManager.clear();
+          
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('batchUpdateRobots', duration);
+          return { data: updates.map(u => u.id), error: null };
+        }
+        
+        return withRetry(async () => {
+          const client = await getClient();
+          
+          // Use Supabase RPC for better batch performance
+          const { data, error } = await client.rpc('batch_update_robots', {
+            robot_updates: updates.map(u => ({
+              robot_id: u.id,
+              robot_data: { ...u.data, updated_at: new Date().toISOString() }
+            }))
+          });
+          
+          if (error) {
+            // Fallback to individual updates if RPC fails
+            console.warn('Batch RPC failed, falling back to individual updates:', error);
+            const batch = updates.map(update => 
+              client.from('robots').update({ ...update.data, updated_at: new Date().toISOString() }).eq('id', update.id)
+            );
+            
+            const results = await Promise.allSettled(batch);
+            const successful = results.filter(r => r.status === 'fulfilled').length;
+            
+            // Clear relevant caches
+            robotCache.clearByTags(['robots']);
+            
+            const duration = performance.now() - startTime;
+            performanceMonitor.record('batchUpdateRobots', duration);
+            
+            return { 
+              data: updates.slice(0, successful).map(u => u.id), 
+              error: successful === updates.length ? null : new Error('Some updates failed')
+            };
+          }
+          
+          // Clear relevant caches
+          robotCache.clearByTags(['robots']);
+          
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('batchUpdateRobots', duration);
+          
+          return { data, error: null };
+        }, 'batchUpdateRobots');
+      } catch (error) {
+        const duration = performance.now() - startTime;
+        performanceMonitor.record('batchUpdateRobots', duration);
+        handleError(error as Error, 'batchUpdateRobots', 'mockDb');
+        throw error;
+      }
+    },
+
+    /**
+     * Generic batch query method for better performance
      */
-   async batchUpdateRobots(updates: Array<{id: string, data: Partial<Robot>}>) {
-     const startTime = performance.now();
-     try {
-       const settings = settingsManager.getDBSettings();
-       
-       if (settings.mode === 'mock') {
-         const stored = localStorage.getItem(ROBOTS_KEY);
-         const robots = safeParse(stored, []);
-         
-         updates.forEach(update => {
-           const index = robots.findIndex((r: Robot) => r.id === update.id);
-           if (index !== -1) {
-             robots[index] = { ...robots[index], ...update.data, updated_at: new Date().toISOString() };
-           }
-         });
-         
-         trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
-         robotIndexManager.clear();
-         
-         const duration = performance.now() - startTime;
-         performanceMonitor.record('batchUpdateRobots', duration);
-         return { data: updates.map(u => u.id), error: null };
-       }
-       
-       return withRetry(async () => {
-         const client = await getClient();
-         const batch = updates.map(update => 
-           client.from('robots').update({ ...update.data, updated_at: new Date().toISOString() }).eq('id', update.id)
-         );
-         
-         const results = await Promise.all(batch);
-         
-         // Clear relevant caches
-         robotCache.clearByTags(['robots']);
-         
-         const duration = performance.now() - startTime;
-         performanceMonitor.record('batchUpdateRobots', duration);
-         
-         return { 
-           data: updates.map(u => u.id), 
-           error: results.some(r => r.error) ? results.find(r => r.error)?.error : null 
-         };
-       }, 'batchUpdateRobots');
-     } catch (error) {
-       const duration = performance.now() - startTime;
-       performanceMonitor.record('batchUpdateRobots', duration);
-       handleError(error as Error, 'batchUpdateRobots', 'mockDb');
-       throw error;
-     }
-   },
+    async batchQuery<T>(queries: Array<() => Promise<T>>): Promise<Array<{ success: boolean, data?: T, error?: Error }>> {
+      const startTime = performance.now();
+      try {
+        // Execute all queries in parallel with Promise.allSettled for better error handling
+        const results = await Promise.allSettled(queries.map(query => query()));
+        
+        const processedResults = results.map(result => {
+          if (result.status === 'fulfilled') {
+            return { success: true, data: result.value };
+          } else {
+            return { success: false, error: result.reason as Error };
+          }
+        });
+        
+        const duration = performance.now() - startTime;
+        performanceMonitor.record('batchQuery', duration);
+        
+        // Log slow batch operations
+        if (duration > 1000) {
+          console.warn(`Slow batchQuery operation: ${duration.toFixed(2)}ms for ${queries.length} queries`);
+        }
+        
+        return processedResults;
+      } catch (error) {
+        const duration = performance.now() - startTime;
+        performanceMonitor.record('batchQuery', duration);
+        handleError(error as Error, 'batchQuery', 'mockDb');
+        throw error;
+      }
+    },
+
+    /**
+     * Optimized search with indexing and caching
+     */
+    async searchRobots(searchTerm: string, filters?: { strategy_type?: string, date_range?: string }) {
+      const startTime = performance.now();
+      try {
+        const cacheKey = `search_${searchTerm}_${JSON.stringify(filters || {})}`;
+        const cached = robotCache.get(cacheKey);
+        if (cached) {
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('searchRobots', duration);
+          return { data: cached, error: null };
+        }
+
+        const settings = settingsManager.getDBSettings();
+        
+        if (settings.mode === 'mock') {
+          const stored = localStorage.getItem(ROBOTS_KEY);
+          const robots = safeParse(stored, []);
+          
+          // Use indexed search for better performance
+          let filtered = robotIndexManager.search(robots, searchTerm);
+          
+          if (filters?.strategy_type) {
+            filtered = filtered.filter((r: Robot) => r.strategy_type === filters.strategy_type);
+          }
+          
+          if (filters?.date_range) {
+            const [start, end] = filters.date_range.split(',');
+            const startDate = new Date(start);
+            const endDate = new Date(end);
+            filtered = filtered.filter((r: Robot) => {
+              const createdAt = new Date(r.created_at);
+              return createdAt >= startDate && createdAt <= endDate;
+            });
+          }
+          
+          robotCache.set(cacheKey, filtered, { ttl: 180000, tags: ['search', 'robots'] });
+          
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('searchRobots', duration);
+          return { data: filtered, error: null };
+        }
+        
+        return withRetry(async () => {
+          const client = await getClient();
+          let query = client
+            .from('robots')
+            .select('*')
+            .or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+          
+          if (filters?.strategy_type) {
+            query = query.eq('strategy_type', filters.strategy_type);
+          }
+          
+          if (filters?.date_range) {
+            const [start, end] = filters.date_range.split(',');
+            query = query.gte('created_at', start).lte('created_at', end);
+          }
+          
+          const result = await query.order('created_at', { ascending: false }).limit(50);
+          
+          if (result.data && !result.error) {
+            robotCache.set(cacheKey, result.data, { ttl: 180000, tags: ['search', 'robots'] });
+          }
+          
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('searchRobots', duration);
+          return result;
+        }, 'searchRobots');
+      } catch (error) {
+        const duration = performance.now() - startTime;
+        performanceMonitor.record('searchRobots', duration);
+        handleError(error as Error, 'searchRobots', 'mockDb');
+        throw error;
+      }
+    },
 
    /**
      * Get robots with pagination for better performance with large datasets

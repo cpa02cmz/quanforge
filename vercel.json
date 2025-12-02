@@ -9,12 +9,7 @@
       }
     }
   ],
-  "functions": {
-    "app/**/*.ts": {
-      "runtime": "nodejs20.x",
-      "maxDuration": 30
-    }
-  },
+
   "routes": [
     {
       "src": "/home",
@@ -113,6 +108,12 @@
   "outputDirectory": "dist",
   "installCommand": "npm ci",
   "devCommand": "npm run dev",
+  "functions": {
+    "app/**/*.ts": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 30
+    }
+  },
   "build": {
     "env": {
       "NODE_ENV": "production",
@@ -120,10 +121,6 @@
       "VITE_ENABLE_SERVICE_WORKER": "true",
       "VITE_ENABLE_EDGE_OPTIMIZATION": "true"
     }
-  },
-  "framework": "vite",
-  "experimental": {
-    "runtime": "edge",
-    "serverless": true
+  }
   }
 }

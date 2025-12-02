@@ -18,9 +18,7 @@ const CACHE_CONFIG = {
     maxAge: 5 * 60 * 1000, // 5 minutes
     patterns: [
       /\/api\//,
-      /supabase/,
-      /googleapis/,
-      /twelvedata/,
+
     ],
   },
   pages: {
