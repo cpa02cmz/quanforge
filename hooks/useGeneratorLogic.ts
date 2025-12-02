@@ -9,6 +9,7 @@ import { DEFAULT_STRATEGY_PARAMS } from '../constants';
 import { runMonteCarloSimulation } from '../services/simulation';
 import { ValidationService } from '../utils/validation';
 import { createScopedLogger } from '../utils/logger';
+import { useMessageBuffer } from '../utils/messageBuffer';
 
 const logger = createScopedLogger('useGeneratorLogic');
 
@@ -116,6 +117,9 @@ export const useGeneratorLogic = (id?: string) => {
   
   // Abort Controller for AI Requests
   const abortControllerRef = useRef<AbortController | null>(null);
+  
+  // Message buffer for memory management
+  const { addMessage, getMessages } = useMessageBuffer(50);
 
    // Enhanced validation using ValidationService
    const validateStrategyParams = useCallback((params: StrategyParams): string[] => {
@@ -229,6 +233,7 @@ const stopGeneration = () => {
       };
 
       dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
+      addMessage(aiMessage);
   }, []);
 
   // Handlers
@@ -254,7 +259,8 @@ const stopGeneration = () => {
       timestamp: Date.now(),
     };
     
-    const updatedMessages = [...state.messages, newMessage];
+    addMessage(newMessage);
+    const updatedMessages = [...getMessages(), newMessage];
     dispatch({ type: 'SET_MESSAGES', payload: updatedMessages });
     dispatch({ type: 'SET_LOADING', payload: true });
     dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'generating', message: 'Generating MQL5 code...' } });
