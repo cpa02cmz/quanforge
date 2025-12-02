@@ -118,13 +118,24 @@ plugins: [react()],
         drop_console: process.env['NODE_ENV'] === 'production',
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.info', 'console.debug'],
-        passes: 2,
-        // Additional optimizations for Vercel Edge
+        passes: 3, // Increased passes for better compression
+        // Additional optimizations for Vercel Edge and Brotli
         inline: 2,
         reduce_funcs: true,
         reduce_vars: true,
         sequences: true,
-        dead_code: true
+        dead_code: true,
+        join_vars: true,
+        collapse_vars: true,
+        negate_iife: true,
+        evaluate: true,
+        hoist_funs: true,
+        hoist_vars: true,
+        if_return: true,
+        loops: true,
+        properties: true,
+        switches: true,
+        typeofs: true
       },
       mangle: {
         safari10: true,
@@ -133,6 +144,12 @@ plugins: [react()],
         properties: {
           regex: /^_/
         }
+      },
+      format: {
+        comments: false,
+        // Optimize for Brotli compression
+        max_line_len: 120,
+        beautify: false
       }
     },
     chunkSizeWarningLimit: 500,
