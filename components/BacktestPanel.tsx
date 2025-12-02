@@ -1,6 +1,8 @@
 
-import React, { useCallback } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useCallback, Suspense, lazy } from 'react';
+
+// Lazy load chart components to reduce initial bundle size
+const ChartComponents = lazy(() => import('./ChartComponents').then(module => ({ default: module.ChartComponents })));
 import { BacktestSettings, SimulationResult } from '../types';
 import { NumericInput } from './NumericInput';
 import { useTranslation } from '../services/i18n';
@@ -161,41 +163,16 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = React.memo(({
                         <div className="flex-1 min-h-0 bg-dark-surface border border-dark-border rounded-xl p-4">
                             <h3 className="text-sm font-bold text-gray-400 mb-4">{t('bt_equity_curve')}</h3>
                             <div className="h-[90%] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={result.equityCurve}>
-                                        <defs>
-                                            <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor={result.totalReturn >= 0 ? '#22c55e' : '#ef4444'} stopOpacity={0.3}/>
-                                                <stop offset="95%" stopColor={result.totalReturn >= 0 ? '#22c55e' : '#ef4444'} stopOpacity={0}/>
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                                        <XAxis 
-                                            dataKey="date" 
-                                            stroke="#94a3b8" 
-                                            tick={{fontSize: 12}} 
-                                            minTickGap={30}
-                                        />
-                                        <YAxis 
-                                            stroke="#94a3b8" 
-                                            tick={{fontSize: 12}}
-                                            domain={['auto', 'auto']}
-                                            tickFormatter={(val) => `$${val}`}
-                                        />
-                                        <Tooltip 
-                                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', color: '#f8fafc' }}
-                                            formatter={(value: number) => [`$${value.toLocaleString()}`, 'Balance']}
-                                        />
-                                        <Area 
-                                            type="monotone" 
-                                            dataKey="balance" 
-                                            stroke={result.totalReturn >= 0 ? '#22c55e' : '#ef4444'} 
-                                            strokeWidth={2}
-                                            fillOpacity={1} 
-                                            fill="url(#colorBalance)" 
-                                        />
-                                    </AreaChart>
-                                </ResponsiveContainer>
+                                <Suspense fallback={
+                                    <div className="flex items-center justify-center h-full">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+                                    </div>
+                                }>
+                                    <ChartComponents 
+                                        data={result.equityCurve} 
+                                        totalReturn={result.totalReturn}
+                                    />
+                                </Suspense>
                             </div>
                         </div>
                     </>

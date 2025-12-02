@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async';
+import React, { useEffect } from 'react';
 
 interface PageMetaProps {
   title: string;
@@ -27,117 +27,92 @@ export const PageMeta: React.FC<PageMetaProps> = ({
   type = 'website',
   structuredData = [],
   noIndex = false,
-  lastModified,
+  lastModified: _lastModified,
   author = 'QuantForge AI',
-  publishedTime,
-  articleSection,
-  readingTime
+  publishedTime: _publishedTime,
+  articleSection: _articleSection,
+  readingTime: _readingTime
 }) => {
   const siteTitle = 'QuantForge AI';
   const fullTitle = title.includes(siteTitle) ? title : `${title} | ${siteTitle}`;
 
-  return (
-    <Helmet>
-      {/* Basic Meta Tags */}
-      <title>{fullTitle}</title>
-      <meta name="description" content={description} />
-      {keywords && <meta name="keywords" content={keywords} />}
-      <meta name="author" content={author} />
-      <meta name="robots" content={noIndex ? 'noindex, nofollow' : 'index, follow'} />
+  useEffect(() => {
+    // Update document title
+    document.title = fullTitle;
+
+    // Update or create meta tags
+    const updateMetaTag = (name: string, content: string, property?: string) => {
+      let meta: HTMLMetaElement | null = document.querySelector(
+        property ? `meta[property="${property}"]` : `meta[name="${name}"]`
+      );
       
-      {/* Canonical URL */}
-      <link rel="canonical" href={canonicalUrl} />
-      
-      {/* Alternate language links */}
-      <link rel="alternate" hrefLang="en" href={canonicalUrl} />
-      <link rel="alternate" hrefLang="x-default" href={canonicalUrl} />
-      
-      {/* Favicon and app icons */}
-      <link rel="manifest" href="/manifest.json" />
-      <link rel="apple-touch-icon" href="/icon-192x192.png" />
-      <link rel="icon" href="/favicon.ico" sizes="any" />
-      
-      {/* Open Graph Tags */}
-      <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
-      <meta property="og:type" content={type} />
-      <meta property="og:image" content={ogImage} />
-      <meta property="og:url" content={ogUrl} />
-      <meta property="og:site_name" content={siteTitle} />
-      <meta property="og:locale" content="en_US" />
-      
-      {/* Article specific tags */}
-      {type === 'article' && (
-        <>
-          {publishedTime && <meta property="article:published_time" content={publishedTime} />}
-          {lastModified && <meta property="article:modified_time" content={lastModified} />}
-          {author && <meta property="article:author" content={author} />}
-          {articleSection && <meta property="article:section" content={articleSection} />}
-          {readingTime && <meta property="article:reading_time" content={readingTime} />}
-        </>
-      )}
-      
-      {/* Twitter Card Tags */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={ogImage} />
-      <meta name="twitter:site" content="@quanforge" />
-      <meta name="twitter:creator" content="@quanforge" />
-      
-      {/* Additional Meta Tags */}
-      <meta name="theme-color" content="#22c55e" />
-      <meta name="msapplication-TileColor" content="#0f172a" />
-      <meta name="language" content="en" />
-      <meta name="distribution" content="global" />
-      <meta name="rating" content="general" />
-      <meta name="revisit-after" content="7 days" />
-      <meta name="geo.region" content="US" />
-      <meta name="geo.placename" content="Global" />
-      <meta name="category" content="finance, technology, trading, artificial intelligence" />
-      <meta name="coverage" content="Worldwide" />
-      <meta name="target" content="all" />
-      <meta name="HandheldFriendly" content="True" />
-      <meta name="MobileOptimized" content="320" />
-      <meta name="apple-mobile-web-app-capable" content="yes" />
-      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-      <meta name="format-detection" content="telephone=no" />
-      <meta name="mobile-web-app-capable" content="yes" />
-      <meta name="apple-mobile-web-app-title" content="QuantForge AI" />
-      <meta name="application-name" content="QuantForge AI" />
-      <meta name="referrer" content="no-referrer-when-downgrade" />
-      
-      {/* Enhanced SEO verification tags */}
-      <meta name="google-site-verification" content="your-google-verification-code" />
-      <meta name="msvalidate.01" content="your-bing-verification-code" />
-      <meta name="yandex-verification" content="your-yandex-verification-code" />
-      <meta name="p:domain_verify" content="your-pinterest-verification-code" />
-      
-      {/* Preconnect and DNS prefetch for performance */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link rel="dns-prefetch" href="//cdn.tailwindcss.com" />
-      <link rel="dns-prefetch" href="//cdnjs.cloudflare.com" />
-      <link rel="dns-prefetch" href="//www.googletagmanager.com" />
-      
-      {/* Additional Open Graph tags */}
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content="QuantForge AI - Advanced MQL5 Trading Robot Generator" />
-      <meta property="fb:app_id" content="your-facebook-app-id" />
-      
-      {/* Additional Twitter tags */}
-      <meta name="twitter:domain" content="quanforge.ai" />
-      <meta name="twitter:image:alt" content="QuantForge AI - Advanced MQL5 Trading Robot Generator" />
-      
-      {/* Structured Data */}
-      {structuredData.map((data, index) => (
-        <script key={index} type="application/ld+json">
-          {JSON.stringify(data)}
-        </script>
-      ))}
-    </Helmet>
-  );
+      if (!meta) {
+        meta = document.createElement('meta');
+        if (property) {
+          meta.setAttribute('property', property);
+        } else {
+          meta.setAttribute('name', name);
+        }
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
+
+    // Basic Meta Tags
+    updateMetaTag('description', description);
+    if (keywords) updateMetaTag('keywords', keywords);
+    updateMetaTag('author', author);
+    updateMetaTag('robots', noIndex ? 'noindex, nofollow' : 'index, follow');
+    
+    // Canonical URL
+    let canonical: HTMLLinkElement | null = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', canonicalUrl);
+    
+    // Open Graph Tags
+    updateMetaTag('og:title', fullTitle, 'og:title');
+    updateMetaTag('og:description', description, 'og:description');
+    updateMetaTag('og:type', type, 'og:type');
+    updateMetaTag('og:image', ogImage, 'og:image');
+    updateMetaTag('og:url', ogUrl, 'og:url');
+    updateMetaTag('og:site_name', siteTitle, 'og:site_name');
+    updateMetaTag('og:locale', 'en_US', 'og:locale');
+    
+    // Twitter Card Tags
+    updateMetaTag('twitter:card', 'summary_large_image');
+    updateMetaTag('twitter:title', fullTitle);
+    updateMetaTag('twitter:description', description);
+    updateMetaTag('twitter:image', ogImage);
+    updateMetaTag('twitter:site', '@quanforge');
+    updateMetaTag('twitter:creator', '@quanforge');
+    
+    // Additional Meta Tags
+    updateMetaTag('theme-color', '#22c55e');
+    updateMetaTag('language', 'en');
+    
+    // Clean up existing structured data
+    const existingScripts = document.querySelectorAll('script[type="application/ld+json"]');
+    existingScripts.forEach(script => script.remove());
+    
+    // Add structured data
+    structuredData.forEach((data) => {
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.textContent = JSON.stringify(data);
+      document.head.appendChild(script);
+    });
+
+    return () => {
+      // Cleanup function if needed
+    };
+  }, [fullTitle, description, keywords, author, noIndex, canonicalUrl, type, ogImage, ogUrl, siteTitle, structuredData]);
+
+  // This component doesn't render anything visible
+  return null;
 };
 
 // Enhanced structured data templates for better SEO

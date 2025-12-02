@@ -22,10 +22,11 @@ export default defineConfig({
             if (id.includes('react-dom')) {
               return 'react-dom';
             }
-            if (id.includes('react-router-dom')) {
-              return 'react-router';
+            // Combine react-router with react-core to avoid empty chunks
+            if (id.includes('react-router-dom') || id.includes('react-router')) {
+              return 'react-core';
             }
-            // Charts and visualization
+            // Charts and visualization - optimize recharts imports
             if (id.includes('recharts')) {
               return 'vendor-charts';
             }
@@ -37,10 +38,7 @@ export default defineConfig({
             if (id.includes('@supabase')) {
               return 'vendor-supabase';
             }
-            // SEO and meta
-            if (id.includes('react-helmet-async')) {
-              return 'vendor-seo';
-            }
+            
             // Security utilities
             if (id.includes('dompurify')) {
               return 'vendor-security';
@@ -61,7 +59,13 @@ export default defineConfig({
             if (id.includes('eslint') || id.includes('@typescript-eslint')) {
               return 'dev-linting';
             }
-            // Remaining vendors
+            // Split remaining vendors into identifiable chunks
+            if (id.includes('date-fns') || id.includes('moment') || id.includes('dayjs')) {
+              return 'vendor-date';
+            }
+            if (id.includes('lodash') || id.includes('ramda')) {
+              return 'vendor-utils';
+            }
             return 'vendor-misc';
           }
           
@@ -281,7 +285,6 @@ export default defineConfig({
       'react',
       'react-dom',
       'react-router-dom',
-      'react-helmet-async',
       '@supabase/supabase-js',
       '@google/genai',
       'recharts',

@@ -1,5 +1,7 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+// Dynamic import for Google GenAI to reduce initial bundle size
+let GoogleGenAI: any;
+let Type: any;
 import { MQL5_SYSTEM_PROMPT } from "../constants";
 import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
 import { settingsManager } from "./settingsManager";
@@ -346,12 +348,23 @@ const getEffectiveSystemPrompt = (settings: AISettings): string => {
 /**
  * Executes a call to the Google Gemini API.
  */
+// Dynamic loader for GoogleGenAI to reduce initial bundle size
+const getGoogleGenAI = async () => {
+  if (!GoogleGenAI) {
+    const module = await import("@google/genai");
+    GoogleGenAI = module.GoogleGenAI;
+    Type = module.Type;
+  }
+  return GoogleGenAI;
+};
+
 const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?: AbortSignal, temperature?: number) => {
     return withRetry(async () => {
         const activeKey = getActiveKey(settings.apiKey);
         if (!activeKey) throw new Error("Google API Key missing in settings.");
         
-        const ai = new GoogleGenAI({ apiKey: activeKey });
+        const GoogleGenAIClass = await getGoogleGenAI();
+        const ai = new GoogleGenAIClass({ apiKey: activeKey });
         const systemInstruction = getEffectiveSystemPrompt(settings);
         
         if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
@@ -646,8 +659,9 @@ export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promi
                  if (settings.provider === 'openai') {
                      // Pass jsonMode: true for OpenAI/DeepSeek
                      textResponse = await callOpenAICompatible(settings, prompt, signal, 0.5, true);
-                 } else {
-                     const ai = new GoogleGenAI({ apiKey: activeKey });
+} else {
+                      const GoogleGenAIClass = await getGoogleGenAI();
+                      const ai = new GoogleGenAIClass({ apiKey: activeKey });
                      
                      if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
