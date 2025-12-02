@@ -7,6 +7,7 @@ import { useToast } from '../components/Toast';
 import { useTranslation } from '../services/i18n';
 import { SEOHead, structuredDataTemplates } from '../utils/seo';
 import { createScopedLogger } from '../utils/logger';
+import { VirtualScrollList } from '../components/VirtualScrollList';
 
 const logger = createScopedLogger('Dashboard');
 
@@ -82,6 +83,9 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
           setProcessingId(null);
       }
   }, [t, showToast]);
+
+  // Determine if virtual scrolling should be used (for large lists)
+  const shouldUseVirtualScroll = robots.length > 20;
 
   // Filter Logic - memoized for performance
   const filteredRobots = useMemo(() => 
@@ -185,6 +189,16 @@ structuredData={[
               <p className="text-gray-400">Try adjusting your search or filters.</p>
               <button onClick={() => { setSearchTerm(''); setFilterType('All'); }} className="mt-4 text-brand-400 hover:underline">{t('dash_clear_filters')}</button>
           </div>
+      ) : shouldUseVirtualScroll ? (
+        <VirtualScrollList
+          robots={robots}
+          searchTerm={searchTerm}
+          filterType={filterType}
+          processingId={processingId}
+          onDuplicate={handleDuplicate}
+          onDelete={handleDelete}
+          t={t}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRobots.map((robot) => (

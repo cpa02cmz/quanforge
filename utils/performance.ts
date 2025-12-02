@@ -293,9 +293,9 @@ private recordInteraction(name: string, duration: number) {
      return null;
    }
    
-   // Track memory usage over time
-   async monitorMemoryUsage(intervalMs: number = 30000): Promise<void> { // Default 30 seconds
-if (!('memory' in performance)) {
+// Track memory usage over time
+    async monitorMemoryUsage(intervalMs: number = 30000): Promise<void> { // Default 30 seconds
+      if (!('memory' in performance)) {
         if (import.meta.env.DEV) {
           console.warn('Memory monitoring not supported in this browser');
         }
@@ -308,7 +308,7 @@ if (!('memory' in performance)) {
          this.recordMetric('memory_used_bytes', memory.used);
          this.recordMetric('memory_utilization_percent', memory.utilization);
          
-// Alert if memory usage is high
+         // Alert if memory usage is high
           if (memory.utilization > 80) {
             if (import.meta.env.DEV) {
               console.warn(`High memory usage detected: ${memory.utilization.toFixed(2)}%`);
