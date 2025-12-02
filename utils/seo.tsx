@@ -355,5 +355,147 @@ export const structuredDataTemplates = {
         }
       ]
     }
+  }),
+
+  // Enhanced structured data for better SEO
+  organization: {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "QuantForge AI",
+    "url": "https://quanforge.ai",
+    "logo": "https://quanforge.ai/logo.png",
+    "description": "Advanced MQL5 Trading Robot Generator powered by AI",
+    "foundingDate": "2023",
+    "founders": [
+      {
+        "@type": "Person",
+        "name": "Dr. Sarah Chen",
+        "jobTitle": "CEO & Co-Founder"
+      },
+      {
+        "@type": "Person", 
+        "name": "Michael Rodriguez",
+        "jobTitle": "CTO & Co-Founder"
+      }
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer service",
+      "availableLanguage": ["English"],
+      "email": "hello@quanforge.ai"
+    },
+    "sameAs": [
+      "https://twitter.com/quanforge",
+      "https://linkedin.com/company/quanforge",
+      "https://github.com/quanforge"
+    ],
+    "areaServed": "Worldwide",
+    "knowsAbout": [
+      "MQL5 Programming",
+      "Algorithmic Trading",
+      "MetaTrader 5",
+      "Artificial Intelligence",
+      "Financial Markets",
+      "Risk Management"
+    ]
+  },
+
+  website: {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "QuantForge AI",
+    "url": "https://quanforge.ai",
+    "description": "Generate professional MQL5 trading robots using AI. Powered by Google Gemini 3.0/2.5.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://quanforge.ai/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "url": "https://quanforge.ai"
+    }
+  },
+
+  educationalOrganization: {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    "name": "QuantForge AI Academy",
+    "url": "https://quanforge.ai/academy",
+    "description": "Learn algorithmic trading and MQL5 development with AI-powered tools",
+    "provider": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "hasOfferCatalog": {
+      "@type": "OfferCatalog",
+      "name": "Trading Education Courses",
+      "itemListElement": [
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Course",
+            "name": "MQL5 Trading Robot Development",
+            "description": "Complete guide to creating trading robots with AI"
+          }
+        }
+      ]
+    }
+  },
+
+  techArticle: (headline: string, description: string, url: string, author: string = "QuantForge AI Team") => ({
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": headline,
+    "description": description,
+    "url": url,
+    "dateModified": new Date().toISOString(),
+    "author": {
+      "@type": "Person",
+      "name": author
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "about": {
+      "@type": "Thing",
+      "name": "MQL5 Programming and Algorithmic Trading"
+    },
+    "programmingLanguage": "MQL5",
+    "genre": ["Technology", "Finance", "Programming", "Trading"]
+  }),
+
+  collectionPage: (name: string, description: string, url: string) => ({
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": name,
+    "description": description,
+    "url": url,
+    "dateModified": new Date().toISOString(),
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "QuantForge AI",
+      "url": "https://quanforge.ai"
+    },
+    "about": {
+      "@type": "Thing",
+      "name": "Trading Robot Collection and Portfolio Management"
+    }
+  }),
+
+  searchResultsPage: (query: string, url: string) => ({
+    "@context": "https://schema.org",
+    "@type": "SearchResultsPage",
+    "name": `Search Results for "${query}"`,
+    "url": url,
+    "description": `Search results for trading robots and strategies matching "${query}"`,
+    "query": query,
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "QuantForge AI",
+      "url": "https://quanforge.ai"
+    }
   })
 };

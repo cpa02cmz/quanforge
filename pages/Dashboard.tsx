@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useMemo, useCallback, memo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { mockDb } from '../services/supabase';
 import { Robot, UserSession } from '../types';
@@ -10,7 +10,7 @@ import { SEOHead, structuredDataTemplates } from '../utils/seo';
 
 
 interface DashboardProps {
-    session?: UserSession | null;
+    session: UserSession | null;
 }
 
 export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
