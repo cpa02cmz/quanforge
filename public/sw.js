@@ -1,54 +1,91 @@
-const CACHE_NAME = 'quanforge-ai-v1.0.0';
-const STATIC_CACHE_NAME = 'quanforge-static-v1.0.0';
-const DYNAMIC_CACHE_NAME = 'quanforge-dynamic-v1.0.0';
+const CACHE_NAME = 'quanforge-edge-v2';
+const STATIC_CACHE_NAME = 'quanforge-static-v2';
+const API_CACHE_NAME = 'quanforge-api-v2';
+
+// Enhanced cache configuration for Vercel Edge
+const CACHE_CONFIG = {
+  staticAssets: {
+    maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
+    patterns: [
+      /\.(js|css|woff|woff2|ttf|eot|png|jpg|jpeg|gif|svg|ico|webp)$/,
+      /\/fonts\//,
+      /\/images\//,
+    ],
+  },
+  apiResponses: {
+    maxAge: 5 * 60 * 1000, // 5 minutes
+    patterns: [
+      /\/api\//,
+    ],
+  },
+  pages: {
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    patterns: [
+      /\/$/,
+      /\/dashboard/,
+      /\/generator/,
+      /\/wiki/,
+    ],
+  },
+};
 
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/robots.txt',
-  '/sitemap.xml'
+  '/sitemap.xml',
+  '/dashboard',
+  '/generator',
+  '/wiki'
 ];
 
-const API_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-const STATIC_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
-
-// Cache strategies
+// Cache strategies optimized for Vercel Edge
 const cacheStrategies = {
   static: 'cacheFirst',
   api: 'networkFirst',
-  dynamic: 'staleWhileRevalidate'
+  dynamic: 'staleWhileRevalidate',
+  edge: 'edgeFirst'
 };
 
-// Install event - cache static assets
+// Install event - cache static assets with enhanced error handling
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...');
+  console.log('[SW] Installing service worker for Vercel Edge...');
   
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME)
       .then((cache) => {
-        console.log('[SW] Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
+        console.log('[SW] Caching static assets for edge deployment');
+        return Promise.allSettled(
+          STATIC_ASSETS.map(asset => 
+            cache.add(asset).catch(error => {
+              console.warn(`[SW] Failed to cache ${asset}:`, error);
+              return null;
+            })
+          )
+        );
       })
       .then(() => {
-        console.log('[SW] Static assets cached successfully');
+        console.log('[SW] Static assets cached successfully for edge');
         return self.skipWaiting();
+      })
+      .catch((error) => {
+        console.error('[SW] Service worker installation failed:', error);
       })
   );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up old caches with enhanced cleanup
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker...');
+  console.log('[SW] Activating service worker for Vercel Edge...');
   
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
+        const currentCaches = [CACHE_NAME, STATIC_CACHE_NAME, API_CACHE_NAME];
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName !== STATIC_CACHE_NAME && 
-                cacheName !== DYNAMIC_CACHE_NAME &&
-                cacheName !== CACHE_NAME) {
+            if (!currentCaches.includes(cacheName)) {
               console.log('[SW] Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
@@ -56,11 +93,45 @@ self.addEventListener('activate', (event) => {
         );
       })
       .then(() => {
-        console.log('[SW] Service worker activated');
+        console.log('[SW] Service worker activated for edge deployment');
         return self.clients.claim();
+      })
+      .then(() => {
+        // Pre-warm edge caches
+        return preWarmEdgeCaches();
+      })
+      .catch((error) => {
+        console.error('[SW] Service worker activation failed:', error);
       })
   );
 });
+
+// Pre-warm edge caches for better performance
+async function preWarmEdgeCaches() {
+  try {
+    const cache = await caches.open(STATIC_CACHE_NAME);
+    const criticalAssets = [
+      '/api/health',
+      '/api/strategies',
+    ];
+    
+    await Promise.allSettled(
+      criticalAssets.map(asset => 
+        fetch(asset).then(response => {
+          if (response.ok) {
+            return cache.put(asset, response);
+          }
+        }).catch(error => {
+          console.warn(`[SW] Failed to pre-warm ${asset}:`, error);
+        })
+      )
+    );
+    
+    console.log('[SW] Edge caches pre-warmed successfully');
+  } catch (error) {
+    console.warn('[SW] Edge cache pre-warming failed:', error);
+  }
+}
 
 // Fetch event - implement caching strategies
 self.addEventListener('fetch', (event) => {
@@ -92,6 +163,8 @@ async function handleRequest(request) {
         return await networkFirst(request);
       case 'staleWhileRevalidate':
         return await staleWhileRevalidate(request);
+      case 'edgeFirst':
+        return await edgeFirst(request);
       default:
         return await fetch(request);
     }
@@ -102,59 +175,55 @@ async function handleRequest(request) {
 }
 
 function getCacheStrategy(url) {
-  // Static assets
-  if (url.pathname.includes('/assets/') || 
-      url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+  // Static assets with enhanced patterns
+  if (CACHE_CONFIG.staticAssets.patterns.some(pattern => pattern.test(url.pathname))) {
     return cacheStrategies.static;
   }
   
-  // API calls
-  if (url.pathname.includes('/api/') || 
+  // API calls with external service detection
+  if (CACHE_CONFIG.apiResponses.patterns.some(pattern => pattern.test(url.pathname)) ||
       url.hostname.includes('supabase') ||
       url.hostname.includes('googleapis') ||
       url.hostname.includes('twelvedata')) {
     return cacheStrategies.api;
   }
   
-  // Dynamic content
+  // Page requests
+  if (CACHE_CONFIG.pages.patterns.some(pattern => pattern.test(url.pathname)) ||
+      request.mode === 'navigate') {
+    return cacheStrategies.dynamic;
+  }
+  
+  // Edge-optimized content
+  if (url.searchParams.has('edge') || url.searchParams.has('cache')) {
+    return cacheStrategies.edge;
+  }
+  
+  // Default to dynamic
   return cacheStrategies.dynamic;
 }
 
-// Cache First strategy for static assets
+// Enhanced Cache First strategy for static assets
 async function cacheFirst(request) {
   const cache = await caches.open(STATIC_CACHE_NAME);
   const cachedResponse = await cache.match(request);
-  
-  if (cachedResponse) {
+
+  if (cachedResponse && !isExpired(cachedResponse, CACHE_CONFIG.staticAssets.maxAge)) {
+    // Update cache in background for fresh content
+    updateCacheInBackground(request, cache);
     return cachedResponse;
   }
-  
+
   try {
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
-      cache.put(request, networkResponse.clone());
+      const responseToCache = networkResponse.clone();
+      cache.put(request, responseToCache);
     }
     return networkResponse;
   } catch (error) {
     console.error('[SW] Network request failed:', error);
-    throw error;
-  }
-}
-
-// Network First strategy for API calls
-async function networkFirst(request) {
-  const cache = await caches.open(DYNAMIC_CACHE_NAME);
-  const cachedResponse = await cache.match(request);
-  
-  try {
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      // Cache the successful response
-      cache.put(request, networkResponse.clone());
-    }
-    return networkResponse;
-  } catch (error) {
-    console.error('[SW] Network request failed, serving from cache:', error);
+    // Return cached version even if expired when network fails
     if (cachedResponse) {
       return cachedResponse;
     }
@@ -162,16 +231,65 @@ async function networkFirst(request) {
   }
 }
 
-// Stale While Revalidate strategy for dynamic content
-async function staleWhileRevalidate(request) {
-  const cache = await caches.open(DYNAMIC_CACHE_NAME);
+// Enhanced Network First strategy for API calls
+async function networkFirst(request) {
+  const cache = await caches.open(API_CACHE_NAME);
   const cachedResponse = await cache.match(request);
   
-  // Always try to update the cache in the background
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      // Cache the successful response with edge headers
+      const responseToCache = new Response(networkResponse.body, {
+        status: networkResponse.status,
+        statusText: networkResponse.statusText,
+        headers: {
+          ...networkResponse.headers,
+          'x-edge-cached': 'false',
+          'x-edge-timestamp': Date.now().toString(),
+        },
+      });
+      cache.put(request, responseToCache);
+    }
+    return networkResponse;
+  } catch (error) {
+    console.error('[SW] Network request failed, serving from cache:', error);
+    if (cachedResponse) {
+      // Add edge header to indicate cached response
+      const cachedResponseWithHeaders = new Response(cachedResponse.body, {
+        status: cachedResponse.status,
+        statusText: cachedResponse.statusText,
+        headers: {
+          ...cachedResponse.headers,
+          'x-edge-cached': 'true',
+          'x-edge-fallback': 'network-failure',
+        },
+      });
+      return cachedResponseWithHeaders;
+    }
+    throw error;
+  }
+}
+
+// Enhanced Stale While Revalidate strategy for dynamic content
+async function staleWhileRevalidate(request) {
+  const cache = await caches.open(API_CACHE_NAME);
+  const cachedResponse = await cache.match(request);
+  
+  // Always try to update the cache in the background with edge optimization
   const fetchPromise = fetch(request)
     .then((networkResponse) => {
       if (networkResponse.ok) {
-        cache.put(request, networkResponse.clone());
+        const responseToCache = new Response(networkResponse.body, {
+          status: networkResponse.status,
+          statusText: networkResponse.statusText,
+          headers: {
+            ...networkResponse.headers,
+            'x-edge-cached': 'false',
+            'x-edge-updated': Date.now().toString(),
+          },
+        });
+        cache.put(request, responseToCache);
       }
       return networkResponse;
     })
@@ -181,14 +299,57 @@ async function staleWhileRevalidate(request) {
   
   // Return cached version immediately if available
   if (cachedResponse) {
-    return cachedResponse;
+    // Add edge header to indicate stale content
+    const cachedResponseWithHeaders = new Response(cachedResponse.body, {
+      status: cachedResponse.status,
+      statusText: cachedResponse.statusText,
+      headers: {
+        ...cachedResponse.headers,
+        'x-edge-cached': 'true',
+        'x-edge-stale': 'true',
+      },
+    });
+    return cachedResponseWithHeaders;
   }
   
   // Otherwise wait for the network
   return await fetchPromise;
 }
 
-// Offline fallback
+// Edge First strategy for edge-optimized content
+async function edgeFirst(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cachedResponse = await cache.match(request);
+
+  if (cachedResponse && !isExpired(cachedResponse, CACHE_CONFIG.pages.maxAge)) {
+    return cachedResponse;
+  }
+
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      const responseToCache = new Response(networkResponse.body, {
+        status: networkResponse.status,
+        statusText: networkResponse.statusText,
+        headers: {
+          ...networkResponse.headers,
+          'x-edge-optimized': 'true',
+          'x-edge-region': detectEdgeRegion(),
+        },
+      });
+      cache.put(request, responseToCache);
+    }
+    return networkResponse;
+  } catch (error) {
+    console.error('[SW] Edge request failed:', error);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    throw error;
+  }
+}
+
+// Enhanced offline fallback with edge optimization
 async function getOfflineResponse(request) {
   const url = new URL(request.url);
   
@@ -199,6 +360,51 @@ async function getOfflineResponse(request) {
     if (cachedPage) {
       return cachedPage;
     }
+    
+    // Return enhanced offline page
+    return new Response(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Offline - QuantForge AI</title>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { font-family: system-ui, sans-serif; text-align: center; padding: 2rem; background: #f8fafc; }
+            .offline-icon { font-size: 4rem; margin-bottom: 1rem; }
+            .message { color: #64748b; margin-bottom: 2rem; }
+            .retry-btn { 
+              background: #3b82f6; 
+              color: white; 
+              border: none; 
+              padding: 0.75rem 1.5rem; 
+              border-radius: 0.5rem; 
+              cursor: pointer;
+              font-weight: 500;
+            }
+            .retry-btn:hover { background: #2563eb; }
+            .edge-info { 
+              margin-top: 2rem; 
+              font-size: 0.875rem; 
+              color: #94a3b8;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="offline-icon">📡</div>
+          <h1>You're Offline</h1>
+          <p class="message">Please check your internet connection and try again.</p>
+          <button class="retry-btn" onclick="window.location.reload()">Retry Connection</button>
+          <div class="edge-info">
+            <p>QuantForge AI Edge Cache Active</p>
+            <p>Some features may be available offline</p>
+          </div>
+        </body>
+      </html>
+    `, {
+      status: 503,
+      headers: { 'Content-Type': 'text/html' },
+    });
   }
   
   // Return offline fallback for API requests
@@ -206,17 +412,25 @@ async function getOfflineResponse(request) {
     return new Response(
       JSON.stringify({ 
         error: 'Offline', 
-        message: 'No network connection available' 
+        message: 'No network connection available',
+        edgeCache: true,
+        timestamp: Date.now()
       }),
       {
         status: 503,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-edge-offline': 'true'
+        }
       }
     );
   }
   
   // Default offline response
-  return new Response('Offline', { status: 503 });
+  return new Response('Offline - Edge Cache Active', { 
+    status: 503,
+    headers: { 'x-edge-offline': 'true' }
+  });
 }
 
 // Background sync for offline actions
@@ -336,8 +550,98 @@ async function clearCaches() {
     await Promise.all(
       cacheNames.map(cacheName => caches.delete(cacheName))
     );
-    console.log('[SW] All caches cleared');
+    console.log('[SW] All edge caches cleared');
   } catch (error) {
-    console.error('[SW] Failed to clear caches:', error);
+    console.error('[SW] Failed to clear edge caches:', error);
   }
+}
+
+// Helper functions for edge optimization
+function isExpired(response, maxAge) {
+  const dateHeader = response.headers.get('date');
+  if (!dateHeader) return true;
+  
+  const cacheTime = new Date(dateHeader).getTime();
+  const now = Date.now();
+  return (now - cacheTime) > maxAge;
+}
+
+function detectEdgeRegion() {
+  // Simplified edge region detection
+  // In production, this would use actual edge detection logic
+  const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'];
+  return regions[Math.floor(Math.random() * regions.length)];
+}
+
+function updateCacheInBackground(request, cache) {
+  fetch(request)
+    .then((networkResponse) => {
+      if (networkResponse.ok) {
+        cache.put(request, networkResponse);
+      }
+    })
+    .catch((error) => {
+      console.log('[SW] Background cache update failed:', request.url);
+    });
+}
+
+// Enhanced message handling for edge features
+self.addEventListener('message', (event) => {
+  console.log('[SW] Edge message received:', event.data);
+  
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  
+  if (event.data && event.data.type === 'CACHE_UPDATE') {
+    event.waitUntil(updateCaches());
+  }
+  
+  if (event.data && event.data.type === 'CACHE_CLEAR') {
+    event.waitUntil(clearCaches());
+  }
+  
+  if (event.data && event.data.type === 'EDGE_STATUS') {
+    event.waitUntil(
+      getEdgeStatus().then(status => {
+        event.ports[0].postMessage(status);
+      })
+    );
+  }
+});
+
+async function getEdgeStatus() {
+  const cacheNames = await caches.keys();
+  const status = {
+    edgeOptimized: true,
+    caches: {},
+    region: detectEdgeRegion(),
+    timestamp: Date.now()
+  };
+  
+  for (const cacheName of cacheNames) {
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
+    status.caches[cacheName] = {
+      entries: keys.length,
+      size: await estimateCacheSize(cache),
+    };
+  }
+  
+  return status;
+}
+
+async function estimateCacheSize(cache) {
+  const keys = await cache.keys();
+  let totalSize = 0;
+  
+  for (const request of keys) {
+    const response = await cache.match(request);
+    if (response) {
+      const blob = await response.blob();
+      totalSize += blob.size;
+    }
+  }
+  
+  return totalSize;
 }

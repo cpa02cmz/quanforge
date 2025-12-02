@@ -21,6 +21,7 @@
     "build": "vite build",
     "build:analyze": "ANALYZE=true vite build",
     "build:edge": "vite build --mode edge",
+    "build:production": "NODE_ENV=production vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'No linter configured'",
@@ -28,8 +29,10 @@
     "test": "echo 'No tests configured'",
     "test:coverage": "echo 'No tests configured'",
     "clean": "rm -rf dist node_modules/.vite",
-    "vercel-build": "npm run build",
-    "bundle-size": "npm run build && echo 'Bundle size analysis complete'"
+    "vercel-build": "npm run build:production",
+    "bundle-size": "npm run build && echo 'Bundle size analysis complete'",
+    "edge-optimize": "npm run build:edge && npm run bundle-size",
+    "performance-check": "npm run build && npm run typecheck"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",

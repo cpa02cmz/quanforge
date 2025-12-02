@@ -3,11 +3,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  server: {
-    port: 3000,
-    host: '0.0.0.0',
-  },
-  plugins: [react()],
+plugins: [react()],
   build: {
     outDir: 'dist',
     sourcemap: process.env['NODE_ENV'] !== 'production',
@@ -151,6 +147,15 @@ export default defineConfig({
       } else {
         return { relative: true };
       }
+    }
+  },
+  // Edge optimization for Vercel deployment
+  server: {
+    port: 3000,
+    host: '0.0.0.0',
+    headers: {
+      'X-Edge-Optimized': 'true',
+      'Cache-Control': 'public, max-age=31536000, immutable',
     }
   }
 });

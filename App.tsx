@@ -7,6 +7,8 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { SEOHead, structuredDataTemplates } from './utils/seo';
+import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
+import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
 
 // Lazy load components for better code splitting
 const Auth = lazy(() => import('./components/Auth').then(module => ({ default: module.Auth })));
@@ -22,13 +24,20 @@ export default function App() {
   useEffect(() => {
     const startTime = performance.now();
     
+    // Initialize Vercel Edge Optimizer
+    vercelEdgeOptimizer.optimizeBundleForEdge();
+    vercelEdgeOptimizer.enableEdgeSSR();
+    vercelEdgeOptimizer.setupEdgeErrorHandling();
+    
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       performanceMonitor.recordMetric('auth_init', performance.now() - startTime);
+      databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, true);
     }).catch((err) => {
       console.warn("Auth initialization failed:", err);
       performanceMonitor.recordMetric('auth_error', 1);
+      databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, false);
     }).finally(() => {
       setLoading(false);
     });
