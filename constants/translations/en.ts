@@ -1,4 +1,4 @@
-import { Language } from "../../types";
+
 
 export const TRANSLATIONS_EN = {
     // Sidebar

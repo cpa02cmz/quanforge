@@ -1,4 +1,4 @@
-import { Language } from "../../types";
+
 
 export const SUGGESTED_STRATEGIES_EN = [
     { label: 'RSI Reversal', prompt: 'Create a Mean Reversion strategy using RSI(14). Buy when RSI < 30, Sell when RSI > 70.' },

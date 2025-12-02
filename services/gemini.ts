@@ -266,33 +266,39 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
     }
     
     buildContext(prompt: string, currentCode?: string, strategyParams?: StrategyParams, history: Message[] = []): string {
-        const footerReminder = `
+        // Create cache key for context building
+        const contextCacheKey = this.createContextCacheKey(prompt, currentCode, strategyParams, history);
+        
+        return this.getCachedContext(contextCacheKey, () => {
+            const footerReminder = `
 FINAL REMINDERS:
 1. Output COMPLETE code. No placeholders like "// ... rest of code".
 2. Ensure strict MQL5 syntax correctness.
 3. If changing logic, rewrite the full file.
 `;
 
-        // Build base components
-        const paramsContext = this.buildParamsContext(strategyParams);
-        let codeContext = this.buildCodeContext(currentCode);
-        
-        const baseLength = paramsContext.length + codeContext.length + prompt.length + footerReminder.length;
-        
-        // Early truncation if base context is too large
-        if (baseLength > TokenBudgetManager.MAX_CONTEXT_CHARS) {
-            console.warn("Base context exceeds token budget, truncating code block");
-            const availableForCode = TokenBudgetManager.MAX_CONTEXT_CHARS - paramsContext.length - prompt.length - footerReminder.length - 1000;
-            codeContext = this.buildCodeContext(currentCode, Math.max(availableForCode, 1000));
-        }
-        
-        const currentBaseLength = paramsContext.length + codeContext.length + prompt.length + footerReminder.length;
-        const remainingBudget = TokenBudgetManager.MAX_CONTEXT_CHARS - currentBaseLength;
-        
-        // Build history with remaining budget
-        const historyContent = this.buildHistoryContext(history, prompt, Math.max(remainingBudget, 0));
-        
-        return `
+            // Build base components
+            const paramsContext = this.buildParamsContext(strategyParams);
+            let codeContext = this.buildCodeContext(currentCode);
+            
+            const baseLength = paramsContext.length + codeContext.length + prompt.length + footerReminder.length;
+            
+            // Early truncation if base context is too large
+            if (baseLength > TokenBudgetManager.MAX_CONTEXT_CHARS) {
+                if (import.meta.env.DEV) {
+                    console.warn("Base context exceeds token budget, truncating code block");
+                }
+                const availableForCode = TokenBudgetManager.MAX_CONTEXT_CHARS - paramsContext.length - prompt.length - footerReminder.length - 1000;
+                codeContext = this.buildCodeContext(currentCode, Math.max(availableForCode, 1000));
+            }
+            
+            const currentBaseLength = paramsContext.length + codeContext.length + prompt.length + footerReminder.length;
+            const remainingBudget = TokenBudgetManager.MAX_CONTEXT_CHARS - currentBaseLength;
+            
+            // Build history with remaining budget
+            const historyContent = this.buildHistoryContext(history, prompt, Math.max(remainingBudget, 0));
+            
+            return `
 ${paramsContext}
 
 ${codeContext}
@@ -308,6 +314,14 @@ If it's just a question, answer with text only.
 
 ${footerReminder}
 `;
+        });
+    }
+
+    private createContextCacheKey(prompt: string, currentCode?: string, strategyParams?: StrategyParams, history: Message[] = []): string {
+        const paramsHash = strategyParams ? JSON.stringify(strategyParams) : '';
+        const codeHash = currentCode ? currentCode.substring(0, 500) : ''; // First 500 chars
+        const historyHash = history.map(m => `${m.role}:${m.content.substring(0, 100)}`).join('|');
+        return `${prompt.length}:${codeHash}:${paramsHash}:${historyHash}`;
     }
     
     // Clear cache when needed
