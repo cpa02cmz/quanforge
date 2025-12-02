@@ -98,8 +98,8 @@
   "functions": {
     "api/**/*.ts": {
       "runtime": "edge",
-      "regions": ["hkg1", "iad1", "sin1", "cle1", "fra1"],
-      "maxDuration": 30
+"regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1"],
+      "maxDuration": 10
     },
     "app/**/*.ts": {
       "runtime": "nodejs20.x",
@@ -118,7 +118,8 @@
       "VITE_ENABLE_WEB_VITALS": "true",
       "VITE_ENABLE_PERFORMANCE_MONITORING": "true",
       "VITE_ENABLE_BUNDLE_ANALYZER": "false",
-      "VERCEL_ANALYTICS_ID": "auto"
+"VITE_ENABLE_PRELOAD": "true",
+      "VITE_ENABLE_PREFETCH": "true"
     }
   },
   "crons": [],

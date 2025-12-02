@@ -30,7 +30,7 @@ class VercelEdgeOptimizer {
     enablePrefetch: process.env['VITE_ENABLE_PREFETCH'] === 'true',
     enablePreload: process.env['VITE_ENABLE_PRELOAD'] === 'true',
     cacheTTL: 31536000, // 1 year for static assets
-    edgeRegions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
+    edgeRegions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1'],
   };
   private metrics: Map<string, EdgeMetrics> = new Map();
 
@@ -64,21 +64,45 @@ class VercelEdgeOptimizer {
   }
 
   private setupEdgeCaching(): void {
-    // Set up service worker for edge caching
+    // Set up enhanced service worker for edge caching
     if ('serviceWorker' in navigator && this.config.enableEdgeRuntime) {
-      navigator.serviceWorker.register('/sw.js').then((registration) => {
-        console.log('Edge Service Worker registered:', registration);
+      navigator.serviceWorker.register('/sw-enhanced.js').then((registration) => {
+        console.log('Enhanced Edge Service Worker registered:', registration);
+        
+        // Send message to service worker to skip waiting
+        if (registration.active) {
+          registration.active.postMessage({ type: 'SKIP_WAITING' });
+        }
+        
+        // Set up periodic cache updates
+        if ('periodicSync' in registration) {
+          (registration as any).periodicSync.register('cache-update', {
+            minInterval: 24 * 60 * 60 * 1000 // 24 hours
+          }).then(() => {
+            console.log('Periodic cache sync registered');
+          }).catch((error: any) => {
+            console.warn('Periodic sync registration failed:', error);
+          });
+        }
       }).catch((error) => {
-        console.warn('Edge Service Worker registration failed:', error);
+        console.warn('Enhanced Edge Service Worker registration failed:', error);
+        // Fallback to basic service worker
+        navigator.serviceWorker.register('/sw.js').then((registration) => {
+          console.log('Fallback Service Worker registered:', registration);
+        }).catch((fallbackError) => {
+          console.warn('Fallback Service Worker registration failed:', fallbackError);
+        });
       });
     }
   }
 
   private setupResourcePrefetching(): void {
-    // Prefetch critical resources
+    // Prefetch critical resources with enhanced strategy
     const criticalResources = [
       '/api/robots',
       '/api/strategies',
+      '/api/health',
+      '/api/analytics/performance-score',
       'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700',
     ];
 
@@ -86,8 +110,53 @@ class VercelEdgeOptimizer {
       const link = document.createElement('link');
       link.rel = 'prefetch';
       link.href = resource;
+      link.setAttribute('data-edge-optimized', 'true');
       document.head.appendChild(link);
     });
+
+    // Prefetch based on user interaction patterns
+    this.setupIntelligentPrefetching();
+  }
+
+  private setupIntelligentPrefetching(): void {
+    // Prefetch resources based on user behavior
+    let idleTimeout: number;
+    
+    const prefetchWhenIdle = () => {
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          // Prefetch next likely pages/resources
+          const likelyResources = [
+            '/api/edge-optimize',
+            '/api/analytics/summary',
+          ];
+          
+          likelyResources.forEach(resource => {
+            const link = document.createElement('link');
+            link.rel = 'prefetch';
+            link.href = resource;
+            document.head.appendChild(link);
+          });
+        });
+      }
+    };
+
+    // Setup intersection observer for prefetching
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            prefetchWhenIdle();
+          }
+        });
+      });
+
+      // Observe main content area
+      const mainContent = document.querySelector('main');
+      if (mainContent) {
+        observer.observe(mainContent);
+      }
+    }
   }
 
   private setupResourcePreloading(): void {

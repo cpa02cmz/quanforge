@@ -71,10 +71,12 @@ class EdgeMetricsCollector {
   }
 
   private guessRegionFromResponseTime(responseTime: number): string {
-    // Simple heuristic to guess region based on response time
-    if (responseTime < 50) return 'iad1'; // US East
-    if (responseTime < 100) return 'hkg1'; // Asia
-    if (responseTime < 150) return 'sin1'; // Singapore
+    // Enhanced heuristic with more regions
+    if (responseTime < 30) return 'iad1'; // US East - fastest
+    if (responseTime < 60) return 'hkg1'; // Hong Kong
+    if (responseTime < 90) return 'sin1'; // Singapore
+    if (responseTime < 120) return 'fra1'; // Frankfurt
+    if (responseTime < 150) return 'sfo1'; // San Francisco
     return 'unknown';
   }
 
@@ -191,7 +193,7 @@ class EdgeMetricsCollector {
 
   // Simulate edge performance for testing
   simulateEdgePerformance(): void {
-    const regions = ['iad1', 'hkg1', 'sin1'];
+    const regions = ['iad1', 'hkg1', 'sin1', 'fra1', 'sfo1'];
     const cacheStatuses: Array<'hit' | 'miss' | 'stale' | 'revalidated'> = ['hit', 'miss', 'stale', 'revalidated'];
 
     regions.forEach(region => {

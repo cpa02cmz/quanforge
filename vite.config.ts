@@ -155,12 +155,12 @@ plugins: [react()],
         reserved: ['React', 'useState', 'useEffect']
       }
     },
-    chunkSizeWarningLimit: 250, // Even stricter for better edge optimization
+chunkSizeWarningLimit: 250, // Even stricter for better edge performance
     target: 'esnext',
     reportCompressedSize: true,
     cssCodeSplit: true,
     // Optimize for Vercel Edge
-    assetsInlineLimit: 2048, // Reduce inline limit
+    assetsInlineLimit: 1024, // Further reduce inline limit for edge optimization
     modulePreload: {
       polyfill: false
     }
