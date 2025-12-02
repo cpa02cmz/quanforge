@@ -401,7 +401,7 @@ const payload = {
             ...(jsonMode ? { response_format: { type: "json_object" } } : {})
         };
 
-        const requestInit: RequestInit = {
+const requestInit: RequestInit = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -411,12 +411,10 @@ const payload = {
                     'X-Title': 'QuantForge AI'
                 } : {})
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
+            signal
         };
-
-        if (signal) {
-            requestInit.signal = signal;
-        }
 
         const response = await fetch(url, requestInit);
         
