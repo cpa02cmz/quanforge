@@ -1,6 +1,7 @@
 /**
  * Request Throttling Service
  * Optimizes API requests and prevents abuse
+ * Enhanced for Vercel Edge deployment
  */
 
 interface RequestConfig {
