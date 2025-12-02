@@ -1,4 +1,4 @@
-import { StrategyParams, CustomInput, BacktestSettings } from '../types';
+import { StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
 
 export interface ValidationError {
@@ -92,7 +92,7 @@ export class ValidationService {
        const input = params.customInputs[index];
        const prefix = `customInputs[${index}]`;
        
-       if (!input.name || !input.name.trim()) {
+       if (!input?.name || !input.name.trim()) {
          errors.push({
            field: `${prefix}.name`,
            message: 'Custom input name is required'
@@ -100,7 +100,7 @@ export class ValidationService {
          continue; // Skip further validation for invalid names
        }
        
-       if (!this.NAME_REGEX.test(input.name)) {
+       if (input && !this.NAME_REGEX.test(input.name)) {
          errors.push({
            field: `${prefix}.name`,
            message: 'Invalid name format. Use letters, numbers, and underscores only, starting with a letter or underscore'
@@ -108,36 +108,36 @@ export class ValidationService {
        }
 
        // Check for duplicate names using Set for O(1) lookup
-       if (seenNames.has(input.name)) {
-         errors.push({
-           field: `${prefix}.name`,
-           message: `Duplicate input name: "${input.name}"`
-         });
-       } else {
-         seenNames.add(input.name);
-       }
+if (input && seenNames.has(input.name)) {
+          errors.push({
+            field: `${prefix}.name`,
+            message: `Duplicate input name: "${input.name}"`
+          });
+        } else if (input) {
+          seenNames.add(input.name);
+        }
 
-       // Validate value based on type
-       if (input.type === 'int') {
-         const value = parseInt(input.value, 10);
-         if (isNaN(value) || value < -2147483648 || value > 2147483647) {
-           errors.push({
-             field: `${prefix}.value`,
-             message: 'Invalid integer value'
-           });
-         }
-       } else if (input.type === 'double') {
-         const value = parseFloat(input.value);
-         if (isNaN(value) || !isFinite(value)) {
-           errors.push({
-             field: `${prefix}.value`,
-             message: 'Invalid number value'
-           });
-         }
-       } else if (input.type === 'bool') {
-         if (input.value !== 'true' && input.value !== 'false') {
-           errors.push({
-             field: `${prefix}.value`,
+        // Validate value based on type
+        if (input && input.type === 'int') {
+          const value = parseInt(input.value, 10);
+          if (isNaN(value) || value < -2147483648 || value > 2147483647) {
+            errors.push({
+              field: `${prefix}.value`,
+              message: 'Invalid integer value'
+            });
+          }
+        } else if (input && input.type === 'double') {
+          const value = parseFloat(input.value);
+          if (isNaN(value) || !isFinite(value)) {
+            errors.push({
+              field: `${prefix}.value`,
+              message: 'Invalid number value'
+            });
+          }
+        } else if (input && input.type === 'bool') {
+          if (input.value !== 'true' && input.value !== 'false') {
+            errors.push({
+              field: `${prefix}.value`,
              message: 'Boolean value must be "true" or "false"'
            });
          }

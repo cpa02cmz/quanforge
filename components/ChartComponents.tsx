@@ -15,11 +15,11 @@ interface RechartsComponents {
 }
 
 interface ChartComponentsProps {
-  riskData?: Array<{ name: string; value: number; color: string }>;
-  analysis?: { riskScore: number; profitability: number; description: string };
-  t?: (key: string) => string;
-  data?: Array<{ date: string; balance: number }>;
-  totalReturn?: number;
+  riskData: Array<{ name: string; value: number; color: string }> | undefined;
+  analysis: { riskScore: number; profitability: number; description: string } | undefined;
+  t: ((key: string) => string) | undefined;
+  data: Array<{ date: string; balance: number }> | undefined;
+  totalReturn: number | undefined;
 }
 
 const RechartsInner = memo(({ 
@@ -49,7 +49,7 @@ const RechartsInner = memo(({
             stroke="#94a3b8" 
             tick={{fontSize: 12}}
             domain={['auto', 'auto']}
-            tickFormatter={(val) => `$${val}`}
+            tickFormatter={(val: number) => `$${val}`}
           />
           <Tooltip 
             contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', color: '#f8fafc' }}

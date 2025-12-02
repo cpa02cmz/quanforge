@@ -61,7 +61,7 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
         }
     };
 
-    const _handleExport = async () => {
+    const handleExport = async () => {
         try {
             const json = await dbUtils.exportDatabase();
             const blob = new Blob([json], { type: 'application/json' });

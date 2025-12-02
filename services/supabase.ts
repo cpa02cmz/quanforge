@@ -380,7 +380,7 @@ class RobotIndexManager {
 const robotIndexManager = new RobotIndexManager();
 
 export const mockDb = {
-   async getRobots() {
+async getRobots() {
      const startTime = performance.now();
      try {
        const settings = settingsManager.getDBSettings();
@@ -394,8 +394,8 @@ export const mockDb = {
          performanceMonitor.record('getRobots', duration);
          return { data: robots, error: null };
        }
-       
-const cacheKey = 'robots_list';
+        
+        const cacheKey = 'robots_list';
         const cached = robotCache.get<Robot[]>(cacheKey);
         if (cached) {
           // Create index for performance
@@ -426,8 +426,8 @@ const cacheKey = 'robots_list';
          const duration = performance.now() - startTime;
          performanceMonitor.record('getRobots', duration);
          
-         // Log slow operations
-         if (duration > 500) {
+         // Log slow operations only in development
+         if (import.meta.env.DEV && duration > 500) {
            console.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
          }
          
