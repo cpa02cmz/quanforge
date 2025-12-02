@@ -28,7 +28,7 @@ interface CacheStats {
 
 import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
 
-class AdvancedCache {
+export class AdvancedCache {
   private cache = new Map<string, CacheEntry<any>>();
   private stats = {
     hits: 0,

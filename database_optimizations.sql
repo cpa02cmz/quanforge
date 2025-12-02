@@ -393,10 +393,10 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- =====================================================
--- 10. OPTIMIZATION RECOMMENDATIONS
+-- 10. ADVANCED MATERIALIZED VIEWS FOR ANALYTICS
 -- =====================================================
 
--- Create a materialized view for popular robots (refresh every hour)
+-- Materialized view for popular robots (refresh every hour)
 CREATE MATERIALIZED VIEW IF NOT EXISTS popular_robots AS
 SELECT 
     r.id,
@@ -406,18 +406,138 @@ SELECT
     r.view_count,
     r.copy_count,
     r.created_at,
-    (r.view_count * 0.7 + r.copy_count * 0.3) as popularity_score
+    (r.view_count * 0.7 + r.copy_count * 0.3) as popularity_score,
+    -- Additional analytics fields
+    EXTRACT(DAY FROM NOW() - r.created_at) as days_since_creation,
+    CASE 
+        WHEN r.created_at > NOW() - INTERVAL '7 days' THEN 'new'
+        WHEN r.created_at > NOW() - INTERVAL '30 days' THEN 'recent'
+        ELSE 'established'
+    END as age_category
 FROM robots r
 WHERE 
     r.is_active = true 
     AND r.is_public = true
-    AND r.created_at > NOW() - INTERVAL '30 days'
+    AND r.created_at > NOW() - INTERVAL '90 days'
 ORDER BY popularity_score DESC, r.created_at DESC
 LIMIT 100;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_popular_robots_id ON popular_robots(id);
+CREATE INDEX IF NOT EXISTS idx_popular_robots_strategy ON popular_robots(strategy_type);
+CREATE INDEX IF NOT EXISTS idx_popular_robots_score ON popular_robots(popularity_score DESC);
 
--- Function to refresh materialized view
+-- Materialized view for robot analytics dashboard
+CREATE MATERIALIZED VIEW IF NOT EXISTS robot_analytics_dashboard AS
+SELECT 
+    -- Time-based analytics
+    DATE_TRUNC('day', r.created_at) as creation_date,
+    r.strategy_type,
+    COUNT(*) as robots_created,
+    AVG(r.view_count) as avg_views,
+    SUM(r.view_count) as total_views,
+    AVG(r.copy_count) as avg_copies,
+    SUM(r.copy_count) as total_copies,
+    -- Performance metrics
+    AVG(EXTRACT(EPOCH FROM (r.updated_at - r.created_at))/3600) as avg_hours_to_update,
+    COUNT(CASE WHEN r.view_count > 10 THEN 1 END) as popular_robots_count,
+    COUNT(CASE WHEN r.copy_count > 5 THEN 1 END) as copied_robots_count,
+    -- User engagement
+    COUNT(DISTINCT r.user_id) as unique_creators
+FROM robots r
+WHERE 
+    r.is_active = true
+    AND r.created_at > NOW() - INTERVAL '90 days'
+GROUP BY 
+    DATE_TRUNC('day', r.created_at),
+    r.strategy_type
+ORDER BY creation_date DESC, robots_created DESC;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_robot_analytics_dashboard_unique 
+    ON robot_analytics_dashboard(creation_date, strategy_type);
+CREATE INDEX IF NOT EXISTS idx_robot_analytics_dashboard_date 
+    ON robot_analytics_dashboard(creation_date DESC);
+
+-- Materialized view for user engagement metrics
+CREATE MATERIALIZED VIEW IF NOT EXISTS user_engagement_metrics AS
+SELECT 
+    u.id as user_id,
+    u.created_at as user_created_at,
+    -- Robot creation metrics
+    COUNT(DISTINCT r.id) as total_robots_created,
+    COUNT(DISTINCT CASE WHEN r.created_at > NOW() - INTERVAL '30 days' THEN r.id END) as recent_robots_created,
+    -- Engagement metrics
+    COALESCE(robot_views.total_views, 0) as total_robot_views,
+    COALESCE(robot_copies.total_copies, 0) as total_robot_copies,
+    -- Activity metrics
+    MAX(r.created_at) as last_robot_created,
+    CASE 
+        WHEN MAX(r.created_at) > NOW() - INTERVAL '7 days' THEN 'active'
+        WHEN MAX(r.created_at) > NOW() - INTERVAL '30 days' THEN 'moderate'
+        ELSE 'inactive'
+    END as activity_level,
+    -- Strategy diversity
+    COUNT(DISTINCT r.strategy_type) as strategy_diversity
+FROM auth.users u
+LEFT JOIN robots r ON u.id = r.user_id AND r.is_active = true
+LEFT JOIN (
+    SELECT 
+        r.user_id,
+        SUM(r.view_count) as total_views
+    FROM robots r
+    WHERE r.is_active = true
+    GROUP BY r.user_id
+) robot_views ON u.id = robot_views.user_id
+LEFT JOIN (
+    SELECT 
+        r.user_id,
+        SUM(r.copy_count) as total_copies
+    FROM robots r
+    WHERE r.is_active = true
+    GROUP BY r.user_id
+) robot_copies ON u.id = robot_copies.user_id
+GROUP BY u.id, u.created_at, robot_views.total_views, robot_copies.total_copies;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_engagement_metrics_user_id ON user_engagement_metrics(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_engagement_metrics_activity ON user_engagement_metrics(activity_level);
+CREATE INDEX IF NOT EXISTS idx_user_engagement_metrics_created ON user_engagement_metrics(user_created_at DESC);
+
+-- Materialized view for strategy performance comparison
+CREATE MATERIALIZED VIEW IF NOT EXISTS strategy_performance_comparison AS
+SELECT 
+    r.strategy_type,
+    -- Popularity metrics
+    COUNT(*) as total_robots,
+    COUNT(DISTINCT r.user_id) as unique_creators,
+    AVG(r.view_count) as avg_views_per_robot,
+    AVG(r.copy_count) as avg_copies_per_robot,
+    -- Engagement metrics
+    SUM(r.view_count) as total_views,
+    SUM(r.copy_count) as total_copies,
+    -- Quality metrics (based on engagement)
+    COUNT(CASE WHEN r.view_count > 50 THEN 1 END) as high_quality_robots,
+    COUNT(CASE WHEN r.copy_count > 10 THEN 1 END) as highly_copied_robots,
+    -- Time metrics
+    AVG(EXTRACT(EPOCH FROM (r.updated_at - r.created_at))/3600) as avg_hours_to_first_update,
+    -- Trends
+    COUNT(CASE WHEN r.created_at > NOW() - INTERVAL '7 days' THEN 1 END) as created_this_week,
+    COUNT(CASE WHEN r.created_at > NOW() - INTERVAL '30 days' THEN 1 END) as created_this_month,
+    -- Performance score
+    (AVG(r.view_count) * 0.6 + AVG(r.copy_count) * 0.4) as performance_score
+FROM robots r
+WHERE 
+    r.is_active = true
+    AND r.created_at > NOW() - INTERVAL '90 days'
+GROUP BY r.strategy_type
+ORDER BY performance_score DESC;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_strategy_performance_strategy ON strategy_performance_comparison(strategy_type);
+CREATE INDEX IF NOT EXISTS idx_strategy_performance_score ON strategy_performance_comparison(performance_score DESC);
+
+-- =====================================================
+-- 11. ADVANCED REFRESH FUNCTIONS
+-- =====================================================
+
+-- Function to refresh popular robots
 CREATE OR REPLACE FUNCTION refresh_popular_robots()
 RETURNS VOID AS $$
 BEGIN
@@ -425,8 +545,292 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Schedule refresh (requires pg_cron extension)
--- SELECT cron.schedule('refresh-popular-robots', '0 * * * *', 'SELECT refresh_popular_robots();');
+-- Function to refresh robot analytics dashboard
+CREATE OR REPLACE FUNCTION refresh_robot_analytics_dashboard()
+RETURNS VOID AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY robot_analytics_dashboard;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to refresh user engagement metrics
+CREATE OR REPLACE FUNCTION refresh_user_engagement_metrics()
+RETURNS VOID AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY user_engagement_metrics;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to refresh strategy performance comparison
+CREATE OR REPLACE FUNCTION refresh_strategy_performance_comparison()
+RETURNS VOID AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY strategy_performance_comparison;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Master function to refresh all materialized views
+CREATE OR REPLACE FUNCTION refresh_all_materialized_views()
+RETURNS TABLE (
+    view_name TEXT,
+    refresh_status TEXT,
+    refresh_time TIMESTAMPTZ
+) AS $$
+DECLARE
+    view_record RECORD;
+    views_to_refresh TEXT[] := ARRAY[
+        'popular_robots',
+        'robot_analytics_dashboard', 
+        'user_engagement_metrics',
+        'strategy_performance_comparison'
+    ];
+BEGIN
+    -- Refresh each view and log the result
+    FOREACH view_name IN ARRAY views_to_refresh
+    LOOP
+        BEGIN
+            EXECUTE 'REFRESH MATERIALIZED VIEW CONCURRENTLY ' || view_name;
+            RETURN QUERY SELECT 
+                view_name as view_name,
+                'success' as refresh_status,
+                NOW() as refresh_time;
+        EXCEPTION WHEN OTHERS THEN
+            RETURN QUERY SELECT 
+                view_name as view_name,
+                'error: ' || SQLERRM as refresh_status,
+                NOW() as refresh_time;
+        END;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =====================================================
+-- 12. ANALYTICS FUNCTIONS USING MATERIALIZED VIEWS
+-- =====================================================
+
+-- Function to get comprehensive robot analytics
+CREATE OR REPLACE FUNCTION get_comprehensive_robot_analytics(
+    days_back INTEGER DEFAULT 30,
+    strategy_filter TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+    total_robots BIGINT,
+    active_creators BIGINT,
+    avg_views_per_robot NUMERIC,
+    avg_copies_per_robot NUMERIC,
+    top_strategy_type TEXT,
+    daily_creation_trend JSONB,
+    engagement_metrics JSONB
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        COALESCE(SUM(rad.robots_created), 0) as total_robots,
+        COALESCE(SUM(rad.unique_creators), 0) as active_creators,
+        COALESCE(AVG(rad.avg_views), 0) as avg_views_per_robot,
+        COALESCE(AVG(rad.avg_copies), 0) as avg_copies_per_robot,
+        (SELECT strategy_type FROM strategy_performance_comparison ORDER BY performance_score DESC LIMIT 1) as top_strategy_type,
+        jsonb_agg(
+            jsonb_build_object(
+                'date', rad.creation_date,
+                'robots_created', rad.robots_created,
+                'total_views', rad.total_views
+            ) ORDER BY rad.creation_date DESC
+        ) as daily_creation_trend,
+        jsonb_build_object(
+            'popular_robots', (SELECT COUNT(*) FROM popular_robots),
+            'avg_engagement_score', (SELECT AVG(popularity_score) FROM popular_robots),
+            'strategy_diversity', (SELECT COUNT(*) FROM strategy_performance_comparison)
+        ) as engagement_metrics
+    FROM robot_analytics_dashboard rad
+    WHERE 
+        rad.creation_date >= NOW() - INTERVAL '1 day' * days_back
+        AND (strategy_filter IS NULL OR rad.strategy_type = strategy_filter);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get user engagement insights
+CREATE OR REPLACE FUNCTION get_user_engagement_insights()
+RETURNS TABLE (
+    total_users BIGINT,
+    active_users BIGINT,
+    moderate_users BIGINT,
+    inactive_users BIGINT,
+    avg_robots_per_user NUMERIC,
+    top_performing_users JSONB,
+    user_retention_rate NUMERIC
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        COUNT(*) as total_users,
+        COUNT(CASE WHEN uem.activity_level = 'active' THEN 1 END) as active_users,
+        COUNT(CASE WHEN uem.activity_level = 'moderate' THEN 1 END) as moderate_users,
+        COUNT(CASE WHEN uem.activity_level = 'inactive' THEN 1 END) as inactive_users,
+        COALESCE(AVG(uem.total_robots_created), 0) as avg_robots_per_user,
+        jsonb_agg(
+            jsonb_build_object(
+                'user_id', uem.user_id,
+                'total_robots', uem.total_robots_created,
+                'total_views', uem.total_robot_views,
+                'strategy_diversity', uem.strategy_diversity
+            ) ORDER BY uem.total_robot_views DESC
+        ) FILTER (WHERE uem.total_robots_created > 0) as top_performing_users,
+        -- Calculate retention as users active in last 30 days / users created more than 30 days ago
+        CASE 
+            WHEN COUNT(CASE WHEN uem.user_created_at < NOW() - INTERVAL '30 days' THEN 1 END) > 0 
+            THEN ROUND(
+                COUNT(CASE WHEN uem.activity_level = 'active' THEN 1 END)::NUMERIC / 
+                COUNT(CASE WHEN uem.user_created_at < NOW() - INTERVAL '30 days' THEN 1 END)::NUMERIC * 100, 2
+            )
+            ELSE 0
+        END as user_retention_rate
+    FROM user_engagement_metrics uem;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get strategy performance insights
+CREATE OR REPLACE FUNCTION get_strategy_performance_insights()
+RETURNS TABLE (
+    strategy_type TEXT,
+    performance_score NUMERIC,
+    total_robots BIGINT,
+    unique_creators BIGINT,
+    engagement_rate NUMERIC,
+    quality_score NUMERIC,
+    trend_indicator TEXT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        spc.strategy_type,
+        spc.performance_score,
+        spc.total_robots,
+        spc.unique_creators,
+        CASE 
+            WHEN spc.total_robots > 0 
+            THEN ROUND((spc.total_views::NUMERIC / spc.total_robots), 2)
+            ELSE 0 
+        END as engagement_rate,
+        CASE 
+            WHEN spc.total_robots > 0 
+            THEN ROUND((spc.high_quality_robots::NUMERIC / spc.total_robots * 100), 2)
+            ELSE 0 
+        END as quality_score,
+        CASE 
+            WHEN spc.created_this_month > spc.created_this_week * 4 THEN 'rising'
+            WHEN spc.created_this_month < spc.created_this_week * 2 THEN 'declining'
+            ELSE 'stable'
+        END as trend_indicator
+    FROM strategy_performance_comparison spc
+    ORDER BY spc.performance_score DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =====================================================
+-- 13. SCHEDULED REFRESH SETUP
+-- =====================================================
+
+-- Create a function to set up scheduled refreshes (requires pg_cron)
+CREATE OR REPLACE FUNCTION setup_scheduled_refreshes()
+RETURNS TEXT AS $$
+DECLARE
+    setup_result TEXT := '';
+BEGIN
+    -- Schedule refresh for popular robots (every hour)
+    setup_result := setup_result || 'Popular robots refresh scheduled: ' || 
+        COALESCE(cron.schedule('refresh-popular-robots', '0 * * * *', 'SELECT refresh_popular_robots();'), 'failed') || E'\n';
+    
+    -- Schedule refresh for robot analytics dashboard (every 6 hours)
+    setup_result := setup_result || 'Analytics dashboard refresh scheduled: ' || 
+        COALESCE(cron.schedule('refresh-analytics-dashboard', '0 */6 * * *', 'SELECT refresh_robot_analytics_dashboard();'), 'failed') || E'\n';
+    
+    -- Schedule refresh for user engagement metrics (daily at 2 AM)
+    setup_result := setup_result || 'User engagement refresh scheduled: ' || 
+        COALESCE(cron.schedule('refresh-user-engagement', '0 2 * * *', 'SELECT refresh_user_engagement_metrics();'), 'failed') || E'\n';
+    
+    -- Schedule refresh for strategy performance (daily at 3 AM)
+    setup_result := setup_result || 'Strategy performance refresh scheduled: ' || 
+        COALESCE(cron.schedule('refresh-strategy-performance', '0 3 * * *', 'SELECT refresh_strategy_performance_comparison();'), 'failed') || E'\n';
+    
+    RETURN setup_result;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =====================================================
+-- 14. PERFORMANCE MONITORING FOR MATERIALIZED VIEWS
+-- =====================================================
+
+-- Table to track materialized view refresh performance
+CREATE TABLE IF NOT EXISTS mv_refresh_log (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    view_name TEXT NOT NULL,
+    refresh_start TIMESTAMPTZ DEFAULT NOW(),
+    refresh_end TIMESTAMPTZ,
+    duration_ms INTEGER,
+    status TEXT NOT NULL, -- 'success', 'error', 'timeout'
+    error_message TEXT,
+    rows_affected INTEGER,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_mv_refresh_log_view_name ON mv_refresh_log(view_name);
+CREATE INDEX IF NOT EXISTS idx_mv_refresh_log_created_at ON mv_refresh_log(created_at DESC);
+
+-- Enhanced refresh function with logging
+CREATE OR REPLACE FUNCTION refresh_mv_with_logging(view_name_param TEXT)
+RETURNS TEXT AS $$
+DECLARE
+    start_time TIMESTAMPTZ := NOW();
+    end_time TIMESTAMPTZ;
+    duration_ms INTEGER;
+    status TEXT := 'success';
+    error_message TEXT := '';
+    rows_before INTEGER;
+    rows_after INTEGER;
+BEGIN
+    -- Get row count before refresh
+    EXECUTE 'SELECT COUNT(*) FROM ' || view_name_param INTO rows_before;
+    
+    -- Attempt refresh
+    BEGIN
+        EXECUTE 'REFRESH MATERIALIZED VIEW CONCURRENTLY ' || view_name_param;
+        end_time := NOW();
+        duration_ms := EXTRACT(MILLISECONDS FROM (end_time - start_time));
+        
+        -- Get row count after refresh
+        EXECUTE 'SELECT COUNT(*) FROM ' || view_name_param INTO rows_after;
+        
+    EXCEPTION WHEN OTHERS THEN
+        status := 'error';
+        error_message := SQLERRM;
+        end_time := NOW();
+        duration_ms := EXTRACT(MILLISECONDS FROM (end_time - start_time));
+    END;
+    
+    -- Log the refresh
+    INSERT INTO mv_refresh_log (
+        view_name,
+        refresh_start,
+        refresh_end,
+        duration_ms,
+        status,
+        error_message,
+        rows_affected
+    ) VALUES (
+        view_name_param,
+        start_time,
+        end_time,
+        duration_ms,
+        status,
+        error_message,
+        COALESCE(rows_after, 0) - COALESCE(rows_before, 0)
+    );
+    
+    RETURN 'Refresh ' || status || ' for ' || view_name_param || 
+           ' (Duration: ' || duration_ms || 'ms, Rows: ' || COALESCE(rows_after, 0) || ')';
+END;
+$$ LANGUAGE plpgsql;
 
 -- =====================================================
 -- USAGE EXAMPLES

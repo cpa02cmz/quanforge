@@ -634,6 +634,504 @@ class SecurityManager {
       blockedRequests,
     };
   }
+
+  // Web Application Firewall (WAF) patterns
+  detectWAFPatterns(request: Request): { isMalicious: boolean; threats: string[]; riskScore: number } {
+    const threats: string[] = [];
+    let riskScore = 0;
+
+    // Get request details
+    const url = request.url;
+    const method = request.method;
+    const userAgent = request.headers.get('user-agent') || '';
+    const referer = request.headers.get('referer') || '';
+    const origin = request.headers.get('origin') || '';
+
+    // Common attack patterns
+    const wafPatterns = [
+      // SQL Injection patterns
+      {
+        name: 'SQL Injection',
+        patterns: [
+          /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b)/gi,
+          /(--|\*\/|\/\*)/g,
+          /(\bOR\b.*=.*\bOR\b)/gi,
+          /(\bAND\b.*=.*\bAND\b)/gi,
+          /('.*'|".*")/g,
+          /waitfor\s+delay/gi,
+          /benchmark\s*\(/gi,
+          /sleep\s*\(/gi,
+          /pg_sleep\s*\(/gi,
+          /dbms_pipe\.receive_message/gi
+        ],
+        riskScore: 80
+      },
+      // XSS patterns
+      {
+        name: 'Cross-Site Scripting',
+        patterns: [
+          /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+          /javascript:/gi,
+          /on\w+\s*=/gi,
+          /<iframe\b[^>]*>/gi,
+          /<object\b[^>]*>/gi,
+          /<embed\b[^>]*>/gi,
+          /vbscript:/gi,
+          /data:text\/html/gi,
+          /expression\(/gi,
+          /@import/gi,
+          /binding:\s*source/gi
+        ],
+        riskScore: 70
+      },
+      // Path Traversal
+      {
+        name: 'Path Traversal',
+        patterns: [
+          /\.\.\//g,
+          /\.\.\\/g,
+          /%2e%2e%2f/gi,
+          /%2e%2e\\/gi,
+          /etc\/passwd/gi,
+          /windows\/system32/gi,
+          /\/proc\//gi,
+          /\/sys\//gi
+        ],
+        riskScore: 75
+      },
+      // Command Injection
+      {
+        name: 'Command Injection',
+        patterns: [
+          /;\s*(rm|del|format|fdisk|mkfs)/gi,
+          /\|\s*(nc|netcat|telnet|wget|curl)/gi,
+          /&&\s*(rm|del|format|shutdown|reboot)/gi,
+          /\$\(/g,
+          /`[^`]*`/g,
+          /\${[^}]*}/g,
+          /eval\s*\(/gi,
+          /exec\s*\(/gi,
+          /system\s*\(/gi
+        ],
+        riskScore: 90
+      },
+      // LDAP Injection
+      {
+        name: 'LDAP Injection',
+        patterns: [
+          /\*\)/g,
+          /\)\(/g,
+          /\*\(/g,
+          /&\(/g,
+          /\|\(/g,
+          /!\(/g,
+          /\/\*/g,
+          /\*\//g
+        ],
+        riskScore: 65
+      },
+      // NoSQL Injection
+      {
+        name: 'NoSQL Injection',
+        patterns: [
+          /\$where/gi,
+          /\$ne/gi,
+          /\$gt/gi,
+          /\$lt/gi,
+          /\$in/gi,
+          /\$nin/gi,
+          /\$regex/gi,
+          /\{.*\$.*\}/gi
+        ],
+        riskScore: 70
+      },
+      // XXE (XML External Entity)
+      {
+        name: 'XXE Attack',
+        patterns: [
+          /<!DOCTYPE/gi,
+          /<!ENTITY/gi,
+          /&[a-zA-Z]+;/g,
+          /<\?xml/gi,
+          /SYSTEM\s+"/gi,
+          /PUBLIC\s+"/gi
+        ],
+        riskScore: 85
+      },
+      // SSRF (Server-Side Request Forgery)
+      {
+        name: 'SSRF Attack',
+        patterns: [
+          /localhost/gi,
+          /127\.0\.0\.1/gi,
+          /0x7f000001/gi,
+          /2130706433/gi,
+          /169\.254\./gi,
+          /192\.168\./gi,
+          /10\./gi,
+          /172\.1[6-9]\./gi,
+          /172\.2[0-9]\./gi,
+          /172\.3[0-1]\./gi,
+          /::1/gi,
+          /metadata/gi
+        ],
+        riskScore: 80
+      },
+      // File Inclusion
+      {
+        name: 'File Inclusion',
+        patterns: [
+          /php:\/\/filter/gi,
+          /php:\/\/input/gi,
+          /data:\/\//gi,
+          /expect:\/\//gi,
+          /file:\/\//gi,
+          /zip:\/\//gi,
+          /phar:\/\//gi,
+          /ssh2\.shell/gi,
+          /ssh2\.exec/gi
+        ],
+        riskScore: 85
+      },
+      // Buffer Overflow
+      {
+        name: 'Buffer Overflow',
+        patterns: [
+          /A{1000,}/g,
+          /%41{100,}/gi,
+          /0x41{100,}/gi,
+          /\x90{100,}/gi,
+          /\x90{50,}\x31\xc0/gi
+        ],
+        riskScore: 75
+      }
+    ];
+
+    // Check URL and parameters
+    const urlToCheck = url + referer + origin;
+    
+    wafPatterns.forEach(threat => {
+      threat.patterns.forEach(pattern => {
+        if (pattern.test(urlToCheck)) {
+          threats.push(threat.name);
+          riskScore += threat.riskScore;
+        }
+      });
+    });
+
+    // Check User-Agent for suspicious patterns
+    const suspiciousUAPatterns = [
+      /sqlmap/gi,
+      /nikto/gi,
+      /nmap/gi,
+      /masscan/gi,
+      /dirb/gi,
+      /gobuster/gi,
+      /wfuzz/gi,
+      /burp/gi,
+      /owasp/gi,
+      /scanner/gi,
+      /bot/gi,
+      /crawler/gi,
+      /spider/gi
+    ];
+
+    suspiciousUAPatterns.forEach(pattern => {
+      if (pattern.test(userAgent)) {
+        threats.push('Suspicious User-Agent');
+        riskScore += 50;
+      }
+    });
+
+    // Check for HTTP method abuse
+    const dangerousMethods = ['TRACE', 'CONNECT', 'TRACK', 'DEBUG'];
+    if (dangerousMethods.includes(method.toUpperCase())) {
+      threats.push('Dangerous HTTP Method');
+      riskScore += 60;
+    }
+
+    // Check for unusual header patterns
+    const headers = Array.from(request.headers.entries());
+    headers.forEach(([key, value]) => {
+      // Check for header injection
+      if (/\r|\n/.test(value)) {
+        threats.push('Header Injection');
+        riskScore += 70;
+      }
+      
+      // Check for suspicious headers
+      const suspiciousHeaders = [
+        /x-forwarded-for/gi,
+        /x-real-ip/gi,
+        /x-originating-ip/gi,
+        /x-remote-ip/gi,
+        /x-remote-addr/gi
+      ];
+      
+      suspiciousHeaders.forEach(pattern => {
+        if (pattern.test(key) && this.isPrivateIP(value)) {
+          threats.push('IP Spoofing Attempt');
+          riskScore += 65;
+        }
+      });
+    });
+
+    // Content-Length abuse
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > this.config.maxPayloadSize) {
+      threats.push('Oversized Payload');
+      riskScore += 40;
+    }
+
+    return {
+      isMalicious: riskScore > 50,
+      threats: [...new Set(threats)], // Remove duplicates
+      riskScore: Math.min(riskScore, 100)
+    };
+  }
+
+  // Check if IP is private/internal
+  private isPrivateIP(ip: string): boolean {
+    const privatePatterns = [
+      /^10\./,
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
+      /^192\.168\./,
+      /^127\./,
+      /^169\.254\./,
+      /^::1$/,
+      /^fc00:/,
+      /^fe80:/
+    ];
+
+    return privatePatterns.some(pattern => pattern.test(ip));
+  }
+
+  // Advanced API key rotation
+  rotateAPIKeys(): { oldKey: string; newKey: string; expiresAt: number } {
+    const oldKey = this.getCurrentAPIKey();
+    const newKey = this.generateSecureAPIKey();
+    const expiresAt = Date.now() + this.config.encryption.keyRotationInterval;
+
+    // Store new key with expiration
+    this.storeAPIKey(newKey, expiresAt);
+
+    return {
+      oldKey,
+      newKey,
+      expiresAt
+    };
+  }
+
+  private getCurrentAPIKey(): string {
+    // Retrieve current API key from secure storage
+    return localStorage.getItem('current_api_key') || '';
+  }
+
+  private generateSecureAPIKey(): string {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  private storeAPIKey(key: string, expiresAt: number): void {
+    localStorage.setItem('current_api_key', key);
+    localStorage.setItem('api_key_expires', expiresAt.toString());
+  }
+
+  // Content Security Policy monitoring
+  monitorCSPViolations(): void {
+    // Listen for CSP violation reports
+    document.addEventListener('securitypolicyviolation', (event) => {
+      const violation = {
+        blockedURI: event.blockedURI,
+        documentURI: event.documentURI,
+        referrer: event.referrer,
+        violatedDirective: event.violatedDirective,
+        effectiveDirective: event.effectiveDirective,
+        originalPolicy: event.originalPolicy,
+        disposition: event.disposition,
+        sourceFile: event.sourceFile,
+        lineNumber: event.lineNumber,
+        columnNumber: event.columnNumber,
+        statusCode: event.statusCode,
+        sample: event.sample,
+        timestamp: Date.now()
+      };
+
+      console.warn('🛡️ CSP Violation detected:', violation);
+      
+      // Store violation for analysis
+      this.storeCSPViolation(violation);
+      
+      // Trigger alert if high severity
+      if (this.isHighSeverityViolation(violation)) {
+        this.triggerSecurityAlert('CSP Violation', violation);
+      }
+    });
+  }
+
+  private storeCSPViolation(violation: any): void {
+    const violations = JSON.parse(localStorage.getItem('csp_violations') || '[]');
+    violations.push(violation);
+    
+    // Keep only last 100 violations
+    if (violations.length > 100) {
+      violations.splice(0, violations.length - 100);
+    }
+    
+    localStorage.setItem('csp_violations', JSON.stringify(violations));
+  }
+
+  private isHighSeverityViolation(violation: any): boolean {
+    const highSeverityDirectives = [
+      'script-src',
+      'object-src',
+      'base-uri',
+      'form-action',
+      'frame-ancestors'
+    ];
+    
+    return highSeverityDirectives.includes(violation.effectiveDirective);
+  }
+
+  private triggerSecurityAlert(type: string, data: any): void {
+    const alert = {
+      type,
+      data,
+      timestamp: Date.now(),
+      severity: 'high',
+      url: window.location.href
+    };
+
+    console.error('🚨 Security Alert:', alert);
+    
+    // In production, send to security monitoring service
+    if (process.env.NODE_ENV === 'production' && this.config.endpoint) {
+      this.sendSecurityAlert(alert);
+    }
+  }
+
+  private async sendSecurityAlert(alert: any): Promise<void> {
+    try {
+      await fetch(`${this.config.endpoint}/security-alerts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Security-Alert': 'true'
+        },
+        body: JSON.stringify(alert)
+      });
+    } catch (error) {
+      console.error('Failed to send security alert:', error);
+    }
+  }
+
+  // Enhanced rate limiting with adaptive thresholds
+  checkAdaptiveRateLimit(identifier: string, userTier: string = 'basic'): { 
+    allowed: boolean; 
+    resetTime?: number; 
+    remainingRequests?: number;
+  } {
+    const now = Date.now();
+    const record = this.rateLimitMap.get(identifier);
+
+    // Adaptive limits based on user tier
+    const tierLimits = {
+      basic: { maxRequests: 100, windowMs: 60000 },
+      premium: { maxRequests: 500, windowMs: 60000 },
+      enterprise: { maxRequests: 2000, windowMs: 60000 }
+    };
+
+    const limits = tierLimits[userTier as keyof typeof tierLimits] || tierLimits.basic;
+
+    if (!record || now > record.resetTime) {
+      // New window
+      this.rateLimitMap.set(identifier, {
+        count: 1,
+        resetTime: now + limits.windowMs,
+      });
+      return { 
+        allowed: true, 
+        remainingRequests: limits.maxRequests - 1 
+      };
+    }
+
+    if (record.count >= limits.maxRequests) {
+      return { 
+        allowed: false, 
+        resetTime: record.resetTime,
+        remainingRequests: 0
+      };
+    }
+
+    record.count++;
+    return { 
+      allowed: true, 
+      remainingRequests: limits.maxRequests - record.count 
+    };
+  }
+
+  // Get comprehensive security statistics
+  getComprehensiveSecurityStats(): {
+    wafStats: {
+      totalRequests: number;
+      blockedRequests: number;
+      topThreats: Array<{ threat: string; count: number }>;
+    };
+    cspStats: {
+      totalViolations: number;
+      highSeverityViolations: number;
+      topViolations: Array<{ directive: string; count: number }>;
+    };
+    rateLimitStats: {
+      activeEntries: number;
+      blockedRequests: number;
+      topBlockedIPs: Array<{ ip: string; count: number }>;
+    };
+  } {
+    // WAF Statistics
+    const wafStats = {
+      totalRequests: parseInt(localStorage.getItem('waf_total_requests') || '0'),
+      blockedRequests: parseInt(localStorage.getItem('waf_blocked_requests') || '0'),
+      topThreats: JSON.parse(localStorage.getItem('waf_top_threats') || '[]')
+    };
+
+    // CSP Statistics
+    const cspViolations = JSON.parse(localStorage.getItem('csp_violations') || '[]');
+    const highSeverityViolations = cspViolations.filter((v: any) => this.isHighSeverityViolation(v));
+    
+    const directiveCounts = cspViolations.reduce((acc: any, violation: any) => {
+      const directive = violation.effectiveDirective;
+      acc[directive] = (acc[directive] || 0) + 1;
+      return acc;
+    }, {});
+
+    const cspStats = {
+      totalViolations: cspViolations.length,
+      highSeverityViolations: highSeverityViolations.length,
+      topViolations: Object.entries(directiveCounts)
+        .map(([directive, count]) => ({ directive, count: count as number }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10)
+    };
+
+    // Rate Limit Statistics
+    const rateLimitEntries = Array.from(this.rateLimitMap.entries());
+    const blockedRequests = rateLimitEntries.reduce((sum, [_, record]) => 
+      sum + Math.max(0, record.count - this.config.rateLimiting.maxRequests), 0);
+
+    const rateLimitStats = {
+      activeEntries: this.rateLimitMap.size,
+      blockedRequests,
+      topBlockedIPs: [] // Would need IP tracking implementation
+    };
+
+    return {
+      wafStats,
+      cspStats,
+      rateLimitStats
+    };
+  }
 }
 
 export const securityManager = SecurityManager.getInstance();
