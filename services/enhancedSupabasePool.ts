@@ -131,7 +131,7 @@ class EnhancedSupabaseConnectionPool {
       lastUsed: Date.now(),
       inUse: false,
       healthy: true,
-      region
+      ...(region && { region })
     };
 
     this.connections.set(id, connection);
@@ -392,7 +392,7 @@ class EnhancedSupabaseConnectionPool {
   }> {
     const connections = Array.from(this.connections.values()).map(conn => ({
       id: conn.id,
-      region: conn.region,
+      ...(conn.region && { region: conn.region }),
       created: conn.created,
       lastUsed: conn.lastUsed,
       inUse: conn.inUse,

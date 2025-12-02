@@ -7,7 +7,7 @@ export interface ErrorContext {
 
 export interface ErrorInfo {
   message: string;
-  stack?: string;
+  stack: string;
   context: ErrorContext;
   timestamp: string;
   userAgent: string;
@@ -61,7 +61,7 @@ export class ErrorHandler {
   public handleError(error: Error | string, context: ErrorContext): void {
     const errorInfo: ErrorInfo = {
       message: typeof error === 'string' ? error : error.message,
-      stack: typeof error === 'string' ? undefined : error.stack,
+      stack: typeof error === 'string' ? '' : (error.stack || ''),
       context,
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
@@ -149,7 +149,11 @@ export class ErrorHandler {
 // Convenience function for global error handling
 export const handleError = (error: Error | string, operation: string, component?: string, additionalData?: Record<string, any>) => {
   const errorHandler = ErrorHandler.getInstance();
-  errorHandler.handleError(error, { operation, component, additionalData });
+  errorHandler.handleError(error, { 
+    operation, 
+    component: component || 'unknown', 
+    ...(additionalData && { additionalData })
+  });
 };
 
 // Higher-order function for wrapping async functions with retry logic
@@ -192,7 +196,7 @@ export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
         lastError = error;
         
         // Log error on each attempt
-        handleError(error as Error, `${operation} (attempt ${attempt + 1}/${retries + 1})`, component, { 
+        handleError(error as Error, `${operation} (attempt ${attempt + 1}/${retries + 1})`, component || 'unknown', { 
           args, 
           attempt: attempt + 1,
           error: error instanceof Error ? error.message : String(error)
@@ -225,7 +229,7 @@ export const useErrorHandler = () => {
 
   return {
     handleError: (error: Error | string, operation: string, component?: string, additionalData?: Record<string, any>) => {
-      errorHandler.handleError(error, { operation, component, additionalData });
+      errorHandler.handleError(error, { operation, component: component || 'unknown', ...(additionalData && { additionalData }) });
     },
     getErrors: () => errorHandler.getErrors(),
     clearErrors: () => errorHandler.clearErrors(),
@@ -419,13 +423,13 @@ export const edgeErrorHandler = {
       // Fallback to client-side processing
       console.warn('Edge error, falling back to client:', error);
       // Implement fallback logic
-      handleError(error, `${context.operation} (edge fallback)`, context.component, {
+      handleError(error, `${context.operation} (edge fallback)`, context.component || 'unknown', {
         ...context.additionalData,
         edgeError: true,
         fallbackTriggered: true
       });
     } else {
-      handleError(error, context.operation, context.component, context.additionalData);
+      handleError(error, context.operation, context.component || 'unknown', context.additionalData);
     }
   }
 };

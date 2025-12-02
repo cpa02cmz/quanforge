@@ -1,5 +1,5 @@
 // Optimized validation service with modular architecture for better tree shaking
-export { ValidationError } from './validationTypes';
+export type { ValidationError, ValidationResult } from './validationTypes';
 export { 
   validateRequired, 
   validateRange, 
@@ -21,6 +21,16 @@ export {
 import { validateStrategyParams as _validateStrategyParams } from './strategyValidation';
 import { validateChatMessage as _validateChatMessage, sanitizeInput as _sanitizeInput } from './inputValidation';
 import { isValid as _isValid, formatErrors as _formatErrors } from './validationHelpers';
+import type { ValidationResult } from './validationTypes';
+import type { StrategyParams, CustomInput, Message } from '../types';
+
+// Missing interfaces for backward compatibility
+interface AISettings {
+  provider: string;
+  apiKey: string;
+  modelName: string;
+  baseUrl?: string;
+}
 
 export class ValidationService {
   static validateStrategyParams = _validateStrategyParams;
@@ -28,6 +38,7 @@ export class ValidationService {
   static sanitizeInput = _sanitizeInput;
   static isValid = _isValid;
   static formatErrors = _formatErrors;
+  
   // Robot validation
   static validateRobot(data: any): ValidationResult {
     const errors: string[] = [];
@@ -52,8 +63,7 @@ export class ValidationService {
     // Validate strategy parameters if present
     if (data.strategy_params) {
       const strategyValidation = this.validateStrategyParams(data.strategy_params);
-      errors.push(...strategyValidation.errors);
-      warnings.push(...strategyValidation.warnings);
+      errors.push(...strategyValidation.map(e => e.message));
     }
 
     // MQL5 code validation
@@ -70,8 +80,8 @@ export class ValidationService {
     };
   }
 
-  // Strategy parameters validation
-  static validateStrategyParams(params: StrategyParams): ValidationResult {
+  // Strategy parameters validation (using imported function)
+  static validateStrategyParamsWrapper(params: StrategyParams): ValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -288,14 +298,32 @@ export class ValidationService {
     };
   }
 
-  // URL validation helper
-  private static isValidUrl(url: string): boolean {
+// URL validation helper
+  static isValidUrl(url: string): boolean {
     try {
       new URL(url);
       return true;
     } catch {
       return false;
     }
+  }
+
+  // Batch validation for multiple items
+  static validateBatch<T>(items: T[], validator: (item: T) => ValidationResult): ValidationResult {
+    const allErrors: string[] = [];
+    const allWarnings: string[] = [];
+
+    items.forEach((item, index) => {
+      const result = validator(item);
+      result.errors.forEach(error => allErrors.push(`Item ${index + 1}: ${error}`));
+      result.warnings.forEach(warning => allWarnings.push(`Item ${index + 1}: ${warning}`));
+    });
+
+    return {
+      isValid: allErrors.length === 0,
+      errors: allErrors,
+      warnings: allWarnings
+    };
   }
 
   // Sanitization helpers
@@ -317,23 +345,5 @@ export class ValidationService {
       .replace(/exec\s*\(/gi, '/* exec removed */(')
       .replace(/shell\s*\(/gi, '/* shell removed */(')
       .replace(/eval\s*\(/gi, '/* eval removed */(');
-  }
-
-  // Batch validation for multiple items
-  static validateBatch<T>(items: T[], validator: (item: T) => ValidationResult): ValidationResult {
-    const allErrors: string[] = [];
-    const allWarnings: string[] = [];
-
-    items.forEach((item, index) => {
-      const result = validator(item);
-      result.errors.forEach(error => allErrors.push(`Item ${index + 1}: ${error}`));
-      result.warnings.forEach(warning => allWarnings.push(`Item ${index + 1}: ${warning}`));
-    });
-
-    return {
-      isValid: allErrors.length === 0,
-      errors: allErrors,
-      warnings: allWarnings
-    };
   }
 }

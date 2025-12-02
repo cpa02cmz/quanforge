@@ -5,8 +5,8 @@ interface PerformanceMetrics {
   startTime: number;
   endTime: number;
   duration: number;
-  memoryUsage?: number;
-  metadata?: Record<string, any>;
+  memoryUsage: number;
+  metadata: Record<string, any>;
 }
 
 interface PerformanceReport {
@@ -37,8 +37,8 @@ class PerformanceMonitor {
         startTime,
         endTime,
         duration,
-        memoryUsage,
-        metadata
+        memoryUsage: memoryUsage || 0,
+        metadata: metadata || {}
       };
 
       this.addMetric(metric);
@@ -68,11 +68,11 @@ class PerformanceMonitor {
     }
   }
 
-  private getMemoryUsage(): number | undefined {
+  private getMemoryUsage(): number {
     if (typeof performance !== 'undefined' && (performance as any).memory) {
-      return (performance as any).memory.usedJSHeapSize;
+      return (performance as any).memory.usedJSHeapSize || 0;
     }
-    return undefined;
+    return 0;
   }
 
   getPerformanceReport(): PerformanceReport {
@@ -126,7 +126,7 @@ class PerformanceMonitor {
     console.log(`🚀 Fastest Operation: ${report.fastestOperation.operation} (${report.fastestOperation.duration.toFixed(2)}ms)`);
     
     if (report.memoryTrend.length > 0) {
-      const currentMemory = report.memoryTrend[report.memoryTrend.length - 1];
+      const currentMemory = report.memoryTrend[report.memoryTrend.length - 1] || 0;
       const memoryMB = (currentMemory / 1024 / 1024).toFixed(2);
       console.log(`💾 Current Memory Usage: ${memoryMB} MB`);
     }
@@ -147,7 +147,7 @@ class PerformanceMonitor {
 
     // Log memory warnings
     if (report.memoryTrend.length > 0) {
-      const currentMemory = report.memoryTrend[report.memoryTrend.length - 1];
+      const currentMemory = report.memoryTrend[report.memoryTrend.length - 1] || 0;
       if (currentMemory > 50 * 1024 * 1024) { // 50MB
         console.warn(`⚠️  High memory usage: ${(currentMemory / 1024 / 1024).toFixed(2)} MB`);
       }
@@ -246,7 +246,7 @@ class PerformanceMonitor {
     
     // Deduct points for memory usage
     if (report.memoryTrend.length > 0) {
-      const currentMemory = report.memoryTrend[report.memoryTrend.length - 1];
+      const currentMemory = report.memoryTrend[report.memoryTrend.length - 1] || 0;
       if (currentMemory > 30 * 1024 * 1024) { // 30MB
         score -= Math.min(20, (currentMemory - 30 * 1024 * 1024) / (1024 * 1024));
       }

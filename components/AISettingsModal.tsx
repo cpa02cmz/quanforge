@@ -90,14 +90,14 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, o
         onClose();
     };
 
-    const handleReset = () => {
-        if (window.confirm("Reset to defaults?")) {
-            const defaults = settingsManager.resetSettings();
-            setSettings(defaults);
-            setActivePreset('google');
-            showToast('Settings reset to default', 'info');
-        }
-    };
+    // const handleReset = () => {
+    //     if (window.confirm("Reset to defaults?")) {
+    //         const defaults = settingsManager.resetSettings();
+    //         setSettings(defaults);
+    //         setActivePreset('google');
+    //         showToast('Settings reset to default', 'info');
+    //     }
+    // };
 
     const handleTestConnection = async () => {
         if (!settings.apiKey && !settings.baseUrl?.includes('localhost')) {
@@ -171,7 +171,7 @@ return (
                                     {t('settings_provider')}
                                 </label>
                                 <div className="grid grid-cols-3 gap-2">
-                                    {Object.entries(PROVIDER_PRESETS).map(([key, preset]) => (
+                                    {Object.entries(PROVIDER_PRESETS).map(([key]) => (
                                         <button
                                             key={key}
                                             type="button"
