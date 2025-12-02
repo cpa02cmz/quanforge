@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, memo, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import { StrategyParams, CustomInput } from '../types';
 import { TIMEFRAMES } from '../constants';
 import { MarketTicker } from './MarketTicker';
@@ -31,7 +32,17 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
       }
   }, []);
 
-const handleChange = useCallback((field: keyof StrategyParams, value: any) => {
+const sanitizeInput = (input: string): string => {
+    return DOMPurify.sanitize(input, {
+      ALLOWED_TAGS: [],
+      ALLOWED_ATTR: []
+    });
+  };
+
+  const handleChange = useCallback((field: keyof StrategyParams, value: any) => {
+     if (typeof value === 'string') {
+       value = sanitizeInput(value);
+     }
      onChange({ ...params, [field]: value });
    }, [params, onChange]);
 

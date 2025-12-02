@@ -29,7 +29,7 @@ export interface Message {
   role: MessageRole;
   content: string;
   timestamp: number;
-  thinking?: string; // Captures the <think> process from reasoning models
+  thinking?: string | null; // Captures the reasoning process from reasoning models
 }
 
 export interface CustomInput {
@@ -118,3 +118,52 @@ export interface WikiSection {
   icon: string;
   articles: WikiArticle[];
 }
+
+// Type guards for runtime type checking
+export const isMessage = (obj: unknown): obj is Message => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'id' in obj &&
+    'role' in obj &&
+    'content' in obj &&
+    'timestamp' in obj &&
+    typeof obj.id === 'string' &&
+    Object.values(MessageRole).includes(obj.role as MessageRole) &&
+    typeof obj.content === 'string' &&
+    typeof obj.timestamp === 'number'
+  );
+};
+
+export const isRobot = (obj: unknown): obj is Robot => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'id' in obj &&
+    'user_id' in obj &&
+    'name' in obj &&
+    'description' in obj &&
+    'code' in obj &&
+    'strategy_type' in obj &&
+    'created_at' in obj &&
+    'updated_at' in obj &&
+    typeof obj.id === 'string' &&
+    typeof obj.user_id === 'string' &&
+    typeof obj.name === 'string' &&
+    typeof obj.description === 'string' &&
+    typeof obj.code === 'string' &&
+    ['Trend', 'Scalping', 'Grid', 'Martingale', 'Custom'].includes(obj.strategy_type as string) &&
+    typeof obj.created_at === 'string' &&
+    typeof obj.updated_at === 'string'
+  );
+};
+
+export const isUser = (obj: unknown): obj is User => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'id' in obj &&
+    typeof obj.id === 'string' &&
+    ('email' in obj ? typeof obj.email === 'string' : true)
+  );
+};

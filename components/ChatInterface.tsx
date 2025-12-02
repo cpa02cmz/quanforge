@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import { Message, MessageRole } from '../types';
 import { loadSuggestedStrategies } from '../constants';
 import { useTranslation } from '../services/i18n';
@@ -72,10 +73,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     scrollToBottom();
   }, [messages, isLoading]);
 
+  const sanitizeInput = (input: string): string => {
+    return DOMPurify.sanitize(input, {
+      ALLOWED_TAGS: [],
+      ALLOWED_ATTR: []
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
-    onSendMessage(input);
+    const sanitizedInput = sanitizeInput(input);
+    onSendMessage(sanitizedInput);
     setInput('');
   };
 
@@ -91,6 +100,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+      if (!line) continue;
+      
       // Handle Lists
       if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
         const listContent = line.trim().substring(2);
