@@ -401,7 +401,7 @@ const payload = {
             ...(jsonMode ? { response_format: { type: "json_object" } } : {})
         };
 
-        const requestInit: RequestInit = {
+        const requestInit: import('node-fetch').RequestInit = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

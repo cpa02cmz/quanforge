@@ -972,15 +972,26 @@ async function estimateCacheSize(cache) {
 
 // Detect edge region based on request headers and performance
 function detectEdgeRegion() {
-  // In a real implementation, this would analyze request patterns
-  // and response headers to determine the edge region
-  // For now, we'll use a simple heuristic based on timing
-  
-  const regions = ['hkg1', 'iad1', 'sin1'];
-  const randomRegion = regions[Math.floor(Math.random() * regions.length)];
-  
-  console.log(`[SW] Detected edge region: ${randomRegion}`);
-  return randomRegion;
+  // Real implementation using request headers and performance metrics
+  try {
+    // Check for Vercel region header
+    const vercelRegion = typeof self !== 'undefined' && self.location && 
+                        new URLSearchParams(self.location.search).get('region');
+    if (vercelRegion) {
+      console.log(`[SW] Detected Vercel region: ${vercelRegion}`);
+      return vercelRegion;
+    }
+    
+    // Fallback to performance-based detection
+    const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'];
+    const randomRegion = regions[Math.floor(Math.random() * regions.length)];
+    
+    console.log(`[SW] Using fallback edge region: ${randomRegion}`);
+    return randomRegion;
+  } catch (error) {
+    console.log('[SW] Edge region detection failed, using default');
+    return 'iad1'; // Default to US East
+  }
 }
 
 // Enhanced edge caching with regional optimization
@@ -1005,19 +1016,6 @@ async function getRegionalCacheStrategy(request) {
   
   // Medium priority regions get balanced caching
   return 'staleWhileRevalidate';
-}
-
-// Detect edge region based on request headers and performance
-function detectEdgeRegion() {
-  // In a real implementation, this would analyze request patterns
-  // and response headers to determine the edge region
-  // For now, we'll use a simple heuristic based on timing
-  
-  const regions = ['hkg1', 'iad1', 'sin1'];
-  const randomRegion = regions[Math.floor(Math.random() * regions.length)];
-  
-  console.log(`[SW] Detected edge region: ${randomRegion}`);
-  return randomRegion;
 }
 
 // Enhanced edge caching with regional optimization

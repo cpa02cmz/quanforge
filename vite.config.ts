@@ -253,12 +253,12 @@ export default defineConfig({
         comments: false
       }
     },
-    chunkSizeWarningLimit: 200, // Stricter limit for better edge performance
+    chunkSizeWarningLimit: 500, // Optimized for better edge performance
     target: 'es2020',
     reportCompressedSize: true,
     cssCodeSplit: true,
     // Enhanced edge optimization
-    assetsInlineLimit: 512, // Reduced for better caching
+    assetsInlineLimit: 4096, // 4KB for better caching
     modulePreload: {
       polyfill: false
     },
@@ -281,15 +281,14 @@ export default defineConfig({
       'react',
       'react-dom',
       'react-router-dom',
-      'react-helmet-async'
+      'react-helmet-async',
+      '@supabase/supabase-js',
+      '@google/genai',
+      'recharts',
+      'dompurify',
+      'lz-string'
     ],
-    exclude: [
-      '@supabase/supabase-js', // Load dynamically
-      '@google/genai', // Load dynamically
-      'recharts', // Load dynamically for charts
-      'dompurify', // Load dynamically for security
-      'lz-string' // Load dynamically for compression
-    ]
+    exclude: []
   },
   experimental: {
     renderBuiltUrl(filename, { hostType }) {

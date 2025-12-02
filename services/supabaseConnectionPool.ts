@@ -303,7 +303,7 @@ class SupabaseConnectionPool {
       try {
         const startTime = Date.now();
         const isHealthy = await this.testConnection(client);
-        Date.now() - startTime; // responseTime calculated but not used
+        const responseTimeMeasured = Date.now() - startTime;
         
         const currentHealth = this.healthStatus.get(connectionId) || {
           isHealthy: false,
@@ -315,7 +315,7 @@ class SupabaseConnectionPool {
         this.healthStatus.set(connectionId, {
           isHealthy,
           lastCheck: Date.now(),
-          responseTime,
+          responseTime: responseTimeMeasured,
           errorCount: isHealthy ? 0 : currentHealth.errorCount + 1,
         });
 
