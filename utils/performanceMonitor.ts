@@ -172,27 +172,61 @@ class PerformanceMonitor {
     return JSON.stringify(this.getPerformanceReport(), null, 2);
   }
 
-   // Web performance API integration
-   getWebVitals(): any {
-     if (typeof performance !== 'undefined' && 'getEntriesByType' in performance) {
-       // Use any type to avoid strict typing issues with performance entries
-       const performanceAPI: any = performance;
-       const navigationEntries = performanceAPI.getEntriesByType?.('navigation') || [];
-       const paintEntries = performanceAPI.getEntriesByType?.('paint') || [];
-       const resourceEntries = performanceAPI.getEntriesByType?.('resource') || [];
-       
-       return {
-         navigation: navigationEntries.length > 0 ? navigationEntries[0] : null,
-         paint: {
-           firstPaint: Array.isArray(paintEntries) ? paintEntries.find((entry: any) => entry.name === 'first-paint') : null,
-           firstContentfulPaint: Array.isArray(paintEntries) ? paintEntries.find((entry: any) => entry.name === 'first-contentful-paint') : null,
-         },
-         resourcesCount: resourceEntries.length,
-         domContentLoaded: typeof document !== 'undefined' && (document.readyState === 'interactive' || document.readyState === 'complete')
-       };
-     }
-     return null;
-   }
+// Web performance API integration
+    getWebVitals(): any {
+      if (typeof performance !== 'undefined' && 'getEntriesByType' in performance) {
+        // Use any type to avoid strict typing issues with performance entries
+        const performanceAPI: any = performance;
+        const navigationEntries = performanceAPI.getEntriesByType?.('navigation') || [];
+        const paintEntries = performanceAPI.getEntriesByType?.('paint') || [];
+        const resourceEntries = performanceAPI.getEntriesByType?.('resource') || [];
+        
+        // Calculate Core Web Vitals
+        let lcpValue = 0;
+        let clsValue = 0;
+        let fidValue = 0;
+        
+        // LCP (Largest Contentful Paint)
+        const lcpEntries = performanceAPI.getEntriesByType?.('largest-contentful-paint') || [];
+        if (lcpEntries.length > 0) {
+          const lcpEntry = lcpEntries[lcpEntries.length - 1];
+          lcpValue = lcpEntry.startTime;
+        }
+        
+        // Calculate CLS (Cumulative Layout Shift)
+        const layoutShiftEntries = performanceAPI.getEntriesByType?.('layout-shift') || [];
+        let clsSessionWindow = 0;
+        for (const entry of layoutShiftEntries) {
+          if (!entry.hadRecentInput) {
+            clsSessionWindow += entry.value;
+          }
+        }
+        clsValue = clsSessionWindow;
+        
+        // Calculate FID (First Input Delay) - only available after user interaction
+        const fidEntries = performanceAPI.getEntriesByType?.('first-input') || [];
+        if (fidEntries.length > 0) {
+          const fidEntry = fidEntries[0];
+          fidValue = fidEntry.processingStart - fidEntry.startTime;
+        }
+        
+        return {
+          navigation: navigationEntries.length > 0 ? navigationEntries[0] : null,
+          paint: {
+            firstPaint: Array.isArray(paintEntries) ? paintEntries.find((entry: any) => entry.name === 'first-paint') : null,
+            firstContentfulPaint: Array.isArray(paintEntries) ? paintEntries.find((entry: any) => entry.name === 'first-contentful-paint') : null,
+          },
+          coreWebVitals: {
+            lcp: lcpValue,
+            cls: clsValue,
+            fid: fidValue,
+          },
+          resourcesCount: resourceEntries.length,
+          domContentLoaded: typeof document !== 'undefined' && (document.readyState === 'interactive' || document.readyState === 'complete')
+        };
+      }
+      return null;
+    }
 
    // Get performance score (0-100)
    getPerformanceScore(): number {

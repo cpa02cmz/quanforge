@@ -53,87 +53,113 @@ class DatabaseOptimizer {
     }
   }
 
-  /**
-   * Optimized robot search with full-text search capabilities
-   */
-  async searchRobotsOptimized(
-    client: SupabaseClient,
-    searchTerm: string,
-    options: {
-      userId?: string;
-      strategyType?: string;
-      limit?: number;
-      offset?: number;
-      sortBy?: 'created_at' | 'updated_at' | 'name' | 'view_count';
-      sortOrder?: 'asc' | 'desc';
-    } = {}
-  ): Promise<{ data: Robot[] | null; error: any; metrics: OptimizationMetrics }> {
-    const startTime = performance.now();
-    
-    // Validate inputs for security
-    const validation = securityManager.sanitizeAndValidate(
-      { searchTerm, ...options },
-      'robot'
-    );
-    
-    if (!validation.isValid) {
-      return { 
-        data: null, 
-        error: new Error(`Validation failed: ${validation.errors.join(', ')}`),
-        metrics: this.metrics 
-      };
-    }
-    
-    const sanitizedTerm = validation.sanitizedData.searchTerm || '';
-    const sanitizedOptions = validation.sanitizedData;
-    
-    try {
-      // Use the existing queryOptimizer for optimized search
-      const result = await queryOptimizer.searchRobotsOptimized(
-        client,
-        sanitizedTerm,
-        {
-          strategyType: sanitizedOptions.strategyType,
-          userId: sanitizedOptions.userId,
-          dateRange: undefined, // Add date range if needed
-        }
-      );
-      
-      const executionTime = performance.now() - startTime;
-      
-      // Record optimization metrics
-      this.recordOptimization(
-        'searchRobotsOptimized',
-        executionTime,
-        Array.isArray(result.data) ? result.data.length : 0,
-        result.metrics.cacheHit
-      );
-      
-      // Update metrics
-      this.metrics.totalOptimizedQueries++;
-      this.metrics.queryResponseTime = executionTime;
-      
-      return { 
-        data: result.data, 
-        error: result.error, 
-        metrics: this.metrics 
-      };
-    } catch (error) {
-      const executionTime = performance.now() - startTime;
-      this.recordOptimization(
-        'searchRobotsOptimized',
-        executionTime,
-        0,
-        false
-      );
-      
-      return { 
-        data: null, 
-        error, 
-        metrics: this.metrics 
-      };
-    }
-  }
+/**
+    * Optimized robot search with full-text search capabilities
+    */
+   async searchRobotsOptimized(
+     client: SupabaseClient,
+     searchTerm: string,
+     options: {
+       userId?: string;
+       strategyType?: string;
+       limit?: number;
+       offset?: number;
+       sortBy?: 'created_at' | 'updated_at' | 'name' | 'view_count';
+       sortOrder?: 'asc' | 'desc';
+     } = {}
+   ): Promise<{ data: Robot[] | null; error: any; metrics: OptimizationMetrics }> {
+     const startTime = performance.now();
+     
+     // Validate inputs for security
+     const validation = securityManager.sanitizeAndValidate(
+       { searchTerm, ...options },
+       'robot'
+     );
+     
+     if (!validation.isValid) {
+       return { 
+         data: null, 
+         error: new Error(`Validation failed: ${validation.errors.join(', ')}`),
+         metrics: this.metrics 
+       };
+     }
+     
+     const sanitizedTerm = validation.sanitizedData.searchTerm || '';
+     const sanitizedOptions = validation.sanitizedData;
+     
+     // Create cache key for this specific search
+     const cacheKey = `search_${sanitizedTerm}_${sanitizedOptions.userId || 'all'}_${sanitizedOptions.strategyType || 'all'}_${sanitizedOptions.limit || 20}`;
+     
+     // Try cache first if enabled
+     if (this.config.enableQueryCaching) {
+       const cached = robotCache.get<any>(cacheKey);
+       if (cached) {
+         const executionTime = performance.now() - startTime;
+         this.recordOptimization('searchRobotsOptimized', executionTime, cached.data.length, true);
+         return { 
+           data: cached.data, 
+           error: null, 
+           metrics: this.metrics 
+         };
+       }
+     }
+     
+     try {
+       // Use the existing queryOptimizer for optimized search
+       const result = await queryOptimizer.searchRobotsOptimized(
+         client,
+         sanitizedTerm,
+         {
+           strategyType: sanitizedOptions.strategyType,
+           userId: sanitizedOptions.userId,
+           dateRange: undefined, // Add date range if needed
+         }
+       );
+       
+       const executionTime = performance.now() - startTime;
+       
+       // Cache result if successful and caching is enabled
+       if (!result.error && result.data && this.config.enableQueryCaching) {
+         robotCache.set(cacheKey, { data: result.data }, {
+           ttl: 300000, // 5 minutes
+           tags: ['robots', 'search'],
+           priority: 'normal'
+         });
+       }
+       
+       // Record optimization metrics
+       this.recordOptimization(
+         'searchRobotsOptimized',
+         executionTime,
+         Array.isArray(result.data) ? result.data.length : 0,
+         result.metrics.cacheHit
+       );
+       
+       // Update metrics
+       this.metrics.totalOptimizedQueries++;
+       this.metrics.queryResponseTime = executionTime;
+       
+       return { 
+         data: result.data, 
+         error: result.error, 
+         metrics: this.metrics 
+       };
+     } catch (error) {
+       const executionTime = performance.now() - startTime;
+       this.recordOptimization(
+         'searchRobotsOptimized',
+         executionTime,
+         0,
+         false
+       );
+       
+       return { 
+         data: null, 
+         error, 
+         metrics: this.metrics 
+       };
+     }
+   }
 
   /**
    * Batch insert operation with optimization

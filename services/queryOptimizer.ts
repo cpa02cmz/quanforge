@@ -32,10 +32,18 @@ class QueryOptimizer {
     }
   }
 
-  // Generate query hash for caching
-  private generateQueryHash(optimization: QueryOptimization): string {
-    return btoa(JSON.stringify(optimization)).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
-  }
+// Generate query hash for caching - improved with proper hash function
+   private generateQueryHash(optimization: QueryOptimization): string {
+     // Create a more robust hash to avoid collisions
+     const str = JSON.stringify(optimization);
+     let hash = 0;
+     for (let i = 0; i < str.length; i++) {
+       const char = str.charCodeAt(i);
+       hash = ((hash << 5) - hash) + char;
+       hash = hash & hash; // Convert to 32bit integer
+     }
+     return Math.abs(hash).toString(36).substring(0, 16);
+   }
 
   // Check and maintain cache size limits
   private maintainCacheSize(newEntrySize: number): void {

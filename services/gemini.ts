@@ -118,10 +118,10 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
 }
 
 // Enhanced token budgeting with incremental history management
-class TokenBudgetManager {
-    private static readonly MAX_CONTEXT_CHARS = 80000;
-    private static readonly TOKEN_RATIO = 4; // 1 token ~= 4 characters
-    private static readonly MIN_HISTORY_CHARS = 1000; // Keep minimum history for context
+ class TokenBudgetManager {
+     private static readonly MAX_CONTEXT_CHARS = 100000; // Increased to handle more complex requests
+     private static readonly TOKEN_RATIO = 4; // 1 token ~= 4 characters
+     private static readonly MIN_HISTORY_CHARS = 1000; // Keep minimum history for context
     
     // Cache for frequently used context parts
     private contextCache = new Map<string, { content: string, length: number, timestamp: number }>();

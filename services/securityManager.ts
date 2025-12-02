@@ -412,21 +412,46 @@ class SecurityManager {
         }
       }
 
-      // Check for obfuscated code patterns
-      const obfuscatedPatterns = [
-        /[^a-zA-Z0-9\s\(\)\[\]\{\}\.\,\;\:\+\-\*\/\=\>\<\!\&\|\^\~\%]+/g, // Non-alphanumeric characters
-        /0x[0-9a-fA-F]+/g, // Hex numbers
-        /\\u[0-9a-fA-F]{4}/g, // Unicode escapes
-        /\\x[0-9a-fA-F]{2}/g, // Hex escapes
-      ];
-      
-      for (const pattern of obfuscatedPatterns) {
-        const matches = sanitizedCode.match(pattern);
-        if (matches && matches.length > 5) { // Allow some legitimate uses
-          errors.push('Code contains potentially obfuscated content');
-          break;
-        }
-      }
+// Check for obfuscated code patterns
+       const obfuscatedPatterns = [
+         /[^a-zA-Z0-9\s\(\)\[\]\{\}\.\,\;\:\+\-\*\/\=\>\<\!\&\|\^\~\%]+/g, // Non-alphanumeric characters
+         /0x[0-9a-fA-F]+/g, // Hex numbers
+         /\\u[0-9a-fA-F]{4}/g, // Unicode escapes
+         /\\x[0-9a-fA-F]{2}/g, // Hex escapes
+         /\+\s*\+\s*\+\s*\+\s*\+/g, // Multiple consecutive operators (obfuscation pattern)
+         /String\.Concatenate|\.concat/gi, // String concatenation for obfuscation
+       ];
+       
+       for (const pattern of obfuscatedPatterns) {
+         const matches = sanitizedCode.match(pattern);
+         if (matches && matches.length > 5) { // Allow some legitimate uses
+           errors.push('Code contains potentially obfuscated content');
+           break;
+         }
+       }
+       
+       // Additional MQL5-specific validations
+       const mql5SecurityChecks = [
+         // Check for potential DLL imports that could be dangerous
+         { pattern: /#import\s+["']([^"']+\.(dll|exe|sys))["']/gi, message: 'Potential unsafe DLL import detected' },
+         // Check for file operations that could be dangerous
+         { pattern: /FileOpenHandle|FileWrite|FileRead|FileDelete|FileMove|FileCopy/gi, message: 'Potential file operation detected' },
+         // Check for registry operations
+         { pattern: /RegOpenKey|RegSetValue|RegGetValue/gi, message: 'Potential registry operation detected' },
+         // Check for process creation
+         { pattern: /ShellExecute|WinExec|CreateProcess/gi, message: 'Potential process creation detected' },
+         // Check for network operations
+         { pattern: /SocketCreate|SocketConnect|WebRequest/gi, message: 'Potential network operation detected' },
+         // Check for self-modifying code patterns
+         { pattern: /WriteString|WriteInteger|WriteDouble/gi, message: 'Potential self-modifying code detected' },
+       ];
+       
+       for (const check of mql5SecurityChecks) {
+         if (check.pattern.test(sanitizedCode)) {
+           errors.push(check.message);
+           sanitizedCode = sanitizedCode.replace(check.pattern, `// SECURITY_BLOCKED: ${check.message}`);
+         }
+       }
 
       return {
         isValid: errors.length === 0,
@@ -568,20 +593,30 @@ class SecurityManager {
     return this.config.allowedOrigins.includes(origin);
   }
 
-   // Validate API key format
-   validateAPIKey(key: string): boolean {
-     if (!key) return false;
-     
-     // Basic format validation for common API key patterns
-     const patterns = [
-       /^[a-zA-Z0-9_-]{20,}$/,  // Generic API key format
-       /^sk-[a-zA-Z0-9_-]{20,}$/,  // OpenAI-style
-       /^AI[0-9a-zA-Z]{20,}$/,  // Google-style
-       /^[\w-]{20,40}$/,  // General API key format
-     ];
-     
-     return patterns.some(pattern => pattern.test(key));
-   }
+// Validate API key format
+    validateAPIKey(key: string): boolean {
+      if (!key) return false;
+      
+      // Basic format validation for common API key patterns
+      const patterns = [
+        /^[a-zA-Z0-9_-]{20,}$/,  // Generic API key format
+        /^sk-[a-zA-Z0-9_-]{20,}$/,  // OpenAI-style
+        /^AI[0-9a-zA-Z]{20,}$/,  // Google-style
+        /^[\w-]{20,40}$/,  // General API key format
+        /^[\w]{32,64}$/,  // Common API key lengths
+        /^[\w]{20,}$/, // General format
+      ];
+      
+      const isValid = patterns.some(pattern => pattern.test(key));
+      
+      if (!isValid) return false;
+      
+      // Additional checks for common placeholder patterns
+      const lowerKey = key.toLowerCase();
+      const placeholders = ['your-', 'api-', 'key-', 'test', 'demo', 'sample', '123', 'xxx'];
+      
+      return !placeholders.some(placeholder => lowerKey.includes(placeholder));
+    }
    
    // Get security metrics
    getSecurityMetrics(): {

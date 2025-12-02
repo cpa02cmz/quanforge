@@ -134,29 +134,49 @@ const stopGeneration = () => {
     }
 };
 
-  // Handle Logic: Load existing robot OR Reset for new robot
-  useEffect(() => {
-    if (id) {
-        dispatch({ type: 'SET_LOADING', payload: true });
-        mockDb.getRobots().then(({ data }) => {
-            const found = data.find((r: Robot) => r.id === id);
-            if (found) {
-                dispatch({ type: 'LOAD_ROBOT', payload: found });
-                
-                if (!found.analysis_result && found.code) {
-                    analyzeStrategy(found.code).then(analysis => 
-                        dispatch({ type: 'SET_ANALYSIS', payload: analysis })
-                    );
-                }
-            } else {
-                showToast("Robot not found", "error");
-                navigate('/generator'); // Redirect to new if not found
-            }
-        }).finally(() => dispatch({ type: 'SET_LOADING', payload: false }));
-    } else {
-        resetState();
-    }
-  }, [id, resetState, navigate, showToast]);
+// Handle Logic: Load existing robot OR Reset for new robot
+   useEffect(() => {
+     if (id) {
+         dispatch({ type: 'SET_LOADING', payload: true });
+         // Use AbortController for request cancellation
+         const controller = new AbortController();
+         
+         mockDb.getRobots().then(({ data }) => {
+             if (controller.signal.aborted) return;
+             const found = data.find((r: Robot) => r.id === id);
+             if (found) {
+                 dispatch({ type: 'LOAD_ROBOT', payload: found });
+                 
+                 if (!found.analysis_result && found.code) {
+                     analyzeStrategy(found.code).then(analysis => {
+                         if (!controller.signal.aborted) {
+                             dispatch({ type: 'SET_ANALYSIS', payload: analysis });
+                         }
+                     });
+                 }
+             } else {
+                 showToast("Robot not found", "error");
+                 navigate('/generator'); // Redirect to new if not found
+             }
+         }).catch(error => {
+             if (!controller.signal.aborted) {
+                 console.error('Error loading robot:', error);
+                 showToast("Error loading robot", "error");
+             }
+         }).finally(() => {
+             if (!controller.signal.aborted) {
+                 dispatch({ type: 'SET_LOADING', payload: false });
+             }
+         });
+         
+         return () => {
+             controller.abort();
+         };
+     } else {
+         resetState();
+         return () => {}; // Return empty function to fix the issue
+     }
+   }, [id, resetState, navigate, showToast]);
 
   // Helpers
   const extractCode = (rawText: string) => {

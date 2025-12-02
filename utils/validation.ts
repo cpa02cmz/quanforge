@@ -450,49 +450,40 @@ static sanitizeInput(input: string): string {
      return errors;
    }
 
-   static validateSymbol(symbol: string): ValidationError[] {
-     const errors: ValidationError[] = [];
+static validateSymbol(symbol: string): ValidationError[] {
+      const errors: ValidationError[] = [];
 
-     if (!symbol || !symbol.trim()) {
-       errors.push({
-         field: 'symbol',
-         message: 'Symbol is required'
-       });
-       return errors;
-     }
+      if (!symbol || !symbol.trim()) {
+        errors.push({
+          field: 'symbol',
+          message: 'Symbol is required'
+        });
+        return errors;
+      }
 
-     const trimmedSymbol = symbol.trim().toUpperCase();
-     
-     // Enhanced symbol validation
-     const validSymbolPatterns = [
-       /^[A-Z]{6}$/,                    // Standard forex pairs without slash (EURUSD)
-       /^[A-Z]{3}\/[A-Z]{3}$/,         // Forex pairs with slash (EUR/USD)
-       /^[A-Z]{3,6}[A-Z]{3}$/,         // Commodity pairs (XAUUSD)
-       /^[A-Z]{2,5}[-_][A-Z]{2,5}$/,   // Pairs with dash/underscore
-       /^[A-Z]{3,6}USDT$/,             // Crypto pairs with USDT
-       /^[A-Z]{3,6}BUSD$/,             // Crypto pairs with BUSD
-     ];
+      const trimmedSymbol = symbol.trim().toUpperCase();
+      
+      // Use a single regex with OR pattern for better performance
+      const symbolPattern = /^(?:[A-Z]{6}|[A-Z]{3}\/[A-Z]{3}|[A-Z]{3,6}[A-Z]{3}|[A-Z]{2,5}[-_][A-Z]{2,5}|[A-Z]{3,6}USDT|[A-Z]{3,6}BUSD)$/;
+      
+      if (!symbolPattern.test(trimmedSymbol)) {
+        errors.push({
+          field: 'symbol',
+          message: 'Invalid symbol format. Use formats like: EURUSD, EUR/USD, XAUUSD, BTCUSDT'
+        });
+      }
 
-     const isValidSymbol = validSymbolPatterns.some(pattern => pattern.test(trimmedSymbol));
-     
-     if (!isValidSymbol) {
-       errors.push({
-         field: 'symbol',
-         message: 'Invalid symbol format. Use formats like: EURUSD, EUR/USD, XAUUSD, BTCUSDT'
-       });
-     }
+      // Use Set for O(1) lookup instead of Array.includes for blacklisted symbols
+      const blacklistedSymbols = new Set(['TEST', 'DEMO', 'FAKE', 'INVALID']);
+      if (blacklistedSymbols.has(trimmedSymbol)) {
+        errors.push({
+          field: 'symbol',
+          message: 'Invalid symbol for trading'
+        });
+      }
 
-     // Check for blacklisted symbols
-     const blacklistedSymbols = ['TEST', 'DEMO', 'FAKE', 'INVALID'];
-     if (blacklistedSymbols.includes(trimmedSymbol)) {
-       errors.push({
-         field: 'symbol',
-         message: 'Invalid symbol for trading'
-       });
-     }
-
-     return errors;
-   }
+      return errors;
+    }
 
   static isValid(errors: ValidationError[]): boolean {
     return errors.length === 0;
