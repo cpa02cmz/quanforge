@@ -107,7 +107,7 @@
   ],
   "regions": ["hkg1", "iad1", "sin1", "cle1", "fra1"],
   "framework": "vite",
-  "buildCommand": "npm run build:edge",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm ci",
   "devCommand": "npm run dev",
