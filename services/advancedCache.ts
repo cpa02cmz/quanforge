@@ -288,7 +288,7 @@ export class AdvancedCache {
   // Add edge-specific cache invalidation
   invalidateForEdgeRegion(region: string): number {
     const regionKeys = Array.from(this.cache.keys())
-      .filter(key => key.includes(`region_${region}`));
+      .filter(key => key.includes(`_${region}`) || key.includes(`region_${region}`));
     let deletedCount = 0;
     
     regionKeys.forEach(key => {
@@ -297,12 +297,33 @@ export class AdvancedCache {
       }
     });
     
+    console.log(`Invalidated ${deletedCount} cache entries for region: ${region}`);
     return deletedCount;
+  }
+
+  // Get edge-specific cache statistics
+  getEdgeStats(): { [region: string]: { entries: number; size: number; hitRate: number } } {
+    const edgeStats: { [region: string]: { entries: number; size: number; hitRate: number } } = {};
+    const regions = ['hkg1', 'iad1', 'sin1', 'cle1', 'fra1'];
+    
+    for (const region of regions) {
+      const regionKeys = Array.from(this.cache.entries())
+        .filter(([key]) => key.includes(`_${region}`) || key.includes(`region_${region}`));
+      
+      const entries = regionKeys.length;
+      const size = regionKeys.reduce((sum, [, entry]) => sum + entry.size, 0);
+      const totalAccess = regionKeys.reduce((sum, [, entry]) => sum + entry.accessCount, 0);
+      const hitRate = entries > 0 ? (totalAccess / entries) * 100 : 0;
+      
+      edgeStats[region] = { entries, size, hitRate };
+    }
+    
+    return edgeStats;
   }
 
   // Edge-optimized cache warming
   async warmEdgeCache(): Promise<void> {
-    const edgeRegions = ['hkg1', 'iad1', 'sin1'];
+    const edgeRegions = ['hkg1', 'iad1', 'sin1', 'cle1', 'fra1'];
     
     for (const region of edgeRegions) {
       try {
@@ -311,11 +332,35 @@ export class AdvancedCache {
         this.set(regionKey, {
           warmed: true,
           timestamp: Date.now(),
-          region
+          region,
+          metrics: {
+            hitRate: 0,
+            lastAccess: Date.now()
+          }
         }, {
           ttl: 300000, // 5 minutes
           tags: ['edge', region, 'warm']
         });
+
+        // Pre-warm common query patterns for this region
+        const commonQueries = [
+          `robots_list_${region}`,
+          `user_sessions_${region}`,
+          `market_data_${region}`
+        ];
+
+        for (const queryKey of commonQueries) {
+          this.set(queryKey, {
+            cached: true,
+            region,
+            timestamp: Date.now()
+          }, {
+            ttl: 180000, // 3 minutes
+            tags: ['edge', region, 'query']
+          });
+        }
+
+        console.log(`Edge cache warmed for region: ${region}`);
       } catch (error) {
         console.warn(`Failed to warm edge cache for region ${region}:`, error);
       }

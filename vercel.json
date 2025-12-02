@@ -30,38 +30,81 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "X-Edge-Cache",
+          "value": "HIT"
         }
-]
-  },
-  {
-    "source": "/api/(.*)",
-    "headers": [
-      {
-        "key": "Cache-Control",
-        "value": "public, max-age=300, s-maxage=600"
-      },
-      {
-        "key": "Edge-Control",
-        "value": "cache-maxage=300"
-      }
-    ]
-  }
+      ]
+    },
+    {
+      "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, s-maxage=600"
+        },
+        {
+          "key": "Edge-Control",
+          "value": "cache-maxage=300"
+        },
+        {
+          "key": "X-Edge-API",
+          "value": "optimized"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    }
   ],
-  "regions": ["hkg1", "iad1", "sin1"],
+  "regions": ["hkg1", "iad1", "sin1", "cle1", "fra1"],
   "framework": "vite",
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build:production",
   "outputDirectory": "dist",
   "installCommand": "npm ci",
   "devCommand": "npm run dev",
   "functions": {
     "api/**/*.ts": {
       "runtime": "edge",
-      "regions": ["hkg1", "iad1", "sin1"],
-      "maxDuration": 10
+      "regions": ["hkg1", "iad1", "sin1", "cle1", "fra1"],
+      "maxDuration": 30
     },
     "app/**/*.ts": {
       "runtime": "nodejs20.x",
-      "memory": 512
+      "memory": 1024,
+      "maxDuration": 30
     }
   },
   "build": {
@@ -73,7 +116,16 @@
       "VITE_ENABLE_SERVICE_WORKER": "true",
       "VITE_ENABLE_COMPRESSION": "true",
       "VITE_ENABLE_WEB_VITALS": "true",
-      "VITE_ENABLE_PERFORMANCE_MONITORING": "true"
+      "VITE_ENABLE_PERFORMANCE_MONITORING": "true",
+      "VITE_ENABLE_BUNDLE_ANALYZER": "false",
+      "VERCEL_ANALYTICS_ID": "auto"
     }
-  }
+  },
+  "crons": [],
+  "rewrites": [
+    {
+      "source": "/api/supabase/(.*)",
+      "destination": "/api/supabase/$1"
+    }
+  ]
 }
