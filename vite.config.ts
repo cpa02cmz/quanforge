@@ -135,7 +135,7 @@ plugins: [react()],
         }
       }
     },
-    chunkSizeWarningLimit: 800,
+    chunkSizeWarningLimit: 500,
     target: 'esnext',
     reportCompressedSize: true,
     cssCodeSplit: true,
