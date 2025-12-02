@@ -203,26 +203,26 @@ export class ValidationService {
     return errors;
   }
 
-    static validateChatMessage(message: string): ValidationError[] {
-       const errors: ValidationError[] = [];
+   static validateChatMessage(message: string): ValidationError[] {
+        const errors: ValidationError[] = [];
 
-       if (!message || !message.trim()) {
-         errors.push({
-           field: 'message',
-           message: 'Message cannot be empty'
-         });
-         return errors;
-       }
+        if (!message || !message.trim()) {
+          errors.push({
+            field: 'message',
+            message: 'Message cannot be empty'
+          });
+          return errors;
+        }
 
-       if (message.length > 10000) {
-         errors.push({
-           field: 'message',
-           message: 'Message is too long (max 10,000 characters)'
-         });
-         return errors;
-       }
+        if (message.length > 10000) {
+          errors.push({
+            field: 'message',
+            message: 'Message is too long (max 10,000 characters)'
+          });
+          return errors;
+        }
 
-// Enhanced XSS prevention using DOMPurify for comprehensive sanitization
+        // Enhanced XSS prevention using DOMPurify for comprehensive sanitization
         const sanitizedMessage = DOMPurify.sanitize(message, { 
           ALLOWED_TAGS: [], 
           ALLOWED_ATTR: [],
@@ -239,140 +239,67 @@ export class ValidationService {
         }
 
         // Additional regex patterns for edge cases DOMPurify might miss
-        const xssPatterns = [
-          /javascript:/gi,
-          /vbscript:/gi,
-          /data:text\/html/gi,
-          /&#x?0*(58|106|0*74|0*42|0*6a);?/gi,  // Hex/decimal encoded chars
-        ];
+        // Use a single combined regex for better performance
+        const combinedXSSPattern = /javascript:|vbscript:|data:text\/html|&#x?0*(58|106|0*74|0*42|0*6a);?/gi;
+        if (combinedXSSPattern.test(message)) {
+          errors.push({
+            field: 'message',
+            message: 'Message contains potentially unsafe content'
+          });
+          return errors;
+        }
 
-        // Check remaining XSS patterns
-        for (const pattern of xssPatterns) {
-          if (pattern.test(message)) {
-           errors.push({
-             field: 'message',
-             message: 'Message contains potentially unsafe content'
-           });
-           return errors; // Return early on first match
-         }
-       }
+        // Enhanced MQL5-specific security validation with optimized patterns
+        // Combine multiple patterns into a single regex for better performance
+        const combinedMQL5Pattern = /(?:FileFind|FileOpen|FileClose|FileDelete|FileCopy|FileMove|FileIsExist|FileIsLineEnding|FileIsEnding|FileRead|FileWrite|FileFlush|WebRequest|SocketCreate|SocketConnect|SocketSend|SocketReceive|InternetOpen|InternetConnect|HttpOpenRequest|ShellExecute|WinExec|CreateProcess|System|Exec|Popen|memcpy|memset|malloc|free|GetMemory|FreeMemory|RegOpenKey|RegCreateKey|RegSetValue|RegGetValue|ResourceCreate|ResourceSave|ResourceRead|GlobalVariableSet|GlobalVariableGet|GlobalVariableDel|GlobalVariablesFlush|GlobalVariableTemp|TerminalInfoInteger|TerminalInfoString|AccountInfo|AccountInfoInteger|AccountInfoDouble|SendNotification|SendMail|SendFTP|Alert|Comment|Print|ChartApplyTemplate|ChartSave|ChartScreenShot|OrderSend|OrderClose|OrderModify|PositionOpen|PositionClose|PositionModify|StringConcatenate|StringTrimLeft|StringTrimRight|ArrayCopy|ArrayFill|ArraySort|GetTickCount|TimeCurrent|TimeLocal|MathRand|MathSrand)\s*\(/i;
+        
+        if (combinedMQL5Pattern.test(message)) {
+          errors.push({
+            field: 'message',
+            message: 'Message contains potentially dangerous MQL5 operations'
+          });
+          return errors;
+        }
 
-       // Enhanced MQL5-specific security validation with more sophisticated patterns
-       const mql5DangerousPatterns = [
-         // File system operations
-         /FileFind\s*\(|FileOpen\s*\(|FileClose\s*\(|FileDelete\s*\(|FileCopy\s*\(|FileMove\s*\(/i,
-         /FileIsExist\s*\(|FileIsLineEnding\s*\(|FileIsEnding\s*\(/i,
-         /FileRead\s*\(|FileWrite\s*\(|FileFlush\s*\(/i,
-         
-         // Network operations
-         /WebRequest\s*\(|SocketCreate\s*\(|SocketConnect\s*\(|SocketSend\s*\(|SocketReceive\s*\(/i,
-         /InternetOpen\s*\(|InternetConnect\s*\(|HttpOpenRequest\s*\(/i,
-         
-         // System operations
-         /ShellExecute\s*\(|WinExec\s*\(|CreateProcess\s*\(/i,
-         /System\s*\(|Exec\s*\(|Popen\s*\(/i,
-         
-         // Memory operations
-         /memcpy\s*\(|memset\s*\(|malloc\s*\(|free\s*\(/i,
-         /GetMemory\s*\(|FreeMemory\s*\(/i,
-         
-         // Registry operations
-         /RegOpenKey\s*\(|RegCreateKey\s*\(|RegSetValue\s*\(|RegGetValue\s*\(/i,
-         
-         // Dangerous imports
-         /#import\s+["\']?(?!user32\.dll|kernel32\.dll|gdi32\.dll|msvcrt\.dll)[^"\']*["\']?/i,
-         /Import\s+["\']?(?!user32\.dll|kernel32\.dll|gdi32\.dll|msvcrt\.dll)[^"\']*["\']?/i,
-         
-         // Resource operations
-         /ResourceCreate\s*\(|ResourceSave\s*\(|ResourceRead\s*\(/i,
-         
-         // Global variable manipulation
-         /GlobalVariableSet\s*\(|GlobalVariableGet\s*\(|GlobalVariableDel\s*\(/i,
-         /GlobalVariablesFlush\s*\(|GlobalVariableTemp\s*\(/i,
-         
-         // Terminal information access
-         /TerminalInfoInteger\s*\(|TerminalInfoString\s*\(/i,
-         /AccountInfo\s*\(|AccountInfoInteger\s*\(|AccountInfoDouble\s*\(/i,
-         
-         // Dangerous MQL5 functions
-         /SendNotification\s*\(|SendMail\s*\(|SendFTP\s*\(/i,
-         /Alert\s*\(|Comment\s*\(|Print\s*\(/i, // Can be used for social engineering
-         
-         // Chart manipulation
-         /ChartApplyTemplate\s*\(|ChartSave\s*\(|ChartScreenShot\s*\(/i,
-         
-         // Trade operations that could be exploited
-         /OrderSend\s*\(|OrderClose\s*\(|OrderModify\s*\(/i,
-         /PositionOpen\s*\(|PositionClose\s*\(|PositionModify\s*\(/i,
-         
-         // String operations that could lead to code injection
-         /StringConcatenate\s*\(|StringTrimLeft\s*\(|StringTrimRight\s*\(/i,
-         
-         // Array operations that could lead to memory issues
-         /ArrayCopy\s*\(|ArrayFill\s*\(|ArraySort\s*\(/i,
-         
-         // Time functions that could be used for timing attacks
-         /GetTickCount\s*\(|TimeCurrent\s*\(|TimeLocal\s*\(/i,
-         
-         // Math functions that could be used for computational attacks
-         /MathRand\s*\(|MathSrand\s*\(/i,
-       ];
+        // Check for obfuscated patterns (base64, hex encoding, etc.) with a single regex
+        const combinedObfuscationPattern = /0x[0-9a-fA-F]+|[A-Za-z0-9+\/]{20,}={0,2}|\\u[0-9a-fA-F]{4}|\\x[0-9a-fA-F]{2}/g;
+        const obfuscationMatches = message.match(combinedObfuscationPattern);
+        if (obfuscationMatches && obfuscationMatches.length > 3) { // Allow a few legitimate uses
+          errors.push({
+            field: 'message',
+            message: 'Message contains potentially obfuscated content'
+          });
+          return errors;
+        }
 
-       // Check for obfuscated patterns (base64, hex encoding, etc.)
-       const obfuscationPatterns = [
-         /0x[0-9a-fA-F]+/g,  // Hex encoded content
-         /[A-Za-z0-9+\/]{20,}={0,2}/g,  // Potential base64
-         /\\u[0-9a-fA-F]{4}/g,  // Unicode escapes
-         /\\x[0-9a-fA-F]{2}/g,  // Hex escapes
-       ];
+        // Additional heuristic checks with a Set for faster lookups
+        // Use a precompiled Set for faster lookups
+        const SUSPICIOUS_KEYWORDS = new Set([
+          'password', 'secret', 'key', 'token', 'auth', 'credential',
+          'exploit', 'hack', 'crack', 'bypass', 'inject', 'payload',
+          'malware', 'virus', 'trojan', 'backdoor', 'rootkit'
+        ]);
 
-       // First check for obfuscation
-       for (const pattern of obfuscationPatterns) {
-         const matches = message.match(pattern);
-         if (matches && matches.length > 3) { // Allow a few legitimate uses
-           errors.push({
-             field: 'message',
-             message: 'Message contains potentially obfuscated content'
-           });
-           return errors; // Return early
-         }
-       }
-
-       // Then check for dangerous MQL5 patterns
-       for (const pattern of mql5DangerousPatterns) {
-         if (pattern.test(message)) {
-           errors.push({
-             field: 'message',
-             message: 'Message contains potentially dangerous MQL5 operations'
-           });
-           return errors; // Return early
-         }
-       }
-
-       // Additional heuristic checks with a Set for faster lookups
-       const suspiciousKeywords = new Set([
-         'password', 'secret', 'key', 'token', 'auth', 'credential',
-         'exploit', 'hack', 'crack', 'bypass', 'inject', 'payload',
-         'malware', 'virus', 'trojan', 'backdoor', 'rootkit'
-       ]);
-
-       const lowerMessage = message.toLowerCase();
-       let suspiciousCount = 0;
-       for (const keyword of suspiciousKeywords) {
-         if (lowerMessage.includes(keyword)) {
-           suspiciousCount++;
-         }
-       }
-
-       if (suspiciousCount > 2) { // Allow some false positives
-         errors.push({
-           field: 'message',
-           message: 'Message contains suspicious content'
-         });
-       }
+        const lowerMessage = message.toLowerCase();
+        let suspiciousCount = 0;
+        
+        // Use a more efficient approach for keyword checking
+        for (const keyword of SUSPICIOUS_KEYWORDS) {
+          if (lowerMessage.includes(keyword)) {
+            suspiciousCount++;
+            // Early exit if we exceed threshold
+            if (suspiciousCount > 2) {
+              errors.push({
+                field: 'message',
+                message: 'Message contains suspicious content'
+              });
+              return errors;
+            }
+          }
+        }
 
         return errors;
-      }
+       }
 
 static sanitizeInput(input: string): string {
      if (!input) return '';

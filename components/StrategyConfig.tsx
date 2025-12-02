@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, useEffect, memo, useCallback } from 'react';
 import { StrategyParams, CustomInput } from '../types';
 import { TIMEFRAMES } from '../constants';
 import { MarketTicker } from './MarketTicker';
@@ -28,18 +28,18 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
       }
   }, []);
 
-  const handleChange = (field: keyof StrategyParams, value: any) => {
+const handleChange = useCallback((field: keyof StrategyParams, value: any) => {
      onChange({ ...params, [field]: value });
-  };
+   }, [params, onChange]);
 
-  const handleInputChange = (id: string, field: keyof CustomInput, value: string) => {
+  const handleInputChange = useCallback((id: string, field: keyof CustomInput, value: string) => {
     const newInputs = params.customInputs.map(input => 
       input.id === id ? { ...input, [field]: value } : input
     );
     onChange({ ...params, customInputs: newInputs });
-  };
+  }, [params.customInputs, onChange]);
 
-  const handleInputTypeChange = (id: string, newType: CustomInput['type']) => {
+  const handleInputTypeChange = useCallback((id: string, newType: CustomInput['type']) => {
       let defaultValue = '0';
       if (newType === 'bool') defaultValue = 'false';
       if (newType === 'string') defaultValue = '';
@@ -48,9 +48,9 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
         input.id === id ? { ...input, type: newType, value: defaultValue } : input
       );
       onChange({ ...params, customInputs: newInputs });
-  };
+  }, [params.customInputs, onChange]);
 
-  const addInput = () => {
+  const addInput = useCallback(() => {
     const newInput: CustomInput = {
       id: Date.now().toString(),
       name: 'New_Param',
@@ -58,21 +58,22 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
       value: '0'
     };
     onChange({ ...params, customInputs: [...params.customInputs, newInput] });
-  };
+  }, [params.customInputs, onChange]);
 
-  const removeInput = (id: string) => {
+  const removeInput = useCallback((id: string) => {
     onChange({ ...params, customInputs: params.customInputs.filter(i => i.id !== id) });
-  };
+  }, [params.customInputs, onChange]);
 
-  const copyConfig = () => {
-      const configStr = JSON.stringify(params, null, 2);
-      navigator.clipboard.writeText(configStr).then(() => {
+  const copyConfig = useCallback(async () => {
+      try {
+          const configStr = JSON.stringify(params, null, 2);
+          await navigator.clipboard.writeText(configStr);
           showToast('Configuration copied to clipboard', 'success');
-      }).catch(err => {
+      } catch (err) {
           console.error("Copy failed", err);
           showToast("Failed to copy to clipboard", "error");
-      });
-  };
+      }
+  }, [params, showToast]);
 
   const parseAndImport = (text: string) => {
     try {
