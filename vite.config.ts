@@ -36,6 +36,9 @@ plugins: [react()],
             if (id.includes('lz-string')) {
               return 'vendor-utils';
             }
+            if (id.includes('dompurify')) {
+              return 'vendor-security';
+            }
             // Split remaining vendors into smaller chunks
             if (id.includes('typescript') || id.includes('@types')) {
               return 'vendor-types';
@@ -82,6 +85,12 @@ plugins: [react()],
             }
             if (id.includes('ChartComponents')) {
               return 'component-charts';
+            }
+            if (id.includes('VirtualScrollList')) {
+              return 'component-virtual';
+            }
+            if (id.includes('LoadingState') || id.includes('ErrorBoundary')) {
+              return 'component-ui';
             }
             return 'components';
           }

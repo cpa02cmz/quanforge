@@ -11,16 +11,23 @@ interface Props {
 interface State {
   hasError: boolean;
   error?: Error;
+  errorId?: string;
+  retryCount: number;
 }
 
 class ErrorBoundaryClass extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, retryCount: 0 };
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { 
+      hasError: true, 
+      error, 
+      errorId: Math.random().toString(36).substr(2, 9),
+      retryCount: 0 
+    };
   }
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -34,7 +41,8 @@ class ErrorBoundaryClass extends Component<Props, State> {
         componentStack: errorInfo.componentStack,
         timestamp: new Date().toISOString(),
         userAgent: navigator.userAgent,
-        url: window.location.href
+        url: window.location.href,
+        errorId: this.state.errorId
       };
       
       try {
@@ -48,6 +56,20 @@ class ErrorBoundaryClass extends Component<Props, State> {
       }
     }
   }
+
+  private handleRetry = () => {
+    if (this.state.retryCount < 3) {
+      this.setState(prevState => ({ 
+        hasError: false, 
+        error: undefined, 
+        errorId: undefined,
+        retryCount: prevState.retryCount + 1 
+      }));
+    } else {
+      // Max retries reached, reload page
+      window.location.reload();
+    }
+  };
 
   override render(): ReactNode {
     if (this.state.hasError) {
@@ -63,12 +85,27 @@ class ErrorBoundaryClass extends Component<Props, State> {
             <p className="text-gray-400 mb-4">
               {this.state.error?.message || 'An unexpected error occurred'}
             </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg transition-colors"
-            >
-              Reload Page
-            </button>
+            {this.state.errorId && (
+              <p className="text-gray-500 text-xs mb-4">
+                Error ID: {this.state.errorId}
+              </p>
+            )}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {this.state.retryCount < 3 && (
+                <button
+                  onClick={this.handleRetry}
+                  className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg transition-colors"
+                >
+                  Try Again ({3 - this.state.retryCount} attempts left)
+                </button>
+              )}
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
+              >
+                Reload Page
+              </button>
+            </div>
           </div>
         </div>
       );

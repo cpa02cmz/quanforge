@@ -8,6 +8,7 @@ import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
 import { BacktestPanel } from '../components/BacktestPanel';
 import { useTranslation } from '../services/i18n';
 import { SEOHead, structuredDataTemplates } from '../utils/seo';
+import { performanceMonitor } from '../utils/performance';
 
 // Lazy load chart components to reduce initial bundle size
 const ChartComponents = lazy(() => import('../components/ChartComponents').then(module => ({ default: module.ChartComponents })));
@@ -15,6 +16,13 @@ const ChartComponents = lazy(() => import('../components/ChartComponents').then(
 export const Generator: React.FC = memo(() => {
   const { id } = useParams();
   const { t } = useTranslation();
+
+  // Cleanup performance monitoring on unmount
+  useEffect(() => {
+    return () => {
+      performanceMonitor.cleanup();
+    };
+  }, []);
   
   // Use Custom Hook for Logic
   const {
@@ -74,7 +82,7 @@ export const Generator: React.FC = memo(() => {
      
      window.addEventListener('keydown', handleKeyDown);
      return () => window.removeEventListener('keydown', handleKeyDown);
-   }, [handleSave, isLoading, stopGeneration, activeSidebarTab]);
+   }, [handleSave, isLoading, stopGeneration]);
    
    const onApplySettings = async () => {
        setActiveMainTab('editor'); // Switch to editor to see changes
