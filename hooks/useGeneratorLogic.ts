@@ -27,6 +27,7 @@ interface GeneratorState {
 type GeneratorAction =
   | { type: 'SET_MESSAGES'; payload: Message[] }
   | { type: 'ADD_MESSAGE'; payload: Message }
+  | { type: 'TRIM_MESSAGES'; payload: Message[] }
   | { type: 'SET_CODE'; payload: string }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_LOADING_PROGRESS'; payload: { step: string; message: string } | null }
@@ -66,6 +67,8 @@ const generatorReducer = (state: GeneratorState, action: GeneratorAction): Gener
       return { ...state, messages: action.payload };
     case 'ADD_MESSAGE':
       return { ...state, messages: [...state.messages, action.payload] };
+    case 'TRIM_MESSAGES':
+      return { ...state, messages: action.payload };
     case 'SET_CODE':
       return { ...state, code: action.payload };
     case 'SET_LOADING':
@@ -473,6 +476,26 @@ const stopGeneration = () => {
       }, 500);
   };
 
+  // Memory management: Trim messages to prevent memory leaks
+  const trimMessages = useCallback((keepLast: number = 30) => {
+      if (state.messages.length > keepLast) {
+          // Keep the first message (usually important context) and the last N messages
+          const firstMessage = state.messages[0];
+          const lastMessages = state.messages.slice(-(keepLast - 1));
+          const trimmedMessages = [firstMessage, ...lastMessages];
+          
+          dispatch({ type: 'TRIM_MESSAGES', payload: trimmedMessages });
+          showToast(`Chat history trimmed to ${keepLast} messages for performance`, 'info');
+      }
+  }, [state.messages, dispatch]);
+
+  // Auto-trim messages when they get too large
+  useEffect(() => {
+      if (state.messages.length > 50) {
+          trimMessages(30);
+      }
+  }, [state.messages.length, trimMessages]);
+
   return {
     messages: state.messages,
     code: state.code,
@@ -502,6 +525,7 @@ const stopGeneration = () => {
     clearChat,
     resetConfig,
     runSimulation,
-    stopGeneration
+    stopGeneration,
+    trimMessages
   };
 };
