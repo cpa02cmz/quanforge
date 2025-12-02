@@ -24,14 +24,14 @@ class SupabaseConnectionPool {
   private clients: Map<string, SupabaseClient> = new Map();
   private healthStatus: Map<string, ConnectionHealth> = new Map();
   private config: ConnectionPoolConfig = {
-    minConnections: 1, // Reduce for edge
-    maxConnections: 5, // Lower for edge memory constraints
-    idleTimeout: 120000, // 2 minutes (reduced)
-    healthCheckInterval: 15000, // 15 seconds (more frequent)
-    connectionTimeout: 5000, // 5 seconds (faster failover)
+    minConnections: 2, // Increase for better warm start
+    maxConnections: 8, // Increase for better concurrency
+    idleTimeout: 300000, // 5 minutes (increase for edge)
+    healthCheckInterval: 10000, // 10 seconds (more frequent)
+    connectionTimeout: 3000, // 3 seconds (faster failover)
     acquireTimeout: 2000, // 2 seconds
-    retryAttempts: 2, // Reduce retries for edge
-    retryDelay: 500, // Faster retry
+    retryAttempts: 3,
+    retryDelay: 1000,
   };
   private healthCheckTimer: NodeJS.Timeout | null = null;
 
@@ -142,7 +142,7 @@ class SupabaseConnectionPool {
       try {
         const startTime = Date.now();
         const isHealthy = await this.testConnection(client);
-        const responseTime = Date.now() - startTime;
+        Date.now() - startTime; // responseTime calculated but not used
         
         const currentHealth = this.healthStatus.get(connectionId) || {
           isHealthy: false,
@@ -188,14 +188,18 @@ class SupabaseConnectionPool {
     }
   }
 
-  // Add connection warming for edge regions
+  // Add connection warming for edge regions with warmup queries
   async warmEdgeConnections(): Promise<void> {
-    const regions = ['hkg1', 'iad1', 'sin1', 'cle1', 'fra1'];
+    const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'];
+    const warmupQueries = ['SELECT 1', 'SELECT COUNT(*) FROM robots LIMIT 1'];
+    
     const warmPromises = regions.map(async (region) => {
       try {
         const client = await this.getClient(`edge_${region}`);
-        // Pre-warm with a lightweight query
-        await client.from('robots').select('id').limit(1);
+        // Pre-warm with multiple lightweight queries
+        for (const query of warmupQueries) {
+          await client.rpc('exec_sql', { query });
+        }
         console.log(`Edge connection warmed for region: ${region}`);
       } catch (error) {
         console.warn(`Failed to warm edge connection for ${region}:`, error);
@@ -250,8 +254,11 @@ class SupabaseConnectionPool {
     const edgeConnections: { [region: string]: number } = {};
     for (const [connectionId] of this.clients) {
       if (connectionId.startsWith('edge_')) {
-        const region = connectionId.split('_')[1];
-        edgeConnections[region] = (edgeConnections[region] || 0) + 1;
+        const parts = connectionId.split('_');
+        const region = parts[1];
+        if (region) {
+          edgeConnections[region] = (edgeConnections[region] || 0) + 1;
+        }
       }
     }
 

@@ -51,14 +51,17 @@ plugins: [react()],
           
           // App chunks - more granular splitting with lazy loading optimization
           if (id.includes('services/')) {
-            if (id.includes('supabase') || id.includes('settingsManager') || id.includes('databaseOptimizer')) {
-              return 'services-db';
+            if (id.includes('supabase') || id.includes('settingsManager') || id.includes('databaseOptimizer') || id.includes('connectionPool')) {
+              return 'vendor-supabase-edge';
             }
             if (id.includes('gemini') || id.includes('simulation')) {
               return 'services-ai';
             }
-            if (id.includes('cache') || id.includes('queryOptimizer') || id.includes('advancedCache')) {
+            if (id.includes('cache') || id.includes('queryOptimizer') || id.includes('advancedCache') || id.includes('queryOptimizerEnhanced')) {
               return 'services-performance';
+            }
+            if (id.includes('edge') || id.includes('metrics') || id.includes('vercelEdgeOptimizer')) {
+              return 'vendor-edge';
             }
             if (id.includes('security') || id.includes('realtime') || id.includes('resilientSupabase')) {
               return 'services-core';
@@ -113,7 +116,21 @@ plugins: [react()],
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
-        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
+        assetFileNames: (assetInfo) => {
+          const name = assetInfo.name || 'unknown';
+          const info = name.split('.');
+          const ext = info[info.length - 1] || 'unknown';
+          if (/\.(mp4|webm|ogg|mp3|wav|flac|aac)$/.test(name)) {
+            return `assets/media/[name]-[hash][extname]`;
+          }
+          if (/\.(png|jpe?g|gif|svg|webp|avif)$/.test(name)) {
+            return `assets/images/[name]-[hash][extname]`;
+          }
+          if (/\.(woff2?|eot|ttf|otf)$/.test(name)) {
+            return `assets/fonts/[name]-[hash][extname]`;
+          }
+          return `assets/${ext}/[name]-[hash][extname]`;
+        }
       },
       onwarn(warning, warn) {
         // Suppress warnings about dynamic imports
@@ -156,7 +173,7 @@ plugins: [react()],
       }
     },
 chunkSizeWarningLimit: 250, // Even stricter for better edge performance
-    target: 'esnext',
+    target: 'es2020',
     reportCompressedSize: true,
     cssCodeSplit: true,
     // Optimize for Vercel Edge
@@ -174,6 +191,7 @@ chunkSizeWarningLimit: 250, // Even stricter for better edge performance
     'process.env.NODE_ENV': JSON.stringify(process.env['NODE_ENV'] || 'development'),
     'process.env.EDGE_RUNTIME': JSON.stringify('true'),
     'process.env.VERCEL_EDGE': JSON.stringify('true'),
+    'process.env.ENABLE_EDGE_CACHING': JSON.stringify('true'),
   },
   optimizeDeps: {
     include: [
