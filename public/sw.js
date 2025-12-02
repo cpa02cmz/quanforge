@@ -1,21 +1,26 @@
-const CACHE_NAME = 'quanforge-edge-v2';
-const STATIC_CACHE_NAME = 'quanforge-static-v2';
-const API_CACHE_NAME = 'quanforge-api-v2';
+const CACHE_NAME = 'quanforge-edge-v3';
+const STATIC_CACHE_NAME = 'quanforge-static-v3';
+const API_CACHE_NAME = 'quanforge-api-v3';
+const DYNAMIC_CACHE_NAME = 'quanforge-dynamic-v3';
 
 // Enhanced cache configuration for Vercel Edge
 const CACHE_CONFIG = {
   staticAssets: {
     maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
     patterns: [
-      /\.(js|css|woff|woff2|ttf|eot|png|jpg|jpeg|gif|svg|ico|webp)$/,
+      /\.(js|css|woff|woff2|ttf|eot|png|jpg|jpeg|gif|svg|ico|webp|avif)$/,
       /\/fonts\//,
       /\/images\//,
+      /\/assets\//,
     ],
   },
   apiResponses: {
     maxAge: 5 * 60 * 1000, // 5 minutes
     patterns: [
       /\/api\//,
+      /supabase/,
+      /googleapis/,
+      /twelvedata/,
     ],
   },
   pages: {
@@ -25,8 +30,18 @@ const CACHE_CONFIG = {
       /\/dashboard/,
       /\/generator/,
       /\/wiki/,
+      /\/about/,
+      /\/features/,
     ],
   },
+  critical: {
+    maxAge: 1 * 60 * 1000, // 1 minute for critical resources
+    patterns: [
+      /\/api\/health/,
+      /\/api\/strategies/,
+      /\/manifest\.json/,
+    ],
+  }
 };
 
 const STATIC_ASSETS = [
