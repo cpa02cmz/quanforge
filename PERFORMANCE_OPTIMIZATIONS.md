@@ -35,10 +35,16 @@ This document outlines the performance optimizations implemented in the QuantFor
 - **Features**: Real-time data synchronization with offline support and conflict resolution
 - **Sync Strategies**: Advanced conflict resolution with merge, client, and server preferences
 
-### Data Compression Service
-- **Data Compression**: Implemented in `services/dataCompression.ts` with automatic compression for large data objects, optimized storage and network transfer, and compression statistics tracking
-- **Performance Improvements**: Significant reduction in storage and bandwidth usage
-- **Efficiency**: Automatic threshold-based compression to optimize performance
+ ### Data Compression Service
+ - **Data Compression**: Implemented in `services/dataCompression.ts` with automatic compression for large data objects, optimized storage and network transfer, and compression statistics tracking
+ - **Performance Improvements**: Significant reduction in storage and bandwidth usage
+ - **Efficiency**: Automatic threshold-based compression to optimize performance
+
+### Memory Management & Web Vitals
+ - **Memory Monitoring**: Implemented in `utils/performance.ts` with memory usage tracking, utilization percentage monitoring, and high memory usage alerts
+ - **Web Vitals Integration**: Core Web Vitals tracking (FCP, LCP, FID, CLS, TTFB) with automatic monitoring and reporting
+ - **Performance Marking**: Custom performance measurement for component rendering and user interactions
+ - **Memory Efficiency**: Automatic cleanup of performance marks to prevent memory bloat
 
 ### Database Schema Optimizations
 - **Optimized Schema**: Recommended PostgreSQL schema in `database_optimizations.sql` with optimized table structure, full-text search capabilities, materialized views for performance, and analytics and monitoring tables

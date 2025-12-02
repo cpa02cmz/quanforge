@@ -583,12 +583,8 @@ class SecurityManager {
      return patterns.some(pattern => pattern.test(key));
    }
    
-   // Get security metrics
-   getSecurityMetrics(): {
-     rateLimitEntries: number;
-     averageRiskScore: number;
-     blockedRequests: number;
-   } {
+    // Get security metrics
+    getSecurityMetrics() {
     const rateLimitEntries = this.rateLimitMap.size;
     const blockedRequests = Array.from(this.rateLimitMap.values())
       .reduce((sum, record) => sum + Math.max(0, record.count - this.config.rateLimiting.maxRequests), 0);
