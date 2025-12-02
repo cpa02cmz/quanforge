@@ -418,7 +418,7 @@ const payload = {
             requestInit.signal = signal;
         }
 
-        const response = await fetch(url, requestInit);
+        const response = await fetch(url, requestInit as RequestInit);
         
         if (!response.ok) {
             throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
