@@ -1,4 +1,4 @@
-import { StrategyParams, CustomInput, AISettings, Message, Robot } from '../types';
+import { StrategyParams, CustomInput, AISettings, Message } from '../types';
 
 export interface ValidationResult {
   isValid: boolean;

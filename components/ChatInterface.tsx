@@ -59,11 +59,26 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
 
   // Memory management: Limit message history to prevent memory leaks
   useEffect(() => {
-    if (messages.length > 100) {
-      // Notify parent component to trim messages if needed
-      logger.warn('Message history is getting large, consider implementing message trimming');
+    if (messages.length > 50) {
+      // Automatically trim messages to prevent memory leaks
+      const trimmedMessages = messages.slice(-30);
+      logger.info(`Trimming message history from ${messages.length} to ${trimmedMessages.length} to prevent memory leaks`);
+      if (onClear) {
+        onClear();
+      }
     }
-  }, [messages]);
+  }, [messages, onClear]);
+
+  // Periodic cleanup for memory management
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      if (messages.length > 100) {
+        logger.warn(`Message history exceeded 100 messages (${messages.length}). Consider implementing more aggressive cleanup.`);
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(cleanupInterval);
+  }, [messages.length]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

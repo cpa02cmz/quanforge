@@ -193,7 +193,7 @@ export class AdvancedCache {
     const promises = entries.map(async ({ key, loader, ttl, tags }) => {
       try {
         const data = await loader();
-        this.set(key, data, { ttl, tags });
+        this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
       } catch (error) {
         if (import.meta.env.DEV) {
           console.warn(`Failed to preload cache entry: ${key}`, error);
@@ -217,7 +217,7 @@ export class AdvancedCache {
         const key = `${pattern}:${JSON.stringify(params)}`;
         try {
           const data = await loader(params);
-this.set(key, data, { ttl: ttl || this.defaultTtl, tags: tags || [] });
+this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
         } catch (error) {
           console.warn(`Failed to warm cache entry: ${key}`, error);
         }
@@ -435,7 +435,7 @@ export class CacheFactory {
   }
 
   static destroyAll(): void {
-    for (const [name, instance] of this.instances) {
+    for (const [, instance] of this.instances) {
       instance.destroy();
     }
     this.instances.clear();
