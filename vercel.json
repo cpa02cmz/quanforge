@@ -9,6 +9,12 @@
       }
     }
   ],
+  "functions": {
+    "app/**/*.ts": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 30
+    }
+  },
   "routes": [
     {
       "src": "/home",
@@ -81,20 +87,23 @@
       ]
     }
   ],
-  "regions": ["hkg1", "iad1", "sin1"],
+  "regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1"],
   "framework": "vite",
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build:production",
   "outputDirectory": "dist",
   "installCommand": "npm ci",
   "devCommand": "npm run dev",
-  "functions": {
-    "app/**/*.ts": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "build": {
     "env": {
-      "NODE_ENV": "production"
+      "NODE_ENV": "production",
+      "VITE_ENABLE_BUNDLE_ANALYZER": "false",
+      "VITE_ENABLE_SERVICE_WORKER": "true",
+      "VITE_ENABLE_EDGE_OPTIMIZATION": "true"
     }
+  },
+  "framework": "vite",
+  "experimental": {
+    "runtime": "edge",
+    "serverless": true
   }
 }
