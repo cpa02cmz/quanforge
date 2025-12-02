@@ -14,10 +14,11 @@
 - **`/pages`**: Route-level components.
     - `Dashboard.tsx`: List, filter, and management of robots.
     - `Generator.tsx`: Main workspace coordinating Chat, Settings, Editor, and Services.
-- **`/services`**: External integrations.
-    - `gemini.ts`: Handles prompt construction, API calls to Google GenAI, and JSON parsing.
-    - `supabase.ts`: Abstracted Database layer. Switches between Real Supabase SDK and Mock (LocalStorage) implementation based on env vars.
-    - `marketData.ts`: Singleton service using the Observer pattern to publish simulated tick data.
+ - **`/services`**: External integrations.
+     - `gemini.ts`: Handles prompt construction, API calls to Google GenAI, and JSON parsing.
+     - `supabase.ts`: Abstracted Database layer. Switches between Real Supabase SDK and Mock (LocalStorage) implementation based on env vars.
+     - `marketData.ts`: Singleton service using the Observer pattern to publish simulated tick data.
+     - `databaseIndexOptimizer.ts`: Intelligent analysis of query patterns and database index recommendations for performance optimization.
 - **`/` Root**:
     - `App.tsx`: Routing (React Router) and Auth state management.
     - `types.ts`: Central TypeScript definitions.

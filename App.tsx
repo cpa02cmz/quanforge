@@ -9,6 +9,7 @@ import { performanceMonitor } from './utils/performance';
 import { SEOHead, structuredDataTemplates } from './utils/seo';
 import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
 import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
+import { optimizationManager } from './services/optimizationManager';
 
 // Lazy load components for better code splitting
 const Auth = lazy(() => import('./components/Auth').then(module => ({ default: module.Auth })));
@@ -28,6 +29,9 @@ export default function App() {
     vercelEdgeOptimizer.optimizeBundleForEdge();
     vercelEdgeOptimizer.enableEdgeSSR();
     vercelEdgeOptimizer.setupEdgeErrorHandling();
+    
+    // Initialize optimization manager
+    optimizationManager.warmupCommonResources();
     
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -49,7 +53,11 @@ export default function App() {
       performanceMonitor.recordMetric('auth_state_change', 1);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      // Cleanup optimization manager on unmount
+      optimizationManager.cleanup();
+    };
   }, []);
 
   // Memoize the loading component to prevent re-renders
