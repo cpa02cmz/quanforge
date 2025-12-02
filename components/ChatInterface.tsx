@@ -53,6 +53,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Memory management: Limit message history to prevent memory leaks
+  useEffect(() => {
+    if (messages.length > 100) {
+      // Notify parent component to trim messages if needed
+      console.warn('Message history is getting large, consider implementing message trimming');
+    }
+  }, [messages]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };

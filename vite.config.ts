@@ -13,7 +13,7 @@ plugins: [react()],
       },
       output: {
         manualChunks: (id) => {
-          // Vendor chunks - more granular splitting
+          // Vendor chunks - more aggressive splitting for better caching
           if (id.includes('node_modules')) {
             if (id.includes('react') || id.includes('react-dom') || id.includes('react-is')) {
               return 'vendor-react';
@@ -36,10 +36,17 @@ plugins: [react()],
             if (id.includes('lz-string')) {
               return 'vendor-utils';
             }
+            // Split remaining vendors into smaller chunks
+            if (id.includes('typescript') || id.includes('@types')) {
+              return 'vendor-types';
+            }
+            if (id.includes('vite') || id.includes('@vitejs')) {
+              return 'vendor-vite';
+            }
             return 'vendor';
           }
           
-          // App chunks - more granular splitting
+          // App chunks - more granular splitting with lazy loading optimization
           if (id.includes('services/')) {
             if (id.includes('supabase') || id.includes('settingsManager') || id.includes('databaseOptimizer')) {
               return 'services-db';
@@ -59,13 +66,22 @@ plugins: [react()],
             return 'services';
           }
           
-          // Separate heavy components
+          // Separate heavy components with more specific splitting
           if (id.includes('components/')) {
-            if (id.includes('CodeEditor') || id.includes('ChatInterface')) {
-              return 'components-heavy';
+            if (id.includes('CodeEditor')) {
+              return 'component-editor';
             }
-            if (id.includes('BacktestPanel') || id.includes('StrategyConfig')) {
-              return 'components-trading';
+            if (id.includes('ChatInterface')) {
+              return 'component-chat';
+            }
+            if (id.includes('BacktestPanel')) {
+              return 'component-backtest';
+            }
+            if (id.includes('StrategyConfig')) {
+              return 'component-config';
+            }
+            if (id.includes('ChartComponents')) {
+              return 'component-charts';
             }
             return 'components';
           }

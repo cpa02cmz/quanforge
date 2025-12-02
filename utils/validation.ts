@@ -1,4 +1,5 @@
 import { StrategyParams, CustomInput, BacktestSettings } from '../types';
+import DOMPurify from 'dompurify';
 
 export interface ValidationError {
   field: string;
@@ -221,32 +222,33 @@ export class ValidationService {
          return errors;
        }
 
-       // Enhanced XSS prevention with more patterns - using Set for faster lookups
-       const xssPatterns = [
-         /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-         /javascript:/gi,
-         /vbscript:/gi,
-         /on\w+\s*=/gi,
-         /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
-         /<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi,
-         /<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi,
-         /<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi,
-         /eval\s*\(/gi,
-         /expression\s*\(/gi,
-         /<link[^>]+rel=["']stylesheet["']/gi,
-         /<meta[^>]+http-equiv=["']refresh["']/gi,
-         /data:text\/html/gi,
-         /<svg[^>]*onload=/gi,
-         /<img[^>]*src[\s]*=[\s]*["'][\s]*(javascript:|data:)/gi,
-         /<a[^>]*href[\s]*=[\s]*["'][\s]*javascript:/gi,
-         /&#x?0*(58|106|0*74|0*42|0*6a);?/gi,  // Hex/decimal encoded chars
-          /\/\*.*\*\/|<%.*%>|<\?php?.*?\?>/gi,  // Comments and server-side code
-         /<style[^>]*>.*?<(?:\/|\\\/)style>/gi,  // Embedded styles
-       ];
+// Enhanced XSS prevention using DOMPurify for comprehensive sanitization
+        const sanitizedMessage = DOMPurify.sanitize(message, { 
+          ALLOWED_TAGS: [], 
+          ALLOWED_ATTR: [],
+          KEEP_CONTENT: true 
+        });
+        
+        // If sanitization removed content, there was likely XSS content
+        if (sanitizedMessage.length !== message.length) {
+          errors.push({
+            field: 'message',
+            message: 'Message contains potentially dangerous content'
+          });
+          return errors;
+        }
 
-       // Check XSS patterns more efficiently
-       for (const pattern of xssPatterns) {
-         if (pattern.test(message)) {
+        // Additional regex patterns for edge cases DOMPurify might miss
+        const xssPatterns = [
+          /javascript:/gi,
+          /vbscript:/gi,
+          /data:text\/html/gi,
+          /&#x?0*(58|106|0*74|0*42|0*6a);?/gi,  // Hex/decimal encoded chars
+        ];
+
+        // Check remaining XSS patterns
+        for (const pattern of xssPatterns) {
+          if (pattern.test(message)) {
            errors.push({
              field: 'message',
              message: 'Message contains potentially unsafe content'

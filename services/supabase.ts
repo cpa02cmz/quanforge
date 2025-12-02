@@ -438,9 +438,63 @@ const cacheKey = 'robots_list';
      }
    },
 
+/**
+     * Batch update multiple robots for better performance
+     */
+   async batchUpdateRobots(updates: Array<{id: string, data: Partial<Robot>}>) {
+     const startTime = performance.now();
+     try {
+       const settings = settingsManager.getDBSettings();
+       
+       if (settings.mode === 'mock') {
+         const stored = localStorage.getItem(ROBOTS_KEY);
+         const robots = safeParse(stored, []);
+         
+         updates.forEach(update => {
+           const index = robots.findIndex((r: Robot) => r.id === update.id);
+           if (index !== -1) {
+             robots[index] = { ...robots[index], ...update.data, updated_at: new Date().toISOString() };
+           }
+         });
+         
+         trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
+         robotIndexManager.clear();
+         
+         const duration = performance.now() - startTime;
+         performanceMonitor.record('batchUpdateRobots', duration);
+         return { data: updates.map(u => u.id), error: null };
+       }
+       
+       return withRetry(async () => {
+         const client = await getClient();
+         const batch = updates.map(update => 
+           client.from('robots').update({ ...update.data, updated_at: new Date().toISOString() }).eq('id', update.id)
+         );
+         
+         const results = await Promise.all(batch);
+         
+         // Clear relevant caches
+         robotCache.clearByTags(['robots']);
+         
+         const duration = performance.now() - startTime;
+         performanceMonitor.record('batchUpdateRobots', duration);
+         
+         return { 
+           data: updates.map(u => u.id), 
+           error: results.some(r => r.error) ? results.find(r => r.error)?.error : null 
+         };
+       }, 'batchUpdateRobots');
+     } catch (error) {
+       const duration = performance.now() - startTime;
+       performanceMonitor.record('batchUpdateRobots', duration);
+       handleError(error as Error, 'batchUpdateRobots', 'mockDb');
+       throw error;
+     }
+   },
+
    /**
-    * Get robots with pagination for better performance with large datasets
-    */
+     * Get robots with pagination for better performance with large datasets
+     */
    async getRobotsPaginated(page: number = 1, limit: number = 20, searchTerm?: string, filterType?: string) {
      const startTime = performance.now();
      try {
@@ -554,9 +608,63 @@ performanceMonitor.record('getRobotsPaginated', duration);
         handleError(error as Error, 'getRobotsPaginated', 'mockDb');
         throw error;
      }
+},
+
+   /**
+     * Get multiple robots by IDs in a single query for better performance
+     */
+   async getRobotsByIds(ids: string[]) {
+     const startTime = performance.now();
+     try {
+       const settings = settingsManager.getDBSettings();
+       
+       if (settings.mode === 'mock') {
+         const stored = localStorage.getItem(ROBOTS_KEY);
+         const allRobots = safeParse(stored, []);
+         const robots = allRobots.filter((robot: Robot) => ids.includes(robot.id));
+         
+         const duration = performance.now() - startTime;
+         performanceMonitor.record('getRobotsByIds', duration);
+         return { data: robots, error: null };
+       }
+       
+       const cacheKey = `robots_batch_${ids.sort().join('_')}`;
+       const cached = robotCache.get<Robot[]>(cacheKey);
+       if (cached) {
+         const duration = performance.now() - startTime;
+         performanceMonitor.record('getRobotsByIds', duration);
+         return { data: cached, error: null };
+       }
+       
+       return withRetry(async () => {
+         const client = await getClient();
+         const result = await client
+           .from('robots')
+           .select('*')
+           .in('id', ids)
+           .order('created_at', { ascending: false });
+         
+         if (result.data && !result.error) {
+           robotCache.set(cacheKey, result.data, {
+             ttl: 300000,
+             tags: ['robots', 'batch'],
+             priority: 'high'
+           });
+         }
+         
+         const duration = performance.now() - startTime;
+         performanceMonitor.record('getRobotsByIds', duration);
+         return result;
+       }, 'getRobotsByIds');
+     } catch (error) {
+       const duration = performance.now() - startTime;
+       performanceMonitor.record('getRobotsByIds', duration);
+       handleError(error as Error, 'getRobotsByIds', 'mockDb');
+       throw error;
+     }
    },
 
-  async saveRobot(robot: any) {
+   async saveRobot(robot: any) {
     const startTime = performance.now();
     try {
       const settings = settingsManager.getDBSettings();
