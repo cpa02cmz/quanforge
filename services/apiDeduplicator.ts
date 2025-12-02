@@ -131,11 +131,8 @@ export class ApiDeduplicator {
    */
   cancelAllRequests(): void {
     const count = this.pendingRequests.size;
-this.pendingRequests.forEach((request) => {
-      if (now - request.timestamp > this.maxAge) {
-        expiredKeys.push('');
-        request.reject(new Error('Request expired'));
-      }
+    this.pendingRequests.forEach((request) => {
+      request.reject(new Error('All requests cancelled'));
     });
     this.pendingRequests.clear();
     logger.info(`Cancelled ${count} pending requests`);
