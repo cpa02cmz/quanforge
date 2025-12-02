@@ -22,6 +22,7 @@
     "build:analyze": "ANALYZE=true vite build",
     "build:edge": "vite build --mode edge",
     "build:production": "NODE_ENV=production vite build",
+    "build:enhanced": "./scripts/build-edge.sh",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'No linter configured'",
@@ -29,10 +30,12 @@
     "test": "echo 'No tests configured'",
     "test:coverage": "echo 'No tests configured'",
     "clean": "rm -rf dist node_modules/.vite",
-    "vercel-build": "npm run build:production",
+    "vercel-build": "npm run build:enhanced",
     "bundle-size": "npm run build && echo 'Bundle size analysis complete'",
-    "edge-optimize": "npm run build:edge && npm run bundle-size",
-    "performance-check": "npm run build && npm run typecheck"
+    "edge-optimize": "npm run build:enhanced",
+    "performance-check": "npm run build:enhanced && npm run typecheck",
+    "edge-status": "cat dist/edge-report.json 2>/dev/null || echo 'No edge report available'",
+    "edge-validate": "npm run typecheck && npm run build:enhanced"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
