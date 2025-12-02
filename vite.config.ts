@@ -2,8 +2,24 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+// Conditional plugin for bundle analysis
+const plugins = [react()];
+if (process.env['ANALYZE']) {
+  try {
+    const { visualizer } = require('rollup-plugin-visualizer');
+    plugins.push(visualizer({
+      filename: './dist/stats.html',
+      open: true,
+      gzipSize: true,
+      brotliSize: true
+    }));
+  } catch (e) {
+    console.warn('Rollup visualizer not installed. Run `npm install --save-dev rollup-plugin-visualizer` to enable bundle analysis.');
+  }
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins,
   build: {
     outDir: 'dist',
     sourcemap: process.env['NODE_ENV'] !== 'production',
@@ -51,45 +67,60 @@ export default defineConfig({
             return 'vendor';
           }
           
-          // App chunks - more granular splitting with lazy loading optimization
-          if (id.includes('services/')) {
-            if (id.includes('supabase') || id.includes('settingsManager') || id.includes('databaseOptimizer')) {
-              return 'services-db';
-            }
-            if (id.includes('gemini') || id.includes('simulation')) {
-              return 'services-ai';
-            }
-            if (id.includes('cache') || id.includes('queryOptimizer') || id.includes('advancedCache')) {
-              return 'services-performance';
-            }
-            if (id.includes('security') || id.includes('realtime') || id.includes('resilientSupabase')) {
-              return 'services-core';
-            }
-            if (id.includes('marketData') || id.includes('i18n')) {
-              return 'services-data';
-            }
-            return 'services';
-          }
+           // App chunks - more granular splitting with lazy loading optimization
+           if (id.includes('services/')) {
+             if (id.includes('supabase') || id.includes('settingsManager') || id.includes('databaseOptimizer')) {
+               return 'services-db';
+             }
+             if (id.includes('gemini') || id.includes('simulation') || id.includes('analyze')) {
+               return 'services-ai';
+             }
+             if (id.includes('cache') || id.includes('queryOptimizer') || id.includes('advancedCache')) {
+               return 'services-performance';
+             }
+             if (id.includes('security') || id.includes('realtime') || id.includes('resilientSupabase')) {
+               return 'services-core';
+             }
+             if (id.includes('marketData') || id.includes('i18n')) {
+               return 'services-data';
+             }
+             if (id.includes('edge') || id.includes('vercel')) {
+               return 'services-edge';
+             }
+             return 'services';
+           }
           
-          // Separate heavy components with more specific splitting
-          if (id.includes('components/')) {
-            if (id.includes('CodeEditor')) {
-              return 'component-editor';
-            }
-            if (id.includes('ChatInterface')) {
-              return 'component-chat';
-            }
-            if (id.includes('BacktestPanel')) {
-              return 'component-backtest';
-            }
-            if (id.includes('StrategyConfig')) {
-              return 'component-config';
-            }
-            if (id.includes('ChartComponents')) {
-              return 'component-charts';
-            }
-            return 'components';
-          }
+           // Separate heavy components with more specific splitting
+           if (id.includes('components/')) {
+             if (id.includes('CodeEditor')) {
+               return 'component-editor';
+             }
+             if (id.includes('ChatInterface')) {
+               return 'component-chat';
+             }
+             if (id.includes('BacktestPanel')) {
+               return 'component-backtest';
+             }
+             if (id.includes('StrategyConfig')) {
+               return 'component-config';
+             }
+             if (id.includes('ChartComponents')) {
+               return 'component-charts';
+             }
+             if (id.includes('Toast') || id.includes('ErrorBoundary')) {
+               return 'component-ui-utils';
+             }
+             if (id.includes('Auth') || id.includes('Layout')) {
+               return 'component-layout';
+             }
+             if (id.includes('MarketTicker')) {
+               return 'component-market';
+             }
+             if (id.includes('AISettings') || id.includes('DatabaseSettings')) {
+               return 'component-settings';
+             }
+             return 'components';
+           }
           
           if (id.includes('pages/')) {
             if (id.includes('Generator')) {
@@ -101,9 +132,21 @@ export default defineConfig({
             return 'pages';
           }
           
-          if (id.includes('utils/')) {
-            return 'utils';
-          }
+           if (id.includes('utils/')) {
+             if (id.includes('validation') || id.includes('validationService')) {
+               return 'utils-validation';
+             }
+             if (id.includes('performance') || id.includes('performanceMonitor')) {
+               return 'utils-performance';
+             }
+             if (id.includes('error') || id.includes('errorHandler')) {
+               return 'utils-error';
+             }
+             if (id.includes('apiKey') || id.includes('encryption')) {
+               return 'utils-security';
+             }
+             return 'utils';
+           }
           
           return 'default';
         },

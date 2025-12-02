@@ -5,50 +5,11 @@ import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } fr
 import { settingsManager } from "./settingsManager";
 import { getActiveKey } from "../utils/apiKeyUtils";
 import { handleError } from "../utils/errorHandler";
+import { queryCache } from './advancedCache';
 
-// Advanced cache for strategy analysis to avoid repeated API calls
-// Uses LRU eviction to prevent memory bloat
-class LRUCache<T> {
-  private cache = new Map<string, { result: T, timestamp: number }>();
-  private readonly ttl: number;
-  private readonly maxSize: number;
-
-  constructor(ttl: number = 5 * 60 * 1000, maxSize: number = 100) { // 5 min TTL, max 100 items
-    this.ttl = ttl;
-    this.maxSize = maxSize;
-  }
-
-  get(key: string): T | undefined {
-    const item = this.cache.get(key);
-    if (!item) return undefined;
-
-    if (Date.now() - item.timestamp > this.ttl) {
-      this.cache.delete(key);
-      return undefined;
-    }
-
-    // Move to end (most recently used)
-    this.cache.delete(key);
-    this.cache.set(key, item);
-    return item.result;
-  }
-
-  set(key: string, value: T): void {
-    // Evict oldest if at max size
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
-    }
-    
-    this.cache.set(key, { result: value, timestamp: Date.now() });
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-}
-
-const analysisCache = new LRUCache<StrategyAnalysis>();
+// Use the advanced cache system for strategy analysis to avoid repeated API calls
+const ANALYSIS_CACHE_TTL = 10 * 60 * 1000; // 10 minutes for analysis results
+const ANALYSIS_CACHE_TAGS = ['strategy-analysis', 'ai-results'];
 
 // Request deduplication to prevent duplicate API calls
 class RequestDeduplicator {
@@ -643,11 +604,11 @@ const extractJson = (text: string): any => {
      const codeHash = createHash(code.substring(0, 5000));
      const cacheKey = `${codeHash}-${settings.provider}-${settings.modelName}`;
      
-      // Check if we have a valid cached result
-      const cached = analysisCache.get(cacheKey);
-      if (cached) {
-          return cached;
-      }
+       // Check if we have a valid cached result
+       const cached = queryCache.get<StrategyAnalysis>(cacheKey);
+       if (cached) {
+           return cached;
+       }
 
       // Use request deduplication to prevent duplicate API calls
       return requestDeduplicator.deduplicate(cacheKey, async () => {
@@ -698,14 +659,17 @@ const extractJson = (text: string): any => {
 
             const result = extractJson(textResponse);
             
-            // Validate the result before caching
-            if (result && typeof result === 'object' && 
-                typeof result.riskScore === 'number' && 
-                typeof result.profitability === 'number' && 
-                typeof result.description === 'string') {
-                 // Cache the result
-                 analysisCache.set(cacheKey, result);
-            }
+             // Validate the result before caching
+             if (result && typeof result === 'object' && 
+                 typeof result.riskScore === 'number' && 
+                 typeof result.profitability === 'number' && 
+                 typeof result.description === 'string') {
+                  // Cache the result using advanced cache
+                  queryCache.set(cacheKey, result, {
+                    ttl: ANALYSIS_CACHE_TTL,
+                    tags: ANALYSIS_CACHE_TAGS
+                  });
+             }
             
             return result;
 

@@ -130,12 +130,12 @@ export const useGeneratorLogic = (id?: string) => {
       dispatch({ type: 'RESET_STATE' });
     }, []);
 
- // Trim Messages Helper - optimize by only trimming when needed
-    const trimMessages = useCallback(() => {
-       if (state.messages.length > 50) { // Only trim if we have more than the threshold
-         dispatch({ type: 'TRIM_MESSAGES' });
-       }
-    }, [state.messages.length]);
+  // Enhanced memory management for messages - trim more aggressively
+     const trimMessages = useCallback(() => {
+        if (state.messages.length > 50) { // Only trim if we have more than the threshold
+          dispatch({ type: 'TRIM_MESSAGES' });
+        }
+     }, [state.messages.length]);
 
 const stopGeneration = () => {
     if (abortControllerRef.current) {
