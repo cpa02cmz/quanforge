@@ -53,11 +53,26 @@ const analysisCache = new LRUCache<StrategyAnalysis>();
 // Request deduplication to prevent duplicate API calls
 class RequestDeduplicator {
   private pendingRequests = new Map<string, Promise<any>>();
+  private cleanupTimer: NodeJS.Timeout;
+  private readonly MAX_PENDING_REQUESTS = 100;
+  private readonly CLEANUP_INTERVAL = 30000; // 30 seconds
+
+  constructor() {
+    this.cleanupTimer = setInterval(() => {
+      this.performCleanup();
+    }, this.CLEANUP_INTERVAL);
+  }
 
   async deduplicate<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
     // If request is already in flight, return the existing promise
     if (this.pendingRequests.has(key)) {
       return this.pendingRequests.get(key) as Promise<T>;
+    }
+
+    // Prevent memory leak by limiting pending requests
+    if (this.pendingRequests.size >= this.MAX_PENDING_REQUESTS) {
+      console.warn(`RequestDeduplicator: Too many pending requests (${this.pendingRequests.size}), clearing oldest`);
+      this.clearOldestRequests(Math.floor(this.MAX_PENDING_REQUESTS * 0.5));
     }
 
     // Create new request and store the promise
@@ -75,13 +90,49 @@ class RequestDeduplicator {
     this.pendingRequests.clear();
   }
 
+  // Clear oldest requests to prevent memory leaks
+  private clearOldestRequests(count: number): void {
+    const keys = Array.from(this.pendingRequests.keys()).slice(0, count);
+    keys.forEach(key => this.pendingRequests.delete(key));
+  }
+
+  // Perform periodic cleanup
+  private performCleanup(): void {
+    if (this.pendingRequests.size > this.MAX_PENDING_REQUESTS * 0.8) {
+      console.warn(`RequestDeduplicator: High pending request count (${this.pendingRequests.size}), performing cleanup`);
+      this.clearOldestRequests(Math.floor(this.MAX_PENDING_REQUESTS * 0.3));
+    }
+  }
+
   // Get count of pending requests
   get pendingCount(): number {
     return this.pendingRequests.size;
   }
+
+  // Destroy the deduplicator and clean up timers
+  destroy(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+    }
+    this.clear();
+  }
 }
 
 const requestDeduplicator = new RequestDeduplicator();
+
+/**
+ * Utility: Add timeout to any promise
+ */
+const callWithTimeout = async <T>(
+  promise: Promise<T>, 
+  timeoutMs: number = 30000
+): Promise<T> => {
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('Request timeout')), timeoutMs);
+  });
+  
+  return Promise.race([promise, timeoutPromise]);
+};
 
 /**
  * Utility: Retry an async operation with exponential backoff.
@@ -89,9 +140,10 @@ const requestDeduplicator = new RequestDeduplicator();
  */
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, maxDelay = 10000): Promise<T> {
     try {
-        return await fn();
+        return await callWithTimeout(fn(), 30000); // 30 second timeout
     } catch (error: any) {
         if (error.name === 'AbortError') throw error; // Do not retry if aborted by user
+        if (error.message === 'Request timeout') throw error; // Do not retry timeouts
 
         if (retries === 0) throw error;
         

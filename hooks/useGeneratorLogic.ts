@@ -39,7 +39,8 @@ type GeneratorAction =
   | { type: 'SET_SIMULATION_RESULT'; payload: SimulationResult | null }
   | { type: 'SET_SIMULATING'; payload: boolean }
   | { type: 'RESET_STATE' }
-  | { type: 'LOAD_ROBOT'; payload: Robot };
+  | { type: 'LOAD_ROBOT'; payload: Robot }
+  | { type: 'TRIM_MESSAGES' };
 
 const initialState: GeneratorState = {
   messages: [],
@@ -100,6 +101,10 @@ const generatorReducer = (state: GeneratorState, action: GeneratorAction): Gener
         messages: action.payload.chat_history || [],
         analysis: action.payload.analysis_result || null
       };
+    case 'TRIM_MESSAGES':
+      // Keep only the last 50 messages to prevent memory leaks
+      const trimmedMessages = state.messages.slice(-50);
+      return { ...state, messages: trimmedMessages };
     default:
       return state;
   }
@@ -120,9 +125,14 @@ export const useGeneratorLogic = (id?: string) => {
      return errors.map(error => error.message);
    }, []);
 
-   // Reset State Helper
-   const resetState = useCallback(() => {
-     dispatch({ type: 'RESET_STATE' });
+// Reset State Helper
+    const resetState = useCallback(() => {
+      dispatch({ type: 'RESET_STATE' });
+    }, []);
+
+   // Trim Messages Helper
+   const trimMessages = useCallback(() => {
+      dispatch({ type: 'TRIM_MESSAGES' });
    }, []);
 
 const stopGeneration = () => {
@@ -502,6 +512,7 @@ const stopGeneration = () => {
     clearChat,
     resetConfig,
     runSimulation,
-    stopGeneration
+    stopGeneration,
+    trimMessages
   };
 };
