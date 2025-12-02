@@ -433,34 +433,331 @@ async function getOfflineResponse(request) {
   });
 }
 
-// Background sync for offline actions
+// Enhanced Background Sync for offline actions
 self.addEventListener('sync', (event) => {
   console.log('[SW] Background sync triggered:', event.tag);
   
   if (event.tag === 'background-sync-robots') {
     event.waitUntil(syncRobotsData());
   }
+  
+  if (event.tag === 'background-sync-trading-data') {
+    event.waitUntil(syncTradingData());
+  }
+  
+  if (event.tag === 'background-sync-user-preferences') {
+    event.waitUntil(syncUserPreferences());
+  }
+  
+  if (event.tag === 'background-sync-analytics') {
+    event.waitUntil(syncAnalyticsData());
+  }
 });
 
 async function syncRobotsData() {
   try {
-    // Get cached data that needs to be synced
-    const cache = await caches.open(DYNAMIC_CACHE_NAME);
-    const pendingRequests = await cache.keys();
+    // Get pending robot operations from IndexedDB
+    const pendingOperations = await getPendingOperations('robots');
+    const results = [];
     
-    for (const request of pendingRequests) {
-      if (request.url.includes('/api/robots')) {
-        try {
-          await fetch(request);
-          console.log('[SW] Synced request:', request.url);
-        } catch (error) {
-          console.error('[SW] Failed to sync request:', request.url, error);
+    for (const operation of pendingOperations) {
+      try {
+        const response = await fetch(operation.url, {
+          method: operation.method,
+          headers: operation.headers,
+          body: operation.body
+        });
+        
+        if (response.ok) {
+          await removePendingOperation(operation.id);
+          results.push({ success: true, operation: operation.id });
+          console.log('[SW] Synced robot operation:', operation.id);
+        } else {
+          results.push({ success: false, operation: operation.id, error: response.status });
         }
+      } catch (error) {
+        console.error('[SW] Failed to sync robot operation:', operation.id, error);
+        results.push({ success: false, operation: operation.id, error: error.message });
       }
     }
+    
+    // Notify clients about sync results
+    notifyClients('sync-complete', { type: 'robots', results });
+    return results;
   } catch (error) {
-    console.error('[SW] Background sync failed:', error);
+    console.error('[SW] Robot background sync failed:', error);
+    throw error;
   }
+}
+
+async function syncTradingData() {
+  try {
+    // Sync trading strategies, backtest results, and market data
+    const tradingData = await getPendingOperations('trading');
+    const results = [];
+    
+    for (const data of tradingData) {
+      try {
+        const response = await fetch(`/api/trading/${data.type}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-background-sync': 'true'
+          },
+          body: JSON.stringify(data.payload)
+        });
+        
+        if (response.ok) {
+          await removePendingOperation(data.id);
+          results.push({ success: true, operation: data.id });
+        } else {
+          results.push({ success: false, operation: data.id, error: response.status });
+        }
+      } catch (error) {
+        results.push({ success: false, operation: data.id, error: error.message });
+      }
+    }
+    
+    notifyClients('sync-complete', { type: 'trading', results });
+    return results;
+  } catch (error) {
+    console.error('[SW] Trading data sync failed:', error);
+    throw error;
+  }
+}
+
+async function syncUserPreferences() {
+  try {
+    // Sync user settings and preferences
+    const preferences = await getPendingOperations('preferences');
+    const results = [];
+    
+    for (const preference of preferences) {
+      try {
+        const response = await fetch('/api/user/preferences', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-background-sync': 'true'
+          },
+          body: JSON.stringify(preference.data)
+        });
+        
+        if (response.ok) {
+          await removePendingOperation(preference.id);
+          results.push({ success: true, operation: preference.id });
+        } else {
+          results.push({ success: false, operation: preference.id, error: response.status });
+        }
+      } catch (error) {
+        results.push({ success: false, operation: preference.id, error: error.message });
+      }
+    }
+    
+    notifyClients('sync-complete', { type: 'preferences', results });
+    return results;
+  } catch (error) {
+    console.error('[SW] User preferences sync failed:', error);
+    throw error;
+  }
+}
+
+async function syncAnalyticsData() {
+  try {
+    // Sync analytics and performance data
+    const analyticsData = await getPendingOperations('analytics');
+    const results = [];
+    
+    // Batch analytics data for efficiency
+    const batchedData = analyticsData.reduce((batches, item) => {
+      const lastBatch = batches[batches.length - 1];
+      if (!lastBatch || lastBatch.length >= 10) {
+        batches.push([item]);
+      } else {
+        lastBatch.push(item);
+      }
+      return batches;
+    }, []);
+    
+    for (const batch of batchedData) {
+      try {
+        const response = await fetch('/api/analytics/batch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-background-sync': 'true'
+          },
+          body: JSON.stringify({ events: batch.map(item => item.payload) })
+        });
+        
+        if (response.ok) {
+          for (const item of batch) {
+            await removePendingOperation(item.id);
+          }
+          results.push({ success: true, operations: batch.map(item => item.id) });
+        } else {
+          results.push({ success: false, operations: batch.map(item => item.id), error: response.status });
+        }
+      } catch (error) {
+        results.push({ success: false, operations: batch.map(item => item.id), error: error.message });
+      }
+    }
+    
+    notifyClients('sync-complete', { type: 'analytics', results });
+    return results;
+  } catch (error) {
+    console.error('[SW] Analytics sync failed:', error);
+    throw error;
+  }
+}
+
+// IndexedDB operations for pending sync data
+async function getPendingOperations(type) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('quanforge-sync-db', 1);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction(['pending-operations'], 'readonly');
+      const store = transaction.objectStore('pending-operations');
+      const index = store.index('type');
+      const getRequest = index.getAll(type);
+      
+      getRequest.onsuccess = () => resolve(getRequest.result || []);
+      getRequest.onerror = () => reject(getRequest.error);
+    };
+    
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains('pending-operations')) {
+        const store = db.createObjectStore('pending-operations', { keyPath: 'id' });
+        store.createIndex('type', 'type', { unique: false });
+        store.createIndex('timestamp', 'timestamp', { unique: false });
+      }
+    };
+  });
+}
+
+async function removePendingOperation(id) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('quanforge-sync-db', 1);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction(['pending-operations'], 'readwrite');
+      const store = transaction.objectStore('pending-operations');
+      const deleteRequest = store.delete(id);
+      
+      deleteRequest.onsuccess = () => resolve(deleteRequest.result);
+      deleteRequest.onerror = () => reject(deleteRequest.error);
+    };
+  });
+}
+
+// Enhanced notification system for sync events
+function notifyClients(type, data) {
+  self.clients.matchAll().then(clients => {
+    clients.forEach(client => {
+      client.postMessage({
+        type,
+        data,
+        timestamp: Date.now(),
+        source: 'service-worker'
+      });
+    });
+  });
+}
+
+// Register background sync for offline operations
+async function registerBackgroundSync(tag, minInterval = 0) {
+  if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+    try {
+      const registration = await self.registration;
+      await registration.sync.register(tag);
+      console.log(`[SW] Background sync registered for tag: ${tag}`);
+    } catch (error) {
+      console.error(`[SW] Failed to register background sync for ${tag}:`, error);
+    }
+  }
+}
+
+// Enhanced periodic sync for cache updates and data synchronization
+self.addEventListener('periodicsync', (event) => {
+  console.log('[SW] Periodic sync triggered:', event.tag);
+  
+  if (event.tag === 'cache-update') {
+    event.waitUntil(updateCaches());
+  }
+  
+  if (event.tag === 'data-sync') {
+    event.waitUntil(performPeriodicDataSync());
+  }
+  
+  if (event.tag === 'analytics-report') {
+    event.waitUntil(sendAnalyticsReport());
+  }
+});
+
+async function performPeriodicDataSync() {
+  try {
+    // Sync all types of data
+    const results = await Promise.allSettled([
+      syncRobotsData(),
+      syncTradingData(),
+      syncUserPreferences(),
+      syncAnalyticsData()
+    ]);
+    
+    console.log('[SW] Periodic data sync completed:', results);
+    notifyClients('periodic-sync-complete', { results });
+  } catch (error) {
+    console.error('[SW] Periodic data sync failed:', error);
+  }
+}
+
+async function sendAnalyticsReport() {
+  try {
+    // Collect performance metrics and send to analytics
+    const metrics = await collectPerformanceMetrics();
+    const response = await fetch('/api/analytics/performance', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-periodic-sync': 'true'
+      },
+      body: JSON.stringify(metrics)
+    });
+    
+    if (response.ok) {
+      console.log('[SW] Analytics report sent successfully');
+    }
+  } catch (error) {
+    console.error('[SW] Failed to send analytics report:', error);
+  }
+}
+
+async function collectPerformanceMetrics() {
+  const cacheNames = await caches.keys();
+  const cacheMetrics = {};
+  
+  for (const cacheName of cacheNames) {
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
+    cacheMetrics[cacheName] = {
+      entries: keys.length,
+      estimatedSize: await estimateCacheSize(cache)
+    };
+  }
+  
+  return {
+    timestamp: Date.now(),
+    caches: cacheMetrics,
+    userAgent: self.navigator.userAgent,
+    platform: self.navigator.platform,
+    edgeRegion: detectEdgeRegion()
+  };
 }
 
 // Push notifications (if needed in the future)
