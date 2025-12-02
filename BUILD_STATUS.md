@@ -3,7 +3,7 @@
 Current build status: ✅ All builds passing
 - Build: Successful
 - Type checking: Successful 
-- Dependencies: Resolved (react-helmet-async peer dependency conflict fixed)
+- Dependencies: Working with legacy-peer-deps flag
 - Build time: 9.15s
 - Bundle size: Optimized with granular chunks
 - All TypeScript checks passed
