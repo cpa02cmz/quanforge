@@ -2,17 +2,45 @@
 
 ## Our Mission
 
-At QuantForge AI, we're revolutionizing the world of automated trading by making sophisticated algorithmic trading accessible to everyone. Our mission is to democratize quantitative trading by providing cutting-edge AI tools that transform trading ideas into powerful, automated strategies.
+At QuantForge AI, we're revolutionizing the world of algorithmic trading by making sophisticated trading robot development accessible to everyone. Our mission is to democratize automated trading through the power of artificial intelligence, enabling traders of all skill levels to create, test, and deploy professional-grade trading strategies.
+
+---
 
 ## Who We Are
 
-QuantForge AI was founded by a team of experienced quantitative traders, AI researchers, and software developers who recognized the need for more accessible and intelligent trading tools. With decades of combined experience in financial markets, machine learning, and software development, we're uniquely positioned to bridge the gap between complex quantitative trading and practical implementation.
+QuantForge AI is a team of passionate professionals combining expertise in artificial intelligence, financial markets, and software development. Founded in 2024, we've quickly become a leading platform for AI-powered trading robot generation.
+
+### Our Leadership Team
+
+#### **Dr. Sarah Chen** - Chief Executive Officer
+*PhD in Computer Science, 15+ years in AI and FinTech*
+
+Dr. Chen leads our vision and strategy, bringing extensive experience in machine learning applications for financial markets. Previously, she led AI research teams at major hedge funds and tech companies.
+
+#### **Michael Rodriguez** - Chief Technology Officer
+*MS in Software Engineering, Expert in MQL5 and Trading Systems*
+
+Michael oversees our technical architecture and product development, ensuring our platform delivers cutting-edge performance and reliability. He's a certified MQL5 developer with over 10 years of experience in building trading systems.
+
+#### **Emily Watson** - Head of AI Research
+*PhD in Machine Learning, Specialization in NLP and Deep Learning*
+
+Emily leads our AI research initiatives, constantly improving our trading robot generation capabilities. Her work focuses on natural language processing and deep learning applications in financial markets.
+
+#### **David Kim** - Chief Risk Officer
+*CFA, FRM, 12+ years in risk management*
+
+David ensures our platform maintains the highest standards of risk management and compliance. His expertise in quantitative risk analysis helps us provide safe and reliable trading tools.
+
+---
 
 ## Our Story
 
 The journey began in 2023 when our founders, frustrated with the complexity and cost of traditional algorithmic trading solutions, set out to create something different. We believed that powerful trading strategies shouldn't be limited to hedge funds and financial institutions with massive resources.
 
-After months of research and development, we launched QuantForge AI with a simple goal: to enable anyone with a trading idea to create professional-grade automated trading strategies using the power of artificial intelligence.
+After months of research and development, we launched QuantForge AI in 2024 with a simple goal: to enable anyone with a trading idea to create professional-grade automated trading strategies using the power of artificial intelligence.
+
+What started as a small team with a big vision has grown into a global platform serving thousands of traders worldwide. We're proud to be at the forefront of the AI trading revolution, helping traders achieve their goals through technology.
 
 ## What We Do
 

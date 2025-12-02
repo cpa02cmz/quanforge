@@ -355,5 +355,189 @@ export const structuredDataTemplates = {
         }
       ]
     }
+  }),
+
+  // New structured data templates for enhanced SEO
+  techArticle: (headline: string, description: string, author: string = "QuantForge AI") => ({
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": headline,
+    "description": description,
+    "author": {
+      "@type": "Organization",
+      "name": author
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "datePublished": new Date().toISOString(),
+    "dateModified": new Date().toISOString(),
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://quanforge.ai"
+    },
+    "about": [
+      {
+        "@type": "Thing",
+        "name": "MQL5 Programming"
+      },
+      {
+        "@type": "Thing", 
+        "name": "Algorithmic Trading"
+      },
+      {
+        "@type": "Thing",
+        "name": "Artificial Intelligence"
+      }
+    ]
+  }),
+
+  collectionPage: (name: string, description: string) => ({
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": name,
+    "description": description,
+    "url": "https://quanforge.ai",
+    "dateModified": new Date().toISOString(),
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "QuantForge AI",
+      "url": "https://quanforge.ai"
+    },
+    "about": {
+      "@type": "Thing",
+      "name": "Trading Robot Collection"
+    },
+    "mainEntity": {
+      "@type": "ItemList",
+      "numberOfItems": 10,
+      "itemListElement": [
+        {
+          "@type": "SoftwareApplication",
+          "name": "MQL5 Trading Robot Generator",
+          "description": "AI-powered trading robot generation tool"
+        },
+        {
+          "@type": "SoftwareApplication", 
+          "name": "Strategy Backtester",
+          "description": "Advanced backtesting and simulation tools"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "Portfolio Manager",
+          "description": "Comprehensive portfolio management dashboard"
+        }
+      ]
+    }
+  }),
+
+  searchAction: () => ({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "url": "https://quanforge.ai/",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://quanforge.ai/search?q={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  }),
+
+  organization: () => ({
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "QuantForge AI",
+    "alternateName": "QuantForge",
+    "url": "https://quanforge.ai",
+    "logo": "https://quanforge.ai/logo.png",
+    "description": "Advanced MQL5 Trading Robot Generator powered by AI",
+    "foundingDate": "2024",
+    "areaServed": "Worldwide",
+    "knowsAbout": [
+      "MQL5 Programming",
+      "MetaTrader 5",
+      "Algorithmic Trading",
+      "Artificial Intelligence",
+      "Financial Technology",
+      "Trading Robots",
+      "Expert Advisors"
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer service",
+      "availableLanguage": ["English"],
+      "url": "https://quanforge.ai/contact"
+    },
+    "sameAs": [
+      "https://twitter.com/quanforge",
+      "https://github.com/quanforge"
+    ]
+  }),
+
+  webApplication: () => ({
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "QuantForge AI",
+    "description": "Advanced MQL5 Trading Robot Generator powered by AI",
+    "url": "https://quanforge.ai",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Web Browser",
+    "browserRequirements": "Requires JavaScript. Requires HTML5.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock"
+    },
+    "featureList": [
+      "AI-Powered Code Generation",
+      "Visual Strategy Configuration",
+      "Real-time Market Simulation",
+      "Risk Analysis Tools",
+      "Portfolio Management",
+      "Multi-Language Support",
+      "Cloud Storage",
+      "Advanced Analytics"
+    ],
+    "screenshot": "https://quanforge.ai/screenshot.png",
+    "softwareVersion": "1.0.0",
+    "author": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    }
+  }),
+
+  dataset: (name: string, description: string) => ({
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "name": name,
+    "description": description,
+    "url": "https://quanforge.ai",
+    "datePublished": new Date().toISOString(),
+    "dateModified": new Date().toISOString(),
+    "creator": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "distribution": [
+      {
+        "@type": "DataDownload",
+        "encodingFormat": "application/json",
+        "contentUrl": "https://quanforge.ai/api/data"
+      }
+    ],
+    "keywords": "trading data, market analysis, algorithmic trading, MQL5",
+    "license": "https://quanforge.ai/terms"
   })
 };
