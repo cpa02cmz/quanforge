@@ -48,6 +48,15 @@ export const PageMeta: React.FC<PageMetaProps> = ({
       {/* Canonical URL */}
       <link rel="canonical" href={canonicalUrl} />
       
+      {/* Alternate language links */}
+      <link rel="alternate" hrefLang="en" href={canonicalUrl} />
+      <link rel="alternate" hrefLang="x-default" href={canonicalUrl} />
+      
+      {/* Favicon and app icons */}
+      <link rel="manifest" href="/manifest.json" />
+      <link rel="apple-touch-icon" href="/icon-192x192.png" />
+      <link rel="icon" href="/favicon.ico" sizes="any" />
+      
       {/* Open Graph Tags */}
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
@@ -86,6 +95,40 @@ export const PageMeta: React.FC<PageMetaProps> = ({
       <meta name="geo.region" content="US" />
       <meta name="geo.placename" content="Global" />
       <meta name="category" content="finance, technology, trading, artificial intelligence" />
+      <meta name="coverage" content="Worldwide" />
+      <meta name="target" content="all" />
+      <meta name="HandheldFriendly" content="True" />
+      <meta name="MobileOptimized" content="320" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      <meta name="format-detection" content="telephone=no" />
+      <meta name="mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-title" content="QuantForge AI" />
+      <meta name="application-name" content="QuantForge AI" />
+      <meta name="referrer" content="no-referrer-when-downgrade" />
+      
+      {/* Enhanced SEO verification tags */}
+      <meta name="google-site-verification" content="your-google-verification-code" />
+      <meta name="msvalidate.01" content="your-bing-verification-code" />
+      <meta name="yandex-verification" content="your-yandex-verification-code" />
+      <meta name="p:domain_verify" content="your-pinterest-verification-code" />
+      
+      {/* Preconnect and DNS prefetch for performance */}
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      <link rel="dns-prefetch" href="//cdn.tailwindcss.com" />
+      <link rel="dns-prefetch" href="//cdnjs.cloudflare.com" />
+      <link rel="dns-prefetch" href="//www.googletagmanager.com" />
+      
+      {/* Additional Open Graph tags */}
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content="QuantForge AI - Advanced MQL5 Trading Robot Generator" />
+      <meta property="fb:app_id" content="your-facebook-app-id" />
+      
+      {/* Additional Twitter tags */}
+      <meta name="twitter:domain" content="quanforge.ai" />
+      <meta name="twitter:image:alt" content="QuantForge AI - Advanced MQL5 Trading Robot Generator" />
       
       {/* Structured Data */}
       {structuredData.map((data, index) => (

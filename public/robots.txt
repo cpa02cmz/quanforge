@@ -136,3 +136,41 @@ Disallow: /
 
 User-agent: Claude-Web
 Disallow: /
+
+# Additional SEO-friendly directives
+# Allow specific important paths for search engines
+User-agent: Googlebot
+Allow: /generator
+Allow: /wiki
+Allow: /faq
+Allow: /features
+Allow: /blog
+Allow: /about
+Allow: /assets/
+Allow: /images/
+Allow: /css/
+Allow: /js/
+Crawl-delay: 1
+
+# Enhanced instructions for Bing
+User-agent: Bingbot
+Allow: /generator
+Allow: /wiki
+Allow: /faq
+Allow: /features
+Allow: /blog
+Allow: /about
+Crawl-delay: 1
+
+# Instructions for other major search engines
+User-agent: Slurp
+Allow: /
+Crawl-delay: 1
+
+User-agent: DuckDuckBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 2

@@ -355,5 +355,82 @@ export const structuredDataTemplates = {
         }
       ]
     }
+  }),
+
+  // Additional structured data types for enhanced SEO
+  financialService: (name: string, description: string) => ({
+    "@context": "https://schema.org",
+    "@type": "FinancialService",
+    "name": name,
+    "description": description,
+    "provider": {
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "url": "https://quanforge.ai"
+    },
+    "serviceType": "Investment Services",
+    "areaServed": "Worldwide",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock"
+    }
+  }),
+
+  techArticle: (headline: string, description: string, author: string, datePublished: string) => ({
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": headline,
+    "description": description,
+    "author": {
+      "@type": "Person",
+      "name": author
+    },
+    "datePublished": datePublished,
+    "dateModified": new Date().toISOString(),
+    "publisher": {
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://quanforge.ai/logo.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://quanforge.ai"
+    }
+  }),
+
+  searchAction: () => ({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "url": "https://quanforge.ai",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://quanforge.ai/search?q={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  }),
+
+  website: (name: string, description: string, url: string) => ({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": name,
+    "description": description,
+    "url": url,
+    "publisher": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": `${url}/search?q={search_term_string}`,
+      "query-input": "required name=search_term_string"
+    }
   })
 };
