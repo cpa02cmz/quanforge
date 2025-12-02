@@ -130,10 +130,12 @@ export const useGeneratorLogic = (id?: string) => {
       dispatch({ type: 'RESET_STATE' });
     }, []);
 
-   // Trim Messages Helper
-   const trimMessages = useCallback(() => {
-      dispatch({ type: 'TRIM_MESSAGES' });
-   }, []);
+ // Trim Messages Helper - optimize by only trimming when needed
+    const trimMessages = useCallback(() => {
+       if (state.messages.length > 50) { // Only trim if we have more than the threshold
+         dispatch({ type: 'TRIM_MESSAGES' });
+       }
+    }, [state.messages.length]);
 
 const stopGeneration = () => {
     if (abortControllerRef.current) {
@@ -202,41 +204,43 @@ const stopGeneration = () => {
       return rawText;
   };
 
-  // Logic: Process AI Response (structured object with content and thinking)
-  const processAIResponse = useCallback(async (response: { content: string, thinking?: string }) => {
-      const { content: rawResponse, thinking } = response;
-      const extractedCode = extractCode(rawResponse);
-      
-      if (extractedCode) {
-          dispatch({ type: 'SET_CODE', payload: extractedCode });
-          
-          // Trigger analysis in background, cancellable
-          const analysisController = new AbortController();
-          analyzeStrategy(extractedCode, analysisController.signal).then(analysis => 
-              dispatch({ type: 'SET_ANALYSIS', payload: analysis })
-          ).catch(err => {
-             if (err.name !== 'AbortError') console.error("Analysis failed", err);
-          });
+   // Logic: Process AI Response (structured object with content and thinking)
+   const processAIResponse = useCallback(async (response: { content: string, thinking?: string }) => {
+       const { content: rawResponse, thinking } = response;
+       const extractedCode = extractCode(rawResponse);
+       
+       if (extractedCode) {
+           dispatch({ type: 'SET_CODE', payload: extractedCode });
+           
+           // Trigger analysis in background, cancellable - use requestAnimationFrame for better performance
+           requestAnimationFrame(() => {
+             const analysisController = new AbortController();
+             analyzeStrategy(extractedCode, analysisController.signal).then(analysis => 
+                 dispatch({ type: 'SET_ANALYSIS', payload: analysis })
+             ).catch(err => {
+                if (err.name !== 'AbortError') console.error("Analysis failed", err);
+             });
+           });
 
-          dispatch({ type: 'SET_SIMULATION_RESULT', payload: null }); 
-          
-          if (window.innerWidth < 768) {
-              dispatch({ type: 'SET_MOBILE_VIEW', payload: 'result' });
-          }
-      }
+           dispatch({ type: 'SET_SIMULATION_RESULT', payload: null }); 
+           
+           if (window.innerWidth < 768) {
+               dispatch({ type: 'SET_MOBILE_VIEW', payload: 'result' });
+           }
+       }
 
-      const chatContent = formatChatMessage(rawResponse, !!extractedCode);
-      
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: MessageRole.MODEL,
-        content: chatContent || (extractedCode ? "Code updated successfully." : "I couldn't generate a text response."),
-        timestamp: Date.now(),
-        thinking: thinking 
-      };
+       const chatContent = formatChatMessage(rawResponse, !!extractedCode);
+       
+       const aiMessage: Message = {
+         id: (Date.now() + 1).toString(),
+         role: MessageRole.MODEL,
+         content: chatContent || (extractedCode ? "Code updated successfully." : "I couldn't generate a text response."),
+         timestamp: Date.now(),
+         thinking: thinking 
+       };
 
-      dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
-  }, []);
+       dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
+   }, []);
 
   // Handlers
   const handleSendMessage = async (content: string) => {
