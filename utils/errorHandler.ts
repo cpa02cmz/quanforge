@@ -152,19 +152,70 @@ export const handleError = (error: Error | string, operation: string, component?
   errorHandler.handleError(error, { operation, component, additionalData });
 };
 
-// Higher-order function for wrapping async functions
+// Higher-order function for wrapping async functions with retry logic
 export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
   fn: T,
   operation: string,
-  component?: string
+  component?: string,
+  options: {
+    retries?: number;
+    fallback?: () => Promise<ReturnType<T>> | ReturnType<T>;
+    backoff?: 'linear' | 'exponential';
+    backoffBase?: number;
+    shouldRetry?: (error: any) => boolean;
+  } = {}
 ): T => {
+  const { 
+    retries = 0, 
+    fallback, 
+    backoff = 'exponential', 
+    backoffBase = 1000,
+    shouldRetry = () => true
+  } = options;
+  
   return (async (...args: Parameters<T>) => {
-    try {
-      return await fn(...args);
-    } catch (error) {
-      handleError(error as Error, operation, component, { args });
-      throw error; // Re-throw to maintain original behavior
+    let lastError: any;
+    
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        if (attempt > 0) {
+          // Apply backoff delay
+          const delay = backoff === 'exponential' 
+            ? backoffBase * Math.pow(2, attempt - 1)
+            : backoffBase * attempt;
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        
+        return await fn(...args);
+      } catch (error) {
+        lastError = error;
+        
+        // Log error on each attempt
+        handleError(error as Error, `${operation} (attempt ${attempt + 1}/${retries + 1})`, component, { 
+          args, 
+          attempt: attempt + 1,
+          error: error instanceof Error ? error.message : String(error)
+        });
+        
+        // Check if we should retry this error
+        if (!shouldRetry(error) || attempt === retries) {
+          break;
+        }
+      }
     }
+    
+    // If fallback is provided, try that instead of re-throwing
+    if (fallback) {
+      try {
+        console.warn(`Using fallback for ${operation} after ${retries + 1} attempts`);
+        return await fallback();
+      } catch (fallbackError) {
+        console.error(`Fallback failed for ${operation}:`, fallbackError);
+      }
+    }
+    
+    throw lastError; // Re-throw the original error if no fallback worked
   }) as T;
 };
 
@@ -180,6 +231,176 @@ export const useErrorHandler = () => {
     clearErrors: () => errorHandler.clearErrors(),
     getErrorStats: () => errorHandler.getErrorStats(),
   };
+};
+
+// Error classification utilities
+export const errorClassifier = {
+  isNetworkError: (error: Error): boolean => {
+    return error.name === 'NetworkError' || 
+           error.message.includes('Network') ||
+           error.message.includes('fetch') ||
+           error.message.includes('Failed to fetch') ||
+           error.message.includes('Load failed');
+  },
+  
+  isTimeoutError: (error: Error): boolean => {
+    return error.name === 'TimeoutError' || 
+           error.message.includes('timeout') ||
+           error.name === 'AbortError';
+  },
+  
+  isValidationError: (error: Error): boolean => {
+    return error.name === 'ValidationError' || 
+           error.message.includes('validation');
+  },
+  
+  isAuthError: (error: Error): boolean => {
+    return error.message.toLowerCase().includes('unauthorized') ||
+           error.message.toLowerCase().includes('forbidden') ||
+           error.message.includes('401') ||
+           error.message.includes('403');
+  },
+  
+  isRateLimitError: (error: Error): boolean => {
+    return error.message.toLowerCase().includes('rate limit') ||
+           error.message.includes('429');
+  },
+  
+  isServerError: (error: Error): boolean => {
+    return error.message.includes('500') ||
+           error.message.includes('502') ||
+           error.message.includes('503') ||
+           error.message.includes('504') ||
+           error.message.toLowerCase().includes('server error');
+  },
+  
+  isClientError: (error: Error): boolean => {
+    return error.message.includes('400') ||
+           error.message.includes('404') ||
+           error.message.includes('409') ||
+           error.message.toLowerCase().includes('client error');
+  }
+};
+
+// Error recovery utilities
+export const errorRecovery = {
+  async retryWithBackoff<T>(
+    operation: () => Promise<T>, 
+    maxRetries: number = 3,
+    baseDelay: number = 1000,
+    shouldRetry?: (error: any) => boolean
+  ): Promise<T> {
+    let lastError: Error;
+    
+    for (let i = 0; i <= maxRetries; i++) {
+      try {
+        return await operation();
+      } catch (error: any) {
+        lastError = error;
+        
+        if (i === maxRetries) {
+          throw error;
+        }
+        
+        // Check if this error should be retried
+        if (shouldRetry && !shouldRetry(error)) {
+          throw error;
+        }
+        
+        // Don't retry on validation or auth errors
+        if (errorClassifier.isValidationError(error) || errorClassifier.isAuthError(error)) {
+          throw error;
+        }
+        
+        const delay = baseDelay * Math.pow(2, i); // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    
+    throw lastError!;
+  },
+  
+  async fallbackToCache<T>(
+    operation: () => Promise<T>,
+    cacheKey: string,
+    cacheGetter: (key: string) => T | null,
+    cacheSetter: (key: string, value: T) => void
+  ): Promise<T> {
+    try {
+      const result = await operation();
+      cacheSetter(cacheKey, result);
+      return result;
+    } catch (error) {
+      // Try to get from cache
+      const cached = cacheGetter(cacheKey);
+      if (cached !== null) {
+        console.warn(`Operation failed, using cached data for ${cacheKey}`);
+        return cached;
+      }
+      throw error;
+    }
+  },
+  
+  // Circuit breaker pattern implementation
+  createCircuitBreaker<T extends (...args: any[]) => Promise<any>>(
+    operation: T,
+    options: {
+      failureThreshold?: number;
+      timeout?: number;
+      resetTimeout?: number;
+    } = {}
+  ): T {
+    const { 
+      failureThreshold = 5, 
+      timeout = 10000, 
+      resetTimeout = 60000 
+    } = options;
+    
+    let failureCount = 0;
+    let lastFailureTime: number | null = null;
+    let state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';
+    
+    return (async (...args: Parameters<T>): Promise<ReturnType<T>> => {
+      const now = Date.now();
+      
+      // If OPEN and reset timeout has passed, move to HALF_OPEN
+      if (state === 'OPEN' && lastFailureTime && now - lastFailureTime > resetTimeout) {
+        state = 'HALF_OPEN';
+      }
+      
+      // If OPEN, fail fast
+      if (state === 'OPEN') {
+        throw new Error('Circuit breaker is OPEN');
+      }
+      
+      try {
+        const result = await Promise.race([
+          operation(...args),
+          new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('Circuit breaker timeout')), timeout)
+          )
+        ]);
+        
+        // Success - reset failure count and close circuit
+        failureCount = 0;
+        state = 'CLOSED';
+        return result;
+      } catch (error) {
+        failureCount++;
+        lastFailureTime = now;
+        
+        // If failure threshold exceeded, open circuit
+        if (failureCount >= failureThreshold) {
+          state = 'OPEN';
+        } else {
+          // Move back to CLOSED if we were in HALF_OPEN and succeeded
+          state = 'HALF_OPEN'; // We actually remain half-open until success
+        }
+        
+        throw error;
+      }
+    }) as T;
+  }
 };
 
 // Global error handlers for unhandled errors and promise rejections

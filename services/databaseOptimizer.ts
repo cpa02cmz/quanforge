@@ -199,144 +199,164 @@ class DatabaseOptimizer {
     }
   }
 
-  /**
-   * Optimized paginated robot query
-   */
-  async getRobotsPaginatedOptimized(
-    client: SupabaseClient,
-    options: {
-      userId?: string;
-      strategyType?: string;
-      searchTerm?: string;
-      limit?: number;
-      offset?: number;
-      sortBy?: 'created_at' | 'updated_at' | 'name';
-      sortOrder?: 'asc' | 'desc';
-      includeAnalytics?: boolean;
-    } = {}
-  ): Promise<{ 
-    data: Robot[] | null; 
-    error: any; 
-    metrics: OptimizationMetrics;
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-      hasNext: boolean;
-      hasPrev: boolean;
-    };
-  }> {
-    const startTime = performance.now();
-    const page = Math.floor((options.offset || 0) / (options.limit || 20)) + 1;
-    const limit = options.limit || 20;
-    const offset = options.offset || 0;
-    
-    // Create cache key for this query
-    const cacheKey = `robots_paginated_${page}_${limit}_${options.searchTerm || ''}_${options.strategyType || 'All'}_${options.userId || 'All'}`;
-    
-    // Try cache first if enabled
-    if (this.config.enableQueryCaching) {
-      const cached = robotCache.get<any>(cacheKey);
-      if (cached) {
-        const executionTime = performance.now() - startTime;
-        this.recordOptimization('getRobotsPaginatedOptimized', executionTime, cached.data.length, true);
-        
-        return {
-          ...cached,
-          metrics: this.metrics
-        };
-      }
-    }
-    
-    try {
-      // Use query optimizer for the database query
-      const result = await queryOptimizer.getRobotsOptimized(client, {
-        userId: options.userId,
-        strategyType: options.strategyType,
-        searchTerm: options.searchTerm,
-        limit: limit,
-        offset: offset,
-        orderBy: options.sortBy,
-        orderDirection: options.sortOrder,
-      });
-      
-      if (result.error) {
-        const executionTime = performance.now() - startTime;
-        this.recordOptimization('getRobotsPaginatedOptimized', executionTime, 0, false);
-        
-        return {
-          data: null,
-          error: result.error,
-          metrics: this.metrics,
-          pagination: {
-            page,
-            limit,
-            total: 0,
-            totalPages: 0,
-            hasNext: false,
-            hasPrev: false,
-          }
-        };
-      }
-      
-      // Calculate pagination metadata
-      const total = result.data ? result.data.length : 0; // In real implementation, we'd get the total from count query
-      const totalPages = Math.ceil(total / limit);
-      const hasNext = offset + limit < total;
-      const hasPrev = page > 1;
-      
-      const response = {
-        data: result.data,
-        error: null,
-        metrics: this.metrics,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages,
-          hasNext,
-          hasPrev,
-        }
-      };
-      
-      // Cache the result if caching is enabled
-      if (this.config.enableQueryCaching) {
-        robotCache.set(cacheKey, response, {
-          ttl: 300000, // 5 minutes
-          tags: ['robots', 'paginated'],
-          priority: 'high'
-        });
-      }
-      
-      const executionTime = performance.now() - startTime;
-      this.recordOptimization(
-        'getRobotsPaginatedOptimized',
-        executionTime,
-        Array.isArray(result.data) ? result.data.length : 0,
-        result.metrics.cacheHit
-      );
-      
-      return response;
-    } catch (error) {
-      const executionTime = performance.now() - startTime;
-      this.recordOptimization('getRobotsPaginatedOptimized', executionTime, 0, false);
-      
-      return {
-        data: null,
-        error,
-        metrics: this.metrics,
-        pagination: {
-          page,
-          limit,
-          total: 0,
-          totalPages: 0,
-          hasNext: false,
-          hasPrev: false,
-        }
-      };
-    }
-  }
+   /**
+    * Optimized paginated robot query with enhanced error handling and proper count
+    */
+   async getRobotsPaginatedOptimized(
+     client: SupabaseClient,
+     options: {
+       userId?: string;
+       strategyType?: string;
+       searchTerm?: string;
+       limit?: number;
+       offset?: number;
+       sortBy?: 'created_at' | 'updated_at' | 'name';
+       sortOrder?: 'asc' | 'desc';
+       includeAnalytics?: boolean;
+     } = {}
+   ): Promise<{ 
+     data: Robot[] | null; 
+     error: any; 
+     metrics: OptimizationMetrics;
+     pagination: {
+       page: number;
+       limit: number;
+       total: number;
+       totalPages: number;
+       hasNext: boolean;
+       hasPrev: boolean;
+     };
+   }> {
+     const startTime = performance.now();
+     const page = Math.floor((options.offset || 0) / (options.limit || 20)) + 1;
+     const limit = options.limit || 20;
+     const offset = options.offset || 0;
+     
+     // Create cache key for this query
+     const cacheKey = `robots_paginated_${page}_${limit}_${options.searchTerm || ''}_${options.strategyType || 'All'}_${options.userId || 'All'}`;
+     
+     // Try cache first if enabled
+     if (this.config.enableQueryCaching) {
+       const cached = robotCache.get<any>(cacheKey);
+       if (cached) {
+         const executionTime = performance.now() - startTime;
+         this.recordOptimization('getRobotsPaginatedOptimized', executionTime, cached.data.length, true);
+         
+         return {
+           ...cached,
+           metrics: this.metrics
+         };
+       }
+     }
+     
+     try {
+       // Get total count for proper pagination
+       let countQuery = client.from('robots').select('*', { count: 'exact', head: true });
+       
+       if (options.userId) {
+         countQuery = countQuery.eq('user_id', options.userId);
+       }
+       
+       if (options.strategyType && options.strategyType !== 'All') {
+         countQuery = countQuery.eq('strategy_type', options.strategyType);
+       }
+       
+       if (options.searchTerm) {
+         countQuery = countQuery.or(`name.ilike.%${options.searchTerm}%,description.ilike.%${options.searchTerm}%`);
+       }
+       
+       const { count: totalCount, error: countError } = await countQuery;
+       if (countError) {
+         console.error('Count query failed:', countError);
+       }
+       
+       // Use query optimizer for the database query
+       const result = await queryOptimizer.getRobotsOptimized(client, {
+         userId: options.userId,
+         strategyType: options.strategyType,
+         searchTerm: options.searchTerm,
+         limit: limit,
+         offset: offset,
+         orderBy: options.sortBy,
+         orderDirection: options.sortOrder,
+       });
+       
+       if (result.error) {
+         const executionTime = performance.now() - startTime;
+         this.recordOptimization('getRobotsPaginatedOptimized', executionTime, 0, false);
+         
+         return {
+           data: null,
+           error: result.error,
+           metrics: this.metrics,
+           pagination: {
+             page,
+             limit,
+             total: totalCount || 0,
+             totalPages: totalCount ? Math.ceil(totalCount / limit) : 0,
+             hasNext: false,
+             hasPrev: false,
+           }
+         };
+       }
+       
+       // Calculate pagination metadata based on actual total count
+       const total = totalCount || (result.data ? result.data.length : 0);
+       const totalPages = totalCount ? Math.ceil(totalCount / limit) : Math.ceil(total / limit);
+       const hasNext = offset + limit < total;
+       const hasPrev = page > 1;
+       
+       const response = {
+         data: result.data,
+         error: null,
+         metrics: this.metrics,
+         pagination: {
+           page,
+           limit,
+           total,
+           totalPages,
+           hasNext,
+           hasPrev,
+         }
+       };
+       
+       // Cache the result if caching is enabled
+       if (this.config.enableQueryCaching) {
+         robotCache.set(cacheKey, response, {
+           ttl: 300000, // 5 minutes
+           tags: ['robots', 'paginated'],
+           priority: 'high'
+         });
+       }
+       
+       const executionTime = performance.now() - startTime;
+       this.recordOptimization(
+         'getRobotsPaginatedOptimized',
+         executionTime,
+         Array.isArray(result.data) ? result.data.length : 0,
+         result.metrics.cacheHit
+       );
+       
+       return response;
+     } catch (error) {
+       const executionTime = performance.now() - startTime;
+       this.recordOptimization('getRobotsPaginatedOptimized', executionTime, 0, false);
+       
+       return {
+         data: null,
+         error,
+         metrics: this.metrics,
+         pagination: {
+           page,
+           limit,
+           total: 0,
+           totalPages: 0,
+           hasNext: false,
+           hasPrev: false,
+         }
+       };
+     }
+   }
 
   /**
    * Advanced analytics query optimization

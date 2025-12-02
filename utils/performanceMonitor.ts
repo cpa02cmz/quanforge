@@ -303,6 +303,113 @@ export function measure<T>(
   }
 }
 
+// Advanced logging and monitoring utilities
+interface LogEntry {
+  timestamp: number;
+  level: 'debug' | 'info' | 'warn' | 'error';
+  message: string;
+  context: Record<string, any>;
+  operation?: string;
+  userId?: string;
+  sessionId?: string;
+}
+
+class Logger {
+  private logs: LogEntry[] = [];
+  private maxLogs = 1000; // Keep only last 1000 logs
+  private logLevel: 'debug' | 'info' | 'warn' | 'error' = 'info';
+  private sessionId: string;
+  private userId?: string;
+
+  constructor() {
+    this.sessionId = this.generateSessionId();
+  }
+
+  private generateSessionId(): string {
+    return 'session_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+  }
+
+  setUserId(userId: string): void {
+    this.userId = userId;
+  }
+
+  setLogLevel(level: 'debug' | 'info' | 'warn' | 'error'): void {
+    this.logLevel = level;
+  }
+
+  private shouldLog(level: 'debug' | 'info' | 'warn' | 'error'): boolean {
+    const levels = { debug: 0, info: 1, warn: 2, error: 3 };
+    return levels[level] >= levels[this.logLevel];
+  }
+
+  log(level: 'debug' | 'info' | 'warn' | 'error', message: string, context: Record<string, any> = {}): void {
+    if (!this.shouldLog(level)) return;
+
+    const logEntry: LogEntry = {
+      timestamp: Date.now(),
+      level,
+      message,
+      context: {
+        ...context,
+        sessionId: this.sessionId,
+        userId: this.userId
+      }
+    };
+
+    this.logs.push(logEntry);
+    if (this.logs.length > this.maxLogs) {
+      this.logs.shift();
+    }
+
+    // Also output to console
+    const consoleMethod = level === 'debug' ? 'log' : level;
+    console[consoleMethod](`[${level.toUpperCase()}] ${message}`, context);
+
+    // In production, send to external logging service
+    if (import.meta.env.PROD) {
+      this.sendToExternalLogger(logEntry);
+    }
+  }
+
+  debug(message: string, context: Record<string, any> = {}): void {
+    this.log('debug', message, context);
+  }
+
+  info(message: string, context: Record<string, any> = {}): void {
+    this.log('info', message, context);
+  }
+
+  warn(message: string, context: Record<string, any> = {}): void {
+    this.log('warn', message, context);
+  }
+
+  error(message: string, context: Record<string, any> = {}): void {
+    this.log('error', message, context);
+  }
+
+  private async sendToExternalLogger(logEntry: LogEntry): Promise<void> {
+    try {
+      // In a real implementation, you would send to a logging service like LogRocket, Sentry, etc.
+      // For now, we'll just log to console to avoid external dependencies
+      console.log('External logging service call:', logEntry);
+    } catch (e) {
+      console.warn('Failed to send log to external service:', e);
+    }
+  }
+
+  getLogs(): LogEntry[] {
+    return [...this.logs];
+  }
+
+  clearLogs(): void {
+    this.logs = [];
+  }
+
+  exportLogs(): string {
+    return JSON.stringify(this.logs, null, 2);
+  }
+}
+
 // Performance monitoring for React components
 export function usePerformanceMonitor(componentName: string) {
   const startRender = () => performanceMonitor.startTimer(`${componentName}.render`);
@@ -317,5 +424,95 @@ export function usePerformanceMonitor(componentName: string) {
     getScore: () => performanceMonitor.getPerformanceScore()
   };
 }
+
+// Enhanced monitoring service that combines performance and logging
+class MonitoringService {
+  private logger: Logger;
+  private perfMonitor: PerformanceMonitor;
+  private initialized = false;
+
+  constructor() {
+    this.logger = new Logger();
+    this.perfMonitor = performanceMonitor; // Use existing instance
+  }
+
+  init(userId?: string): void {
+    if (this.initialized) return;
+
+    this.logger.setUserId(userId || '');
+    this.initialized = true;
+
+    // Set up performance monitoring
+    this.setupPerformanceMonitoring();
+    
+    // Log initialization
+    this.logger.info('Monitoring service initialized', { userId });
+  }
+
+  private setupPerformanceMonitoring(): void {
+    // Monitor resource loading
+    if ('PerformanceObserver' in window) {
+      const observer = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (entry.entryType === 'navigation') {
+            this.logger.info('Navigation timing', {
+              url: entry.name,
+              startTime: entry.startTime,
+              duration: entry.duration
+            });
+          } else if (entry.entryType === 'resource') {
+            this.logger.debug('Resource loaded', {
+              name: entry.name,
+              duration: entry.duration,
+              initiatorType: (entry as PerformanceResourceTiming).initiatorType
+            });
+          }
+        }
+      });
+      
+      observer.observe({ entryTypes: ['navigation', 'resource', 'paint'] });
+    }
+  }
+
+  // Public API
+  getLogger(): Logger {
+    return this.logger;
+  }
+
+  log(level: 'debug' | 'info' | 'warn' | 'error', message: string, context: Record<string, any> = {}): void {
+    this.logger.log(level, message, context);
+  }
+
+  info(message: string, context: Record<string, any> = {}): void {
+    this.logger.info(message, context);
+  }
+
+  warn(message: string, context: Record<string, any> = {}): void {
+    this.logger.warn(message, context);
+  }
+
+  error(message: string, context: Record<string, any> = {}): void {
+    this.logger.error(message, context);
+  }
+
+  getLogs(): LogEntry[] {
+    return this.logger.getLogs();
+  }
+
+  exportLogs(): string {
+    return this.logger.exportLogs();
+  }
+
+  setLogLevel(level: 'debug' | 'info' | 'warn' | 'error'): void {
+    this.logger.setLogLevel(level);
+  }
+
+  clearLogs(): void {
+    this.logger.clearLogs();
+  }
+}
+
+// Singleton instance
+export const monitoringService = new MonitoringService();
 
 export default performanceMonitor;
