@@ -146,12 +146,12 @@ plugins: [react()],
         reserved: ['React', 'useState', 'useEffect']
       }
     },
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 300, // Stricter for edge
     target: 'esnext',
     reportCompressedSize: true,
     cssCodeSplit: true,
     // Optimize for Vercel Edge
-    assetsInlineLimit: 4096,
+    assetsInlineLimit: 2048, // Reduce inline limit
     modulePreload: {
       polyfill: false
     }
@@ -163,9 +163,21 @@ plugins: [react()],
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env['NODE_ENV'] || 'development'),
+    'process.env.EDGE_RUNTIME': JSON.stringify('true'),
+    'process.env.VERCEL_EDGE': JSON.stringify('true'),
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'recharts', '@google/genai', '@supabase/supabase-js', 'react-router-dom', 'react-helmet-async'],
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'react-helmet-async'
+    ],
+    exclude: [
+      '@supabase/supabase-js', // Load dynamically
+      '@google/genai', // Load dynamically
+      'recharts' // Load dynamically for charts
+    ]
   },
   experimental: {
     renderBuiltUrl(filename, { hostType }) {

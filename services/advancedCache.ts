@@ -37,11 +37,11 @@ export class AdvancedCache {
     compressions: 0,
   };
   private config: CacheConfig = {
-    maxSize: 50 * 1024 * 1024, // 50MB
-    maxEntries: 1000,
-    defaultTTL: 300000, // 5 minutes
-    cleanupInterval: 60000, // 1 minute
-    compressionThreshold: 1024, // 1KB
+    maxSize: 10 * 1024 * 1024, // 10MB (reduced for edge)
+    maxEntries: 500, // Reduced entries
+    defaultTTL: 180000, // 3 minutes (shorter for edge)
+    cleanupInterval: 30000, // 30 seconds
+    compressionThreshold: 512, // 0.5KB (more aggressive)
   };
   private cleanupTimer: NodeJS.Timeout | null = null;
 
@@ -283,6 +283,43 @@ export class AdvancedCache {
     this.cleanupTimer = setInterval(() => {
       this.removeExpiredEntries();
     }, this.config.cleanupInterval);
+  }
+
+  // Add edge-specific cache invalidation
+  invalidateForEdgeRegion(region: string): number {
+    const regionKeys = Array.from(this.cache.keys())
+      .filter(key => key.includes(`region_${region}`));
+    let deletedCount = 0;
+    
+    regionKeys.forEach(key => {
+      if (this.cache.delete(key)) {
+        deletedCount++;
+      }
+    });
+    
+    return deletedCount;
+  }
+
+  // Edge-optimized cache warming
+  async warmEdgeCache(): Promise<void> {
+    const edgeRegions = ['hkg1', 'iad1', 'sin1'];
+    
+    for (const region of edgeRegions) {
+      try {
+        // Pre-warm region-specific cache entries
+        const regionKey = `edge_${region}_warm`;
+        this.set(regionKey, {
+          warmed: true,
+          timestamp: Date.now(),
+          region
+        }, {
+          ttl: 300000, // 5 minutes
+          tags: ['edge', region, 'warm']
+        });
+      } catch (error) {
+        console.warn(`Failed to warm edge cache for region ${region}:`, error);
+      }
+    }
   }
 
   // Cleanup and destroy

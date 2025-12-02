@@ -24,14 +24,14 @@ class SupabaseConnectionPool {
   private clients: Map<string, SupabaseClient> = new Map();
   private healthStatus: Map<string, ConnectionHealth> = new Map();
   private config: ConnectionPoolConfig = {
-    minConnections: 2,
-    maxConnections: 10,
-    idleTimeout: 300000, // 5 minutes
-    healthCheckInterval: 30000, // 30 seconds
-    connectionTimeout: 10000, // 10 seconds
-    acquireTimeout: 5000, // 5 seconds
-    retryAttempts: 3,
-    retryDelay: 1000, // 1 second
+    minConnections: 1, // Reduce for edge
+    maxConnections: 5, // Lower for edge memory constraints
+    idleTimeout: 120000, // 2 minutes (reduced)
+    healthCheckInterval: 15000, // 15 seconds (more frequent)
+    connectionTimeout: 5000, // 5 seconds (faster failover)
+    acquireTimeout: 2000, // 2 seconds
+    retryAttempts: 2, // Reduce retries for edge
+    retryDelay: 500, // Faster retry
   };
   private healthCheckTimer: NodeJS.Timeout | null = null;
 
@@ -186,6 +186,29 @@ class SupabaseConnectionPool {
       clearInterval(this.healthCheckTimer);
       this.healthCheckTimer = null;
     }
+  }
+
+  // Add connection warming for edge regions
+  async warmEdgeConnections(): Promise<void> {
+    const regions = ['hkg1', 'iad1', 'sin1'];
+    await Promise.allSettled(
+      regions.map(region => this.getClient(`edge_${region}`))
+    );
+  }
+
+  // Edge-optimized connection acquisition
+  async getEdgeClient(connectionId: string = 'default', region?: string): Promise<SupabaseClient> {
+    const edgeConnectionId = region ? `edge_${region}_${connectionId}` : connectionId;
+    
+    // Check if we have a healthy existing connection
+    const existingClient = this.clients.get(edgeConnectionId);
+    const health = this.healthStatus.get(edgeConnectionId);
+    
+    if (existingClient && health?.isHealthy && (Date.now() - health.lastCheck) < 60000) {
+      return existingClient;
+    }
+
+    return this.getClient(edgeConnectionId);
   }
 
   // Get connection metrics for monitoring
