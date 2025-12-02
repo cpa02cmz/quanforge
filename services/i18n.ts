@@ -32,7 +32,7 @@ export const useTranslation = () => {
 
         if (params) {
             Object.keys(params).forEach(param => {
-                text = text.replace(`{${param}}`, params[param]);
+                text = text.replace(`{${param}}`, String(params[param] || ''));
             });
         }
         return text;

@@ -56,37 +56,44 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   const { t, language } = useTranslation();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Memory management: Limit message history to prevent memory leaks
+  // Enhanced memory management with proper cleanup
   useEffect(() => {
+    // Create new abort controller for this effect
+    abortControllerRef.current = new AbortController();
+    
+    // Memory management: Limit message history to prevent memory leaks
     if (messages.length > 50) {
-      // Automatically trim messages to prevent memory leaks
-      const trimmedMessages = messages.slice(-30);
-      logger.info(`Trimming message history from ${messages.length} to ${trimmedMessages.length} to prevent memory leaks`);
-      if (onClear) {
+      logger.info(`Trimming message history from ${messages.length} to 30 to prevent memory leaks`);
+      // Use a more efficient approach - just notify parent to trim
+      if (onClear && !abortControllerRef.current.signal.aborted) {
         onClear();
       }
     }
-  }, [messages, onClear]);
 
-  // Periodic cleanup for memory management
-  useEffect(() => {
-    const cleanupInterval = setInterval(() => {
-      if (messages.length > 100) {
-        logger.warn(`Message history exceeded 100 messages (${messages.length}). Consider implementing more aggressive cleanup.`);
+    // Cleanup function
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-    }, 60000); // Check every minute
+    };
+  }, [messages.length, onClear]);
 
-    return () => clearInterval(cleanupInterval);
-  }, [messages.length]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // Optimized scroll to bottom with requestAnimationFrame
+  const scrollToBottom = useCallback(() => {
+    if (abortControllerRef.current?.signal.aborted) return;
+    
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    });
+  }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading]);
+    if (!abortControllerRef.current?.signal.aborted) {
+      scrollToBottom();
+    }
+  }, [messages, isLoading, scrollToBottom]);
 
   const sanitizeInput = (input: string): string => {
     return DOMPurify.sanitize(input, {

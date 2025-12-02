@@ -61,7 +61,7 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
         }
     };
 
-    const handleExport = async () => {
+    const _handleExport = async () => {
         try {
             const json = await dbUtils.exportDatabase();
             const blob = new Blob([json], { type: 'application/json' });
@@ -78,7 +78,7 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
         }
     };
 
-    const handleImport = async () => {
+    const _handleImport = async () => {
         // Create file input programmatically
         const input = document.createElement('input');
         input.type = 'file';

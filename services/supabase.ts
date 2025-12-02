@@ -2,7 +2,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { Robot, UserSession } from '../types';
-import { connectionPool } from './supabaseConnectionPool';
 import { enhancedConnectionPool } from './enhancedSupabasePool';
 import { robotCache } from './advancedCache';
 import { securityManager } from './securityManager';
@@ -245,18 +244,12 @@ const getClient = async () => {
 
     if (settings.mode === 'supabase' && settings.url && settings.anonKey) {
         try {
-            // Use enhanced connection pool for better performance
+            // Use unified enhanced connection pool with fallback mechanism
             const client = await enhancedConnectionPool.acquire('default');
             activeClient = client;
         } catch (e) {
-            console.error("Enhanced connection pool failed, trying fallback", e);
-            try {
-                // Fallback to basic connection pool
-                activeClient = await connectionPool.getClient('default');
-            } catch (fallbackError) {
-                console.error("All connection pools failed, using mock", fallbackError);
-                activeClient = mockClient;
-            }
+            console.error("Connection pool failed, using mock client", e);
+            activeClient = mockClient;
         }
     } else {
         activeClient = mockClient;
@@ -326,8 +319,13 @@ interface RobotIndex {
 
 class RobotIndexManager {
   private index: RobotIndex | null = null;
-  private lastUpdated: number = 0;
-  private rebuildInterval: number = 30000; // Rebuild index every 30 seconds if needed
+  private lastDataVersion: string = '';
+  private currentDataVersion: string = '';
+
+  private getDataVersion(robots: Robot[]): string {
+    // Create a hash from robot data for change detection
+    return robots.map(r => `${r.id}:${r.updated_at}`).join('|');
+  }
 
   createIndex(robots: Robot[]): RobotIndex {
     const byId = new Map<string, Robot>();
@@ -362,18 +360,20 @@ class RobotIndexManager {
   }
 
   getIndex(robots: Robot[]): RobotIndex {
-    const now = Date.now();
-    // Rebuild index if it doesn't exist or if it's too old
-    if (!this.index || now - this.lastUpdated > this.rebuildInterval) {
+    this.currentDataVersion = this.getDataVersion(robots);
+    
+    // Rebuild index only if data has changed
+    if (!this.index || this.lastDataVersion !== this.currentDataVersion) {
       this.index = this.createIndex(robots);
-      this.lastUpdated = now;
+      this.lastDataVersion = this.currentDataVersion;
     }
     return this.index;
   }
 
   clear() {
     this.index = null;
-    this.lastUpdated = 0;
+    this.lastDataVersion = '';
+    this.currentDataVersion = '';
   }
 }
 
