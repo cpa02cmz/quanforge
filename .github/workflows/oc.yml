@@ -42,6 +42,29 @@ jobs:
         run: |
           curl -fsSL https://opencode.ai/install | bash
           echo "$HOME/.opencode/bin" >> $GITHUB_PATH
+      - name: Run OpenCode7
+        id: run_oc7
+        timeout-minutes: 20
+        run: |
+          opencode run "$(cat <<'PROMPT'
+            You are operating inside a GitHub Actions environment. Your responsibilities:
+            Primary Tasks
+              Ensure no dependency conflicts and maintain a clean dependency graph.
+              Review all open Pull Requests, keep them up to date with the main branch, and merge when safe.
+              Resolve merge conflicts, address all review comments, and apply suggested changes when appropriate.
+              Ensure the project builds successfully and all automated checks/tests pass.
+              Perform branch maintenance: keep branches v1, v2, and v3 unchanged and stable.
+              Conduct repository maintenance tasks as required.
+              Manage documentation to remain aligned with current codebase, features, and updates.
+            Rules
+              Never disclose secrets or sensitive information.
+              Do not modify existing GitHub workflow files.
+              Follow repository coding conventions and standards.
+              Always commit and push updates after changes.
+          PROMPT
+          )" \
+            --model iflowcn/qwen3-coder-plus \
+            --share false \
       - name: Run OpenCode
         id: run_oc
         timeout-minutes: 20
@@ -199,23 +222,6 @@ jobs:
             * Commit your work, push and update/open a pull request using the required template.
             * Ensure all automated checks pass.
             * Merge the pull request or enable auto-merge.
-            Rules:
-            * Do not disclose any secrets.
-            * Do not modify GitHub workflows.
-            * Follow the repository’s coding standards.
-          PROMPT
-          )" \
-            --model iflowcn/qwen3-coder-plus \
-            --share false \
-      - name: Run OpenCode7
-        id: run_oc7
-        timeout-minutes: 20
-        run: |
-          opencode run "$(cat <<'PROMPT'
-            You are in github action environtment. Always update commit and push your work. Your tasks:
-            * commit, push, create pr in new branch, merge if all check passed
-            * do repository maintenance
-            * do documents management, makes sure document up to date with code and fiture 
             Rules:
             * Do not disclose any secrets.
             * Do not modify GitHub workflows.
