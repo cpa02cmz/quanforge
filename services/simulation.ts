@@ -57,7 +57,7 @@ export const runMonteCarloSimulation = (
     // Main simulation loop with performance optimization
     for (let i = 1; i <= days; i++) {
         // Calculate daily return percentage using pre-calculated random value
-        const dailyReturn = dailyDriftMean + (randomValues[i-1] * dailyVol);
+        const dailyReturn = dailyDriftMean + ((randomValues[i-1] || 0) * dailyVol);
         
         // Apply return to balance with bounds checking
         balance = Math.max(0, balance * (1 + dailyReturn));

@@ -120,8 +120,6 @@ class VercelEdgeOptimizer {
 
   private setupIntelligentPrefetching(): void {
     // Prefetch resources based on user behavior
-    let idleTimeout: number;
-    
     const prefetchWhenIdle = () => {
       if ('requestIdleCallback' in window) {
         requestIdleCallback(() => {
@@ -185,7 +183,9 @@ class VercelEdgeOptimizer {
         const lcpObserver = new PerformanceObserver((list) => {
           const entries = list.getEntries();
           const lastEntry = entries[entries.length - 1];
-          this.recordMetric('lcp', lastEntry.startTime);
+          if (lastEntry) {
+            this.recordMetric('lcp', lastEntry.startTime);
+          }
         });
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
 
@@ -265,10 +265,10 @@ class VercelEdgeOptimizer {
     // Detect edge region from request headers or performance timing
     // This is a simplified detection - in production, use more sophisticated methods
     const regions = this.config.edgeRegions;
-    return regions[Math.floor(Math.random() * regions.length)];
+    return regions[Math.floor(Math.random() * regions.length)] || 'global';
   }
 
-  private recordApiMetrics(url: string, responseTime: number, success: boolean): void {
+  private recordApiMetrics(_url: string, responseTime: number, _success: boolean): void {
     const region = this.detectEdgeRegion();
     const existing = this.metrics.get(region) || {
       region,

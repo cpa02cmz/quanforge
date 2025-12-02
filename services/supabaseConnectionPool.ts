@@ -265,7 +265,6 @@ class SupabaseConnectionPool {
 
   private async testConnection(client: SupabaseClient): Promise<boolean> {
      try {
-       const startTime = Date.now();
        const timeoutPromise = new Promise((_, reject) => 
          setTimeout(() => reject(new Error('Connection timeout')), this.config.connectionTimeout)
        );
@@ -276,8 +275,7 @@ class SupabaseConnectionPool {
          .select('id')
          .limit(1);
        
-       const result = await Promise.race([queryPromise, timeoutPromise]) as { data?: any[]; error?: any };
-       const responseTime = Date.now() - startTime;
+const result = await Promise.race([queryPromise, timeoutPromise]) as { data?: any[]; error?: any };
        
        // Check if result has error property
        if (result && result.error) {
@@ -315,7 +313,7 @@ class SupabaseConnectionPool {
         this.healthStatus.set(connectionId, {
           isHealthy,
           lastCheck: Date.now(),
-          responseTime,
+          responseTime: 0,
           errorCount: isHealthy ? 0 : currentHealth.errorCount + 1,
         });
 

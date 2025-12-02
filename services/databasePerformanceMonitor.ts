@@ -166,7 +166,7 @@ class DatabasePerformanceMonitor {
 
     this.queryHistory.forEach(({ query }) => {
       const tableMatch = query.match(/from\s+(\w+)/i);
-      if (tableMatch) {
+      if (tableMatch && tableMatch[1]) {
         const table = tableMatch[1].toLowerCase();
         tableCounts.set(table, (tableCounts.get(table) || 0) + 1);
       }
@@ -238,7 +238,7 @@ class DatabasePerformanceMonitor {
 
     this.queryHistory.forEach(({ query }) => {
       const tableMatch = query.match(/from\s+(\w+)/i);
-      if (tableMatch) {
+      if (tableMatch && tableMatch[1]) {
         const table = tableMatch[1].toLowerCase();
         if (!tableQueries.has(table)) {
           tableQueries.set(table, []);
@@ -255,13 +255,13 @@ class DatabasePerformanceMonitor {
 
     queries.forEach((query) => {
       const whereMatch = query.match(/where\s+(.+?)(?:\s+order\s+by|\s+group\s+by|\s+limit|$)/i);
-      if (whereMatch) {
+      if (whereMatch && whereMatch[1]) {
         const whereClause = whereMatch[1];
         const filters = whereClause.split(/\s+and\s+/i);
         
         filters.forEach((filter) => {
           const columnMatch = filter.match(/(\w+)\s*=/);
-          if (columnMatch) {
+          if (columnMatch && columnMatch[1]) {
             const column = columnMatch[1].toLowerCase();
             filterCounts.set(column, (filterCounts.get(column) || 0) + 1);
           }
