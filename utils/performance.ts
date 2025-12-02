@@ -98,24 +98,35 @@ class PerformanceMonitor {
 
     this.metrics.push(metric);
     
-    // Keep only last 50 metrics
+    // Keep only last 50 metrics - optimize by only splicing when needed
     if (this.metrics.length > 50) {
-      this.metrics = this.metrics.slice(-50);
+      this.metrics.splice(0, this.metrics.length - 50);
     }
 
-    // Log in production for monitoring
-    if (import.meta.env.PROD) {
+    // Only log in production if debugging is enabled
+    if (import.meta.env.PROD && this.isDebuggingEnabled()) {
       console.log(`Performance Metric [${name}]:`, value);
     }
 
-    // Store critical metrics in localStorage
-    if (['fcp', 'lcp', 'cls', 'fid', 'ttfb'].includes(name)) {
+    // Store critical metrics in localStorage - use a Set for faster lookup
+    const CRITICAL_METRICS = new Set(['fcp', 'lcp', 'cls', 'fid', 'ttfb']);
+    if (CRITICAL_METRICS.has(name)) {
       try {
         const key = `perf_${name}`;
         localStorage.setItem(key, value.toString());
       } catch (e) {
         // Ignore storage errors
       }
+    }
+  }
+
+  private isDebuggingEnabled(): boolean {
+    // Check for debugging flag in localStorage or URL params
+    try {
+      return localStorage.getItem('perf_debug') === 'true' || 
+             window.location.search.includes('perf_debug=true');
+    } catch (e) {
+      return false;
     }
   }
 

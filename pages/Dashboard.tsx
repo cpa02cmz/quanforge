@@ -13,7 +13,7 @@ interface DashboardProps {
     session?: UserSession | null;
 }
 
-export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
+export const Dashboard: React.FC<DashboardProps> = memo(({ session: _session }) => {
   const { t } = useTranslation();
   const [robots, setRobots] = useState<Robot[]>([]);
   const [loading, setLoading] = useState(true);
