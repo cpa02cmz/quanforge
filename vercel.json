@@ -89,8 +89,7 @@
   "devCommand": "npm run dev",
   "functions": {
     "api/**/*.ts": {
-      "runtime": "edge",
-      "regions": ["hkg1", "iad1", "sin1"]
+      "runtime": "edge"
     },
     "app/**/*.ts": {
       "runtime": "nodejs20.x"
