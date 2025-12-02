@@ -5,27 +5,25 @@ import { supabase } from './services/supabase';
 import { ToastProvider } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { UserSession } from './types';
+import { performanceMonitor } from './utils/performance';
 import { SEOHead, structuredDataTemplates } from './utils/seo';
 import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
+import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
 
 // Lazy load components for better code splitting
 const Auth = lazy(() => import('./components/Auth').then(module => ({ default: module.Auth })));
 const Dashboard = lazy(() => import('./pages/Dashboard').then(module => ({ default: module.Dashboard })));
 const Generator = lazy(() => import('./pages/Generator').then(module => ({ default: module.Generator })));
 const Wiki = lazy(() => import('./pages/Wiki').then(module => ({ default: module.Wiki })));
-const About = lazy(() => import('./pages/About').then(module => ({ default: module.About })));
-const Features = lazy(() => import('./pages/Features').then(module => ({ default: module.Features })));
-const FAQ = lazy(() => import('./pages/FAQ').then(module => ({ default: module.FAQ })));
-const Blog = lazy(() => import('./pages/Blog').then(module => ({ default: module.Blog })));
 const Layout = lazy(() => import('./components/Layout').then(module => ({ default: module.Layout })));
-
-
 
 export default function App() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const startTime = performance.now();
+    
     // Initialize Vercel Edge Optimizer
     vercelEdgeOptimizer.optimizeBundleForEdge();
     vercelEdgeOptimizer.enableEdgeSSR();
@@ -34,8 +32,12 @@ export default function App() {
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      performanceMonitor.recordMetric('auth_init', performance.now() - startTime);
+      databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, true);
     }).catch((err) => {
       console.warn("Auth initialization failed:", err);
+      performanceMonitor.recordMetric('auth_error', 1);
+      databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, false);
     }).finally(() => {
       setLoading(false);
     });
@@ -44,6 +46,7 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      performanceMonitor.recordMetric('auth_state_change', 1);
     });
 
     return () => subscription.unsubscribe();
@@ -97,22 +100,6 @@ export default function App() {
                 <Route 
                   path="/wiki" 
                   element={session ? <Wiki /> : <Navigate to="/login" replace />} 
-                />
-                <Route 
-                  path="/about" 
-                  element={<About />} 
-                />
-                <Route 
-                  path="/features" 
-                  element={<Features />} 
-                />
-                <Route 
-                  path="/faq" 
-                  element={<FAQ />} 
-                />
-                <Route 
-                  path="/blog" 
-                  element={<Blog />} 
                 />
               </Route>
             </Routes>

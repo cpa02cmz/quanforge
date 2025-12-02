@@ -2,10 +2,14 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 
 interface ConnectionPoolConfig {
+  minConnections: number;
   maxConnections: number;
   idleTimeout: number;
   healthCheckInterval: number;
   connectionTimeout: number;
+  acquireTimeout: number;
+  retryAttempts: number;
+  retryDelay: number;
 }
 
 interface ConnectionHealth {
@@ -20,10 +24,14 @@ class SupabaseConnectionPool {
   private clients: Map<string, SupabaseClient> = new Map();
   private healthStatus: Map<string, ConnectionHealth> = new Map();
   private config: ConnectionPoolConfig = {
-    maxConnections: 5,
+    minConnections: 2,
+    maxConnections: 10,
     idleTimeout: 300000, // 5 minutes
     healthCheckInterval: 30000, // 30 seconds
     connectionTimeout: 10000, // 10 seconds
+    acquireTimeout: 5000, // 5 seconds
+    retryAttempts: 3,
+    retryDelay: 1000, // 1 second
   };
   private healthCheckTimer: NodeJS.Timeout | null = null;
 

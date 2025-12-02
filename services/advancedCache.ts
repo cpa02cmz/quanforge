@@ -9,7 +9,7 @@ interface CacheEntry<T> {
   compressed?: boolean;
 }
 
-interface CacheConfig {
+export interface CacheConfig {
   maxSize: number; // Maximum cache size in bytes
   maxEntries: number; // Maximum number of entries
   defaultTTL: number; // Default TTL in milliseconds
@@ -28,7 +28,7 @@ interface CacheStats {
 
 import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
 
-class AdvancedCache {
+export class AdvancedCache {
   private cache = new Map<string, CacheEntry<any>>();
   private stats = {
     hits: 0,

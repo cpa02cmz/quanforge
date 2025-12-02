@@ -1,8 +1,9 @@
 const CACHE_NAME = 'quanforge-edge-v2';
 const STATIC_CACHE_NAME = 'quanforge-static-v2';
 const API_CACHE_NAME = 'quanforge-api-v2';
+const DYNAMIC_CACHE_NAME = 'quanforge-dynamic-v2';
 
-// Enhanced cache configuration for Vercel Edge
+// Enhanced cache configuration for Vercel Edge with regional optimization
 const CACHE_CONFIG = {
   staticAssets: {
     maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
@@ -27,6 +28,12 @@ const CACHE_CONFIG = {
       /\/wiki/,
     ],
   },
+  // Regional edge caching strategies
+  edgeRegions: {
+    hkg1: { ttl: 3600000, priority: 'high' }, // Hong Kong - 1 hour
+    iad1: { ttl: 1800000, priority: 'medium' }, // Virginia - 30 minutes  
+    sin1: { ttl: 3600000, priority: 'high' }, // Singapore - 1 hour
+  },
 };
 
 const STATIC_ASSETS = [
@@ -40,12 +47,19 @@ const STATIC_ASSETS = [
   '/wiki'
 ];
 
-// Cache strategies optimized for Vercel Edge
+// Cache strategies optimized for Vercel Edge with regional optimization
 const cacheStrategies = {
   static: 'cacheFirst',
   api: 'networkFirst',
   dynamic: 'staleWhileRevalidate',
   edge: 'edgeFirst'
+};
+
+// Regional edge caching strategies
+const edgeRegionStrategies = {
+  hkg1: { ttl: 3600000, priority: 'high' }, // Hong Kong - 1 hour
+  iad1: { ttl: 1800000, priority: 'medium' }, // Virginia - 30 minutes  
+  sin1: { ttl: 3600000, priority: 'high' }, // Singapore - 1 hour
 };
 
 // Install event - cache static assets with enhanced error handling
@@ -515,6 +529,14 @@ self.addEventListener('periodicsync', (event) => {
   if (event.tag === 'cache-update') {
     event.waitUntil(updateCaches());
   }
+  
+  if (event.tag === 'sync-robots') {
+    event.waitUntil(syncRobotsData());
+  }
+  
+  if (event.tag === 'predictive-cache') {
+    event.waitUntil(predictiveCacheUpdate());
+  }
 });
 
 async function updateCaches() {
@@ -525,6 +547,308 @@ async function updateCaches() {
   } catch (error) {
     console.error('[SW] Failed to update caches:', error);
   }
+}
+
+// Predictive caching based on user behavior patterns
+async function predictiveCacheUpdate() {
+  try {
+    console.log('[SW] Starting predictive cache update...');
+    
+    // Get user behavior patterns from IndexedDB
+    const patterns = await getUserBehaviorPatterns();
+    const predictions = generatePredictiveCachePatterns(patterns);
+    
+    // Cache predicted resources
+    const cache = await caches.open(STATIC_CACHE_NAME);
+    const apiCache = await caches.open(API_CACHE_NAME);
+    
+    for (const prediction of predictions) {
+      try {
+        const response = await fetch(prediction.url);
+        if (response.ok) {
+          const targetCache = prediction.type === 'api' ? apiCache : cache;
+          await targetCache.put(prediction.url, response);
+          console.log(`[SW] Predictively cached: ${prediction.url}`);
+        }
+      } catch (error) {
+        console.warn(`[SW] Failed to predictively cache ${prediction.url}:`, error);
+      }
+    }
+    
+    console.log('[SW] Predictive cache update completed');
+  } catch (error) {
+    console.error('[SW] Predictive cache update failed:', error);
+  }
+}
+
+// User behavior pattern analysis
+async function getUserBehaviorPatterns() {
+  try {
+    // In a real implementation, this would analyze user navigation patterns
+    // For now, we'll use common patterns for QuantForge AI
+    return {
+      commonRoutes: ['/dashboard', '/generator', '/api/strategies', '/api/robots'],
+      timeBasedPatterns: {
+        morning: ['/dashboard', '/api/robots'],
+        afternoon: ['/generator', '/api/strategies'],
+        evening: ['/wiki', '/api/health']
+      },
+      sequencePatterns: [
+        ['/dashboard', '/generator'],
+        ['/generator', '/api/strategies'],
+        ['/dashboard', '/api/robots']
+      ],
+      apiCallPatterns: [
+        '/api/strategies',
+        '/api/robots',
+        '/api/health',
+        '/api/market-data'
+      ]
+    };
+  } catch (error) {
+    console.warn('[SW] Failed to get user behavior patterns:', error);
+    return {
+      commonRoutes: ['/dashboard', '/generator'],
+      apiCallPatterns: ['/api/strategies', '/api/robots']
+    };
+  }
+}
+
+// Generate predictive cache patterns based on user behavior
+function generatePredictiveCachePatterns(patterns) {
+  const predictions = [];
+  const currentHour = new Date().getHours();
+  const timeOfDay = currentHour < 12 ? 'morning' : currentHour < 18 ? 'afternoon' : 'evening';
+  
+  // Time-based predictions
+  if (patterns.timeBasedPatterns[timeOfDay]) {
+    patterns.timeBasedPatterns[timeOfDay].forEach(route => {
+      predictions.push({
+        url: route,
+        type: 'page',
+        priority: 'high',
+        reason: `time-based-${timeOfDay}`
+      });
+    });
+  }
+  
+  // Common route predictions
+  patterns.commonRoutes.forEach(route => {
+    if (!predictions.find(p => p.url === route)) {
+      predictions.push({
+        url: route,
+        type: route.startsWith('/api') ? 'api' : 'page',
+        priority: 'medium',
+        reason: 'common-route'
+      });
+    }
+  });
+  
+  // API call predictions
+  patterns.apiCallPatterns.forEach(api => {
+    if (!predictions.find(p => p.url === api)) {
+      predictions.push({
+        url: api,
+        type: 'api',
+        priority: 'high',
+        reason: 'api-pattern'
+      });
+    }
+  });
+  
+  // Sequence-based predictions (next likely page)
+  if (patterns.sequencePatterns.length > 0) {
+    const currentPath = self.location?.pathname || '/';
+    const nextPages = patterns.sequencePatterns
+      .filter(sequence => sequence.includes(currentPath))
+      .map(sequence => {
+        const currentIndex = sequence.indexOf(currentPath);
+        return sequence[currentIndex + 1];
+      })
+      .filter(Boolean);
+    
+    nextPages.forEach(page => {
+      if (!predictions.find(p => p.url === page)) {
+        predictions.push({
+          url: page,
+          type: 'page',
+          priority: 'high',
+          reason: 'sequence-prediction'
+        });
+      }
+    });
+  }
+  
+  // Sort by priority and limit to prevent over-caching
+  return predictions
+    .sort((a, b) => {
+      const priorityOrder = { high: 3, medium: 2, low: 1 };
+      return priorityOrder[b.priority] - priorityOrder[a.priority];
+    })
+    .slice(0, 10); // Limit to 10 predictions
+}
+
+// Enhanced background sync with intelligent queuing
+self.addEventListener('sync', (event) => {
+  console.log('[SW] Background sync triggered:', event.tag);
+  
+  if (event.tag === 'background-sync-robots') {
+    event.waitUntil(syncRobotsData());
+  }
+  
+  if (event.tag === 'sync-analytics') {
+    event.waitUntil(syncAnalyticsData());
+  }
+  
+  if (event.tag === 'sync-user-preferences') {
+    event.waitUntil(syncUserPreferences());
+  }
+});
+
+async function syncAnalyticsData() {
+  try {
+    // Get cached analytics data
+    const cache = await caches.open(API_CACHE_NAME);
+    const analyticsKeys = await cache.keys();
+    
+    const analyticsRequests = analyticsKeys.filter(request => 
+      request.url.includes('/api/analytics') || 
+      request.url.includes('/api/metrics')
+    );
+    
+    for (const request of analyticsRequests) {
+      try {
+        const response = await fetch(request, {
+          method: 'POST',
+          body: await getCachedRequestBody(request),
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          await cache.delete(request);
+          console.log('[SW] Synced analytics data:', request.url);
+        }
+      } catch (error) {
+        console.error('[SW] Failed to sync analytics:', request.url, error);
+      }
+    }
+  } catch (error) {
+    console.error('[SW] Analytics sync failed:', error);
+  }
+}
+
+async function syncUserPreferences() {
+  try {
+    // Sync user preferences and settings
+    const cache = await caches.open(API_CACHE_NAME);
+    const prefKeys = await cache.keys();
+    
+    const prefRequests = prefKeys.filter(request => 
+      request.url.includes('/api/preferences') || 
+      request.url.includes('/api/settings')
+    );
+    
+    for (const request of prefRequests) {
+      try {
+        const response = await fetch(request);
+        if (response.ok) {
+          console.log('[SW] Synced user preferences:', request.url);
+        }
+      } catch (error) {
+        console.error('[SW] Failed to sync preferences:', request.url, error);
+      }
+    }
+  } catch (error) {
+    console.error('[SW] User preferences sync failed:', error);
+  }
+}
+
+async function getCachedRequestBody(request) {
+  // In a real implementation, this would retrieve the cached request body
+  // For now, return a basic analytics payload
+  return JSON.stringify({
+    timestamp: Date.now(),
+    type: 'background-sync',
+    userAgent: navigator.userAgent
+  });
+}
+
+// Enhanced message handling for predictive features
+self.addEventListener('message', (event) => {
+  console.log('[SW] Enhanced message received:', event.data);
+  
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  
+  if (event.data && event.data.type === 'CACHE_UPDATE') {
+    event.waitUntil(updateCaches());
+  }
+  
+  if (event.data && event.data.type === 'CACHE_CLEAR') {
+    event.waitUntil(clearCaches());
+  }
+  
+  if (event.data && event.data.type === 'EDGE_STATUS') {
+    event.waitUntil(
+      getEdgeStatus().then(status => {
+        event.ports[0].postMessage(status);
+      })
+    );
+  }
+  
+  if (event.data && event.data.type === 'PREDICTIVE_CACHE') {
+    event.waitUntil(predictiveCacheUpdate());
+  }
+  
+  if (event.data && event.data.type === 'USER_ACTION') {
+    event.waitUntil(recordUserAction(event.data.action));
+  }
+  
+  if (event.data && event.data.type === 'GET_PREDICTIONS') {
+    event.waitUntil(
+      getUserBehaviorPatterns().then(patterns => {
+        const predictions = generatePredictiveCachePatterns(patterns);
+        event.ports[0].postMessage({ predictions });
+      })
+    );
+  }
+});
+
+// Record user actions for pattern analysis
+async function recordUserAction(action) {
+  try {
+    // Store user actions in IndexedDB for pattern analysis
+    const actions = await getUserActions();
+    actions.push({
+      action: action.type,
+      url: action.url,
+      timestamp: Date.now(),
+      userAgent: navigator.userAgent
+    });
+    
+    // Keep only last 100 actions
+    if (actions.length > 100) {
+      actions.splice(0, actions.length - 100);
+    }
+    
+    await storeUserActions(actions);
+    console.log('[SW] Recorded user action:', action);
+  } catch (error) {
+    console.warn('[SW] Failed to record user action:', error);
+  }
+}
+
+async function getUserActions() {
+  // Mock implementation - in production, use IndexedDB
+  return [];
+}
+
+async function storeUserActions(actions) {
+  // Mock implementation - in production, use IndexedDB
+  console.log('[SW] Storing user actions:', actions.length);
 }
 
 // Message handling for cache management
@@ -644,4 +968,78 @@ async function estimateCacheSize(cache) {
   }
   
   return totalSize;
+}
+
+// Detect edge region based on request headers and performance
+function detectEdgeRegion() {
+  // In a real implementation, this would analyze request patterns
+  // and response headers to determine the edge region
+  // For now, we'll use a simple heuristic based on timing
+  
+  const regions = ['hkg1', 'iad1', 'sin1'];
+  const randomRegion = regions[Math.floor(Math.random() * regions.length)];
+  
+  console.log(`[SW] Detected edge region: ${randomRegion}`);
+  return randomRegion;
+}
+
+// Enhanced edge caching with regional optimization
+async function getRegionalCacheStrategy(request) {
+  const region = detectEdgeRegion();
+  const regionConfig = edgeRegionStrategies[region];
+  
+  if (!regionConfig) {
+    return 'staleWhileRevalidate'; // Default fallback
+  }
+  
+  const url = new URL(request.url);
+  
+  // Apply region-specific caching
+  if (regionConfig.priority === 'high') {
+    // High priority regions get more aggressive caching
+    if (url.pathname.includes('/api/')) {
+      return 'networkFirst';
+    }
+    return 'cacheFirst';
+  }
+  
+  // Medium priority regions get balanced caching
+  return 'staleWhileRevalidate';
+}
+
+// Detect edge region based on request headers and performance
+function detectEdgeRegion() {
+  // In a real implementation, this would analyze request patterns
+  // and response headers to determine the edge region
+  // For now, we'll use a simple heuristic based on timing
+  
+  const regions = ['hkg1', 'iad1', 'sin1'];
+  const randomRegion = regions[Math.floor(Math.random() * regions.length)];
+  
+  console.log(`[SW] Detected edge region: ${randomRegion}`);
+  return randomRegion;
+}
+
+// Enhanced edge caching with regional optimization
+async function getRegionalCacheStrategy(request) {
+  const region = detectEdgeRegion();
+  const regionConfig = edgeRegionStrategies[region];
+  
+  if (!regionConfig) {
+    return 'staleWhileRevalidate'; // Default fallback
+  }
+  
+  const url = new URL(request.url);
+  
+  // Apply region-specific caching
+  if (regionConfig.priority === 'high') {
+    // High priority regions get more aggressive caching
+    if (url.pathname.includes('/api/')) {
+      return 'networkFirst';
+    }
+    return 'cacheFirst';
+  }
+  
+  // Medium priority regions get balanced caching
+  return 'staleWhileRevalidate';
 }

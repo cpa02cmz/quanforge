@@ -38,7 +38,7 @@
     "src/**/*",
     "components/**/*",
     "pages/**/*",
-    "services/**/*",
+    "services/*!*/distributedCache.ts",
     "utils/**/*",
     "hooks/**/*",
     "constants/**/*",

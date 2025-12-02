@@ -6,6 +6,9 @@ import { Robot, UserSession } from '../types';
 import { useToast } from '../components/Toast';
 import { useTranslation } from '../services/i18n';
 import { SEOHead, structuredDataTemplates } from '../utils/seo';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('Dashboard');
 
 
 
@@ -13,7 +16,7 @@ interface DashboardProps {
     session?: UserSession | null;
 }
 
-export const Dashboard: React.FC<DashboardProps> = memo(({ session: _session }) => {
+export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
   const { t } = useTranslation();
   const [robots, setRobots] = useState<Robot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +38,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session: _session }) 
       if (error) throw error;
       if (data) setRobots(data);
     } catch (err) {
-      console.error('Failed to load robots', err);
+      logger.error('Failed to load robots', err);
       showToast('Failed to load robots', 'error');
     } finally {
       setLoading(false);
@@ -55,7 +58,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session: _session }) 
         setRobots(prev => prev.filter(r => r.id !== id));
         showToast(t('dash_toast_delete_success'), 'success');
     } catch (err) {
-        console.error("Failed to delete robot", err);
+        logger.error("Failed to delete robot", err);
         showToast("Failed to delete robot", 'error');
     } finally {
         setProcessingId(null);
@@ -73,7 +76,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session: _session }) 
               showToast(t('dash_toast_duplicate_success'), 'success');
           }
       } catch (err) {
-          console.error("Failed to duplicate robot", err);
+          logger.error("Failed to duplicate robot", err);
           showToast("Failed to duplicate robot", 'error');
       } finally {
           setProcessingId(null);

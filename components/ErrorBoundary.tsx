@@ -1,4 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('ErrorBoundary');
 
 interface Props {
   children: ReactNode;
@@ -21,7 +24,7 @@ class ErrorBoundaryClass extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    logger.error('ErrorBoundary caught an error:', error, errorInfo);
     
     // Enhanced error logging for production
     if (import.meta.env.PROD) {

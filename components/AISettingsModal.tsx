@@ -5,6 +5,9 @@ import { settingsManager, DEFAULT_AI_SETTINGS } from '../services/settingsManage
 import { useToast } from './Toast';
 import { testAIConnection } from '../services/gemini';
 import { useTranslation } from '../services/i18n';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('AISettingsModal');
 
 interface AISettingsModalProps {
     isOpen: boolean;
@@ -107,7 +110,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, o
             await testAIConnection(settings);
             showToast(t('settings_test_success'), 'success');
         } catch (error: any) {
-            console.error(error);
+            logger.error(error);
             showToast(`Connection Failed: ${error.message}`, 'error');
         } finally {
             setIsTesting(false);

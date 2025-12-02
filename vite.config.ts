@@ -3,16 +3,11 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react()],
+plugins: [react()],
   build: {
     outDir: 'dist',
     sourcemap: process.env['NODE_ENV'] !== 'production',
     rollupOptions: {
-      treeshake: {
-        moduleSideEffects: false,
-        propertyReadSideEffects: false,
-        tryCatchDeoptimization: false
-      },
       input: {
         main: './index.html'
       },
@@ -122,25 +117,24 @@ export default defineConfig({
       compress: {
         drop_console: process.env['NODE_ENV'] === 'production',
         drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug'],
-        passes: 4, // Increased passes for better compression
-        // Additional optimizations for Vercel Edge and Brotli
+        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'],
+        passes: 3,
+        // Additional optimizations for Vercel Edge
         inline: 2,
         reduce_funcs: true,
         reduce_vars: true,
         sequences: true,
         dead_code: true,
+        // Enhanced optimizations
         join_vars: true,
         collapse_vars: true,
         negate_iife: true,
         evaluate: true,
-        hoist_funs: true,
-        hoist_vars: true,
-        if_return: true,
+        booleans: true,
         loops: true,
-        properties: true,
-        switches: true,
-        typeofs: true
+        unused: true,
+        hoist_funs: true,
+        if_return: true
       },
       mangle: {
         safari10: true,
@@ -148,16 +142,11 @@ export default defineConfig({
         toplevel: true,
         properties: {
           regex: /^_/
-        }
-      },
-      format: {
-        comments: false,
-        // Optimize for Brotli compression
-        max_line_len: 120,
-        beautify: false
+        },
+        reserved: ['React', 'useState', 'useEffect']
       }
     },
-    chunkSizeWarningLimit: 500,
+    chunkSizeWarningLimit: 600,
     target: 'esnext',
     reportCompressedSize: true,
     cssCodeSplit: true,
@@ -177,7 +166,6 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'recharts', '@google/genai', '@supabase/supabase-js', 'react-router-dom', 'react-helmet-async'],
-    exclude: ['dompurify'] // Exclude heavy dependency that's minimally used
   },
   experimental: {
     renderBuiltUrl(filename, { hostType }) {

@@ -114,48 +114,4 @@
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
-  <url>
-    <loc>https://quanforge.ai/about</loc>
-    <lastmod>2025-12-02</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://quanforge.ai/about-preview.png</image:loc>
-      <image:title>About QuantForge AI</image:title>
-      <image:caption>Learn about QuantForge AI's mission to democratize algorithmic trading</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://quanforge.ai/features</loc>
-    <lastmod>2025-12-02</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://quanforge.ai/features-preview.png</image:loc>
-      <image:title>QuantForge AI Features</image:title>
-      <image:caption>Discover powerful features for AI-powered trading robot generation</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://quanforge.ai/faq</loc>
-    <lastmod>2025-12-02</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <image:image>
-      <image:loc>https://quanforge.ai/faq-preview.png</image:loc>
-      <image:title>Frequently Asked Questions</image:title>
-      <image:caption>Find answers to common questions about QuantForge AI and MQL5 trading</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://quanforge.ai/blog</loc>
-    <lastmod>2025-12-02</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://quanforge.ai/blog-preview.png</image:loc>
-      <image:title>QuantForge AI Blog</image:title>
-      <image:caption>Latest trading insights, AI technology, and market analysis</image:caption>
-    </image:image>
-  </url>
 </urlset>

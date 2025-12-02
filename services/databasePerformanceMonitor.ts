@@ -100,48 +100,24 @@ class DatabasePerformanceMonitor {
   }
 
   private updateQueryMetrics(executionTime: number, success: boolean): void {
-    // Update average query time - use cached recent queries to avoid repeated slicing
-    const recentQueryCount = Math.min(100, this.queryHistory.length);
-    const startIndex = Math.max(0, this.queryHistory.length - 100);
-    let totalTime = 0;
-    for (let i = startIndex; i < this.queryHistory.length; i++) {
-      totalTime += this.queryHistory[i].time;
-    }
-    this.metrics.queryTime = recentQueryCount > 0 ? totalTime / recentQueryCount : 0;
-
-    // Update error rate - simplified approach since success is passed for current query only
-    // In a real implementation, you'd track historical errors separately
-    // For now, just update based on the passed success parameter
-    // Keep the original approach but make it more efficient
-    let recentErrorCount = 0;
+    // Update average query time
     const recentQueries = this.queryHistory.slice(-100);
-    for (const query of recentQueries) {
-      // This is simplified - in real usage, check actual query success
-      // Using the success parameter for the current query, assuming it applies to recent
-      if (!success) {
-        recentErrorCount++;
-      }
-    }
-    this.metrics.errorRate = recentQueryCount > 0 ? recentErrorCount / recentQueryCount : 0;
+    this.metrics.queryTime = recentQueries.reduce((sum, q) => sum + q.time, 0) / recentQueries.length;
 
-    // Update throughput (queries per second) - use cached timestamp for efficiency
+    // Update error rate
+    const recentErrors = this.queryHistory.slice(-100).filter((_, index) => {
+      // This is a simplified error tracking - in production, track actual errors
+      return !success;
+    }).length;
+    this.metrics.errorRate = recentErrors / Math.min(100, this.queryHistory.length);
+
+    // Update throughput (queries per second)
     const oneMinuteAgo = Date.now() - 60000;
-    let queriesInLastMinute = 0;
-    // Iterate backwards for efficiency since recent queries are at the end
-    for (let i = this.queryHistory.length - 1; i >= 0 && this.queryHistory[i].timestamp > oneMinuteAgo; i--) {
-      queriesInLastMinute++;
-    }
+    const queriesInLastMinute = this.queryHistory.filter(q => q.timestamp > oneMinuteAgo).length;
     this.metrics.throughput = queriesInLastMinute / 60;
 
-    // Update slow queries count - cache this value to avoid recalculation
-    // For now, just make it more efficient by using a loop instead of filter
-    let slowQueryCount = 0;
-    for (const query of this.queryHistory) {
-      if (query.time > this.SLOW_QUERY_THRESHOLD) {
-        slowQueryCount++;
-      }
-    }
-    this.metrics.slowQueries = slowQueryCount;
+    // Update slow queries count
+    this.metrics.slowQueries = this.queryHistory.filter(q => q.time > this.SLOW_QUERY_THRESHOLD).length;
   }
 
   private collectMetrics(): void {

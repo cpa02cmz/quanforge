@@ -1,7 +1,6 @@
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useTranslation } from '../services/i18n';
-import { usePerformanceMonitor } from '../utils/performance';
 
 interface CodeEditorProps {
   code: string;
@@ -40,37 +39,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
     }
   };
 
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      // Fallback for older browsers or when clipboard API is not available
-      console.warn('Clipboard API failed, using fallback method');
-      try {
-        const textArea = document.createElement('textarea');
-        textArea.value = code;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        const successful = document.execCommand('copy');
-        document.body.removeChild(textArea);
-        
-        if (successful) {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        } else {
-          throw new Error('Fallback copy method failed');
-        }
-      } catch (fallbackError) {
-        console.error('Both clipboard API and fallback failed:', fallbackError);
-        // Could show a toast message here if needed
-      }
-    }
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }, [code]);
 
   const handleDownload = useCallback(() => {

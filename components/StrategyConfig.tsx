@@ -1,11 +1,14 @@
 
-import React, { useState, useEffect, memo, useCallback } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { StrategyParams, CustomInput } from '../types';
 import { TIMEFRAMES } from '../constants';
 import { MarketTicker } from './MarketTicker';
 import { useToast } from './Toast';
 import { NumericInput } from './NumericInput';
 import { useTranslation } from '../services/i18n';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('StrategyConfig');
 
 interface StrategyConfigProps {
   params: StrategyParams;
@@ -28,18 +31,18 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
       }
   }, []);
 
-const handleChange = useCallback((field: keyof StrategyParams, value: any) => {
+  const handleChange = (field: keyof StrategyParams, value: any) => {
      onChange({ ...params, [field]: value });
-   }, [params, onChange]);
+  };
 
-  const handleInputChange = useCallback((id: string, field: keyof CustomInput, value: string) => {
+  const handleInputChange = (id: string, field: keyof CustomInput, value: string) => {
     const newInputs = params.customInputs.map(input => 
       input.id === id ? { ...input, [field]: value } : input
     );
     onChange({ ...params, customInputs: newInputs });
-  }, [params.customInputs, onChange]);
+  };
 
-  const handleInputTypeChange = useCallback((id: string, newType: CustomInput['type']) => {
+  const handleInputTypeChange = (id: string, newType: CustomInput['type']) => {
       let defaultValue = '0';
       if (newType === 'bool') defaultValue = 'false';
       if (newType === 'string') defaultValue = '';
@@ -48,9 +51,9 @@ const handleChange = useCallback((field: keyof StrategyParams, value: any) => {
         input.id === id ? { ...input, type: newType, value: defaultValue } : input
       );
       onChange({ ...params, customInputs: newInputs });
-  }, [params.customInputs, onChange]);
+  };
 
-  const addInput = useCallback(() => {
+  const addInput = () => {
     const newInput: CustomInput = {
       id: Date.now().toString(),
       name: 'New_Param',
@@ -58,22 +61,21 @@ const handleChange = useCallback((field: keyof StrategyParams, value: any) => {
       value: '0'
     };
     onChange({ ...params, customInputs: [...params.customInputs, newInput] });
-  }, [params.customInputs, onChange]);
+  };
 
-  const removeInput = useCallback((id: string) => {
+  const removeInput = (id: string) => {
     onChange({ ...params, customInputs: params.customInputs.filter(i => i.id !== id) });
-  }, [params.customInputs, onChange]);
+  };
 
-  const copyConfig = useCallback(async () => {
-      try {
-          const configStr = JSON.stringify(params, null, 2);
-          await navigator.clipboard.writeText(configStr);
+  const copyConfig = () => {
+      const configStr = JSON.stringify(params, null, 2);
+      navigator.clipboard.writeText(configStr).then(() => {
           showToast('Configuration copied to clipboard', 'success');
-      } catch (err) {
-          console.error("Copy failed", err);
+      }).catch(err => {
+          logger.error("Copy failed", err);
           showToast("Failed to copy to clipboard", "error");
-      }
-  }, [params, showToast]);
+      });
+  };
 
   const parseAndImport = (text: string) => {
     try {
@@ -103,7 +105,7 @@ const handleChange = useCallback((field: keyof StrategyParams, value: any) => {
         setShowManualImport(false);
         setManualImportText('');
     } catch (e: any) {
-        console.error(e);
+        logger.error(e);
         showToast(`Import Failed: ${e.message}`, 'error');
     }
   };
@@ -113,7 +115,7 @@ const handleChange = useCallback((field: keyof StrategyParams, value: any) => {
           const text = await navigator.clipboard.readText();
           parseAndImport(text);
       } catch (e: any) {
-          console.warn("Clipboard read failed, switching to manual mode", e);
+          logger.warn("Clipboard read failed, switching to manual mode", e);
           setShowManualImport(true);
           showToast('Clipboard blocked. Please paste manually below.', 'info');
       }

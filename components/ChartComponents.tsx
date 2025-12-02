@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 export interface ChartComponentsProps {
@@ -7,7 +7,7 @@ export interface ChartComponentsProps {
   t: (key: string) => string;
 }
 
-export const ChartComponents: React.FC<ChartComponentsProps> = ({ riskData, analysis, t }) => {
+export const ChartComponents: React.FC<ChartComponentsProps> = memo(({ riskData, analysis, t }) => {
   return (
     <>
       <div className="bg-dark-surface p-6 rounded-xl border border-dark-border">
@@ -56,4 +56,4 @@ export const ChartComponents: React.FC<ChartComponentsProps> = ({ riskData, anal
       </div>
     </>
   );
-};
+});

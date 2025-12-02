@@ -1,5 +1,5 @@
 
-import React, { useMemo, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { BacktestSettings, SimulationResult } from '../types';
 import { NumericInput } from './NumericInput';
@@ -48,45 +48,6 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = React.memo(({
         link.click();
         document.body.removeChild(link);
     }, [result]);
-
-    // Memoize chart data to prevent unnecessary re-renders
-    const chartData = useMemo(() => {
-        return result?.equityCurve || [];
-    }, [result?.equityCurve]);
-
-    // Memoize stats cards to prevent unnecessary re-renders
-    const statsCards = useMemo(() => {
-        if (!result) return null;
-        
-        return (
-            <>
-                <div className="bg-dark-surface border border-dark-border p-4 rounded-xl">
-                    <p className="text-xs text-gray-500 uppercase">{t('bt_final_bal')}</p>
-                    <p className={`text-xl font-bold font-mono ${result.finalBalance >= settings.initialDeposit ? 'text-green-400' : 'text-red-400'}`}>
-                        ${result.finalBalance.toLocaleString()}
-                    </p>
-                </div>
-                <div className="bg-dark-surface border border-dark-border p-4 rounded-xl">
-                    <p className="text-xs text-gray-500 uppercase">{t('bt_total_ret')}</p>
-                    <p className={`text-xl font-bold font-mono ${result.totalReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {result.totalReturn > 0 ? '+' : ''}{result.totalReturn}%
-                    </p>
-                </div>
-                <div className="bg-dark-surface border border-dark-border p-4 rounded-xl">
-                    <p className="text-xs text-gray-500 uppercase">{t('bt_max_dd')}</p>
-                    <p className="text-xl font-bold font-mono text-red-400">
-                        {result.maxDrawdown}%
-                    </p>
-                </div>
-                <div className="bg-dark-surface border border-dark-border p-4 rounded-xl">
-                    <p className="text-xs text-gray-500 uppercase">{t('bt_win_rate')}</p>
-                    <p className="text-xl font-bold font-mono text-blue-400">
-                        ~{result.winRate.toFixed(1)}%
-                    </p>
-                </div>
-            </>
-        );
-    }, [result, settings.initialDeposit, t]);
 
     return (
         <div className="flex flex-col h-full bg-dark-bg">

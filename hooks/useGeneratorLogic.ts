@@ -8,6 +8,9 @@ import { useToast } from '../components/Toast';
 import { DEFAULT_STRATEGY_PARAMS } from '../constants';
 import { runMonteCarloSimulation } from '../services/simulation';
 import { ValidationService } from '../utils/validation';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('useGeneratorLogic');
 
 interface GeneratorState {
   messages: Message[];
@@ -39,8 +42,7 @@ type GeneratorAction =
   | { type: 'SET_SIMULATION_RESULT'; payload: SimulationResult | null }
   | { type: 'SET_SIMULATING'; payload: boolean }
   | { type: 'RESET_STATE' }
-  | { type: 'LOAD_ROBOT'; payload: Robot }
-  | { type: 'TRIM_MESSAGES' };
+  | { type: 'LOAD_ROBOT'; payload: Robot };
 
 const initialState: GeneratorState = {
   messages: [],
@@ -101,10 +103,6 @@ const generatorReducer = (state: GeneratorState, action: GeneratorAction): Gener
         messages: action.payload.chat_history || [],
         analysis: action.payload.analysis_result || null
       };
-    case 'TRIM_MESSAGES':
-      // Keep only the last 50 messages to prevent memory leaks
-      const trimmedMessages = state.messages.slice(-50);
-      return { ...state, messages: trimmedMessages };
     default:
       return state;
   }
@@ -125,17 +123,10 @@ export const useGeneratorLogic = (id?: string) => {
      return errors.map(error => error.message);
    }, []);
 
-// Reset State Helper
-    const resetState = useCallback(() => {
-      dispatch({ type: 'RESET_STATE' });
-    }, []);
-
- // Trim Messages Helper - optimize by only trimming when needed
-    const trimMessages = useCallback(() => {
-       if (state.messages.length > 50) { // Only trim if we have more than the threshold
-         dispatch({ type: 'TRIM_MESSAGES' });
-       }
-    }, [state.messages.length]);
+   // Reset State Helper
+   const resetState = useCallback(() => {
+     dispatch({ type: 'RESET_STATE' });
+   }, []);
 
 const stopGeneration = () => {
     if (abortControllerRef.current) {
@@ -172,7 +163,7 @@ const stopGeneration = () => {
              }
          }).catch(error => {
              if (!controller.signal.aborted) {
-                 console.error('Error loading robot:', error);
+                 logger.error('Error loading robot:', error);
                  showToast("Error loading robot", "error");
              }
          }).finally(() => {
@@ -204,43 +195,41 @@ const stopGeneration = () => {
       return rawText;
   };
 
-   // Logic: Process AI Response (structured object with content and thinking)
-   const processAIResponse = useCallback(async (response: { content: string, thinking?: string }) => {
-       const { content: rawResponse, thinking } = response;
-       const extractedCode = extractCode(rawResponse);
-       
-       if (extractedCode) {
-           dispatch({ type: 'SET_CODE', payload: extractedCode });
-           
-           // Trigger analysis in background, cancellable - use requestAnimationFrame for better performance
-           requestAnimationFrame(() => {
-             const analysisController = new AbortController();
-             analyzeStrategy(extractedCode, analysisController.signal).then(analysis => 
-                 dispatch({ type: 'SET_ANALYSIS', payload: analysis })
-             ).catch(err => {
-                if (err.name !== 'AbortError') console.error("Analysis failed", err);
-             });
-           });
+  // Logic: Process AI Response (structured object with content and thinking)
+  const processAIResponse = useCallback(async (response: { content: string, thinking?: string }) => {
+      const { content: rawResponse, thinking } = response;
+      const extractedCode = extractCode(rawResponse);
+      
+      if (extractedCode) {
+          dispatch({ type: 'SET_CODE', payload: extractedCode });
+          
+          // Trigger analysis in background, cancellable
+          const analysisController = new AbortController();
+          analyzeStrategy(extractedCode, analysisController.signal).then(analysis => 
+              dispatch({ type: 'SET_ANALYSIS', payload: analysis })
+          ).catch(err => {
+             if (err.name !== 'AbortError') logger.error("Analysis failed", err);
+          });
 
-           dispatch({ type: 'SET_SIMULATION_RESULT', payload: null }); 
-           
-           if (window.innerWidth < 768) {
-               dispatch({ type: 'SET_MOBILE_VIEW', payload: 'result' });
-           }
-       }
+          dispatch({ type: 'SET_SIMULATION_RESULT', payload: null }); 
+          
+          if (window.innerWidth < 768) {
+              dispatch({ type: 'SET_MOBILE_VIEW', payload: 'result' });
+          }
+      }
 
-       const chatContent = formatChatMessage(rawResponse, !!extractedCode);
-       
-       const aiMessage: Message = {
-         id: (Date.now() + 1).toString(),
-         role: MessageRole.MODEL,
-         content: chatContent || (extractedCode ? "Code updated successfully." : "I couldn't generate a text response."),
-         timestamp: Date.now(),
-         thinking: thinking 
-       };
+      const chatContent = formatChatMessage(rawResponse, !!extractedCode);
+      
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: MessageRole.MODEL,
+        content: chatContent || (extractedCode ? "Code updated successfully." : "I couldn't generate a text response."),
+        timestamp: Date.now(),
+        thinking: thinking 
+      };
 
-       dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
-   }, []);
+      dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
+  }, []);
 
   // Handlers
   const handleSendMessage = async (content: string) => {
@@ -277,7 +266,7 @@ const stopGeneration = () => {
     } catch (error: any) {
       if (error.name === 'AbortError') return;
       
-      console.error(error);
+      logger.error(error);
       showToast(error.message || "Error generating response", 'error');
       dispatch({ type: 'ADD_MESSAGE', payload: {
           id: Date.now().toString(),
@@ -316,7 +305,7 @@ const stopGeneration = () => {
           showToast("Settings applied & code updated", 'success');
       } catch (error: any) {
           if (error.name === 'AbortError') return;
-          console.error("Failed to apply settings:", error);
+          logger.error("Failed to apply settings:", error);
           showToast("Failed to apply settings", 'error');
       } finally {
            if (!signal.aborted) {
@@ -351,7 +340,7 @@ const stopGeneration = () => {
           showToast("Code optimized & refined", 'success');
       } catch (error: any) {
           if (error.name === 'AbortError') return;
-          console.error("Refinement failed:", error);
+          logger.error("Refinement failed:", error);
           showToast("Refinement failed", 'error');
       } finally {
           if (!signal.aborted) {
@@ -386,7 +375,7 @@ const stopGeneration = () => {
           showToast("Code explanation generated", 'success');
       } catch (error: any) {
           if (error.name === 'AbortError') return;
-          console.error("Explanation failed:", error);
+          logger.error("Explanation failed:", error);
           showToast("Explanation failed", 'error');
       } finally {
           if (!signal.aborted) {
@@ -443,7 +432,7 @@ const stopGeneration = () => {
         }
         showToast('Robot saved successfully!', 'success');
       } catch (e) {
-        console.error(e);
+        logger.error(e);
         showToast('Failed to save robot', 'error');
       } finally {
         dispatch({ type: 'SET_SAVING', payload: false });
@@ -479,7 +468,7 @@ const stopGeneration = () => {
               dispatch({ type: 'SET_SIMULATION_RESULT', payload: res });
               showToast("Simulation completed", 'success');
           } catch (e) {
-              console.error(e);
+              logger.error(e);
               showToast("Simulation failed", 'error');
           } finally {
               dispatch({ type: 'SET_SIMULATING', payload: false });
@@ -516,7 +505,6 @@ const stopGeneration = () => {
     clearChat,
     resetConfig,
     runSimulation,
-    stopGeneration,
-    trimMessages
+    stopGeneration
   };
 };

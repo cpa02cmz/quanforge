@@ -3,6 +3,9 @@ import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
 import { Message, MessageRole } from '../types';
 import { loadSuggestedStrategies } from '../constants';
 import { useTranslation } from '../services/i18n';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('ChatInterface');
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -10,7 +13,6 @@ interface ChatInterfaceProps {
   isLoading: boolean;
   onClear?: () => void;
   onStop?: () => void; // New Prop
-  onTrimMessages?: () => void; // New prop for message trimming
 }
 
 // Extract and memoize Message component to prevent re-renders of the whole list on input change
@@ -49,31 +51,18 @@ const MemoizedMessage = memo(({ msg, formatMessageContent }: { msg: Message, for
 
 MemoizedMessage.displayName = 'MemoizedMessage';
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ messages, onSendMessage, isLoading, onClear, onStop, onTrimMessages }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ messages, onSendMessage, isLoading, onClear, onStop }) => {
   const { t, language } = useTranslation();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const MAX_MESSAGES = 50; // Reduced from 100 for better memory management
-  const TRIM_THRESHOLD = 40; // Start trimming at 40 to be more aggressive
 
-  // Enhanced memory management: More aggressive message trimming with compression
+  // Memory management: Limit message history to prevent memory leaks
   useEffect(() => {
-    if (messages.length > MAX_MESSAGES && onTrimMessages) {
-      console.warn(`Message history exceeds ${MAX_MESSAGES} messages, trimming oldest messages`);
-      onTrimMessages();
+    if (messages.length > 100) {
+      // Notify parent component to trim messages if needed
+      logger.warn('Message history is getting large, consider implementing message trimming');
     }
-  }, [messages, MAX_MESSAGES, onTrimMessages]);
-
-  // Additional memory cleanup: Clean up old message references
-  useEffect(() => {
-    if (messages.length > TRIM_THRESHOLD) {
-      // Trigger garbage collection hint for older messages
-      const trimmedMessages = messages.slice(-TRIM_THRESHOLD);
-      if (onTrimMessages && trimmedMessages.length < messages.length) {
-        onTrimMessages();
-      }
-    }
-  }, [messages, TRIM_THRESHOLD, onTrimMessages]);
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -94,16 +83,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
       onSendMessage(prompt);
   };
 
-  // Lightweight Markdown Formatter with memory optimization
+  // Lightweight Markdown Formatter
   // Memoized to prevent unnecessary re-renders
   const formatMessageContent = useCallback((content: string) => {
-    // Early return for empty content
-    if (!content || content.trim() === '') return [];
-    
     const lines = content.split('\n');
     const elements = [];
     
-    // Use for...of for better performance with large arrays
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       // Handle Lists
@@ -160,7 +145,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     loadSuggestedStrategies(language).then(strategies => {
       setSuggestedStrategies(strategies[language] || strategies.en || []);
     }).catch(err => {
-      console.error('Failed to load suggested strategies:', err);
+      logger.error('Failed to load suggested strategies:', err);
       setSuggestedStrategies([]);
     });
   }, [language]);
