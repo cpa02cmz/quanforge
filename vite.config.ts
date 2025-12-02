@@ -13,40 +13,46 @@ plugins: [react()],
       },
       output: {
         manualChunks: (id) => {
-          // Vendor chunks - more aggressive splitting for better caching
+          // Vendor chunks - optimized for better caching and edge performance
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-is')) {
-              return 'vendor-react';
+            // Core React - separate for better caching
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'vendor-react-core';
             }
+            if (id.includes('react-is') || id.includes('react-router')) {
+              return 'vendor-react-utils';
+            }
+            // Charts - heavy library, separate chunk
             if (id.includes('recharts')) {
               return 'vendor-charts';
             }
+            // AI providers - separate for potential multiple providers
             if (id.includes('@google/genai')) {
-              return 'vendor-ai';
+              return 'vendor-google-ai';
             }
-            if (id.includes('react-router-dom')) {
-              return 'vendor-router';
+            // Database/Backend
+            if (id.includes('@supabase/supabase-js')) {
+              return 'vendor-supabase-core';
             }
             if (id.includes('@supabase')) {
-              return 'vendor-supabase';
+              return 'vendor-supabase-utils';
             }
-            if (id.includes('react-helmet-async')) {
-              return 'vendor-seo';
-            }
-            if (id.includes('lz-string')) {
-              return 'vendor-utils';
-            }
+            // Security and utilities
             if (id.includes('dompurify')) {
               return 'vendor-security';
             }
-            // Split remaining vendors into smaller chunks
+            if (id.includes('lz-string')) {
+              return 'vendor-compression';
+            }
+            // SEO and meta
+            if (id.includes('react-helmet-async')) {
+              return 'vendor-seo';
+            }
+            // Development dependencies
             if (id.includes('typescript') || id.includes('@types')) {
-              return 'vendor-types';
+              return 'vendor-dev';
             }
-            if (id.includes('vite') || id.includes('@vitejs')) {
-              return 'vendor-vite';
-            }
-            return 'vendor';
+            return 'vendor-misc';
           }
           
           // App chunks - more granular splitting with lazy loading optimization

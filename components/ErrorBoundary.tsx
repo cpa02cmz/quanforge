@@ -57,12 +57,12 @@ class ErrorBoundaryClass extends Component<Props, State> {
     }
   }
 
-  private handleRetry = () => {
+private handleRetry = () => {
     if (this.state.retryCount < 3) {
       this.setState(prevState => ({ 
         hasError: false, 
-        error: undefined, 
-        errorId: undefined,
+        error: null as unknown as Error, 
+        errorId: '' as string,
         retryCount: prevState.retryCount + 1 
       }));
     } else {

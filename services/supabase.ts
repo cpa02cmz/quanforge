@@ -7,6 +7,7 @@ import { robotCache } from './advancedCache';
 import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { smartCache } from './smartCache';
+import DOMPurify from 'dompurify';
 
 // Connection retry configuration
 const RETRY_CONFIG = {
@@ -387,23 +388,23 @@ export const mockDb = {
          return { data: robots, error: null };
        }
        
-const cacheKey = 'robots_list';
-        const cached = robotCache.get<Robot[]>(cacheKey);
-        if (cached) {
-          // Create index for performance
-          robotIndexManager.getIndex(cached);
-          const duration = performance.now() - startTime;
-          performanceMonitor.record('getRobots', duration);
-          return { data: cached, error: null };
-        }
+const cacheKey = 'robots_list_v2';
+         const cached = robotCache.get<Robot[]>(cacheKey);
+         if (cached) {
+           // Create index for performance
+           robotIndexManager.getIndex(cached);
+           const duration = performance.now() - startTime;
+           performanceMonitor.record('getRobots', duration);
+           return { data: cached, error: null };
+         }
         
         return withRetry(async () => {
           const client = await getClient();
           const result = client
             .from('robots')
-            .select('*')
+            .select('id, name, description, strategy_type, created_at, updated_at') // Select only needed fields
             .order('created_at', { ascending: false })
-            .limit(100); // Add reasonable limit to prevent performance issues
+            .limit(50); // Implement pagination
           
           if (result.data && !result.error) {
             // Create index for performance
@@ -490,11 +491,16 @@ const cacheKey = 'robots_list';
    /**
      * Get robots with pagination for better performance with large datasets
      */
-   async getRobotsPaginated(page: number = 1, limit: number = 20, searchTerm?: string, filterType?: string) {
-     const startTime = performance.now();
-     try {
-       const settings = settingsManager.getDBSettings();
-       const offset = (page - 1) * limit;
+async getRobotsPaginated(page: number = 1, limit: number = 20, searchTerm?: string, filterType?: string) {
+      const startTime = performance.now();
+      try {
+        const settings = settingsManager.getDBSettings();
+        const offset = (page - 1) * limit;
+        
+        // Add input sanitization for search
+        if (searchTerm) {
+          searchTerm = DOMPurify.sanitize(searchTerm.trim());
+        }
        
        if (settings.mode === 'mock') {
          const stored = localStorage.getItem(ROBOTS_KEY);
