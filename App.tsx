@@ -17,6 +17,8 @@ const Generator = lazy(() => import('./pages/Generator').then(module => ({ defau
 const Wiki = lazy(() => import('./pages/Wiki').then(module => ({ default: module.Wiki })));
 const Layout = lazy(() => import('./components/Layout').then(module => ({ default: module.Layout })));
 
+
+
 export default function App() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);

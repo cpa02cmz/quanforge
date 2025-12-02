@@ -55,7 +55,7 @@ class SecurityManager {
       // Check payload size
       const payloadSize = new Blob([JSON.stringify(data)]).size;
       if (payloadSize > this.config.maxPayloadSize) {
-        errors.push(`Payload too large: ${payloadSize} bytes (max: ${this.config.maxPayloadSize})`);
+         errors.push('Payload too large: ' + payloadSize + ' bytes (max: ' + this.config.maxPayloadSize + ')');
         riskScore += 50;
       }
 
@@ -305,49 +305,49 @@ class SecurityManager {
        if (regex.test(sanitizedCode)) {
          errors.push(`Dangerous function detected: ${func}`);
          // Remove or comment out dangerous functions
-         sanitizedCode = sanitizedCode.replace(regex, `// REMOVED_${func}(`);
+         sanitizedCode = sanitizedCode.replace(regex, '// REMOVED_' + func + '(');
        }
      }
 
      // Check for file operations
      const fileOperations = ['FileOpen', 'FileWrite', 'FileRead', 'FileDelete', 'FileCopy', 'FileMove', 'FileIsExist'];
-     for (const op of fileOperations) {
-       const regex = new RegExp(`\\b${op}\\s*\\(`, 'gi');
-       if (regex.test(sanitizedCode)) {
-         errors.push(`File operation detected: ${op}`);
-         sanitizedCode = sanitizedCode.replace(regex, `// REMOVED_${op}(`);
-       }
-     }
+      for (const op of fileOperations) {
+        const regex = new RegExp(`\\b${op}\\s*\\(`, 'gi');
+        if (regex.test(sanitizedCode)) {
+          errors.push(`File operation detected: ${op}`);
+          sanitizedCode = sanitizedCode.replace(regex, '// REMOVED_' + op + '(');
+        }
+      }
 
      // Check for network operations
      const networkOps = ['InternetOpen', 'InternetConnect', 'HttpOpenRequest', 'SocketCreate', 'SocketConnect', 'SocketSend', 'SocketReceive'];
-     for (const op of networkOps) {
-       const regex = new RegExp(`\\b${op}\\s*\\(`, 'gi');
-       if (regex.test(sanitizedCode)) {
-         errors.push(`Network operation detected: ${op}`);
-         sanitizedCode = sanitizedCode.replace(regex, `// REMOVED_${op}(`);
-       }
-     }
+      for (const op of networkOps) {
+        const regex = new RegExp(`\\b${op}\\s*\\(`, 'gi');
+        if (regex.test(sanitizedCode)) {
+          errors.push(`Network operation detected: ${op}`);
+          sanitizedCode = sanitizedCode.replace(regex, '// REMOVED_' + op + '(');
+        }
+      }
 
      // Check for memory operations
      const memoryOps = ['memcpy', 'memset', 'malloc', 'free', 'GetMemory', 'FreeMemory'];
-     for (const op of memoryOps) {
-       const regex = new RegExp(`\\b${op}\\s*\\(`, 'gi');
-       if (regex.test(sanitizedCode)) {
-         errors.push(`Memory operation detected: ${op}`);
-         sanitizedCode = sanitizedCode.replace(regex, `// REMOVED_${op}(`);
-       }
-     }
+      for (const op of memoryOps) {
+        const regex = new RegExp(`\\b${op}\\s*\\(`, 'gi');
+        if (regex.test(sanitizedCode)) {
+          errors.push(`Memory operation detected: ${op}`);
+          sanitizedCode = sanitizedCode.replace(regex, '// REMOVED_' + op + '(');
+        }
+      }
 
      // Check for registry operations
      const registryOps = ['RegOpenKey', 'RegCreateKey', 'RegSetValue', 'RegGetValue'];
-     for (const op of registryOps) {
-       const regex = new RegExp(`\\b${op}\\s*\\(`, 'gi');
-       if (regex.test(sanitizedCode)) {
-         errors.push(`Registry operation detected: ${op}`);
-         sanitizedCode = sanitizedCode.replace(regex, `// REMOVED_${op}(`);
-       }
-     }
+      for (const op of registryOps) {
+        const regex = new RegExp(`\\b${op}\\s*\\(`, 'gi');
+        if (regex.test(sanitizedCode)) {
+          errors.push(`Registry operation detected: ${op}`);
+          sanitizedCode = sanitizedCode.replace(regex, '// REMOVED_' + op + '(');
+        }
+      }
 
       // Basic syntax validation
       if (!sanitizedCode.includes('OnTick') && !sanitizedCode.includes('OnStart') && !sanitizedCode.includes('OnInit') && !sanitizedCode.includes('OnDeinit')) {
