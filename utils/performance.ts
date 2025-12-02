@@ -310,13 +310,87 @@ private recordInteraction(name: string, duration: number) {
      (globalThis as any).__memoryMonitoringInterval = memoryInterval;
    }
    
-   // Stop memory monitoring
-   stopMemoryMonitoring(): void {
-     if ((globalThis as any).__memoryMonitoringInterval) {
-       clearInterval((globalThis as any).__memoryMonitoringInterval);
-       delete (globalThis as any).__memoryMonitoringInterval;
-     }
-   }
+    // Stop memory monitoring
+    stopMemoryMonitoring(): void {
+      if ((globalThis as any).__memoryMonitoringInterval) {
+        clearInterval((globalThis as any).__memoryMonitoringInterval);
+        delete (globalThis as any).__memoryMonitoringInterval;
+      }
+    }
+    
+    // Comprehensive performance report
+    getPerformanceReport(): {
+      webVitals: Partial<PageLoadMetrics>;
+      memoryUsage: any;
+      metrics: PerformanceMetric[];
+      recommendations: string[];
+    } {
+      return {
+        webVitals: this.getWebVitals(),
+        memoryUsage: this.getMemoryUsage(),
+        metrics: this.getMetrics(),
+        recommendations: this.getPerformanceRecommendations()
+      };
+    }
+    
+    // Get performance recommendations
+    getPerformanceRecommendations(): string[] {
+      const recommendations: string[] = [];
+      const webVitals = this.getWebVitals();
+      
+      // Core Web Vitals recommendations
+      if (webVitals.fcp && webVitals.fcp > 1800) {
+        recommendations.push('First Contentful Paint is slow (>1.8s), optimize initial rendering');
+      }
+      
+      if (webVitals.lcp && webVitals.lcp > 2500) {
+        recommendations.push('Largest Contentful Paint is slow (>2.5s), optimize critical resources');
+      }
+      
+      if (webVitals.fid && webVitals.fid > 100) {
+        recommendations.push('First Input Delay is high (>100ms), reduce main thread work');
+      }
+      
+      if (webVitals.cls && webVitals.cls > 0.1) {
+        recommendations.push('Cumulative Layout Shift is high (>0.1), avoid unexpected layout changes');
+      }
+      
+      // Memory recommendations
+      const memory = this.getMemoryUsage();
+      if (memory && memory.utilization > 80) {
+        recommendations.push('High memory usage detected (>80%), investigate memory leaks');
+      } else if (memory && memory.utilization > 60) {
+        recommendations.push('Memory usage is elevated (>60%), consider optimization');
+      }
+      
+      // Performance metric recommendations
+      const metrics = this.getMetrics();
+      const slowMetrics = metrics.filter(m => 
+        m.name.startsWith('api_') && m.value > 1000
+      );
+      
+      if (slowMetrics.length > 0) {
+        recommendations.push(`Found ${slowMetrics.length} slow API calls (>1s), optimize backend performance`);
+      }
+      
+      return recommendations;
+    }
+    
+    // Log comprehensive performance report
+    logPerformanceReport(): void {
+      const report = this.getPerformanceReport();
+      
+      console.group('Performance Report');
+      console.log('Web Vitals:', report.webVitals);
+      console.log('Memory Usage:', report.memoryUsage);
+      console.log('Performance Metrics Count:', report.metrics.length);
+      console.log('Recommendations:', report.recommendations);
+      console.groupEnd();
+      
+      if (report.recommendations.length > 0) {
+        console.warn('Performance Issues Found:', report.recommendations);
+      }
+    }
 }
 
 // Singleton instance

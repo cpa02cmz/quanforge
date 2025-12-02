@@ -10,6 +10,7 @@ interface ChatInterfaceProps {
   isLoading: boolean;
   onClear?: () => void;
   onStop?: () => void; // New Prop
+  onTrimMessages?: () => void; // New Prop for message trimming
 }
 
 // Extract and memoize Message component to prevent re-renders of the whole list on input change
@@ -48,18 +49,18 @@ const MemoizedMessage = memo(({ msg, formatMessageContent }: { msg: Message, for
 
 MemoizedMessage.displayName = 'MemoizedMessage';
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ messages, onSendMessage, isLoading, onClear, onStop }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ messages, onSendMessage, isLoading, onClear, onStop, onTrimMessages }) => {
   const { t, language } = useTranslation();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Memory management: Limit message history to prevent memory leaks
   useEffect(() => {
-    if (messages.length > 100) {
-      // Notify parent component to trim messages if needed
-      console.warn('Message history is getting large, consider implementing message trimming');
+    if (messages.length > 50 && onTrimMessages) {
+      // Automatically trim messages to prevent memory issues
+      onTrimMessages();
     }
-  }, [messages]);
+  }, [messages, onTrimMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

@@ -44,7 +44,8 @@ export const Generator: React.FC = memo(() => {
     clearChat,
     resetConfig,
     runSimulation,
-    stopGeneration
+    stopGeneration,
+    trimMessages
   } = useGeneratorLogic(id);
 
    // Local UI State
@@ -197,13 +198,14 @@ structuredData={[
 
         <div className="flex-1 overflow-hidden relative bg-dark-surface">
             {activeSidebarTab === 'chat' ? (
-                 <ChatInterface 
-                    messages={messages} 
-                    onSendMessage={handleSendMessage} 
-                    isLoading={isLoading} 
-                    onClear={clearChat}
-                    onStop={stopGeneration}
-                />
+<ChatInterface 
+                     messages={messages} 
+                     onSendMessage={handleSendMessage} 
+                     isLoading={isLoading} 
+                     onClear={clearChat}
+                     onStop={stopGeneration}
+                     onTrimMessages={trimMessages}
+                 />
             ) : (
                 <StrategyConfig 
                     params={strategyParams} 

@@ -1,6 +1,6 @@
 /**
- * Database Performance Monitor
- * Monitors and optimizes database performance for Supabase integration
+ * Enhanced Database Performance Monitor
+ * Advanced monitoring and optimization for Supabase integration
  */
 
 interface DatabaseMetrics {
@@ -11,6 +11,18 @@ interface DatabaseMetrics {
   slowQueries: number;
   errorRate: number;
   throughput: number;
+  avgQueryComplexity: number;
+  connectionLatency: number;
+  compressionRatio: number;
+  batchOperationEfficiency: number;
+}
+
+interface QueryOptimization {
+  query: string;
+  originalTime: number;
+  optimizedTime: number;
+  improvement: number;
+  suggestions: string[];
 }
 
 interface QueryPlan {
@@ -39,13 +51,19 @@ class DatabasePerformanceMonitor {
     slowQueries: 0,
     errorRate: 0,
     throughput: 0,
+    avgQueryComplexity: 0,
+    connectionLatency: 0,
+    compressionRatio: 0,
+    batchOperationEfficiency: 0,
   };
-  private queryHistory: Array<{ query: string; time: number; timestamp: number }> = [];
+  private queryHistory: Array<{ query: string; time: number; timestamp: number; complexity: number; batchSize?: number }> = [];
   private alerts: PerformanceAlert[] = [];
+  private optimizations: QueryOptimization[] = [];
   private monitoringInterval: NodeJS.Timeout | null = null;
   private readonly SLOW_QUERY_THRESHOLD = 1000; // 1 second
   private readonly HIGH_ERROR_RATE_THRESHOLD = 0.05; // 5%
   private readonly MAX_QUERY_HISTORY = 1000;
+  private connectionMetrics: Map<string, number> = new Map();
 
   private constructor() {
     this.startMonitoring();
@@ -72,6 +90,7 @@ class DatabasePerformanceMonitor {
       query: this.sanitizeQuery(query),
       time: executionTime,
       timestamp: Date.now(),
+      complexity: this.calculateQueryComplexity(query),
     });
 
     // Maintain query history size
@@ -154,7 +173,7 @@ class DatabasePerformanceMonitor {
   private analyzeQueryPatterns(): any {
     const patterns = {
       mostFrequentTables: this.getMostFrequentTables(),
-      averageQueryComplexity: this.calculateQueryComplexity(),
+      averageQueryComplexity: this.calculateAverageQueryComplexity(),
       peakUsageTimes: this.getPeakUsageTimes(),
     };
 
@@ -178,30 +197,29 @@ class DatabasePerformanceMonitor {
       .slice(0, 5);
   }
 
-  private calculateQueryComplexity(): number {
-    let totalComplexity = 0;
-    let queryCount = 0;
+  private calculateQueryComplexity(query: string): number {
+    let complexity = 1;
+    
+    // Add complexity for joins
+    const joins = (query.match(/join/gi) || []).length;
+    complexity += joins * 2;
 
-    this.queryHistory.forEach(({ query }) => {
-      let complexity = 1;
-      
-      // Add complexity for joins
-      const joins = (query.match(/join/gi) || []).length;
-      complexity += joins * 2;
+    // Add complexity for subqueries
+    const subqueries = (query.match(/\(select/gi) || []).length;
+    complexity += subqueries * 3;
 
-      // Add complexity for subqueries
-      const subqueries = (query.match(/\(select/gi) || []).length;
-      complexity += subqueries * 3;
+    // Add complexity for aggregations
+    const aggregations = (query.match(/\b(count|sum|avg|min|max)\b/gi) || []).length;
+    complexity += aggregations;
 
-      // Add complexity for aggregations
-      const aggregations = (query.match(/\b(count|sum|avg|min|max)\b/gi) || []).length;
-      complexity += aggregations;
+    return complexity;
+  }
 
-      totalComplexity += complexity;
-      queryCount++;
-    });
-
-    return queryCount > 0 ? totalComplexity / queryCount : 0;
+  private calculateAverageQueryComplexity(): number {
+    if (this.queryHistory.length === 0) return 0;
+    
+    const totalComplexity = this.queryHistory.reduce((sum, { complexity }) => sum + complexity, 0);
+    return totalComplexity / this.queryHistory.length;
   }
 
   private getPeakUsageTimes(): Array<{ hour: number; queryCount: number }> {
@@ -402,6 +420,10 @@ class DatabasePerformanceMonitor {
       slowQueries: 0,
       errorRate: 0,
       throughput: 0,
+      avgQueryComplexity: 0,
+      connectionLatency: 0,
+      compressionRatio: 0,
+      batchOperationEfficiency: 0,
     };
     this.queryHistory = [];
     this.alerts = [];

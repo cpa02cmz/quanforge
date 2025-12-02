@@ -662,9 +662,181 @@ performanceMonitor.record('getRobotsPaginated', duration);
        handleError(error as Error, 'getRobotsByIds', 'mockDb');
        throw error;
      }
-   },
+},
 
-   async saveRobot(robot: any) {
+    /**
+     * Get robots with cached analysis for better performance
+     * Batches robot retrieval with analysis to reduce redundant operations
+     */
+    async getRobotsWithAnalysis(limit: number = 20, searchTerm?: string, filterType?: string) {
+      const startTime = performance.now();
+      try {
+        const settings = settingsManager.getDBSettings();
+        
+        if (settings.mode === 'mock') {
+          const stored = localStorage.getItem(ROBOTS_KEY);
+          const robots = safeParse(stored, []);
+          const index = robotIndexManager.getIndex(robots);
+          
+          let results = index.byDate.slice(0, limit);
+          
+          // Apply search filter if provided
+          if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            results = results.filter(robot => 
+              robot.name.toLowerCase().includes(term) || 
+              robot.description.toLowerCase().includes(term)
+            );
+          }
+          
+          // Apply type filter if provided
+          if (filterType && filterType !== 'All') {
+            results = results.filter(robot => 
+              (robot.strategy_type || 'Custom') === filterType
+            );
+          }
+          
+          // Batch analysis caching
+          const robotsWithAnalysis = await Promise.all(
+            results.map(async (robot) => {
+              const analysisCacheKey = `analysis_${robot.id}`;
+              let analysis = robotCache.get<any>(analysisCacheKey);
+              
+              if (!analysis && robot.code) {
+                try {
+                  // Import gemini service dynamically to avoid circular dependencies
+                  const { analyzeStrategy } = await import('./gemini');
+                  analysis = await analyzeStrategy(robot.code);
+                  
+                  // Cache analysis result
+                  robotCache.set(analysisCacheKey, analysis, {
+                    ttl: 600000, // 10 minutes
+                    tags: ['analysis', `robot_${robot.id}`],
+                    priority: 'normal'
+                  });
+                } catch (error) {
+                  console.warn(`Failed to analyze robot ${robot.id}:`, error);
+                  analysis = {
+                    riskScore: 50,
+                    profitability: 50,
+                    description: 'Analysis unavailable'
+                  };
+                }
+              }
+              
+              return {
+                ...robot,
+                analysis_result: analysis || robot.analysis_result
+              };
+            })
+          );
+          
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('getRobotsWithAnalysis', duration);
+          
+          return { 
+            data: robotsWithAnalysis, 
+            error: null,
+            cached: true
+          };
+        }
+        
+        // For Supabase, use cached approach
+        const cacheKey = `robots_with_analysis_${limit}_${searchTerm || ''}_${filterType || 'All'}`;
+        const cached = robotCache.get<any>(cacheKey);
+        if (cached) {
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('getRobotsWithAnalysis', duration);
+          return { ...cached, cached: true };
+        }
+        
+        return withRetry(async () => {
+          const client = await getClient();
+          let query = client
+            .from('robots')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(limit);
+          
+          // Apply search filter if provided
+          if (searchTerm) {
+            query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+          }
+          
+          // Apply type filter if provided
+          if (filterType && filterType !== 'All') {
+            query = query.eq('strategy_type', filterType);
+          }
+          
+          const result = await query;
+          
+          if (result.data && !result.error) {
+            // Batch analysis caching for Supabase results
+            const robotsWithAnalysis = await Promise.all(
+              result.data.map(async (robot: Robot) => {
+                const analysisCacheKey = `analysis_${robot.id}`;
+                let analysis = robotCache.get<any>(analysisCacheKey);
+                
+                if (!analysis && robot.code) {
+                  try {
+                    const { analyzeStrategy } = await import('./gemini');
+                    analysis = await analyzeStrategy(robot.code);
+                    
+                    robotCache.set(analysisCacheKey, analysis, {
+                      ttl: 600000,
+                      tags: ['analysis', `robot_${robot.id}`],
+                      priority: 'normal'
+                    });
+                  } catch (error) {
+                    console.warn(`Failed to analyze robot ${robot.id}:`, error);
+                    analysis = {
+                      riskScore: 50,
+                      profitability: 50,
+                      description: 'Analysis unavailable'
+                    };
+                  }
+                }
+                
+                return {
+                  ...robot,
+                  analysis_result: analysis || robot.analysis_result
+                };
+              })
+            );
+            
+            const response = {
+              data: robotsWithAnalysis,
+              error: null,
+              cached: false
+            };
+            
+            // Cache the entire result
+            robotCache.set(cacheKey, response, {
+              ttl: 300000, // 5 minutes
+              tags: ['robots', 'list', 'with_analysis'],
+              priority: 'high'
+            });
+            
+            const duration = performance.now() - startTime;
+            performanceMonitor.record('getRobotsWithAnalysis', duration);
+            
+            return response;
+          }
+          
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('getRobotsWithAnalysis', duration);
+          
+          return result;
+        }, 'getRobotsWithAnalysis');
+      } catch (error) {
+        const duration = performance.now() - startTime;
+        performanceMonitor.record('getRobotsWithAnalysis', duration);
+        handleError(error as Error, 'getRobotsWithAnalysis', 'mockDb');
+        throw error;
+      }
+    },
+
+    async saveRobot(robot: any) {
     const startTime = performance.now();
     try {
       const settings = settingsManager.getDBSettings();

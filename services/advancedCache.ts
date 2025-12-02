@@ -277,6 +277,45 @@ class AdvancedCache {
     return lruKey;
   }
 
+  // Adaptive cache eviction based on access patterns
+  private adaptEvictionPolicy(): void {
+    // Calculate access patterns and adjust eviction strategy
+    const accessCounts = Array.from(this.cache.values()).map(entry => entry.accessCount);
+    if (accessCounts.length === 0) return;
+    
+    const avgAccess = accessCounts.reduce((sum, count) => sum + count, 0) / accessCounts.length;
+    const maxAccess = Math.max(...accessCounts);
+    
+    // If there's a big difference between most and least accessed items,
+    // we should be more aggressive about keeping frequently accessed items
+    if (maxAccess > avgAccess * 2) {
+      // Trim the cache more aggressively to keep only high-value items
+      this.trimCacheAggressively();
+    }
+  }
+  
+  private trimCacheAggressively(): void {
+    const entries = Array.from(this.cache.entries())
+      .map(([key, entry]) => ({ key, entry }))
+      .sort((a, b) => {
+        // Prioritize by access count first, then by recency
+        const accessDiff = b.entry.accessCount - a.entry.accessCount;
+        if (accessDiff !== 0) return accessDiff;
+        return b.entry.lastAccessed - a.entry.lastAccessed;
+      });
+    
+    // Keep only the top 70% most valuable entries
+    const keepCount = Math.max(10, Math.floor(entries.length * 0.7)); // Keep at least 10 entries
+    const entriesToKeep = new Set(entries.slice(0, keepCount).map(item => item.key));
+    
+    for (const [key] of this.cache) {
+      if (!entriesToKeep.has(key)) {
+        this.cache.delete(key);
+        this.stats.evictions++;
+      }
+    }
+  }
+
   // Compression methods now use lz-string library
 
   private startCleanup(): void {
@@ -284,6 +323,9 @@ class AdvancedCache {
       this.removeExpiredEntries();
     }, this.config.cleanupInterval);
   }
+
+  // Get cache efficiency metrics
+
 
   // Cleanup and destroy
   destroy(): void {

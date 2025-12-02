@@ -127,6 +127,23 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
     private contextCache = new Map<string, { content: string, length: number, timestamp: number }>();
     private static readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
     
+    // Context fingerprinting for optimization
+    private lastContextFingerprint = '';
+    private lastBuiltContext = '';
+    private static readonly FINGERPRINT_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+    
+    // Create context fingerprint to detect changes
+    private createContextFingerprint(prompt: string, currentCode?: string, strategyParams?: StrategyParams, history: Message[] = []): string {
+        const parts = [
+            prompt,
+            currentCode?.substring(0, 500) || '', // First 500 chars of code
+            strategyParams ? `${strategyParams.symbol}-${strategyParams.timeframe}-${strategyParams.riskPercent}` : '',
+            history.map(m => `${m.role}:${m.content.substring(0, 100)}`).join('|'), // First 100 chars of each message
+            history.length.toString()
+        ];
+        return parts.join('::');
+    }
+
     private getCachedContext(key: string, builder: () => string): string {
         const cached = this.contextCache.get(key);
         const now = Date.now();
@@ -260,6 +277,16 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
     }
     
     buildContext(prompt: string, currentCode?: string, strategyParams?: StrategyParams, history: Message[] = []): string {
+        // Check if context has changed using fingerprinting
+        const contextFingerprint = this.createContextFingerprint(prompt, currentCode, strategyParams, history);
+        const now = Date.now();
+        
+        if (this.lastContextFingerprint === contextFingerprint && 
+            this.lastBuiltContext && 
+            (now - (this.contextCache.get('last-built')?.timestamp || 0)) < TokenBudgetManager.FINGERPRINT_CACHE_TTL) {
+            return this.lastBuiltContext;
+        }
+
         const footerReminder = `
 FINAL REMINDERS:
 1. Output COMPLETE code. No placeholders like "// ... rest of code".
@@ -286,7 +313,7 @@ FINAL REMINDERS:
         // Build history with remaining budget
         const historyContent = this.buildHistoryContext(history, prompt, Math.max(remainingBudget, 0));
         
-        return `
+        const builtContext = `
 ${paramsContext}
 
 ${codeContext}
@@ -302,6 +329,13 @@ If it's just a question, answer with text only.
 
 ${footerReminder}
 `;
+
+        // Cache the built context
+        this.lastContextFingerprint = contextFingerprint;
+        this.lastBuiltContext = builtContext;
+        this.contextCache.set('last-built', { content: builtContext, length: builtContext.length, timestamp: now });
+
+        return builtContext;
     }
     
     // Clear cache when needed

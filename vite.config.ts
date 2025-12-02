@@ -13,7 +13,7 @@ plugins: [react()],
       },
       output: {
         manualChunks: (id) => {
-          // Vendor chunks - more aggressive splitting for better caching
+          // Vendor chunks - enhanced splitting for Vercel Edge caching
           if (id.includes('node_modules')) {
             if (id.includes('react') || id.includes('react-dom') || id.includes('react-is')) {
               return 'vendor-react';
@@ -36,7 +36,10 @@ plugins: [react()],
             if (id.includes('lz-string')) {
               return 'vendor-utils';
             }
-            // Split remaining vendors into smaller chunks
+            if (id.includes('dompurify')) {
+              return 'vendor-security';
+            }
+            // Split remaining vendors into smaller chunks for better edge caching
             if (id.includes('typescript') || id.includes('@types')) {
               return 'vendor-types';
             }
@@ -46,7 +49,7 @@ plugins: [react()],
             return 'vendor';
           }
           
-          // App chunks - more granular splitting with lazy loading optimization
+          // App chunks - enhanced splitting for Vercel Edge optimization
           if (id.includes('services/')) {
             if (id.includes('supabase') || id.includes('settingsManager') || id.includes('databaseOptimizer')) {
               return 'services-db';
@@ -54,10 +57,10 @@ plugins: [react()],
             if (id.includes('gemini') || id.includes('simulation')) {
               return 'services-ai';
             }
-            if (id.includes('cache') || id.includes('queryOptimizer') || id.includes('advancedCache')) {
+            if (id.includes('cache') || id.includes('queryOptimizer') || id.includes('advancedCache') || id.includes('vercelEdgeOptimizer') || id.includes('enhancedEdgeOptimizer')) {
               return 'services-performance';
             }
-            if (id.includes('security') || id.includes('realtime') || id.includes('resilientSupabase')) {
+            if (id.includes('security') || id.includes('realtime') || id.includes('resilientSupabase') || id.includes('databasePerformanceMonitor')) {
               return 'services-core';
             }
             if (id.includes('marketData') || id.includes('i18n')) {
@@ -66,7 +69,7 @@ plugins: [react()],
             return 'services';
           }
           
-          // Separate heavy components with more specific splitting
+          // Separate heavy components with enhanced edge optimization
           if (id.includes('components/')) {
             if (id.includes('CodeEditor')) {
               return 'component-editor';
@@ -107,8 +110,9 @@ plugins: [react()],
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
       },
       onwarn(warning, warn) {
-        // Suppress warnings about dynamic imports
+        // Suppress warnings about dynamic imports for edge optimization
         if (warning.code === 'DYNAMIC_IMPORT') return;
+        if (warning.code === 'THIS_IS_UNDEFINED') return;
         warn(warning);
       }
     },
@@ -117,33 +121,49 @@ plugins: [react()],
       compress: {
         drop_console: process.env['NODE_ENV'] === 'production',
         drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug'],
-        passes: 2,
-        // Additional optimizations for Vercel Edge
-        inline: 2,
+        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'],
+        passes: 3, // Enhanced optimization passes for Vercel Edge
+        // Advanced optimizations for edge deployment
+        inline: 3,
         reduce_funcs: true,
         reduce_vars: true,
         sequences: true,
-        dead_code: true
+        dead_code: true,
+        conditionals: true,
+        comparisons: true,
+        evaluate: true,
+        booleans: true,
+        loops: true,
+        unused: true,
+        hoist_funs: true,
+        if_return: true,
+        join_vars: true,
+        side_effects: true
       },
       mangle: {
         safari10: true,
-        // Additional mangling for better compression
+        // Enhanced mangling for better edge compression
         toplevel: true,
         properties: {
           regex: /^_/
-        }
+        },
+        reserved: ['React', 'useState', 'useEffect'] // Preserve React hooks
+      },
+      format: {
+        comments: false,
+        ascii_only: true // Better for edge compression
       }
     },
-    chunkSizeWarningLimit: 800,
-    target: 'esnext',
+    chunkSizeWarningLimit: 500, // More aggressive for edge optimization
+    target: 'es2020', // Better edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,
-    // Optimize for Vercel Edge
-    assetsInlineLimit: 4096,
+    // Enhanced optimization for Vercel Edge
+    assetsInlineLimit: 2048, // Smaller for better edge caching
     modulePreload: {
       polyfill: false
-    }
+    },
+    // Additional edge optimizations completed
   },
   resolve: {
     alias: {
