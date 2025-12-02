@@ -99,9 +99,9 @@ class ResilientSupabaseClient {
     jitter: true,
   };
   private circuitBreakerConfig: CircuitBreakerConfig = {
-    failureThreshold: 5,
-    resetTimeout: 60000,
-    monitoringPeriod: 300000,
+    failureThreshold: 3, // Reduced for edge
+    resetTimeout: 30000, // 30 seconds (faster recovery)
+    monitoringPeriod: 10000, // 10 seconds
   };
   private metrics: ResilienceMetrics = {
     totalRequests: 0,
@@ -230,10 +230,18 @@ class ResilientSupabaseClient {
     ];
 
     const nonRetryableStatusCodes = [400, 401, 403, 404, 422];
+    
+    // Add edge-specific errors
+    const edgeSpecificErrors = [
+      'EDGE_FUNCTION_TIMEOUT',
+      'EDGE_MEMORY_LIMIT',
+      'EDGE_RATE_LIMIT'
+    ];
 
     return (
       nonRetryableErrors.some(code => error?.code === code) ||
       nonRetryableStatusCodes.some(status => error?.status === status) ||
+      edgeSpecificErrors.some(code => error?.code === code) ||
       error?.message?.includes('circuit breaker is OPEN')
     );
   }

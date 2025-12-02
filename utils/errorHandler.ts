@@ -403,6 +403,33 @@ export const errorRecovery = {
   }
 };
 
+// Edge-specific error handling
+export const edgeErrorHandler = {
+  isEdgeError: (error: Error): boolean => {
+    return error.message.includes('EDGE') ||
+           error.message.includes('timeout') ||
+           error.message.includes('memory limit') ||
+           error.message.includes('EDGE_FUNCTION_TIMEOUT') ||
+           error.message.includes('EDGE_MEMORY_LIMIT') ||
+           error.message.includes('EDGE_RATE_LIMIT');
+  },
+  
+  handleEdgeError: (error: Error, context: ErrorContext): void => {
+    if (edgeErrorHandler.isEdgeError(error)) {
+      // Fallback to client-side processing
+      console.warn('Edge error, falling back to client:', error);
+      // Implement fallback logic
+      handleError(error, `${context.operation} (edge fallback)`, context.component, {
+        ...context.additionalData,
+        edgeError: true,
+        fallbackTriggered: true
+      });
+    } else {
+      handleError(error, context.operation, context.component, context.additionalData);
+    }
+  }
+};
+
 // Global error handlers for unhandled errors and promise rejections
 if (typeof window !== 'undefined') {
   window.addEventListener('error', (event) => {

@@ -31,55 +31,21 @@
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
         }
-      ]
-    },
-    {
-      "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000"
-        }
-      ]
-    },
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=(), payment=()"
-        }
-      ]
-    },
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Strict-Transport-Security",
-          "value": "max-age=31536000; includeSubDomains; preload"
-        },
-        {
-          "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.supabase.co https://generativelanguage.googleapis.com https://api.twelvedata.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
-        }
-      ]
-    }
+]
+  },
+  {
+    "source": "/api/(.*)",
+    "headers": [
+      {
+        "key": "Cache-Control",
+        "value": "public, max-age=300, s-maxage=600"
+      },
+      {
+        "key": "Edge-Control",
+        "value": "cache-maxage=300"
+      }
+    ]
+  }
   ],
   "regions": ["hkg1", "iad1", "sin1"],
   "framework": "vite",
@@ -90,15 +56,19 @@
   "functions": {
     "api/**/*.ts": {
       "runtime": "edge",
-      "regions": ["hkg1", "iad1", "sin1"]
+      "regions": ["hkg1", "iad1", "sin1"],
+      "maxDuration": 10
     },
     "app/**/*.ts": {
-      "runtime": "nodejs20.x"
+      "runtime": "nodejs20.x",
+      "memory": 512
     }
   },
   "build": {
     "env": {
       "NODE_ENV": "production",
+      "EDGE_RUNTIME": "true",
+      "ENABLE_EDGE_CACHING": "true",
       "VITE_ENABLE_EDGE_RUNTIME": "true",
       "VITE_ENABLE_SERVICE_WORKER": "true",
       "VITE_ENABLE_COMPRESSION": "true",
