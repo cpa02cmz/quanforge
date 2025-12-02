@@ -76,6 +76,13 @@ export interface Robot {
   chat_history?: Message[];
   created_at: string;
   updated_at: string;
+  // Performance tracking fields
+  version?: number;
+  is_active?: boolean;
+  is_public?: boolean;
+  view_count?: number;
+  copy_count?: number;
+  search_vector?: string;
 }
 
 export interface GenerationConfig {
