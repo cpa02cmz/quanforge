@@ -9,6 +9,7 @@ import { performanceMonitor } from './utils/performance';
 import { SEOHead, structuredDataTemplates } from './utils/seo';
 import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
 import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
+import { frontendOptimizer } from './services/frontendOptimizer';
 
 // Lazy load components for better code splitting
 const Auth = lazy(() => import('./components/Auth').then(module => ({ default: module.Auth })));
@@ -24,10 +25,13 @@ export default function App() {
   useEffect(() => {
     const startTime = performance.now();
     
-    // Initialize Vercel Edge Optimizer
-    vercelEdgeOptimizer.optimizeBundleForEdge();
-    vercelEdgeOptimizer.enableEdgeSSR();
-    vercelEdgeOptimizer.setupEdgeErrorHandling();
+     // Initialize Vercel Edge Optimizer
+     vercelEdgeOptimizer.optimizeBundleForEdge();
+     vercelEdgeOptimizer.enableEdgeSSR();
+     vercelEdgeOptimizer.setupEdgeErrorHandling();
+     
+     // Initialize Frontend Optimizer
+     frontendOptimizer.warmUp().catch(console.warn);
     
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
