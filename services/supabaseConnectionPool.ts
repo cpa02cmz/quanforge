@@ -19,9 +19,19 @@ interface ConnectionHealth {
   errorCount: number;
 }
 
+interface ReadReplicaConfig {
+  url: string;
+  anonKey: string;
+  region: string;
+  priority: number;
+  isHealthy: boolean;
+  lastUsed: number;
+}
+
 class SupabaseConnectionPool {
   private static instance: SupabaseConnectionPool;
   private clients: Map<string, SupabaseClient> = new Map();
+  private readReplicas: Map<string, ReadReplicaConfig> = new Map();
   private healthStatus: Map<string, ConnectionHealth> = new Map();
   private config: ConnectionPoolConfig = {
     minConnections: 2, // Increase for better warm start
@@ -34,9 +44,62 @@ class SupabaseConnectionPool {
     retryDelay: 1000,
   };
   private healthCheckTimer: NodeJS.Timeout | null = null;
+  private readReplicaIndex = 0;
 
   private constructor() {
+    this.initializeReadReplicas();
     this.startHealthChecks();
+  }
+
+  private initializeReadReplicas(): void {
+    const settings = settingsManager.getDBSettings();
+    
+    if (settings.mode === 'supabase' && settings.url && settings.anonKey) {
+      // Initialize read replicas if configured
+      const replicaConfigs = this.getReadReplicaConfigs();
+      
+      replicaConfigs.forEach((config, index) => {
+        this.readReplicas.set(`replica_${index}`, {
+          ...config,
+          isHealthy: true,
+          lastUsed: 0,
+        });
+      });
+    }
+  }
+
+  private getReadReplicaConfigs(): ReadReplicaConfig[] {
+    // Read replica configurations - these should be environment-specific
+    const settings = settingsManager.getDBSettings();
+    const baseConfig = {
+      anonKey: settings.anonKey!,
+    };
+
+    // Example read replica configurations
+    // In production, these would come from environment variables
+    return [
+      {
+        ...baseConfig,
+        url: settings.url!, // Primary can also serve as read replica
+        region: 'primary',
+        priority: 1,
+        isHealthy: true,
+        lastUsed: 0,
+      },
+      // Additional read replicas would be configured here
+      // {
+      //   ...baseConfig,
+      //   url: process.env.VITE_SUPABASE_READ_REPLICA_URL_1 || settings.url!,
+      //   region: 'replica-1',
+      //   priority: 2,
+      // },
+      // {
+      //   ...baseConfig,
+      //   url: process.env.VITE_SUPABASE_READ_REPLICA_URL_2 || settings.url!,
+      //   region: 'replica-2',
+      //   priority: 3,
+      // },
+    ];
   }
 
   static getInstance(): SupabaseConnectionPool {
@@ -100,6 +163,104 @@ class SupabaseConnectionPool {
     } else {
       throw new Error('Failed to establish healthy Supabase connection');
     }
+  }
+
+  // Get read client with automatic replica selection
+  async getReadClient(connectionId: string = 'default'): Promise<SupabaseClient> {
+    const settings = settingsManager.getDBSettings();
+    
+    if (settings.mode !== 'supabase' || !settings.url || !settings.anonKey) {
+      throw new Error('Supabase not configured');
+    }
+
+    // Get the best available read replica
+    const replica = this.selectBestReadReplica();
+    
+    if (!replica) {
+      // Fallback to primary client if no replicas available
+      return this.getClient(`read_${connectionId}`);
+    }
+
+    const replicaConnectionId = `read_replica_${replica.region}_${connectionId}`;
+    
+    // Check if we have a healthy existing replica connection
+    const existingClient = this.clients.get(replicaConnectionId);
+    const health = this.healthStatus.get(replicaConnectionId);
+    
+    if (existingClient && health?.isHealthy) {
+      replica.lastUsed = Date.now();
+      return existingClient;
+    }
+
+    // Create new replica connection
+    const client = createClient(replica.url, replica.anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
+      },
+      db: {
+        schema: 'public',
+      },
+      global: {
+        headers: {
+          'x-application-name': 'quanforge-ai',
+          'x-connection-id': replicaConnectionId,
+          'x-replica-region': replica.region,
+        },
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 5, // Lower for read replicas
+        },
+      },
+    });
+
+    // Test connection
+    const isHealthy = await this.testConnection(client);
+    
+    if (isHealthy) {
+      this.clients.set(replicaConnectionId, client);
+      this.healthStatus.set(replicaConnectionId, {
+        isHealthy: true,
+        lastCheck: Date.now(),
+        responseTime: 0,
+        errorCount: 0,
+      });
+      replica.lastUsed = Date.now();
+      return client;
+    } else {
+      // Mark replica as unhealthy and try next one
+      replica.isHealthy = false;
+      return this.getReadClient(connectionId); // Recursive call to try next replica
+    }
+  }
+
+  private selectBestReadReplica(): ReadReplicaConfig | null {
+    const healthyReplicas = Array.from(this.readReplicas.values())
+      .filter(replica => replica.isHealthy)
+      .sort((a, b) => {
+        // Sort by priority first, then by last used time (for load balancing)
+        if (a.priority !== b.priority) {
+          return a.priority - b.priority;
+        }
+        return a.lastUsed - b.lastUsed;
+      });
+
+    if (healthyReplicas.length === 0) {
+      return null;
+    }
+
+    // Round-robin selection among healthy replicas
+    const selectedReplica = healthyReplicas[this.readReplicaIndex % healthyReplicas.length];
+    this.readReplicaIndex = (this.readReplicaIndex + 1) % healthyReplicas.length;
+    
+    return selectedReplica || null;
+  }
+
+  // Get write client (always uses primary)
+  async getWriteClient(connectionId: string = 'default'): Promise<SupabaseClient> {
+    return this.getClient(`write_${connectionId}`);
   }
 
   private async testConnection(client: SupabaseClient): Promise<boolean> {
@@ -233,15 +394,21 @@ class SupabaseConnectionPool {
     }
   }
 
-  // Enhanced connection metrics with edge-specific data
+  // Enhanced connection metrics with edge-specific data and read replica info
   getDetailedConnectionMetrics(): {
     totalConnections: number;
     healthyConnections: number;
     averageResponseTime: number;
     totalErrors: number;
     edgeConnections: { [region: string]: number };
+    readReplicaConnections: { [region: string]: number };
     connectionUtilization: number;
     uptime: number;
+    readReplicaMetrics: {
+      totalReplicas: number;
+      healthyReplicas: number;
+      replicaUtilization: number;
+    };
   } {
     const healthArray = Array.from(this.healthStatus.values());
     const healthyConnections = healthArray.filter(h => h.isHealthy).length;
@@ -252,6 +419,8 @@ class SupabaseConnectionPool {
 
     // Count edge connections by region
     const edgeConnections: { [region: string]: number } = {};
+    const readReplicaConnections: { [region: string]: number } = {};
+    
     for (const [connectionId] of this.clients) {
       if (connectionId.startsWith('edge_')) {
         const parts = connectionId.split('_');
@@ -260,10 +429,26 @@ class SupabaseConnectionPool {
           edgeConnections[region] = (edgeConnections[region] || 0) + 1;
         }
       }
+      
+      if (connectionId.startsWith('read_replica_')) {
+        const parts = connectionId.split('_');
+        const region = parts[2];
+        if (region) {
+          readReplicaConnections[region] = (readReplicaConnections[region] || 0) + 1;
+        }
+      }
     }
 
     const connectionUtilization = this.config.maxConnections > 0 
       ? (this.clients.size / this.config.maxConnections) * 100 
+      : 0;
+
+    // Read replica metrics
+    const totalReplicas = this.readReplicas.size;
+    const healthyReplicas = Array.from(this.readReplicas.values())
+      .filter(replica => replica.isHealthy).length;
+    const replicaUtilization = totalReplicas > 0 
+      ? (healthyReplicas / totalReplicas) * 100 
       : 0;
 
     return {
@@ -272,8 +457,14 @@ class SupabaseConnectionPool {
       averageResponseTime,
       totalErrors,
       edgeConnections,
+      readReplicaConnections,
       connectionUtilization,
       uptime: Date.now() - (this.healthCheckTimer ? 0 : Date.now()),
+      readReplicaMetrics: {
+        totalReplicas,
+        healthyReplicas,
+        replicaUtilization,
+      },
     };
   }
 
