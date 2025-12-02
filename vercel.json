@@ -1,19 +1,6 @@
 {
   "version": 2,
-  "routes": [
-    {
-      "src": "/home",
-      "dest": "/"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
+  
   "headers": [
     {
       "source": "/assets/(.*)",
