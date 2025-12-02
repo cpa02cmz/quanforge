@@ -5,6 +5,7 @@ import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } fr
 import { settingsManager } from "./settingsManager";
 import { getActiveKey } from "../utils/apiKeyUtils";
 import { handleError } from "../utils/errorHandler";
+import { apiDeduplicator } from "./apiDeduplicator";
 
 // Advanced cache for strategy analysis to avoid repeated API calls
 // Uses LRU eviction to prevent memory bloat
@@ -435,7 +436,7 @@ const extractThinking = (rawText: string): { thinking?: string, content: string 
     const thinkRegex = /<think(?:ing)?>(.*?)<\/think(?:ing)?>/si;
     const match = rawText.match(thinkRegex);
     
-    if (match) {
+    if (match && match[1]) {
         const thinking = match[1].trim();
         const content = rawText.replace(thinkRegex, '').trim();
         return { thinking, content };
@@ -459,8 +460,8 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
      // Create deduplication key for this specific request with more comprehensive parameters
      const requestKey = createHash(`${prompt}-${currentCode?.substring(0, 200)}-${JSON.stringify(strategyParams)}-${history.length}-${settings.provider}-${settings.modelName}`);
      
-     // Use request deduplication to prevent duplicate API calls
-     rawResponse = await requestDeduplicator.deduplicate(requestKey, async () => {
+// Use request deduplication to prevent duplicate API calls
+      rawResponse = await apiDeduplicator.deduplicate(requestKey, async () => {
        if (settings.provider === 'openai') {
            return await callOpenAICompatible(settings, fullPrompt, signal);
        } else {

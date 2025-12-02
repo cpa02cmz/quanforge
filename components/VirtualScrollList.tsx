@@ -146,8 +146,7 @@ const RobotCard: React.FC<RobotCardProps> = React.memo(({
   robot,
   processingId,
   onDuplicate,
-  onDelete,
-  t
+  onDelete
 }) => {
   const handleDelete = useCallback(() => {
     onDelete(robot.id, robot.name);

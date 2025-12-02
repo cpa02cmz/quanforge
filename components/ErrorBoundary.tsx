@@ -10,15 +10,15 @@ interface Props {
 
 interface State {
   hasError: boolean;
-  error?: Error;
-  errorId?: string;
+  error: Error | null;
+  errorId: string | null;
   retryCount: number;
 }
 
 class ErrorBoundaryClass extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, retryCount: 0 };
+    this.state = { hasError: false, error: null, errorId: null, retryCount: 0 };
   }
 
   static getDerivedStateFromError(error: Error): State {
@@ -61,8 +61,8 @@ class ErrorBoundaryClass extends Component<Props, State> {
     if (this.state.retryCount < 3) {
       this.setState(prevState => ({ 
         hasError: false, 
-        error: undefined, 
-        errorId: undefined,
+        error: null, 
+        errorId: null,
         retryCount: prevState.retryCount + 1 
       }));
     } else {

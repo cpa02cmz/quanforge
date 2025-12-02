@@ -174,7 +174,7 @@ export default defineConfig({
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: (assetInfo) => {
-          const name = assetInfo.name || 'unknown';
+          const name = assetInfo.names?.[0] || 'unknown';
           const info = name.split('.');
           const ext = info[info.length - 1] || 'unknown';
           

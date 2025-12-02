@@ -47,7 +47,7 @@ class SecurityManager {
   }
 
   // Input sanitization and validation
-  sanitizeAndValidate<T>(data: any, type: 'robot' | 'strategy' | 'backtest' | 'user'): ValidationResult {
+  sanitizeAndValidate(data: any, type: 'robot' | 'strategy' | 'backtest' | 'user'): ValidationResult {
     const errors: string[] = [];
     let sanitizedData = data;
     let riskScore = 0;
