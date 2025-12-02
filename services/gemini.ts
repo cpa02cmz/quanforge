@@ -400,7 +400,7 @@ const payload = {
             ...(jsonMode ? { response_format: { type: "json_object" } } : {})
         };
 
-        const requestInit: RequestInit = {
+        const requestInit: globalThis.RequestInit = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -436,9 +436,9 @@ const extractThinking = (rawText: string): { thinking?: string, content: string 
     const match = rawText.match(thinkRegex);
     
     if (match) {
-        const thinking = match[1].trim();
+        const thinking = match[1]?.trim();
         const content = rawText.replace(thinkRegex, '').trim();
-        return { thinking, content };
+        return thinking ? { thinking, content } : { content };
     }
     
     return { content: rawText };

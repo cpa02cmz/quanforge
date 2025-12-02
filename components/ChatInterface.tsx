@@ -16,6 +16,8 @@ interface ChatInterfaceProps {
   onStop?: () => void; // New Prop
 }
 
+
+
 // Extract and memoize Message component to prevent re-renders of the whole list on input change
 const MemoizedMessage = memo(({ msg, formatMessageContent }: { msg: Message, formatMessageContent: (c: string) => any }) => {
     return (
@@ -43,11 +45,16 @@ const MemoizedMessage = memo(({ msg, formatMessageContent }: { msg: Message, for
                 )}
 
                 <div className="leading-relaxed">
-                    {formatMessageContent(msg.content)}
+                    {formatMessageContent(msg.content || '')}
                 </div>
             </div>
         </div>
     );
+}, (prevProps, nextProps) => {
+  // Custom comparison function for better memoization
+  return prevProps.msg.id === nextProps.msg.id && 
+         prevProps.msg.content === nextProps.msg.content &&
+         prevProps.msg.thinking === nextProps.msg.thinking;
 });
 
 MemoizedMessage.displayName = 'MemoizedMessage';

@@ -185,7 +185,7 @@ const stopGeneration = () => {
   const extractCode = (rawText: string) => {
       const codeBlockRegex = /```(?:cpp|c|mql5)?([\s\S]*?)```/i;
       const match = rawText.match(codeBlockRegex);
-      return match ? match[1].trim() : null;
+      return match?.[1]?.trim() || null;
   };
 
   const formatChatMessage = (rawText: string, hasCode: boolean) => {
@@ -225,7 +225,7 @@ const stopGeneration = () => {
         role: MessageRole.MODEL,
         content: chatContent || (extractedCode ? "Code updated successfully." : "I couldn't generate a text response."),
         timestamp: Date.now(),
-        thinking: thinking 
+        thinking: thinking || null 
       };
 
       dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
@@ -368,7 +368,7 @@ const stopGeneration = () => {
               id: Date.now().toString(),
               role: MessageRole.MODEL,
               content: response.content || "Could not generate explanation.",
-              thinking: response.thinking,
+              thinking: response.thinking || null,
               timestamp: Date.now()
           }});
           

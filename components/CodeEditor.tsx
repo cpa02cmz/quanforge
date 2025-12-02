@@ -88,6 +88,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
       return Array.from({ length: lines.length }, (_, i) => i + 1);
     }, [code]);
 
+    
+
   return (
     <div className="flex flex-col h-full bg-[#0d1117] text-gray-300 font-mono text-sm relative">
       <div className="flex items-center justify-between px-4 py-2 bg-dark-surface border-b border-dark-border shrink-0 z-10">

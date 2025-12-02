@@ -1,11 +1,13 @@
 
-import React, { useState, memo, useMemo, useCallback } from 'react';
+import React, { useState, memo, useMemo, useCallback, lazy, Suspense } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import { AISettingsModal } from './AISettingsModal';
-import { DatabaseSettingsModal } from './DatabaseSettingsModal';
 import { useTranslation } from '../services/i18n';
 import { UserSession } from '../types';
+
+// Lazy load modals for better performance
+const AISettingsModal = lazy(() => import('./AISettingsModal').then(module => ({ default: module.AISettingsModal })));
+const DatabaseSettingsModal = lazy(() => import('./DatabaseSettingsModal').then(module => ({ default: module.DatabaseSettingsModal })));
 
 interface LayoutProps {
   session: UserSession | null;
@@ -38,8 +40,10 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
 
   return (
     <div className="flex h-screen bg-dark-bg text-gray-100 overflow-hidden font-sans" role="application">
-      <AISettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-      <DatabaseSettingsModal isOpen={isDbSettingsOpen} onClose={() => setIsDbSettingsOpen(false)} />
+      <Suspense fallback={<div className="hidden" />}>
+        <AISettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+        <DatabaseSettingsModal isOpen={isDbSettingsOpen} onClose={() => setIsDbSettingsOpen(false)} />
+      </Suspense>
       
       {/* Skip to main content link for accessibility */}
       <a 

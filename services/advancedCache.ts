@@ -37,11 +37,11 @@ export class AdvancedCache {
     compressions: 0,
   };
   private config: CacheConfig = {
-    maxSize: 10 * 1024 * 1024, // 10MB (reduced for edge)
-    maxEntries: 500, // Reduced entries
-    defaultTTL: 180000, // 3 minutes (shorter for edge)
-    cleanupInterval: 30000, // 30 seconds
-    compressionThreshold: 512, // 0.5KB (more aggressive)
+    maxSize: 5 * 1024 * 1024, // 5MB (further reduced for edge)
+    maxEntries: 250, // Further reduced entries
+    defaultTTL: 120000, // 2 minutes (shorter for edge)
+    cleanupInterval: 15000, // 15 seconds (more frequent)
+    compressionThreshold: 256, // 0.25KB (more aggressive)
   };
   private cleanupTimer: NodeJS.Timeout | null = null;
 
@@ -193,7 +193,7 @@ export class AdvancedCache {
     const promises = entries.map(async ({ key, loader, ttl, tags }) => {
       try {
         const data = await loader();
-        this.set(key, data, { ttl, tags });
+        this.set(key, data, { ttl: ttl || this.config.defaultTTL, tags: tags || [] });
       } catch (error) {
         if (import.meta.env.DEV) {
           console.warn(`Failed to preload cache entry: ${key}`, error);
@@ -217,7 +217,7 @@ export class AdvancedCache {
         const key = `${pattern}:${JSON.stringify(params)}`;
         try {
           const data = await loader(params);
-this.set(key, data, { ttl: ttl || this.defaultTtl, tags: tags || [] });
+this.set(key, data, { ttl: ttl || this.config.defaultTTL, tags: tags || [] });
         } catch (error) {
           console.warn(`Failed to warm cache entry: ${key}`, error);
         }
@@ -435,7 +435,7 @@ export class CacheFactory {
   }
 
   static destroyAll(): void {
-    for (const [name, instance] of this.instances) {
+    for (const [, instance] of this.instances) {
       instance.destroy();
     }
     this.instances.clear();
