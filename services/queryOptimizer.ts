@@ -98,13 +98,13 @@ class QueryOptimizer {
        const controller = new AbortController();
        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-       // Build query with optimizations - need to cast properly to handle Supabase types
-       let queryBuilder = client.from(table);
+    // Build query with optimizations - need to cast properly to handle Supabase types
+    let queryBuilder = client.from(table);
 
-       // Start building the query with select
-       let query = queryBuilder.select(optimization.selectFields && optimization.selectFields.length > 0 
-         ? optimization.selectFields.join(', ') 
-         : '*');
+    // Start building the query with select - optimize field selection
+    let query = queryBuilder.select(optimization.selectFields && optimization.selectFields.length > 0 
+      ? optimization.selectFields.join(', ') 
+      : '*');
 
        // Apply filters efficiently
        if (optimization.filters) {
@@ -283,45 +283,49 @@ class QueryOptimizer {
     };
   }
 
-  // Optimized search with database indexes
-  async searchRobotsOptimized(
-    client: SupabaseClient,
-    searchTerm: string,
-    filters: {
-      strategyType?: string;
-      userId?: string;
-      dateRange?: { start: string; end: string };
-    } = {}
-  ): Promise<{ data: Robot[] | null; error: any; metrics: QueryMetrics }> {
-    const optimization: QueryOptimization = {
-      selectFields: ['id', 'name', 'description', 'strategy_type', 'created_at', 'updated_at'],
-      limit: 50, // Reasonable limit for search
-    };
+   // Optimized search with database indexes
+   async searchRobotsOptimized(
+     client: SupabaseClient,
+     searchTerm: string,
+     filters: {
+       strategyType?: string;
+       userId?: string;
+       dateRange?: { start: string; end: string };
+     } = {}
+   ): Promise<{ data: Robot[] | null; error: any; metrics: QueryMetrics }> {
+     const optimization: QueryOptimization = {
+       selectFields: ['id', 'name', 'description', 'strategy_type', 'created_at', 'updated_at'],
+       limit: 50, // Reasonable limit for search
+     };
 
-    const queryFilters: Record<string, any> = {};
+     const queryFilters: Record<string, any> = {};
 
-    // Use text search for better performance
-    if (searchTerm) {
-      queryFilters['or'] = `name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`;
-    }
+     // Use text search for better performance
+     if (searchTerm) {
+       // Sanitize search term to prevent injection
+       const sanitizedTerm = searchTerm.replace(/[^\w\s]/gi, '');
+       if (sanitizedTerm.length > 0) {
+         queryFilters['or'] = `name.ilike.%${sanitizedTerm}%,description.ilike.%${sanitizedTerm}%`;
+       }
+     }
 
-    if (filters.strategyType && filters.strategyType !== 'All') {
-      queryFilters['strategy_type'] = filters.strategyType;
-    }
+     if (filters.strategyType && filters.strategyType !== 'All') {
+       queryFilters['strategy_type'] = filters.strategyType;
+     }
 
-    if (filters.userId) {
-      queryFilters['user_id'] = filters.userId;
-    }
+     if (filters.userId) {
+       queryFilters['user_id'] = filters.userId;
+     }
 
-    if (filters.dateRange) {
-      queryFilters['and'] = `created_at.gte.${filters.dateRange.start},created_at.lte.${filters.dateRange.end}`;
-    }
+     if (filters.dateRange) {
+       queryFilters['and'] = `created_at.gte.${filters.dateRange.start},created_at.lte.${filters.dateRange.end}`;
+     }
 
-    optimization.filters = queryFilters;
-    optimization.orderBy = { column: 'created_at', ascending: false };
+     optimization.filters = queryFilters;
+     optimization.orderBy = { column: 'created_at', ascending: false };
 
-    return this.executeQuery<Robot>(client, 'robots', optimization);
-  }
+     return this.executeQuery<Robot>(client, 'robots', optimization);
+   }
 
   private recordMetrics(metrics: QueryMetrics): void {
     this.queryMetrics.push(metrics);
