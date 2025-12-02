@@ -37,7 +37,9 @@ class LRUCache<T> {
     // Evict oldest if at max size
     if (this.cache.size >= this.maxSize) {
       const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
+      if (firstKey) {
+        this.cache.delete(firstKey);
+      }
     }
     
     this.cache.set(key, { result: value, timestamp: Date.now() });
@@ -120,7 +122,6 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
 // Enhanced token budgeting with incremental history management
   class TokenBudgetManager {
       private static readonly MAX_CONTEXT_CHARS = 150000; // Increased to handle more complex requests
-      private static readonly TOKEN_RATIO = 4; // 1 token ~= 4 characters
       private static readonly MIN_HISTORY_CHARS = 1000; // Keep minimum history for context
     
     // Cache for frequently used context parts
@@ -141,7 +142,9 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
         // Cleanup old cache entries
         if (this.contextCache.size > 50) {
             const oldestKey = this.contextCache.keys().next().value;
-            this.contextCache.delete(oldestKey);
+            if (oldestKey) {
+                this.contextCache.delete(oldestKey);
+            }
         }
         
         return content;
@@ -352,13 +355,18 @@ const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?
         
         if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
+        const config: any = {
+          systemInstruction: systemInstruction
+        };
+        
+        if (temperature !== undefined) {
+          config.temperature = temperature;
+        }
+
         const response = await ai.models.generateContent({
           model: settings.modelName || 'gemini-3-pro-preview',
           contents: fullPrompt,
-          config: {
-            systemInstruction: systemInstruction,
-            temperature: temperature
-          }
+          config
         });
 
         if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
@@ -382,7 +390,7 @@ const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, si
         const url = `${baseUrl}/chat/completions`;
         const systemInstruction = getEffectiveSystemPrompt(settings);
 
-        const body = {
+const payload = {
             model: settings.modelName || 'gpt-4',
             messages: [
                 { role: "system", content: systemInstruction },
@@ -392,7 +400,7 @@ const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, si
             ...(jsonMode ? { response_format: { type: "json_object" } } : {})
         };
 
-        const response = await fetch(url, {
+        const requestInit: RequestInit = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -402,19 +410,22 @@ const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, si
                     'X-Title': 'QuantForge AI'
                 } : {})
             },
-            body: JSON.stringify(body),
-            signal // Pass AbortSignal to fetch
-        });
+            body: JSON.stringify(payload)
+        };
 
-        if (!response.ok) {
-            const err = await response.text();
-            throw new Error(`OpenAI API Error (${response.status}): ${err}`);
+        if (signal) {
+            requestInit.signal = signal;
         }
 
-        const data = await response.json();
-        return data.choices?.[0]?.message?.content || "";
+        const response = await fetch(url, requestInit);
+        
+        if (!response.ok) {
+            throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+        }
+
+        return await response.json();
     });
-};
+}
 
 /**
  * Splits the raw response into thinking process (if any) and actual content.

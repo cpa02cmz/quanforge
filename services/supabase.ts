@@ -1,14 +1,12 @@
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { settingsManager, getEnv } from './settingsManager';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { settingsManager } from './settingsManager';
 import { Robot, UserSession } from '../types';
 import { connectionPool } from './supabaseConnectionPool';
-import { robotCache, queryCache } from './advancedCache';
+import { robotCache } from './advancedCache';
 import { securityManager } from './securityManager';
-import { withErrorHandling, handleError } from '../utils/errorHandler';
-import { databaseOptimizer } from './databaseOptimizer';
-import { dataCompression } from './dataCompression';
-import { backendOptimizer } from './backendOptimizer';
+import { handleError } from '../utils/errorHandler';
+import { smartCache } from './smartCache';
 
 // Connection retry configuration
 const RETRY_CONFIG = {
@@ -180,7 +178,9 @@ class LRUCache<T> {
     // Evict oldest if at max size
     if (this.cache.size >= this.maxSize) {
       const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
+      if (firstKey) {
+        this.cache.delete(firstKey);
+      }
     }
     
     this.cache.set(key, { data, timestamp: Date.now() });
@@ -208,13 +208,7 @@ class LRUCache<T> {
 
 const cache = new LRUCache<any>(CACHE_CONFIG.ttl, CACHE_CONFIG.maxSize);
 
-const getCachedData = (key: string): any | null => {
-  return cache.get(key);
-};
 
-const setCachedData = (key: string, data: any): void => {
-  cache.set(key, data);
-};
 
 // Retry wrapper for Supabase operations
 const withRetry = async <T>(
@@ -268,7 +262,7 @@ window.addEventListener('db-settings-changed', () => {
 });
 
 export const supabase = new Proxy({}, {
-    get: (target, prop) => {
+    get: (_target, prop) => {
         const client = getClient();
         return (client as any)[prop];
     }
@@ -1003,11 +997,16 @@ export const dbUtils = {
                 
                 trySaveToStorage(ROBOTS_KEY, JSON.stringify(finalRobots));
                 
-                return { 
+                const result: { success: boolean; count: number; error?: string } = {
                     success: true, 
-                    count: newRobots.length, 
-                    error: skippedCount > 0 ? `Skipped ${skippedCount} invalid records.` : undefined 
+                    count: newRobots.length
                 };
+                
+                if (skippedCount > 0) {
+                    result.error = `Skipped ${skippedCount} invalid records.`;
+                }
+                
+                return result;
             } else {
                 const client = await getClient();
                 const { data: sessionData } = await client.auth.getSession();
@@ -1026,11 +1025,16 @@ export const dbUtils = {
                 const { error } = await client.from('robots').insert(payload);
                 if (error) throw error;
                 
-                return { 
+                const importResult: { success: boolean; count: number; error?: string } = {
                     success: true, 
-                    count: payload.length,
-                    error: skippedCount > 0 ? `Skipped ${skippedCount} invalid records.` : undefined 
+                    count: payload.length
                 };
+                
+                if (skippedCount > 0) {
+                    importResult.error = `Skipped ${skippedCount} invalid records.`;
+                }
+                
+                return importResult;
             }
 
         } catch (e: any) {
@@ -1093,7 +1097,16 @@ export const dbUtils = {
                 return { success: false, count: 0, error: lastError };
             }
 
-            return { success: true, count: successCount, error: failCount > 0 ? `Migrated ${successCount}, Failed ${failCount}. Last error: ${lastError}` : undefined };
+            const migrationResult: { success: boolean; count: number; error?: string } = {
+                success: true, 
+                count: successCount
+            };
+            
+            if (failCount > 0) {
+                migrationResult.error = `Migrated ${successCount}, Failed ${failCount}. Last error: ${lastError}`;
+            }
+            
+            return migrationResult;
         } catch (e: any) {
             return { success: false, count: 0, error: e.message };
         }
@@ -1257,7 +1270,16 @@ export const dbUtils = {
                     
                     const duration = performance.now() - startTime;
                     performanceMonitor.record('batchUpdateRobots', duration);
-                    return { success: successCount, failed: failedCount, errors: errors.length > 0 ? errors : undefined };
+const batchResult: { success: number; failed: number; errors?: string[] } = {
+                        success: successCount, 
+                        failed: failedCount
+                    };
+                    
+                    if (errors.length > 0) {
+                        batchResult.errors = errors;
+                    }
+                    
+                    return batchResult;
                 } catch (e: any) {
                     const duration = performance.now() - startTime;
                     performanceMonitor.record('batchUpdateRobots', duration);
@@ -1297,7 +1319,16 @@ export const dbUtils = {
                 
                 const duration = performance.now() - startTime;
                 performanceMonitor.record('batchUpdateRobots', duration);
-                return { success: successCount, failed: failedCount, errors: errors.length > 0 ? errors : undefined };
+                const supabaseBatchResult: { success: number; failed: number; errors?: string[] } = {
+                    success: successCount, 
+                    failed: failedCount
+                };
+                
+                if (errors.length > 0) {
+                    supabaseBatchResult.errors = errors;
+                }
+                
+                return supabaseBatchResult;
             }
         } catch (error) {
             const duration = performance.now() - startTime;
@@ -1314,6 +1345,17 @@ export const dbUtils = {
         try {
             const settings = settingsManager.getDBSettings();
             const offset = (page - 1) * limit;
+            
+            // Create cache key for this query
+            const cacheKey = `robots_paginated_${page}_${limit}_${searchTerm || ''}_${filterType || ''}`;
+            
+            // Try to get from smart cache first
+            const cachedResult = await smartCache.get(cacheKey);
+            if (cachedResult) {
+                const duration = performance.now() - startTime;
+                performanceMonitor.record('getRobotsPaginated', duration);
+                return cachedResult as { data: Robot[]; total: number; page: number; totalPages: number };
+            }
             
             if (settings.mode === 'mock') {
                 const stored = localStorage.getItem(ROBOTS_KEY);
@@ -1378,15 +1420,20 @@ export const dbUtils = {
                 const total = count || 0;
                 const totalPages = Math.ceil(total / limit);
                 
-                const duration = performance.now() - startTime;
-                performanceMonitor.record('getRobotsPaginated', duration);
-                
-                return {
+                const result = {
                     data: data || [],
                     total,
                     page,
                     totalPages
                 };
+                
+                // Cache the result for 5 minutes
+                await smartCache.set(cacheKey, result, { ttl: 5 * 60 * 1000 });
+                
+                const duration = performance.now() - startTime;
+                performanceMonitor.record('getRobotsPaginated', duration);
+                
+                return result;
             }
         } catch (error) {
             const duration = performance.now() - startTime;
@@ -1536,7 +1583,7 @@ export const dbUtils = {
             }
             
             // Get approximate table size from PostgreSQL
-            const { data: tableSize, error: sizeError } = await client
+            await client
                 .from('information_schema.tables')
                 .select('table_schema, table_name')
                 .eq('table_name', 'robots');
