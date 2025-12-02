@@ -76,7 +76,7 @@ export class AnalyticsManager {
       enableRealTime: true,
       enablePersistence: true,
       sampleRate: 1.0, // 100% sampling
-      debugMode: process.env.NODE_ENV === 'development',
+      debugMode: process.env['NODE_ENV'] === 'development',
       ...config
     };
 
@@ -399,7 +399,7 @@ export class AnalyticsManager {
       switch (event.action) {
         case 'robot_generated':
           metrics.robotGeneration.total++;
-          if (event.metadata?.success) {
+          if (event.metadata?.['success']) {
             metrics.robotGeneration.successful++;
           } else {
             metrics.robotGeneration.failed++;
@@ -409,8 +409,8 @@ export class AnalyticsManager {
             metrics.robotGeneration.averageTime += event.value;
           }
           
-          if (event.metadata?.strategyType) {
-            const strategy = event.metadata.strategyType;
+          if (event.metadata?.['strategyType']) {
+            const strategy = event.metadata['strategyType'];
             metrics.robotGeneration.strategyTypes[strategy] = 
               (metrics.robotGeneration.strategyTypes[strategy] || 0) + 1;
           }
@@ -563,13 +563,13 @@ export class AnalyticsManager {
 
 // Singleton instance
 export const analyticsManager = new AnalyticsManager({
-  endpoint: process.env.NODE_ENV === 'production' ? '/api/analytics' : undefined,
+  endpoint: process.env['NODE_ENV'] === 'production' ? '/api/analytics' : undefined,
   batchSize: 50,
   flushInterval: 30000,
   enableRealTime: true,
   enablePersistence: true,
   sampleRate: 1.0,
-  debugMode: process.env.NODE_ENV === 'development'
+  debugMode: process.env['NODE_ENV'] === 'development'
 });
 
 // Auto-track page views

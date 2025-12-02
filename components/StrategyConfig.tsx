@@ -6,6 +6,9 @@ import { MarketTicker } from './MarketTicker';
 import { useToast } from './Toast';
 import { NumericInput } from './NumericInput';
 import { useTranslation } from '../services/i18n';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('StrategyConfig');
 
 interface StrategyConfigProps {
   params: StrategyParams;
@@ -69,7 +72,7 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
       navigator.clipboard.writeText(configStr).then(() => {
           showToast('Configuration copied to clipboard', 'success');
       }).catch(err => {
-          console.error("Copy failed", err);
+          logger.error("Copy failed", err);
           showToast("Failed to copy to clipboard", "error");
       });
   };
@@ -102,7 +105,7 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
         setShowManualImport(false);
         setManualImportText('');
     } catch (e: any) {
-        console.error(e);
+        logger.error(e);
         showToast(`Import Failed: ${e.message}`, 'error');
     }
   };
@@ -112,7 +115,7 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
           const text = await navigator.clipboard.readText();
           parseAndImport(text);
       } catch (e: any) {
-          console.warn("Clipboard read failed, switching to manual mode", e);
+          logger.warn("Clipboard read failed, switching to manual mode", e);
           setShowManualImport(true);
           showToast('Clipboard blocked. Please paste manually below.', 'info');
       }

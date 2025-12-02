@@ -1,4 +1,4 @@
-import { AdvancedCache, CacheFactory, CacheConfig } from './advancedCache';
+import { AdvancedCache, CacheConfig } from './advancedCache';
 
 interface CachePattern {
   url: string;
@@ -36,7 +36,7 @@ interface CacheSyncMessage {
 }
 
 export class DistributedCache extends AdvancedCache {
-  private config: DistributedCacheConfig;
+  private distributedConfig: DistributedCacheConfig;
   private currentRegion: string;
   private versionMap = new Map<string, number>();
   private syncTimer: NodeJS.Timeout | null = null;
@@ -47,7 +47,7 @@ export class DistributedCache extends AdvancedCache {
   constructor(config?: Partial<DistributedCacheConfig>, cacheConfig?: Partial<CacheConfig>) {
     super(cacheConfig);
     
-    this.config = {
+    this.distributedConfig = {
       regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
       replicationFactor: 3,
       consistencyLevel: 'eventual',

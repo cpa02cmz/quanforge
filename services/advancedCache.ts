@@ -9,7 +9,7 @@ interface CacheEntry<T> {
   compressed?: boolean;
 }
 
-interface CacheConfig {
+export interface CacheConfig {
   maxSize: number; // Maximum cache size in bytes
   maxEntries: number; // Maximum number of entries
   defaultTTL: number; // Default TTL in milliseconds

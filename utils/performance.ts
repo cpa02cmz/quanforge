@@ -18,6 +18,7 @@ interface PageLoadMetrics {
 
 class PerformanceMonitor {
   private metrics: PerformanceMetric[] = [];
+  private observers: PerformanceObserver[] = [];
   private isSupported = typeof window !== 'undefined' && 'performance' in window;
 
   constructor() {
@@ -40,6 +41,7 @@ class PerformanceMonitor {
           }
         });
         observerFCP.observe({ entryTypes: ['paint'] });
+        this.observers.push(observerFCP);
 
         // Largest Contentful Paint
         const observerLCP = new PerformanceObserver((list) => {
@@ -48,6 +50,7 @@ class PerformanceMonitor {
           this.recordMetric('lcp', lastEntry.startTime);
         });
         observerLCP.observe({ entryTypes: ['largest-contentful-paint'] });
+        this.observers.push(observerLCP);
 
         // Cumulative Layout Shift
         let clsValue = 0;
@@ -60,6 +63,7 @@ class PerformanceMonitor {
           this.recordMetric('cls', clsValue);
         });
         observerCLS.observe({ entryTypes: ['layout-shift'] });
+        this.observers.push(observerCLS);
 
         // First Input Delay
         const observerFID = new PerformanceObserver((list) => {
@@ -68,8 +72,11 @@ class PerformanceMonitor {
           }
         });
         observerFID.observe({ entryTypes: ['first-input'] });
+        this.observers.push(observerFID);
       } catch (e) {
-        console.warn('Performance monitoring not fully supported:', e);
+        if (import.meta.env.DEV) {
+          console.warn('Performance monitoring not fully supported:', e);
+        }
       }
     }
   }
@@ -288,10 +295,12 @@ private recordInteraction(name: string, duration: number) {
    
    // Track memory usage over time
    async monitorMemoryUsage(intervalMs: number = 30000): Promise<void> { // Default 30 seconds
-     if (!('memory' in performance)) {
-       console.warn('Memory monitoring not supported in this browser');
-       return;
-     }
+if (!('memory' in performance)) {
+        if (import.meta.env.DEV) {
+          console.warn('Memory monitoring not supported in this browser');
+        }
+        return;
+      }
      
      const memoryInterval = setInterval(() => {
        const memory = this.getMemoryUsage();
@@ -299,10 +308,12 @@ private recordInteraction(name: string, duration: number) {
          this.recordMetric('memory_used_bytes', memory.used);
          this.recordMetric('memory_utilization_percent', memory.utilization);
          
-         // Alert if memory usage is high
-         if (memory.utilization > 80) {
-           console.warn(`High memory usage detected: ${memory.utilization.toFixed(2)}%`);
-         }
+// Alert if memory usage is high
+          if (memory.utilization > 80) {
+            if (import.meta.env.DEV) {
+              console.warn(`High memory usage detected: ${memory.utilization.toFixed(2)}%`);
+            }
+          }
        }
      }, intervalMs);
      
@@ -310,13 +321,27 @@ private recordInteraction(name: string, duration: number) {
      (globalThis as any).__memoryMonitoringInterval = memoryInterval;
    }
    
-   // Stop memory monitoring
-   stopMemoryMonitoring(): void {
-     if ((globalThis as any).__memoryMonitoringInterval) {
-       clearInterval((globalThis as any).__memoryMonitoringInterval);
-       delete (globalThis as any).__memoryMonitoringInterval;
-     }
-   }
+// Stop memory monitoring
+    stopMemoryMonitoring(): void {
+      if ((globalThis as any).__memoryMonitoringInterval) {
+        clearInterval((globalThis as any).__memoryMonitoringInterval);
+        delete (globalThis as any).__memoryMonitoringInterval;
+      }
+    }
+    
+    // Cleanup all resources and prevent memory leaks
+    cleanup(): void {
+      this.stopMemoryMonitoring();
+      this.metrics = [];
+      this.observers.forEach(observer => {
+        try {
+          observer.disconnect();
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
+      });
+      this.observers = [];
+    }
 }
 
 // Singleton instance

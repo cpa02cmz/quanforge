@@ -117,14 +117,24 @@ plugins: [react()],
       compress: {
         drop_console: process.env['NODE_ENV'] === 'production',
         drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug'],
-        passes: 2,
+        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'],
+        passes: 3,
         // Additional optimizations for Vercel Edge
         inline: 2,
         reduce_funcs: true,
         reduce_vars: true,
         sequences: true,
-        dead_code: true
+        dead_code: true,
+        // Enhanced optimizations
+        join_vars: true,
+        collapse_vars: true,
+        negate_iife: true,
+        evaluate: true,
+        booleans: true,
+        loops: true,
+        unused: true,
+        hoist_funs: true,
+        if_return: true
       },
       mangle: {
         safari10: true,
@@ -132,10 +142,11 @@ plugins: [react()],
         toplevel: true,
         properties: {
           regex: /^_/
-        }
+        },
+        reserved: ['React', 'useState', 'useEffect']
       }
     },
-    chunkSizeWarningLimit: 800,
+    chunkSizeWarningLimit: 600,
     target: 'esnext',
     reportCompressedSize: true,
     cssCodeSplit: true,

@@ -3,6 +3,7 @@ import { Robot, StrategyParams, BacktestSettings } from '../types';
 interface SecurityConfig {
   maxPayloadSize: number;
   allowedOrigins: string[];
+  endpoint?: string;
   rateLimiting: {
     windowMs: number;
     maxRequests: number;
@@ -1006,7 +1007,7 @@ class SecurityManager {
     console.error('🚨 Security Alert:', alert);
     
     // In production, send to security monitoring service
-    if (process.env.NODE_ENV === 'production' && this.config.endpoint) {
+    if (process.env["NODE_ENV"] === 'production' && this.config.endpoint) {
       this.sendSecurityAlert(alert);
     }
   }

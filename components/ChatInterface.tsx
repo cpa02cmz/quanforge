@@ -3,6 +3,9 @@ import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
 import { Message, MessageRole } from '../types';
 import { loadSuggestedStrategies } from '../constants';
 import { useTranslation } from '../services/i18n';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('ChatInterface');
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -57,7 +60,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   useEffect(() => {
     if (messages.length > 100) {
       // Notify parent component to trim messages if needed
-      console.warn('Message history is getting large, consider implementing message trimming');
+      logger.warn('Message history is getting large, consider implementing message trimming');
     }
   }, [messages]);
 
@@ -142,7 +145,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     loadSuggestedStrategies(language).then(strategies => {
       setSuggestedStrategies(strategies[language] || strategies.en || []);
     }).catch(err => {
-      console.error('Failed to load suggested strategies:', err);
+      logger.error('Failed to load suggested strategies:', err);
       setSuggestedStrategies([]);
     });
   }, [language]);

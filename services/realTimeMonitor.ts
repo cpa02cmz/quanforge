@@ -83,7 +83,7 @@ export class RealTimeMonitor {
     };
 
     // Initialize reporting endpoint for production
-    this.reportingEndpoint = process.env.NODE_ENV === 'production' 
+    this.reportingEndpoint = process.env["NODE_ENV"] === 'production' 
       ? '/api/performance-metrics' 
       : undefined;
   }
@@ -283,8 +283,8 @@ export class RealTimeMonitor {
         cls: 0,
         fcp: navigation.responseStart - navigation.requestStart,
         ttfb: navigation.responseStart - navigation.requestStart,
-        domContentLoaded: navigation.domContentLoadedEventEnd - navigation.navigationStart,
-        loadComplete: navigation.loadEventEnd - navigation.navigationStart,
+        domContentLoaded: navigation.domContentLoadedEventEnd - navigation.fetchStart,
+        loadComplete: navigation.loadEventEnd - navigation.fetchStart,
         timestamp: Date.now(),
         url: window.location.href,
         deviceType: this.getDeviceType(),
@@ -293,9 +293,9 @@ export class RealTimeMonitor {
       });
 
       // Check navigation budgets
-      if (navigation.domContentLoadedEventEnd - navigation.navigationStart > 3000) {
+      if (navigation.domContentLoadedEventEnd - navigation.fetchStart > 3000) {
         this.triggerAlert('DOM Content Loaded', 
-          navigation.domContentLoadedEventEnd - navigation.navigationStart, 3000);
+          navigation.domContentLoadedEventEnd - navigation.fetchStart, 3000);
       }
     });
   }
@@ -576,6 +576,6 @@ export class RealTimeMonitor {
 export const performanceMonitor = new RealTimeMonitor();
 
 // Auto-start monitoring in production
-if (process.env.NODE_ENV === 'production') {
+if (process.env["NODE_ENV"] === 'production') {
   performanceMonitor.startMonitoring();
 }

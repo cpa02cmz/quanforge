@@ -5,6 +5,9 @@ import { settingsManager, DEFAULT_DB_SETTINGS } from '../services/settingsManage
 import { dbUtils } from '../services/supabase';
 import { useToast } from './Toast';
 import { useTranslation } from '../services/i18n';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('DatabaseSettingsModal');
 
 interface DatabaseSettingsModalProps {
     isOpen: boolean;
@@ -31,7 +34,7 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
             const s = await dbUtils.getStats();
             setStats(s);
         } catch (e) {
-            console.error(e);
+            logger.error(e);
         }
     };
 
