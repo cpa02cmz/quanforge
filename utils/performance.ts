@@ -279,47 +279,81 @@ private recordInteraction(name: string, duration: number) {
      }
    }
 
-    // Memory usage monitoring (if available)
-    getMemoryUsage() {
-     if ('memory' in performance) {
-       const memory = (performance as any).memory;
-       return {
-         used: memory.usedJSHeapSize,
-         total: memory.totalJSHeapSize,
-         limit: memory.jsHeapSizeLimit,
-         utilization: memory.usedJSHeapSize / memory.jsHeapSizeLimit * 100,
-       };
-     }
-     return null;
-   }
-   
-// Track memory usage over time
-    async monitorMemoryUsage(intervalMs: number = 30000): Promise<void> { // Default 30 seconds
-      if (!('memory' in performance)) {
-        if (import.meta.env.DEV) {
-          console.warn('Memory monitoring not supported in this browser');
-        }
-        return;
+  // Memory usage monitoring (if available)
+     getMemoryUsage() {
+      if ('memory' in performance) {
+        const memory = (performance as any).memory;
+        return {
+          used: memory.usedJSHeapSize,
+          total: memory.totalJSHeapSize,
+          limit: memory.jsHeapSizeLimit,
+          utilization: memory.usedJSHeapSize / memory.jsHeapSizeLimit * 100,
+        };
       }
-     
-     const memoryInterval = setInterval(() => {
-       const memory = this.getMemoryUsage();
-       if (memory) {
-         this.recordMetric('memory_used_bytes', memory.used);
-         this.recordMetric('memory_utilization_percent', memory.utilization);
-         
-         // Alert if memory usage is high
-          if (memory.utilization > 80) {
-            if (import.meta.env.DEV) {
-              console.warn(`High memory usage detected: ${memory.utilization.toFixed(2)}%`);
-            }
-          }
+      return null;
+    }
+    
+ // Track memory usage over time
+     async monitorMemoryUsage(intervalMs: number = 30000): Promise<void> { // Default 30 seconds
+       if (!('memory' in performance)) {
+         if (import.meta.env.DEV) {
+           console.warn('Memory monitoring not supported in this browser');
+         }
+         return;
        }
-     }, intervalMs);
-     
-     // Store interval for potential cleanup
-     (globalThis as any).__memoryMonitoringInterval = memoryInterval;
-   }
+      
+      const memoryInterval = setInterval(() => {
+        const memory = this.getMemoryUsage();
+        if (memory) {
+          this.recordMetric('memory_used_bytes', memory.used);
+          this.recordMetric('memory_utilization_percent', memory.utilization);
+          
+          // Alert if memory usage is high
+           if (memory.utilization > 80) {
+             if (import.meta.env.DEV) {
+               console.warn(`High memory usage detected: ${memory.utilization.toFixed(2)}%`);
+             }
+             // Record high memory usage event
+             this.recordMetric('high_memory_event', 1);
+           }
+        }
+      }, intervalMs);
+      
+      // Store interval for potential cleanup
+      (globalThis as any).__memoryMonitoringInterval = memoryInterval;
+    }
+    
+    // Enhanced metrics for React component performance
+    measureComponentRender(componentName: string, renderFn: () => any) {
+      const start = performance.now();
+      const result = renderFn();
+      const duration = performance.now() - start;
+      
+      // Only record if render was slow (indicating potential performance issue)
+      if (duration > 10) { // More than 10ms is considered slow for a render
+        this.recordMetric(`component_render_${componentName}`, duration);
+        if (duration > 100) { // Very slow render
+          console.warn(`Slow component render detected: ${componentName} took ${duration.toFixed(2)}ms`);
+        }
+      }
+      
+      return result;
+    }
+    
+    // Track bundle size and loading performance
+    async trackBundlePerformance(): Promise<void> {
+      if ('performance' in window) {
+        window.addEventListener('load', () => {
+          // Track resource loading times
+          const resources = performance.getEntriesByType('resource');
+          resources.forEach((resource: PerformanceEntry) => {
+            if (resource.name.includes('assets/js/')) {
+              this.recordMetric('bundle_load_time', resource.duration);
+            }
+          });
+        });
+      }
+    }
    
 // Stop memory monitoring
     stopMemoryMonitoring(): void {

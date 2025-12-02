@@ -19,6 +19,9 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
   const { t } = useTranslation();
+  
+  // Log session for debugging (remove the warning about unused parameter)
+  console.debug('Dashboard session:', !!session);
   const [robots, setRobots] = useState<Robot[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
