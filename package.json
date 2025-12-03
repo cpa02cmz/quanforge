@@ -26,6 +26,8 @@
     "build:edge-analyze": "ANALYZE=true vite build --mode edge && npx @vercel/webpack-bundle-analyzer dist/static/js/*.js",
     "build:edge-profile": "vite build --mode edge --profile",
     "build:production": "npm run build:edge",
+    "build:edge-optimized": "NODE_ENV=production vite build --mode edge && npm run analyze:bundle",
+    "build:with-preload": "npm run build:edge-optimized && npm run generate:preload-list",
     "edge:performance-test": "npm run build:edge && npm run test:edge",
     "edge:warmup": "node scripts/warm-edge-cache.js",
     "preview": "vite preview",
@@ -45,7 +47,9 @@
     "deploy:edge": "vercel --prod",
     "cache:warm": "node scripts/warm-edge-cache.js",
     "bundle:optimize": "npx @vercel/webpack-bundle-analyzer dist/static/js/*.js",
-    "performance-check": "npm run build && npm run typecheck && npm run lint"
+    "performance-check": "npm run build && npm run typecheck && npm run lint",
+    "analyze:bundle": "npx @vercel/webpack-bundle-analyzer dist/static/js/*.js",
+    "generate:preload-list": "node scripts/generate-preload-list.js"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",

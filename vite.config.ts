@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   build: {
+    manifest: true,
     outDir: 'dist',
     sourcemap: process.env['NODE_ENV'] !== 'production' ? 'hidden' : false,
     rollupOptions: {
@@ -15,14 +16,17 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced vendor chunks for optimal edge caching and tree-shaking
           if (id.includes('node_modules')) {
-            // React ecosystem - split for better caching
-            if (id.includes('react') || id.includes('react-dom')) {
+            // React ecosystem - split more granularly for better caching
+            if (id.includes('react') && !id.includes('react-dom') && !id.includes('react-router')) {
               return 'vendor-react-core';
+            }
+            if (id.includes('react-dom')) {
+              return 'vendor-react-dom';
             }
             if (id.includes('react-router')) {
               return 'vendor-react-router';
             }
-            // Enhanced Charts splitting - granular for better performance
+            // Enhanced Charts splitting - more granular for better performance
             if (id.includes('recharts')) {
               // Core chart components
               if (id.includes('BarChart') || id.includes('LineChart') || id.includes('AreaChart')) {

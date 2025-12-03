@@ -65,7 +65,7 @@ export default function middleware(request: Request) {
   }
 
   // Add security headers
-  addSecurityHeaders(response, securityAnalysis);
+  addSecurityHeaders(response, securityAnalysis, request);
 
   // Add performance monitoring headers
   response.headers.set('X-Edge-Performance-Enabled', 'true');
@@ -272,7 +272,14 @@ function createSecurityResponse(code: string, message: string) {
 /**
  * Add security headers to response
  */
-function addSecurityHeaders(response: Response, securityAnalysis: any) {
+function addSecurityHeaders(response: Response, securityAnalysis: any, request: Request) {
+  const region = request.headers.get('x-vercel-region') || 'unknown';
+  const userAgent = request.headers.get('user-agent') || '';
+  
+  // Generate dynamic CSP based on context
+  const csp = generateDynamicCSP(request, region, securityAnalysis);
+  response.headers.set('Content-Security-Policy', csp);
+  
   // Basic security headers
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
@@ -284,16 +291,153 @@ function addSecurityHeaders(response: Response, securityAnalysis: any) {
   response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
   response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
   
-  // Permissions policy
-  response.headers.set('Permissions-Policy', 
-    'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), ambient-light-sensor=()'
-  );
+  // Permissions policy with dynamic adjustments
+  const permissionsPolicy = generatePermissionsPolicy(securityAnalysis, userAgent);
+  response.headers.set('Permissions-Policy', permissionsPolicy);
   
   // Security analysis headers
   response.headers.set('X-Edge-Risk-Score', securityAnalysis.riskScore.toString());
   if (securityAnalysis.threats.length > 0) {
     response.headers.set('X-Edge-Threats', securityAnalysis.threats.join(','));
   }
+  
+  // HSTS for production
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
+}
+
+/**
+ * Generate dynamic CSP based on request context
+ */
+function generateDynamicCSP(request: Request, region: string, securityAnalysis: any): string {
+  const url = request.nextUrl;
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const isAPI = url.pathname.startsWith('/api/');
+  
+  // Base CSP policy
+  let csp = "default-src 'self'; ";
+  
+  // Script sources with context-aware rules
+  if (isDevelopment) {
+    csp += "script-src 'self' 'unsafe-inline' 'unsafe-eval' ";
+  } else {
+    csp += "script-src 'self' 'unsafe-inline' ";
+  }
+  
+  // Add Vercel analytics
+  csp += "https://cdn.vercel-insights.com ";
+  
+  // Add Supabase domains
+  csp += "https://*.supabase.co ";
+  
+  // Add Google Analytics if in production
+  if (!isDevelopment) {
+    csp += "https://www.googletagmanager.com https://www.google-analytics.com ";
+  }
+  
+  // Style sources
+  csp += "; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com ";
+  
+  // Image sources with region-specific CDN domains
+  csp += "; img-src 'self' data: https: https://*.supabase.co https://www.google-analytics.com ";
+  
+  // Add region-specific CDN domains
+  const regionCDNs = {
+    'hkg1': 'https://cdn.asia.quanforge.ai',
+    'iad1': 'https://cdn.us.quanforge.ai',
+    'fra1': 'https://cdn.eu.quanforge.ai',
+    'sin1': 'https://cdn.asia.quanforge.ai',
+    'sfo1': 'https://cdn.us.quanforge.ai',
+    'arn1': 'https://cdn.us.quanforge.ai',
+    'gru1': 'https://cdn.sa.quanforge.ai',
+    'cle1': 'https://cdn.us.quanforge.ai'
+  };
+  
+  const cdnDomain = regionCDNs[region as keyof typeof regionCDNs];
+  if (cdnDomain) {
+    csp += `${cdnDomain} `;
+  }
+  
+  // Font sources
+  csp += "; font-src 'self' data: https://fonts.gstatic.com ";
+  
+  // Connect sources with API endpoints
+  csp += "; connect-src 'self' https://*.supabase.co https://googleapis.com ";
+  
+  if (!isDevelopment) {
+    csp += "https://www.google-analytics.com https://region1.google-analytics.com ";
+  }
+  
+  // Frame sources - generally deny frames
+  csp += "; frame-src 'none' ";
+  
+  // Object sources
+  csp += "; object-src 'none' ";
+  
+  // Base URI
+  csp += "; base-uri 'self' ";
+  
+  // Form action
+  csp += "; form-action 'self' ";
+  
+  // Upgrade insecure requests
+  if (!isDevelopment) {
+    csp += "; upgrade-insecure-requests ";
+  }
+  
+  // Adjust CSP based on security analysis
+  if (securityAnalysis.isSuspicious) {
+    // Stricter CSP for suspicious requests
+    csp = csp.replace("'unsafe-inline'", "'nonce-dynamic'").replace("'unsafe-eval'", '');
+  }
+  
+  if (isAPI) {
+    // Stricter CSP for API endpoints
+    csp = "default-src 'self'; script-src 'none'; style-src 'none'; img-src 'none'; connect-src 'self'";
+  }
+  
+  return csp;
+}
+
+/**
+ * Generate dynamic permissions policy
+ */
+function generatePermissionsPolicy(securityAnalysis: any, userAgent: string): string {
+  let policies = [
+    'camera=()',
+    'microphone=()',
+    'geolocation=()',
+    'payment=()',
+    'usb=()',
+    'magnetometer=()',
+    'gyroscope=()',
+    'accelerometer=()',
+    'ambient-light-sensor=()',
+    'bluetooth=()',
+    'clipboard-read=()',
+    'clipboard-write=()',
+    'fullscreen=(self)',
+    'payment=()',
+    'speaker=()',
+    'vr=()',
+    'xr=()'
+  ];
+  
+  // Allow some permissions for trusted browsers in development
+  if (process.env.NODE_ENV === 'development' && !securityAnalysis.isSuspicious) {
+    // Add development-specific permissions
+    policies.push('microphone=(self)', 'camera=(self)');
+  }
+  
+  // Adjust based on device type
+  const isMobile = /Mobile|Android|iPhone|iPad|iPod/i.test(userAgent);
+  if (isMobile) {
+    // Allow some mobile-specific permissions if needed
+    policies.push('orientation-lock=(self)');
+  }
+  
+  return policies.join(', ');
 }
 
 /**
