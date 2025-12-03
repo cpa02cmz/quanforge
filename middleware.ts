@@ -6,6 +6,7 @@
 // This middleware will be processed by Vercel Edge Functions
 export default function middleware(request: Request) {
   const response = new Response();
+  const url = request.nextUrl;
 
   // Add edge-specific headers
   response.headers.set('x-edge-region', request.headers.get('x-vercel-region') || 'unknown');
@@ -20,8 +21,22 @@ export default function middleware(request: Request) {
   response.headers.set('X-Edge-Performance-Enabled', 'true');
   response.headers.set('X-Edge-Monitoring-Version', '1.0.0');
 
-  // Handle bot traffic
+  // Enhanced edge optimizations
+  const country = request.headers.get('x-vercel-ip-country');
+  if (country === 'CN') {
+    response.headers.set('X-Content-Region', 'apac');
+  }
+  
+  // Device-based optimization
   const userAgent = request.headers.get('user-agent') || '';
+  const isMobile = /Mobile|Android|iPhone|iPad/.test(userAgent);
+  response.headers.set('X-Device-Type', isMobile ? 'mobile' : 'desktop');
+  
+  // A/B testing framework
+  const abTestGroup = Math.random() < 0.5 ? 'A' : 'B';
+  response.headers.set('X-AB-Test', abTestGroup);
+
+  // Handle bot traffic
   const isBot = /bot|crawler|spider|crawling|facebook|twitter|google|yahoo|bing/i.test(userAgent);
   
   if (isBot) {

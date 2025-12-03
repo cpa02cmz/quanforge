@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
-    sourcemap: process.env['NODE_ENV'] !== 'production',
+    sourcemap: process.env['NODE_ENV'] !== 'production' ? 'hidden' : false,
     rollupOptions: {
       input: {
         main: './index.html'
@@ -171,7 +171,8 @@ export default defineConfig({
       treeshake: {
         moduleSideEffects: false,
         propertyReadSideEffects: false,
-        tryCatchDeoptimization: false
+        tryCatchDeoptimization: false,
+        unknownGlobalSideEffects: false
       }
     },
     minify: 'terser',
@@ -219,10 +220,11 @@ export default defineConfig({
         comments: false
       }
     },
-    chunkSizeWarningLimit: 200, // Reduced for better edge performance
-    target: 'es2020',
+    chunkSizeWarningLimit: 250, // Optimized for better edge performance
+    target: ['es2020', 'edge101'], // More specific targets for edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,
+    cssMinify: true, // Add CSS minification
     // Enhanced edge optimization
     assetsInlineLimit: 4096, // 4KB for better caching
     modulePreload: {
@@ -264,6 +266,9 @@ export default defineConfig({
       'node:fs',
       'node:path',
       'node:crypto',
+      'node:fs/promises',
+      'node:worker_threads',
+      'node:child_process'
     ]
   },
   // Edge optimization for Vercel deployment

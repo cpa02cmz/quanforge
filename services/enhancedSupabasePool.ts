@@ -46,13 +46,13 @@ class EnhancedSupabaseConnectionPool {
     timestamp: number;
   }> = [];
   private config: ConnectionConfig = {
-    maxConnections: 50, // Increased for better edge performance
-    minConnections: 10, // Increased minimum for edge regions
-    acquireTimeout: 5000, // Reduced for faster failover
-    idleTimeout: 180000, // 3 minutes - reduced for edge efficiency
-    healthCheckInterval: 30000, // 30 seconds - more frequent health checks
-    retryAttempts: 5, // Increased retry attempts for edge reliability
-    retryDelay: 500 // Reduced retry delay for faster recovery
+    maxConnections: 75, // Increased for better edge performance
+    minConnections: 15, // Increased minimum for edge regions
+    acquireTimeout: 3000, // Reduced for faster failover
+    idleTimeout: 120000, // 2 minutes - reduced for edge efficiency
+    healthCheckInterval: 15000, // 15 seconds - more frequent health checks
+    retryAttempts: 7, // Increased retry attempts for edge reliability
+    retryDelay: 250 // Reduced retry delay for faster recovery
   };
   private stats: PoolStats = {
     totalConnections: 0,
