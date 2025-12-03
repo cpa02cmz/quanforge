@@ -395,19 +395,38 @@ private recordInteraction(name: string, duration: number) {
       }
     }
     
-    // Cleanup all resources and prevent memory leaks
-    cleanup(): void {
-      this.stopMemoryMonitoring();
-      this.metrics = [];
-      this.observers.forEach(observer => {
-        try {
-          observer.disconnect();
-        } catch (e) {
-          // Ignore errors during cleanup
-        }
-      });
-      this.observers = [];
-    }
+ // Cleanup all resources and prevent memory leaks
+     cleanup(): void {
+       this.stopMemoryMonitoring();
+       this.metrics = [];
+       this.observers.forEach(observer => {
+         try {
+           observer.disconnect();
+         } catch (e) {
+           // Ignore errors during cleanup
+         }
+       });
+       this.observers = [];
+       
+       // Additional cleanup for performance monitoring
+       this.cleanupPerformanceEntries();
+     }
+     
+     /**
+      * Clean up performance entries to prevent memory leaks
+      */
+     private cleanupPerformanceEntries(): void {
+       if ('performance' in window) {
+         try {
+           // Clear all performance entries to prevent memory buildup
+           performance.clearResourceTimings();
+           performance.clearMarks();
+           performance.clearMeasures();
+         } catch (e) {
+           // Ignore cleanup errors
+         }
+       }
+     }
 }
 
 // Singleton instance

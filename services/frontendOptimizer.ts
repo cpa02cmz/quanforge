@@ -161,18 +161,57 @@ class FrontendOptimizer {
     });
   }
 
-  /**
-   * Setup bundle optimization techniques
-   */
-  private setupBundleOptimization(): void {
-    // Implement code splitting hints and dynamic import optimization
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(() => {
-        // Preload non-critical modules when browser is idle
-        this.preloadNonCriticalModules();
-      });
-    }
-  }
+   /**
+    * Setup bundle optimization techniques
+    */
+   private setupBundleOptimization(): void {
+     // Implement code splitting hints and dynamic import optimization
+     if ('requestIdleCallback' in window) {
+       requestIdleCallback(() => {
+         // Preload non-critical modules when browser is idle
+         this.preloadNonCriticalModules();
+       });
+     }
+     
+     // Implement aggressive bundle optimization
+     this.aggressiveBundleOptimization();
+   }
+   
+   /**
+    * Aggressive bundle optimization techniques
+    */
+   private aggressiveBundleOptimization(): void {
+     // Preload critical components based on user behavior
+     const criticalComponents = [
+       { path: '/generator', preload: () => import('../components/CodeEditor') },
+       { path: '/', preload: () => import('../components/RobotCard') },
+       { path: '/generator', preload: () => import('../components/BacktestPanel') },
+     ];
+     
+     // Preload based on current route
+     const currentPath = window.location.pathname;
+     criticalComponents.forEach(component => {
+       if (currentPath.includes(component.path)) {
+         setTimeout(() => {
+           component.preload().catch(() => {
+             // Ignore preload errors
+           });
+         }, 2000); // Preload after initial render
+       }
+     });
+     
+     // Implement resource timing optimization
+     const navigationEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+     if (navigationEntries.length > 0) {
+       const navEntry = navigationEntries[0];
+       if (navEntry) {
+         const loadTime = navEntry.loadEventEnd - navEntry.fetchStart;
+         
+         // Record bundle load performance
+         this.metrics.bundleSize = loadTime;
+       }
+     }
+   }
 
   /**
    * Setup preconnect hints for critical origins
@@ -350,21 +389,45 @@ class FrontendOptimizer {
     return allItems;
   }
 
-  /**
-   * Optimize memory usage by cleaning up unused resources
-   */
-  optimizeMemoryUsage(): void {
-    // Clean up expired cache entries
-    const now = Date.now();
-    for (const [key, entry] of this.resourceCache.entries()) {
-      if (now - entry.timestamp > this.CACHE_TTL) {
-        this.resourceCache.delete(key);
-      }
-    }
+   /**
+    * Optimize memory usage by cleaning up unused resources
+    */
+   optimizeMemoryUsage(): void {
+     // Clean up expired cache entries
+     const now = Date.now();
+     for (const [key, entry] of this.resourceCache.entries()) {
+       if (now - entry.timestamp > this.CACHE_TTL) {
+         this.resourceCache.delete(key);
+       }
+     }
 
-    // Clear old metrics periodically
-    this.metrics.memoryUsage = this.getCurrentMemoryUsage();
-  }
+     // Clear old metrics periodically
+     this.metrics.memoryUsage = this.getCurrentMemoryUsage();
+     
+     // Perform aggressive memory optimization
+     this.aggressiveMemoryOptimization();
+   }
+   
+   /**
+    * Aggressive memory optimization techniques
+    */
+   private aggressiveMemoryOptimization(): void {
+     // Clear any potential memory leaks in event listeners
+     if ('gc' in window) {
+       (window as any).gc(); // Force garbage collection if available
+     }
+     
+     // Optimize cache size based on current memory usage
+     if (this.resourceCache.size > 50) {
+       // Remove oldest entries to keep cache size reasonable
+       const keys = Array.from(this.resourceCache.keys());
+       const keysToRemove = keys.slice(0, Math.floor(keys.length / 2)); // Remove half of entries
+       
+       keysToRemove.forEach(key => {
+         this.resourceCache.delete(key);
+       });
+     }
+   }
 
   /**
    * Get current memory usage if available

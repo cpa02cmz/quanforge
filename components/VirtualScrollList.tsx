@@ -107,17 +107,17 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
             const top = actualIndex * itemHeight;
             
             return (
-              <div
-                key={robot.id}
-                style={{
-                  position: 'absolute',
-                  top: `${top}px`,
-                  left: 0,
-                  right: 0,
-                  height: `${itemHeight}px`,
-                }}
-                className="p-2"
-              >
+               <div
+                 key={`${robot.id}-${actualIndex}`} // Use composite key to prevent reordering issues
+                 style={{
+                   position: 'absolute',
+                   top: `${top}px`,
+                   left: 0,
+                   right: 0,
+                   height: `${itemHeight}px`,
+                 }}
+                 className="p-2"
+               >
                 <RobotCard
                   robot={robot}
                   processingId={processingId || undefined}

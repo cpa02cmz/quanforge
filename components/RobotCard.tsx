@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Robot } from '../types';
 
@@ -25,6 +25,18 @@ export const RobotCard: React.FC<RobotCardProps> = React.memo(({
     onDuplicate(robot.id);
   }, [robot.id, onDuplicate]);
 
+  // Memoize the strategy type class string to prevent unnecessary re-renders
+  const strategyTypeClass = useMemo(() => {
+    return robot.strategy_type === 'Scalping' ? 'bg-purple-900/30 text-purple-300 border-purple-800' : 
+           robot.strategy_type === 'Trend' ? 'bg-green-900/30 text-green-300 border-green-800' :
+           'bg-blue-900/30 text-blue-300 border-blue-800';
+  }, [robot.strategy_type]);
+
+  // Memoize the date string to prevent unnecessary re-renders
+  const dateStr = useMemo(() => {
+    return new Date(robot.created_at).toLocaleDateString();
+  }, [robot.created_at]);
+
   return (
     <div className="bg-dark-surface border border-dark-border rounded-xl p-6 hover:border-brand-500/50 transition-colors group relative flex flex-col h-full animate-fade-in-up">
       {processingId === robot.id && (
@@ -39,9 +51,9 @@ export const RobotCard: React.FC<RobotCardProps> = React.memo(({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
           </svg>
         </div>
-        <span className="text-xs font-mono text-gray-500">
-          {new Date(robot.created_at).toLocaleDateString()}
-        </span>
+         <span className="text-xs font-mono text-gray-500">
+           {dateStr}
+         </span>
       </div>
       
       <h3 className="text-lg font-bold text-white mb-1 truncate" title={robot.name}>
@@ -52,11 +64,7 @@ export const RobotCard: React.FC<RobotCardProps> = React.memo(({
       </p>
       
       <div className="pt-4 border-t border-dark-border flex items-center justify-between mt-auto">
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border
-          ${robot.strategy_type === 'Scalping' ? 'bg-purple-900/30 text-purple-300 border-purple-800' : 
-            robot.strategy_type === 'Trend' ? 'bg-green-900/30 text-green-300 border-green-800' :
-            'bg-blue-900/30 text-blue-300 border-blue-800'}
-        `}>
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${strategyTypeClass}`}>
           {robot.strategy_type || 'Custom'}
         </span>
         
