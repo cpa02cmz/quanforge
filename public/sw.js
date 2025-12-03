@@ -1017,27 +1017,3 @@ async function getRegionalCacheStrategy(request) {
   // Medium priority regions get balanced caching
   return 'staleWhileRevalidate';
 }
-
-// Enhanced edge caching with regional optimization
-async function getRegionalCacheStrategy(request) {
-  const region = detectEdgeRegion();
-  const regionConfig = edgeRegionStrategies[region];
-  
-  if (!regionConfig) {
-    return 'staleWhileRevalidate'; // Default fallback
-  }
-  
-  const url = new URL(request.url);
-  
-  // Apply region-specific caching
-  if (regionConfig.priority === 'high') {
-    // High priority regions get more aggressive caching
-    if (url.pathname.includes('/api/')) {
-      return 'networkFirst';
-    }
-    return 'cacheFirst';
-  }
-  
-  // Medium priority regions get balanced caching
-  return 'staleWhileRevalidate';
-}

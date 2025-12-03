@@ -1,6 +1,37 @@
-import { SupabaseClient } from '@supabase/supabase-js';
-import { connectionPool } from './supabaseConnectionPool';
-import { smartCache } from './advancedCache';
+import { settingsManager } from './settingsManager';
+import { handleError } from '../utils/errorHandler';
+import { smartCache } from './smartCache';
+import { enhancedConnectionPool } from './enhancedSupabasePool';
+
+interface QueryOptimization {
+  originalQuery: string;
+  optimizedQuery: string;
+  improvements: string[];
+  estimatedPerformanceGain: number;
+}
+
+interface QueryMetrics {
+  executionTime: number;
+  resultCount: number;
+  cacheHit: boolean;
+  timestamp: number;
+}
+
+interface PaginationOptions {
+  page: number;
+  limit: number;
+  offset: number;
+  orderBy?: string;
+  ascending?: boolean;
+}
+
+interface IndexRecommendation {
+  table: string;
+  columns: string[];
+  type: 'btree' | 'hash' | 'gin' | 'gist';
+  reason: string;
+  priority: 'high' | 'medium' | 'low';
+}
 
 interface BatchQuery<T = any> {
   query: string;
@@ -15,19 +46,28 @@ interface QueryResult<T = any> {
   cached?: boolean;
 }
 
-export class QueryOptimizer {
-  private static instance: QueryOptimizer;
+export class QueryOptimizerEnhanced {
+  private queryMetrics: Map<string, QueryMetrics[]> = new Map();
+  private indexRecommendations: Map<string, IndexRecommendation[]> = new Map();
   private batchQueue: Map<string, BatchQuery[]> = new Map();
   private batchTimeout: Map<string, NodeJS.Timeout> = new Map();
   private readonly BATCH_DELAY = 50; // 50ms batching window
+  private readonly METRICS_RETENTION_LIMIT = 1000;
+  private readonly SLOW_QUERY_THRESHOLD = 1000; // 1 second
 
-  private constructor() {}
+  constructor() {
+    this.initializeOptimizations();
+  }
 
-  static getInstance(): QueryOptimizer {
-    if (!QueryOptimizer.instance) {
-      QueryOptimizer.instance = new QueryOptimizer();
-    }
-    return QueryOptimizer.instance;
+  private initializeOptimizations(): void {
+    // Pre-compute common query patterns
+    this.precomputeCommonQueries();
+    
+    // Initialize index recommendations
+    this.initializeIndexRecommendations();
+    
+    // Set up periodic optimization
+    this.setupPeriodicOptimization();
   }
 
   async batchQuery<T>(queries: BatchQuery[]): Promise<QueryResult<T>[]> {
