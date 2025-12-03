@@ -80,12 +80,9 @@ class EdgeAnalytics {
       enablePerformanceTracking: process.env['VITE_ENABLE_PERFORMANCE_MONITORING'] === 'true',
       enableUserBehaviorTracking: true,
       enableErrorTracking: process.env['VITE_ENABLE_ERROR_REPORTING'] === 'true',
-      sampleRate: 0.1 // 10% sample rate
+      sampleRate: 0.1, // 10% sample rate
+      endpoint: process.env['VITE_ANALYTICS_ENDPOINT']
     };
-    
-    if (process.env['VITE_ANALYTICS_ENDPOINT']) {
-      this.config.endpoint = process.env['VITE_ANALYTICS_ENDPOINT'];
-    }
 
     this.sessionId = this.generateSessionId();
     this.startTime = performance.now();
