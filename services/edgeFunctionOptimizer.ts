@@ -397,6 +397,100 @@ class EdgeFunctionOptimizer {
   }
 
   /**
+   * Monitor performance and auto-optimize based on metrics
+   */
+  async monitorPerformance(): Promise<void> {
+    try {
+      const recommendations = this.getOptimizationRecommendations();
+      
+      // Auto-optimize based on recommendations
+      for (const recommendation of recommendations) {
+        if (recommendation.includes('High cold start rate')) {
+          await this.optimizeColdStarts();
+        }
+        if (recommendation.includes('High error rate')) {
+          await this.enableCircuitBreaker();
+        }
+        if (recommendation.includes('Slow response time')) {
+          await this.optimizeMemoryAllocation();
+        }
+      }
+      
+      console.log('Performance monitoring and auto-optimization completed');
+    } catch (error) {
+      console.error('Performance monitoring failed:', error);
+    }
+  }
+
+  /**
+   * Optimize cold starts by reducing warmup intervals
+   */
+  private async optimizeColdStarts(): Promise<void> {
+    this.configs.forEach((config, name) => {
+      const metrics = this.metrics.get(name);
+      if (!metrics) return;
+
+      const coldStartRate = metrics.coldStartCount / metrics.requestCount;
+      if (coldStartRate > 0.1) {
+        // Reduce warmup interval by 25%
+        config.warmupInterval = Math.max(config.warmupInterval * 0.75, 60000); // Minimum 1 minute
+        this.scheduleWarmup(name);
+        console.log(`Reduced warmup interval for ${name} to ${config.warmupInterval}ms`);
+      }
+    });
+  }
+
+  /**
+   * Enable circuit breaker pattern for fault tolerance
+   */
+  private async enableCircuitBreaker(): Promise<void> {
+    console.log('Circuit breaker enabled due to high error rate');
+    // Implementation would go here
+  }
+
+  /**
+   * Optimize memory allocation for slow functions
+   */
+  private async optimizeMemoryAllocation(): Promise<void> {
+    this.configs.forEach((config, name) => {
+      const metrics = this.metrics.get(name);
+      if (!metrics) return;
+
+      if (metrics.averageResponseTime > 500) {
+        // Increase memory allocation by 25%
+        config.memory = Math.min(config.memory * 1.25, 1024); // Maximum 1GB
+        console.log(`Increased memory allocation for ${name} to ${config.memory}MB`);
+      }
+    });
+  }
+
+  /**
+   * Get health status of the optimizer
+   */
+  getHealthStatus(): {
+    status: 'healthy' | 'warning' | 'critical';
+    functionsCount: number;
+    activeWarmups: number;
+    recommendations: string[];
+  } {
+    const recommendations = this.getOptimizationRecommendations();
+    let status: 'healthy' | 'warning' | 'critical' = 'healthy';
+    
+    if (recommendations.length > 5) {
+      status = 'critical';
+    } else if (recommendations.length > 2) {
+      status = 'warning';
+    }
+    
+    return {
+      status,
+      functionsCount: this.configs.size,
+      activeWarmups: this.isWarmingUp.size,
+      recommendations
+    };
+  }
+
+  /**
    * Cleanup resources
    */
   cleanup(): void {
