@@ -9,7 +9,7 @@ const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 // SEO enhancement patterns
 const SEO_PATTERNS = {
   trailingSlash: /\/$/,
-  nonSeoChars: /[^a-zA-Z0-9\-_\/]/g,
+  nonSeoChars: /[^a-zA-Z0-9\-_/]/g,
   uppercase: /[A-Z]/
 };
 
