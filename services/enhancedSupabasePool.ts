@@ -775,6 +775,12 @@ class EnhancedSupabaseConnectionPool {
       warmedRegions,
       lastWarmup: this.edgeWarmingTimer ? Date.now() - 300000 : undefined,
       nextWarmup: this.edgeWarmingTimer ? Date.now() + 300000 : undefined
+    } as {
+      enabled: boolean;
+      regions: string[];
+      warmedRegions: string[];
+      lastWarmup?: number;
+      nextWarmup?: number;
     };
   }
 
@@ -857,7 +863,7 @@ class EnhancedSupabaseConnectionPool {
     const now = Date.now();
     const connectionsToRemove: string[] = [];
 
-    for (const [id, connection] of this.connections.values()) {
+    for (const [id, connection] of this.connections.entries()) {
       // More aggressive cleanup for edge
       if (connection.inUse || this.stats.totalConnections <= this.config.minConnections) {
         continue;

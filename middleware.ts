@@ -32,6 +32,13 @@ export default function middleware(request: Request) {
   const region = request.headers.get('x-vercel-region') || 'unknown';
   const country = request.headers.get('x-vercel-ip-country') || 'unknown';
 
+  // Enhanced prewarming for edge functions
+  if (request.headers.get('x-purpose') === 'prefetch' || 
+      request.headers.get('x-moz') === 'prefetch' ||
+      request.headers.get('purpose') === 'prefetch') {
+    handlePrewarming(request, region);
+  }
+
   // Create response object
   const response = new Response();
 
@@ -472,6 +479,34 @@ function applyCacheOptimizations(response: Response, request: Request, securityA
   
   // Edge cache tags
   response.headers.set('Edge-Cache-Tag', `region-${request.headers.get('x-vercel-region')},device-${response.headers.get('X-Device-Type')}`);
+}
+
+/**
+ * Enhanced prewarming handler for edge functions
+ */
+async function handlePrewarming(request: Request, region: string) {
+  try {
+    // Trigger concurrent warmup for critical functions
+    const warmupPromises = [
+      fetch('/api/edge/warmup', { 
+        headers: { 'X-Prewarm': 'true', 'X-Region': region } 
+      }),
+      fetch('/api/health', { 
+        headers: { 'X-Prewarm': 'true' } 
+      }),
+      // Warm up database connections
+      fetch('/api/database/ping', { 
+        headers: { 'X-Prewarm': 'true', 'X-Region': region } 
+      })
+    ];
+    
+    // Execute warmup in parallel without blocking
+    Promise.allSettled(warmupPromises).catch(() => {
+      // Ignore warmup errors to not affect main request
+    });
+  } catch (error) {
+    // Silently ignore warmup failures
+  }
 }
 
 export const config = {

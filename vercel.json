@@ -132,12 +132,15 @@
       "includeFiles": ["public/**/*"],
       "excludeFiles": ["**/*.test.*", "**/*.spec.*"],
       "cache": "max-age=300, s-maxage=600",
-      "invocationCount": 10,
+      "invocationCount": 20,
       "environment": {
         "EDGE_CACHE_ENABLED": "true",
         "SUPABASE_POOL_SIZE": "20",
         "EDGE_REGION_AFFINITY": "true",
-        "CONNECTION_WARMING": "true"
+        "CONNECTION_WARMING": "true",
+        "EDGE_KEEP_WARM": "true",
+        "PREWARM_CONCURRENT": "5",
+        "EDGE_MEMORY_POOL": "true"
       }
     },
     "app/**/*.ts": {

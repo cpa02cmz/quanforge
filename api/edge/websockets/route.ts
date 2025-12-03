@@ -123,7 +123,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Create WebSocket pair
-    const { 0: client, 1: server } = new WebSocketPair();
+    const pair = new (globalThis as any).WebSocketPair();
+    const client = pair[0];
+    const server = pair[1];
     const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     // Store connection
