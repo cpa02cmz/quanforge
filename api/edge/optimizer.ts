@@ -413,7 +413,7 @@ async function optimizeDatabase(): Promise<{ optimized: boolean; connections?: n
     return {
       optimized: true,
     };
-  } catch (error) {
+  } catch (_error) {
     return { optimized: false };
   }
 }

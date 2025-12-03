@@ -22,13 +22,22 @@ export default defineConfig({
             if (id.includes('react-router')) {
               return 'vendor-react-router';
             }
-            // Charts and visualization - isolated chunk
+            // Enhanced Charts splitting - granular for better performance
             if (id.includes('recharts')) {
-              return 'vendor-charts';
+              // Core chart components
+              if (id.includes('BarChart') || id.includes('LineChart') || id.includes('AreaChart')) {
+                return 'vendor-charts-core';
+              }
+              // Chart components and utilities
+              if (id.includes('Tooltip') || id.includes('Legend') || id.includes('ResponsiveContainer')) {
+                return 'vendor-charts-components';
+              }
+              // Advanced chart features
+              return 'vendor-charts-advanced';
             }
             // AI services - isolated for better tree-shaking
             if (id.includes('@google/genai')) {
-              return 'vendor-ai-gemini';
+              return 'vendor-ai-gemini-dynamic';
             }
             // Enhanced Supabase splitting for better tree-shaking
             if (id.includes('@supabase/realtime-js')) {
@@ -57,17 +66,17 @@ export default defineConfig({
           
           // Enhanced app chunks with better separation
           if (id.includes('services/')) {
-            // Core database services
+            // Core database services - critical path
             if (id.includes('supabase') || id.includes('database') || id.includes('cache')) {
-              return 'services-database';
+              return 'services-database-critical';
             }
             // AI and simulation services
             if (id.includes('gemini') || id.includes('simulation') || id.includes('ai')) {
               return 'services-ai';
             }
-            // Edge and performance services
+            // Edge and performance services - critical for edge deployment
             if (id.includes('edge') || id.includes('performance') || id.includes('vercel')) {
-              return 'services-edge';
+              return 'services-edge-critical';
             }
             // Security services
             if (id.includes('security') || id.includes('validation')) {
@@ -242,13 +251,13 @@ export default defineConfig({
         comments: false
       }
     },
-    chunkSizeWarningLimit: 250, // Optimized for better edge performance
+    chunkSizeWarningLimit: 200, // Further reduced for optimal edge performance
     target: ['es2020', 'edge101'], // More specific targets for edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
     // Enhanced edge optimization
-    assetsInlineLimit: 4096, // 4KB for better caching
+    assetsInlineLimit: 2048, // 2KB for better caching and smaller initial chunks
     modulePreload: {
       polyfill: false
     },
