@@ -171,6 +171,9 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = React.memo(({
                                     <ChartComponents 
                                         data={result.equityCurve} 
                                         totalReturn={result.totalReturn}
+                                        riskData={undefined}
+                                        analysis={undefined}
+                                        t={undefined}
                                     />
                                 </Suspense>
                             </div>
