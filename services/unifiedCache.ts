@@ -218,7 +218,7 @@ export class UnifiedCache {
   invalidateByTags(tags: string[]): number {
     try {
       const stats = this.memoryCache.getStats();
-      let invalidatedCount = 0;
+      const invalidatedCount = 0;
       
       // This is a simplified implementation
       // In a real scenario, you'd need to track tags more efficiently

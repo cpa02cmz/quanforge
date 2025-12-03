@@ -224,25 +224,7 @@ class EnhancedSupabaseConnectionPool {
     return connection.client;
   }
 
-  private _getAvailableConnection(region?: string): Connection | null {
-    // Prefer connections from the same region
-    if (region) {
-      for (const connection of this.connections.values()) {
-        if (!connection.inUse && connection.healthy && connection.region === region) {
-          return connection;
-        }
-      }
-    }
 
-    // Fall back to any available connection
-    for (const connection of this.connections.values()) {
-      if (!connection.inUse && connection.healthy) {
-        return connection;
-      }
-    }
-
-    return null;
-  }
 
   /**
    * Get optimal connection based on region, health, and recent usage
@@ -637,23 +619,23 @@ class EnhancedSupabaseConnectionPool {
     console.log('Read replica warm-up completed');
   }
 
-  /**
-   * Get read replica statistics
-   */
-  getReadReplicaStats(): { region: string; status: 'connected' | 'disconnected'; lastUsed?: number }[] {
-    const stats: { region: string; status: 'connected' | 'disconnected'; lastUsed?: number }[] = [];
-    
-    for (const [key, client] of this.readReplicaClients.entries()) {
-      const region = key.replace('_read_replica', '');
-      stats.push({
-        region,
-        status: 'connected', // We only store successful connections
-        lastUsed: Date.now() // This could be enhanced with actual last used tracking
-      });
-    }
+   /**
+    * Get read replica statistics
+    */
+   getReadReplicaStats(): { region: string; status: 'connected' | 'disconnected'; lastUsed?: number }[] {
+     const stats: { region: string; status: 'connected' | 'disconnected'; lastUsed?: number }[] = [];
+     
+     for (const [key, ] of this.readReplicaClients.entries()) {
+       const region = key.replace('_read_replica', '');
+       stats.push({
+         region,
+         status: 'connected', // We only store successful connections
+         lastUsed: Date.now() // This could be enhanced with actual last used tracking
+       });
+     }
 
-    return stats;
-  }
+     return stats;
+   }
 
   /**
    * Close all read replica connections

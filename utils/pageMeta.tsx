@@ -93,6 +93,23 @@ export const PageMeta: React.FC<PageMetaProps> = ({
     // Additional Meta Tags
     updateMetaTag('theme-color', '#22c55e');
     updateMetaTag('language', 'en');
+    updateMetaTag('distribution', 'global');
+    updateMetaTag('rating', 'general');
+    updateMetaTag('revisit-after', '7 days');
+    updateMetaTag('geo.region', 'US');
+    updateMetaTag('geo.placename', 'Global');
+    updateMetaTag('category', 'finance, technology, trading, artificial intelligence');
+    updateMetaTag('coverage', 'Worldwide');
+    updateMetaTag('target', 'all');
+    updateMetaTag('HandheldFriendly', 'True');
+    updateMetaTag('MobileOptimized', '320');
+    updateMetaTag('apple-mobile-web-app-capable', 'yes');
+    updateMetaTag('apple-mobile-web-app-status-bar-style', 'black-translucent');
+    updateMetaTag('format-detection', 'telephone=no');
+    updateMetaTag('mobile-web-app-capable', 'yes');
+    updateMetaTag('apple-mobile-web-app-title', siteTitle);
+    updateMetaTag('application-name', siteTitle);
+    updateMetaTag('referrer', 'no-referrer-when-downgrade');
     
     // Clean up existing structured data
     const existingScripts = document.querySelectorAll('script[type="application/ld+json"]');
@@ -105,6 +122,26 @@ export const PageMeta: React.FC<PageMetaProps> = ({
       script.textContent = JSON.stringify(data);
       document.head.appendChild(script);
     });
+
+    // Add JSON-LD for website info
+    const websiteScript = document.createElement('script');
+    websiteScript.type = 'application/ld+json';
+    websiteScript.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": siteTitle,
+      "url": "https://quanforge.ai",
+      "description": "Advanced MQL5 Trading Robot Generator powered by AI",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://quanforge.ai/search?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    });
+    document.head.appendChild(websiteScript);
 
     return () => {
       // Cleanup function if needed

@@ -158,14 +158,10 @@ const FeaturesComponent: React.FC = () => {
       currentContent.description,
       'https://quanforge.ai/features'
     ),
-    enhancedStructuredData.article(
-      'QuantForge AI Features',
-      currentContent.description,
-      'https://quanforge.ai/features',
-      'QuantForge AI',
-      '2023-01-01',
-      new Date().toISOString()
-    )
+    enhancedStructuredData.breadcrumb([
+      { name: 'Home', url: 'https://quanforge.ai/' },
+      { name: 'Features', url: 'https://quanforge.ai/features' }
+    ])
   ];
 
   return (

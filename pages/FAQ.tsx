@@ -217,20 +217,25 @@ const FAQComponent: React.FC = () => {
     return filtered;
   }, [currentContent.categories, searchTerm]);
 
+  // Generate FAQ structured data
+  const allQuestions = Object.values(filteredCategories).flatMap((category: any) =>
+    category.questions.map((q: any) => ({
+      question: q.q,
+      answer: q.a
+    }))
+  );
+  
   const structuredData = [
     enhancedStructuredData.webPage(
       currentContent.title,
       currentContent.description,
       'https://quanforge.ai/faq'
     ),
-    enhancedStructuredData.faq(
-      Object.values(filteredCategories).flatMap((category: any) =>
-        category.questions.map((q: any) => ({
-          question: q.q,
-          answer: q.a
-        }))
-      )
-    )
+    enhancedStructuredData.faq(allQuestions),
+    enhancedStructuredData.breadcrumb([
+      { name: 'Home', url: 'https://quanforge.ai/' },
+      { name: 'FAQ', url: 'https://quanforge.ai/faq' }
+    ])
   ];
 
   return (

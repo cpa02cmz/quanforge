@@ -65,7 +65,7 @@ const generateUUID = (): string => {
     }
     // Fallback
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
 };
@@ -1280,7 +1280,7 @@ export const dbUtils = {
             if (settings.mode === 'mock') {
                 try {
                     const stored = localStorage.getItem(ROBOTS_KEY);
-                    let robots = safeParse(stored, []);
+                    const robots = safeParse(stored, []);
                     
                     for (const item of updates) {
                         const robotIndex = robots.findIndex((r: any) => r.id === item.id);

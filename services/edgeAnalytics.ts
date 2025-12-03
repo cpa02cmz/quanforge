@@ -9,7 +9,7 @@ interface EdgeAnalyticsConfig {
   enableUserBehaviorTracking: boolean;
   enableErrorTracking: boolean;
   sampleRate: number;
-  endpoint?: string;
+  endpoint: string | undefined;
 }
 
 interface EdgeMetrics {
@@ -81,7 +81,7 @@ class EdgeAnalytics {
       enableUserBehaviorTracking: true,
       enableErrorTracking: process.env['VITE_ENABLE_ERROR_REPORTING'] === 'true',
       sampleRate: 0.1, // 10% sample rate
-      endpoint: process.env['VITE_ANALYTICS_ENDPOINT']
+      endpoint: process.env['VITE_ANALYTICS_ENDPOINT'] || undefined
     };
 
     this.sessionId = this.generateSessionId();

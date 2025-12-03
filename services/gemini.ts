@@ -192,78 +192,125 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
     }
     
     // Optimized history management with diff-based updates
-    private buildHistoryContext(history: Message[], currentPrompt: string, remainingBudget: number): string {
-        // Filter out duplicate immediate prompt more efficiently
-        const effectiveHistory = history.filter((msg, index) => {
-            const isLast = index === history.length - 1;
-            const isUser = msg.role === MessageRole.USER;
-            return !(isLast && isUser && msg.content === currentPrompt);
-        });
-
-        if (effectiveHistory.length === 0) return '';
-        
-        // Pre-calculate message sizes and sort by importance
-        const messageData = effectiveHistory.map((msg, index) => ({
-            msg,
-            index,
-            content: `${msg.role === MessageRole.USER ? 'User' : 'Model'}: ${msg.content}`,
-            length: 0,
-            importance: 0
-        }));
-        
-        // Calculate lengths and importance scores
-        messageData.forEach(data => {
-            data.length = data.content.length;
-            // More recent messages are more important
-            data.importance = (data.index / effectiveHistory.length) * 10;
-            // User messages are slightly more important
-            if (data.msg.role === MessageRole.USER) {
-                data.importance += 1;
-            }
-            // Longer messages might contain more context
-            if (data.length > 500) {
-                data.importance += 0.5;
-            }
-        });
-        
-        // Sort by importance (descending) then by recency
-        messageData.sort((a, b) => {
-            if (Math.abs(a.importance - b.importance) > 0.1) {
-                return b.importance - a.importance;
-            }
-            return b.index - a.index;
-        });
-        
-        // Greedy selection based on importance and budget
-        const selectedMessages = [];
-        let usedBudget = 0;
-        
-        for (const data of messageData) {
-            const requiredBudget = data.length + (selectedMessages.length > 0 ? 2 : 0); // +2 for \n\n
-            
-            if (usedBudget + requiredBudget <= remainingBudget) {
-                selectedMessages.push(data);
-                usedBudget += requiredBudget;
-            } else if (selectedMessages.length === 0 && remainingBudget > TokenBudgetManager.MIN_HISTORY_CHARS) {
-                // If we haven't selected anything and have reasonable budget, truncate this message
-                const truncatedLength = Math.max(remainingBudget - 10, 100); // Keep at least 100 chars
-                const truncatedContent = data.content.substring(0, truncatedLength) + '...';
-                selectedMessages.push({
-                    ...data,
-                    content: truncatedContent,
-                    length: truncatedContent.length
-                });
-                break;
-            } else {
-                break;
-            }
-        }
-        
-        // Sort back to chronological order
-        selectedMessages.sort((a, b) => a.index - b.index);
-        
-        return selectedMessages.map(data => data.content).join('\n\n');
-    }
+     private buildHistoryContext(history: Message[], currentPrompt: string, remainingBudget: number): string {
+         // Filter out duplicate immediate prompt more efficiently
+         const effectiveHistory = history.filter((msg, index) => {
+             const isLast = index === history.length - 1;
+             const isUser = msg.role === MessageRole.USER;
+             return !(isLast && isUser && msg.content === currentPrompt);
+         });
+ 
+         if (effectiveHistory.length === 0) return '';
+         
+         // Pre-calculate message sizes and sort by importance
+         const messageData = effectiveHistory.map((msg, index) => {
+             const content = `${msg.role === MessageRole.USER ? 'User' : 'Model'}: ${msg.content}`;
+             return {
+                 msg,
+                 index,
+                 content,
+                 length: content.length,
+                 importance: 0
+             };
+         });
+         
+         // Calculate importance scores with more sophisticated logic
+         messageData.forEach(data => {
+             // Base importance on recency (more recent = more important)
+             const recencyFactor = (data.index + 1) / effectiveHistory.length;
+             data.importance = recencyFactor * 10;
+             
+             // User messages are more important than model messages
+             if (data.msg.role === MessageRole.USER) {
+                 data.importance += 2;
+             }
+             
+             // Messages with code blocks or technical content may be more important
+             if (data.content.includes('```') || data.content.includes('function') || 
+                 data.content.includes('if ') || data.content.includes('for ')) {
+                 data.importance += 1;
+             }
+             
+             // Shorter messages are more likely to be concise and valuable
+             if (data.length < 300) {
+                 data.importance += 0.5;
+             }
+         });
+         
+         // Sort by importance (descending) then by recency
+         messageData.sort((a, b) => {
+             if (Math.abs(a.importance - b.importance) > 0.01) {
+                 return b.importance - a.importance;
+             }
+             return b.index - a.index;
+         });
+         
+         // Smart selection algorithm with adaptive truncation
+         const selectedMessages = [];
+         let usedBudget = 0;
+         const separatorLength = 2; // \n\n
+         
+         // First, try to fit as many complete messages as possible
+         for (const data of messageData) {
+             const requiredBudget = data.length + (selectedMessages.length > 0 ? separatorLength : 0);
+             
+             if (usedBudget + requiredBudget <= remainingBudget) {
+                 selectedMessages.push(data);
+                 usedBudget += requiredBudget;
+             } else {
+                 // If we're at the limit but still have budget for truncation, try truncating
+                 break;
+             }
+         }
+         
+         // If we have remaining budget and no messages were selected, select and truncate the most important one
+         if (selectedMessages.length === 0 && remainingBudget > TokenBudgetManager.MIN_HISTORY_CHARS && messageData.length > 0) {
+             const mostImportant = messageData[0];
+             if (mostImportant) {
+                 const availableForContent = remainingBudget - 3; // 3 for "..."
+                 if (availableForContent >= 50) { // Minimum truncation length
+                     const truncatedLength = Math.min(mostImportant.length, availableForContent);
+                     const truncatedContent = mostImportant.content.substring(0, truncatedLength) + '...';
+                     selectedMessages.push({
+                         ...mostImportant,
+                         content: truncatedContent,
+                         length: truncatedContent.length
+                     });
+                     usedBudget = truncatedContent.length;
+                 }
+             }
+         }
+         
+         // If we still have significant budget remaining and have selected messages,
+         // consider adding truncated versions of additional messages
+         if (selectedMessages.length > 0 && (remainingBudget - usedBudget) > 200) {
+             for (const data of messageData) {
+                 // Skip if already selected
+                 if (selectedMessages.some(selected => selected.index === data.index)) {
+                     continue;
+                 }
+                 
+                 const availableForTruncation = remainingBudget - usedBudget - separatorLength;
+                 if (availableForTruncation > 50) { // Minimum size for meaningful truncation
+                     const truncatedLength = Math.min(data.length, Math.floor(availableForTruncation * 0.7)); // Use 70% of available space
+                     if (truncatedLength >= 30) { // Minimum meaningful content
+                         const truncatedContent = data.content.substring(0, truncatedLength) + '...';
+                         selectedMessages.push({
+                             ...data,
+                             content: truncatedContent,
+                             length: truncatedContent.length
+                         });
+                         usedBudget += separatorLength + truncatedContent.length;
+                     }
+                 }
+             }
+         }
+         
+         // Sort back to chronological order
+         selectedMessages.sort((a, b) => (a.index || 0) - (b.index || 0));
+         
+         return selectedMessages.map(data => data.content).join('\n\n');
+     }
     
     buildContext(prompt: string, currentCode?: string, strategyParams?: StrategyParams, history: Message[] = []): string {
         // Create cache key for context building
