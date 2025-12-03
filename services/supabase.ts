@@ -26,16 +26,12 @@ const CACHE_CONFIG = {
 const STORAGE_KEY = 'mock_session';
 const ROBOTS_KEY = 'mock_robots';
 
-// Helper for safe JSON parsing
+// Helper for safe JSON parsing with enhanced security
 const safeParse = (data: string | null, fallback: any) => {
     if (!data) return fallback;
     try {
-        const parsed = JSON.parse(data);
-        // Security: Prevent prototype pollution
-        if (parsed && typeof parsed === 'object' && ('__proto__' in parsed || 'constructor' in parsed)) {
-             return fallback;
-        }
-        return parsed;
+        // Use security manager's safe JSON parsing
+        return securityManager.safeJSONParse(data) || fallback;
     } catch (e) {
         console.error("Failed to parse data from storage:", e);
         return fallback;
@@ -572,27 +568,25 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
         return withRetry(async () => {
           const client = await getClient();
           
-          // Build query with optimized filters
+          // Build query with optimized filters - single query builder pattern
           let query = client
             .from('robots')
-            .select('*', { count: 'exact', head: false })
+            .select('*', { count: 'exact', head: false });
+          
+          // Apply filters in the most efficient order
+          if (filterType && filterType !== 'All') {
+            query = query.eq('strategy_type', filterType);
+          }
+          
+          if (searchTerm) {
+            // Use more efficient search with index hints
+            query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+          }
+          
+          // Apply ordering and pagination last
+          query = query
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
-          
-          // Apply filters efficiently
-          const filters: string[] = [];
-          if (searchTerm) {
-            // Use full-text search if available, fallback to ILIKE
-            filters.push(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
-          }
-          if (filterType && filterType !== 'All') {
-            filters.push(`strategy_type.eq.${filterType}`);
-          }
-          
-          // Apply all filters in a single call
-          if (filters.length > 0) {
-            query = query.or(filters.join(','));
-          }
           
           const result = await query;
           

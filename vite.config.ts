@@ -276,7 +276,7 @@ export default defineConfig({
         comments: false
       }
     },
-     chunkSizeWarningLimit: 100, // Reduced for optimal edge performance
+chunkSizeWarningLimit: 100, // Optimized for edge performance
     target: ['es2020', 'edge101'], // More specific targets for edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,

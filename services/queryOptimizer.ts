@@ -18,10 +18,13 @@ interface QueryMetrics {
 }
 
 class QueryOptimizer {
-  private queryCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+  private queryCache = new Map<string, { data: any; timestamp: number; ttl: number; hits: number }>();
   private queryMetrics: QueryMetrics[] = [];
-  private readonly DEFAULT_TTL = 60000; // 1 minute
+  private readonly DEFAULT_TTL = 300000; // 5 minutes - optimized for edge
   private readonly MAX_METRICS = 1000;
+  private cacheHitRate = 0;
+  private totalQueries = 0;
+  private cacheHits = 0;
 
   // Calculate size of data in bytes
   private calculateSize(data: any): number {
@@ -45,9 +48,9 @@ class QueryOptimizer {
      return Math.abs(hash).toString(36).substring(0, 16);
    }
 
-  // Check and maintain cache size limits
+  // Check and maintain cache size limits - optimized for edge
   private maintainCacheSize(newEntrySize: number): void {
-    const maxCacheSize = 50 * 1024 * 1024; // 50MB
+    const maxCacheSize = 10 * 1024 * 1024; // 10MB - optimized for edge constraints
     let currentSize = 0;
     
     // Calculate current size
@@ -79,19 +82,26 @@ class QueryOptimizer {
      const startTime = performance.now();
      const queryHash = this.generateQueryHash(optimization);
      
-     // Check cache first
-     const cached = this.queryCache.get(queryHash);
-     if (cached && Date.now() - cached.timestamp < cached.ttl) {
-       const metrics: QueryMetrics = {
-         executionTime: performance.now() - startTime,
-         resultCount: Array.isArray(cached.data) ? cached.data.length : 0,
-         cacheHit: true,
-         queryHash,
-       };
-       
-       this.recordMetrics(metrics);
-       return { data: cached.data as T[], error: null, metrics };
-     }
+// Check cache first with enhanced tracking
+      this.totalQueries++;
+      const cached = this.queryCache.get(queryHash);
+      if (cached && Date.now() - cached.timestamp < cached.ttl) {
+        this.cacheHits++;
+        cached.hits++; // Track cache hit frequency
+        
+        // Update cache hit rate
+        this.cacheHitRate = (this.cacheHits / this.totalQueries) * 100;
+        
+        const metrics: QueryMetrics = {
+          executionTime: performance.now() - startTime,
+          resultCount: Array.isArray(cached.data) ? cached.data.length : 0,
+          cacheHit: true,
+          queryHash,
+        };
+        
+        this.recordMetrics(metrics);
+        return { data: cached.data as T[], error: null, metrics };
+      }
 
      try {
        // Create AbortController for timeout handling

@@ -162,23 +162,30 @@ class SecurityManager {
     };
   }
 
-  private validateRobotData(data: any): ValidationResult {
-    const errors: string[] = [];
-    let riskScore = 0;
-    const sanitized: Partial<Robot> = {};
+private validateRobotData(data: any): ValidationResult {
+     const errors: string[] = [];
+     let riskScore = 0;
+     const sanitized: Partial<Robot> = {};
 
-    // Name validation
-    if (data.name) {
-      const sanitizedName = this.sanitizeString(data.name);
-      if (sanitizedName.length < 3 || sanitizedName.length > 100) {
-        errors.push('Robot name must be between 3 and 100 characters');
-        riskScore += 10;
-      }
-      sanitized.name = sanitizedName;
-    } else {
-      errors.push('Robot name is required');
-      riskScore += 15;
-    }
+     // Prevent prototype pollution
+     if (this.isPrototypePollution(data)) {
+       errors.push('Prototype pollution detected');
+       riskScore += 100;
+       return { isValid: false, errors, riskScore: 100 };
+     }
+
+     // Name validation
+     if (data.name) {
+       const sanitizedName = this.sanitizeString(data.name);
+       if (sanitizedName.length < 3 || sanitizedName.length > 100) {
+         errors.push('Robot name must be between 3 and 100 characters');
+         riskScore += 10;
+       }
+       sanitized.name = sanitizedName;
+     } else {
+       errors.push('Robot name is required');
+       riskScore += 15;
+     }
 
     // Description validation
     if (data.description) {
@@ -1416,6 +1423,51 @@ class SecurityManager {
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash).toString(36);
+  }
+
+  // Prevent prototype pollution attacks
+  private isPrototypePollution(obj: any): boolean {
+    if (!obj || typeof obj !== 'object') {
+      return false;
+    }
+
+    // Check for dangerous prototype pollution patterns
+    const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
+    
+    for (const key of dangerousKeys) {
+      if (key in obj) {
+        return true;
+      }
+    }
+
+    // Check nested objects
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key) && typeof obj[key] === 'object') {
+        if (this.isPrototypePollution(obj[key])) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  // Safe JSON parsing with prototype pollution protection
+  safeJSONParse(jsonString: string): any {
+    try {
+      // First, parse the JSON
+      const parsed = JSON.parse(jsonString);
+      
+      // Then check for prototype pollution
+      if (this.isPrototypePollution(parsed)) {
+        throw new Error('Prototype pollution detected in JSON');
+      }
+      
+      return parsed;
+    } catch (error) {
+      console.error('JSON parsing error:', error);
+      return null;
+    }
   }
 }
 
