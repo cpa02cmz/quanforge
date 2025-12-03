@@ -570,7 +570,11 @@ class EnhancedSupabaseConnectionPool {
   private async acquireReadReplica(region?: string): Promise<SupabaseClient | null> {
     const settings = settingsManager.getDBSettings();
     
-    if (!settings.readReplicaUrl || !settings.readReplicaAnonKey) {
+    // Check if read replica is configured (using environment variables as fallback)
+    const readReplicaUrl = (settings as any).readReplicaUrl || process.env['VITE_SUPABASE_READ_REPLICA_URL'];
+    const readReplicaAnonKey = (settings as any).readReplicaAnonKey || process.env['VITE_SUPABASE_READ_REPLICA_ANON_KEY'];
+    
+    if (!readReplicaUrl || !readReplicaAnonKey) {
       return null; // No read replica configured
     }
 
@@ -579,7 +583,7 @@ class EnhancedSupabaseConnectionPool {
 
     if (!readClient) {
       try {
-        readClient = new SupabaseClient(settings.readReplicaUrl, settings.readReplicaAnonKey, {
+        readClient = new SupabaseClient(readReplicaUrl, readReplicaAnonKey, {
           auth: {
             persistSession: false,
             autoRefreshToken: false,

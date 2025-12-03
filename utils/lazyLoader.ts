@@ -7,34 +7,35 @@ import { lazy } from 'react';
 // Lazy load heavy components to reduce initial bundle size
 export const lazyLoadComponents = {
   // Chart and visualization components
-  ChartComponents: lazy(() => import('../components/ChartComponents')),
-  BacktestPanel: lazy(() => import('../components/BacktestPanel')),
+  ChartComponents: lazy(() => import('../components/ChartComponents').then(m => ({ default: m.ChartComponents }))),
+  BacktestPanel: lazy(() => import('../components/BacktestPanel').then(m => ({ default: m.BacktestPanel }))),
   
   // Editor and AI components
-  CodeEditor: lazy(() => import('../components/CodeEditor')),
-  ChatInterface: lazy(() => import('../components/ChatInterface')),
+  CodeEditor: lazy(() => import('../components/CodeEditor').then(m => ({ default: m.CodeEditor }))),
+  ChatInterface: lazy(() => import('../components/ChatInterface').then(m => ({ default: m.ChatInterface }))),
   
   // Modal components
-  AISettingsModal: lazy(() => import('../components/AISettingsModal')),
-  DatabaseSettingsModal: lazy(() => import('../components/DatabaseSettingsModal')),
+  AISettingsModal: lazy(() => import('../components/AISettingsModal').then(m => ({ default: m.AISettingsModal }))),
+  DatabaseSettingsModal: lazy(() => import('../components/DatabaseSettingsModal').then(m => ({ default: m.DatabaseSettingsModal }))),
   
   // Advanced components
-  VirtualScrollList: lazy(() => import('../components/VirtualScrollList')),
+  VirtualScrollList: lazy(() => import('../components/VirtualScrollList').then(m => ({ default: m.VirtualScrollList }))),
   
   // Page components
-  Generator: lazy(() => import('../pages/Generator')),
-  Dashboard: lazy(() => import('../pages/Dashboard')),
+  Generator: lazy(() => import('../pages/Generator').then(m => ({ default: m.Generator }))),
+  Dashboard: lazy(() => import('../pages/Dashboard').then(m => ({ default: m.Dashboard }))),
   
-  // Service utilities
-  PerformanceMonitor: lazy(() => import('../services/performanceMonitorEnhanced')),
-  SecurityManager: lazy(() => import('../services/securityManager')),
+  // Service utilities (commented out as they are not components)
+  // PerformanceMonitor: lazy(() => import('../services/performanceMonitorEnhanced')),
+  // SecurityManager: lazy(() => import('../services/securityManager')),
 };
 
 // Preload critical components
 export const preloadComponent = (componentName: keyof typeof lazyLoadComponents) => {
   const component = lazyLoadComponents[componentName];
   if (component && typeof component === 'function') {
-    component();
+    // Trigger preload by accessing the component
+    component.preload?.();
   }
 };
 
@@ -84,7 +85,7 @@ export const dynamicImport = async <T>(
 export const bundleAnalyzer = {
   // Log current bundle size (development only)
   logBundleSize: () => {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env['NODE_ENV'] === 'development') {
       const scripts = document.querySelectorAll('script[src]');
       scripts.forEach(script => {
         const src = script.getAttribute('src');
@@ -157,7 +158,7 @@ export const inlineCriticalCSS = (css: string) => {
 // Progressive loading utilities
 export const progressiveLoader = {
   // Load images progressively
-  loadImage: (src: string, placeholder?: string): Promise<HTMLImageElement> => {
+  loadImage: (src: string): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => resolve(img);
