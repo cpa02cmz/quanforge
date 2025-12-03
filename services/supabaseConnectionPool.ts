@@ -207,32 +207,7 @@ class SupabaseConnectionPool {
           'x-connection-pool': 'true',
           'x-edge-optimized': 'true',
           'x-connection-id': replicaConnectionId,
-        },
-      },
-      // Edge-specific optimizations
-      ...(typeof window === 'undefined' && {
-        // Server-side/edge specific options
-        fetch: (url, options) => {
-          // Add connection pooling headers for edge requests
-          return fetch(url, {
-            ...options,
-            headers: {
-              ...options?.headers,
-              'Connection': 'keep-alive',
-              'Keep-Alive': 'timeout=60',
-              'x-edge-client': 'vercel',
-            },
-          });
-        },
-      }),
-      },
-      db: {
-        schema: 'public',
-      },
-      global: {
-        headers: {
           'x-application-name': 'quanforge-ai',
-          'x-connection-id': replicaConnectionId,
           'x-replica-region': replica.region,
         },
       },
@@ -241,6 +216,23 @@ class SupabaseConnectionPool {
           eventsPerSecond: 5, // Lower for read replicas
         },
       },
+      // Add fetch override for edge-specific optimizations
+      ...(typeof window === 'undefined' ? {
+        global: {
+          fetch: (url, options) => {
+            // Add connection pooling headers for edge requests
+            return fetch(url, {
+              ...options,
+              headers: {
+                ...(options?.headers || {}),
+                'Connection': 'keep-alive',
+                'Keep-Alive': 'timeout=60',
+                'x-edge-client': 'vercel',
+              },
+            });
+          },
+        }
+      } : {})
     });
 
     // Test connection
