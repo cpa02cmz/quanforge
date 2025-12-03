@@ -7,7 +7,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
-import { SEOHead, structuredDataTemplates } from './utils/seo';
+import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
  import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
  import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
  import { frontendOptimizer } from './services/frontendOptimizer';
