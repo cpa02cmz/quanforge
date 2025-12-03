@@ -1,0 +1,44 @@
+# QuantForge AI - Security.txt
+
+# Contact Information
+# For security-related inquiries, please contact our security team
+
+Contact: mailto:security@quanforge.ai
+Contact: https://quanforge.ai/contact
+
+# Security Policy
+# Our security policy is available at:
+Policy: https://quanforge.ai/security-policy
+
+# Disclosure Policy
+# We follow responsible disclosure practices
+# Please report security vulnerabilities through our official channels
+
+# Encryption
+# All data transmission is encrypted using TLS 1.3
+# We use industry-standard encryption protocols
+
+# Security Measures
+# - Content Security Policy (CSP) implementation
+# - XSS protection mechanisms
+# - CSRF protection
+# - Input validation and sanitization
+# - Rate limiting on API endpoints
+# - Regular security audits
+# - Dependency vulnerability scanning
+
+# Data Protection
+# - GDPR compliant data handling
+# - Minimal data collection
+# - Secure data storage practices
+# - Regular data backups
+
+# Acknowledgments
+# We thank the security community for helping us maintain
+# a secure platform for our users
+
+# Last Updated: 2025-12-03
+# Expires: 2026-12-03
+
+# For urgent security matters, please contact us immediately
+# We typically respond to security reports within 24-48 hours

@@ -364,50 +364,240 @@ class DatabasePerformanceMonitor {
     return [...this.alerts];
   }
 
-  // Get query performance report
-  getPerformanceReport(): {
-    summary: DatabaseMetrics;
-    topSlowQueries: Array<{ query: string; time: number; timestamp: number }>;
-    alerts: PerformanceAlert[];
-    recommendations: string[];
-  } {
-    const topSlowQueries = this.queryHistory
-      .filter((q) => q.time > this.SLOW_QUERY_THRESHOLD)
-      .sort((a, b) => b.time - a.time)
-      .slice(0, 10);
+   // Get query performance report
+   getPerformanceReport(): {
+     summary: DatabaseMetrics;
+     topSlowQueries: Array<{ query: string; time: number; timestamp: number }>;
+     alerts: PerformanceAlert[];
+     recommendations: string[];
+     detailedAnalysis: {
+       queryPatternAnalysis: any;
+       indexSuggestions: string[];
+       optimizationOpportunities: string[];
+     };
+   } {
+     const topSlowQueries = this.queryHistory
+       .filter((q) => q.time > this.SLOW_QUERY_THRESHOLD)
+       .sort((a, b) => b.time - a.time)
+       .slice(0, 10);
 
-    const recommendations = this.suggestOptimizations();
+     const recommendations = this.suggestOptimizations();
+     
+     // Generate detailed analysis
+     const detailedAnalysis = {
+       queryPatternAnalysis: this.analyzeQueryPatterns(),
+       indexSuggestions: this.suggestIndexes(),
+       optimizationOpportunities: this.suggestOptimizations()
+     };
 
-    return {
-      summary: this.metrics,
-      topSlowQueries,
-      alerts: this.alerts,
-      recommendations,
-    };
-  }
+     return {
+       summary: this.metrics,
+       topSlowQueries,
+       alerts: this.alerts,
+       recommendations,
+       detailedAnalysis
+     };
+   }
 
-  // Reset metrics
-  resetMetrics(): void {
-    this.metrics = {
-      queryTime: 0,
-      cacheHitRate: 0,
-      connectionPoolUtilization: 0,
-      indexUsage: 0,
-      slowQueries: 0,
-      errorRate: 0,
-      throughput: 0,
-    };
-    this.queryHistory = [];
-    this.alerts = [];
-  }
+   // Reset metrics
+   resetMetrics(): void {
+     this.metrics = {
+       queryTime: 0,
+       cacheHitRate: 0,
+       connectionPoolUtilization: 0,
+       indexUsage: 0,
+       slowQueries: 0,
+       errorRate: 0,
+       throughput: 0,
+     };
+     this.queryHistory = [];
+     this.alerts = [];
+   }
+   
+   /**
+    * Get comprehensive performance trends
+    */
+   getPerformanceTrends(hours: number = 24): {
+     queryTimeTrend: Array<{ timestamp: number; avgTime: number }>;
+     throughputTrend: Array<{ timestamp: number; throughput: number }>;
+     errorRateTrend: Array<{ timestamp: number; errorRate: number }>;
+     cacheHitTrend: Array<{ timestamp: number; cacheHitRate: number }>;
+   } {
+     const now = Date.now();
+     const startTime = now - (hours * 60 * 60 * 1000);
+     
+     // Group queries by time window to calculate trends
+     const timeWindows: Map<number, Array<{ time: number; timestamp: number }>> = new Map();
+     const windowSize = 3600000; // 1 hour in ms
+     
+     this.queryHistory
+       .filter(q => q.timestamp >= startTime)
+       .forEach(q => {
+         const windowStart = Math.floor(q.timestamp / windowSize) * windowSize;
+         if (!timeWindows.has(windowStart)) {
+           timeWindows.set(windowStart, []);
+         }
+         timeWindows.get(windowStart)!.push(q);
+       });
+       
+     // Calculate trends for each time window
+     const sortedWindows = Array.from(timeWindows.entries()).sort(([a], [b]) => a - b);
+     
+     const queryTimeTrend = sortedWindows.map(([timestamp, windowQueries]) => ({
+       timestamp,
+       avgTime: windowQueries.reduce((sum, q) => sum + q.time, 0) / windowQueries.length
+     }));
+     
+     const throughputTrend = sortedWindows.map(([timestamp, windowQueries]) => ({
+       timestamp,
+       throughput: windowQueries.length // Number of queries per hour
+     }));
+     
+     // Calculate error rate trend - for this implementation we'll assume all recorded queries succeeded
+     // In a real implementation, we'd track errors separately
+     const errorRateTrend = sortedWindows.map(([timestamp]) => ({
+       timestamp,
+       errorRate: 0 // Placeholder - would need actual error data
+     }));
+     
+     // Calculate cache hit trend - placeholder for now
+     const cacheHitTrend = sortedWindows.map(([timestamp]) => ({
+       timestamp,
+       cacheHitRate: this.metrics.cacheHitRate // Use overall rate as placeholder
+     }));
+     
+     return {
+       queryTimeTrend,
+       throughputTrend,
+       errorRateTrend,
+       cacheHitTrend
+     };
+   }
+   
+   /**
+    * Get performance impact analysis
+    */
+   getPerformanceImpactAnalysis(): {
+     potentialSavings: {
+       timeSavedMs: number;
+       queriesOptimized: number;
+       estimatedCostReduction: number; // Placeholder for cost estimation
+     };
+     bottleneckAnalysis: Array<{
+       category: 'query' | 'connection' | 'cache' | 'index';
+       severity: 'low' | 'medium' | 'high';
+       impact: number; // 0-100 percentage
+       recommendation: string;
+     }>;
+   } {
+     const bottleneckAnalysis = [];
+     
+     // Query time bottleneck
+     if (this.metrics.queryTime > 500) {
+       bottleneckAnalysis.push({
+         category: 'query' as const,
+         severity: 'high' as const,
+         impact: 80,
+         recommendation: 'Implement query optimization and indexing strategies'
+       });
+     } else if (this.metrics.queryTime > 200) {
+       bottleneckAnalysis.push({
+         category: 'query' as const,
+         severity: 'medium' as const,
+         impact: 50,
+         recommendation: 'Review slow queries and add appropriate indexes'
+       });
+     }
+     
+     // Cache bottleneck
+     if (this.metrics.cacheHitRate < 50) {
+       bottleneckAnalysis.push({
+         category: 'cache' as const,
+         severity: 'high' as const,
+         impact: 70,
+         recommendation: 'Improve caching strategy to reduce database load'
+       });
+     } else if (this.metrics.cacheHitRate < 70) {
+       bottleneckAnalysis.push({
+         category: 'cache' as const,
+         severity: 'medium' as const,
+         impact: 40,
+         recommendation: 'Optimize cache hit rate through better TTL settings'
+       });
+     }
+     
+     // Connection pool bottleneck
+     if (this.metrics.connectionPoolUtilization > 0.85) {
+       bottleneckAnalysis.push({
+         category: 'connection' as const,
+         severity: 'high' as const,
+         impact: 60,
+         recommendation: 'Increase connection pool size or optimize query patterns'
+       });
+     } else if (this.metrics.connectionPoolUtilization > 0.7) {
+       bottleneckAnalysis.push({
+         category: 'connection' as const,
+         severity: 'medium' as const,
+         impact: 30,
+         recommendation: 'Monitor connection usage and consider pool size adjustment'
+       });
+     }
+     
+     // Index usage bottleneck (placeholder - would need actual index stats)
+     if (this.metrics.indexUsage < 0.5) {
+       bottleneckAnalysis.push({
+         category: 'index' as const,
+         severity: 'high' as const,
+         impact: 75,
+         recommendation: 'Implement missing database indexes for common query patterns'
+       });
+     }
+     
+     // Calculate potential savings
+     const slowQueryCount = this.queryHistory.filter(q => q.time > this.SLOW_QUERY_THRESHOLD).length;
+     const avgSlowQueryTime = slowQueryCount > 0 
+       ? this.queryHistory.filter(q => q.time > this.SLOW_QUERY_THRESHOLD).reduce((sum, q) => sum + q.time, 0) / slowQueryCount 
+       : 0;
+       
+     const potentialSavings = {
+       timeSavedMs: slowQueryCount * (avgSlowQueryTime - 100), // Assuming 100ms as optimized time
+       queriesOptimized: slowQueryCount,
+       estimatedCostReduction: slowQueryCount * 0.001 // Placeholder cost estimation
+     };
+     
+     return {
+       potentialSavings,
+       bottleneckAnalysis
+     };
+   }
+   
+   /**
+    * Export performance data for analysis
+    */
+   exportPerformanceData(): string {
+     const report = {
+       timestamp: new Date().toISOString(),
+       metrics: this.metrics,
+       queryCount: this.queryHistory.length,
+       alertCount: this.alerts.length,
+       topSlowQueries: this.queryHistory
+         .sort((a, b) => b.time - a.time)
+         .slice(0, 10)
+         .map(q => ({ query: q.query, time: q.time, timestamp: new Date(q.timestamp).toISOString() })),
+       trends: this.getPerformanceTrends(24),
+       analysis: this.getPerformanceImpactAnalysis()
+     };
+     
+     return JSON.stringify(report, null, 2);
+   }
 
-  // Cleanup
-  destroy(): void {
-    if (this.monitoringInterval) {
-      clearInterval(this.monitoringInterval);
-      this.monitoringInterval = null;
-    }
-  }
+   // Cleanup
+   destroy(): void {
+     if (this.monitoringInterval) {
+       clearInterval(this.monitoringInterval);
+       this.monitoringInterval = null;
+     }
+   }
 }
 
 export const databasePerformanceMonitor = DatabasePerformanceMonitor.getInstance();

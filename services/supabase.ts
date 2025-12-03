@@ -7,6 +7,9 @@ import { robotCache } from './advancedCache';
 import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { smartCache } from './smartCache';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('Supabase');
 
 // Connection retry configuration
 const RETRY_CONFIG = {
@@ -25,18 +28,41 @@ const CACHE_CONFIG = {
 const STORAGE_KEY = 'mock_session';
 const ROBOTS_KEY = 'mock_robots';
 
-// Helper for safe JSON parsing
-const safeParse = (data: string | null, fallback: any) => {
+// Helper for safe JSON parsing with enhanced security
+const safeParse = (data: string | null, fallback: any, dataType: 'robot' | 'strategy' | 'backtest' | 'user' | 'storage' = 'storage') => {
     if (!data) return fallback;
     try {
         const parsed = JSON.parse(data);
-        // Security: Prevent prototype pollution
-        if (parsed && typeof parsed === 'object' && ('__proto__' in parsed || 'constructor' in parsed)) {
-             return fallback;
+        
+        // Enhanced security validation
+        if (parsed && typeof parsed === 'object') {
+            // Prevent prototype pollution
+            if ('__proto__' in parsed || 'constructor' in parsed || 'prototype' in parsed) {
+                logger.warn('Prototype pollution attempt detected in parsed data');
+                return fallback;
+            }
+            
+            // Use security manager for additional validation if not storage type
+            if (dataType !== 'storage') {
+                const validation = securityManager.sanitizeAndValidate(parsed, dataType);
+                if (!validation.isValid) {
+                    logger.warn('Security validation failed for parsed data', validation.errors);
+                    return fallback;
+                }
+                return validation.sanitizedData;
+            }
+            
+            // Additional storage-specific security checks
+            const storageValidation = securityManager.sanitizeAndValidate(parsed, 'user');
+            if (!storageValidation.isValid || storageValidation.riskScore > 30) {
+                logger.warn('High risk data detected in storage', { riskScore: storageValidation.riskScore });
+                return fallback;
+            }
         }
+        
         return parsed;
     } catch (e) {
-        console.error("Failed to parse data from storage:", e);
+        logger.error("Failed to parse data from storage:", e);
         return fallback;
     }
 };

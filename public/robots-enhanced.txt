@@ -1,5 +1,5 @@
 # Enhanced Robots.txt for QuantForge AI
-# Generated: 2025-12-03T00:00:00.000Z
+# Generated: ${new Date().toISOString()}
 
 # Sitemap location
 Sitemap: https://quanforge.ai/sitemap.xml
@@ -204,6 +204,10 @@ Disallow: /
 Host: https://quanforge.ai
 
 # Additional SEO directives
+# Specify preferred domain
+# Disallow: http://quanforge.ai
+# Allow: https://quanforge.ai
+
 # Block parameters that don't affect content
 Disallow: /*?utm_*
 Disallow: /*?fbclid*

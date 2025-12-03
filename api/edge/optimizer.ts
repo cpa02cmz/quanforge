@@ -407,15 +407,11 @@ async function optimizeCache(): Promise<{ optimized: boolean; entries?: number }
  * Optimize database
  */
 async function optimizeDatabase(): Promise<{ optimized: boolean; connections?: number }> {
-  try {
-    // This would trigger database optimizations
-    // For now, return a placeholder
-    return {
-      optimized: true,
-    };
-  } catch (error) {
-    return { optimized: false };
-  }
+  // This would trigger database optimizations
+  // For now, return a placeholder
+  return {
+    optimized: true,
+  };
 }
 
 /**
