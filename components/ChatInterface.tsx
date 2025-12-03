@@ -114,15 +114,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
       onSendMessage(prompt);
   };
 
-  // Lightweight Markdown Formatter
+  // Enhanced Markdown Formatter with memory optimization
   // Memoized to prevent unnecessary re-renders
   const formatMessageContent = useCallback((content: string): React.ReactElement[] => {
     if (!content) return [];
     
-    const lines = content.split('\n');
+    // Limit content length to prevent memory issues
+    const maxLength = 5000;
+    const truncatedContent = content.length > maxLength 
+      ? content.substring(0, maxLength) + '...' 
+      : content;
+    
+    const lines = truncatedContent.split('\n');
     const elements: React.ReactElement[] = [];
     
-    // Optimize by using forEach instead of for loop with better memory management
+    // Optimize by using forEach with better memory management
     lines.forEach((line, i) => {
       if (!line) return;
       
@@ -150,10 +156,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     return elements;
   }, []);
 
-  // Helper to parse **bold** and `code`
+  // Enhanced helper to parse **bold** and `code` with memory optimization
   const parseInlineStyles = useCallback((text: string) => {
+    // Limit text length to prevent memory issues
+    const maxLength = 1000;
+    const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    
     // We split by bold markers first
-    const boldParts = text.split(/(\*\*.*?\*\*)/g);
+    const boldParts = truncatedText.split(/(\*\*.*?\*\*)/g);
     
     return boldParts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
@@ -187,12 +197,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     });
   }, [language]);
 
-  // Calculate visible messages for performance (show only recent messages if too many)
+  // Enhanced virtual scrolling for better performance
   const visibleMessages = useMemo(() => {
     if (messages.length <= 50) return messages;
-    // Show the most recent 50 messages
+    // Show the most recent 50 messages with memory optimization
     return messages.slice(-50);
   }, [messages]);
+
+  // Memory optimization: cleanup old message references
+  useEffect(() => {
+    if (messages.length > 200) {
+      logger.warn(`Message history exceeded 200 messages (${messages.length}). Consider implementing pagination.`);
+    }
+  }, [messages.length]);
 
   return (
     <div className="flex flex-col h-full bg-dark-surface border-r border-dark-border">

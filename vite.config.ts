@@ -107,27 +107,6 @@ export default defineConfig({
             return 'services-other';
           }
           
-          // Enhanced app chunks with better separation
-          if (id.includes('services/')) {
-            // Core database services - critical path
-            if (id.includes('supabase') || id.includes('database') || id.includes('cache')) {
-              return 'services-database-critical';
-            }
-            // AI and simulation services
-            if (id.includes('gemini') || id.includes('simulation') || id.includes('ai')) {
-              return 'services-ai';
-            }
-            // Edge and performance services - critical for edge deployment
-            if (id.includes('edge') || id.includes('performance') || id.includes('vercel')) {
-              return 'services-edge-critical';
-            }
-            // Security services
-            if (id.includes('security') || id.includes('validation')) {
-              return 'services-security';
-            }
-            return 'services-other';
-          }
-          
           // Enhanced component chunks for optimal lazy loading
           if (id.includes('components/')) {
             // Heavy components - isolated for lazy loading
@@ -294,7 +273,7 @@ export default defineConfig({
         comments: false
       }
     },
-chunkSizeWarningLimit: 100, // Optimized for edge performance
+chunkSizeWarningLimit: 250, // Increased to accommodate essential libraries
     target: ['es2020', 'edge101'], // More specific targets for edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,

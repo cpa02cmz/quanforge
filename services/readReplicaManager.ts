@@ -1,5 +1,6 @@
 // Read Replica Optimization Service for Analytics Queries
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { getEnv } from './settingsManager';
 import { queryCache } from './advancedCache';
 import { withErrorHandling } from '../utils/errorHandler';
@@ -24,10 +25,11 @@ class ReadReplicaManager {
   private readonly MAX_METRICS = 1000;
 
   constructor() {
-    this.initializeClients();
+    // Initialize asynchronously without blocking
+    this.initializeClients().catch(console.error);
   }
 
-  private initializeClients() {
+  private async initializeClients() {
     const supabaseUrl = getEnv('VITE_SUPABASE_URL');
     const supabaseAnonKey = getEnv('VITE_SUPABASE_ANON_KEY');
 
@@ -37,10 +39,7 @@ class ReadReplicaManager {
     }
 
     // Primary client for writes
-    this.primaryClient = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false },
-      db: { schema: 'public' }
-    });
+    this.primaryClient = await createDynamicSupabaseClient(supabaseUrl, supabaseAnonKey);
 
     // Read replica configurations (example regions)
     const replicaConfigs: ReadReplicaConfig[] = [
@@ -50,20 +49,10 @@ class ReadReplicaManager {
     ];
 
     // Initialize replica clients
-    replicaConfigs.forEach(config => {
+    // Initialize replica clients asynchronously
+    replicaConfigs.forEach(async (config) => {
       const replicaUrl = supabaseUrl.replace('.supabase.co', `-${config.region}.supabase.co`);
-      const client = createClient(replicaUrl, supabaseAnonKey, {
-        auth: { persistSession: false },
-        db: { schema: 'public' },
-        // Read-only configuration
-        global: {
-          headers: {
-            'X-Read-Replica': 'true',
-            'X-Replica-Region': config.region
-          }
-        }
-      });
-
+      const client = await createDynamicSupabaseClient(replicaUrl, supabaseAnonKey);
       this.replicas.set(config.region, client);
     });
   }
