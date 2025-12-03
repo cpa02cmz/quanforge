@@ -268,58 +268,59 @@ const stopGeneration = () => {
   }, []);
 
   // Handlers
-  const handleSendMessage = async (content: string) => {
-    // Validate input
-    const validationErrors = ValidationService.validateChatMessage(content);
-    if (!ValidationService.isValid(validationErrors)) {
-      showToast(ValidationService.formatErrors(validationErrors), 'error');
-      return;
-    }
+   const handleSendMessage = async (content: string) => {
+     // Validate input
+     const validationErrors = ValidationService.validateChatMessage(content);
+     if (!ValidationService.isValid(validationErrors)) {
+       showToast(ValidationService.formatErrors(validationErrors), 'error');
+       return;
+     }
 
-    // Sanitize input
-    const sanitizedContent = ValidationService.sanitizeInput(content);
-    
-    if (abortControllerRef.current) abortControllerRef.current.abort();
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
+     // Sanitize input
+     const sanitizedContent = ValidationService.sanitizeInput(content);
+     
+     if (abortControllerRef.current) abortControllerRef.current.abort();
+     abortControllerRef.current = new AbortController();
+     const signal = abortControllerRef.current.signal;
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      role: MessageRole.USER,
-      content: sanitizedContent,
-      timestamp: Date.now(),
-    };
-    
-    addMessage(newMessage);
-    const updatedMessages = [...getMessages(), newMessage];
-    dispatch({ type: 'SET_MESSAGES', payload: updatedMessages });
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'generating', message: 'Generating MQL5 code...' } });
+     const newMessage: Message = {
+       id: Date.now().toString(),
+       role: MessageRole.USER,
+       content: sanitizedContent,
+       timestamp: Date.now(),
+     };
+     
+     addMessage(newMessage);
+     const updatedMessages = [...getMessages(), newMessage];
+     dispatch({ type: 'SET_MESSAGES', payload: updatedMessages });
+     dispatch({ type: 'SET_LOADING', payload: true });
+     dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'generating', message: 'Generating MQL5 code...' } });
 
-    try {
-      const { generateMQL5Code } = await loadGeminiService();
-      const response = await generateMQL5Code(content, state.code, state.strategyParams, updatedMessages, signal);
-      dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'processing', message: 'Processing response...' } });
-      await processAIResponse(response);
-    } catch (error: any) {
-      if (error.name === 'AbortError') return;
-      
-      logger.error(error);
-      showToast(error.message || "Error generating response", 'error');
-      dispatch({ type: 'ADD_MESSAGE', payload: {
-          id: Date.now().toString(),
-          role: MessageRole.MODEL,
-          content: "Sorry, I encountered an error generating the response.",
-          timestamp: Date.now()
-      }});
-    } finally {
-      if (!signal.aborted) {
-        dispatch({ type: 'SET_LOADING', payload: false });
-        dispatch({ type: 'SET_LOADING_PROGRESS', payload: null });
-      }
-      abortControllerRef.current = null;
-    }
-  };
+     try {
+       const { generateMQL5Code } = await loadGeminiService();
+       // Use the sanitized content for API call to ensure security
+       const response = await generateMQL5Code(sanitizedContent, state.code, state.strategyParams, updatedMessages, signal);
+       dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'processing', message: 'Processing response...' } });
+       await processAIResponse(response);
+     } catch (error: any) {
+       if (error.name === 'AbortError') return;
+       
+       logger.error(error);
+       showToast(error.message || "Error generating response", 'error');
+       dispatch({ type: 'ADD_MESSAGE', payload: {
+           id: Date.now().toString(),
+           role: MessageRole.MODEL,
+           content: "Sorry, I encountered an error generating the response.",
+           timestamp: Date.now()
+       }});
+     } finally {
+       if (!signal.aborted) {
+         dispatch({ type: 'SET_LOADING', payload: false });
+         dispatch({ type: 'SET_LOADING_PROGRESS', payload: null });
+       }
+       abortControllerRef.current = null;
+     }
+   };
 
   const handleApplySettings = async () => {
       // Validate strategy parameters before applying

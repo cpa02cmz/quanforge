@@ -134,52 +134,92 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-// Handle API requests with network-first strategy
-async function handleAPIRequest(request) {
-  const cache = await caches.open(API_CACHE);
-  const url = new URL(request.url);
-  
-  try {
-    // Try network first for API requests
-    const networkResponse = await fetch(request);
-    
-    if (networkResponse.ok) {
-      // Cache successful responses
-      const responseClone = networkResponse.clone();
-      await cache.put(request, responseClone);
-    }
-    
-    return networkResponse;
-  } catch (error) {
-    console.warn('API request failed, trying cache:', error);
-    
-    // Fallback to cache
-    const cachedResponse = await cache.match(request);
-    
-    if (cachedResponse) {
-      // Add stale-while-revalidate header
-      const headers = new Headers(cachedResponse.headers);
-      headers.set('X-Served-By', 'cache');
-      headers.set('X-Cache-Status', 'stale');
-      
-      return new Response(cachedResponse.body, {
-        status: cachedResponse.status,
-        statusText: cachedResponse.statusText,
-        headers
-      });
-    }
-    
-    // Return offline response for API failures
-    return new Response(JSON.stringify({ 
-      error: 'Offline', 
-      message: 'No network connection available' 
-    }), {
-      status: 503,
-      statusText: 'Service Unavailable',
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-}
+ // Handle API requests with network-first strategy with improved caching
+ async function handleAPIRequest(request) {
+   const cache = await caches.open(API_CACHE);
+   const url = new URL(request.url);
+   
+   try {
+     // Try network first for API requests
+     const networkResponse = await fetch(request);
+     
+     if (networkResponse.ok) {
+       // Cache successful responses with expiration headers
+       const responseClone = networkResponse.clone();
+       // Add expiration time to response for cache management
+       const expirationTime = Date.now() + CACHE_STRATEGIES.API.maxAge;
+       const headers = new Headers(responseClone.headers);
+       headers.set('X-Cache-Expiration', expirationTime.toString());
+       headers.set('X-Cache-Strategy', 'api');
+       
+       await cache.put(request, new Response(responseClone.body, {
+         status: responseClone.status,
+         statusText: responseClone.statusText,
+         headers
+       }));
+     }
+     
+     return networkResponse;
+   } catch (error) {
+     console.warn('API request failed, trying cache:', error);
+     
+     // Fallback to cache
+     const cachedResponse = await cache.match(request);
+     
+     if (cachedResponse) {
+       // Check if cached response is still valid
+       const expiration = cachedResponse.headers.get('X-Cache-Expiration');
+       if (expiration && Date.now() < parseInt(expiration)) {
+         // Still valid
+         return cachedResponse;
+       } else {
+         // Expired, but return stale version while revalidating in background
+         const headers = new Headers(cachedResponse.headers);
+         headers.set('X-Served-By', 'cache');
+         headers.set('X-Cache-Status', 'stale');
+         headers.set('X-Stale-While-Revalidate', 'true');
+         
+         // Revalidate in background
+         fetch(request).then(async (networkResponse) => {
+           if (networkResponse.ok) {
+             const responseClone = networkResponse.clone();
+             const newHeaders = new Headers(responseClone.headers);
+             newHeaders.set('X-Cache-Expiration', (Date.now() + CACHE_STRATEGIES.API.maxAge).toString());
+             newHeaders.set('X-Cache-Strategy', 'api');
+             
+             await cache.put(request, new Response(responseClone.body, {
+               status: responseClone.status,
+               statusText: responseClone.statusText,
+               headers: newHeaders
+             }));
+             console.log('API cache updated in background:', request.url);
+           }
+         }).catch(() => {
+           console.warn('Background revalidation failed for:', request.url);
+         });
+         
+         return new Response(cachedResponse.body, {
+           status: cachedResponse.status,
+           statusText: cachedResponse.statusText,
+           headers
+         });
+       }
+     }
+     
+     // Return offline response for API failures
+     return new Response(JSON.stringify({ 
+       error: 'Offline', 
+       message: 'No network connection available' 
+     }), {
+       status: 503,
+       statusText: 'Service Unavailable',
+       headers: { 
+         'Content-Type': 'application/json',
+         'X-Cache-Status': 'offline'
+       }
+     });
+   }
+ }
 
 // Handle static assets with cache-first strategy
 async function handleStaticAsset(request) {

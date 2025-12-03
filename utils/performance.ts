@@ -17,10 +17,12 @@ interface PageLoadMetrics {
   ttfb: number; // Time to First Byte
 }
 
-class PerformanceMonitor {
-  private metrics: PerformanceMetric[] = [];
-  private observers: PerformanceObserver[] = [];
-  private isSupported = typeof window !== 'undefined' && 'performance' in window;
+ class PerformanceMonitor {
+   private static readonly CRITICAL_PERFORMANCE_METRICS = new Set(['fcp', 'lcp', 'cls', 'fid', 'ttfb']);
+   
+   private metrics: PerformanceMetric[] = [];
+   private observers: PerformanceObserver[] = [];
+   private isSupported = typeof window !== 'undefined' && 'performance' in window;
 
   constructor() {
     if (this.isSupported && import.meta.env.PROD) {
@@ -99,35 +101,35 @@ class PerformanceMonitor {
     }
   }
 
-  recordMetric(name: string, value: number) {
-    const metric: PerformanceMetric = {
-      name,
-      value,
-      timestamp: Date.now(),
-    };
+   recordMetric(name: string, value: number) {
+     const metric: PerformanceMetric = {
+       name,
+       value,
+       timestamp: Date.now(),
+     };
 
-    this.metrics.push(metric);
-    
-    // Keep only last 50 metrics
-    if (this.metrics.length > 50) {
-      this.metrics = this.metrics.slice(-50);
-    }
+     this.metrics.push(metric);
+     
+     // Keep only last 50 metrics
+     if (this.metrics.length > 50) {
+       this.metrics = this.metrics.slice(-50);
+     }
 
-    // Log in production for monitoring
-    if (import.meta.env.PROD) {
-      logger.log(`Performance Metric [${name}]:`, value);
-    }
+     // Log in production for monitoring
+     if (import.meta.env.PROD) {
+       logger.log(`Performance Metric [${name}]:`, value);
+     }
 
-    // Store critical metrics in localStorage
-    if (['fcp', 'lcp', 'cls', 'fid', 'ttfb'].includes(name)) {
-      try {
-        const key = `perf_${name}`;
-        localStorage.setItem(key, value.toString());
-      } catch (e) {
-        // Ignore storage errors
-      }
-    }
-  }
+     // Store critical metrics in localStorage
+     if (PerformanceMonitor.CRITICAL_PERFORMANCE_METRICS.has(name)) {
+       try {
+         const key = `perf_${name}`;
+         localStorage.setItem(key, value.toString());
+       } catch (e) {
+         // Ignore storage errors
+       }
+     }
+   }
 
   getMetrics(): PerformanceMetric[] {
     return [...this.metrics];
