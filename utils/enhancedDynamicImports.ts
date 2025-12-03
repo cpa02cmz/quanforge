@@ -35,7 +35,6 @@ class EnhancedDynamicImports {
   private preloadedModules = new Set<string>();
   private loadingPromises = new Map<string, Promise<any>>();
   private metrics: LoadMetrics;
-  private retryTimers = new Map<string, NodeJS.Timeout>();
 
   constructor() {
     this.metrics = {
@@ -284,7 +283,10 @@ class EnhancedDynamicImports {
     // Remove oldest 25% of entries
     const toRemove = Math.floor(entries.length * 0.25);
     for (let i = 0; i < toRemove; i++) {
-      this.cache.delete(entries[i][0]);
+      const key = entries[i]?.[0];
+      if (key) {
+        this.cache.delete(key);
+      }
     }
   }
 
@@ -329,7 +331,7 @@ class EnhancedDynamicImports {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             const element = entry.target as HTMLElement;
-            const componentPath = element.dataset.preloadComponent;
+            const componentPath = element.dataset['preloadComponent'];
             
             if (componentPath) {
               this.preloadComponent(componentPath, 'medium');

@@ -24,6 +24,27 @@ interface EdgeMetric {
   region: string;
 }
 
+// Add missing edge performance metrics
+interface EdgePerformanceMetrics {
+  coldStartMetrics: {
+    frequency: number;
+    averageDuration: number;
+    regions: Record<string, number>;
+  };
+  cacheEfficiency: {
+    hitRate: number;
+    missRate: number;
+    staleRate: number;
+  };
+  regionPerformance: {
+    [region: string]: {
+      averageResponseTime: number;
+      errorRate: number;
+      requestCount: number;
+    };
+  };
+}
+
 interface BundleMetric {
   name: string;
   size: number;
@@ -40,6 +61,21 @@ class PerformanceMonitor {
   private bundleMetrics: BundleMetric[] = [];
   private isMonitoring = false;
   private sampleRate = 0.1; // 10% sampling rate
+  // Add missing edge-specific monitoring
+  private edgePerformanceMetrics: EdgePerformanceMetrics = {
+    coldStartMetrics: {
+      frequency: 0,
+      averageDuration: 0,
+      regions: {}
+    },
+    cacheEfficiency: {
+      hitRate: 0,
+      missRate: 0,
+      staleRate: 0
+    },
+    regionPerformance: {}
+  };
+  private coldStartThreshold = 1000; // 1 second threshold for cold starts
 
   private constructor() {
     this.initializeMonitoring();
@@ -63,6 +99,11 @@ class PerformanceMonitor {
     this.monitorEdgePerformance();
     this.monitorBundleLoading();
     this.monitorUserInteractions();
+    // Add missing edge monitoring
+    this.monitorEdgePerformance();
+    this.monitorColdStarts();
+    this.monitorRegionalPerformance();
+    this.monitorCacheEfficiency();
   }
 
   private async monitorCoreWebVitals(): Promise<void> {
@@ -119,11 +160,104 @@ class PerformanceMonitor {
           
           this.edgeMetrics.push(edgeMetric);
           this.sendMetric('edge-performance', edgeMetric);
+          
+          // Update region performance metrics
+          this.updateRegionPerformance(edgeMetric);
         }
       }
     });
 
     observer.observe({ entryTypes: ['resource'] });
+  }
+
+  /**
+   * Monitor cold starts for edge functions
+   */
+  private monitorColdStarts(): void {
+    // Monitor navigation timing for cold start detection
+    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+    
+    if (navigation) {
+      const serverResponseTime = navigation.responseStart - navigation.requestStart;
+      
+      if (serverResponseTime > this.coldStartThreshold) {
+        const region = this.detectEdgeRegion();
+        
+        this.edgePerformanceMetrics.coldStartMetrics.frequency++;
+        this.edgePerformanceMetrics.coldStartMetrics.averageDuration = 
+          (this.edgePerformanceMetrics.coldStartMetrics.averageDuration + serverResponseTime) / 2;
+        
+        if (!this.edgePerformanceMetrics.coldStartMetrics.regions[region]) {
+          this.edgePerformanceMetrics.coldStartMetrics.regions[region] = 0;
+        }
+        this.edgePerformanceMetrics.coldStartMetrics.regions[region]++;
+        
+        this.sendMetric('cold-start', {
+          duration: serverResponseTime,
+          region,
+          threshold: this.coldStartThreshold
+        });
+      }
+    }
+  }
+
+  /**
+   * Monitor regional performance
+   */
+  private monitorRegionalPerformance(): void {
+    // This would be enhanced with actual region detection from headers
+    const region = this.detectEdgeRegion();
+    
+    if (!this.edgePerformanceMetrics.regionPerformance[region]) {
+      this.edgePerformanceMetrics.regionPerformance[region] = {
+        averageResponseTime: 0,
+        errorRate: 0,
+        requestCount: 0
+      };
+    }
+  }
+
+  /**
+   * Monitor cache efficiency
+   */
+  private monitorCacheEfficiency(): void {
+    const totalRequests = this.edgeMetrics.length;
+    if (totalRequests === 0) return;
+
+    const cacheHits = this.edgeMetrics.filter(m => m.cache === 'hit').length;
+    const cacheMisses = this.edgeMetrics.filter(m => m.cache === 'miss').length;
+    const cacheStale = this.edgeMetrics.filter(m => m.cache === 'stale').length;
+
+    this.edgePerformanceMetrics.cacheEfficiency.hitRate = (cacheHits / totalRequests) * 100;
+    this.edgePerformanceMetrics.cacheEfficiency.missRate = (cacheMisses / totalRequests) * 100;
+    this.edgePerformanceMetrics.cacheEfficiency.staleRate = (cacheStale / totalRequests) * 100;
+  }
+
+  /**
+   * Update region performance metrics
+   */
+  private updateRegionPerformance(metric: EdgeMetric): void {
+    const region = metric.region;
+    
+    if (!this.edgePerformanceMetrics.regionPerformance[region]) {
+      this.edgePerformanceMetrics.regionPerformance[region] = {
+        averageResponseTime: 0,
+        errorRate: 0,
+        requestCount: 0
+      };
+    }
+
+    const regionMetrics = this.edgePerformanceMetrics.regionPerformance[region];
+    regionMetrics.requestCount++;
+    
+    // Update average response time
+    regionMetrics.averageResponseTime = 
+      (regionMetrics.averageResponseTime * (regionMetrics.requestCount - 1) + metric.duration) / regionMetrics.requestCount;
+    
+    // Update error rate (status >= 400)
+    if (metric.status >= 400) {
+      regionMetrics.errorRate = ((regionMetrics.errorRate * (regionMetrics.requestCount - 1)) + 1) / regionMetrics.requestCount;
+    }
   }
 
   private monitorBundleLoading(): void {
@@ -321,6 +455,7 @@ class PerformanceMonitor {
       totalGzippedSize: number;
       averageLoadTime: number;
     };
+    edgeMetrics: EdgePerformanceMetrics;
   } {
     const latestVitals = this.coreWebVitals[this.coreWebVitals.length - 1] || {};
     
@@ -354,7 +489,8 @@ class PerformanceMonitor {
         totalSize,
         totalGzippedSize,
         averageLoadTime
-      }
+      },
+      edgeMetrics: { ...this.edgePerformanceMetrics }
     };
   }
 
@@ -363,6 +499,53 @@ class PerformanceMonitor {
     this.coreWebVitals = [];
     this.edgeMetrics = [];
     this.bundleMetrics = [];
+    // Clear edge metrics
+    this.edgePerformanceMetrics = {
+      coldStartMetrics: {
+        frequency: 0,
+        averageDuration: 0,
+        regions: {}
+      },
+      cacheEfficiency: {
+        hitRate: 0,
+        missRate: 0,
+        staleRate: 0
+      },
+      regionPerformance: {}
+    };
+  }
+
+  /**
+   * Get edge-specific performance metrics
+   */
+  getEdgePerformanceMetrics(): EdgePerformanceMetrics {
+    return { ...this.edgePerformanceMetrics };
+  }
+
+  /**
+   * Get cold start statistics
+   */
+  getColdStartStats(): {
+    frequency: number;
+    averageDuration: number;
+    regions: Record<string, number>;
+    threshold: number;
+  } {
+    return {
+      ...this.edgePerformanceMetrics.coldStartMetrics,
+      threshold: this.coldStartThreshold
+    };
+  }
+
+  /**
+   * Get regional performance breakdown
+   */
+  getRegionalPerformance(): Record<string, {
+    averageResponseTime: number;
+    errorRate: number;
+    requestCount: number;
+  }> {
+    return { ...this.edgePerformanceMetrics.regionPerformance };
   }
 
   setSampleRate(rate: number): void {

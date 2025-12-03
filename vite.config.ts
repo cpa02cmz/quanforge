@@ -28,11 +28,20 @@ export default defineConfig({
             }
             // AI services - isolated for better tree-shaking
             if (id.includes('@google/genai')) {
-              return 'vendor-ai';
+              return 'vendor-ai-gemini';
             }
-            // Database services - isolated chunk
+            // Enhanced Supabase splitting for better tree-shaking
+            if (id.includes('@supabase/realtime-js')) {
+              return 'vendor-supabase-realtime';
+            }
+            if (id.includes('@supabase/storage-js')) {
+              return 'vendor-supabase-storage';
+            }
+            if (id.includes('@supabase/functions-js')) {
+              return 'vendor-supabase-functions';
+            }
             if (id.includes('@supabase')) {
-              return 'vendor-supabase';
+              return 'vendor-supabase-core';
             }
             // Security and utilities - consolidated
             if (id.includes('dompurify') || id.includes('lz-string')) {
@@ -205,7 +214,16 @@ export default defineConfig({
         conditionals: true,
         side_effects: true,
         // New optimizations for better tree-shaking
-        toplevel: true
+        toplevel: true,
+        // Add missing optimizations for better compression
+        arrows: true,
+        computed_props: true,
+        hoist_props: true,
+        properties: true,
+        // Edge-specific optimizations
+        keep_fargs: false,
+        keep_fnames: false,
+        ecma: 2020
       },
       mangle: {
         safari10: true,
@@ -214,7 +232,11 @@ export default defineConfig({
         properties: {
           regex: /^_/
         },
-        reserved: ['React', 'useState', 'useEffect', 'useRef', 'useCallback', 'useMemo', 'lazy']
+        reserved: ['React', 'useState', 'useEffect', 'useRef', 'useCallback', 'useMemo', 'lazy'],
+        // Add missing mangling options
+        keep_classnames: false,
+        keep_fnames: false,
+        module: false
       },
       format: {
         comments: false
@@ -235,7 +257,9 @@ export default defineConfig({
     // Dynamic import optimization
     dynamicImportVarsOptions: {
       warnOnError: false
-    }
+    },
+    // Add missing optimizations for better edge performance
+    // Enhanced tree-shaking is handled in rollupOptions
   },
   resolve: {
     alias: {
