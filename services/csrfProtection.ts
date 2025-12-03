@@ -186,7 +186,7 @@ class CSRFProtection {
   /**
    * Validate CSRF token from request
    */
-  validateToken(token: string): boolean {
+   validateTokenInternal(token: string): boolean {
     if (!token || !this.currentToken) {
       return false;
     }
@@ -216,7 +216,7 @@ class CSRFProtection {
       return false;
     }
 
-    return this.validateToken(token);
+     return this.validateTokenInternal(token);
   }
 
   /**
@@ -364,7 +364,7 @@ export const csrfProtection = CSRFProtection.getInstance();
 
 // Utility functions for common use cases
 export const withCSRF = (fetch: typeof global.fetch) => {
-  return async (url: string, options?: RequestInit) => {
+  return async (url: string, options?: Parameters<typeof fetch>[1]) => {
     const optionsWithCSRF = csrfProtection.addToFetchOptions(options);
     return fetch(url, optionsWithCSRF);
   };
