@@ -142,12 +142,14 @@ useEffect(() => {
     initializeServices();
   }, []);
 
-  // Memoize the loading component to prevent re-renders
-  const LoadingComponent = useMemo(() => (
-    <div className="flex items-center justify-center h-screen bg-dark-bg text-white">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500"></div>
-    </div>
-  ), []);
+   // Enhanced loading component with better UX
+   const LoadingComponent = useMemo(() => (
+     <div className="flex flex-col items-center justify-center h-screen bg-dark-bg text-white">
+       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mb-4"></div>
+       <p className="text-lg font-medium">Loading QuantForge AI...</p>
+       <p className="text-sm text-gray-400 mt-2">Initializing your trading environment</p>
+     </div>
+   ), []);
 
   if (loading) {
     return LoadingComponent;

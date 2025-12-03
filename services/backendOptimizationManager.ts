@@ -540,40 +540,222 @@ class BackendOptimizationManager {
      }
    }
    
-   /**
+/**
     * Get optimization recommendations across all systems
     */
-   async getCrossSystemOptimizationRecommendations(client: SupabaseClient): Promise<{
-     database: string[];
-     cache: string[];
-     edge: string[];
-     overall: string[];
-   }> {
-     const dbRecommendations = (await this.getQueryOptimizationRecommendations(client)).recommendations || [];
-     const cacheStats = robotCache.getStats();
-     const edgeRecommendations = edgeOptimizer.getOptimizationRecommendations();
-     
-     const overallRecommendations: string[] = [];
-     
-     if (cacheStats.hitRate < 70) {
-       overallRecommendations.push('Cache hit rate is below optimal threshold, consider increasing TTL or adding more cache warming');
-     }
-     
-     if (this.config.enableQueryOptimization) {
-       const queryAnalysis = queryOptimizer.getPerformanceAnalysis();
-       if (queryAnalysis.averageExecutionTime > 500) {
-         overallRecommendations.push('Average query execution time is high, consider adding more indexes');
-       }
-     }
-     
-     return {
-       database: dbRecommendations,
-       cache: cacheStats.hitRate < 70 ? ['Low cache hit rate - optimize caching strategy'] : [],
-       edge: edgeRecommendations,
-       overall: overallRecommendations
-     };
-   }
-}
+    async getCrossSystemOptimizationRecommendations(client: SupabaseClient): Promise<{
+      database: string[];
+      cache: string[];
+      edge: string[];
+      overall: string[];
+      priority: 'high' | 'medium' | 'low';
+    }> {
+      const dbRecommendations = (await this.getQueryOptimizationRecommendations(client)).recommendations || [];
+      const cacheStats = robotCache.getStats();
+      const edgeRecommendations = edgeOptimizer.getOptimizationRecommendations();
+      
+      const overallRecommendations: string[] = [];
+      
+      // Cross-system correlation analysis
+      const metrics = await this.collectMetrics();
+      
+      // If cache hit rate is low AND database queries are slow, recommend both caching and indexing
+      if (cacheStats.hitRate < 60 && metrics.database.queryTime > 300) {
+        overallRecommendations.push(
+          'Low cache hit rate combined with slow database queries detected. ' +
+          'Recommend enabling full caching strategy with database index optimization.'
+        );
+      }
+      
+      // If edge functions have cold starts AND database queries are slow, recommend pre-warming
+      if (metrics.edge.coldStartCount > 3 && metrics.database.queryTime > 300) {
+        overallRecommendations.push(
+          'Edge cold starts combined with slow database queries. ' +
+          'Recommend implementing connection pooling and edge pre-warming.'
+        );
+      }
+      
+      // If error rates are high across systems, recommend circuit breaker
+      if (metrics.database.errorRate > 0.05 || metrics.edge.errorRate > 0.05) {
+        overallRecommendations.push(
+          'High error rates detected. Consider implementing circuit breaker pattern and retry logic.'
+        );
+      }
+      
+      // Determine priority based on severity
+      let priority: 'high' | 'medium' | 'low' = 'medium';
+      if (metrics.database.queryTime > 1000 || metrics.edge.coldStartCount > 10 || metrics.database.errorRate > 0.1) {
+        priority = 'high';
+      } else if (cacheStats.hitRate < 50 || metrics.database.queryTime > 500) {
+        priority = 'medium';
+      } else {
+        priority = 'low';
+      }
+      
+      return {
+        database: dbRecommendations,
+        cache: cacheStats.hitRate < 70 ? ['Low cache hit rate - optimize caching strategy'] : [],
+        edge: edgeRecommendations,
+        overall: overallRecommendations,
+        priority
+      };
+    }
+    
+    /**
+     * Perform predictive optimization based on usage patterns
+     */
+    async performPredictiveOptimization(client: SupabaseClient): Promise<{
+      success: boolean;
+      message: string;
+      optimizationsApplied: number;
+      predictedPerformanceGain: number;
+    }> {
+      try {
+        // Analyze usage patterns to predict optimization opportunities
+        const usagePatterns = await this.analyzeUsagePatterns(client);
+        
+        let optimizationsApplied = 0;
+        let predictedPerformanceGain = 0;
+        
+        // Apply predictive optimizations based on patterns
+        if (usagePatterns.frequentSearches) {
+          // Pre-warm search-related caches
+          await this.warmupCommonCaches();
+          optimizationsApplied++;
+          predictedPerformanceGain += 15; // Estimated 15% improvement
+        }
+        
+        if (usagePatterns.highQueryLoad) {
+          // Optimize query patterns
+          await this.optimizeQueries();
+          optimizationsApplied++;
+          predictedPerformanceGain += 10; // Estimated 10% improvement
+        }
+        
+        if (usagePatterns.edgeColdStarts) {
+          // Adjust edge function warmup intervals
+          await this.optimizeEdgeFunctions();
+          optimizationsApplied++;
+          predictedPerformanceGain += 20; // Estimated 20% improvement
+        }
+        
+        return {
+          success: true,
+          message: `Predictive optimization completed with ${optimizationsApplied} optimizations applied`,
+          optimizationsApplied,
+          predictedPerformanceGain
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: `Predictive optimization failed: ${error}`,
+          optimizationsApplied: 0,
+          predictedPerformanceGain: 0
+        };
+      }
+    }
+    
+    /**
+     * Analyze usage patterns to inform optimization decisions
+     */
+    private async analyzeUsagePatterns(client: SupabaseClient): Promise<{
+      frequentSearches: boolean;
+      highQueryLoad: boolean;
+      edgeColdStarts: boolean;
+      peakHours: number[];
+      commonQueryPatterns: string[];
+    }> {
+      // This would typically analyze real usage data from logs or metrics
+      // For now, we'll simulate pattern detection based on current metrics
+      const currentMetrics = await this.collectMetrics();
+      
+      return {
+        frequentSearches: currentMetrics.cache.hitRate < 60, // Low cache hit rate suggests frequent new searches
+        highQueryLoad: currentMetrics.database.queryTime > 300, // High query times suggest high load
+        edgeColdStarts: currentMetrics.edge.coldStartCount > 5, // Multiple cold starts suggest insufficient warming
+        peakHours: [9, 13, 17], // Simulated peak hours
+        commonQueryPatterns: ['robots_list', 'search_robots', 'user_strategies'] // Common patterns
+      };
+    }
+    
+    /**
+     * Optimize the entire system based on current load and usage patterns
+     */
+    async optimizeSystem(client: SupabaseClient, options?: {
+      targetPerformanceGain?: number;
+      maxExecutionTime?: number;
+      priority: 'performance' | 'cost' | 'reliability';
+    }): Promise<{
+      success: boolean;
+      appliedOptimizations: string[];
+      estimatedPerformanceGain: number;
+      executionTime: number;
+    }> {
+      const startTime = Date.now();
+      const targetGain = options?.targetPerformanceGain || 25;
+      const maxTime = options?.maxExecutionTime || 30000; // 30 seconds max
+      const priority = options?.priority || 'performance';
+      
+      const appliedOptimizations: string[] = [];
+      let estimatedPerformanceGain = 0;
+      
+      try {
+        // First, get current metrics to understand the system state
+        const currentMetrics = await this.collectMetrics();
+        
+        // Apply optimizations based on priority and current bottlenecks
+        if (priority === 'performance' || currentMetrics.database.queryTime > 500) {
+          // Optimize database queries
+          await this.optimizeQueries();
+          appliedOptimizations.push('Database query optimization');
+          estimatedPerformanceGain += 15;
+        }
+        
+        if (priority === 'performance' || currentMetrics.cache.hitRate < 70) {
+          // Optimize caching
+          await this.optimizeCaching();
+          appliedOptimizations.push('Cache optimization');
+          estimatedPerformanceGain += 20;
+        }
+        
+        if (priority === 'performance' || currentMetrics.edge.coldStartCount > 3) {
+          // Optimize edge functions
+          await this.optimizeEdgeFunctions();
+          appliedOptimizations.push('Edge function optimization');
+          estimatedPerformanceGain += 10;
+        }
+        
+        // Run comprehensive optimization if needed
+        if (estimatedPerformanceGain < targetGain) {
+          const compResult = await this.runComprehensiveOptimization(client);
+          if (compResult.success) {
+            appliedOptimizations.push('Comprehensive optimization');
+            estimatedPerformanceGain += compResult.details.overallScore * 0.5; // Scale down the score
+          }
+        }
+        
+        // Check execution time constraint
+        const executionTime = Date.now() - startTime;
+        if (executionTime > maxTime) {
+          console.warn(`System optimization exceeded time limit: ${executionTime}ms > ${maxTime}ms`);
+        }
+        
+        return {
+          success: true,
+          appliedOptimizations,
+          estimatedPerformanceGain: Math.min(estimatedPerformanceGain, 100), // Cap at 100%
+          executionTime
+        };
+      } catch (error) {
+        return {
+          success: false,
+          appliedOptimizations,
+          estimatedPerformanceGain: 0,
+          executionTime: Date.now() - startTime
+        };
+      }
+    }
+ }
 
 // Singleton instance
 export const backendOptimizationManager = new BackendOptimizationManager();

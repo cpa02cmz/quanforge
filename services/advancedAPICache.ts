@@ -69,40 +69,41 @@ class AdvancedAPICache {
     }
   }
   
-  private handleStorageChange = (event: StorageEvent) => {
-    if (event.key === this.storageKey && event.newValue) {
-      try {
-        const data = JSON.parse(event.newValue);
-        this.cache = new Map(data);
-      } catch (e) {
-        console.warn('Failed to sync cache from storage:', e);
-      }
-    }
-  };
+   private handleStorageChange = (event: StorageEvent) => {
+     if (event.key === this.storageKey && event.newValue) {
+       try {
+         const data = JSON.parse(event.newValue);
+         this.cache = new Map(data);
+       } catch (e) {
+         console.error('Failed to sync cache from storage:', e);
+       }
+     }
+   };
   
-  private saveToStorage(): void {
-    if (typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem(this.storageKey, JSON.stringify(Array.from(this.cache.entries())));
-      } catch (e) {
-        console.warn('Failed to save cache to storage:', e);
-      }
-    }
-  }
+   private saveToStorage(): void {
+     if (typeof localStorage !== 'undefined') {
+       try {
+         localStorage.setItem(this.storageKey, JSON.stringify(Array.from(this.cache.entries())));
+       } catch (e) {
+         // Storage might be full or unavailable, handle gracefully
+         console.error('Failed to save cache to storage:', e);
+       }
+     }
+   }
   
-  private loadFromStorage(): void {
-    if (typeof localStorage !== 'undefined') {
-      try {
-        const stored = localStorage.getItem(this.storageKey);
-        if (stored) {
-          const data = JSON.parse(stored);
-          this.cache = new Map(data);
-        }
-      } catch (e) {
-        console.warn('Failed to load cache from storage:', e);
-      }
-    }
-  }
+   private loadFromStorage(): void {
+     if (typeof localStorage !== 'undefined') {
+       try {
+         const stored = localStorage.getItem(this.storageKey);
+         if (stored) {
+           const data = JSON.parse(stored);
+           this.cache = new Map(data);
+         }
+       } catch (e) {
+         console.error('Failed to load cache from storage:', e);
+       }
+     }
+   }
   
 private generateKey(url: string, options?: RequestInit): string {
      // Create a unique key based on URL and request options

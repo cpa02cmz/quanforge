@@ -12,7 +12,7 @@ interface EnhancedSEOProps {
   type?: 'website' | 'article' | 'software';
   structuredData?: Record<string, any>[];
   enableAnalytics?: boolean;
-  pageType?: 'homepage' | 'generator' | 'dashboard' | 'wiki' | 'blog' | 'other';
+  pageType?: 'homepage' | 'generator' | 'dashboard' | 'wiki' | 'blog' | 'faq' | 'other';
   customMeta?: Record<string, string>;
   jsonLd?: Record<string, any>[];
   alternateLanguages?: Record<string, string>;
@@ -96,6 +96,18 @@ const PAGE_SEO_CONFIGS: Record<string, Partial<PageSEOData>> = {
       { name: 'Home', url: 'https://quanforge.ai/' },
       { name: 'Wiki', url: 'https://quanforge.ai/wiki' }
     ]
+  },
+  faq: {
+    title: 'FAQ - QuantForge AI Trading Robot Generator',
+    description: 'Frequently asked questions about QuantForge AI. Learn how to create MQL5 trading robots, pricing, features, and technical support.',
+    keywords: [
+      'QuantForge AI FAQ', 'MQL5 generator questions', 'trading robot help',
+      'Expert Advisor FAQ', 'MetaTrader 5 support', 'AI trading bot questions'
+    ],
+    breadcrumbs: [
+      { name: 'Home', url: 'https://quanforge.ai/' },
+      { name: 'FAQ', url: 'https://quanforge.ai/faq' }
+    ]
   }
 };
 
@@ -157,7 +169,43 @@ export const EnhancedSEO: React.FC<EnhancedSEOProps> = ({
       data.push(structuredDataTemplates.webPage(finalTitle, finalDescription, finalCanonicalUrl));
     } else if (pageType === 'wiki') {
       data.push(structuredDataTemplates.breadcrumb(finalBreadcrumbs));
-      data.push(structuredDataTemplates.creativeWork(finalTitle, finalDescription));
+      data.push(structuredDataTemplates.course(finalTitle, finalDescription));
+    } else if (pageType === 'faq') {
+      data.push(structuredDataTemplates.breadcrumb(finalBreadcrumbs));
+      data.push(structuredDataTemplates.faq([
+        {
+          question: 'What is QuantForge AI?',
+          answer: 'QuantForge AI is an advanced platform that uses artificial intelligence to generate MQL5 trading robots for MetaTrader 5.'
+        },
+        {
+          question: 'How does the AI generate trading robots?',
+          answer: 'Our AI analyzes your strategy description and generates professional MQL5 code using Google Gemini models.'
+        },
+        {
+          question: 'Is QuantForge AI free to use?',
+          answer: 'Yes, QuantForge AI offers free access to generate and test trading robots.'
+        },
+        {
+          question: 'What programming language does QuantForge AI use?',
+          answer: 'QuantForge AI generates MQL5 (MetaQuotes Language 5) code, which is the native language for MetaTrader 5 trading platforms.'
+        },
+        {
+          question: 'Can I customize the generated trading robots?',
+          answer: 'Yes, you can customize risk parameters, timeframes, trading symbols, and other settings through our visual interface.'
+        },
+        {
+          question: 'Does QuantForge AI support backtesting?',
+          answer: 'Yes, QuantForge AI includes built-in backtesting tools and Monte Carlo simulation to validate your trading strategies.'
+        },
+        {
+          question: 'What types of trading strategies can I create?',
+          answer: 'You can create various strategies including scalping, trend following, grid trading, martingale, and custom algorithmic strategies.'
+        },
+        {
+          question: 'Is my trading data secure?',
+          answer: 'Yes, all trading data and strategies are encrypted and stored securely with enterprise-grade security measures.'
+        }
+      ]));
     }
     
     // Add custom JSON-LD data
@@ -172,7 +220,7 @@ export const EnhancedSEO: React.FC<EnhancedSEOProps> = ({
       ));
     }
     
-    // Add FAQ structured data if tags include FAQ-related terms
+    // Add additional FAQ structured data if tags include FAQ-related terms
     if (tags.some(tag => tag.toLowerCase().includes('faq'))) {
       data.push(structuredDataTemplates.faq([
         {
@@ -1123,5 +1171,148 @@ export const enhancedStructuredDataTemplates = {
         "contentUrl": "https://quanforge.ai/api/data"
       }
     ]
+  }),
+
+  creativeWork: (name: string, description: string) => ({
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    "name": name,
+    "description": description,
+    "author": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://quanforge.ai/logo.png"
+      }
+    },
+    "dateModified": new Date().toISOString(),
+    "datePublished": new Date().toISOString()
+  }),
+
+  service: (name: string, description: string) => ({
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "name": name,
+    "description": description,
+    "provider": {
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "url": "https://quanforge.ai"
+    },
+    "serviceType": "Software Development",
+    "areaServed": "Worldwide",
+    "hasOfferCatalog": {
+      "@type": "OfferCatalog",
+      "name": "Trading Robot Generation Services",
+      "itemListElement": [
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Service",
+            "name": "MQL5 Robot Generation",
+            "description": "AI-powered MQL5 trading robot generation"
+          },
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      ]
+    }
+  }),
+
+  review: (itemReviewed: string, reviewBody: string, author: string, rating: number) => ({
+    "@context": "https://schema.org",
+    "@type": "Review",
+    "itemReviewed": {
+      "@type": "SoftwareApplication",
+      "name": itemReviewed,
+      "applicationCategory": "FinanceApplication"
+    },
+    "reviewBody": reviewBody,
+    "author": {
+      "@type": "Person",
+      "name": author
+    },
+    "datePublished": new Date().toISOString(),
+    "reviewRating": {
+      "@type": "Rating",
+      "ratingValue": rating.toString(),
+      "bestRating": "5",
+      "worstRating": "1"
+    }
+  }),
+
+  event: (name: string, description: string, startDate: string, endDate: string) => ({
+    "@context": "https://schema.org",
+    "@type": "Event",
+    "name": name,
+    "description": description,
+    "startDate": startDate,
+    "endDate": endDate,
+    "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "location": {
+      "@type": "VirtualLocation",
+      "url": "https://quanforge.ai"
+    },
+    "organizer": {
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "url": "https://quanforge.ai"
+    }
+  }),
+
+  person: (name: string, jobTitle: string, description: string) => ({
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": name,
+    "jobTitle": jobTitle,
+    "description": description,
+    "worksFor": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "sameAs": [
+      "https://linkedin.com/in/" + name.toLowerCase().replace(/\s+/g, ''),
+      "https://twitter.com/" + name.toLowerCase().replace(/\s+/g, '')
+    ]
+  }),
+
+  book: (name: string, description: string, author: string) => ({
+    "@context": "https://schema.org",
+    "@type": "Book",
+    "name": name,
+    "description": description,
+    "author": {
+      "@type": "Person",
+      "name": author
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "QuantForge AI Publishing"
+    },
+    "datePublished": new Date().toISOString(),
+    "inLanguage": "en",
+    "genre": ["Technology", "Finance", "Programming"],
+    "keywords": "MQL5, Trading, Algorithmic Trading, MetaTrader 5"
+  }),
+
+  recipe: (name: string, description: string, ingredients: string[], instructions: string[]) => ({
+    "@context": "https://schema.org",
+    "@type": "Recipe",
+    "name": name,
+    "description": description,
+    "recipeIngredient": ingredients,
+    "recipeInstructions": instructions.map((instruction, index) => ({
+      "@type": "HowToStep",
+      "position": index + 1,
+      "text": instruction
+    })),
+    "recipeCategory": "Technology",
+    "recipeCuisine": "Algorithmic Trading"
   })
 };

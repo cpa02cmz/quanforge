@@ -14,12 +14,21 @@ export default defineConfig({
       },
       output: {
         manualChunks: (id) => {
-          // Consolidated chunk strategy for optimal HTTP/2 performance
+// Consolidated chunk strategy for optimal HTTP/2 performance
           if (id.includes('node_modules')) {
-            // React ecosystem - consolidated for better caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-              return 'vendor-react';
-            }
+             // React ecosystem - split for better caching and loading
+             if (id.includes('react') && id.includes('react-jsx')) {
+               return 'vendor-react-jsx';
+             }
+             if (id.includes('react') && id.includes('react-dom')) {
+               return 'vendor-react-dom';
+             }
+             if (id.includes('react') && !id.includes('react-dom') && !id.includes('jsx')) {
+               return 'vendor-react-core';
+             }
+             if (id.includes('react-router')) {
+               return 'vendor-react-router';
+             }
             
             // Charts library - consolidated to reduce HTTP overhead
             if (id.includes('recharts')) {
@@ -39,6 +48,11 @@ export default defineConfig({
             // Security utilities
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'vendor-security';
+            }
+            
+// Charts library - consolidated to reduce HTTP overhead
+            if (id.includes('recharts')) {
+              return 'vendor-charts';
             }
             
             // All other node_modules
