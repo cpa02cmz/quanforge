@@ -3,7 +3,7 @@
  * Handles WebSocket connections for live market data and notifications
  */
 
-import { NextRequest } from 'next/server';
+import { Request as NextRequest } from 'express';
 import { performanceMonitorEnhanced } from '../../services/performanceMonitorEnhanced';
 import { securityManager } from '../../services/securityManager';
 

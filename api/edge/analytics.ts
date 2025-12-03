@@ -36,27 +36,27 @@ export default async function analyticsHandler(request: Request): Promise<Respon
   const region = request.headers.get('x-vercel-region') || 'unknown';
   
   try {
-    switch (request.method) {
-      case 'GET':
-        return await getAnalytics(url, region);
-      case 'POST':
-        return await postAnalytics(request, region);
-      default:
-        return new NextResponse('Method not allowed', { status: 405 });
-    }
-  } catch (error) {
-    console.error('Analytics handler error:', error);
-    return new Response(JSON.stringify({ error: 'Analytics service error' }), {
-      status: 500,
-      headers: { 'content-type': 'application/json' },
-    });
-  }
+     switch (request.method) {
+       case 'GET':
+         return await getAnalytics(url, region);
+       case 'POST':
+         return await postAnalytics(request, region);
+       default:
+         return new Response('Method not allowed', { status: 405 });
+     }
+   } catch (error) {
+     console.error('Analytics handler error:', error);
+     return new Response(JSON.stringify({ error: 'Analytics service error' }), {
+       status: 500,
+       headers: { 'content-type': 'application/json' },
+     });
+   }
 }
 
 /**
  * Get analytics data
  */
-async function getAnalytics(url: URL, region: string): Promise<NextResponse> {
+async function getAnalytics(url: URL, region: string): Promise<Response> {
   const timeframe = url.searchParams.get('timeframe') || '1h';
   const metric = url.searchParams.get('metric') || 'all';
   
@@ -116,7 +116,7 @@ return new Response(JSON.stringify({
 /**
  * Post analytics data
  */
-async function postAnalytics(request: Request, region: string): Promise<NextResponse> {
+async function postAnalytics(request: Request, region: string): Promise<Response> {
   try {
     const body = await request.json() as Partial<AnalyticsData>;
     

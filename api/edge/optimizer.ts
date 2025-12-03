@@ -75,10 +75,10 @@ export default async function edgeHandler(request: Request): Promise<Response> {
       
       default:
         response = { error: 'Endpoint not found' };
-        return new NextResponse(JSON.stringify(response), {
-          status: 404,
-          headers: responseHeaders,
-        });
+         return new Response(JSON.stringify(response), {
+           status: 404,
+           headers: responseHeaders,
+         });
     }
 
     // Add performance metadata
@@ -280,7 +280,12 @@ async function handleCacheWarmup(
   const endpoints = searchParams.get('endpoints')?.split(',') || ['robots', 'strategies'];
   
   try {
-    const warmupResults = [];
+     const warmupResults: Array<{
+       endpoint: string;
+       success: boolean;
+       duration?: number;
+       error?: string;
+     }> = [];
 
     for (const endpoint of endpoints) {
       const startTime = performance.now();
