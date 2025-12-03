@@ -99,7 +99,7 @@ class QueryOptimizer {
        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     // Build query with optimizations - need to cast properly to handle Supabase types
-    let queryBuilder = client.from(table);
+    const queryBuilder = client.from(table);
 
     // Start building the query with select - optimize field selection
     let query = queryBuilder.select(optimization.selectFields && optimization.selectFields.length > 0 
@@ -245,7 +245,7 @@ class QueryOptimizer {
   ): Promise<{ data: T[] | null; error: any; metrics: QueryMetrics }> {
     const startTime = performance.now();
     const results: T[] = [];
-    let errors: any[] = [];
+    const errors: any[] = [];
 
     // Process in batches to avoid payload limits
     for (let i = 0; i < records.length; i += batchSize) {

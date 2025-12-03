@@ -223,19 +223,8 @@ class SupabaseConnectionPool {
               'x-edge-client': 'vercel',
             },
           });
-        },
-      }),
-      },
-      db: {
-        schema: 'public',
-      },
-      global: {
-        headers: {
-          'x-application-name': 'quanforge-ai',
-          'x-connection-id': replicaConnectionId,
-          'x-replica-region': replica.region,
-        },
-      },
+         },
+       }),
       realtime: {
         params: {
           eventsPerSecond: 5, // Lower for read replicas

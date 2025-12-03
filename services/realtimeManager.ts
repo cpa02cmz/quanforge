@@ -251,7 +251,7 @@ class RealtimeManager {
     if (!this.client) return;
 
     try {
-      let channel = this.client.channel(`public:${subscription.table}`);
+      const channel = this.client.channel(`public:${subscription.table}`);
 
       // Supabase Realtime doesn't have a direct filter method on channels
       // Instead, we need to specify the filter in the subscription options
