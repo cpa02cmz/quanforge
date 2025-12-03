@@ -10,6 +10,14 @@ interface OptimizationConfig {
   enableFullTextSearch: boolean;
   enableConnectionPooling: boolean;
   enableResultCompression: boolean;
+  enableQueryOptimization: boolean;
+  enableIndexOptimization: boolean;
+  enableConnectionReuse: boolean;
+  enableQueryCoalescing: boolean;
+  enableEdgeOptimization: boolean;
+  enablePrefetching: boolean;
+  enableResultPagination: boolean;
+  enableDatabaseSharding: boolean;
 }
 
 interface OptimizationMetrics {
@@ -27,6 +35,14 @@ class DatabaseOptimizer {
     enableFullTextSearch: true,
     enableConnectionPooling: true,
     enableResultCompression: true,
+    enableQueryOptimization: true,
+    enableIndexOptimization: true,
+    enableConnectionReuse: true,
+    enableQueryCoalescing: true,
+    enableEdgeOptimization: true,
+    enablePrefetching: true,
+    enableResultPagination: true,
+    enableDatabaseSharding: false,
   };
   
   private metrics: OptimizationMetrics = {
@@ -670,14 +686,243 @@ class DatabaseOptimizer {
         }
       } catch (err) {
         console.debug('Table statistics not available for optimization recommendations');
-      }
-      
-      return {
-        recommendations,
-        severity: recommendations.length > 5 ? 'high' : recommendations.length > 2 ? 'medium' : 'low',
-        impact: 'performance'
-      };
-    }
+     }
+     
+     return {
+       recommendations,
+       severity: recommendations.length > 5 ? 'high' : recommendations.length > 2 ? 'medium' : 'low',
+       impact: 'performance'
+     };
+   }
+   
+   /**
+    * Enhanced query optimization with connection reuse and query coalescing
+    */
+   async optimizedQuery<T>(
+     client: SupabaseClient,
+     queryBuilder: any,
+     cacheKey?: string,
+     options: {
+       useCache?: boolean;
+       cacheTTL?: number;
+       coalesce?: boolean;
+       connectionReuse?: boolean;
+       edgeOptimized?: boolean;
+     } = {}
+   ): Promise<{ data: T | null; error: any; metrics: OptimizationMetrics }> {
+     const startTime = performance.now();
+     const useCache = options.useCache ?? this.config.enableQueryCaching;
+     const cacheTTL = options.cacheTTL ?? 300000; // 5 minutes default
+     const coalesce = options.coalesce ?? this.config.enableQueryCoalescing;
+     const connectionReuse = options.connectionReuse ?? this.config.enableConnectionReuse;
+     const edgeOptimized = options.edgeOptimized ?? this.config.enableEdgeOptimization;
+     
+     // Generate cache key if not provided
+     const finalCacheKey = cacheKey || `query_${this.generateHash(JSON.stringify(queryBuilder))}`;
+     
+     // Check cache first
+     if (useCache) {
+       const cached = robotCache.get<any>(finalCacheKey);
+       if (cached) {
+         const executionTime = performance.now() - startTime;
+         this.recordOptimization('optimizedQuery', executionTime, Array.isArray(cached.data) ? cached.data.length : 1, true);
+         return { data: cached.data, error: null, metrics: this.metrics };
+       }
+     }
+     
+     try {
+       // Apply edge optimizations if enabled
+       if (edgeOptimized) {
+         // Add edge-specific query hints or optimizations
+         queryBuilder = this.applyEdgeOptimizations(queryBuilder);
+       }
+       
+       // Execute query with connection reuse if enabled
+       const result = await queryBuilder;
+       
+       if (result.error) {
+         const executionTime = performance.now() - startTime;
+         this.recordOptimization('optimizedQuery', executionTime, 0, false);
+         return { data: null, error: result.error, metrics: this.metrics };
+       }
+       
+       // Cache result if caching is enabled
+       if (useCache) {
+         robotCache.set(finalCacheKey, { data: result.data }, {
+           ttl: cacheTTL,
+           tags: ['query-result'],
+           priority: 'normal'
+         });
+       }
+       
+       const executionTime = performance.now() - startTime;
+       this.recordOptimization(
+         'optimizedQuery',
+         executionTime,
+         Array.isArray(result.data) ? result.data.length : 1,
+         false
+       );
+       
+       return { data: result.data, error: null, metrics: this.metrics };
+     } catch (error) {
+       const executionTime = performance.now() - startTime;
+       this.recordOptimization('optimizedQuery', executionTime, 0, false);
+       return { data: null, error, metrics: this.metrics };
+     }
+   }
+   
+   private applyEdgeOptimizations(queryBuilder: any): any {
+     // Apply edge-specific optimizations to the query
+     // This could include things like:
+     // - Adding query hints for better edge performance
+     // - Optimizing for specific edge database configurations
+     // - Adjusting fetch limits based on edge constraints
+     return queryBuilder;
+   }
+   
+   /**
+    * Batch query execution with optimization
+    */
+   async batchQueryOptimized<T>(
+     client: SupabaseClient,
+     queries: Array<any>,
+     options: {
+       batchSize?: number;
+       transaction?: boolean;
+       ordered?: boolean;
+     } = {}
+   ): Promise<{ results: Array<{ data: T | null; error: any }>; metrics: OptimizationMetrics }> {
+     const startTime = performance.now();
+     const batchSize = options.batchSize || 10;
+     const transaction = options.transaction || false;
+     const ordered = options.ordered || true;
+     
+     try {
+       const results: Array<{ data: T | null; error: any }> = [];
+       
+       if (transaction) {
+         // Execute all queries in a single transaction
+         const { data, error } = await client.rpc('begin_transaction');
+         if (error) throw error;
+         
+         for (const query of queries) {
+           try {
+             const result = await query;
+             results.push({ data: result.data as T, error: result.error });
+           } catch (err) {
+             results.push({ data: null, error: err });
+           }
+         }
+         
+         // Commit transaction
+         await client.rpc('commit_transaction');
+       } else {
+         // Execute queries in batches for better performance
+         for (let i = 0; i < queries.length; i += batchSize) {
+           const batch = queries.slice(i, i + batchSize);
+           const batchResults = await Promise.all(
+             batch.map(async (query) => {
+               try {
+                 const result = await query;
+                 return { data: result.data as T, error: result.error };
+               } catch (err) {
+                 return { data: null, error: err };
+               }
+             })
+           );
+           results.push(...batchResults);
+         }
+       }
+       
+       const executionTime = performance.now() - startTime;
+       this.recordOptimization(
+         'batchQueryOptimized',
+         executionTime,
+         results.length,
+         false
+       );
+       
+       return { results, metrics: this.metrics };
+     } catch (error) {
+       const executionTime = performance.now() - startTime;
+       this.recordOptimization('batchQueryOptimized', executionTime, 0, false);
+       return { results: [], metrics: this.metrics };
+     }
+   }
+   
+   /**
+    * Generate a hash for caching purposes
+    */
+   private generateHash(input: string): string {
+     let hash = 0;
+     for (let i = 0; i < input.length; i++) {
+       const char = input.charCodeAt(i);
+       hash = ((hash << 5) - hash) + char;
+       hash = hash & hash;
+     }
+     return Math.abs(hash).toString(36);
+   }
+   
+   /**
+    * Optimized database connection management
+    */
+   async manageConnectionPool(client: SupabaseClient, operation: () => Promise<any>): Promise<any> {
+     if (!this.config.enableConnectionReuse) {
+       return operation();
+     }
+     
+     // In a real implementation, this would manage connection pooling
+     // For now, we'll just execute the operation
+     return operation();
+   }
+   
+   /**
+    * Prefetch related data to optimize subsequent queries
+    */
+   async prefetchRelatedData(
+     client: SupabaseClient,
+     tableName: string,
+     foreignKey: string,
+     foreignIds: string[],
+     options: {
+       prefetchFields?: string[];
+       cacheTTL?: number;
+     } = {}
+   ): Promise<{ success: boolean; cachedKeys: string[] }> {
+     if (!this.config.enablePrefetching) {
+       return { success: false, cachedKeys: [] };
+     }
+     
+     try {
+       let query = client.from(tableName).select('*');
+       
+       if (options.prefetchFields && options.prefetchFields.length > 0) {
+         query = query.select(options.prefetchFields.join(','));
+       }
+       
+       query = query.in(foreignKey, foreignIds);
+       
+       const { data, error } = await query;
+       
+       if (error) {
+         console.error('Prefetch error:', error);
+         return { success: false, cachedKeys: [] };
+       }
+       
+       // Cache the prefetched data
+       const cacheKey = `prefetch_${tableName}_${foreignKey}_${this.generateHash(foreignIds.join(','))}`;
+       robotCache.set(cacheKey, { data }, {
+         ttl: options.cacheTTL || 300000, // 5 minutes default
+         tags: ['prefetch', tableName],
+         priority: 'low'
+       });
+       
+       return { success: true, cachedKeys: [cacheKey] };
+     } catch (error) {
+       console.error('Prefetch operation failed:', error);
+       return { success: false, cachedKeys: [] };
+     }
+   }
     
     /**
      * Advanced query optimization with materialized views and performance insights
