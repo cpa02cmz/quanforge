@@ -80,6 +80,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     };
   }, [messages.length, onClear]);
 
+  // Additional cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
   // Optimized scroll to bottom with requestAnimationFrame
   const scrollToBottom = useCallback(() => {
     if (abortControllerRef.current?.signal.aborted) return;

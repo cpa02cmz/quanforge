@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 interface LoadingStateProps {
   message?: string;
@@ -6,7 +6,7 @@ interface LoadingStateProps {
   className?: string;
 }
 
-export const LoadingState: React.FC<LoadingStateProps> = ({ 
+export const LoadingState: React.FC<LoadingStateProps> = memo(({ 
   message = 'Loading...', 
   size = 'md',
   className = ''
@@ -17,15 +17,15 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
     lg: 'h-12 w-12'
   };
 
-  return (
-    <div className={`flex flex-col items-center justify-center p-8 ${className}`}>
-      <div className={`animate-spin rounded-full border-b-2 border-brand-500 ${sizeClasses[size]}`}></div>
+return (
+    <div className={`flex items-center justify-center ${className}`}>
+      <div className={`animate-spin rounded-full border-2 border-gray-600 border-t-brand-500 ${sizeClasses[size]}`}></div>
       {message && (
-        <p className="mt-4 text-gray-400 text-sm">{message}</p>
+        <span className="ml-3 text-gray-400 text-sm">{message}</span>
       )}
     </div>
   );
-};
+});
 
 interface SkeletonProps {
   lines?: number;

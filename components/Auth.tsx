@@ -1,10 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { supabase } from '../services/supabase';
 import { useToast } from './Toast';
 import { useTranslation } from '../services/i18n';
 
-export const Auth: React.FC = () => {
+export const Auth: React.FC = memo(() => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -100,4 +100,4 @@ export const Auth: React.FC = () => {
       </div>
     </div>
   );
-};
+});
