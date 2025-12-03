@@ -104,21 +104,27 @@ class AdvancedAPICache {
     }
   }
   
-   private generateKey(url: string, options?: RequestInit): string {
-    // Create a unique key based on URL and request options
-    const optionsKey = options ? JSON.stringify(options) : '';
-    const combinedKey = `${url}_${optionsKey}`;
-    
-    // Simple hash function to create a consistent key
-    let hash = 0;
-    for (let i = 0; i < combinedKey.length; i++) {
-      const char = combinedKey.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash |= 0; // Convert to 32-bit integer
-    }
-    
-    return Math.abs(hash).toString(36);
-  }
+private generateKey(url: string, options?: RequestInit): string {
+     // Create a unique key based on URL and request options
+     const optionsKey = options ? JSON.stringify({
+       method: options.method,
+       body: options.body,
+       cache: options.cache,
+       credentials: options.credentials,
+       headers: options.headers
+     }) : '';
+     const combinedKey = `${url}_${optionsKey}`;
+     
+     // Simple hash function to create a consistent key
+     let hash = 0;
+     for (let i = 0; i < combinedKey.length; i++) {
+       const char = combinedKey.charCodeAt(i);
+       hash = ((hash << 5) - hash) + char;
+       hash |= 0; // Convert to 32-bit integer
+     }
+     
+     return Math.abs(hash).toString(36);
+   }
   
   private compressData(data: any): any {
     if (!this.config.compression) return data;
@@ -251,7 +257,7 @@ class AdvancedAPICache {
     }
     
     // Fetch from network
-    const response = await fetch(url, options);
+    const response = await fetch(url, options as any);
     
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -302,7 +308,7 @@ class AdvancedAPICache {
     ttl: number
   ): Promise<void> {
     try {
-      const response = await fetch(url, options);
+const response = await fetch(url, options as any);
       if (response.ok) {
         const data = await response.json();
         await this.set(cacheKey, data, ttl);
