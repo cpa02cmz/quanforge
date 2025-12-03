@@ -13,25 +13,32 @@ export default defineConfig({
       },
       output: {
         manualChunks: (id) => {
-          // Optimized vendor chunks for better caching and reduced fragmentation
+          // Enhanced vendor chunks for optimal edge caching and tree-shaking
           if (id.includes('node_modules')) {
-            // Consolidated React ecosystem for optimal edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-              return 'react-vendor';
+            // React ecosystem - split for better caching
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'vendor-react-core';
             }
-            // Charts and visualization
+            if (id.includes('react-router')) {
+              return 'vendor-react-router';
+            }
+            // Charts and visualization - isolated chunk
             if (id.includes('recharts')) {
               return 'vendor-charts';
             }
-            // Backend services consolidated
-            if (id.includes('@google/genai') || id.includes('@supabase')) {
-              return 'vendor-backend';
+            // AI services - isolated for better tree-shaking
+            if (id.includes('@google/genai')) {
+              return 'vendor-ai';
             }
-            // Security and utilities consolidated
+            // Database services - isolated chunk
+            if (id.includes('@supabase')) {
+              return 'vendor-supabase';
+            }
+            // Security and utilities - consolidated
             if (id.includes('dompurify') || id.includes('lz-string')) {
-              return 'vendor-utils';
+              return 'vendor-security';
             }
-            // Development tools (excluded from production chunks)
+            // Development tools - excluded from production
             if (id.includes('typescript') || id.includes('@types') || id.includes('@testing-library') || id.includes('vitest') || id.includes('eslint')) {
               return 'dev-tools';
             }
@@ -39,11 +46,11 @@ export default defineConfig({
             return 'vendor-misc';
           }
           
-          // Optimized app chunks with reduced fragmentation
+          // Enhanced app chunks with better separation
           if (id.includes('services/')) {
-            // Core services that are frequently used together
+            // Core database services
             if (id.includes('supabase') || id.includes('database') || id.includes('cache')) {
-              return 'services-core';
+              return 'services-database';
             }
             // AI and simulation services
             if (id.includes('gemini') || id.includes('simulation') || id.includes('ai')) {
@@ -53,12 +60,16 @@ export default defineConfig({
             if (id.includes('edge') || id.includes('performance') || id.includes('vercel')) {
               return 'services-edge';
             }
+            // Security services
+            if (id.includes('security') || id.includes('validation')) {
+              return 'services-security';
+            }
             return 'services-other';
           }
           
-          // Component chunks optimized for lazy loading
+          // Enhanced component chunks for optimal lazy loading
           if (id.includes('components/')) {
-            // Heavy components that should be lazy-loaded
+            // Heavy components - isolated for lazy loading
             if (id.includes('CodeEditor') || id.includes('ChatInterface')) {
               return 'components-heavy';
             }
@@ -66,8 +77,12 @@ export default defineConfig({
             if (id.includes('BacktestPanel') || id.includes('ChartComponents')) {
               return 'components-charts';
             }
+            // Modal components
+            if (id.includes('Modal') || id.includes('AISettingsModal') || id.includes('DatabaseSettingsModal')) {
+              return 'components-modals';
+            }
             // Form and configuration components
-            if (id.includes('StrategyConfig') || id.includes('NumericInput') || id.includes('AISettingsModal')) {
+            if (id.includes('StrategyConfig') || id.includes('NumericInput')) {
               return 'components-forms';
             }
             // Layout and core UI components
@@ -77,7 +92,7 @@ export default defineConfig({
             return 'components-other';
           }
           
-          // Page chunks with route-based splitting
+          // Enhanced page chunks with better route splitting
           if (id.includes('pages/')) {
             if (id.includes('Generator')) {
               return 'page-generator';
@@ -92,10 +107,16 @@ export default defineConfig({
             return 'pages-other';
           }
           
-          // Utility chunks consolidated
+          // Enhanced utility chunks
           if (id.includes('utils/')) {
-            if (id.includes('performance') || id.includes('seo') || id.includes('security') || id.includes('validation')) {
-              return 'utils-core';
+            if (id.includes('lazyLoader') || id.includes('performance')) {
+              return 'utils-performance';
+            }
+            if (id.includes('seo') || id.includes('enhancedSEO')) {
+              return 'utils-seo';
+            }
+            if (id.includes('security') || id.includes('validation')) {
+              return 'utils-security';
             }
             return 'utils-other';
           }
@@ -143,7 +164,14 @@ export default defineConfig({
         if (warning.code === 'DYNAMIC_IMPORT') return;
         if (warning.code === 'THIS_IS_UNDEFINED') return;
         if (warning.code === 'EVAL') return;
+        if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return;
         warn(warning);
+      },
+      // Enhanced tree-shaking
+      treeshake: {
+        moduleSideEffects: false,
+        propertyReadSideEffects: false,
+        tryCatchDeoptimization: false
       }
     },
     minify: 'terser',
@@ -152,7 +180,7 @@ export default defineConfig({
         drop_console: process.env['NODE_ENV'] === 'production',
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn', 'console.error'],
-        passes: 4, // Increased for better compression
+        passes: 5, // Increased for maximum compression
         // Enhanced optimizations for Vercel Edge
         inline: 3,
         reduce_funcs: true,
@@ -174,7 +202,9 @@ export default defineConfig({
         typeofs: true,
         comparisons: true,
         conditionals: true,
-        side_effects: true
+        side_effects: true,
+        // New optimizations for better tree-shaking
+        toplevel: true
       },
       mangle: {
         safari10: true,
@@ -183,13 +213,13 @@ export default defineConfig({
         properties: {
           regex: /^_/
         },
-        reserved: ['React', 'useState', 'useEffect', 'useRef', 'useCallback', 'useMemo']
+        reserved: ['React', 'useState', 'useEffect', 'useRef', 'useCallback', 'useMemo', 'lazy']
       },
       format: {
         comments: false
       }
     },
-    chunkSizeWarningLimit: 250, // Optimized for edge performance - smaller chunks
+    chunkSizeWarningLimit: 200, // Reduced for better edge performance
     target: 'es2020',
     reportCompressedSize: true,
     cssCodeSplit: true,
@@ -200,6 +230,10 @@ export default defineConfig({
     },
     // Additional build optimizations
     emptyOutDir: true,
+    // Dynamic import optimization
+    dynamicImportVarsOptions: {
+      warnOnError: false
+    }
   },
   resolve: {
     alias: {

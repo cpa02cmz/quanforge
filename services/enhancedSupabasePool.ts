@@ -39,6 +39,7 @@ interface PoolStats {
 class EnhancedSupabaseConnectionPool {
   private static instance: EnhancedSupabaseConnectionPool;
   private connections: Map<string, Connection> = new Map();
+  private readReplicaClients: Map<string, SupabaseClient> = new Map();
   private waitingQueue: Array<{
     resolve: (connection: Connection) => void;
     reject: (error: Error) => void;
@@ -152,9 +153,20 @@ class EnhancedSupabaseConnectionPool {
     return connection;
   }
 
-  async acquire(region?: string): Promise<SupabaseClient> {
+  async acquire(region?: string, useReadReplica: boolean = false): Promise<SupabaseClient> {
     const startTime = performance.now();
     const preferredRegion = region || process.env['VERCEL_REGION'] || 'default';
+
+    // Use read replica for read operations if requested and available
+    if (useReadReplica) {
+      const readClient = await this.acquireReadReplica(preferredRegion);
+      if (readClient) {
+        const acquireTime = performance.now() - startTime;
+        this.recordAcquireTime(acquireTime);
+        console.debug(`Using read replica for region: ${preferredRegion}`);
+        return readClient;
+      }
+    }
 
     // Try to find an available connection with enhanced selection logic
     let connection = this.getOptimalConnection(preferredRegion);
@@ -550,6 +562,105 @@ class EnhancedSupabaseConnectionPool {
 
     this.updateStats();
     return { healthy, unhealthy };
+  }
+
+  /**
+   * Acquire a read replica client for read operations
+   */
+  private async acquireReadReplica(region?: string): Promise<SupabaseClient | null> {
+    const settings = settingsManager.getDBSettings();
+    
+    // Check if read replica is configured (using environment variables as fallback)
+    const readReplicaUrl = (settings as any).readReplicaUrl || process.env['VITE_SUPABASE_READ_REPLICA_URL'];
+    const readReplicaAnonKey = (settings as any).readReplicaAnonKey || process.env['VITE_SUPABASE_READ_REPLICA_ANON_KEY'];
+    
+    if (!readReplicaUrl || !readReplicaAnonKey) {
+      return null; // No read replica configured
+    }
+
+    const replicaKey = `${region || 'default'}_read_replica`;
+    let readClient = this.readReplicaClients.get(replicaKey);
+
+    if (!readClient) {
+      try {
+        readClient = new SupabaseClient(readReplicaUrl, readReplicaAnonKey, {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+          },
+          db: {
+            schema: 'public'
+          },
+          global: {
+            headers: {
+              'X-Connection-Type': 'read-replica',
+              'X-Connection-Region': region || process.env['VERCEL_REGION'] || 'default',
+              'X-Edge-Optimized': 'true',
+              'X-Client-Info': 'quantforge-read-replica/1.0.0'
+            }
+          }
+        });
+
+        // Test the connection
+        const { error } = await readClient.from('robots').select('id').limit(1);
+        if (error) {
+          console.warn('Read replica connection test failed:', error);
+          return null;
+        }
+
+        this.readReplicaClients.set(replicaKey, readClient);
+        console.debug(`Created read replica client for region: ${region || 'default'}`);
+      } catch (error) {
+        console.warn('Failed to create read replica client:', error);
+        return null;
+      }
+    }
+
+    return readClient;
+  }
+
+  /**
+   * Warm up read replica connections proactively
+   */
+  async warmUpReadReplicas(): Promise<void> {
+    const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1'];
+    const warmUpPromises = regions.map(async (region) => {
+      try {
+        await this.acquireReadReplica(region);
+      } catch (error) {
+        console.warn(`Failed to warm up read replica for region ${region}:`, error);
+      }
+    });
+
+    await Promise.allSettled(warmUpPromises);
+    console.log('Read replica warm-up completed');
+  }
+
+  /**
+   * Get read replica statistics
+   */
+  getReadReplicaStats(): { region: string; status: 'connected' | 'disconnected'; lastUsed?: number }[] {
+    const stats: { region: string; status: 'connected' | 'disconnected'; lastUsed?: number }[] = [];
+    
+    for (const [key, client] of this.readReplicaClients.entries()) {
+      const region = key.replace('_read_replica', '');
+      stats.push({
+        region,
+        status: 'connected', // We only store successful connections
+        lastUsed: Date.now() // This could be enhanced with actual last used tracking
+      });
+    }
+
+    return stats;
+  }
+
+  /**
+   * Close all read replica connections
+   */
+  async closeReadReplicas(): Promise<void> {
+    this.readReplicaClients.clear();
+    console.log('All read replica connections closed');
   }
 }
 
