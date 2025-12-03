@@ -1,28 +1,53 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 interface SEOAnalyticsProps {
   pageUrl: string;
   pageTitle: string;
+  pageType?: 'article' | 'product' | 'homepage' | 'other';
 }
 
-export const SEOAnalytics: React.FC<SEOAnalyticsProps> = ({ pageUrl, pageTitle }) => {
+export const SEOAnalytics: React.FC<SEOAnalyticsProps> = ({ 
+  pageUrl, 
+  pageTitle, 
+  pageType = 'other' 
+}) => {
   const [scrollDepth, setScrollDepth] = useState(0);
   const [timeOnPage, setTimeOnPage] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+  const [clicks, setClicks] = useState(0);
+  const [formInteractions, setFormInteractions] = useState(0);
+  const startTime = useRef(Date.now());
+  const lastScrollPosition = useRef(0);
 
-  // Track scroll depth
+  // Track scroll depth with enhanced precision
   useEffect(() => {
     const handleScroll = () => {
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       const scrollPercentage = Math.round((scrollTop / (documentHeight - windowHeight)) * 100);
-      setScrollDepth(Math.max(scrollDepth, scrollPercentage));
+      
+      // Track scroll milestones
+      if (scrollPercentage > scrollDepth) {
+        setScrollDepth(scrollPercentage);
+        
+        // Send scroll milestone events
+        if (scrollPercentage === 25 || scrollPercentage === 50 || 
+            scrollPercentage === 75 || scrollPercentage === 90) {
+          sendAnalyticsEvent('scroll_milestone', {
+            depth: scrollPercentage,
+            page: pageTitle,
+            url: pageUrl
+          });
+        }
+      }
+      
+      lastScrollPosition.current = scrollTop;
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [scrollDepth]);
+  }, [scrollDepth, pageTitle, pageUrl]);
 
   // Track time on page
   useEffect(() => {
@@ -38,31 +63,145 @@ export const SEOAnalytics: React.FC<SEOAnalyticsProps> = ({ pageUrl, pageTitle }
   // Track page visibility
   useEffect(() => {
     const handleVisibilityChange = () => {
+      const wasVisible = isVisible;
       setIsVisible(!document.hidden);
+      
+      // Send engagement data when page becomes hidden
+      if (wasVisible && document.hidden) {
+        sendEngagementData();
+      }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
+  }, [isVisible]);
 
-  // Send analytics data on page unload
+  // Track user interactions
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      setClicks(prev => prev + 1);
+      
+      // Track click on important elements
+      const target = e.target as HTMLElement;
+      const elementData = {
+        tagName: target.tagName,
+        className: target.className,
+        id: target.id,
+        textContent: target.textContent?.substring(0, 50)
+      };
+      
+      sendAnalyticsEvent('user_click', {
+        element: elementData,
+        page: pageTitle,
+        url: pageUrl
+      });
+    };
+
+    const handleFormInteraction = (e: Event) => {
+      setFormInteractions(prev => prev + 1);
+      
+      const target = e.target as HTMLElement;
+      sendAnalyticsEvent('form_interaction', {
+        elementType: target.tagName,
+        elementName: (target as HTMLInputElement).name || 'unknown',
+        page: pageTitle,
+        url: pageUrl
+      });
+    };
+
+    document.addEventListener('click', handleClick);
+    document.addEventListener('focus', handleFormInteraction, true);
+    
+    return () => {
+      document.removeEventListener('click', handleClick);
+      document.removeEventListener('focus', handleFormInteraction, true);
+    };
+  }, [pageTitle, pageUrl]);
+
+  // Send engagement data on page unload
   useEffect(() => {
     const handlePageUnload = () => {
-      // Send data to analytics service
-      if (typeof window !== 'undefined' && (window as any).gtag) {
-        (window as any).gtag('event', 'page_engagement', {
-          page_title: pageTitle,
-          page_location: pageUrl,
-          scroll_depth: scrollDepth,
-          time_on_page: timeOnPage,
-          custom_parameter_1: 'quantforge_ai'
-        });
-      }
+      sendEngagementData();
     };
 
     window.addEventListener('beforeunload', handlePageUnload);
     return () => window.removeEventListener('beforeunload', handlePageUnload);
   }, [pageUrl, pageTitle, scrollDepth, timeOnPage]);
+
+  // Track Core Web Vitals (basic implementation without external library)
+  useEffect(() => {
+    // Basic performance tracking without external dependencies
+    const trackPerformance = () => {
+      if ('performance' in window) {
+        // Track navigation timing
+        const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+        if (navigation) {
+          sendAnalyticsEvent('page_load_time', {
+            loadTime: navigation.loadEventEnd - navigation.loadEventStart,
+            domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
+            page: pageTitle,
+            url: pageUrl
+          });
+        }
+      }
+    };
+
+    // Track after page loads
+    if (document.readyState === 'complete') {
+      trackPerformance();
+    } else {
+      window.addEventListener('load', trackPerformance);
+      return () => window.removeEventListener('load', trackPerformance);
+    }
+    return undefined;
+  }, [pageTitle, pageUrl]);
+
+  const sendEngagementData = () => {
+    const totalTime = Math.round((Date.now() - startTime.current) / 1000);
+    
+    sendAnalyticsEvent('page_engagement', {
+      page_title: pageTitle,
+      page_location: pageUrl,
+      page_type: pageType,
+      scroll_depth: scrollDepth,
+      time_on_page: totalTime,
+      active_time: timeOnPage,
+      total_clicks: clicks,
+      form_interactions: formInteractions,
+      engagement_score: calculateEngagementScore(scrollDepth, timeOnPage, clicks)
+    });
+  };
+
+  const calculateEngagementScore = (depth: number, time: number, clickCount: number): number => {
+    const depthScore = Math.min(depth / 100, 1) * 30;
+    const timeScore = Math.min(time / 300, 1) * 40; // 5 minutes max
+    const clickScore = Math.min(clickCount / 10, 1) * 30;
+    return Math.round(depthScore + timeScore + clickScore);
+  };
+
+  const sendAnalyticsEvent = (eventName: string, data: Record<string, any>) => {
+    // Send to Google Analytics
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', eventName, {
+        ...data,
+        custom_parameter_1: 'quantforge_ai',
+        custom_parameter_2: pageType
+      });
+    }
+
+    // Send to other analytics services if available
+    if (typeof window !== 'undefined' && (window as any).dataLayer) {
+      (window as any).dataLayer.push({
+        event: eventName,
+        ...data
+      });
+    }
+
+    // Log for debugging (remove in production)
+    if (process.env['NODE_ENV'] === 'development') {
+      console.log('Analytics Event:', eventName, data);
+    }
+  };
 
   return null; // This component doesn't render anything
 };
@@ -186,8 +325,8 @@ export const optimizeImageSrc = (src: string, width?: number, height?: number, q
   return src;
 };
 
-// Generate SEO-friendly URLs
-export const generateSeoUrl = (title: string, id?: string): string => {
+// Generate SEO-friendly URLs with better handling
+export const generateSeoUrl = (title: string, id?: string, category?: string): string => {
   const slug = title
     .toLowerCase()
     .replace(/[^a-z0-9 -]/g, '')
@@ -195,49 +334,96 @@ export const generateSeoUrl = (title: string, id?: string): string => {
     .replace(/-+/g, '-')
     .trim();
   
-  return id ? `${slug}-${id}` : slug;
+  const parts = [slug];
+  if (category) parts.unshift(category);
+  if (id) parts.push(id);
+  
+  return parts.join('/');
 };
 
-// Meta description generator
+// Enhanced meta description generator
 export const generateMetaDescription = (content: string, maxLength: number = 160): string => {
   const cleaned = content
     .replace(/<[^>]*>/g, '') // Remove HTML tags
     .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+    .replace(/&[^;]+;/g, ' ') // Remove HTML entities
     .trim();
   
   if (cleaned.length <= maxLength) {
     return cleaned;
   }
   
-  return cleaned.substring(0, maxLength - 3).trim() + '...';
+  // Try to break at word boundary
+  const truncated = cleaned.substring(0, maxLength - 3);
+  const lastSpace = truncated.lastIndexOf(' ');
+  
+  if (lastSpace > maxLength * 0.8) {
+    return truncated.substring(0, lastSpace) + '...';
+  }
+  
+  return truncated + '...';
 };
 
-// Keyword density analyzer
-export const analyzeKeywordDensity = (text: string, keywords: string[]): Record<string, number> => {
+// Advanced keyword density analyzer
+export const analyzeKeywordDensity = (text: string, keywords: string[]): Record<string, {
+  density: number;
+  count: number;
+  prominence: number;
+}> => {
   const words = text.toLowerCase().split(/\s+/);
   const totalWords = words.length;
-  const density: Record<string, number> = {};
+  const firstWords = words.slice(0, 100); // First 100 words for prominence
+  const results: Record<string, any> = {};
   
   keywords.forEach(keyword => {
     const keywordLower = keyword.toLowerCase();
     const count = words.filter(word => word.includes(keywordLower)).length;
-    density[keyword] = totalWords > 0 ? (count / totalWords) * 100 : 0;
+    const density = totalWords > 0 ? (count / totalWords) * 100 : 0;
+    const prominenceCount = firstWords.filter(word => word.includes(keywordLower)).length;
+    const prominence = firstWords.length > 0 ? (prominenceCount / firstWords.length) * 100 : 0;
+    
+    results[keyword] = {
+      density: Math.round(density * 100) / 100,
+      count,
+      prominence: Math.round(prominence * 100) / 100
+    };
   });
   
-  return density;
+  return results;
 };
 
-// Generate table of contents for long content
-export const generateTableOfContents = (content: string): Array<{ id: string; title: string; level: number }> => {
-  const headings = content.match(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi) || [];
+// Generate table of contents with anchor links
+export const generateTableOfContents = (content: string): Array<{
+  id: string;
+  title: string;
+  level: number;
+  anchor: string;
+}> => {
+  const headingRegex = /<h([1-6])[^>]*>(.*?)<\/h[1-6]>/gi;
+  const headings: Array<{ id: string; title: string; level: number; anchor: string }> = [];
+  let match;
+  let index = 0;
   
-  return headings.map((heading, index) => {
-    const level = parseInt(heading.match(/h([1-6])/i)?.[1] || '1');
-    const title = heading.replace(/<[^>]*>/g, '');
-    const id = `heading-${index}`;
+  while ((match = headingRegex.exec(content)) !== null) {
+    const level = parseInt(match[1] || '1');
+    const title = match[2]?.replace(/<[^>]*>/g, '').trim() || '';
+    const anchor = title
+      .toLowerCase()
+      .replace(/[^a-z0-9 -]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
     
-    return { id, title, level };
-  });
+    headings.push({
+      id: `heading-${index}`,
+      title,
+      level,
+      anchor: anchor || `heading-${index}`
+    });
+    index++;
+  }
+  
+  return headings;
 };
 
 // Schema.org BreadcrumbList generator
@@ -259,12 +445,56 @@ export const optimizeOgImage = (_title: string, _description: string, _brand: st
   return '/og-image.png';
 };
 
+// Schema.org WebSite generator with search action
+export const generateWebsiteSchema = (siteName: string, siteUrl: string, siteDescription?: string) => ({
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": siteName,
+  "url": siteUrl,
+  ...(siteDescription && { "description": siteDescription }),
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": `${siteUrl}/search?q={search_term_string}`
+    },
+    "query-input": "required name=search_term_string"
+  }
+});
+
+// Generate FAQ schema for better SEO
+export const generateFAQSchema = (faqs: Array<{ question: string; answer: string }>) => ({
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": faqs.map(faq => ({
+    "@type": "Question",
+    "name": faq.question,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": faq.answer
+    }
+  }))
+});
+
+// Open Graph optimizer for social media
+export const optimizeOpenGraph = (title: string, description: string, url: string, image?: string) => ({
+  'og:title': title,
+  'og:description': description,
+  'og:url': url,
+  'og:type': 'website',
+  'og:image': image || '/og-image.png',
+  'og:image:width': '1200',
+  'og:image:height': '630',
+  'og:site_name': 'QuantForge AI',
+  'og:locale': 'en_US'
+});
+
 // Twitter Card optimizer
-export const generateTwitterCard = (title: string, description: string, image: string) => ({
+export const optimizeTwitterCard = (title: string, description: string, image?: string) => ({
   'twitter:card': 'summary_large_image',
   'twitter:title': title,
   'twitter:description': description,
-  'twitter:image': image,
+  'twitter:image': image || '/twitter-image.png',
   'twitter:site': '@quanforge',
   'twitter:creator': '@quanforge'
 });
