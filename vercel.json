@@ -126,7 +126,7 @@
   "functions": {
     "api/**/*.ts": {
       "runtime": "edge",
-      "regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1"],
+"regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1", "arn1", "gru1"],
       "maxDuration": 30,
       "memory": 512
     },
