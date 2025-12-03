@@ -114,6 +114,40 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
       onSendMessage(prompt);
   };
 
+  // Pre-compiled regex patterns for performance
+  const boldRegex = useMemo(() => /(\*\*.*?\*\*)/g, []);
+  const codeRegex = useMemo(() => /(`.*?`)/g, []);
+  const listRegex = useMemo(() => /^[-*]\s/, []);
+
+  // Enhanced helper to parse **bold** and `code` with memory optimization
+  const parseInlineStyles = useCallback((text: string) => {
+    // Limit text length to prevent memory issues
+    const maxLength = 1000;
+    const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    
+    // We split by bold markers first using pre-compiled regex
+    const boldParts = truncatedText.split(boldRegex);
+    
+    return boldParts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="text-brand-300 font-bold">{part.slice(2, -2)}</strong>;
+      }
+      
+      // Then split by code markers using pre-compiled regex
+      const codeParts = part.split(codeRegex);
+      return codeParts.map((subPart, j) => {
+        if (subPart.startsWith('`') && subPart.endsWith('`')) {
+          return (
+            <code key={`${i}-${j}`} className="bg-dark-bg border border-dark-border px-1 py-0.5 rounded text-xs font-mono text-brand-400">
+              {subPart.slice(1, -1)}
+            </code>
+          );
+        }
+        return <span key={`${i}-${j}`}>{subPart}</span>;
+      });
+    });
+  }, [boldRegex, codeRegex]);
+
   // Enhanced Markdown Formatter with memory optimization
   // Memoized to prevent unnecessary re-renders
   const formatMessageContent = useCallback((content: string): React.ReactElement[] => {
@@ -135,7 +169,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
       const trimmedLine = line.trim();
       
       // Handle Lists
-      if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+      if (listRegex.test(trimmedLine)) {
         const listContent = trimmedLine.substring(2);
         elements.push(
           <div key={i} className="flex items-start ml-2 mb-1">
@@ -154,36 +188,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     });
     
     return elements;
-  }, []);
-
-  // Enhanced helper to parse **bold** and `code` with memory optimization
-  const parseInlineStyles = useCallback((text: string) => {
-    // Limit text length to prevent memory issues
-    const maxLength = 1000;
-    const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-    
-    // We split by bold markers first
-    const boldParts = truncatedText.split(/(\*\*.*?\*\*)/g);
-    
-    return boldParts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="text-brand-300 font-bold">{part.slice(2, -2)}</strong>;
-      }
-      
-      // Then split by code markers
-      const codeParts = part.split(/(`.*?`)/g);
-      return codeParts.map((subPart, j) => {
-        if (subPart.startsWith('`') && subPart.endsWith('`')) {
-          return (
-            <code key={`${i}-${j}`} className="bg-dark-bg border border-dark-border px-1 py-0.5 rounded text-xs font-mono text-brand-400">
-              {subPart.slice(1, -1)}
-            </code>
-          );
-        }
-        return <span key={`${i}-${j}`}>{subPart}</span>;
-      });
-});
-  }, []);
+  }, [listRegex, parseInlineStyles]);
 
   // Get strategies based on current language
   const [suggestedStrategies, setSuggestedStrategies] = useState<any[]>([]);
