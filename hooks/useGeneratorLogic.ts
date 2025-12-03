@@ -180,7 +180,7 @@ const stopGeneration = () => {
                           if (!controller.signal.aborted && analysis) {
                               dispatch({ type: 'SET_ANALYSIS', payload: analysis });
                           }
-                      } catch (err: any) {
+                      } catch (err: unknown) {
                           if (!controller.signal.aborted) {
                               logger.error('Error analyzing strategy:', err);
                           }
@@ -242,9 +242,9 @@ const stopGeneration = () => {
               if (!analysisController.signal.aborted && analysis) {
                   dispatch({ type: 'SET_ANALYSIS', payload: analysis });
               }
-          }).catch((err: any) => {
-              if (err.name !== 'AbortError') logger.error("Analysis failed", err);
-          });
+           }).catch((err: unknown) => {
+               if (err instanceof Error && err.name !== 'AbortError') logger.error("Analysis failed", err);
+           });
 
           dispatch({ type: 'SET_SIMULATION_RESULT', payload: null }); 
           
@@ -301,18 +301,19 @@ const stopGeneration = () => {
       const response = await generateMQL5Code(content, state.code, state.strategyParams, updatedMessages, signal);
       dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'processing', message: 'Processing response...' } });
       await processAIResponse(response);
-    } catch (error: any) {
-      if (error.name === 'AbortError') return;
-      
-      logger.error(error);
-      showToast(error.message || "Error generating response", 'error');
-      dispatch({ type: 'ADD_MESSAGE', payload: {
-          id: Date.now().toString(),
-          role: MessageRole.MODEL,
-          content: "Sorry, I encountered an error generating the response.",
-          timestamp: Date.now()
-      }});
-    } finally {
+     } catch (error: unknown) {
+       if (error instanceof Error && error.name === 'AbortError') return;
+       
+       logger.error(error);
+       const errorMessage = error instanceof Error ? error.message : "Error generating response";
+       showToast(errorMessage, 'error');
+       dispatch({ type: 'ADD_MESSAGE', payload: {
+           id: Date.now().toString(),
+           role: MessageRole.MODEL,
+           content: "Sorry, I encountered an error generating the response.",
+           timestamp: Date.now()
+       }});
+     } finally {
       if (!signal.aborted) {
         dispatch({ type: 'SET_LOADING', payload: false });
         dispatch({ type: 'SET_LOADING_PROGRESS', payload: null });
@@ -342,11 +343,11 @@ const stopGeneration = () => {
           dispatch({ type: 'SET_LOADING_PROGRESS', payload: { step: 'processing', message: 'Processing updated code...' } });
           await processAIResponse(response);
           showToast("Settings applied & code updated", 'success');
-      } catch (error: any) {
-          if (error.name === 'AbortError') return;
-          logger.error("Failed to apply settings:", error);
-          showToast("Failed to apply settings", 'error');
-      } finally {
+           } catch (error: unknown) {
+               if (error instanceof Error && error.name === 'AbortError') return;
+               logger.error("Failed to apply settings:", error);
+               showToast("Failed to apply settings", 'error');
+           } finally {
            if (!signal.aborted) {
              dispatch({ type: 'SET_LOADING', payload: false });
              dispatch({ type: 'SET_LOADING_PROGRESS', payload: null });
@@ -378,11 +379,11 @@ const stopGeneration = () => {
           }});
 
           showToast("Code optimized & refined", 'success');
-      } catch (error: any) {
-          if (error.name === 'AbortError') return;
-          logger.error("Refinement failed:", error);
-          showToast("Refinement failed", 'error');
-      } finally {
+       } catch (error: unknown) {
+           if (error instanceof Error && error.name === 'AbortError') return;
+           logger.error("Refinement failed:", error);
+           showToast("Refinement failed", 'error');
+       } finally {
           if (!signal.aborted) {
             dispatch({ type: 'SET_LOADING', payload: false });
             dispatch({ type: 'SET_LOADING_PROGRESS', payload: null });
@@ -414,11 +415,11 @@ const stopGeneration = () => {
           }});
           
           showToast("Code explanation generated", 'success');
-      } catch (error: any) {
-          if (error.name === 'AbortError') return;
-          logger.error("Explanation failed:", error);
-          showToast("Explanation failed", 'error');
-      } finally {
+       } catch (error: unknown) {
+           if (error instanceof Error && error.name === 'AbortError') return;
+           logger.error("Explanation failed:", error);
+           showToast("Explanation failed", 'error');
+       } finally {
           if (!signal.aborted) {
             dispatch({ type: 'SET_LOADING', payload: false });
             dispatch({ type: 'SET_LOADING_PROGRESS', payload: null });

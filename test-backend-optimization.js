@@ -5,7 +5,7 @@
 console.log('Testing backend optimization functionality...');
 
 // Import the optimization manager
-import { backendOptimizationManager } from './services/backendOptimizationManager.js';
+import { backendOptimizationManager } from './services/backendOptimizationManager.ts';
 
 console.log('✓ Backend Optimization Manager imported successfully');
 

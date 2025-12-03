@@ -107,12 +107,12 @@ export const Generator: React.FC = memo(() => {
       />
       <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] md:h-screen bg-dark-bg relative" role="main" aria-label="Strategy generator workspace">
       
-      {/* Loading Progress Indicator */}
-      {isLoading && loadingProgress && (
-        <div className="absolute top-0 left-0 right-0 h-1 bg-dark-surface z-50">
-          <div className="h-full bg-brand-500 animate-pulse"></div>
-        </div>
-      )}
+        {/* Loading Progress Indicator */}
+        {isLoading && loadingProgress && (
+          <div className="absolute top-0 left-0 right-0 h-1 bg-dark-surface z-50">
+            <div className="h-full bg-brand-500 animate-pulse w-full"></div>
+          </div>
+        )}
       
        {/* Mobile Tab Toggle */}
        <div className="md:hidden flex bg-dark-surface border-b border-dark-border">
