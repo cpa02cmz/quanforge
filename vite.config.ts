@@ -28,13 +28,21 @@ export default defineConfig({
             }
             // Enhanced Charts splitting - more granular for better performance
             if (id.includes('recharts')) {
-              // Core chart components
+              // Core chart components - most commonly used
               if (id.includes('BarChart') || id.includes('LineChart') || id.includes('AreaChart')) {
                 return 'vendor-charts-core';
               }
               // Chart components and utilities
               if (id.includes('Tooltip') || id.includes('Legend') || id.includes('ResponsiveContainer')) {
                 return 'vendor-charts-components';
+              }
+              // Candlestick and financial charts - heavy components
+              if (id.includes('CandlestickChart') || id.includes('ComposedChart')) {
+                return 'vendor-charts-financial';
+              }
+              // Technical indicators and advanced features
+              if (id.includes('ReferenceLine') || id.includes('Brush') || id.includes('CrossHair')) {
+                return 'vendor-charts-indicators';
               }
               // Advanced chart features
               return 'vendor-charts-advanced';
