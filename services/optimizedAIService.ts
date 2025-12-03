@@ -199,7 +199,7 @@ class OptimizedAIService {
    */
   private parseResponse(text: string, chatHistory: Message[]): { code: string; analysis: StrategyAnalysis; messages: Message[] } {
     let code = '';
-    let analysis: StrategyAnalysis = {
+    const analysis: StrategyAnalysis = {
       riskScore: 5,
       profitability: 5,
       description: 'Analysis not available'

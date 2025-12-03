@@ -1,9 +1,9 @@
 
-import { SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { Robot, UserSession } from '../types';
 import { enhancedConnectionPool } from './enhancedSupabasePool';
-import { robotCache } from './advancedCache';
+import { robotCache } from './optimizedLRUCache';
 import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { smartCache } from './smartCache';
@@ -393,7 +393,7 @@ async getRobots() {
        }
         
         const cacheKey = 'robots_list';
-        const cached = robotCache.get<Robot[]>(cacheKey);
+const cached = robotCache.get(cacheKey) as Robot[] | undefined;
         if (cached) {
           // Create index for performance
           robotIndexManager.getIndex(cached);
@@ -653,7 +653,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
        }
        
        const cacheKey = `robots_batch_${ids.sort().join('_')}`;
-       const cached = robotCache.get<Robot[]>(cacheKey);
+       const cached = robotCache.get(cacheKey) as Robot[] | undefined;
        if (cached) {
          const duration = performance.now() - startTime;
          performanceMonitor.record('getRobotsByIds', duration);
