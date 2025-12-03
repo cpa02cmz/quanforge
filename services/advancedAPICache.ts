@@ -26,6 +26,15 @@ interface RequestInit {
   mode?: RequestMode;
 }
 
+// Define global types to avoid ESLint errors
+type HeadersInit = globalThis.HeadersInit;
+type BodyInit = globalThis.BodyInit;
+type RequestCache = globalThis.RequestCache;
+type RequestCredentials = globalThis.RequestCredentials;
+type RequestRedirect = globalThis.RequestRedirect;
+type ReferrerPolicy = globalThis.ReferrerPolicy;
+type RequestMode = globalThis.RequestMode;
+
 
 
 interface CacheConfig {
