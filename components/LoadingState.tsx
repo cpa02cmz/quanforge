@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 interface LoadingStateProps {
   message?: string;
@@ -6,7 +6,7 @@ interface LoadingStateProps {
   className?: string;
 }
 
-export const LoadingState: React.FC<LoadingStateProps> = ({ 
+export const LoadingState: React.FC<LoadingStateProps> = memo(({ 
   message = 'Loading...', 
   size = 'md',
   className = ''
@@ -23,41 +23,16 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
       {message && (
         <p className="mt-4 text-gray-400 text-sm">{message}</p>
       )}
-    </div>
+</div>
   );
-};
-
-interface SkeletonProps {
-  lines?: number;
-  className?: string;
-}
-
-export const SkeletonLoader: React.FC<SkeletonProps> = ({ 
-  lines = 3,
-  className = ''
-}) => {
-  return (
-    <div className={`space-y-3 ${className}`}>
-      {Array.from({ length: lines }).map((_, i) => (
-        <div 
-          key={i} 
-          className="bg-dark-bg rounded animate-pulse"
-          style={{
-            height: `${Math.random() * 20 + 16}px`,
-            width: `${Math.random() * 40 + 60}%`
-          }}
-        ></div>
-      ))}
-    </div>
-  );
-};
+});
 
 interface CardSkeletonProps {
   count?: number;
   className?: string;
 }
 
-export const CardSkeletonLoader: React.FC<CardSkeletonProps> = ({ 
+export const CardSkeletonLoader: React.FC<CardSkeletonProps> = memo(({ 
   count = 3,
   className = ''
 }) => {
@@ -86,4 +61,4 @@ export const CardSkeletonLoader: React.FC<CardSkeletonProps> = ({
       ))}
     </div>
   );
-};
+});

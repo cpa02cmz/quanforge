@@ -3,7 +3,7 @@ import React, { useState, useEffect, memo } from 'react';
 import { AISettings, AIProvider, Language } from '../types';
 import { settingsManager, DEFAULT_AI_SETTINGS } from '../services/settingsManager';
 import { useToast } from './Toast';
-import { testAIConnection } from '../services/gemini';
+// testAIConnection imported dynamically to avoid bundle issues
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
 
@@ -107,6 +107,8 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, o
 
         setIsTesting(true);
         try {
+            // Dynamic import to avoid bundle issues
+            const { testAIConnection } = await import('../services/gemini');
             await testAIConnection(settings);
             showToast(t('settings_test_success'), 'success');
         } catch (error: any) {

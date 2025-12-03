@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode, memo } from 'react';
 import { createScopedLogger } from '../utils/logger';
 
 const logger = createScopedLogger('ErrorBoundary');
@@ -115,6 +115,6 @@ class ErrorBoundaryClass extends Component<Props, State> {
   }
 }
 
-export const ErrorBoundary: React.FC<Props> = (props) => {
+export const ErrorBoundary: React.FC<Props> = memo((props) => {
   return <ErrorBoundaryClass {...props} />;
-};
+});
