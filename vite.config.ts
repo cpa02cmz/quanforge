@@ -70,7 +70,17 @@ export default defineConfig({
             }
             // Development tools - excluded from production
             if (id.includes('typescript') || id.includes('@types') || id.includes('@testing-library') || id.includes('vitest') || id.includes('eslint')) {
-              return 'dev-tools';
+              return 'dev-tools-excluded';
+            }
+            
+            // Add missing edge-specific chunks
+            if (id.includes('edge') || id.includes('vercel')) {
+              return 'vendor-edge-runtime';
+            }
+            
+            // Add missing optimization for web workers
+            if (id.includes('worker') || id.includes('web-worker')) {
+              return 'vendor-web-workers';
             }
             // All other node_modules
             return 'vendor-misc';
@@ -218,7 +228,7 @@ export default defineConfig({
         if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return;
         warn(warning);
       },
-      // Enhanced tree-shaking
+      // Enhanced tree-shaking with aggressive optimizations
       treeshake: {
         moduleSideEffects: false,
         propertyReadSideEffects: false,
@@ -333,7 +343,16 @@ chunkSizeWarningLimit: 100, // Optimized for edge performance
       'node:crypto',
       'node:fs/promises',
       'node:worker_threads',
-      'node:child_process'
+      'node:child_process',
+      // Add missing edge-specific exclusions
+      'node:buffer',
+      'node:stream',
+      'node:util',
+      'node:url',
+      'node:querystring',
+      'node:assert',
+      'node:os',
+      'node:process'
     ]
   },
   // Edge optimization for Vercel deployment

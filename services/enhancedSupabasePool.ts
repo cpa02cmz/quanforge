@@ -679,6 +679,216 @@ class EnhancedSupabaseConnectionPool {
   }
 
   /**
+   * Enhanced edge warming with intelligent pre-warming strategies
+   */
+  async warmEdgeConnectionsEnhanced(): Promise<void> {
+    if (!this.config.connectionWarming) {
+      return;
+    }
+
+    const startTime = performance.now();
+    console.log('Starting enhanced edge connection warm-up...');
+
+    // Get current region for optimization
+    const currentRegion = process.env['VERCEL_REGION'] || 'unknown';
+    
+    // Priority-based warming: current region first, then high-traffic regions
+    const priorityRegions = [currentRegion, 'hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'];
+    const remainingRegions = this.edgeRegions.filter(r => !priorityRegions.includes(r));
+
+    const warmupPromises: Promise<void>[] = [];
+
+    // Phase 1: Warm current region immediately (parallel)
+    for (const region of priorityRegions.slice(0, 3)) {
+      warmupPromises.push(this.warmRegionConnectionEnhanced(region, 'high'));
+    }
+
+    // Phase 2: Warm other regions (parallel with delay)
+    setTimeout(() => {
+      for (const region of priorityRegions.slice(3)) {
+        warmupPromises.push(this.warmRegionConnectionEnhanced(region, 'medium'));
+      }
+    }, 1000);
+
+    // Phase 3: Warm remaining regions (lower priority)
+    setTimeout(() => {
+      for (const region of remainingRegions) {
+        warmupPromises.push(this.warmRegionConnectionEnhanced(region, 'low'));
+      }
+    }, 2000);
+
+    // Phase 4: Warm read replicas
+    setTimeout(() => {
+      warmupPromises.push(this.warmUpReadReplicasEnhanced());
+    }, 1500);
+
+    try {
+      await Promise.allSettled(warmupPromises);
+      const duration = performance.now() - startTime;
+      console.log(`Enhanced edge connection warm-up completed in ${duration.toFixed(2)}ms`);
+    } catch (error) {
+      console.warn('Enhanced edge connection warm-up failed:', error);
+    }
+  }
+
+  /**
+   * Enhanced region warming with priority and retry logic
+   */
+  private async warmRegionConnectionEnhanced(region: string, priority: 'high' | 'medium' | 'low'): Promise<void> {
+    try {
+      // Check if we already have a healthy connection for this region
+      const existingConnection = Array.from(this.connections.values())
+        .find(conn => conn.region === region && conn.healthy && !conn.inUse);
+
+      if (existingConnection) {
+        console.debug(`Region ${region} already has a warm connection (${priority} priority)`);
+        return;
+      }
+
+      // Create connection based on priority
+      const maxRetries = priority === 'high' ? 3 : priority === 'medium' ? 2 : 1;
+      const timeout = priority === 'high' ? 3000 : priority === 'medium' ? 5000 : 8000;
+
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          // Check connection pool capacity
+          if (this.stats.totalConnections >= this.config.maxConnections) {
+            // For high priority, try to drain an idle connection
+            if (priority === 'high') {
+              await this.drainOneIdleConnection();
+            } else {
+              console.debug(`Skipping warm-up for ${region} - connection pool at capacity (${priority} priority)`);
+              return;
+            }
+          }
+
+          const connection = await this.createConnectionWithTimeout(region, timeout);
+          
+          // Perform enhanced warm-up queries
+          await this.performEnhancedWarmupQueries(connection.client, region);
+          
+          console.debug(`Enhanced warm-up completed for region: ${region} (${priority} priority, attempt ${attempt})`);
+          return; // Success, exit retry loop
+          
+        } catch (error) {
+          if (attempt === maxRetries) {
+            console.warn(`Failed to warm up connection for region ${region} after ${maxRetries} attempts (${priority} priority):`, error);
+          } else {
+            console.debug(`Warm-up attempt ${attempt} failed for region ${region} (${priority} priority), retrying...`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+          }
+        }
+      }
+    } catch (error) {
+      console.warn(`Enhanced warm-up failed for region ${region}:`, error);
+    }
+  }
+
+  /**
+   * Create connection with timeout
+   */
+  private async createConnectionWithTimeout(region: string, timeout: number): Promise<Connection> {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error(`Connection creation timeout for region ${region}`));
+      }, timeout);
+
+      this.createConnection(region)
+        .then(connection => {
+          clearTimeout(timer);
+          resolve(connection);
+        })
+        .catch(error => {
+          clearTimeout(timer);
+          reject(error);
+        });
+    });
+  }
+
+  /**
+   * Perform enhanced warm-up queries
+   */
+  private async performEnhancedWarmupQueries(client: SupabaseClient, region: string): Promise<void> {
+    try {
+      const startTime = performance.now();
+
+      // Query 1: Basic connectivity test
+      await client
+        .from('robots')
+        .select('count', { count: 'exact', head: true })
+        .limit(1);
+
+      // Query 2: Auth session test (lightweight)
+      try {
+        await client.auth.getSession();
+      } catch (authError) {
+        // Auth errors are not critical for warm-up
+        console.debug(`Auth warm-up failed for region ${region}:`, authError);
+      }
+
+      // Query 3: Index warm-up (if robots table exists)
+      try {
+        await client
+          .from('robots')
+          .select('id, created_at')
+          .order('created_at', { ascending: false })
+          .limit(1);
+      } catch (indexError) {
+        console.debug(`Index warm-up failed for region ${region}:`, indexError);
+      }
+
+      const duration = performance.now() - startTime;
+      console.debug(`Enhanced warm-up queries completed for region ${region} in ${duration.toFixed(2)}ms`);
+      
+    } catch (error) {
+      console.debug(`Enhanced warm-up queries failed for region ${region}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Enhanced read replica warming
+   */
+  private async warmUpReadReplicasEnhanced(): Promise<void> {
+    const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1'];
+    const warmUpPromises = regions.map(async (region, index) => {
+      // Stagger the requests to avoid overwhelming the system
+      await new Promise(resolve => setTimeout(resolve, index * 200));
+      
+      try {
+        const readClient = await this.acquireReadReplica(region);
+        if (readClient) {
+          // Perform warm-up query on read replica
+          await readClient.from('robots').select('count', { count: 'exact', head: true }).limit(1);
+          console.debug(`Enhanced read replica warm-up completed for region: ${region}`);
+        }
+      } catch (error) {
+        console.warn(`Enhanced read replica warm-up failed for region ${region}:`, error);
+      }
+    });
+
+    await Promise.allSettled(warmUpPromises);
+    console.log('Enhanced read replica warm-up completed');
+  }
+
+  /**
+   * Drain one idle connection to make room for high-priority connections
+   */
+  private async drainOneIdleConnection(): Promise<void> {
+    const idleConnections = Array.from(this.connections.values())
+      .filter(conn => !conn.inUse && conn.healthy)
+      .sort((a, b) => a.lastUsed - b.lastUsed); // Oldest first
+
+    if (idleConnections.length > 0) {
+      const connectionToDrain = idleConnections[0];
+      if (connectionToDrain) {
+        await this.closeConnection(connectionToDrain.id);
+        console.debug(`Drained idle connection ${connectionToDrain.id} for high-priority warm-up`);
+      }
+    }
+  }
+
+  /**
    * Warm up edge connections across all regions
    */
   async warmEdgeConnections(): Promise<void> {
