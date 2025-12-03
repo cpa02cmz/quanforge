@@ -13,9 +13,9 @@ export default defineConfig({
       },
       output: {
         manualChunks: (id) => {
-          // Enhanced vendor chunks with better splitting for optimal caching
+          // Enhanced vendor chunks with edge-optimized splitting
           if (id.includes('node_modules')) {
-            // React core split for better caching
+            // React core split for optimal edge caching
             if (id.includes('react') && !id.includes('react-router') && !id.includes('react-helmet')) {
               return 'react-core';
             }
@@ -26,28 +26,28 @@ export default defineConfig({
             if (id.includes('react-router-dom') || id.includes('react-router')) {
               return 'react-core';
             }
-            // Charts and visualization - optimize recharts imports
+            // Charts and visualization - optimize recharts imports with tree-shaking
             if (id.includes('recharts')) {
               return 'vendor-charts';
             }
-            // AI and ML libraries
+            // AI and ML libraries - separate for edge optimization
             if (id.includes('@google/genai')) {
               return 'vendor-ai';
             }
-            // Database and backend
+            // Database and backend - optimized for edge connections
             if (id.includes('@supabase')) {
               return 'vendor-supabase';
             }
             
-            // Security utilities
+            // Security utilities - critical for edge deployment
             if (id.includes('dompurify')) {
               return 'vendor-security';
             }
-            // Compression utilities
+            // Compression utilities - essential for edge performance
             if (id.includes('lz-string')) {
               return 'vendor-compression';
             }
-            // Development and build tools
+            // Development and build tools - excluded from production
             if (id.includes('typescript') || id.includes('@types')) {
               return 'dev-types';
             }
@@ -69,9 +69,9 @@ export default defineConfig({
             return 'vendor-misc';
           }
           
-          // Enhanced app chunks with better granularity
+          // Enhanced app chunks with edge-optimized granularity
           if (id.includes('services/')) {
-            // Database and connection services
+            // Database and connection services - edge optimized
             if (id.includes('supabase') || id.includes('database') || id.includes('connectionPool') || id.includes('readReplica')) {
               return 'services-database';
             }
@@ -79,9 +79,9 @@ export default defineConfig({
             if (id.includes('gemini') || id.includes('simulation') || id.includes('ai')) {
               return 'services-ai';
             }
-            // Cache and performance services
-            if (id.includes('cache') || id.includes('queryOptimizer') || id.includes('performance') || id.includes('edge')) {
-              return 'services-performance';
+            // Edge and performance services - critical for edge deployment
+            if (id.includes('edge') || id.includes('cache') || id.includes('queryOptimizer') || id.includes('performance') || id.includes('vercel')) {
+              return 'services-edge';
             }
             // Security and validation services
             if (id.includes('security') || id.includes('validation') || id.includes('encryption')) {
@@ -99,9 +99,9 @@ export default defineConfig({
             return 'services-core';
           }
           
-          // Enhanced component chunks with lazy loading optimization
+          // Enhanced component chunks with edge-optimized lazy loading
           if (id.includes('components/')) {
-            // Heavy components that should be lazy-loaded
+            // Heavy components that should be lazy-loaded for edge performance
             if (id.includes('CodeEditor')) {
               return 'component-editor';
             }
@@ -117,7 +117,7 @@ export default defineConfig({
             if (id.includes('VirtualScrollList')) {
               return 'component-virtual';
             }
-            // UI components
+            // UI components - critical for edge rendering
             if (id.includes('LoadingState') || id.includes('ErrorBoundary') || id.includes('Toast')) {
               return 'component-ui';
             }
@@ -125,14 +125,14 @@ export default defineConfig({
             if (id.includes('NumericInput') || id.includes('AISettingsModal') || id.includes('DatabaseSettingsModal')) {
               return 'component-forms';
             }
-            // Layout components
+            // Layout components - essential for edge SSR
             if (id.includes('Layout') || id.includes('Auth') || id.includes('MarketTicker')) {
               return 'component-layout';
             }
             return 'components-misc';
           }
           
-          // Page chunks with route-based splitting
+          // Page chunks with edge-optimized route-based splitting
           if (id.includes('pages/')) {
             if (id.includes('Generator')) {
               return 'page-generator';
@@ -140,7 +140,7 @@ export default defineConfig({
             if (id.includes('Dashboard')) {
               return 'page-dashboard';
             }
-            // Static pages that can be pre-rendered
+            // Static pages that can be pre-rendered at edge
             if (id.includes('About') || id.includes('FAQ') || id.includes('Features') || id.includes('Wiki')) {
               return 'page-static';
             }
@@ -151,17 +151,17 @@ export default defineConfig({
             return 'pages-misc';
           }
           
-          // Utility chunks
+          // Utility chunks with edge optimization
           if (id.includes('utils/')) {
-            // Performance utilities
+            // Performance utilities - critical for edge monitoring
             if (id.includes('performance') || id.includes('monitor')) {
               return 'utils-performance';
             }
-            // SEO utilities
+            // SEO utilities - essential for edge SEO
             if (id.includes('seo') || id.includes('meta')) {
               return 'utils-seo';
             }
-            // Security utilities
+            // Security utilities - critical for edge security
             if (id.includes('encryption') || id.includes('validation') || id.includes('errorHandler')) {
               return 'utils-security';
             }
@@ -257,7 +257,7 @@ export default defineConfig({
         comments: false
       }
     },
-    chunkSizeWarningLimit: 500, // Optimized for better edge performance
+    chunkSizeWarningLimit: 250, // Optimized for edge performance - smaller chunks
     target: 'es2020',
     reportCompressedSize: true,
     cssCodeSplit: true,
@@ -267,7 +267,16 @@ export default defineConfig({
       polyfill: false
     },
     // Additional build optimizations
-    emptyOutDir: true
+    emptyOutDir: true,
+    // Edge-specific optimizations
+    rollupExternalOptions: {
+      // Externalize node-specific modules for edge runtime
+      'node:fs': 'commonjs fs',
+      'node:path': 'commonjs path',
+      'node:crypto': 'commonjs crypto',
+    },
+    // Enable code splitting for edge
+    splitVendorChunk: true,
   },
   resolve: {
     alias: {
@@ -279,6 +288,8 @@ export default defineConfig({
     'process.env.EDGE_RUNTIME': JSON.stringify('true'),
     'process.env.VERCEL_EDGE': JSON.stringify('true'),
     'process.env.ENABLE_EDGE_CACHING': JSON.stringify('true'),
+    'process.env.EDGE_REGION': JSON.stringify(process.env.VERCEL_REGION || 'unknown'),
+    'process.env.ENABLE_EDGE_OPTIMIZATION': JSON.stringify('true'),
   },
   optimizeDeps: {
     include: [
@@ -291,16 +302,12 @@ export default defineConfig({
       'dompurify',
       'lz-string'
     ],
-    exclude: []
-  },
-  experimental: {
-    renderBuiltUrl(filename, { hostType }) {
-      if (hostType === 'js') {
-        return { js: `/${filename}` };
-      } else {
-        return { relative: true };
-      }
-    }
+    exclude: [
+      // Exclude edge-specific modules from pre-bundling
+      'node:fs',
+      'node:path',
+      'node:crypto',
+    ]
   },
   // Edge optimization for Vercel deployment
   server: {
@@ -309,6 +316,19 @@ export default defineConfig({
     headers: {
       'X-Edge-Optimized': 'true',
       'Cache-Control': 'public, max-age=31536000, immutable',
+      'X-Edge-Region': process.env.VERCEL_REGION || 'local',
     }
-  }
+  },
+  // Experimental features for edge optimization
+  experimental: {
+    renderBuiltUrl(filename: string, { hostType }: { hostType: string }) {
+      if (hostType === 'js') {
+        return { js: `/${filename}` };
+      } else {
+        return { relative: true };
+      }
+    },
+    // Enable build-time optimizations
+    buildTarget: 'es2020',
+  },
 });
