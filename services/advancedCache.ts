@@ -195,7 +195,7 @@ export class AdvancedCache {
         const data = await loader();
         this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
       } catch (error) {
-        if (import.meta.env.DEV) {
+        if (process.env.NODE_ENV === 'development') {
           console.warn(`Failed to preload cache entry: ${key}`, error);
         }
       }
@@ -333,7 +333,7 @@ this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
     });
     
     // Use logger instead of console.log for production safety
-    if (import.meta.env.DEV) {
+    if (process.env.NODE_ENV === 'development') {
       console.log(`Invalidated ${deletedCount} cache entries for region: ${region}`);
     }
     return deletedCount;

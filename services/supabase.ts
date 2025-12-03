@@ -3,10 +3,9 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { Robot, UserSession } from '../types';
 import { enhancedConnectionPool } from './enhancedSupabasePool';
-import { robotCache } from './advancedCache';
+import { consolidatedCache } from './consolidatedCache';
 import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
-import { smartCache } from './smartCache';
 
 // Connection retry configuration
 const RETRY_CONFIG = {
@@ -396,7 +395,7 @@ async getRobots() {
        }
         
         const cacheKey = 'robots_list';
-        const cached = robotCache.get<Robot[]>(cacheKey);
+        const cached = await consolidatedCache.get<Robot[]>(cacheKey);
         if (cached) {
           // Create index for performance
           robotIndexManager.getIndex(cached);
@@ -416,7 +415,7 @@ async getRobots() {
           if (result.data && !result.error) {
             // Create index for performance
             robotIndexManager.getIndex(result.data);
-            robotCache.set(cacheKey, result.data, {
+            consolidatedCache.set(cacheKey, result.data, {
               ttl: 300000,
               tags: ['robots', 'list'],
               priority: 'high'
@@ -477,7 +476,7 @@ async getRobots() {
          const results = await Promise.all(batch);
          
          // Clear relevant caches
-         robotCache.clearByTags(['robots']);
+         await consolidatedCache.invalidateByTag('robots');
          
          const duration = performance.now() - startTime;
          performanceMonitor.record('batchUpdateRobots', duration);
@@ -549,7 +548,7 @@ async getRobots() {
        
        // For Supabase, use database pagination
        const cacheKey = `robots_paginated_${page}_${limit}_${searchTerm || ''}_${filterType || 'All'}`;
-       const cached = robotCache.get<any>(cacheKey);
+       const cached = consolidatedCache.get<any>(cacheKey);
        if (cached) {
          const duration = performance.now() - startTime;
          performanceMonitor.record('getRobotsPaginated', duration);
@@ -590,7 +589,7 @@ async getRobots() {
              error: null
            };
            
-           robotCache.set(cacheKey, response, {
+           consolidatedCache.set(cacheKey, response, {
              ttl: 300000,
              tags: ['robots', 'paginated'],
              priority: 'high'
@@ -632,7 +631,7 @@ performanceMonitor.record('getRobotsPaginated', duration);
        }
        
        const cacheKey = `robots_batch_${ids.sort().join('_')}`;
-       const cached = robotCache.get<Robot[]>(cacheKey);
+       const cached = consolidatedCache.get<Robot[]>(cacheKey);
        if (cached) {
          const duration = performance.now() - startTime;
          performanceMonitor.record('getRobotsByIds', duration);
@@ -648,7 +647,7 @@ performanceMonitor.record('getRobotsPaginated', duration);
            .order('created_at', { ascending: false });
          
          if (result.data && !result.error) {
-           robotCache.set(cacheKey, result.data, {
+           consolidatedCache.set(cacheKey, result.data, {
              ttl: 300000,
              tags: ['robots', 'batch'],
              priority: 'high'
@@ -706,7 +705,8 @@ performanceMonitor.record('getRobotsPaginated', duration);
             robotIndexManager.clear(); // Clear index since data changed
             
             // Clear cache after save
-            robotCache.clearByTags(['robots', 'list']);
+await consolidatedCache.invalidateByTag('robots');
+await consolidatedCache.invalidateByTag('list');
             
             return { data: [newRobot], error: null };
         } catch (e: any) {
@@ -721,7 +721,8 @@ performanceMonitor.record('getRobotsPaginated', duration);
         const result = client.from('robots').insert([sanitizedRobot]).select();
         
         // Invalidate cache after save
-        robotCache.clearByTags(['robots', 'list']);
+        await consolidatedCache.invalidateByTag('robots');
+        await consolidatedCache.invalidateByTag('list');
         
         const duration = performance.now() - startTime;
         performanceMonitor.record('saveRobot', duration);
@@ -1358,7 +1359,7 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
             const cacheKey = `robots_paginated_${page}_${limit}_${searchTerm || ''}_${filterType || ''}`;
             
             // Try to get from smart cache first
-            const cachedResult = await smartCache.get(cacheKey);
+            const cachedResult = await consolidatedCache.get(cacheKey);
             if (cachedResult) {
                 const duration = performance.now() - startTime;
                 performanceMonitor.record('getRobotsPaginated', duration);
@@ -1436,7 +1437,7 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                 };
                 
                 // Cache the result for 5 minutes
-                await smartCache.set(cacheKey, result, { ttl: 5 * 60 * 1000 });
+                await consolidatedCache.set(cacheKey, result, { ttl: 5 * 60 * 1000 });
                 
                 const duration = performance.now() - startTime;
                 performanceMonitor.record('getRobotsPaginated', duration);

@@ -264,7 +264,7 @@ export const OptimizedImage: React.FC<{
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry && entry.isIntersecting) {
           setIsInView(true);
           observer.disconnect();
         }
@@ -425,8 +425,8 @@ export const generateTableOfContents = (content: string): Array<{
   let index = 0;
   
   while ((match = headingRegex.exec(content)) !== null) {
-    const level = parseInt(match[1]);
-    const title = match[2].replace(/<[^>]*>/g, '').trim();
+    const level = parseInt(match[1] || '1');
+    const title = (match[2] || '').replace(/<[^>]*>/g, '').trim();
     const anchor = title
       .toLowerCase()
       .replace(/[^a-z0-9 -]/g, '')
