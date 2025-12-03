@@ -14,7 +14,7 @@ interface MetaTagsProps {
 export const SEOHead: React.FC<MetaTagsProps> = ({
   title = 'QuantForge AI - Advanced MQL5 Trading Robot Generator | MetaTrader 5',
   description = 'Generate professional MQL5 trading robots and Expert Advisors using AI. Powered by Google Gemini 3.0/2.5. Create, test, and deploy automated trading strategies for MetaTrader 5 with visual strategy configuration and real-time market simulation.',
-  keywords = 'MQL5 generator, MetaTrader 5, trading robot, Expert Advisor, AI trading, automated trading, forex robot, algorithmic trading, Gemini AI, trading strategy generator, MT5 EA, quantitative trading, forex EA, MQL5 EA builder, automated forex trading, AI trading bot, MetaTrader expert advisor, trading algorithm generator',
+  keywords = 'MQL5 generator, MetaTrader 5, trading robot, Expert Advisor, AI trading, automated trading, forex robot, algorithmic trading, Gemini AI, trading strategy generator, MT5 EA, quantitative trading, forex EA, MQL5 EA builder, automated forex trading, AI trading bot, MetaTrader expert advisor, trading algorithm generator, MQL5 development, forex algorithm, trading automation, AI trading system, quantitative finance, algorithmic trading platform, MT5 programming, Expert Advisor development, forex bot creator, automated trading software, MQL5 coder, trading strategy automation, AI-powered trading, forex robot development, MetaTrader automation',
   ogImage = '/og-image.png',
   ogUrl = 'https://quanforge.ai',
   canonicalUrl = 'https://quanforge.ai',
@@ -78,6 +78,41 @@ export const SEOHead: React.FC<MetaTagsProps> = ({
     // Additional Meta Tags
     updateMetaTag('theme-color', '#22c55e');
     updateMetaTag('language', 'en');
+    updateMetaTag('distribution', 'global');
+    updateMetaTag('rating', 'general');
+    updateMetaTag('revisit-after', '7 days');
+    updateMetaTag('geo.region', 'US');
+    updateMetaTag('geo.placename', 'Global');
+    updateMetaTag('category', 'finance, technology, trading, artificial intelligence');
+    updateMetaTag('coverage', 'Worldwide');
+    updateMetaTag('target', 'all');
+    updateMetaTag('HandheldFriendly', 'True');
+    updateMetaTag('MobileOptimized', '320');
+    updateMetaTag('apple-mobile-web-app-capable', 'yes');
+    updateMetaTag('apple-mobile-web-app-status-bar-style', 'black-translucent');
+    updateMetaTag('format-detection', 'telephone=no');
+    updateMetaTag('mobile-web-app-capable', 'yes');
+    updateMetaTag('apple-mobile-web-app-title', 'QuantForge AI');
+    updateMetaTag('application-name', 'QuantForge AI');
+    updateMetaTag('referrer', 'no-referrer-when-downgrade');
+    updateMetaTag('pinterest-rich-pin', 'false');
+    updateMetaTag('pinterest-site-verification', 'disabled');
+    
+    // Enhanced Open Graph tags
+    updateMetaTag('og:locale', 'en_US', 'og:locale');
+    updateMetaTag('og:site_name', 'QuantForge AI', 'og:site_name');
+    updateMetaTag('fb:app_id', 'your-facebook-app-id', 'fb:app_id');
+    
+    // Enhanced Twitter tags
+    updateMetaTag('twitter:site', '@quanforge');
+    updateMetaTag('twitter:creator', '@quanforge');
+    updateMetaTag('twitter:domain', 'quanforge.ai');
+    
+    // Additional SEO meta tags
+    updateMetaTag('google-site-verification', 'your-google-verification-code');
+    updateMetaTag('msvalidate.01', 'your-bing-verification-code');
+    updateMetaTag('yandex-verification', 'your-yandex-verification-code');
+    updateMetaTag('p:domain_verify', 'your-pinterest-verification-code');
     
     // Clean up existing structured data
     const existingScripts = document.querySelectorAll('script[type="application/ld+json"]');
@@ -461,5 +496,162 @@ export const structuredDataTemplates = {
       "target": `${url}/search?q={search_term_string}`,
       "query-input": "required name=search_term_string"
     }
+  }),
+
+  // Enhanced structured data for better SEO
+  organization: {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "QuantForge AI",
+    "description": "Advanced MQL5 Trading Robot Generator powered by AI",
+    "url": "https://quanforge.ai",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://quanforge.ai/logo.png",
+      "width": 512,
+      "height": 512
+    },
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer service",
+      "availableLanguage": ["English", "Indonesian"]
+    },
+    "sameAs": [
+      "https://twitter.com/quanforge",
+      "https://github.com/quanforge",
+      "https://linkedin.com/company/quanforge"
+    ],
+    "foundingDate": "2024",
+    "areaServed": "Worldwide",
+    "knowsAbout": [
+      "MQL5 Programming",
+      "MetaTrader 5",
+      "Algorithmic Trading",
+      "AI Code Generation",
+      "Forex Trading",
+      "Expert Advisors",
+      "Trading Robots",
+      "Financial Technology"
+    ]
+  },
+
+  financialProduct: (name: string, description: string) => ({
+    "@context": "https://schema.org",
+    "@type": "FinancialProduct",
+    "name": name,
+    "description": description,
+    "provider": {
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "url": "https://quanforge.ai"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock"
+    },
+    "category": "Trading Software",
+    "audience": {
+      "@type": "Audience",
+      "audienceType": "Traders, Developers, Investors"
+    }
+  }),
+
+  educationalOrganization: {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    "name": "QuantForge AI Academy",
+    "description": "Learn MQL5 programming and algorithmic trading with AI-powered tools",
+    "url": "https://quanforge.ai/wiki",
+    "provider": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "hasOfferCatalog": {
+      "@type": "OfferCatalog",
+      "name": "Trading Education Courses",
+      "itemListElement": [
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Course",
+            "name": "MQL5 Programming Basics",
+            "description": "Learn the fundamentals of MQL5 programming"
+          }
+        },
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Course",
+            "name": "Algorithmic Trading Strategies",
+            "description": "Master advanced trading strategies"
+          }
+        }
+      ]
+    }
+  },
+
+  videoObject: (name: string, description: string, thumbnailUrl: string) => ({
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    "name": name,
+    "description": description,
+    "thumbnailUrl": thumbnailUrl,
+    "uploadDate": new Date().toISOString(),
+    "contentUrl": "https://quanforge.ai/videos/",
+    "publisher": {
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://quanforge.ai/logo.png"
+      }
+    }
+  }),
+
+  quoraQuestion: (name: string, text: string, answerCount: number) => ({
+    "@context": "https://schema.org",
+    "@type": "Question",
+    "name": name,
+    "text": text,
+    "answerCount": answerCount,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "QuantForge AI provides the best solution for generating MQL5 trading robots using advanced AI technology.",
+      "author": {
+        "@type": "Organization",
+        "name": "QuantForge AI"
+      }
+    },
+    "suggestedAnswer": [
+      {
+        "@type": "Answer",
+        "text": "You can create professional trading robots by describing your strategy in natural language.",
+        "author": {
+          "@type": "Organization",
+          "name": "QuantForge AI"
+        }
+      }
+    ]
+  }),
+
+  dataset: (name: string, description: string) => ({
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "name": name,
+    "description": description,
+    "publisher": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "license": "https://creativecommons.org/licenses/by/4.0/",
+    "distribution": [
+      {
+        "@type": "DataDownload",
+        "encodingFormat": "application/json",
+        "contentUrl": "https://quanforge.ai/api/data"
+      }
+    ]
   })
 };

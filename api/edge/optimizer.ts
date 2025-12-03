@@ -3,7 +3,6 @@
  * Optimized for global distribution and performance
  */
 
-import { NextRequest, NextResponse } from 'next/server';
 import { edgeSupabase } from '../../services/edgeSupabaseClient';
 import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
 
@@ -74,12 +73,15 @@ export default async function edgeHandler(request: Request): Promise<Response> {
         response = await handleOptimization(request, region);
         break;
       
-      default:
-        response = { error: 'Endpoint not found' };
-        return NextResponse.json(response, {
-          status: 404,
-          headers: responseHeaders,
-        });
+       default:
+         response = { error: 'Endpoint not found' };
+         return new Response(JSON.stringify(response), {
+           status: 404,
+           headers: {
+             ...responseHeaders,
+             'content-type': 'application/json',
+           },
+         });
     }
 
     // Add performance metadata
@@ -281,37 +283,42 @@ async function handleCacheWarmup(
   const endpoints = searchParams.get('endpoints')?.split(',') || ['robots', 'strategies'];
   
   try {
-    const warmupResults = [];
+     const warmupResults: Array<{
+       endpoint: string;
+       success: boolean;
+       duration?: number;
+       error?: string;
+     }> = [];
 
-    for (const endpoint of endpoints) {
-      const startTime = performance.now();
-      
-      try {
-        await vercelEdgeOptimizer.optimizedFetch(
-          `${process.env.VERCEL_URL}/api/edge/${endpoint}`,
-          {
-            method: 'GET',
-            headers: { 'x-cache-warmup': 'true' },
-          },
-          {
-            ttl: 300000,
-            key: `warmup_${endpoint}_${region}`,
-          }
-        );
-        
-        warmupResults.push({
-          endpoint,
-          success: true,
-          duration: Math.round(performance.now() - startTime),
-        });
-      } catch (error) {
-        warmupResults.push({
-          endpoint,
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-      }
-    }
+     for (const endpoint of endpoints) {
+       const startTime = performance.now();
+       
+       try {
+         await vercelEdgeOptimizer.optimizedFetch(
+           `${process.env.VERCEL_URL}/api/edge/${endpoint}`,
+           {
+             method: 'GET',
+             headers: { 'x-cache-warmup': 'true' },
+           },
+           {
+             ttl: 300000,
+             key: `warmup_${endpoint}_${region}`,
+           }
+         );
+         
+         warmupResults.push({
+           endpoint,
+           success: true,
+           duration: Math.round(performance.now() - startTime),
+         });
+       } catch (error) {
+         warmupResults.push({
+           endpoint,
+           success: false,
+           error: error instanceof Error ? error.message : 'Unknown error',
+         });
+       }
+     }
 
     return { 
       data: {
@@ -410,9 +417,9 @@ async function optimizeDatabase(): Promise<{ optimized: boolean; connections?: n
   try {
     // This would trigger database optimizations
     // For now, return a placeholder
-    return {
-      optimized: true,
-    };
+    // Simulate a potential error for proper error handling
+    const result = await Promise.resolve({ optimized: true });
+    return result;
   } catch (_error) {
     return { optimized: false };
   }

@@ -8,12 +8,12 @@ import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seo';
-import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
-import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
-import { frontendOptimizer } from './services/frontendOptimizer';
-import { edgeAnalytics } from './services/edgeAnalytics';
-import { edgeMonitoring } from './services/edgeMonitoring';
-import { edgeOptimizer } from './services/edgeFunctionOptimizer';
+ import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
+ import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
+ import { frontendOptimizer } from './services/frontendOptimizer';
+ import { edgeAnalytics } from './services/edgeAnalytics';
+ import { edgeMonitoring } from './services/edgeMonitoring';
+ import { advancedAPICache } from './services/advancedAPICache';
 
 // Enhanced lazy loading with preloading for better performance
 const Auth = lazy(() => 
@@ -74,10 +74,10 @@ useEffect(() => {
      const monitoringStatus = edgeMonitoring.getMonitoringStatus();
      logger.info('Edge monitoring status:', monitoringStatus);
      
-     // Initialize Edge Function Optimizer
-     edgeOptimizer.warmupAllFunctions().catch((err: any) => 
-       logger.warn('Edge function warmup failed:', err)
-     );
+      // Initialize Advanced API Cache for better performance
+      advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: any) => 
+        logger.warn('API cache prefetch failed:', err)
+      );
     
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {

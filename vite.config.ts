@@ -276,7 +276,7 @@ export default defineConfig({
         comments: false
       }
     },
-    chunkSizeWarningLimit: 150, // Further reduced for optimal edge performance
+     chunkSizeWarningLimit: 100, // Reduced for optimal edge performance
     target: ['es2020', 'edge101'], // More specific targets for edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,
@@ -292,7 +292,6 @@ export default defineConfig({
     dynamicImportVarsOptions: {
       warnOnError: false
     },
-    // Add missing optimizations for better edge performance
     // Enhanced tree-shaking is handled in rollupOptions
   },
   resolve: {

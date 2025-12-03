@@ -9,6 +9,61 @@ import { getActiveKey } from "../utils/apiKeyUtils";
 import { handleError } from "../utils/errorHandler";
 import { apiDeduplicator } from "./apiDeduplicator";
 
+// Enhanced cache with TTL and size management
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+  ttl: number;
+}
+
+class EnhancedCache<T> {
+  private cache = new Map<string, CacheEntry<T>>();
+  private readonly maxSize: number;
+  
+  constructor(maxSize: number = 100) {
+    this.maxSize = maxSize;
+  }
+  
+  get(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    
+    // Check if entry is expired
+    if (Date.now() - entry.timestamp > entry.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return entry.data;
+  }
+  
+  set(key: string, data: T, ttl: number = 300000): void { // Default 5 minutes TTL
+    // Remove oldest entries if we're at max size
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey) this.cache.delete(firstKey);
+    }
+    
+    this.cache.set(key, { data, timestamp: Date.now(), ttl });
+  }
+  
+  clear(): void {
+    this.cache.clear();
+  }
+  
+  has(key: string): boolean {
+    return this.cache.has(key);
+  }
+  
+  size(): number {
+    return this.cache.size;
+  }
+  
+  keys(): string[] {
+    return Array.from(this.cache.keys());
+  }
+}
+
 // Advanced cache for strategy analysis to avoid repeated API calls
 // Uses LRU eviction to prevent memory bloat
 class LRUCache<T> {
@@ -54,6 +109,7 @@ class LRUCache<T> {
 }
 
 const analysisCache = new LRUCache<StrategyAnalysis>();
+const enhancedAnalysisCache = new EnhancedCache<StrategyAnalysis>(200); // Larger cache size for better performance
 
 // Request deduplication to prevent duplicate API calls
 class RequestDeduplicator {
@@ -124,7 +180,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
 
 // Enhanced token budgeting with incremental history management
   class TokenBudgetManager {
-      private static readonly MAX_CONTEXT_CHARS = 150000; // Increased to handle more complex requests
+      private static readonly MAX_CONTEXT_CHARS = 100000; // Reduced to optimize for performance while maintaining functionality
       private static readonly MIN_HISTORY_CHARS = 1000; // Keep minimum history for context
     
     // Cache for frequently used context parts
@@ -688,10 +744,16 @@ export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promi
       const codeHash = createHash(code.substring(0, 5000));
       const cacheKey = `${codeHash}-${settings.provider}-${settings.modelName}`;
       
-       // Check if we have a valid cached result
+       // Check primary cache first
        const cached = analysisCache.get(cacheKey);
        if (cached) {
            return cached;
+       }
+       
+       // Check enhanced cache as fallback
+       const enhancedCached = enhancedAnalysisCache.get(cacheKey);
+       if (enhancedCached) {
+           return enhancedCached;
        }
  
        // Use request deduplication to prevent duplicate API calls
@@ -721,7 +783,7 @@ export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promi
                  if (settings.provider === 'openai') {
                      // Pass jsonMode: true for OpenAI/DeepSeek
                      textResponse = await callOpenAICompatible(settings, prompt, signal, 0.5, true);
-} else {
+ } else {
                       const GoogleGenAIClass = await getGoogleGenAI();
                       const ai = new GoogleGenAIClass({ apiKey: activeKey });
                      
@@ -757,13 +819,15 @@ export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promi
                   result.riskScore = Math.min(10, Math.max(1, Number(result.riskScore) || 0));
                   result.profitability = Math.min(10, Math.max(1, Number(result.profitability) || 0));
                   
-                  // Cache the result
+                  // Cache the result in both caches
                   analysisCache.set(cacheKey, result);
+                  enhancedAnalysisCache.set(cacheKey, result, 600000); // 10 minutes TTL for enhanced cache
                   
                   // Also cache by shorter code snippet for similar code detection
                   const shortCodeHash = createHash(code.substring(0, 1000));
                   const shortCacheKey = `short-${shortCodeHash}-${settings.provider}`;
                   analysisCache.set(shortCacheKey, result);
+                  enhancedAnalysisCache.set(shortCacheKey, result, 600000);
              } else {
                  // Return a default response if parsing fails
                  return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };
