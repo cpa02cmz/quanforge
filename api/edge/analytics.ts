@@ -3,6 +3,7 @@
  * Real-time performance monitoring and analytics for edge deployment
  */
 
+import { NextRequest, NextResponse } from 'next/server';
 import { edgeSupabase } from '../../services/edgeSupabaseClient';
 import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
 
@@ -42,11 +43,11 @@ export default async function analyticsHandler(request: Request): Promise<Respon
       case 'POST':
         return await postAnalytics(request, region);
       default:
-        return new NextResponse('Method not allowed', { status: 405 });
+        return NextResponse.json('Method not allowed', { status: 405 });
     }
   } catch (error) {
     console.error('Analytics handler error:', error);
-    return new Response(JSON.stringify({ error: 'Analytics service error' }), {
+    return NextResponse.json({ error: 'Analytics service error' }, {
       status: 500,
       headers: { 'content-type': 'application/json' },
     });

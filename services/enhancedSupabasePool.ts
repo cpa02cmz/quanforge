@@ -73,12 +73,18 @@ class EnhancedSupabaseConnectionPool {
   };
   private healthCheckTimer: number | null = null;
   private cleanupTimer: number | null = null;
+  private edgeWarmingTimer: number | null = null;
   private acquireTimes: number[] = [];
+  private edgeRegions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'];
 
   private constructor() {
     this.initializePool();
     this.startHealthChecks();
     this.startCleanup();
+    // Initialize edge warming if enabled
+    if (this.config.connectionWarming) {
+      this.initializeEdgeWarming();
+    }
   }
 
   static getInstance(): EnhancedSupabaseConnectionPool {
@@ -649,12 +655,228 @@ class EnhancedSupabaseConnectionPool {
      return stats;
    }
 
-  /**
-   * Close all read replica connections
-   */
+/**
+    * Close all read replica connections
+    */
   async closeReadReplicas(): Promise<void> {
     this.readReplicaClients.clear();
     console.log('All read replica connections closed');
+  }
+
+  /**
+   * Initialize edge connection warming
+   */
+  private async initializeEdgeWarming(): Promise<void> {
+    // Delay initial warm-up to allow for application startup
+    setTimeout(() => {
+      this.warmEdgeConnections();
+    }, 5000);
+
+    // Schedule periodic warming
+    this.edgeWarmingTimer = window.setInterval(() => {
+      this.warmEdgeConnections();
+    }, 300000); // Every 5 minutes
+  }
+
+  /**
+   * Warm up edge connections across all regions
+   */
+  async warmEdgeConnections(): Promise<void> {
+    if (!this.config.connectionWarming) {
+      return;
+    }
+
+    const startTime = performance.now();
+    const warmupPromises: Promise<void>[] = [];
+
+    console.log('Starting edge connection warm-up...');
+
+    // Warm up primary connections for each region
+    for (const region of this.edgeRegions) {
+      warmupPromises.push(this.warmRegionConnection(region));
+    }
+
+    // Warm up read replicas
+    warmupPromises.push(this.warmUpReadReplicas());
+
+    try {
+      await Promise.allSettled(warmupPromises);
+      const duration = performance.now() - startTime;
+      console.log(`Edge connection warm-up completed in ${duration.toFixed(2)}ms`);
+    } catch (error) {
+      console.warn('Edge connection warm-up failed:', error);
+    }
+  }
+
+  /**
+   * Warm up connection for a specific region
+   */
+  private async warmRegionConnection(region: string): Promise<void> {
+    try {
+      // Check if we already have a healthy connection for this region
+      const existingConnection = Array.from(this.connections.values())
+        .find(conn => conn.region === region && conn.healthy && !conn.inUse);
+
+      if (existingConnection) {
+        console.debug(`Region ${region} already has a warm connection`);
+        return;
+      }
+
+      // Create a new connection for the region if under limit
+      if (this.stats.totalConnections < this.config.maxConnections) {
+        const connection = await this.createConnection(region);
+        
+        // Perform a warm-up query
+        await this.performWarmupQuery(connection.client);
+        
+        console.debug(`Warmed up connection for region: ${region}`);
+      } else {
+        console.debug(`Skipping warm-up for ${region} - connection pool at capacity`);
+      }
+    } catch (error) {
+      console.warn(`Failed to warm up connection for region ${region}:`, error);
+    }
+  }
+
+  /**
+   * Perform a warm-up query to initialize the connection
+   */
+  private async performWarmupQuery(client: SupabaseClient): Promise<void> {
+    try {
+      // Simple lightweight query for warm-up
+      await client
+        .from('robots')
+        .select('count', { count: 'exact', head: true })
+        .limit(1);
+    } catch (error) {
+      // Don't throw error for warm-up failures, just log
+      console.debug('Warm-up query failed:', error);
+    }
+  }
+
+  /**
+   * Get edge warming statistics
+   */
+  getEdgeWarmingStats(): {
+    enabled: boolean;
+    regions: string[];
+    warmedRegions: string[];
+    lastWarmup?: number;
+    nextWarmup?: number;
+  } {
+    const warmedRegions = Array.from(this.connections.values())
+      .filter(conn => conn.region && conn.healthy)
+      .map(conn => conn.region!)
+      .filter((region, index, self) => self.indexOf(region) === index);
+
+    return {
+      enabled: this.config.connectionWarming || false,
+      regions: this.edgeRegions,
+      warmedRegions,
+      lastWarmup: this.edgeWarmingTimer ? Date.now() - 300000 : undefined,
+      nextWarmup: this.edgeWarmingTimer ? Date.now() + 300000 : undefined
+    };
+  }
+
+  /**
+   * Force immediate edge warming
+   */
+  async forceEdgeWarming(): Promise<void> {
+    console.log('Forcing immediate edge connection warming...');
+    await this.warmEdgeConnections();
+  }
+
+  /**
+   * Optimize connection pool for edge deployment
+   */
+  optimizeForEdge(): void {
+    // Update configuration for edge optimization
+    this.updateConfig({
+      maxConnections: Math.min(this.config.maxConnections, 6), // Lower max for edge
+      minConnections: Math.max(this.config.minConnections, 1), // Ensure at least 1
+      acquireTimeout: 800, // Faster timeout for edge
+      idleTimeout: 45000, // Faster cleanup for serverless
+      healthCheckInterval: 10000, // More frequent health checks
+      connectionWarming: true,
+      enableConnectionDraining: true,
+      regionAffinity: true
+    });
+
+    console.log('Connection pool optimized for edge deployment');
+  }
+
+  /**
+   * Get connection metrics for edge monitoring
+   */
+  getEdgeMetrics(): {
+    totalConnections: number;
+    connectionsByRegion: Record<string, number>;
+    healthyConnectionsByRegion: Record<string, number>;
+    avgResponseTime: number;
+    coldStartRate: number;
+    cacheHitRate: number;
+  } {
+    const connectionsByRegion: Record<string, number> = {};
+    const healthyConnectionsByRegion: Record<string, number> = {};
+
+    for (const connection of this.connections.values()) {
+      const region = connection.region || 'unknown';
+      connectionsByRegion[region] = (connectionsByRegion[region] || 0) + 1;
+      
+      if (connection.healthy) {
+        healthyConnectionsByRegion[region] = (healthyConnectionsByRegion[region] || 0) + 1;
+      }
+    }
+
+    return {
+      totalConnections: this.stats.totalConnections,
+      connectionsByRegion,
+      healthyConnectionsByRegion,
+      avgResponseTime: this.stats.avgAcquireTime,
+      coldStartRate: this.calculateColdStartRate(),
+      cacheHitRate: this.stats.hitRate
+    };
+  }
+
+  /**
+   * Calculate cold start rate based on connection acquisition times
+   */
+  private calculateColdStartRate(): number {
+    if (this.acquireTimes.length === 0) return 0;
+    
+    // Consider acquisitions over 500ms as potential cold starts
+    const coldStarts = this.acquireTimes.filter(time => time > 500).length;
+    return coldStarts / this.acquireTimes.length;
+  }
+
+  /**
+   * Enhanced cleanup for edge environment
+   */
+  protected async cleanupForEdge(): Promise<void> {
+    // Force cleanup of idle connections more aggressively
+    const now = Date.now();
+    const connectionsToRemove: string[] = [];
+
+    for (const [id, connection] of this.connections.values()) {
+      // More aggressive cleanup for edge
+      if (connection.inUse || this.stats.totalConnections <= this.config.minConnections) {
+        continue;
+      }
+
+      // Remove if idle for more than 30 seconds or unhealthy
+      if (!connection.healthy || (now - connection.lastUsed) > 30000) {
+        connectionsToRemove.push(id);
+      }
+    }
+
+    connectionsToRemove.forEach(id => {
+      this.connections.delete(id);
+      console.debug(`Edge cleanup: removed connection ${id}`);
+    });
+
+    if (connectionsToRemove.length > 0) {
+      this.updateStats();
+    }
   }
 }
 
