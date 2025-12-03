@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo, Suspense, lazy } from 'react';
+import { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './services/supabase';
 import { ToastProvider } from './components/Toast';
@@ -54,32 +54,8 @@ export default function App() {
 
 useEffect(() => {
     const startTime = performance.now();
-     
-     // Initialize Vercel Edge Optimizer
-     vercelEdgeOptimizer.optimizeBundleForEdge();
-     vercelEdgeOptimizer.enableEdgeSSR();
-     vercelEdgeOptimizer.setupEdgeErrorHandling();
-     
-     // Initialize Frontend Optimizer
-     frontendOptimizer.warmUp().catch(err => logger.warn('Frontend optimizer warmup failed:', err));
-     
-     // Initialize Edge Analytics
-     edgeAnalytics.trackCustomEvent('app_initialization', {
-       timestamp: Date.now(),
-       userAgent: navigator.userAgent,
-       region: 'unknown' // Will be detected by edge analytics
-     });
-     
-     // Initialize Edge Monitoring
-     const monitoringStatus = edgeMonitoring.getMonitoringStatus();
-     logger.info('Edge monitoring status:', monitoringStatus);
-     
-      // Initialize Advanced API Cache for better performance
-      advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: any) => 
-        logger.warn('API cache prefetch failed:', err)
-      );
     
-    // Check active sessions and sets the user
+    // Critical path: Auth initialization first
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       performanceMonitor.recordMetric('auth_init', performance.now() - startTime);
@@ -89,10 +65,16 @@ useEffect(() => {
       if (session) {
         preloadCriticalRoutes();
       }
+      
+      // Initialize non-critical services after auth is complete
+      initializeNonCriticalServices();
     }).catch((err) => {
       logger.warn("Auth initialization failed:", err);
       performanceMonitor.recordMetric('auth_error', 1);
       databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, false);
+      
+      // Still initialize non-critical services even on auth error
+      initializeNonCriticalServices();
     }).finally(() => {
       setLoading(false);
     });
@@ -114,6 +96,50 @@ useEffect(() => {
       // Cleanup performance monitor on app unmount
       performanceMonitor.cleanup();
     };
+  }, []);
+
+  // Separate non-critical service initialization to prevent blocking
+  const initializeNonCriticalServices = useCallback(() => {
+    // Use setTimeout to defer non-critical initialization
+    const initializeServices = async () => {
+      try {
+        // Initialize Vercel Edge Optimizer (non-blocking)
+        setTimeout(() => {
+          vercelEdgeOptimizer.optimizeBundleForEdge();
+          vercelEdgeOptimizer.enableEdgeSSR();
+          vercelEdgeOptimizer.setupEdgeErrorHandling();
+        }, 100);
+        
+        // Initialize Frontend Optimizer (non-blocking)
+        setTimeout(() => {
+          frontendOptimizer.warmUp().catch(err => logger.warn('Frontend optimizer warmup failed:', err));
+        }, 200);
+        
+        // Initialize Edge Analytics (non-blocking)
+        setTimeout(() => {
+          edgeAnalytics.trackCustomEvent('app_initialization', {
+            timestamp: Date.now(),
+            userAgent: navigator.userAgent,
+            region: 'unknown' // Will be detected by edge analytics
+          });
+          
+          const monitoringStatus = edgeMonitoring.getMonitoringStatus();
+          logger.info('Edge monitoring status:', monitoringStatus);
+        }, 300);
+        
+        // Initialize Advanced API Cache (non-blocking)
+        setTimeout(() => {
+          advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
+            logger.warn('API cache prefetch failed:', err)
+          );
+        }, 400);
+      } catch (error) {
+        logger.warn('Non-critical service initialization failed:', error);
+      }
+    };
+    
+    // Run initialization in background
+    initializeServices();
   }, []);
 
   // Memoize the loading component to prevent re-renders

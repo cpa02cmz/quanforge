@@ -64,6 +64,59 @@ class EnhancedCache<T> {
   }
 }
 
+// Security utilities for input sanitization and validation
+const sanitizePrompt = (prompt: string): string => {
+  if (!prompt || typeof prompt !== 'string') {
+    throw new Error('Invalid prompt: must be a non-empty string');
+  }
+  
+  // Remove potentially dangerous patterns
+  const sanitized = prompt
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
+    .replace(/javascript:/gi, '') // Remove javascript: protocol
+    .replace(/on\w+\s*=/gi, '') // Remove event handlers
+    .replace(/data:text\/html/gi, '') // Remove data URLs
+    .trim();
+  
+  // Enforce length limits to prevent token exhaustion attacks
+  if (sanitized.length > 10000) {
+    throw new Error('Prompt too long: maximum 10,000 characters allowed');
+  }
+  
+  if (sanitized.length < 10) {
+    throw new Error('Prompt too short: minimum 10 characters required');
+  }
+  
+  return sanitized;
+};
+
+const validateStrategyParams = (params: StrategyParams): StrategyParams => {
+  if (!params || typeof params !== 'object') {
+    throw new Error('Invalid strategy parameters');
+  }
+  
+  // Validate numeric ranges
+  const validated = { ...params };
+  
+  if (validated.stopLoss !== undefined) {
+    validated.stopLoss = Math.max(1, Math.min(1000, Number(validated.stopLoss) || 50));
+  }
+  
+  if (validated.takeProfit !== undefined) {
+    validated.takeProfit = Math.max(1, Math.min(1000, Number(validated.takeProfit) || 100));
+  }
+  
+  if (validated.riskPercent !== undefined) {
+    validated.riskPercent = Math.max(0.1, Math.min(100, Number(validated.riskPercent) || 2));
+  }
+  
+  if (validated.magicNumber !== undefined) {
+    validated.magicNumber = Math.max(1000, Math.min(999999, Number(validated.magicNumber) || 12345));
+  }
+  
+  return validated;
+};
+
 // Advanced cache for strategy analysis to avoid repeated API calls
 // Uses LRU eviction to prevent memory bloat
 class LRUCache<T> {
@@ -580,12 +633,21 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
    const settings = settingsManager.getSettings();
 
    try {
-     // Early return for empty prompts
-     if (!prompt || prompt.trim().length === 0) {
+     // Security: Validate and sanitize inputs
+     const sanitizedPrompt = sanitizePrompt(prompt);
+     
+     // Validate strategy parameters if provided
+     let validatedParams = strategyParams;
+     if (strategyParams) {
+       validatedParams = validateStrategyParams(strategyParams);
+     }
+
+     // Early return for empty prompts (after sanitization check)
+     if (!sanitizedPrompt || sanitizedPrompt.trim().length === 0) {
        return { content: "Please provide a strategy description or request." };
      }
 
-     const fullPrompt = buildContextPrompt(prompt, currentCode, strategyParams, history);
+     const fullPrompt = buildContextPrompt(sanitizedPrompt, currentCode, validatedParams, history);
      let rawResponse = "";
 
      // Create deduplication key for this specific request with more comprehensive parameters
