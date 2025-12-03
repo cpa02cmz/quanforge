@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback, useLayoutEffect } from 'react';
 import { useTranslation } from '../services/i18n';
 
 interface CodeEditorProps {
@@ -15,6 +15,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [wordWrap, setWordWrap] = useState(false);
+  const [fontSize, setFontSize] = useState(14); // Default font size in px
   
   const contentRef = useRef<HTMLDivElement>(null);
   const gutterRef = useRef<HTMLDivElement>(null);
@@ -22,7 +24,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Re-run highlighting when code changes or when switching back to view mode
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isEditing && codeRef.current && (window as any).Prism) {
         // MQL5 is very similar to C++, so we use the cpp language definition
         // Use requestAnimationFrame to ensure highlighting happens after DOM updates
@@ -33,11 +35,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
   }, [code, isEditing]);
 
   // Sync scrolling between content and gutter
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     if (contentRef.current && gutterRef.current) {
       gutterRef.current.scrollTop = contentRef.current.scrollTop;
     }
-  };
+  }, []);
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(code);
@@ -59,7 +61,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
     document.body.removeChild(element);
   }, [code, filename]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Handle Tab key for indentation
     if (e.key === 'Tab') {
       e.preventDefault();
       const start = e.currentTarget.selectionStart;
@@ -80,13 +83,69 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
         }, 0);
       }
     }
-  };
+    
+    // Handle Ctrl/Cmd + S to save
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      handleDownload();
+    }
+    
+    // Handle Ctrl/Cmd + / for comment toggle
+    if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+      e.preventDefault();
+      const start = e.currentTarget.selectionStart;
+      const end = e.currentTarget.selectionEnd;
+      const value = e.currentTarget.value;
+      const selectedText = value.substring(start, end);
+      
+      // Simple comment toggling for MQL5
+      if (selectedText.trim().startsWith('//')) {
+        // Remove comment
+        const newValue = value.substring(0, start) + selectedText.replace(/\/\/\s?/g, '') + value.substring(end);
+        if (onChange) onChange(newValue);
+      } else {
+        // Add comment
+        const newValue = value.substring(0, start) + selectedText.replace(/^(.*)$/gm, '//$1') + value.substring(end);
+        if (onChange) onChange(newValue);
+      }
+    }
+  }, [onChange, handleDownload]);
 
-// Generate line numbers efficiently - memoized for performance
-    const lineNumbers = useMemo(() => {
-      const lines = code.split('\n');
-      return Array.from({ length: lines.length }, (_, i) => i + 1);
-    }, [code]);
+  // Handle Ctrl/Cmd + Plus and Minus for font size adjustment
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
+        if (e.key === '+' || e.key === '=') {
+          e.preventDefault();
+          setFontSize(prev => Math.min(prev + 1, 24)); // Max font size 24px
+        } else if (e.key === '-') {
+          e.preventDefault();
+          setFontSize(prev => Math.max(prev - 1, 10)); // Min font size 10px
+        } else if (e.key === '0') {
+          e.preventDefault();
+          setFontSize(14); // Reset to default
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
+ // Generate line numbers efficiently - memoized for performance
+     const lineNumbers = useMemo(() => {
+       const lines = code.split('\n');
+       return Array.from({ length: lines.length }, (_, i) => i + 1);
+     }, [code]);
+     
+     // Calculate editor height based on content for auto-expanding textarea
+     const editorHeight = useMemo(() => {
+       if (!isEditing) return 'auto';
+       
+       // Calculate height based on number of lines with a minimum height
+       const lines = code.split('\n').length;
+       return `${Math.max(lines * 26, 300)}px`; // 26px per line, minimum 300px
+     }, [code, isEditing]);
 
   return (
     <div className="flex flex-col h-full bg-[#0d1117] text-gray-300 font-mono text-sm relative">
@@ -101,6 +160,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
                         ? 'bg-brand-500/20 text-brand-400 border-brand-500/50' 
                         : 'bg-dark-bg text-gray-400 border-dark-border hover:text-white'
                     }`}
+                    title="Toggle Edit Mode"
                 >
                     {isEditing ? t('editor_done') : t('editor_edit')}
                 </button>
@@ -129,19 +189,55 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
             )}
         </div>
         <div className="flex space-x-2">
-            <button 
+            <div className="flex items-center space-x-2">
+              {/* Font size controls */}
+              <div className="flex items-center space-x-1">
+                <button 
+                  onClick={() => setFontSize(prev => Math.max(prev - 1, 10))}
+                  className="w-6 h-6 flex items-center justify-center bg-dark-bg text-gray-400 hover:text-white rounded text-xs"
+                  title="Decrease font size"
+                >
+                  -
+                </button>
+                <span className="text-xs w-8 text-center">{fontSize}px</span>
+                <button 
+                  onClick={() => setFontSize(prev => Math.min(prev + 1, 24))}
+                  className="w-6 h-6 flex items-center justify-center bg-dark-bg text-gray-400 hover:text-white rounded text-xs"
+                  title="Increase font size"
+                >
+                  +
+                </button>
+              </div>
+              
+              {/* Word wrap toggle */}
+              <button 
+                onClick={() => setWordWrap(!wordWrap)}
+                className={`px-2 py-0.5 text-xs rounded border ${
+                  wordWrap 
+                    ? 'bg-brand-500/20 text-brand-400 border-brand-500/50' 
+                    : 'bg-dark-bg text-gray-400 border-dark-border hover:text-white'
+                }`}
+                title="Toggle word wrap"
+              >
+                W
+              </button>
+              
+              <button 
                 onClick={handleCopy}
                 className="flex items-center space-x-1 px-2 py-1 hover:bg-white/5 rounded text-xs transition-colors"
-            >
+                title="Copy code to clipboard"
+              >
                 {copied ? <span className="text-green-500">{t('editor_copied')}</span> : <span>{t('editor_copy')}</span>}
-            </button>
-            <button 
+              </button>
+              <button 
                 onClick={handleDownload}
                 className="flex items-center space-x-1 px-2 py-1 bg-brand-600/20 text-brand-400 hover:bg-brand-600/30 rounded text-xs transition-colors border border-brand-600/30"
-            >
+                title="Download .mq5 file (Ctrl+S)"
+              >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                 <span>{t('editor_download')}</span>
-            </button>
+              </button>
+            </div>
         </div>
       </div>
       
@@ -152,11 +248,20 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
          <div 
            ref={gutterRef}
            className="w-12 bg-[#0d1117] border-r border-[#30363d] text-right pr-3 pt-4 text-gray-600 select-none overflow-hidden"
-           style={{ lineHeight: '1.625' }} // match tailwind leading-relaxed
+           style={{ 
+             lineHeight: '1.625',
+             fontSize: `${fontSize}px` // Dynamic font size for line numbers
+           }}
          >
-           <div style={{ height: `${lineNumbers.length * 26}px` }}>
+           <div style={{ height: `${lineNumbers.length * (fontSize * 1.625)}px` }}>
              {lineNumbers.map(n => (
-               <div key={n} className="h-6 flex items-center justify-end px-0">{n}</div>
+               <div 
+                 key={n} 
+                 className="flex items-center justify-end px-0"
+                 style={{ height: `${fontSize * 1.625}px` }}
+               >
+                 {n}
+               </div>
              ))}
            </div>
          </div>
@@ -174,16 +279,44 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
                   onChange={(e) => onChange && onChange(e.target.value)}
                   onKeyDown={handleKeyDown}
                   spellCheck={false}
-                  className="absolute top-0 left-0 w-full h-full min-h-full bg-transparent text-gray-300 p-4 pl-4 resize-none outline-none font-mono text-sm leading-relaxed whitespace-pre"
+                  style={{
+                    fontSize: `${fontSize}px`,
+                    lineHeight: '1.625',
+                    whiteSpace: wordWrap ? 'pre-wrap' : 'pre',
+                    wordWrap: wordWrap ? 'break-word' : 'normal',
+                    minHeight: editorHeight
+                  }}
+                  className="absolute top-0 left-0 w-full bg-transparent text-gray-300 p-4 pl-4 resize-none outline-none font-mono leading-relaxed"
                   placeholder="// Start coding..."
               />
           ) : (
-              <pre className="outline-none min-h-full language-cpp p-4 pl-4 !bg-transparent">
+              <pre 
+                style={{
+                  fontSize: `${fontSize}px`,
+                  lineHeight: '1.625',
+                  whiteSpace: wordWrap ? 'pre-wrap' : 'pre',
+                  wordWrap: wordWrap ? 'break-word' : 'normal',
+                }}
+                className="outline-none min-h-full language-cpp p-4 pl-4 !bg-transparent"
+              >
                 <code ref={codeRef} className="language-cpp block leading-relaxed">
                   {code || '// Generated code will appear here...'}
                 </code>
               </pre>
           )}
+        </div>
+      </div>
+      
+      {/* Status bar */}
+      <div className="flex items-center justify-between px-4 py-1 bg-dark-surface border-t border-dark-border text-xs text-gray-500 shrink-0">
+        <div className="flex items-center space-x-4">
+          <span>{isEditing ? 'Editing' : 'Viewing'}</span>
+          <span>{lineNumbers.length} lines</span>
+          <span>{code.length} characters</span>
+        </div>
+        <div className="flex items-center space-x-4">
+          <span>Font: {fontSize}px</span>
+          <span>Wrap: {wordWrap ? 'On' : 'Off'}</span>
         </div>
       </div>
     </div>

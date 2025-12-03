@@ -1,10 +1,477 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { SEOHead, structuredDataTemplates } from './seo';
+import { SEOAnalytics } from './seoAnalytics';
+
+interface EnhancedSEOProps {
+  title?: string;
+  description?: string;
+  keywords?: string;
+  ogImage?: string;
+  ogUrl?: string;
+  canonicalUrl?: string;
+  type?: 'website' | 'article' | 'software';
+  structuredData?: Record<string, any>[];
+  enableAnalytics?: boolean;
+  pageType?: 'homepage' | 'generator' | 'dashboard' | 'wiki' | 'blog' | 'other';
+  customMeta?: Record<string, string>;
+  jsonLd?: Record<string, any>[];
+  alternateLanguages?: Record<string, string>;
+  noIndex?: boolean;
+  lastModified?: string;
+  author?: string;
+  publishedDate?: string;
+  category?: string;
+  tags?: string[];
+}
+
+interface PageSEOData {
+  title: string;
+  description: string;
+  keywords: string[];
+  structuredData: Record<string, any>[];
+  breadcrumbs: Array<{ name: string; url: string }>;
+}
 
 interface SEOAnalyticsProps {
   pageUrl: string;
   pageTitle: string;
   pageType?: 'article' | 'product' | 'homepage' | 'other';
 }
+
+const SEO_CONFIG = {
+  siteName: 'QuantForge AI',
+  siteUrl: 'https://quanforge.ai',
+  defaultImage: '/og-image.png',
+  twitterHandle: '@quanforge',
+  author: 'QuantForge AI',
+  themeColor: '#22c55e',
+  language: 'en',
+  locale: 'en_US'
+};
+
+const PAGE_SEO_CONFIGS: Record<string, Partial<PageSEOData>> = {
+  homepage: {
+    title: 'QuantForge AI - Advanced MQL5 Trading Robot Generator | MetaTrader 5',
+    description: 'Generate professional MQL5 trading robots and Expert Advisors using AI. Powered by Google Gemini 3.0/2.5. Create, test, and deploy automated trading strategies for MetaTrader 5.',
+    keywords: [
+      'MQL5 generator', 'MetaTrader 5', 'trading robot', 'Expert Advisor', 'AI trading',
+      'automated trading', 'forex robot', 'algorithmic trading', 'Gemini AI', 'trading strategy generator',
+      'MT5 EA', 'quantitative trading', 'forex EA', 'MQL5 EA builder', 'automated forex trading',
+      'AI trading bot', 'MetaTrader expert advisor', 'trading algorithm generator'
+    ],
+    breadcrumbs: [{ name: 'Home', url: 'https://quanforge.ai/' }]
+  },
+  generator: {
+    title: 'Create Trading Robot - AI-Powered MQL5 Generator',
+    description: 'Create professional MQL5 trading robots using AI. Describe your strategy and generate Expert Advisors for MetaTrader 5 with visual configuration.',
+    keywords: [
+      'MQL5 generator', 'trading robot creator', 'Expert Advisor builder', 'AI trading strategy',
+      'MetaTrader 5 robot', 'forex EA builder', 'automated trading bot', 'MT5 expert advisor'
+    ],
+    breadcrumbs: [
+      { name: 'Home', url: 'https://quanforge.ai/' },
+      { name: 'Generator', url: 'https://quanforge.ai/generator' }
+    ]
+  },
+  dashboard: {
+    title: 'Dashboard - Trading Robots Management',
+    description: 'Manage your MQL5 trading robots and Expert Advisors. View, edit, duplicate, and analyze your automated trading strategies.',
+    keywords: [
+      'trading robot dashboard', 'MQL5 management', 'Expert Advisor dashboard',
+      'automated trading portfolio', 'forex robot management', 'MT5 EA portfolio'
+    ],
+    breadcrumbs: [
+      { name: 'Home', url: 'https://quanforge.ai/' },
+      { name: 'Dashboard', url: 'https://quanforge.ai/' }
+    ]
+  },
+  wiki: {
+    title: 'Documentation - MQL5 Trading Robot Development Guide',
+    description: 'Comprehensive documentation for MQL5 trading robot development. Learn best practices, strategies, and advanced techniques.',
+    keywords: [
+      'MQL5 documentation', 'trading robot tutorial', 'Expert Advisor guide',
+      'MetaTrader 5 programming', 'algorithmic trading guide', 'forex robot development'
+    ],
+    breadcrumbs: [
+      { name: 'Home', url: 'https://quanforge.ai/' },
+      { name: 'Wiki', url: 'https://quanforge.ai/wiki' }
+    ]
+  }
+};
+
+export const EnhancedSEO: React.FC<EnhancedSEOProps> = ({
+  title,
+  description,
+  keywords,
+  ogImage = SEO_CONFIG.defaultImage,
+  ogUrl,
+  canonicalUrl,
+  type = 'website',
+  structuredData = [],
+  enableAnalytics = true,
+  pageType = 'other',
+  customMeta = {},
+  jsonLd = [],
+  alternateLanguages = {},
+  noIndex = false,
+  lastModified,
+  author = SEO_CONFIG.author,
+  publishedDate,
+  category,
+  tags = []
+}) => {
+  // Get page-specific configuration
+  const pageConfig = useMemo(() => PAGE_SEO_CONFIGS[pageType] || {}, [pageType]);
+  
+  // Merge props with page configuration
+  const finalTitle = title || pageConfig.title || SEO_CONFIG.siteName;
+  const finalDescription = description || pageConfig.description || '';
+  const finalKeywords = keywords || pageConfig.keywords?.join(', ') || '';
+  const finalCanonicalUrl = canonicalUrl || ogUrl || SEO_CONFIG.siteUrl;
+  const finalBreadcrumbs = pageConfig.breadcrumbs || [];
+  
+  // Generate enhanced structured data
+  const enhancedStructuredData = useMemo(() => {
+    const data = [...structuredData];
+    
+    // Add basic structured data based on page type
+    if (pageType === 'homepage') {
+      data.push(structuredDataTemplates.softwareApplication);
+      data.push(structuredDataTemplates.localBusiness);
+      data.push(structuredDataTemplates.webPage(finalTitle, finalDescription, finalCanonicalUrl));
+    } else if (pageType === 'generator') {
+      data.push(structuredDataTemplates.softwareApplication);
+      data.push(structuredDataTemplates.breadcrumb(finalBreadcrumbs));
+      data.push(structuredDataTemplates.howTo(
+        'Create a Trading Robot with QuantForge AI',
+        finalDescription,
+        [
+          { name: 'Describe Your Strategy', text: 'Explain your trading strategy in natural language.' },
+          { name: 'Configure Parameters', text: 'Set risk management, timeframes, and symbols.' },
+          { name: 'Generate Code', text: 'AI generates professional MQL5 code.' },
+          { name: 'Test & Deploy', text: 'Validate and deploy to MetaTrader 5.' }
+        ]
+      ));
+    } else if (pageType === 'dashboard') {
+      data.push(structuredDataTemplates.breadcrumb(finalBreadcrumbs));
+      data.push(structuredDataTemplates.webPage(finalTitle, finalDescription, finalCanonicalUrl));
+    } else if (pageType === 'wiki') {
+      data.push(structuredDataTemplates.breadcrumb(finalBreadcrumbs));
+      data.push(structuredDataTemplates.creativeWork(finalTitle, finalDescription));
+    }
+    
+    // Add custom JSON-LD data
+    data.push(...jsonLd);
+    
+    // Add article structured data for blog-like content
+    if (pageType === 'blog' || publishedDate) {
+      data.push(structuredDataTemplates.article(
+        finalTitle,
+        finalDescription,
+        finalCanonicalUrl
+      ));
+    }
+    
+    // Add FAQ structured data if tags include FAQ-related terms
+    if (tags.some(tag => tag.toLowerCase().includes('faq'))) {
+      data.push(structuredDataTemplates.faq([
+        {
+          question: 'What is QuantForge AI?',
+          answer: 'QuantForge AI is an advanced platform that uses artificial intelligence to generate MQL5 trading robots for MetaTrader 5.'
+        },
+        {
+          question: 'How does the AI generate trading robots?',
+          answer: 'Our AI analyzes your strategy description and generates professional MQL5 code using Google Gemini models.'
+        },
+        {
+          question: 'Is QuantForge AI free to use?',
+          answer: 'Yes, QuantForge AI offers free access to generate and test trading robots.'
+        }
+      ]));
+    }
+    
+    return data;
+  }, [pageType, finalTitle, finalDescription, finalCanonicalUrl, finalBreadcrumbs, structuredData, jsonLd, publishedDate, tags]);
+  
+  // Generate alternate language links
+  const alternateLanguageLinks = useMemo(() => {
+    const links: Array<{ rel: string; hrefLang: string; href: string }> = [];
+    
+    // Add default alternate languages
+    links.push({ rel: 'alternate', hrefLang: 'en', href: finalCanonicalUrl });
+    links.push({ rel: 'alternate', hrefLang: 'x-default', href: finalCanonicalUrl });
+    links.push({ rel: 'alternate', hrefLang: 'id', href: `${finalCanonicalUrl}?lang=id` });
+    
+    // Add custom alternate languages
+    Object.entries(alternateLanguages).forEach(([lang, url]) => {
+      links.push({ rel: 'alternate', hrefLang: lang, href: url });
+    });
+    
+    return links;
+  }, [finalCanonicalUrl, alternateLanguages]);
+  
+  // SEO analytics component
+  const analyticsComponent = enableAnalytics ? (
+    <SEOAnalytics
+      pageUrl={finalCanonicalUrl}
+      pageTitle={finalTitle}
+      pageType={pageType === 'homepage' ? 'homepage' : pageType === 'blog' ? 'article' : 'other'}
+    />
+  ) : null;
+  
+  // Update meta tags dynamically
+  useEffect(() => {
+    // Update document title
+    document.title = finalTitle.includes(SEO_CONFIG.siteName) ? finalTitle : `${finalTitle} | ${SEO_CONFIG.siteName}`;
+    
+    // Update or create meta tags
+    const updateMetaTag = (name: string, content: string, property?: string) => {
+      const selector = property ? `meta[property="${property}"]` : `meta[name="${name}"]`;
+      let meta: HTMLMetaElement | null = document.querySelector(selector);
+      
+      if (!meta) {
+        meta = document.createElement('meta');
+        if (property) {
+          meta.setAttribute('property', property);
+        } else {
+          meta.setAttribute('name', name);
+        }
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
+    
+    // Basic meta tags
+    updateMetaTag('description', finalDescription);
+    updateMetaTag('keywords', finalKeywords);
+    updateMetaTag('author', author);
+    updateMetaTag('robots', noIndex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
+    
+    if (lastModified) {
+      updateMetaTag('last-modified', lastModified);
+    }
+    
+    if (publishedDate) {
+      updateMetaTag('article:published_time', publishedDate);
+    }
+    
+    if (category) {
+      updateMetaTag('article:section', category);
+    }
+    
+    // Add tags as article:tag meta tags
+    tags.forEach(tag => {
+      updateMetaTag('article:tag', tag);
+    });
+    
+    // Open Graph tags
+    updateMetaTag('og:title', finalTitle, 'og:title');
+    updateMetaTag('og:description', finalDescription, 'og:description');
+    updateMetaTag('og:type', type, 'og:type');
+    updateMetaTag('og:image', ogImage, 'og:image');
+    updateMetaTag('og:url', finalCanonicalUrl, 'og:url');
+    updateMetaTag('og:site_name', SEO_CONFIG.siteName, 'og:site_name');
+    updateMetaTag('og:locale', SEO_CONFIG.locale, 'og:locale');
+    
+    if (author) {
+      updateMetaTag('article:author', author, 'article:author');
+    }
+    
+    if (publishedDate) {
+      updateMetaTag('article:published_time', publishedDate, 'article:published_time');
+    }
+    
+    // Twitter Card tags
+    updateMetaTag('twitter:card', 'summary_large_image');
+    updateMetaTag('twitter:title', finalTitle);
+    updateMetaTag('twitter:description', finalDescription);
+    updateMetaTag('twitter:image', ogImage);
+    updateMetaTag('twitter:site', SEO_CONFIG.twitterHandle);
+    updateMetaTag('twitter:creator', SEO_CONFIG.twitterHandle);
+    
+    // Technical meta tags
+    updateMetaTag('theme-color', SEO_CONFIG.themeColor);
+    updateMetaTag('language', SEO_CONFIG.language);
+    updateMetaTag('distribution', 'global');
+    updateMetaTag('rating', 'general');
+    updateMetaTag('revisit-after', '7 days');
+    updateMetaTag('geo.region', 'US');
+    updateMetaTag('geo.placename', 'Global');
+    updateMetaTag('category', 'finance, technology, trading, artificial intelligence');
+    updateMetaTag('coverage', 'Worldwide');
+    updateMetaTag('target', 'all');
+    
+    // Custom meta tags
+    Object.entries(customMeta).forEach(([name, content]) => {
+      updateMetaTag(name, content);
+    });
+    
+    // Canonical URL
+    let canonical: HTMLLinkElement | null = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', finalCanonicalUrl);
+    
+    // Alternate language links
+    alternateLanguageLinks.forEach(({ rel, hrefLang, href }) => {
+      let link: HTMLLinkElement | null = document.querySelector(`link[rel="${rel}"][hreflang="${hrefLang}"]`);
+      if (!link) {
+        link = document.createElement('link');
+        link.setAttribute('rel', rel);
+        link.setAttribute('hreflang', hrefLang);
+        document.head.appendChild(link);
+      }
+      link.setAttribute('href', href);
+    });
+    
+    // Clean up and add structured data
+    const existingScripts = document.querySelectorAll('script[type="application/ld+json"]');
+    existingScripts.forEach(script => script.remove());
+    
+    enhancedStructuredData.forEach((data) => {
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.textContent = JSON.stringify(data);
+      document.head.appendChild(script);
+    });
+  }, [
+    finalTitle,
+    finalDescription,
+    finalKeywords,
+    author,
+    noIndex,
+    lastModified,
+    publishedDate,
+    category,
+    tags,
+    type,
+    ogImage,
+    finalCanonicalUrl,
+    customMeta,
+    alternateLanguageLinks,
+    enhancedStructuredData,
+    finalBreadcrumbs
+  ]);
+  
+  return (
+    <>
+      {analyticsComponent}
+      <SEOHead
+        title={finalTitle}
+        description={finalDescription}
+        keywords={finalKeywords}
+        ogImage={ogImage}
+        ogUrl={finalCanonicalUrl}
+        canonicalUrl={finalCanonicalUrl}
+        type={type}
+        structuredData={enhancedStructuredData}
+      />
+    </>
+  );
+};
+
+// Hook for accessing page SEO data
+export const usePageSEO = () => {
+  const [pageData, setPageData] = useState<PageSEOData | null>(null);
+  
+  useEffect(() => {
+    // This would typically be populated by the EnhancedSEO component
+    // For now, return a default structure
+    setPageData({
+      title: document.title,
+      description: document.querySelector('meta[name="description"]')?.getAttribute('content') || '',
+      keywords: [],
+      structuredData: [],
+      breadcrumbs: []
+    });
+  }, []);
+  
+  return pageData;
+};
+
+// Helper function to generate SEO-friendly URLs
+export const generateSEOFriendlyUrl = (title: string, basePath: string = ''): string => {
+  const urlFriendly = title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  
+  return basePath ? `${basePath}/${urlFriendly}` : urlFriendly;
+};
+
+// Helper function to generate structured data for blog posts
+export const generateBlogStructuredData = (
+  title: string,
+  description: string,
+  url: string,
+  author: string,
+  publishDate: string,
+  imageUrl?: string
+) => {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: title,
+    description,
+    image: imageUrl || `${SEO_CONFIG.siteUrl}/og-image.png`,
+    url,
+    datePublished: publishDate,
+    dateModified: new Date().toISOString(),
+    author: {
+      '@type': 'Organization',
+      name: author
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: SEO_CONFIG.siteName,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${SEO_CONFIG.siteUrl}/logo.png`,
+        width: 512,
+        height: 512
+      }
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': url
+    }
+  };
+};
+
+// Helper function to generate product structured data
+export const generateProductStructuredData = (
+  name: string,
+  description: string,
+  price: string,
+  currency: string = 'USD',
+  availability: string = 'InStock'
+) => {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name,
+    description,
+    brand: {
+      '@type': 'Brand',
+      name: SEO_CONFIG.siteName
+    },
+    offers: {
+      '@type': 'Offer',
+      price,
+      priceCurrency: currency,
+      availability: `https://schema.org/${availability}`,
+      seller: {
+        '@type': 'Organization',
+        name: SEO_CONFIG.siteName
+      }
+    }
+  };
+};
 
 export const EnhancedSEOAnalytics: React.FC<SEOAnalyticsProps> = ({ 
   pageUrl, 
