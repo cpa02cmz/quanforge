@@ -36,15 +36,15 @@ const Layout = lazy(() =>
   import('./components/Layout').then(module => ({ default: module.Layout }))
 );
 
-// Preload critical routes after initial load
-const preloadCriticalRoutes = () => {
-  // Preload Dashboard (most likely route after login)
-  import('./pages/Dashboard');
-  // Preload Generator (second most likely)
-  setTimeout(() => import('./pages/Generator'), 1000);
-  // Preload Layout (essential for navigation)
-  setTimeout(() => import('./components/Layout'), 500);
-};
+// Preload critical routes after initial load with better optimization
+   const preloadCriticalRoutes = () => {
+     // Preload Dashboard (most likely route after login)
+     import('./pages/Dashboard').catch(err => logger.warn('Dashboard preload failed:', err));
+     // Preload Generator (second most likely)
+     setTimeout(() => import('./pages/Generator').catch(err => logger.warn('Generator preload failed:', err)), 1000);
+     // Preload Layout (essential for navigation)
+     setTimeout(() => import('./components/Layout').catch(err => logger.warn('Layout preload failed:', err)), 500);
+   };
 
 
 

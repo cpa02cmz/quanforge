@@ -185,26 +185,32 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
   // Optimized threshold for better performance with medium-sized lists
   const shouldUseVirtualScroll = robots.length > 20;
 
-  // Filter Logic - memoized for performance with optimization tracking
-  const filteredRobots = useMemo(() => {
-    const startTime = import.meta.env.DEV ? performance.now() : 0;
-    
-    const result = robots.filter(robot => {
-      const matchesSearch = robot.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = filterType === 'All' || (robot.strategy_type || 'Custom') === filterType;
-      return matchesSearch && matchesType;
-    });
-    
-    // Log performance in development
-    if (import.meta.env.DEV && startTime) {
-      const duration = performance.now() - startTime;
-      if (duration > 10) { // Only log if filtering takes more than 10ms
-        logger.debug(`Filtering ${robots.length} robots took ${duration.toFixed(2)}ms`);
-      }
-    }
-    
-    return result;
-  }, [robots, searchTerm, filterType]);
+// Filter Logic - memoized for performance with optimization tracking
+   const filteredRobots = useMemo(() => {
+     const startTime = import.meta.env.DEV ? performance.now() : 0;
+     
+     // Pre-calculate normalized searchTerm to avoid repeated operations
+     const normalizedSearchTerm = searchTerm.toLowerCase();
+     
+     const result = robots.filter(robot => {
+       // Use memoized search term to avoid recalculating
+       const matchesSearch = normalizedSearchTerm === '' || 
+         robot.name.toLowerCase().includes(normalizedSearchTerm);
+       const matchesType = filterType === 'All' || 
+         (robot.strategy_type || 'Custom') === filterType;
+       return matchesSearch && matchesType;
+     });
+     
+     // Log performance in development
+     if (import.meta.env.DEV && startTime) {
+       const duration = performance.now() - startTime;
+       if (duration > 10) { // Only log if filtering takes more than 10ms
+         logger.debug(`Filtering ${robots.length} robots took ${duration.toFixed(2)}ms`);
+       }
+     }
+     
+     return result;
+   }, [robots, searchTerm, filterType]);
 
   // Derived list of unique strategy types for the dropdown - memoized
   const availableTypes = useMemo(() => 
