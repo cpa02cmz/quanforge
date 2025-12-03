@@ -14,74 +14,100 @@ export default defineConfig({
       },
       output: {
         manualChunks: (id) => {
-          // Enhanced vendor chunks for optimal edge caching and tree-shaking
+          // Advanced vendor chunks for optimal edge caching and tree-shaking
           if (id.includes('node_modules')) {
-            // React ecosystem - split more granularly for better caching
-            if (id.includes('react') && !id.includes('react-dom') && !id.includes('react-router')) {
+            // React ecosystem - ultra-granular splitting for maximum caching efficiency
+            if (id.includes('react')) {
+              // React hooks and utilities - separate for better caching
+              if (id.includes('use') || id.includes('hooks') || id.includes('memo') || id.includes('callback')) {
+                return 'vendor-react-hooks';
+              }
+              // React DOM specific
+              if (id.includes('react-dom')) {
+                return 'vendor-react-dom';
+              }
+              // React router - separate for route-based splitting
+              if (id.includes('react-router')) {
+                return 'vendor-react-router';
+              }
+              // React core - smallest possible chunk
               return 'vendor-react-core';
             }
-            if (id.includes('react-dom')) {
-              return 'vendor-react-dom';
-            }
-            if (id.includes('react-router')) {
-              return 'vendor-react-router';
-            }
-            // Enhanced Charts splitting - more granular for better performance
+            
+            // Charts library - highly optimized splitting
             if (id.includes('recharts')) {
-              // Core chart components - most commonly used
+              // Core charts - most commonly used, smallest chunk
               if (id.includes('BarChart') || id.includes('LineChart') || id.includes('AreaChart')) {
                 return 'vendor-charts-core';
               }
-              // Chart components and utilities
-              if (id.includes('Tooltip') || id.includes('Legend') || id.includes('ResponsiveContainer')) {
-                return 'vendor-charts-components';
+              // Chart utilities - shared components
+              if (id.includes('Tooltip') || id.includes('Legend') || id.includes('ResponsiveContainer') || id.includes('CartesianGrid')) {
+                return 'vendor-charts-utils';
               }
-              // Candlestick and financial charts - heavy components
-              if (id.includes('CandlestickChart') || id.includes('ComposedChart')) {
+              // Financial charts - heavy, load on demand
+              if (id.includes('CandlestickChart') || id.includes('ComposedChart') || id.includes('ScatterChart')) {
                 return 'vendor-charts-financial';
               }
-              // Technical indicators and advanced features
-              if (id.includes('ReferenceLine') || id.includes('Brush') || id.includes('CrossHair')) {
+              // Technical indicators - specialized features
+              if (id.includes('ReferenceLine') || id.includes('Brush') || id.includes('CrossHair') || id.includes('ErrorBar')) {
                 return 'vendor-charts-indicators';
               }
-              // Advanced chart features
+              // Advanced chart features - load last
               return 'vendor-charts-advanced';
             }
-            // AI services - isolated for better tree-shaking
+            
+            // AI services - optimized for dynamic loading
             if (id.includes('@google/genai')) {
-              return 'vendor-ai-gemini-dynamic';
+              return 'vendor-ai-gemini';
             }
-            // Enhanced Supabase splitting for better tree-shaking
-            if (id.includes('@supabase/realtime-js')) {
-              return 'vendor-supabase-realtime';
-            }
-            if (id.includes('@supabase/storage-js')) {
-              return 'vendor-supabase-storage';
-            }
-            if (id.includes('@supabase/functions-js')) {
-              return 'vendor-supabase-functions';
-            }
+            
+            // Supabase - modular splitting for better tree-shaking
             if (id.includes('@supabase')) {
+              if (id.includes('realtime-js')) {
+                return 'vendor-supabase-realtime';
+              }
+              if (id.includes('storage-js')) {
+                return 'vendor-supabase-storage';
+              }
+              if (id.includes('functions-js')) {
+                return 'vendor-supabase-functions';
+              }
+              if (id.includes('auth-js')) {
+                return 'vendor-supabase-auth';
+              }
               return 'vendor-supabase-core';
             }
-            // Security and utilities - consolidated
+            
+            // Security and validation utilities
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'vendor-security';
             }
-            // Development tools - excluded from production
+            
+            // Development and testing tools - excluded from production chunks
             if (id.includes('typescript') || id.includes('@types') || id.includes('@testing-library') || id.includes('vitest') || id.includes('eslint')) {
               return 'dev-tools-excluded';
             }
             
-            // Add missing edge-specific chunks
+            // Edge and Vercel specific modules
             if (id.includes('edge') || id.includes('vercel')) {
               return 'vendor-edge-runtime';
             }
             
-            // Add missing optimization for web workers
+            // Web workers and background processing
             if (id.includes('worker') || id.includes('web-worker')) {
               return 'vendor-web-workers';
             }
+            
+            // Date and time utilities
+            if (id.includes('date') || id.includes('moment') || id.includes('dayjs')) {
+              return 'vendor-date-utils';
+            }
+            
+            // HTTP and network utilities
+            if (id.includes('axios') || id.includes('fetch') || id.includes('request')) {
+              return 'vendor-network';
+            }
+            
             // All other node_modules
             return 'vendor-misc';
           }
@@ -273,13 +299,13 @@ export default defineConfig({
         comments: false
       }
     },
-chunkSizeWarningLimit: 250, // Increased to accommodate essential libraries
+chunkSizeWarningLimit: 200, // Optimized for better edge performance
     target: ['es2020', 'edge101'], // More specific targets for edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
     // Enhanced edge optimization
-    assetsInlineLimit: 1024, // 1KB for better caching and smaller initial chunks
+    assetsInlineLimit: 512, // 0.5KB for optimal edge caching
     modulePreload: {
       polyfill: false
     },
