@@ -21,10 +21,16 @@ interface PerformanceReport {
 class PerformanceMonitor {
   private metrics: PerformanceMetrics[] = [];
   private memorySnapshots: number[] = [];
-  private maxMetrics = 1000; // Keep last 1000 metrics
-  private reportingThreshold = 100; // Report every 100 operations
+  private maxMetrics = 500; // Reduced from 1000 for better memory
+  private reportingThreshold = 200; // Increased from 100 to reduce overhead
+  private samplingRate = 0.1; // Sample 10% of operations to reduce overhead
 
   startTimer(operation: string, metadata?: Record<string, any>): () => PerformanceMetrics {
+    // Skip monitoring for some operations to reduce overhead
+    if (Math.random() > this.samplingRate) {
+      return () => ({} as PerformanceMetrics);
+    }
+
     const startTime = performance.now();
     const memoryUsage = this.getMemoryUsage();
 
@@ -361,7 +367,7 @@ class Logger {
   }
 
   private generateSessionId(): string {
-    return 'session_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    return 'session_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
   }
 
   setUserId(userId: string): void {
