@@ -3,8 +3,14 @@
  * Real-time performance monitoring and analytics for edge deployment
  */
 
+import { NextRequest, NextResponse } from 'next/server';
 import { edgeSupabase } from '../../services/edgeSupabaseClient';
 import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
+
+export const config = {
+  runtime: 'edge',
+  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
+};
 
 interface AnalyticsData {
   timestamp: number;
@@ -23,32 +29,40 @@ interface AnalyticsData {
     ttfb?: number;
   };
   resources: {
-    memoryUsage: NodeJS.MemoryUsage;
-    cpuUsage: NodeJS.CpuUsage;
+    memoryUsage: { rss: number; heapTotal: number; heapUsed: number; external: number; arrayBuffers: number };
+    cpuUsage: { user: number; system: number };
   };
 }
 
 /**
- * Collect and store analytics data
+ * GET handler for analytics data
  */
-export default async function analyticsHandler(request: Request): Promise<Response> {
+export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const region = request.headers.get('x-vercel-region') || 'unknown';
   
   try {
-    switch (request.method) {
-      case 'GET':
-        return await getAnalytics(url, region);
-      case 'POST':
-        return await postAnalytics(request, region);
-      default:
-        return new NextResponse('Method not allowed', { status: 405 });
-    }
+    return await getAnalytics(url, region);
   } catch (error) {
-    console.error('Analytics handler error:', error);
-    return new Response(JSON.stringify({ error: 'Analytics service error' }), {
+    console.error('Analytics GET error:', error);
+    return NextResponse.json({ error: 'Analytics service error' }, {
       status: 500,
-      headers: { 'content-type': 'application/json' },
+    });
+  }
+}
+
+/**
+ * POST handler for analytics data
+ */
+export async function POST(request: NextRequest) {
+  const region = request.headers.get('x-vercel-region') || 'unknown';
+  
+  try {
+    return await postAnalytics(request, region);
+  } catch (error) {
+    console.error('Analytics POST error:', error);
+    return NextResponse.json({ error: 'Analytics service error' }, {
+      status: 500,
     });
   }
 }
@@ -76,17 +90,17 @@ async function getAnalytics(url: URL, region: string): Promise<NextResponse> {
     );
 
     if (cached) {
-return new Response(JSON.stringify({
-      data: cached,
-      cached: true,
-      region,
-      timeframe,
-    }), {
-      headers: {
-        'content-type': 'application/json',
-        'cache-control': 'public, max-age=180', // 3 minutes
-      },
-    });
+      return new Response(JSON.stringify({
+        data: cached,
+        cached: true,
+        region,
+        timeframe,
+      }), {
+        headers: {
+          'content-type': 'application/json',
+          'cache-control': 'public, max-age=180', // 3 minutes
+        },
+      });
     }
 
     // Generate analytics data
@@ -116,7 +130,7 @@ return new Response(JSON.stringify({
 /**
  * Post analytics data
  */
-async function postAnalytics(request: Request, region: string): Promise<NextResponse> {
+async function postAnalytics(request: NextRequest, region: string): Promise<NextResponse> {
   try {
     const body = await request.json() as Partial<AnalyticsData>;
     

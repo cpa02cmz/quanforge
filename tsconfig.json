@@ -32,13 +32,15 @@
     "sourceMap": true,
     "removeComments": true,
     "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true
+    "noPropertyAccessFromIndexSignature": true,
+    "types": ["node"]
   },
   "include": [
     "src/**/*",
     "components/**/*",
     "pages/**/*",
-    "services/*!*/distributedCache.ts",
+    "services/**/*",
+    "api/**/*",
     "utils/**/*",
     "hooks/**/*",
     "constants/**/*",

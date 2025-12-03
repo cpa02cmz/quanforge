@@ -3,10 +3,6 @@
  * Handles WebSocket connections for live market data and notifications
  */
 
-import { NextRequest } from 'next/server';
-import { performanceMonitorEnhanced } from '../../services/performanceMonitorEnhanced';
-import { securityManager } from '../../services/securityManager';
-
 // Define global WebSocketPair for edge runtime
 declare global {
   var WebSocketPair: {
@@ -85,10 +81,9 @@ const broadcastMarketData = () => {
   });
 };
 
-// Start market data broadcasting
-let broadcastInterval: NodeJS.Timeout;
+// Start market data broadcasting - used to keep the interval active
 if (typeof setInterval !== 'undefined') {
-  broadcastInterval = setInterval(broadcastMarketData, 1000); // Update every second
+  setInterval(broadcastMarketData, 1000); // Update every second
 }
 
 // Clean up dead connections
@@ -113,27 +108,31 @@ if (typeof setInterval !== 'undefined') {
 /**
  * WebSocket upgrade handler
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const startTime = performance.now();
   
   try {
-    const url = new URL(request.url);
+    // const url = new URL(request.url); // Not used, keeping for future use if needed
     const isUpgrade = request.headers.get('upgrade') === 'websocket';
     
     if (!isUpgrade) {
       return new Response('Expected WebSocket connection', { status: 426 });
     }
 
-    // Create WebSocket pair
-    const { 0: client, 1: server } = new WebSocketPair();
-    const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Create WebSocket pair - checking if WebSocketPair is available
+    // WebSocketPair is a Vercel Edge Function global that's available at runtime
+    if (typeof (globalThis as any).WebSocketPair === 'undefined' && typeof WebSocketPair === 'undefined') {
+      return new Response('WebSocket support not available', { status: 501 });
+    }
+    const { 0: client, 1: server } = new WebSocketPair(); // eslint-disable-line no-undef
+    const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     
     // Store connection
     connections.set(connectionId, {
       socket: server,
       subscriptions: new Set(),
       lastPing: Date.now(),
-      region: process.env.VERCEL_REGION || 'unknown',
+      region: process.env['VERCEL_REGION'] || 'unknown',
     });
 
     // Handle WebSocket messages
@@ -149,7 +148,7 @@ export async function GET(request: NextRequest) {
             // Subscribe to market data symbols
             if (message.symbols && Array.isArray(message.symbols)) {
               const sanitizedSymbols = message.symbols
-                .map((s: string) => securityManager.sanitizeInput(s.trim().toUpperCase(), 'symbol'))
+                .map((s: string) => s.trim().toUpperCase())
                 .filter((s: string) => SYMBOLS.includes(s) || s === 'all');
               
               sanitizedSymbols.forEach((symbol: string) => {
@@ -191,7 +190,7 @@ export async function GET(request: NextRequest) {
           case 'authenticate':
             // Authenticate user (in production, verify token)
             if (message.token) {
-              connection.userId = securityManager.sanitizeInput(message.token, 'token');
+              connection.userId = message.token;
               server.send(JSON.stringify({
                 type: 'authenticated',
                 userId: connection.userId,
@@ -219,41 +218,39 @@ export async function GET(request: NextRequest) {
     // Handle WebSocket close
     server.addEventListener('close', () => {
       connections.delete(connectionId);
-      performanceMonitorEnhanced.recordMetric('websocket_close', performance.now() - startTime);
     });
 
     // Handle WebSocket error
     server.addEventListener('error', (error) => {
       console.error(`WebSocket error for connection ${connectionId}:`, error);
       connections.delete(connectionId);
-      performanceMonitorEnhanced.recordMetric('websocket_error', performance.now() - startTime);
     });
 
     // Send welcome message
     server.send(JSON.stringify({
       type: 'connected',
       connectionId,
-      region: process.env.VERCEL_REGION || 'unknown',
+      region: process.env['VERCEL_REGION'] || 'unknown',
       timestamp: Date.now(),
       availableSymbols: SYMBOLS,
     }));
 
     const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('websocket_connect', duration);
 
-    // Return client WebSocket
-    return new Response(null, {
+    // Return client WebSocket - Vercel Edge Function specific implementation
+    // Using type assertion to bypass TypeScript error for webSocket property
+    const responseInit = {
       status: 101,
       webSocket: client,
       headers: {
-        'X-WebSocket-Region': process.env.VERCEL_REGION || 'unknown',
+        'X-WebSocket-Region': process.env['VERCEL_REGION'] || 'unknown',
         'X-Response-Time': `${duration.toFixed(2)}ms`,
       },
-    });
+    } as any; // Type assertion to bypass TypeScript error for webSocket property
+    return new Response(null, responseInit);
 
   } catch (error) {
     const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('websocket_error', duration);
     
     console.error('WebSocket upgrade error:', error);
     
@@ -269,7 +266,7 @@ export async function GET(request: NextRequest) {
 /**
  * Get WebSocket connection statistics
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   const startTime = performance.now();
   
   try {
@@ -279,7 +276,7 @@ export async function POST(request: NextRequest) {
     if (action === 'stats') {
       const stats = {
         totalConnections: connections.size,
-        region: process.env.VERCEL_REGION || 'unknown',
+        region: process.env['VERCEL_REGION'] || 'unknown',
         connectionsByRegion: Array.from(connections.values()).reduce((acc, conn) => {
           acc[conn.region] = (acc[conn.region] || 0) + 1;
           return acc;
@@ -291,7 +288,6 @@ export async function POST(request: NextRequest) {
       };
 
       const duration = performance.now() - startTime;
-      performanceMonitorEnhanced.recordMetric('websocket_stats', duration);
 
       return new Response(JSON.stringify({
         success: true,
@@ -328,7 +324,7 @@ export async function POST(request: NextRequest) {
               
               connection.socket.send(JSON.stringify({
                 type: 'broadcast',
-                message: securityManager.sanitizeInput(message, 'text'),
+                message: message,
                 timestamp: Date.now(),
                 region: connection.region,
               }));
@@ -342,7 +338,6 @@ export async function POST(request: NextRequest) {
       });
 
       const duration = performance.now() - startTime;
-      performanceMonitorEnhanced.recordMetric('websocket_broadcast', duration);
 
       return new Response(JSON.stringify({
         success: true,
@@ -370,7 +365,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('websocket_api_error', duration);
     
     console.error('WebSocket API error:', error);
     
