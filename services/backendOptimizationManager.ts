@@ -473,12 +473,106 @@ class BackendOptimizationManager {
     console.log('Backend Optimization Manager shut down');
   }
 
-  /**
-   * Force an immediate optimization cycle
-   */
-  async forceOptimization(): Promise<void> {
-    await this.performOptimizationCycle();
-  }
+   /**
+    * Force an immediate optimization cycle
+    */
+   async forceOptimization(): Promise<void> {
+     await this.performOptimizationCycle();
+   }
+   
+   /**
+    * Get advanced optimization insights including materialized views and performance analytics
+    */
+   async getAdvancedOptimizationInsights(client: SupabaseClient): Promise<any> {
+     if (!this.config.enableDatabaseOptimization) return null;
+     
+     return databaseOptimizer.getAdvancedOptimizationInsights(client);
+   }
+   
+   /**
+    * Run comprehensive optimization including database maintenance, cache warming, and performance analysis
+    */
+   async runComprehensiveOptimization(client: SupabaseClient): Promise<{
+     success: boolean;
+     message: string;
+     details: {
+       database?: any;
+       cache?: any;
+       edge?: any;
+       overallScore: number;
+     }
+   }> {
+     const startTime = Date.now();
+     
+     try {
+       // Run database optimization
+       const dbResult = await this.runDatabaseMaintenance(client);
+       
+       // Run cache optimization
+       await this.optimizeCaching();
+       
+       // Get current metrics
+       const metrics = await this.collectMetrics();
+       
+       const duration = Date.now() - startTime;
+       
+       return {
+         success: true,
+         message: `Comprehensive optimization completed in ${duration}ms`,
+         details: {
+           database: dbResult,
+           cache: robotCache.getStats(),
+           edge: edgeOptimizer.getMetrics(),
+           overallScore: metrics.overallScore
+         }
+       };
+     } catch (error) {
+       return {
+         success: false,
+         message: `Comprehensive optimization failed: ${error}`,
+         details: {
+           database: null,
+           cache: null,
+           edge: null,
+           overallScore: 0
+         }
+       };
+     }
+   }
+   
+   /**
+    * Get optimization recommendations across all systems
+    */
+   async getCrossSystemOptimizationRecommendations(client: SupabaseClient): Promise<{
+     database: string[];
+     cache: string[];
+     edge: string[];
+     overall: string[];
+   }> {
+     const dbRecommendations = (await this.getQueryOptimizationRecommendations(client)).recommendations || [];
+     const cacheStats = robotCache.getStats();
+     const edgeRecommendations = edgeOptimizer.getOptimizationRecommendations();
+     
+     const overallRecommendations: string[] = [];
+     
+     if (cacheStats.hitRate < 70) {
+       overallRecommendations.push('Cache hit rate is below optimal threshold, consider increasing TTL or adding more cache warming');
+     }
+     
+     if (this.config.enableQueryOptimization) {
+       const queryAnalysis = queryOptimizer.getPerformanceAnalysis();
+       if (queryAnalysis.averageExecutionTime > 500) {
+         overallRecommendations.push('Average query execution time is high, consider adding more indexes');
+       }
+     }
+     
+     return {
+       database: dbRecommendations,
+       cache: cacheStats.hitRate < 70 ? ['Low cache hit rate - optimize caching strategy'] : [],
+       edge: edgeRecommendations,
+       overall: overallRecommendations
+     };
+   }
 }
 
 // Singleton instance
