@@ -372,20 +372,100 @@ private recordInteraction(name: string, duration: number) {
       return result;
     }
     
-    // Track bundle size and loading performance
-    async trackBundlePerformance(): Promise<void> {
-      if ('performance' in window) {
-        window.addEventListener('load', () => {
-          // Track resource loading times
-          const resources = performance.getEntriesByType('resource');
-          resources.forEach((resource: PerformanceEntry) => {
-            if (resource.name.includes('assets/js/')) {
-              this.recordMetric('bundle_load_time', resource.duration);
-            }
-          });
-        });
-      }
-    }
+ // Track bundle size and loading performance
+     async trackBundlePerformance(): Promise<void> {
+       if ('performance' in window) {
+         window.addEventListener('load', () => {
+           // Track resource loading times
+           const resources = performance.getEntriesByType('resource');
+           resources.forEach((resource: PerformanceEntry) => {
+             if (resource.name.includes('assets/js/')) {
+               this.recordMetric('bundle_load_time', resource.duration);
+             }
+           });
+           
+           // Record overall page load performance
+           const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+           if (navigation) {
+             this.recordMetric('dom_content_loaded', navigation.domContentLoadedEventEnd - navigation.fetchStart);
+             this.recordMetric('window_load_time', navigation.loadEventEnd - navigation.fetchStart);
+             this.recordMetric('first_byte_time', navigation.responseStart - navigation.requestStart);
+           }
+         });
+       }
+     }
+     
+     // Performance feedback for user experience
+     getPerformanceFeedback(): string {
+       const webVitals = this.getWebVitals();
+       let feedback = '';
+       
+       if (webVitals.lcp && webVitals.lcp > 2500) {
+         feedback += 'Slow loading detected. Consider optimizing images and assets. ';
+       } else if (webVitals.lcp && webVitals.lcp < 1500) {
+         feedback += 'Great loading performance! ';
+       }
+       
+       if (webVitals.fid && webVitals.fid > 100) {
+         feedback += 'Slow interactions detected. Consider optimizing code. ';
+       }
+       
+       if (webVitals.cls && webVitals.cls > 0.1) {
+         feedback += 'Layout shifts detected. Consider reserving space for images. ';
+       }
+       
+       return feedback || 'Performance looks good!';
+     }
+     
+     // Performance health check
+     async performHealthCheck(): Promise<{
+       score: number;
+       issues: string[];
+       suggestions: string[];
+     }> {
+       const webVitals = this.getWebVitals();
+       const memory = this.getMemoryUsage();
+       
+       let score = 100;
+       const issues: string[] = [];
+       const suggestions: string[] = [];
+       
+       // Check LCP
+       if (webVitals.lcp && webVitals.lcp > 2500) {
+         score -= 25;
+         issues.push(`LCP is ${webVitals.lcp}ms (should be < 2500ms)`);
+         suggestions.push('Optimize critical rendering path and reduce server response time');
+       }
+       
+       // Check FID
+       if (webVitals.fid && webVitals.fid > 100) {
+         score -= 20;
+         issues.push(`FID is ${webVitals.fid}ms (should be < 100ms)`);
+         suggestions.push('Reduce JavaScript execution time and break long tasks');
+       }
+       
+       // Check CLS
+       if (webVitals.cls && webVitals.cls > 0.1) {
+         score -= 15;
+         issues.push(`CLS is ${webVitals.cls} (should be < 0.1)`);
+         suggestions.push('Reserve space for images and avoid dynamic content injection');
+       }
+       
+       // Check memory usage
+       if (memory && memory.utilization > 80) {
+         score -= 10;
+         issues.push(`Memory usage is ${memory.utilization.toFixed(1)}% (high)`);
+         suggestions.push('Consider implementing memory cleanup and optimize data structures');
+       }
+       
+       score = Math.max(0, score);
+       
+       return {
+         score,
+         issues,
+         suggestions
+       };
+     }
    
 // Stop memory monitoring
     stopMemoryMonitoring(): void {

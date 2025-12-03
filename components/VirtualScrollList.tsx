@@ -93,41 +93,43 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
       {/* Total height container */}
       <div style={{ height: `${filteredRobots.length * itemHeight}px`, position: 'relative' }}>
         {/* Visible items */}
-        <div 
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-          }}
-        >
-          {visibleRobots.map((robot, index) => {
-            const actualIndex = visibleRange.startIndex + index;
-            const top = actualIndex * itemHeight;
-            
-            return (
-              <div
-                key={robot.id}
-                style={{
-                  position: 'absolute',
-                  top: `${top}px`,
-                  left: 0,
-                  right: 0,
-                  height: `${itemHeight}px`,
-                }}
-                className="p-2"
-              >
-                <RobotCard
-                  robot={robot}
-                  processingId={processingId}
-                  onDuplicate={onDuplicate}
-                  onDelete={onDelete}
-                  t={t}
-                />
-              </div>
-            );
-          })}
-        </div>
+       <div 
+         style={{
+           position: 'absolute',
+           top: 0,
+           left: 0,
+           right: 0,
+           contain: 'layout style paint' // CSS containment for better performance
+         }}
+       >
+         {visibleRobots.map((robot, index) => {
+           const actualIndex = visibleRange.startIndex + index;
+           const top = actualIndex * itemHeight;
+           
+           return (
+             <div
+               key={robot.id}
+               style={{
+                 position: 'absolute',
+                 top: `${top}px`,
+                 left: 0,
+                 right: 0,
+                 height: `${itemHeight}px`,
+                 contain: 'layout style paint' // CSS containment for better performance
+               }}
+               className="p-2"
+             >
+               <RobotCard
+                 robot={robot}
+                 processingId={processingId}
+                 onDuplicate={onDuplicate}
+                 onDelete={onDelete}
+                 t={t}
+               />
+             </div>
+           );
+         })}
+       </div>
       </div>
     </div>
   );
