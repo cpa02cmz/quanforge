@@ -330,7 +330,7 @@ class APIResponseCache {
     
     const invalidateFn = async () => {
       try {
-        let keysToDelete: string[] = [];
+        const keysToDelete: string[] = [];
         
         // Find matching entries in memory cache
         for (const [key, entry] of this.memoryCache.entries()) {

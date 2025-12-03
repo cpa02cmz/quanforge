@@ -430,11 +430,11 @@ async function optimizeEdge(region: string): Promise<{ optimized: boolean; regio
       cacheTTL: 3600000, // 1 hour
     });
 
-    return {
-      optimized: true,
-      region,
-    };
-  } catch (error) {
-    return { optimized: false, region };
-  }
+     return {
+       optimized: true,
+       region,
+     };
+   } catch (error) {
+     return { optimized: false, region };
+   }
 }

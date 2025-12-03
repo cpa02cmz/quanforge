@@ -7,23 +7,24 @@ export interface ValidationError {
 }
 
 export class ValidationService {
-  private static readonly TIMEFRAMES = ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'];
-  private static readonly SYMBOL_REGEX = /^[A-Z]{3,6}[\/]?[A-Z]{3,6}$/;
-  private static readonly NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
-  private static readonly MAX_RISK_PERCENT = 100;
-  private static readonly MIN_RISK_PERCENT = 0.01;
-  private static readonly MAX_STOP_LOSS = 1000;
-  private static readonly MIN_STOP_LOSS = 1;
-  private static readonly MAX_TAKE_PROFIT = 1000;
-  private static readonly MIN_TAKE_PROFIT = 1;
-  private static readonly MAX_MAGIC_NUMBER = 999999;
-  private static readonly MIN_MAGIC_NUMBER = 1;
-  private static readonly MAX_INITIAL_DEPOSIT = 10000000;
-  private static readonly MIN_INITIAL_DEPOSIT = 100;
-  private static readonly MAX_DURATION = 365;
-  private static readonly MIN_DURATION = 1;
-  private static readonly MAX_LEVERAGE = 1000;
-  private static readonly MIN_LEVERAGE = 1;
+   private static readonly TIMEFRAMES = ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'];
+   private static readonly TIMEFRAMES_SET = new Set(ValidationService.TIMEFRAMES);
+   private static readonly SYMBOL_REGEX = /^[A-Z]{3,6}[\/]?[A-Z]{3,6}$/;
+   private static readonly NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+   private static readonly MAX_RISK_PERCENT = 100;
+   private static readonly MIN_RISK_PERCENT = 0.01;
+   private static readonly MAX_STOP_LOSS = 1000;
+   private static readonly MIN_STOP_LOSS = 1;
+   private static readonly MAX_TAKE_PROFIT = 1000;
+   private static readonly MIN_TAKE_PROFIT = 1;
+   private static readonly MAX_MAGIC_NUMBER = 999999;
+   private static readonly MIN_MAGIC_NUMBER = 1;
+   private static readonly MAX_INITIAL_DEPOSIT = 10000000;
+   private static readonly MIN_INITIAL_DEPOSIT = 100;
+   private static readonly MAX_DURATION = 365;
+   private static readonly MIN_DURATION = 1;
+   private static readonly MAX_LEVERAGE = 1000;
+   private static readonly MIN_LEVERAGE = 1;
   
   // Cached regex patterns for performance in chat validation
   private static readonly XSS_PATTERNS = [
@@ -100,133 +101,143 @@ export class ValidationService {
     /\\x[0-9a-fA-F]{2}/g,  // Hex escapes
   ];
   
-  private static readonly SUSPICIOUS_KEYWORDS = new Set([
-    'password', 'secret', 'key', 'token', 'auth', 'credential',
-    'exploit', 'hack', 'crack', 'bypass', 'inject', 'payload',
-    'malware', 'virus', 'trojan', 'backdoor', 'rootkit'
-  ]);
+   private static readonly SUSPICIOUS_KEYWORDS = new Set([
+     'password', 'secret', 'key', 'token', 'auth', 'credential',
+     'exploit', 'hack', 'crack', 'bypass', 'inject', 'payload',
+     'malware', 'virus', 'trojan', 'backdoor', 'rootkit'
+   ]);
+   
+   private static readonly PLACEHOLDER_KEYS = new Set([
+     'your-api-key-here',
+     '1234567890',
+     'abcdefghijk',
+     'test-key',
+     'demo-key',
+     'sample-key'
+   ]);
+   
+   private static readonly BLACKLISTED_SYMBOLS = new Set(['TEST', 'DEMO', 'FAKE', 'INVALID']);
 
    static validateStrategyParams(params: StrategyParams): ValidationError[] {
-     const errors: ValidationError[] = [];
+      const errors: ValidationError[] = [];
 
-     // Validate timeframe - use Set for O(1) lookup
-     const TIMEFRAMES_SET = new Set(this.TIMEFRAMES);
-     if (!TIMEFRAMES_SET.has(params.timeframe)) {
-       errors.push({
-         field: 'timeframe',
-         message: `Invalid timeframe. Must be one of: ${this.TIMEFRAMES.join(', ')}`
-       });
-     }
+      // Validate timeframe - use cached Set for O(1) lookup
+      if (!ValidationService.TIMEFRAMES_SET.has(params.timeframe)) {
+        errors.push({
+          field: 'timeframe',
+          message: `Invalid timeframe. Must be one of: ${this.TIMEFRAMES.join(', ')}`
+        });
+      }
 
-     // Validate symbol
-     if (!params.symbol) {
-       errors.push({
-         field: 'symbol',
-         message: 'Symbol is required'
-       });
-     } else {
-       // Optimize regex by pre-processing the string
-       const cleanSymbol = params.symbol.replace('USDT', '').replace('BUSD', '');
-       if (!this.SYMBOL_REGEX.test(cleanSymbol)) {
-         errors.push({
-           field: 'symbol',
-           message: 'Invalid symbol format. Use format like BTCUSDT, EUR/USD, XAUUSD'
-         });
-       }
-     }
+      // Validate symbol
+      if (!params.symbol) {
+        errors.push({
+          field: 'symbol',
+          message: 'Symbol is required'
+        });
+      } else {
+        // Optimize regex by pre-processing the string
+        const cleanSymbol = params.symbol.replace('USDT', '').replace('BUSD', '');
+        if (!this.SYMBOL_REGEX.test(cleanSymbol)) {
+          errors.push({
+            field: 'symbol',
+            message: 'Invalid symbol format. Use format like BTCUSDT, EUR/USD, XAUUSD'
+          });
+        }
+      }
 
-     // Validate risk percent - single check with bounds
-     if (params.riskPercent < this.MIN_RISK_PERCENT || params.riskPercent > this.MAX_RISK_PERCENT) {
-       errors.push({
-         field: 'riskPercent',
-         message: `Risk percent must be between ${this.MIN_RISK_PERCENT} and ${this.MAX_RISK_PERCENT}`
-       });
-     }
+      // Validate risk percent - single check with bounds
+      if (params.riskPercent < this.MIN_RISK_PERCENT || params.riskPercent > this.MAX_RISK_PERCENT) {
+        errors.push({
+          field: 'riskPercent',
+          message: `Risk percent must be between ${this.MIN_RISK_PERCENT} and ${this.MAX_RISK_PERCENT}`
+        });
+      }
 
-     // Validate stop loss
-     if (params.stopLoss < this.MIN_STOP_LOSS || params.stopLoss > this.MAX_STOP_LOSS) {
-       errors.push({
-         field: 'stopLoss',
-         message: `Stop loss must be between ${this.MIN_STOP_LOSS} and ${this.MAX_STOP_LOSS} pips`
-       });
-     }
+      // Validate stop loss
+      if (params.stopLoss < this.MIN_STOP_LOSS || params.stopLoss > this.MAX_STOP_LOSS) {
+        errors.push({
+          field: 'stopLoss',
+          message: `Stop loss must be between ${this.MIN_STOP_LOSS} and ${this.MAX_STOP_LOSS} pips`
+        });
+      }
 
-     // Validate take profit
-     if (params.takeProfit < this.MIN_TAKE_PROFIT || params.takeProfit > this.MAX_TAKE_PROFIT) {
-       errors.push({
-         field: 'takeProfit',
-         message: `Take profit must be between ${this.MIN_TAKE_PROFIT} and ${this.MAX_TAKE_PROFIT} pips`
-       });
-     }
+      // Validate take profit
+      if (params.takeProfit < this.MIN_TAKE_PROFIT || params.takeProfit > this.MAX_TAKE_PROFIT) {
+        errors.push({
+          field: 'takeProfit',
+          message: `Take profit must be between ${this.MIN_TAKE_PROFIT} and ${this.MAX_TAKE_PROFIT} pips`
+        });
+      }
 
-     // Validate magic number
-     if (params.magicNumber < this.MIN_MAGIC_NUMBER || params.magicNumber > this.MAX_MAGIC_NUMBER) {
-       errors.push({
-         field: 'magicNumber',
-         message: `Magic number must be between ${this.MIN_MAGIC_NUMBER} and ${this.MAX_MAGIC_NUMBER}`
-       });
-     }
+      // Validate magic number
+      if (params.magicNumber < this.MIN_MAGIC_NUMBER || params.magicNumber > this.MAX_MAGIC_NUMBER) {
+        errors.push({
+          field: 'magicNumber',
+          message: `Magic number must be between ${this.MIN_MAGIC_NUMBER} and ${this.MAX_MAGIC_NUMBER}`
+        });
+      }
 
-     // Validate custom inputs - optimize duplicate checking
-     const seenNames = new Set<string>();
-     for (let index = 0; index < params.customInputs.length; index++) {
-       const input = params.customInputs[index];
-       const prefix = `customInputs[${index}]`;
-       
-       if (!input?.name || !input.name.trim()) {
-         errors.push({
-           field: `${prefix}.name`,
-           message: 'Custom input name is required'
-         });
-         continue; // Skip further validation for invalid names
-       }
-       
-       if (input && !this.NAME_REGEX.test(input.name)) {
-         errors.push({
-           field: `${prefix}.name`,
-           message: 'Invalid name format. Use letters, numbers, and underscores only, starting with a letter or underscore'
-         });
-       }
-
-       // Check for duplicate names using Set for O(1) lookup
-if (input && seenNames.has(input.name)) {
+      // Validate custom inputs - optimize duplicate checking
+      const seenNames = new Set<string>();
+      for (let index = 0; index < params.customInputs.length; index++) {
+        const input = params.customInputs[index];
+        const prefix = `customInputs[${index}]`;
+        
+        if (!input?.name || !input.name.trim()) {
           errors.push({
             field: `${prefix}.name`,
-            message: `Duplicate input name: "${input.name}"`
+            message: 'Custom input name is required'
           });
-        } else if (input) {
-          seenNames.add(input.name);
+          continue; // Skip further validation for invalid names
+        }
+        
+        if (input && !this.NAME_REGEX.test(input.name)) {
+          errors.push({
+            field: `${prefix}.name`,
+            message: 'Invalid name format. Use letters, numbers, and underscores only, starting with a letter or underscore'
+          });
         }
 
-        // Validate value based on type
-        if (input && input.type === 'int') {
-          const value = parseInt(input.value, 10);
-          if (isNaN(value) || value < -2147483648 || value > 2147483647) {
-            errors.push({
-              field: `${prefix}.value`,
-              message: 'Invalid integer value'
-            });
-          }
-        } else if (input && input.type === 'double') {
-          const value = parseFloat(input.value);
-          if (isNaN(value) || !isFinite(value)) {
-            errors.push({
-              field: `${prefix}.value`,
-              message: 'Invalid number value'
-            });
-          }
-        } else if (input && input.type === 'bool') {
-          if (input.value !== 'true' && input.value !== 'false') {
-            errors.push({
-              field: `${prefix}.value`,
-             message: 'Boolean value must be "true" or "false"'
+        // Check for duplicate names using Set for O(1) lookup
+ if (input && seenNames.has(input.name)) {
+           errors.push({
+             field: `${prefix}.name`,
+             message: `Duplicate input name: "${input.name}"`
            });
+         } else if (input) {
+           seenNames.add(input.name);
          }
-       }
-     }
 
-     return errors;
-   }
+         // Validate value based on type
+         if (input && input.type === 'int') {
+           const value = parseInt(input.value, 10);
+           if (isNaN(value) || value < -2147483648 || value > 2147483647) {
+             errors.push({
+               field: `${prefix}.value`,
+               message: 'Invalid integer value'
+             });
+           }
+         } else if (input && input.type === 'double') {
+           const value = parseFloat(input.value);
+           if (isNaN(value) || !isFinite(value)) {
+             errors.push({
+               field: `${prefix}.value`,
+               message: 'Invalid number value'
+             });
+           }
+         } else if (input && input.type === 'bool') {
+           if (input.value !== 'true' && input.value !== 'false') {
+             errors.push({
+               field: `${prefix}.value`,
+              message: 'Boolean value must be "true" or "false"'
+            });
+          }
+        }
+      }
+
+      return errors;
+    }
 
   static validateBacktestSettings(settings: BacktestSettings): ValidationError[] {
     const errors: ValidationError[] = [];
@@ -427,23 +438,17 @@ static sanitizeInput(input: string): string {
        });
      }
 
-     // Check for common placeholder/fake keys
-     const placeholderKeys = [
-       'your-api-key-here',
-       '1234567890',
-       'abcdefghijk',
-       'test-key',
-       'demo-key',
-       'sample-key'
-     ];
-
-     const lowerKey = apiKey.toLowerCase();
-     if (placeholderKeys.some(placeholder => lowerKey.includes(placeholder))) {
-       errors.push({
-         field: 'apiKey',
-         message: 'Please use a valid API key, not a placeholder'
-       });
-     }
+      // Check for common placeholder/fake keys
+      const lowerKey = apiKey.toLowerCase();
+      for (const placeholder of ValidationService.PLACEHOLDER_KEYS) {
+        if (lowerKey.includes(placeholder)) {
+          errors.push({
+            field: 'apiKey',
+            message: 'Please use a valid API key, not a placeholder'
+          });
+          break; // Exit early after finding first match
+        }
+      }
 
      return errors;
    }
@@ -471,14 +476,12 @@ static validateSymbol(symbol: string): ValidationError[] {
         });
       }
 
-      // Use Set for O(1) lookup instead of Array.includes for blacklisted symbols
-      const blacklistedSymbols = new Set(['TEST', 'DEMO', 'FAKE', 'INVALID']);
-      if (blacklistedSymbols.has(trimmedSymbol)) {
-        errors.push({
-          field: 'symbol',
-          message: 'Invalid symbol for trading'
-        });
-      }
+       if (ValidationService.BLACKLISTED_SYMBOLS.has(trimmedSymbol)) {
+         errors.push({
+           field: 'symbol',
+           message: 'Invalid symbol for trading'
+         });
+       }
 
       return errors;
     }
