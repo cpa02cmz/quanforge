@@ -8,6 +8,7 @@ import { useTranslation } from '../services/i18n';
 import { SEOHead, structuredDataTemplates } from '../utils/seo';
 import { createScopedLogger } from '../utils/logger';
 import { VirtualScrollList } from '../components/VirtualScrollList';
+import { PageAnalytics } from '../utils/pageAnalytics';
 
 const logger = createScopedLogger('Dashboard');
 
@@ -202,6 +203,11 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
 
   return (
     <>
+      <PageAnalytics 
+        pageUrl="https://quanforge.ai/"
+        pageTitle="Dashboard - Trading Robots Management"
+        pageType="dashboard"
+      />
       <SEOHead 
         title="Dashboard - Trading Robots Management"
         description="Manage your MQL5 trading robots and Expert Advisors. View, edit, duplicate, and analyze your automated trading strategies."

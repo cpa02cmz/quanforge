@@ -8,6 +8,7 @@ import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seo';
+import { PageAnalytics } from './utils/pageAnalytics';
 import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
 import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
 import { frontendOptimizer } from './services/frontendOptimizer';
@@ -78,10 +79,16 @@ export default function App() {
     <ErrorBoundary>
       <ToastProvider>
         <BrowserRouter>
+          <PageAnalytics 
+            pageUrl="https://quanforge.ai"
+            pageTitle="QuantForge AI - Advanced MQL5 Trading Robot Generator"
+            pageType="homepage"
+          />
           <SEOHead 
             structuredData={[
               structuredDataTemplates.softwareApplication,
               structuredDataTemplates.localBusiness,
+              structuredDataTemplates.organization(),
               structuredDataTemplates.webPage(
                 'QuantForge AI - Advanced MQL5 Trading Robot Generator',
                 'Generate professional MQL5 trading robots and Expert Advisors using AI. Powered by Google Gemini 3.0/2.5.',

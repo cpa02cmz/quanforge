@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { WIKI_CONTENT } from '../constants';
 import { useTranslation } from '../services/i18n';
 import { SEOHead, structuredDataTemplates } from '../utils/seo';
+import { PageAnalytics } from '../utils/pageAnalytics';
 
 export const Wiki: React.FC = () => {
   const { language } = useTranslation();
@@ -98,6 +99,11 @@ export const Wiki: React.FC = () => {
 
   return (
     <>
+      <PageAnalytics 
+        pageUrl="https://quanforge.ai/wiki"
+        pageTitle="Documentation & Wiki - QuantForge AI"
+        pageType="wiki"
+      />
       <SEOHead 
         title="Documentation & Wiki - QuantForge AI"
         description="Complete documentation and guides for QuantForge AI. Learn how to create MQL5 trading robots, use AI features, and optimize your trading strategies."

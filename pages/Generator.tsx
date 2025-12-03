@@ -9,6 +9,7 @@ import { BacktestPanel } from '../components/BacktestPanel';
 import { useTranslation } from '../services/i18n';
 import { SEOHead, structuredDataTemplates } from '../utils/seo';
 import { performanceMonitor } from '../utils/performance';
+import { PageAnalytics } from '../utils/pageAnalytics';
 
 // Lazy load chart components to reduce initial bundle size
 const ChartComponents = lazy(() => import('../components/ChartComponents').then(module => ({ default: module.ChartComponents })));
@@ -96,6 +97,11 @@ export const Generator: React.FC = memo(() => {
 
   return (
     <>
+      <PageAnalytics 
+        pageUrl={id ? `https://quanforge.ai/generator/${id}` : 'https://quanforge.ai/generator'}
+        pageTitle={id ? `Edit Trading Robot - ${robotName || 'Loading...'}` : 'Create New Trading Robot'}
+        pageType="generator"
+      />
       <SEOHead 
         title={id ? `Edit Trading Robot - ${robotName || 'Loading...'}` : 'Create New Trading Robot'}
         description={id ? `Edit and optimize your MQL5 trading robot "${robotName}". Adjust parameters, test strategies, and deploy to MetaTrader 5.` : 'Create a new MQL5 trading robot using AI. Describe your strategy and generate professional Expert Advisors for MetaTrader 5.'}

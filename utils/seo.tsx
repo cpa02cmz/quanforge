@@ -78,6 +78,45 @@ export const SEOHead: React.FC<MetaTagsProps> = ({
     // Additional Meta Tags
     updateMetaTag('theme-color', '#22c55e');
     updateMetaTag('language', 'en');
+    updateMetaTag('distribution', 'global');
+    updateMetaTag('rating', 'general');
+    updateMetaTag('revisit-after', '7 days');
+    updateMetaTag('geo.region', 'US');
+    updateMetaTag('geo.placename', 'Global');
+    updateMetaTag('category', 'finance, technology, trading, artificial intelligence');
+    updateMetaTag('coverage', 'Worldwide');
+    updateMetaTag('target', 'all');
+    updateMetaTag('HandheldFriendly', 'True');
+    updateMetaTag('MobileOptimized', '320');
+    updateMetaTag('apple-mobile-web-app-capable', 'yes');
+    updateMetaTag('apple-mobile-web-app-status-bar-style', 'black-translucent');
+    updateMetaTag('format-detection', 'telephone=no');
+    updateMetaTag('mobile-web-app-capable', 'yes');
+    updateMetaTag('apple-mobile-web-app-title', 'QuantForge AI');
+    updateMetaTag('application-name', 'QuantForge AI');
+    updateMetaTag('referrer', 'no-referrer-when-downgrade');
+    
+    // Enhanced Open Graph tags
+    updateMetaTag('og:locale', 'en_US', 'og:locale');
+    updateMetaTag('og:site_name', 'QuantForge AI', 'og:site_name');
+    updateMetaTag('og:image:width', '1200', 'og:image:width');
+    updateMetaTag('og:image:height', '630', 'og:image:height');
+    updateMetaTag('og:image:type', 'image/png', 'og:image:type');
+    updateMetaTag('og:image:alt', 'QuantForge AI - MQL5 Trading Robot Generator', 'og:image:alt');
+    
+    // Enhanced Twitter Card tags
+    updateMetaTag('twitter:site', '@quanforge');
+    updateMetaTag('twitter:creator', '@quanforge');
+    updateMetaTag('twitter:domain', 'quanforge.ai');
+    updateMetaTag('twitter:image:alt', 'QuantForge AI - MQL5 Trading Robot Generator', 'twitter:image:alt');
+    
+    // Article specific tags if applicable
+    if (type === 'article') {
+      updateMetaTag('article:section', 'Trading Technology', 'article:section');
+      updateMetaTag('article:tag', 'MQL5,Trading,MetaTrader,AI', 'article:tag');
+      updateMetaTag('article:published_time', new Date().toISOString(), 'article:published_time');
+      updateMetaTag('article:modified_time', new Date().toISOString(), 'article:modified_time');
+    }
     
     // Clean up existing structured data
     const existingScripts = document.querySelectorAll('script[type="application/ld+json"]');
@@ -89,6 +128,26 @@ export const SEOHead: React.FC<MetaTagsProps> = ({
       script.type = 'application/ld+json';
       script.textContent = JSON.stringify(data);
       document.head.appendChild(script);
+    });
+    
+    // Add preload for critical resources
+    const preloadResources = [
+      { href: '/fonts/Inter-Regular.woff2', as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' },
+      { href: '/fonts/Inter-Bold.woff2', as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' },
+      { href: '/og-image.png', as: 'image' }
+    ];
+    
+    preloadResources.forEach(resource => {
+      let link = document.querySelector(`link[rel="preload"][href="${resource.href}"]`) as HTMLLinkElement;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'preload';
+        link.href = resource.href;
+        link.as = resource.as;
+        if (resource.type) link.type = resource.type;
+        if (resource.crossOrigin) link.crossOrigin = resource.crossOrigin;
+        document.head.appendChild(link);
+      }
     });
 
     return () => {
@@ -460,6 +519,103 @@ export const structuredDataTemplates = {
       "@type": "SearchAction",
       "target": `${url}/search?q={search_term_string}`,
       "query-input": "required name=search_term_string"
+    }
+  }),
+
+  // Enhanced structured data for better SEO
+  financialProduct: (name: string, description: string) => ({
+    "@context": "https://schema.org",
+    "@type": "FinancialProduct",
+    "name": name,
+    "description": description,
+    "provider": {
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "url": "https://quanforge.ai"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock"
+    },
+    "category": "Investment Services",
+    "audience": {
+      "@type": "Audience",
+      "audienceType": "Traders and Investors"
+    }
+  }),
+
+  organization: () => ({
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "QuantForge AI",
+    "url": "https://quanforge.ai",
+    "logo": "https://quanforge.ai/logo.png",
+    "description": "Advanced MQL5 Trading Robot Generator powered by AI",
+    "sameAs": [
+      "https://twitter.com/quanforge",
+      "https://github.com/quanforge",
+      "https://linkedin.com/company/quanforge"
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer service",
+      "availableLanguage": ["English"],
+      "hoursAvailable": "24/7"
+    },
+    "areaServed": "Worldwide",
+    "foundingDate": "2024",
+    "founder": {
+      "@type": "Person",
+      "name": "QuantForge AI Team"
+    }
+  }),
+
+  videoObject: (name: string, description: string, thumbnailUrl: string, contentUrl: string) => ({
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    "name": name,
+    "description": description,
+    "thumbnailUrl": thumbnailUrl,
+    "contentUrl": contentUrl,
+    "uploadDate": new Date().toISOString(),
+    "duration": "PT5M",
+    "publisher": {
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://quanforge.ai/logo.png"
+      }
+    }
+  }),
+
+  collectionPage: (name: string, description: string, url: string) => ({
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": name,
+    "description": description,
+    "url": url,
+    "dateModified": new Date().toISOString(),
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "QuantForge AI",
+      "url": "https://quanforge.ai"
+    },
+    "about": {
+      "@type": "Thing",
+      "name": "MQL5 Trading Robot Collection"
+    },
+    "mainEntity": {
+      "@type": "ItemList",
+      "itemListElement": [
+        {
+          "@type": "SoftwareApplication",
+          "name": "MQL5 Trading Robot Generator",
+          "description": "AI-powered trading robot generation tool"
+        }
+      ]
     }
   })
 };
