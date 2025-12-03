@@ -19,7 +19,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:analyze": "ANALYZE=true vite build",
+    "build:analyze": "ANALYZE=true vite build && npx @vercel/webpack-bundle-analyzer dist/static/js/*.js",
+    "build:profile": "vite build --mode profile",
+    "build:benchmark": "npm run clean && npm run build && npm run build:analyze",
     "build:edge": "NODE_ENV=production vite build --mode edge",
     "build:production": "npm run build:edge",
     "preview": "vite preview",

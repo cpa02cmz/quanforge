@@ -24,15 +24,20 @@ interface ValidationResult {
 class SecurityManager {
   private static instance: SecurityManager;
   private config: SecurityConfig = {
-    maxPayloadSize: 10 * 1024 * 1024, // 10MB
-    allowedOrigins: ['https://quanforge.ai', 'http://localhost:3000'],
+    maxPayloadSize: 5 * 1024 * 1024, // Reduced to 5MB for better security
+    allowedOrigins: [
+      'https://quanforge.ai',
+      'https://www.quanforge.ai',
+      'http://localhost:3000',
+      'http://localhost:5173' // Vite dev server
+    ],
     rateLimiting: {
       windowMs: 60000, // 1 minute
       maxRequests: 100,
     },
     encryption: {
-      algorithm: 'AES-GCM',
-      keyRotationInterval: 86400000, // 24 hours
+      algorithm: 'AES-256-GCM',
+      keyRotationInterval: 43200000, // 12 hours - more frequent rotation
     },
   };
   private rateLimitMap = new Map<string, { count: number; resetTime: number }>();
