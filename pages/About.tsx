@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../services/i18n';
-import { PageMeta, enhancedStructuredData } from '../utils/pageMeta';
-import { generateTableOfContents } from '../utils/seoAnalytics';
+import { AdvancedSEO } from '../utils/advancedSEO';
 
 const AboutComponent: React.FC = () => {
   const { language } = useTranslation();
@@ -90,7 +89,12 @@ const AboutComponent: React.FC = () => {
   };
 
   const currentContent = content[language] || content.en;
-  const tableOfContents = generateTableOfContents(currentContent.sections.map(s => `<h2>${s.title}</h2><p>${s.content}</p>`).join('\n'));
+  const tableOfContents = currentContent.sections.map(s => ({
+    id: s.id,
+    title: s.title,
+    anchor: s.id,
+    level: 2
+  }));
 
   useEffect(() => {
     const handleScroll = () => {
@@ -113,32 +117,38 @@ const AboutComponent: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [currentContent.sections]);
 
-  const structuredData = [
-    enhancedStructuredData.organization,
-    enhancedStructuredData.webPage(
-      currentContent.title,
-      currentContent.description,
-      'https://quanforge.ai/about'
-    ),
-    enhancedStructuredData.article(
-      'About QuantForge AI',
-      currentContent.description,
-      'https://quanforge.ai/about',
-      'QuantForge AI',
-      '2023-01-01',
-      new Date().toISOString()
-    )
+  const faqs = [
+    {
+      question: language === 'id' ? "Apa itu QuantForge AI?" : "What is QuantForge AI?",
+      answer: language === 'id' 
+        ? "QuantForge AI adalah platform canggih yang menggunakan AI untuk menghasilkan robot trading MQL5 untuk MetaTrader 5."
+        : "QuantForge AI is an advanced platform that uses AI to generate MQL5 trading robots for MetaTrader 5."
+    },
+    {
+      question: language === 'id' ? "Bagaimana cara kerjanya?" : "How does it work?",
+      answer: language === 'id'
+        ? "Cukup jelaskan strategi trading Anda dalam bahasa alami, dan AI kami akan menghasilkan kode MQL5 profesional."
+        : "Simply describe your trading strategy in natural language, and our AI will generate professional MQL5 code."
+    }
   ];
 
   return (
     <>
-      <PageMeta
+      <AdvancedSEO
+        pageType="other"
         title={currentContent.title}
         description={currentContent.description}
         keywords="QuantForge AI about, automated trading team, AI trading platform company, MQL5 generator company, trading robot developers, quantitative finance team"
         canonicalUrl="https://quanforge.ai/about"
-        structuredData={structuredData}
-        type="article"
+        readingTime={12}
+        wordCount={2000}
+        faqs={faqs}
+        breadcrumbs={[
+          { name: 'Home', url: 'https://quanforge.ai/' },
+          { name: 'About', url: 'https://quanforge.ai/about' }
+        ]}
+        tags={['About', 'Company', 'Team', 'Mission']}
+        category="Company"
       />
       
       <div className="min-h-screen bg-dark-bg text-white">
@@ -178,7 +188,7 @@ const AboutComponent: React.FC = () => {
               <span className="text-sm font-semibold text-gray-400">
                 {language === 'id' ? 'Navigasi:' : 'Navigation:'}
               </span>
-              {tableOfContents.map((item) => (
+              {tableOfContents.map((item: any) => (
                 <button
                   key={item.id}
                   onClick={() => {
