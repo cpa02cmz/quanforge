@@ -103,6 +103,8 @@ export const Generator: React.FC = memo(() => {
         canonicalUrl={id ? `https://quanforge.ai/generator/${id}` : 'https://quanforge.ai/generator'}
 structuredData={[
            structuredDataTemplates.softwareApplication,
+           structuredDataTemplates.organization,
+           structuredDataTemplates.professionalService,
            structuredDataTemplates.breadcrumb([
              { name: 'Home', url: 'https://quanforge.ai/' },
              { name: 'Generator', url: 'https://quanforge.ai/generator' }
@@ -123,6 +125,10 @@ structuredData={[
              id ? `Edit Trading Robot - ${robotName}` : 'Create New Trading Robot',
              id ? `Edit and optimize your MQL5 trading robot "${robotName}" with advanced AI-powered tools.` : 'Create new MQL5 trading robots using advanced AI technology with visual configuration and real-time testing.',
              id ? `https://quanforge.ai/generator/${id}` : 'https://quanforge.ai/generator'
+           ),
+           structuredDataTemplates.financialService(
+             'AI Trading Robot Generation',
+             'Professional AI-powered service for generating and optimizing MQL5 trading robots with advanced analytics.'
            )
          ]}
       />

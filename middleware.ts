@@ -6,6 +6,13 @@
 // Rate limiting store (in production, use Redis or KV)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
+// SEO enhancement patterns
+const SEO_PATTERNS = {
+  trailingSlash: /\/$/,
+  nonSeoChars: /[^a-zA-Z0-9\-_\/]/g,
+  uppercase: /[A-Z]/
+};
+
 // Security patterns for threat detection
 const SECURITY_PATTERNS = {
   sqlInjection: /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|SCRIPT)\b)/i,
@@ -22,7 +29,7 @@ const RATE_LIMITS = {
   suspicious: { requests: 20, window: 60000 } // 20 requests per minute for suspicious IPs
 };
 
-export default function middleware(request: Request) {
+export default function middleware(request: any) {
   const startTime = performance.now();
   const url = request.nextUrl;
   const userAgent = request.headers.get('user-agent') || '';
@@ -113,13 +120,16 @@ export default function middleware(request: Request) {
   // Cache optimization based on request characteristics
   applyCacheOptimizations(response, request, securityAnalysis, botInfo);
 
+  // SEO enhancements
+  applySEOEnhancements(response, request, botInfo, country);
+
   return response;
 }
 
 /**
  * Analyze request for security threats
  */
-function analyzeRequest(request: Request, userAgent: string, clientIP: string) {
+function analyzeRequest(request: any, userAgent: string, clientIP: string) {
   const url = request.nextUrl;
   const searchParams = url.searchParams.toString();
   
@@ -454,7 +464,7 @@ function applyGeographicOptimizations(response: Response, country: string, regio
 /**
  * Apply cache optimizations based on request characteristics
  */
-function applyCacheOptimizations(response: Response, request: Request, securityAnalysis: any, botInfo: any) {
+function applyCacheOptimizations(response: any, request: any, securityAnalysis: any, botInfo: any) {
   const url = request.nextUrl;
   
   // Different cache strategies for different content types
@@ -482,9 +492,140 @@ function applyCacheOptimizations(response: Response, request: Request, securityA
 }
 
 /**
+ * Apply SEO enhancements to the response
+ */
+function applySEOEnhancements(response: any, request: any, botInfo: any, country: string) {
+  const url = request.nextUrl;
+  
+  // Add SEO-specific headers
+  response.headers.set('X-SEO-Optimized', 'true');
+  response.headers.set('X-SEO-Version', '2.0.0');
+  
+  // Canonical URL hints
+  response.headers.set('X-Canonical-URL', `https://quanforge.ai${url.pathname}`);
+  
+  // Language and region hints for SEO
+  const languageMap: Record<string, string> = {
+    'US': 'en-US',
+    'GB': 'en-GB', 
+    'CA': 'en-CA',
+    'AU': 'en-AU',
+    'DE': 'de-DE',
+    'FR': 'fr-FR',
+    'ES': 'es-ES',
+    'IT': 'it-IT',
+    'JP': 'ja-JP',
+    'KR': 'ko-KR',
+    'CN': 'zh-CN',
+    'BR': 'pt-BR',
+    'MX': 'es-MX'
+  };
+  
+  if (languageMap[country]) {
+    response.headers.set('X-SEO-Language-Hint', languageMap[country]);
+    response.headers.set('X-SEO-Region-Hint', country);
+  }
+  
+  // Content type hints for search engines
+  if (url.pathname.startsWith('/blog/')) {
+    response.headers.set('X-SEO-Content-Type', 'article');
+  } else if (url.pathname.startsWith('/generator')) {
+    response.headers.set('X-SEO-Content-Type', 'tool');
+  } else if (url.pathname.startsWith('/wiki')) {
+    response.headers.set('X-SEO-Content-Type', 'documentation');
+  } else {
+    response.headers.set('X-SEO-Content-Type', 'webpage');
+  }
+  
+  // Bot-specific SEO optimizations
+  if (botInfo.isBot) {
+    response.headers.set('X-SEO-Bot-Optimized', 'true');
+    
+    // Enhanced crawling instructions for search engines
+    if (botInfo.type === 'search-engine') {
+      response.headers.set('X-SEO-Crawl-Priority', 'high');
+      response.headers.set('X-SEO-Structured-Data-Enhanced', 'true');
+    }
+  }
+  
+  // Page-specific SEO hints
+  const seoHints = generateSEOHints(url.pathname);
+  if (seoHints.title) response.headers.set('X-SEO-Title-Hint', seoHints.title);
+  if (seoHints.description) response.headers.set('X-SEO-Description-Hint', seoHints.description);
+  if (seoHints.keywords) response.headers.set('X-SEO-Keywords-Hint', seoHints.keywords);
+  
+  // Internal linking hints
+  const relatedPages = generateRelatedPages(url.pathname);
+  if (relatedPages.length > 0) {
+    response.headers.set('X-SEO-Related-Pages', relatedPages.join(','));
+  }
+}
+
+/**
+ * Generate SEO hints based on page path
+ */
+function generateSEOHints(pathname: string) {
+  const hints: any = {};
+  
+  // Page-specific SEO metadata
+  const seoMap: Record<string, any> = {
+    '/': {
+      title: 'QuantForge AI - Advanced MQL5 Trading Robot Generator',
+      description: 'Generate professional MQL5 trading robots using AI. Powered by Google Gemini.',
+      keywords: 'MQL5, trading robot, AI, MetaTrader 5, Expert Advisor'
+    },
+    '/generator': {
+      title: 'Create Trading Robot - QuantForge AI',
+      description: 'Create custom MQL5 trading robots with our AI-powered generator.',
+      keywords: 'MQL5 generator, trading robot creator, EA builder'
+    },
+    '/wiki': {
+      title: 'Documentation - QuantForge AI',
+      description: 'Comprehensive guides for MQL5 trading robot development.',
+      keywords: 'MQL5 documentation, trading tutorials, MetaTrader 5 guide'
+    },
+    '/dashboard': {
+      title: 'Dashboard - QuantForge AI',
+      description: 'Manage your trading robots and analyze performance.',
+      keywords: 'trading dashboard, robot management, performance analytics'
+    }
+  };
+  
+  // Find matching SEO data
+  for (const [path, data] of Object.entries(seoMap)) {
+    if (pathname === path || pathname.startsWith(path + '/')) {
+      return data;
+    }
+  }
+  
+  return hints;
+}
+
+/**
+ * Generate related pages for internal linking
+ */
+function generateRelatedPages(pathname: string): string[] {
+  const relatedMap: Record<string, string[]> = {
+    '/': ['/generator', '/wiki', '/features'],
+    '/generator': ['/wiki', '/dashboard', '/tutorials'],
+    '/wiki': ['/generator', '/tutorials', '/faq'],
+    '/dashboard': ['/generator', '/wiki', '/analytics'],
+    '/blog': ['/wiki', '/generator', '/tutorials'],
+    '/tutorials': ['/generator', '/wiki', '/blog']
+  };
+  
+  // Find base path
+  const basePath = Object.keys(relatedMap).find(path => 
+    pathname === path || pathname.startsWith(path + '/')
+  );
+  
+  return basePath ? relatedMap[basePath] : [];
+}
+
+/**
  * Enhanced prewarming handler for edge functions
  */
-async function handlePrewarming(request: Request, region: string) {
+async function handlePrewarming(request: any, region: string) {
   try {
     // Trigger concurrent warmup for critical functions
     const warmupPromises = [

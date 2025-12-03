@@ -446,7 +446,7 @@ export const structuredDataTemplates = {
     }
   }),
 
-  website: (name: string, description: string, url: string) => ({
+website: (name: string, description: string, url: string) => ({
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": name,
@@ -461,5 +461,64 @@ export const structuredDataTemplates = {
       "target": `${url}/search?q={search_term_string}`,
       "query-input": "required name=search_term_string"
     }
-  })
+  }),
+
+  // Enhanced structured data for better SEO
+  organization: {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "QuantForge AI",
+    "description": "Advanced MQL5 Trading Robot Generator powered by AI",
+    "url": "https://quanforge.ai",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://quanforge.ai/logo.png",
+      "width": 512,
+      "height": 512
+    },
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer service",
+      "availableLanguage": ["English", "Indonesian"]
+    },
+    "sameAs": [
+      "https://twitter.com/quanforge",
+      "https://github.com/quanforge",
+      "https://linkedin.com/company/quanforge"
+    ],
+    "foundingDate": "2024",
+    "areaServed": "Worldwide",
+    "knowsLanguage": ["English", "Indonesian", "MQL5"],
+    "makesOffer": {
+      "@type": "Offer",
+      "itemOffered": {
+        "@type": "Service",
+        "name": "MQL5 Trading Robot Generation",
+        "description": "AI-powered generation of MetaTrader 5 trading robots and Expert Advisors"
+      }
+    }
+  },
+
+  professionalService: {
+    "@context": "https://schema.org",
+    "@type": "ProfessionalService",
+    "name": "QuantForge AI",
+    "description": "AI-powered MQL5 trading robot generation and optimization platform",
+    "url": "https://quanforge.ai",
+    "telephone": "+1-555-0123",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Global",
+      "addressCountry": "Worldwide"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": 0.0,
+      "longitude": 0.0
+    },
+    "openingHours": "Mo-Su 00:00-23:59",
+    "priceRange": "$0",
+    "paymentAccepted": ["Credit Card", "PayPal", "Crypto"],
+    "currenciesAccepted": "USD"
+  }
 };

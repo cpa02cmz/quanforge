@@ -209,6 +209,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
         canonicalUrl="https://quanforge.ai/"
 structuredData={[
            structuredDataTemplates.softwareApplication,
+           structuredDataTemplates.organization,
            structuredDataTemplates.breadcrumb([
              { name: 'Home', url: 'https://quanforge.ai/' },
              { name: 'Dashboard', url: 'https://quanforge.ai/' }
@@ -221,6 +222,10 @@ structuredData={[
              'Trading Robot Dashboard',
              'Comprehensive dashboard for managing MQL5 trading robots and Expert Advisors with performance analytics.',
              'https://quanforge.ai/'
+           ),
+           structuredDataTemplates.service(
+             'Trading Robot Management',
+             'Professional management and optimization platform for MQL5 trading robots with real-time analytics.'
            )
          ]}
       />
