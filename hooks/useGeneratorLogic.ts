@@ -223,49 +223,49 @@ const stopGeneration = () => {
       return rawText;
   };
 
-  // Logic: Process AI Response (structured object with content and thinking)
-  const processAIResponse = useCallback(async (response: { content: string, thinking?: string }) => {
-      const { content: rawResponse, thinking } = response;
-      const extractedCode = extractCode(rawResponse);
-      
-      if (extractedCode) {
-          dispatch({ type: 'SET_CODE', payload: extractedCode });
-          
-          // Trigger analysis in background, cancellable
-          const analysisController = new AbortController();
-          loadGeminiService().then(({ analyzeStrategy }) => {
-              if (!analysisController.signal.aborted) {
-                  return analyzeStrategy(extractedCode, analysisController.signal);
-              }
-              return Promise.reject(new Error('Aborted'));
-          }).then(analysis => {
-              if (!analysisController.signal.aborted && analysis) {
-                  dispatch({ type: 'SET_ANALYSIS', payload: analysis });
-              }
-          }).catch((err: any) => {
-              if (err.name !== 'AbortError') logger.error("Analysis failed", err);
-          });
+   // Logic: Process AI Response (structured object with content and thinking)
+   const processAIResponse = useCallback(async (response: { content: string, thinking?: string }) => {
+       const { content: rawResponse, thinking } = response;
+       const extractedCode = extractCode(rawResponse);
+       
+       if (extractedCode) {
+           dispatch({ type: 'SET_CODE', payload: extractedCode });
+           
+           // Trigger analysis in background, cancellable
+           const analysisController = new AbortController();
+           loadGeminiService().then(({ analyzeStrategy }) => {
+               if (!analysisController.signal.aborted) {
+                   return analyzeStrategy(extractedCode, analysisController.signal);
+               }
+               return Promise.reject(new Error('Aborted'));
+           }).then(analysis => {
+               if (!analysisController.signal.aborted && analysis) {
+                   dispatch({ type: 'SET_ANALYSIS', payload: analysis });
+               }
+           }).catch((err: any) => {
+               if (err.name !== 'AbortError') logger.error("Analysis failed", err);
+           });
 
-          dispatch({ type: 'SET_SIMULATION_RESULT', payload: null }); 
-          
-          if (window.innerWidth < 768) {
-              dispatch({ type: 'SET_MOBILE_VIEW', payload: 'result' });
-          }
-      }
+           dispatch({ type: 'SET_SIMULATION_RESULT', payload: null }); 
+           
+           if (window.innerWidth < 768) {
+               dispatch({ type: 'SET_MOBILE_VIEW', payload: 'result' });
+           }
+       }
 
-      const chatContent = formatChatMessage(rawResponse, !!extractedCode);
-      
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: MessageRole.MODEL,
-        content: chatContent || (extractedCode ? "Code updated successfully." : "I couldn't generate a text response."),
-        timestamp: Date.now(),
-        thinking: thinking || null 
-      };
+       const chatContent = formatChatMessage(rawResponse, !!extractedCode);
+       
+       const aiMessage: Message = {
+         id: (Date.now() + 1).toString(),
+         role: MessageRole.MODEL,
+         content: chatContent || (extractedCode ? "Code updated successfully." : "I couldn't generate a text response."),
+         timestamp: Date.now(),
+         thinking: thinking || null 
+       };
 
-      dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
-      addMessage(aiMessage);
-  }, []);
+       dispatch({ type: 'ADD_MESSAGE', payload: aiMessage });
+       addMessage(aiMessage);
+   }, [loadGeminiService, extractCode, formatChatMessage, addMessage]);
 
   // Handlers
   const handleSendMessage = async (content: string) => {
