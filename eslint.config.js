@@ -16,9 +16,11 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.node,
+        ...globals.webextensions, // For edge runtime globals
         process: 'readonly',
         Buffer: 'readonly',
         NodeJS: 'readonly',
+        WebSocketPair: 'readonly', // For edge runtime WebSocket support
       },
       parser: tsparser,
       parserOptions: {

@@ -1,7 +1,7 @@
 {
-  "name": "QuantForge AI - MQL5 Generator",
+  "name": "QuantForge AI - Advanced MQL5 Trading Robot Generator",
   "short_name": "QuantForge",
-  "description": "Generate professional MQL5 trading robots with AI",
+  "description": "Generate professional MQL5 trading robots and Expert Advisors using AI. Powered by Google Gemini 3.0/2.5. Create, test, and deploy automated trading strategies for MetaTrader 5.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",
@@ -9,8 +9,44 @@
   "orientation": "portrait-primary",
   "icons": [
     {
+      "src": "/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
       "src": "/icon-192x192.png",
       "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-384x384.png",
+      "sizes": "384x384",
       "type": "image/png",
       "purpose": "any maskable"
     },
@@ -21,9 +57,102 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["finance", "productivity", "business"],
+  "categories": ["finance", "productivity", "business", "trading", "ai", "development"],
   "lang": "en",
   "dir": "ltr",
   "scope": "/",
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "screenshots": [
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "QuantForge AI Desktop Interface - Create MQL5 trading robots with AI"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "375x667",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "QuantForge AI Mobile Interface - Trading robot generation on the go"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Create New Robot",
+      "short_name": "New Robot",
+      "description": "Start creating a new MQL5 trading robot",
+      "url": "/generator",
+      "icons": [
+        {
+          "src": "/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "View Dashboard",
+      "short_name": "Dashboard",
+      "description": "Manage your trading robots",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Documentation",
+      "short_name": "Docs",
+      "description": "View documentation and tutorials",
+      "url": "/wiki",
+      "icons": [
+        {
+          "src": "/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "scope_extensions": [],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+quanforge",
+      "url": "/handle-protocol?url=%s"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/import-robot",
+      "accept": {
+        "application/json": [".json"],
+        "text/plain": [".mq5", ".mqh"]
+      }
+    }
+  ],
+  "share_target": {
+    "action": "/share-robot",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "name",
+      "text": "description",
+      "url": "link",
+      "files": [
+        {
+          "name": "robot",
+          "accept": [".mq5", ".mqh", ".json"]
+        }
+      ]
+    }
+  }
 }

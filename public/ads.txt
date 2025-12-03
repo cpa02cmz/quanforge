@@ -1,0 +1,29 @@
+# QuantForge AI - ads.txt
+
+# This file contains advertising information for QuantForge AI
+# For advertising inquiries, please contact: ads@quanforge.ai
+
+# Direct Advertising
+contact: ads@quanforge.ai
+
+# Programmatic Advertising
+# We may participate in programmatic advertising networks
+# All ads are reviewed for compliance with our policies
+
+# Ad Network Partnerships
+# Partnerships with financial and technology advertising networks
+# Focus on trading, finance, and AI-related products
+
+# Advertising Guidelines
+# - No misleading or deceptive advertising
+# - Financial products must be appropriately disclosed
+# - AI and technology products must be accurately represented
+# - All ads must comply with applicable laws and regulations
+
+# Privacy Compliance
+# All advertising activities comply with:
+# - GDPR (General Data Protection Regulation)
+# - CCPA (California Consumer Privacy Act)
+# - Other applicable privacy regulations
+
+# Last Updated: 2025-12-03
