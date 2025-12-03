@@ -164,11 +164,12 @@ class QueryOptimizer {
          const dataSize = this.calculateSize(data);
          this.maintainCacheSize(dataSize);
          
-         this.queryCache.set(queryHash, {
-           data,
-           timestamp: Date.now(),
-           ttl: this.DEFAULT_TTL,
-         });
+          this.queryCache.set(queryHash, {
+            data,
+            timestamp: Date.now(),
+            ttl: this.DEFAULT_TTL,
+            hits: 1,
+          });
        }
 
        const metrics: QueryMetrics = {
