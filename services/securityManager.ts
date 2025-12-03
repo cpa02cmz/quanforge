@@ -458,7 +458,7 @@ private validateRobotData(data: any): ValidationResult {
 
 // Check for obfuscated code patterns
        const obfuscatedPatterns = [
-         /[^a-zA-Z0-9\s\(\)\[\]\{\}\.\,\;\:\+\-\*\/\=\>\<\!\&\|\^\~\%]+/g, // Non-alphanumeric characters
+          /[^a-zA-Z0-9\s(){}.,;:+\-*/=<>!&|^~%]+/g, // Non-alphanumeric characters
          /0x[0-9a-fA-F]+/g, // Hex numbers
          /\\u[0-9a-fA-F]{4}/g, // Unicode escapes
          /\\x[0-9a-fA-F]{2}/g, // Hex escapes
@@ -1370,7 +1370,7 @@ private validateRobotData(data: any): ValidationResult {
 
       case 'code':
         // Allow code characters but remove dangerous patterns
-        sanitized = sanitized.replace(/<script[^>]*>.*?<\/script>/gis, '');
+        sanitized = sanitized.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
         sanitized = sanitized.replace(/javascript:/gi, '');
         sanitized = sanitized.substring(0, 50000);
         break;
@@ -1442,7 +1442,7 @@ private validateRobotData(data: any): ValidationResult {
 
     // Check nested objects
     for (const key in obj) {
-      if (obj.hasOwnProperty(key) && typeof obj[key] === 'object') {
+       if (Object.prototype.hasOwnProperty.call(obj, key) && typeof obj[key] === 'object') {
         if (this.isPrototypePollution(obj[key])) {
           return true;
         }
