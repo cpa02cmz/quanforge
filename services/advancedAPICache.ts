@@ -3,6 +3,15 @@
  * Provides sophisticated caching strategies for API calls to improve performance
  */
 
+// Import required types for compatibility
+type HeadersInit = string[][] | Record<string, string> | Headers;
+type BodyInit = Blob | ArrayBuffer | Uint8Array | DataView | FormData | URLSearchParams | ReadableStream | string;
+type RequestCache = 'default' | 'force-cache' | 'no-cache' | 'no-store' | 'only-if-cached' | 'reload';
+type RequestCredentials = 'include' | 'omit' | 'same-origin';
+type RequestRedirect = 'error' | 'follow' | 'manual';
+type ReferrerPolicy = '' | 'no-referrer' | 'no-referrer-when-downgrade' | 'origin' | 'origin-when-cross-origin' | 'same-origin' | 'strict-origin-when-cross-origin' | 'unsafe-url';
+type RequestMode = 'cors' | 'navigate' | 'no-cors' | 'same-origin';
+
 interface CacheEntry {
   data: unknown;
   timestamp: number;
@@ -266,7 +275,7 @@ class AdvancedAPICache {
     const ttl = cacheTTL ?? this.config.defaultTTL;
     
     // Get from cache first (even if expired)
-    let cached = await this.get<T>(cacheKey);
+    const cached = await this.get<T>(cacheKey);
     let isStale = false;
     
     // Check if cached entry exists but is expired

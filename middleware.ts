@@ -404,7 +404,7 @@ function generateDynamicCSP(request: Request, region: string, securityAnalysis: 
  * Generate dynamic permissions policy
  */
 function generatePermissionsPolicy(securityAnalysis: any, userAgent: string): string {
-  let policies = [
+  const policies = [
     'camera=()',
     'microphone=()',
     'geolocation=()',

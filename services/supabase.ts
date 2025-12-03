@@ -1,5 +1,6 @@
 
-import { SupabaseClient } from '@supabase/supabase-js';
+import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { Robot, UserSession } from '../types';
 import { enhancedConnectionPool } from './enhancedSupabasePool';

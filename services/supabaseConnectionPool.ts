@@ -1,4 +1,5 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 
 interface ConnectionPoolConfig {
@@ -125,28 +126,7 @@ class SupabaseConnectionPool {
     }
 
     // Create new connection with optimized config
-    const client = createClient(settings.url, settings.anonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: false,
-      },
-      db: {
-        schema: 'public',
-      },
-      global: {
-        headers: {
-          'x-application-name': 'quanforge-ai',
-          'x-connection-id': connectionId,
-        },
-      },
-      // Add connection timeout
-      realtime: {
-        params: {
-          eventsPerSecond: 10,
-        },
-      },
-    });
+    const client = await createDynamicSupabaseClient(settings.url, settings.anonKey);
 
     // Test connection
     const isHealthy = await this.testConnection(client);
@@ -193,44 +173,7 @@ class SupabaseConnectionPool {
     }
 
     // Create new replica connection with edge optimizations
-    const client = createClient(replica.url, replica.anonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: false,
-      },
-      db: {
-        schema: 'public',
-      },
-      global: {
-        headers: {
-          'x-connection-pool': 'true',
-          'x-edge-optimized': 'true',
-          'x-connection-id': replicaConnectionId,
-        },
-      },
-      // Edge-specific optimizations
-      ...(typeof window === 'undefined' && {
-        // Server-side/edge specific options
-        fetch: (url, options) => {
-          // Add connection pooling headers for edge requests
-          return fetch(url, {
-            ...options,
-            headers: {
-              ...options?.headers,
-              'Connection': 'keep-alive',
-              'Keep-Alive': 'timeout=60',
-              'x-edge-client': 'vercel',
-            },
-          });
-         },
-       }),
-      realtime: {
-        params: {
-          eventsPerSecond: 5, // Lower for read replicas
-        },
-      },
-    });
+    const client = await createDynamicSupabaseClient(replica.url, replica.anonKey);
 
     // Test connection
     const isHealthy = await this.testConnection(client);
