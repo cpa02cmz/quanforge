@@ -3,6 +3,7 @@
  * Optimized for global distribution and performance
  */
 
+import { NextRequest, NextResponse } from 'next/server';
 import { edgeSupabase } from '../../services/edgeSupabaseClient';
 import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
 
@@ -75,7 +76,7 @@ export default async function edgeHandler(request: Request): Promise<Response> {
       
       default:
         response = { error: 'Endpoint not found' };
-        return new NextResponse(JSON.stringify(response), {
+        return NextResponse.json(response, {
           status: 404,
           headers: responseHeaders,
         });

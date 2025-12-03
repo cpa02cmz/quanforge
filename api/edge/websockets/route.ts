@@ -9,9 +9,7 @@ import { securityManager } from '../../services/securityManager';
 
 // Define global WebSocketPair for edge runtime
 declare global {
-  var WebSocketPair: {
-    new (): { 0: WebSocket; 1: WebSocket };
-  };
+  var WebSocketPair: any;
 }
 
 export const config = {
