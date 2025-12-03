@@ -1133,6 +1133,80 @@ class SecurityManager {
       rateLimitStats
     };
   }
+
+  // Generic input sanitization method
+  sanitizeInput(input: string, type: 'text' | 'code' | 'symbol' | 'url' | 'token' | 'search' | 'email' = 'text'): string {
+    if (!input || typeof input !== 'string') {
+      return '';
+    }
+
+    let sanitized = input.trim();
+
+    switch (type) {
+      case 'text':
+        // Remove HTML tags and dangerous characters
+        sanitized = sanitized.replace(/<[^>]*>/g, '');
+        sanitized = sanitized.replace(/[<>]/g, '');
+        // Limit length
+        sanitized = sanitized.substring(0, 1000);
+        break;
+
+      case 'code':
+        // Allow code characters but remove dangerous patterns
+        sanitized = sanitized.replace(/<script[^>]*>.*?<\/script>/gis, '');
+        sanitized = sanitized.replace(/javascript:/gi, '');
+        sanitized = sanitized.substring(0, 50000);
+        break;
+
+      case 'symbol':
+        // Only allow uppercase letters, numbers, and some special characters
+        sanitized = sanitized.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        sanitized = sanitized.substring(0, 10);
+        break;
+
+      case 'url':
+        // Basic URL sanitization
+        sanitized = sanitized.replace(/[<>'"]/g, '');
+        if (!sanitized.startsWith('http://') && !sanitized.startsWith('https://')) {
+          sanitized = 'https://' + sanitized;
+        }
+        sanitized = sanitized.substring(0, 2048);
+        break;
+
+      case 'token':
+        // Only allow alphanumeric and some special characters
+        sanitized = sanitized.replace(/[^a-zA-Z0-9\-_.]/g, '');
+        sanitized = sanitized.substring(0, 500);
+        break;
+
+      case 'search':
+        // Allow search terms but limit dangerous characters
+        sanitized = sanitized.replace(/[<>'"]/g, '');
+        sanitized = sanitized.substring(0, 200);
+        break;
+
+      case 'email':
+        // Basic email sanitization
+        sanitized = sanitized.toLowerCase().replace(/[^a-z0-9@._-]/g, '');
+        sanitized = sanitized.substring(0, 254);
+        break;
+    }
+
+    return sanitized;
+  }
+
+  // Hash string for rate limiting and caching
+  hashString(input: string): string {
+    if (!input) return '';
+    
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      const char = input.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(36);
+  }
 }
 
 export const securityManager = SecurityManager.getInstance();
