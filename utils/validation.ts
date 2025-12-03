@@ -24,6 +24,11 @@ export class ValidationService {
   private static readonly MIN_DURATION = 1;
   private static readonly MAX_LEVERAGE = 1000;
   private static readonly MIN_LEVERAGE = 1;
+
+  // Rate limiting for chat validation
+  private static rateLimiter = new Map<string, { count: number; resetTime: number }>();
+  private static readonly RATE_LIMIT_WINDOW = 60000; // 1 minute
+  private static readonly RATE_LIMIT_MAX_REQUESTS = 10;
   
   // Cached regex patterns for performance in chat validation
   private static readonly XSS_PATTERNS = [
@@ -284,7 +289,32 @@ if (input && seenNames.has(input.name)) {
     return errors;
   }
 
-    static validateChatMessage(message: string): ValidationError[] {
+    static validateChatMessageWithRateLimit(userId: string, message: string): ValidationError[] {
+       const errors: ValidationError[] = [];
+       const now = Date.now();
+       
+       // Check rate limit
+       const userLimit = this.rateLimiter.get(userId);
+       if (userLimit && now < userLimit.resetTime) {
+         if (userLimit.count >= this.RATE_LIMIT_MAX_REQUESTS) {
+           errors.push({
+             field: 'rate',
+             message: `Rate limit exceeded. Please wait ${Math.ceil((userLimit.resetTime - now) / 1000)} seconds.`
+           });
+           return errors;
+         }
+         userLimit.count++;
+       } else {
+         this.rateLimiter.set(userId, { 
+           count: 1, 
+           resetTime: now + this.RATE_LIMIT_WINDOW 
+         });
+       }
+
+       return this.validateChatMessage(message);
+     }
+
+     static validateChatMessage(message: string): ValidationError[] {
        const errors: ValidationError[] = [];
 
        if (!message || !message.trim()) {
