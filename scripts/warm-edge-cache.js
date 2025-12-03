@@ -238,6 +238,96 @@ async function collectMetrics() {
 }
 
 /**
+ * Warm up database connections
+ */
+async function warmupDatabaseConnections() {
+  console.log('🗄️  Warming up database connections...');
+  
+  const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'];
+  const warmupPromises = regions.map(async (region) => {
+    try {
+      await makeRequest(`${CONFIG.baseUrl}/api/database/warmup`, {
+        method: 'POST',
+        headers: {
+          'X-Target-Region': region,
+          'X-Warmup-Type': 'database-connection',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          region,
+          connectionCount: 2, // Warm up 2 connections per region
+          timeout: 5000
+        })
+      });
+      console.debug(`✅ Database connections warmed up for region: ${region}`);
+    } catch (error) {
+      console.warn(`❌ Failed to warmup DB connections for region ${region}:`, error.message);
+    }
+  });
+
+  await Promise.allSettled(warmupPromises);
+  console.log('✅ Database connection warm-up completed');
+}
+
+/**
+ * Warm up Supabase edge functions
+ */
+async function warmupSupabaseFunctions() {
+  console.log('🔥 Warming up Supabase edge functions...');
+  
+  const functions = [
+    'robots-list',
+    'market-data',
+    'user-session',
+    'strategy-analysis'
+  ];
+  
+  const warmupPromises = functions.map(async (funcName) => {
+    try {
+      await makeRequest(`${CONFIG.baseUrl}/api/supabase/${funcName}`, {
+        method: 'GET',
+        headers: {
+          'X-Warmup-Request': 'true',
+          'X-Function-Name': funcName,
+          'Cache-Control': 'no-cache'
+        }
+      });
+      console.debug(`✅ Supabase function warmed up: ${funcName}`);
+    } catch (error) {
+      console.warn(`❌ Failed to warmup Supabase function ${funcName}:`, error.message);
+    }
+  });
+
+  await Promise.allSettled(warmupPromises);
+  console.log('✅ Supabase edge functions warm-up completed');
+}
+
+/**
+ * Warm up AI service connections
+ */
+async function warmupAIServiceConnections() {
+  console.log('🤖 Warming up AI service connections...');
+  
+  try {
+    await makeRequest(`${CONFIG.baseUrl}/api/ai/warmup`, {
+      method: 'POST',
+      headers: {
+        'X-Warmup-Request': 'true',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gemini-pro',
+        prompt: 'warmup',
+        timeout: 3000
+      })
+    });
+    console.log('✅ AI service connections warmed up');
+  } catch (error) {
+    console.warn('❌ Failed to warmup AI service connections:', error.message);
+  }
+}
+
+/**
  * Print summary report
  */
 function printSummary() {
@@ -293,11 +383,14 @@ async function main() {
   
   try {
     // Update total requests count
-    metrics.totalRequests = CONFIG.endpoints.length * CONFIG.regions.length + 2; // +2 for cache warmup and metrics
+    metrics.totalRequests = CONFIG.endpoints.length * CONFIG.regions.length + 5; // +5 for all warmup routines
     
     // Execute warmup sequence
     await warmupEndpoints();
     await warmupCachePatterns();
+    await warmupDatabaseConnections();
+    await warmupSupabaseFunctions();
+    await warmupAIServiceConnections();
     await collectMetrics();
     
     const totalDuration = performance.now() - startTime;

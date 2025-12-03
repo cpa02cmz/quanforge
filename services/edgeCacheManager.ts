@@ -118,6 +118,7 @@ export class EdgeCacheManager<T = any> {
     region?: string;
     preferEdge?: boolean;
     vary?: string[];
+    staleWhileRevalidate?: boolean;
   }): Promise<T | null> {
     const region = options?.region || this.currentRegion;
     const varyKey = this.getVaryKey(key, options?.vary);
@@ -131,16 +132,30 @@ export class EdgeCacheManager<T = any> {
       return memoryEntry.compressed ? this.decompressData(memoryEntry.data) : memoryEntry.data;
     }
 
-    // 2. Check edge cache (if preferred)
+    // 2. Check edge cache hierarchy with stale-while-revalidate
     if (options?.preferEdge !== false) {
-      const edgeEntry = await this.getFromEdgeCache(varyKey, region);
-      if (edgeEntry && this.isValidEntry(edgeEntry)) {
-        // Promote to memory cache
-        this.setToMemoryCache(varyKey, edgeEntry);
-        this.updateAccess(edgeEntry);
-        this.stats.edgeHits++;
-        this.updateRegionalStats(region, 'edge');
-        return edgeEntry.compressed ? this.decompressData(edgeEntry.data) : edgeEntry.data;
+      const edgeEntry = await this.getFromEdgeHierarchy(varyKey, region);
+      if (edgeEntry) {
+        // Check if entry is stale but still usable
+        const isStale = !this.isValidEntry(edgeEntry);
+        const canUseStale = options?.staleWhileRevalidate && this.canUseStaleEntry(edgeEntry);
+        
+        if (!isStale || canUseStale) {
+          // Promote to memory cache
+          this.setToMemoryCache(varyKey, edgeEntry);
+          this.updateAccess(edgeEntry);
+          
+          if (isStale) {
+            this.stats.edgeHits++; // Count as hit even if stale
+            // Trigger background refresh
+            this.refreshEntryInBackground(key, varyKey, region);
+          } else {
+            this.stats.edgeHits++;
+          }
+          
+          this.updateRegionalStats(region, 'edge');
+          return edgeEntry.compressed ? this.decompressData(edgeEntry.data) : edgeEntry.data;
+        }
       }
     }
 
@@ -158,6 +173,158 @@ export class EdgeCacheManager<T = any> {
 
     this.stats.misses++;
     return null;
+  }
+
+  /**
+   * Get data from edge cache hierarchy with multi-tier lookup
+   */
+  private async getFromEdgeHierarchy(key: string, region: string): Promise<EdgeCacheEntry<T> | null> {
+    // 1. Check CDN edge cache (fastest)
+    const cdnCache = await this.getFromCDNCache(key, region);
+    if (cdnCache) {
+      return cdnCache;
+    }
+    
+    // 2. Check regional edge cache
+    const regionalCache = await this.getFromRegionalCache(key, region);
+    if (regionalCache) {
+      // Promote to CDN cache for faster future access
+      await this.setToCDNCache(key, regionalCache, region);
+      return regionalCache;
+    }
+    
+    // 3. Check neighboring edge regions for fallback
+    const neighborCache = await this.getFromNeighborCache(key, region);
+    if (neighborCache) {
+      // Promote through the hierarchy
+      await this.setToRegionalCache(key, neighborCache, region);
+      await this.setToCDNCache(key, neighborCache, region);
+      return neighborCache;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Get from CDN edge cache
+   */
+  private async getFromCDNCache(key: string, region: string): Promise<EdgeCacheEntry<T> | null> {
+    const cdnKey = `cdn:${region}:${key}`;
+    const entry = this.edgeCache.get(cdnKey);
+    
+    if (entry && this.isValidEntry(entry)) {
+      return entry;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Get from regional edge cache
+   */
+  private async getFromRegionalCache(key: string, region: string): Promise<EdgeCacheEntry<T> | null> {
+    const regionalKey = `regional:${region}:${key}`;
+    const entry = this.edgeCache.get(regionalKey);
+    
+    if (entry && this.isValidEntry(entry)) {
+      return entry;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Get from neighboring edge regions for fallback
+   */
+  private async getFromNeighborCache(key: string, region: string): Promise<EdgeCacheEntry<T> | null> {
+    // Get neighboring regions based on geographic proximity
+    const neighbors = this.getNeighborRegions(region);
+    
+    for (const neighbor of neighbors) {
+      const neighborKey = `regional:${neighbor}:${key}`;
+      const entry = this.edgeCache.get(neighborKey);
+      
+      if (entry && this.isValidEntry(entry)) {
+        return entry;
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Set to CDN cache
+   */
+  private async setToCDNCache(key: string, entry: EdgeCacheEntry<T>, region: string): Promise<void> {
+    const cdnKey = `cdn:${region}:${key}`;
+    this.edgeCache.set(cdnKey, { ...entry, region });
+    
+    // Update regional stats
+    const stats = this.stats.regionalStats.get(region);
+    if (stats) {
+      stats.size += entry.size;
+    }
+  }
+
+  /**
+   * Set to regional cache
+   */
+  private async setToRegionalCache(key: string, entry: EdgeCacheEntry<T>, region: string): Promise<void> {
+    const regionalKey = `regional:${region}:${key}`;
+    this.edgeCache.set(regionalKey, { ...entry, region });
+    
+    // Update regional stats
+    const stats = this.stats.regionalStats.get(region);
+    if (stats) {
+      stats.size += entry.size;
+    }
+  }
+
+  /**
+   * Get neighboring regions for fallback
+   */
+  private getNeighborRegions(region: string): string[] {
+    const proximityMap: Record<string, string[]> = {
+      'hkg1': ['sin1', 'fra1'],
+      'sin1': ['hkg1', 'fra1'],
+      'fra1': ['sin1', 'iad1'],
+      'iad1': ['fra1', 'sfo1', 'cle1'],
+      'sfo1': ['iad1', 'arn1'],
+      'arn1': ['sfo1', 'gru1'],
+      'gru1': ['arn1'],
+      'cle1': ['iad1']
+    };
+    
+    return proximityMap[region] || [];
+  }
+
+  /**
+   * Check if stale entry can still be used
+   */
+  private canUseStaleEntry(entry: EdgeCacheEntry<T>): boolean {
+    const age = Date.now() - entry.timestamp;
+    const staleThreshold = entry.ttl * 0.5; // Allow 50% past TTL
+    return age <= entry.ttl + staleThreshold;
+  }
+
+  /**
+   * Refresh entry in background
+   */
+  private async refreshEntryInBackground(originalKey: string, varyKey: string, region: string): Promise<void> {
+    // Don't wait for this to complete
+    setTimeout(async () => {
+      try {
+        const freshData = await this.fetchDataForWarmup(originalKey);
+        if (freshData) {
+          await this.set(originalKey, freshData, {
+            region,
+            replicate: true,
+          });
+        }
+      } catch (error) {
+        console.debug(`Background refresh failed for key ${originalKey}:`, error);
+      }
+    }, 0);
   }
 
   /**

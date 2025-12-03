@@ -855,9 +855,9 @@ class EnhancedSupabaseConnectionPool {
     return coldStarts / this.acquireTimes.length;
   }
 
-  /**
-   * Enhanced cleanup for edge environment
-   */
+/**
+    * Enhanced cleanup for edge environment
+    */
   protected async cleanupForEdge(): Promise<void> {
     // Force cleanup of idle connections more aggressively
     const now = Date.now();
@@ -883,6 +883,131 @@ class EnhancedSupabaseConnectionPool {
     if (connectionsToRemove.length > 0) {
       this.updateStats();
     }
+  }
+
+  /**
+   * Enhanced connection draining for edge optimization
+   */
+  async drainConnections(): Promise<void> {
+    if (!this.config.enableConnectionDraining) {
+      return;
+    }
+
+    const now = Date.now();
+    const unhealthyConnections = Array.from(this.connections.values())
+      .filter(conn => !conn.healthy || now - conn.lastUsed > this.config.idleTimeout);
+    
+    const drainPromises = unhealthyConnections.map(async (conn) => {
+      try {
+        await this.closeConnection(conn.id);
+        console.debug(`Drained connection ${conn.id} (healthy: ${conn.healthy})`);
+      } catch (error) {
+        console.warn(`Failed to drain connection ${conn.id}:`, error);
+      }
+    });
+
+    await Promise.allSettled(drainPromises);
+    
+    // Also drain read replicas if they're idle
+    await this.drainReadReplicas();
+  }
+
+  /**
+   * Close a specific connection gracefully
+   */
+  private async closeConnection(connectionId: string): Promise<void> {
+    const connection = this.connections.get(connectionId);
+    if (!connection) {
+      return;
+    }
+
+    try {
+      // Wait for any in-use operations to complete (with timeout)
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      while (connection.inUse && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+
+      // Remove from pool
+      this.connections.delete(connectionId);
+      this.updateStats();
+      
+      console.debug(`Successfully closed connection ${connectionId}`);
+    } catch (error) {
+      console.error(`Error closing connection ${connectionId}:`, error);
+      // Force remove even if error occurs
+      this.connections.delete(connectionId);
+      this.updateStats();
+    }
+  }
+
+  /**
+   * Drain idle read replica connections
+   */
+  private async drainReadReplicas(): Promise<void> {
+    // Simple heuristic - remove replicas randomly to prevent memory leaks
+    // In a real implementation, you'd track last used time
+    for (const [key] of this.readReplicaClients.entries()) {
+      if (Math.random() < 0.1) { // 10% chance to clean up each run
+        this.readReplicaClients.delete(key);
+        console.debug(`Drained read replica connection for ${key}`);
+      }
+    }
+  }
+
+  /**
+   * Get connection pool health metrics for monitoring
+   */
+  getHealthMetrics(): {
+    overall: 'healthy' | 'degraded' | 'unhealthy';
+    connections: {
+      total: number;
+      healthy: number;
+      unhealthy: number;
+      draining: number;
+    };
+    readReplicas: {
+      total: number;
+      active: number;
+    };
+    performance: {
+      avgAcquireTime: number;
+      hitRate: number;
+      coldStartRate: number;
+    };
+  } {
+    const connections = Array.from(this.connections.values());
+    const healthy = connections.filter(c => c.healthy).length;
+    const unhealthy = connections.filter(c => !c.healthy).length;
+    const draining = connections.filter(c => !c.healthy && Date.now() - c.lastUsed > this.config.idleTimeout).length;
+    
+    // Determine overall health
+    let overall: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+    if (unhealthy > 0) {
+      overall = unhealthy > this.connections.size * 0.5 ? 'unhealthy' : 'degraded';
+    }
+
+    return {
+      overall,
+      connections: {
+        total: connections.length,
+        healthy,
+        unhealthy,
+        draining
+      },
+      readReplicas: {
+        total: this.readReplicaClients.size,
+        active: this.readReplicaClients.size // All stored replicas are considered active
+      },
+      performance: {
+        avgAcquireTime: this.stats.avgAcquireTime,
+        hitRate: this.stats.hitRate,
+        coldStartRate: this.calculateColdStartRate()
+      }
+    };
   }
 }
 
