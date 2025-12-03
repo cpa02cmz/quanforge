@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, memo, useCallback, useMemo } from 'react';
 import DOMPurify from 'dompurify';
 import { Message, MessageRole } from '../types';
 import { loadSuggestedStrategies } from '../constants';
@@ -64,8 +64,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     abortControllerRef.current = new AbortController();
     
     // Memory management: Limit message history to prevent memory leaks
-    if (messages.length > 50) {
-      logger.info(`Trimming message history from ${messages.length} to 30 to prevent memory leaks`);
+    if (messages.length > 100) {
+      logger.info(`Trimming message history from ${messages.length} to 50 to prevent memory leaks`);
       // Use a more efficient approach - just notify parent to trim
       if (onClear && !abortControllerRef.current.signal.aborted) {
         onClear();
@@ -187,6 +187,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     });
   }, [language]);
 
+  // Calculate visible messages for performance (show only recent messages if too many)
+  const visibleMessages = useMemo(() => {
+    if (messages.length <= 50) return messages;
+    // Show the most recent 50 messages
+    return messages.slice(-50);
+  }, [messages]);
+
   return (
     <div className="flex flex-col h-full bg-dark-surface border-r border-dark-border">
       {/* Header */}
@@ -243,7 +250,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
                 </div>
             </div>
         )}
-        {messages.map((msg) => (
+        {visibleMessages.map((msg) => (
             <MemoizedMessage key={msg.id} msg={msg} formatMessageContent={formatMessageContent} />
         ))}
         {isLoading && (
