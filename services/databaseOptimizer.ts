@@ -3,6 +3,7 @@ import { Robot } from '../types';
 import { queryOptimizer } from './queryOptimizer';
 import { robotCache } from './advancedCache';
 import { securityManager } from './securityManager';
+import { queryPatternAnalyzer } from './queryPatternAnalyzer';
 
 interface OptimizationConfig {
   enableQueryCaching: boolean;
@@ -106,15 +107,14 @@ class DatabaseOptimizer {
       
       try {
         // Use the existing queryOptimizer for optimized search
-        const result = await queryOptimizer.searchRobotsOptimized(
-          client,
-          sanitizedTerm,
-          {
-            strategyType: sanitizedOptions.strategyType,
-            userId: sanitizedOptions.userId,
-            dateRange: undefined, // Add date range if needed
-          }
-        );
+         const result = await queryOptimizer.searchRobotsOptimized(
+           client,
+           sanitizedTerm,
+           {
+             strategyType: sanitizedOptions.strategyType,
+             userId: sanitizedOptions.userId,
+           }
+         );
         
         const executionTime = performance.now() - startTime;
         
@@ -296,16 +296,19 @@ class DatabaseOptimizer {
          console.error('Count query failed:', countError);
        }
        
-       // Use query optimizer for the database query
-       const result = await queryOptimizer.getRobotsOptimized(client, {
-         userId: options.userId,
-         strategyType: options.strategyType,
-         searchTerm: options.searchTerm,
-         limit: limit,
-         offset: offset,
-         orderBy: options.sortBy,
-         orderDirection: options.sortOrder,
-       });
+        // Build query options object conditionally to avoid exactOptionalPropertyTypes issues
+        const queryOptions: any = {
+          limit: limit,
+          offset: offset,
+        };
+        
+        if (options.userId !== undefined) queryOptions.userId = options.userId;
+        if (options.strategyType !== undefined) queryOptions.strategyType = options.strategyType;
+        if (options.searchTerm !== undefined) queryOptions.searchTerm = options.searchTerm;
+        if (options.sortBy !== undefined) queryOptions.orderBy = options.sortBy;
+        if (options.sortOrder !== undefined) queryOptions.orderDirection = options.sortOrder;
+        
+        const result = await queryOptimizer.getRobotsOptimized(client, queryOptions);
        
        if (result.error) {
          const executionTime = performance.now() - startTime;
@@ -428,8 +431,8 @@ class DatabaseOptimizer {
         };
       }
       
-      // Process analytics data
-      const analytics = this.processAnalytics(data as Robot[], options);
+       // Process analytics data
+       const analytics = this.processAnalytics(data as Robot[]);
       
       const executionTime = performance.now() - startTime;
       this.recordOptimization(
@@ -456,23 +459,40 @@ class DatabaseOptimizer {
     }
   }
 
-  private processAnalytics(robots: Robot[], options: any) {
-    const analytics = {
-      totalRobots: robots.length,
-      byStrategyType: {} as Record<string, number>,
-      byDate: {} as Record<string, number>,
-      avgRobotSize: 0,
-      totalCodeSize: 0,
-    };
+   private processAnalytics(robots: Robot[]) {
+     const analytics: {
+       totalRobots: number;
+       byStrategyType: Record<string, number>;
+       byDate: Record<string, number>;
+       avgRobotSize: number;
+       totalCodeSize: number;
+     } = {
+       totalRobots: robots.length,
+       byStrategyType: {},
+       byDate: {},
+       avgRobotSize: 0,
+       totalCodeSize: 0,
+     };
     
     // Group by strategy type
     for (const robot of robots) {
       const type = robot.strategy_type || 'Custom';
-      analytics.byStrategyType[type] = (analytics.byStrategyType[type] || 0) + 1;
+       analytics.byStrategyType[type] = ((analytics.byStrategyType as Record<string, number>)[type] || 0) + 1;
       
-      // Count by date (for date range analytics)
-      const date = new Date(robot.created_at).toISOString().split('T')[0];
-      analytics.byDate[date] = (analytics.byDate[date] || 0) + 1;
+       // Count by date (for date range analytics)
+       if (robot.created_at) {
+         try {
+           const dateStr = new Date(robot.created_at).toISOString();
+           const dateParts = dateStr.split('T');
+           if (dateParts && dateParts[0]) {
+             const date: string = dateParts[0];
+             (analytics.byDate as Record<string, number>)[date] = ((analytics.byDate as Record<string, number>)[date] || 0) + 1;
+           }
+         } catch (e) {
+           // If date parsing fails, skip this robot
+           console.warn('Failed to parse date for robot:', robot.id, e);
+         }
+       }
       
       // Calculate code size
       if (robot.code) {
@@ -659,7 +679,36 @@ class DatabaseOptimizer {
        severity: recommendations.length > 5 ? 'high' : recommendations.length > 2 ? 'medium' : 'low',
        impact: 'performance'
      };
-   }
+    }
+    
+    /**
+     * Get query pattern analysis and optimization recommendations
+     */
+    async getQueryPatternAnalysis(): Promise<any> {
+      return queryPatternAnalyzer.getPerformanceMetrics();
+    }
+    
+    /**
+     * Record query execution for pattern analysis
+     */
+    recordQueryExecution(table: string, columns: string[], filters: string[], orderBy: string[], 
+                         executionTime: number, userId?: string): void {
+      queryPatternAnalyzer.recordQueryExecution(table, columns, filters, orderBy, executionTime, userId);
+    }
+    
+    /**
+     * Get slowest queries for optimization
+     */
+    getSlowestQueries(limit: number = 10): any[] {
+      return queryPatternAnalyzer.getSlowestQueries(limit);
+    }
+    
+    /**
+     * Get most frequent queries for optimization
+     */
+    getFrequentQueries(limit: number = 10): any[] {
+      return queryPatternAnalyzer.getFrequentQueries(limit);
+    }
 }
 
 // Singleton instance

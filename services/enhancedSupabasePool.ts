@@ -792,24 +792,119 @@ class EnhancedSupabaseConnectionPool {
     await this.warmEdgeConnections();
   }
 
-  /**
-   * Optimize connection pool for edge deployment
-   */
-  optimizeForEdge(): void {
-    // Update configuration for edge optimization
-    this.updateConfig({
-      maxConnections: Math.min(this.config.maxConnections, 6), // Lower max for edge
-      minConnections: Math.max(this.config.minConnections, 1), // Ensure at least 1
-      acquireTimeout: 800, // Faster timeout for edge
-      idleTimeout: 45000, // Faster cleanup for serverless
-      healthCheckInterval: 10000, // More frequent health checks
-      connectionWarming: true,
-      enableConnectionDraining: true,
-      regionAffinity: true
-    });
-
-    console.log('Connection pool optimized for edge deployment');
-  }
+ /**
+    * Optimize connection pool for edge deployment
+    */
+   optimizeForEdge(): void {
+     // Update configuration for edge optimization
+     this.updateConfig({
+       maxConnections: Math.min(this.config.maxConnections, 6), // Lower max for edge
+       minConnections: Math.max(this.config.minConnections, 1), // Ensure at least 1
+       acquireTimeout: 800, // Faster timeout for edge
+       idleTimeout: 45000, // Faster cleanup for serverless
+       healthCheckInterval: 10000, // More frequent health checks
+       retryAttempts: 1, // Reduce retries for edge to fail faster
+       retryDelay: 150, // Faster retry for edge recovery
+       connectionWarming: true,
+       enableConnectionDraining: true,
+       regionAffinity: true
+     });
+ 
+     console.log('Connection pool optimized for edge deployment');
+   }
+   
+   /**
+    * Implement smart routing to the nearest region
+    */
+   async routeToNearestRegion(): Promise<string> {
+     const userRegion = process.env['VERCEL_REGION'] || 'default';
+     const availableRegions = this.edgeRegions;
+     
+     // For now, return the current region; in production this could use 
+     // more sophisticated routing based on latency measurements
+     if (availableRegions.includes(userRegion)) {
+       return userRegion;
+     }
+     
+     // Fallback to the first available region
+     return availableRegions[0] || 'default';
+   }
+   
+   /**
+    * Implement connection pre-warming for specific regions
+    */
+   async prewarmConnectionsForRegion(region: string, count: number = 2): Promise<void> {
+     const promises = [];
+     
+     for (let i = 0; i < count; i++) {
+       if (this.stats.totalConnections < this.config.maxConnections) {
+         promises.push(this.createConnection(region));
+       }
+     }
+     
+     await Promise.allSettled(promises);
+     console.log(`Pre-warmed ${promises.length} connections for region: ${region}`);
+   }
+   
+   /**
+    * Implement intelligent connection cleanup for serverless environments
+    */
+   async cleanupForServerless(): Promise<void> {
+     const now = Date.now();
+     const connectionsToRemove: string[] = [];
+     
+     for (const [id, connection] of this.connections.entries()) {
+       // More aggressive cleanup for serverless
+       if (connection.inUse || this.stats.totalConnections <= this.config.minConnections) {
+         continue;
+       }
+ 
+       // Remove if idle for more than 30 seconds or unhealthy
+       if (!connection.healthy || (now - connection.lastUsed) > 30000) {
+         connectionsToRemove.push(id);
+       }
+     }
+ 
+     connectionsToRemove.forEach(id => {
+       this.connections.delete(id);
+       console.debug(`Serverless cleanup: removed connection ${id}`);
+     });
+ 
+     if (connectionsToRemove.length > 0) {
+       this.updateStats();
+     }
+   }
+   
+   /**
+    * Get connection efficiency metrics
+    */
+   getConnectionEfficiency(): {
+     utilizationRate: number;
+     avgResponseTime: number;
+     successRate: number;
+     idleRate: number;
+   } {
+     const totalConnections = this.stats.totalConnections;
+     if (totalConnections === 0) {
+       return {
+         utilizationRate: 0,
+         avgResponseTime: 0,
+         successRate: 1,
+         idleRate: 1
+       };
+     }
+     
+     const activeRate = this.stats.activeConnections / totalConnections;
+     const idleRate = this.stats.idleConnections / totalConnections;
+     const successRate = 1 - (this.stats.unhealthyConnections / totalConnections);
+     
+     return {
+       utilizationRate: activeRate,
+       avgResponseTime: this.stats.avgAcquireTime,
+       successRate,
+       idleRate
+     };
+   }
 
   /**
    * Get connection metrics for edge monitoring
