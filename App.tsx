@@ -15,12 +15,36 @@ import { edgeAnalytics } from './services/edgeAnalytics';
 import { edgeMonitoring } from './services/edgeMonitoring';
 import { edgeOptimizer } from './services/edgeFunctionOptimizer';
 
-// Lazy load components for better code splitting
-const Auth = lazy(() => import('./components/Auth').then(module => ({ default: module.Auth })));
-const Dashboard = lazy(() => import('./pages/Dashboard').then(module => ({ default: module.Dashboard })));
-const Generator = lazy(() => import('./pages/Generator').then(module => ({ default: module.Generator })));
-const Wiki = lazy(() => import('./pages/Wiki').then(module => ({ default: module.Wiki })));
-const Layout = lazy(() => import('./components/Layout').then(module => ({ default: module.Layout })));
+// Enhanced lazy loading with preloading for better performance
+const Auth = lazy(() => 
+  import('./components/Auth').then(module => ({ default: module.Auth }))
+);
+
+const Dashboard = lazy(() => 
+  import('./pages/Dashboard').then(module => ({ default: module.Dashboard }))
+);
+
+const Generator = lazy(() => 
+  import('./pages/Generator').then(module => ({ default: module.Generator }))
+);
+
+const Wiki = lazy(() => 
+  import('./pages/Wiki').then(module => ({ default: module.Wiki }))
+);
+
+const Layout = lazy(() => 
+  import('./components/Layout').then(module => ({ default: module.Layout }))
+);
+
+// Preload critical routes after initial load
+const preloadCriticalRoutes = () => {
+  // Preload Dashboard (most likely route after login)
+  import('./pages/Dashboard');
+  // Preload Generator (second most likely)
+  setTimeout(() => import('./pages/Generator'), 1000);
+  // Preload Layout (essential for navigation)
+  setTimeout(() => import('./components/Layout'), 500);
+};
 
 
 
@@ -28,9 +52,9 @@ export default function App() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+useEffect(() => {
     const startTime = performance.now();
-    
+     
      // Initialize Vercel Edge Optimizer
      vercelEdgeOptimizer.optimizeBundleForEdge();
      vercelEdgeOptimizer.enableEdgeSSR();
@@ -60,6 +84,11 @@ export default function App() {
       setSession(session);
       performanceMonitor.recordMetric('auth_init', performance.now() - startTime);
       databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, true);
+      
+      // Preload critical routes after successful auth
+      if (session) {
+        preloadCriticalRoutes();
+      }
     }).catch((err) => {
       logger.warn("Auth initialization failed:", err);
       performanceMonitor.recordMetric('auth_error', 1);
@@ -73,6 +102,11 @@ export default function App() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       performanceMonitor.recordMetric('auth_state_change', 1);
+      
+      // Preload critical routes on auth state change
+      if (session) {
+        preloadCriticalRoutes();
+      }
     });
 
     return () => {

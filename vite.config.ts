@@ -251,13 +251,13 @@ export default defineConfig({
         comments: false
       }
     },
-    chunkSizeWarningLimit: 200, // Further reduced for optimal edge performance
+    chunkSizeWarningLimit: 150, // Further reduced for optimal edge performance
     target: ['es2020', 'edge101'], // More specific targets for edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
     // Enhanced edge optimization
-    assetsInlineLimit: 2048, // 2KB for better caching and smaller initial chunks
+    assetsInlineLimit: 1024, // 1KB for better caching and smaller initial chunks
     modulePreload: {
       polyfill: false
     },
