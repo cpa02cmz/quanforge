@@ -7,7 +7,7 @@ import { StrategyConfig } from '../components/StrategyConfig';
 import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
 import { BacktestPanel } from '../components/BacktestPanel';
 import { useTranslation } from '../services/i18n';
-import { EnhancedSEO } from '../utils/enhancedSEO';
+import { AdvancedSEO } from '../utils/advancedSEO';
 import { performanceMonitor } from '../utils/performance';
 
 // Lazy load chart components to reduce initial bundle size
@@ -96,7 +96,7 @@ export const Generator: React.FC = memo(() => {
 
   return (
 <>
-      <EnhancedSEO 
+      <AdvancedSEO 
         pageType="generator"
         title={id ? `Edit Trading Robot - ${robotName || 'Loading...'}` : 'Create New Trading Robot'}
         description={id ? `Edit and optimize your MQL5 trading robot "${robotName}". Adjust parameters, test strategies, and deploy to MetaTrader 5.` : 'Create a new MQL5 trading robot using AI. Describe your strategy and generate professional Expert Advisors for MetaTrader 5.'}

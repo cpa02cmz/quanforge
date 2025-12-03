@@ -640,6 +640,18 @@ export const structuredDataTemplates = {
       "name": "MQL5 Trading Robot Generation",
       "description": "Creating automated trading strategies using AI"
     },
+    "inLanguage": "en-US",
+    "isAccessibleForFree": true,
+    "audience": {
+      "@type": "Audience",
+      "audienceType": "Traders, Developers, Investors"
+    },
+    "mainEntity": {
+      "@type": "SoftwareApplication",
+      "name": "QuantForge AI",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web"
+    },
     "breadcrumb": {
       "@type": "BreadcrumbList",
       "itemListElement": [{

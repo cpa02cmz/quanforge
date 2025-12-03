@@ -352,21 +352,180 @@ const response = await fetch(url, options as any);
     }
   }
   
-  // Get cache statistics for monitoring
-  getStats(): {
-    size: number;
-    keys: number;
-    hitRate: number;
-    estimatedSizeKB: number;
-  } {
-    // Simple stats calculation
-    return {
-      size: this.cache.size,
-      keys: this.cache.size,
-      hitRate: 0, // Would require tracking hits/misses
-      estimatedSizeKB: Math.round(JSON.stringify(Array.from(this.cache.entries())).length / 1024)
-    };
-  }
+   // Get cache statistics for monitoring
+   getStats(): {
+     size: number;
+     keys: number;
+     hitRate: number;
+     estimatedSizeKB: number;
+   } {
+     // Simple stats calculation
+     return {
+       size: this.cache.size,
+       keys: this.cache.size,
+       hitRate: 0, // Would require tracking hits/misses
+       estimatedSizeKB: Math.round(JSON.stringify(Array.from(this.cache.entries())).length / 1024)
+     };
+   }
+   
+   // Enhanced caching with tags for intelligent invalidation
+   async setWithTags(key: string, data: any, tags: string[], ttl?: number): Promise<void> {
+     this.cleanupExpired();
+     
+     const entry: CacheEntry = {
+       data: this.encryptData(this.compressData(data)),
+       timestamp: Date.now(),
+       ttl: ttl ?? this.config.defaultTTL,
+       // Store tags with the entry for retrieval
+       ...tags.length > 0 ? { tags } as any : {}
+     };
+     
+     this.cache.set(key, entry);
+     this.enforceMaxSize();
+     this.saveToStorage();
+     
+     // Register tags for later invalidation
+     if (tags.length > 0) {
+       this.registerTags(key, tags);
+     }
+   }
+   
+   private tagMap: Map<string, Set<string>> = new Map(); // tag -> Set of keys
+   private keyTagMap: Map<string, Set<string>> = new Map(); // key -> Set of tags
+   
+   private registerTags(key: string, tags: string[]): void {
+     for (const tag of tags) {
+       if (!this.tagMap.has(tag)) {
+         this.tagMap.set(tag, new Set<string>());
+       }
+       this.tagMap.get(tag)!.add(key);
+       
+       if (!this.keyTagMap.has(key)) {
+         this.keyTagMap.set(key, new Set<string>());
+       }
+       this.keyTagMap.get(key)!.add(tag);
+     }
+   }
+   
+   // Invalidate all entries with a specific tag
+   async invalidateByTag(tag: string): Promise<void> {
+     const keys = this.tagMap.get(tag);
+     if (!keys) return;
+     
+     for (const key of keys) {
+       this.cache.delete(key);
+       this.saveToStorage();
+       
+       // Remove from keyTagMap as well
+       const keyTags = this.keyTagMap.get(key);
+       if (keyTags) {
+         keyTags.delete(tag);
+         if (keyTags.size === 0) {
+           this.keyTagMap.delete(key);
+         }
+       }
+     }
+     
+     this.tagMap.delete(tag);
+   }
+   
+   // Enhanced fetch with tag-based caching
+   async cachedFetchWithTags<T = unknown>(
+     url: string, 
+     tags: string[],
+     options?: RequestInit, 
+     cacheTTL?: number
+   ): Promise<T> {
+     const cacheKey = this.generateKey(url, options);
+     
+     // Try to get from cache first
+     const cached = await this.get<T>(cacheKey);
+     if (cached !== null) {
+       return cached;
+     }
+     
+     // Fetch from network
+     const response = await fetch(url, options as any);
+     
+     if (!response.ok) {
+       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+     }
+     
+     const data = await response.json();
+     
+     // Cache the successful response with tags
+     await this.setWithTags(cacheKey, data, tags, cacheTTL);
+     
+     return data;
+   }
+   
+   // Get all tags currently registered
+   getTags(): string[] {
+     return Array.from(this.tagMap.keys());
+   }
+   
+   // Get all keys for a specific tag
+   getKeysByTag(tag: string): string[] {
+     const keys = this.tagMap.get(tag);
+     return keys ? Array.from(keys) : [];
+   }
+   
+   // Track cache hits and misses for performance monitoring
+   private hits = 0;
+   private misses = 0;
+   
+   // Enhanced fetch with hit/miss tracking
+   async trackedFetch<T = unknown>(
+     url: string, 
+     options?: RequestInit, 
+     cacheTTL?: number
+   ): Promise<T> {
+     const cacheKey = this.generateKey(url, options);
+     
+     // Try to get from cache first
+     const cached = await this.get<T>(cacheKey);
+     if (cached !== null) {
+       this.hits++;
+       return cached;
+     }
+     
+     this.misses++;
+     
+     // Fetch from network
+     const response = await fetch(url, options as any);
+     
+     if (!response.ok) {
+       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+     }
+     
+     const data = await response.json();
+     
+     // Cache the successful response
+     await this.set(cacheKey, data, cacheTTL);
+     
+     return data;
+   }
+   
+   // Get cache hit rate statistics
+   getHitRate(): number {
+     const total = this.hits + this.misses;
+     return total > 0 ? (this.hits / total) * 100 : 0;
+   }
+   
+   // Reset hit/miss counters
+   resetHitRate(): void {
+     this.hits = 0;
+     this.misses = 0;
+   }
+   
+   // Get hit/miss statistics
+   getHitMissStats(): { hits: number; misses: number; hitRate: number } {
+     return {
+       hits: this.hits,
+       misses: this.misses,
+       hitRate: this.getHitRate()
+     };
+   }
   
   // Clean up resources
   destroy(): void {

@@ -15,36 +15,80 @@ import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
  import { edgeMonitoring } from './services/edgeMonitoring';
  import { advancedAPICache } from './services/advancedAPICache';
 
-// Enhanced lazy loading with preloading for better performance
-const Auth = lazy(() => 
-  import('./components/Auth').then(module => ({ default: module.Auth }))
-);
+ // Enhanced lazy loading with preloading for better performance
+ const Auth = lazy(() => 
+   import('./components/Auth').then(module => ({ default: module.Auth }))
+ );
 
-const Dashboard = lazy(() => 
-  import('./pages/Dashboard').then(module => ({ default: module.Dashboard }))
-);
+ const Dashboard = lazy(() => 
+   import('./pages/Dashboard').then(module => ({ default: module.Dashboard }))
+ );
 
-const Generator = lazy(() => 
-  import('./pages/Generator').then(module => ({ default: module.Generator }))
-);
+ const Generator = lazy(() => 
+   import('./pages/Generator').then(module => ({ default: module.Generator }))
+ );
 
-const Wiki = lazy(() => 
-  import('./pages/Wiki').then(module => ({ default: module.Wiki }))
-);
+ const Wiki = lazy(() => 
+   import('./pages/Wiki').then(module => ({ default: module.Wiki }))
+ );
 
-const Layout = lazy(() => 
-  import('./components/Layout').then(module => ({ default: module.Layout }))
-);
+ const Layout = lazy(() => 
+   import('./components/Layout').then(module => ({ default: module.Layout }))
+ );
 
-// Preload critical routes after initial load with better optimization
-   const preloadCriticalRoutes = () => {
-     // Preload Dashboard (most likely route after login)
-     import('./pages/Dashboard').catch(err => logger.warn('Dashboard preload failed:', err));
-     // Preload Generator (second most likely)
-     setTimeout(() => import('./pages/Generator').catch(err => logger.warn('Generator preload failed:', err)), 1000);
-     // Preload Layout (essential for navigation)
-     setTimeout(() => import('./components/Layout').catch(err => logger.warn('Layout preload failed:', err)), 500);
-   };
+// Optimized preloading with priority-based loading and error handling
+const preloadCriticalRoutes = () => {
+  // Preload Dashboard (most likely route after login)
+  const dashboardPromise = import('./pages/Dashboard')
+    .then(module => {
+      logger.info('Dashboard preloaded successfully');
+      return module;
+    })
+    .catch(err => {
+      logger.warn('Dashboard preload failed:', err);
+      return null;
+    });
+  
+  // Preload Layout (essential for navigation) - higher priority
+  const layoutPromise = import('./components/Layout')
+    .then(module => {
+      logger.info('Layout preloaded successfully');
+      return module;
+    })
+    .catch(err => {
+      logger.warn('Layout preload failed:', err);
+      return null;
+    });
+  
+  // Preload Generator (second most likely) - lower priority after delay
+  setTimeout(() => {
+    import('./pages/Generator')
+      .then(module => {
+        logger.info('Generator preloaded successfully');
+        return module;
+      })
+      .catch(err => {
+        logger.warn('Generator preload failed:', err);
+        return null;
+      });
+  }, 800);
+  
+  // Preload Wiki (documentation) - lowest priority
+  setTimeout(() => {
+    import('./pages/Wiki')
+      .then(module => {
+        logger.info('Wiki preloaded successfully');
+        return module;
+      })
+      .catch(err => {
+        logger.warn('Wiki preload failed:', err);
+        return null;
+      });
+  }, 1200);
+  
+  // Return promises for potential awaiting if needed
+  return Promise.allSettled([dashboardPromise, layoutPromise]);
+};
 
 
 

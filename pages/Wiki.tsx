@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { WIKI_CONTENT } from '../constants';
 import { useTranslation } from '../services/i18n';
-import { SEOHead, structuredDataTemplates } from '../utils/seo';
+import { AdvancedSEO } from '../utils/advancedSEO';
 
 export const Wiki: React.FC = () => {
   const { language } = useTranslation();
@@ -96,68 +96,58 @@ export const Wiki: React.FC = () => {
       });
   };
 
+  const faqs = [
+  {
+    question: "What is QuantForge AI?",
+    answer: "QuantForge AI is an advanced web-based platform that uses Google's Gemini AI models to generate, analyze, and manage trading robots for MetaTrader 5."
+  },
+  {
+    question: "How do I create a trading robot?",
+    answer: "Simply describe your trading strategy in natural language, and our AI will generate professional MQL5 code that you can deploy to MetaTrader 5."
+  },
+  {
+    question: "Is QuantForge AI free to use?",
+    answer: "Yes, QuantForge AI offers free access to generate and manage trading robots. You only need your own API keys for the AI service."
+  },
+  {
+    question: "What programming languages are supported?",
+    answer: "QuantForge AI specializes in MQL5 (MetaQuotes Language 5) for MetaTrader 5 Expert Advisors and custom indicators."
+  },
+  {
+    question: "Can I use the generated robots with any broker?",
+    answer: "Yes, the generated MQL5 robots work with any broker that supports MetaTrader 5 platform."
+  },
+  {
+    question: "How accurate are the trading strategies?",
+    answer: "The AI generates strategies based on your requirements and market analysis. However, all strategies should be thoroughly tested on demo accounts before live trading."
+  },
+  {
+    question: "What types of trading strategies can I create?",
+    answer: "You can create various strategies including trend following, mean reversion, breakout, scalping, and custom indicator-based strategies."
+  },
+  {
+    question: "Is my data secure?",
+    answer: "Yes, all data is encrypted and stored securely. You can also use local storage mode for complete privacy."
+  }
+];
+
   return (
     <>
-      <SEOHead 
+      <AdvancedSEO 
+        pageType="wiki"
         title="Documentation & Wiki - QuantForge AI"
         description="Complete documentation and guides for QuantForge AI. Learn how to create MQL5 trading robots, use AI features, and optimize your trading strategies."
         keywords="MQL5 documentation, trading robot guide, MetaTrader 5 tutorial, AI trading help, QuantForge wiki, forex trading guide, expert advisor tutorial, automated trading documentation"
         canonicalUrl="https://quanforge.ai/wiki"
-structuredData={[
-           structuredDataTemplates.softwareApplication,
-           structuredDataTemplates.breadcrumb([
-             { name: 'Home', url: 'https://quanforge.ai/' },
-             { name: 'Wiki', url: 'https://quanforge.ai/wiki' }
-           ]),
-           ...(activeSection ? [structuredDataTemplates.article(
-             activeSection.title,
-             `Documentation for ${activeSection.title}`,
-             `https://quanforge.ai/wiki#${activeSection.id}`
-           )] : []),
-           structuredDataTemplates.webPage(
-             'Documentation & Wiki',
-             'Comprehensive documentation and guides for QuantForge AI MQL5 trading robot generator.',
-             'https://quanforge.ai/wiki'
-           ),
-           structuredDataTemplates.course(
-             'MQL5 Trading Robot Development',
-             'Learn how to create professional trading robots using AI-powered tools and MetaTrader 5 platform.'
-           ),
-           structuredDataTemplates.faq([
-             {
-               question: "What is QuantForge AI?",
-               answer: "QuantForge AI is an advanced web-based platform that uses Google's Gemini AI models to generate, analyze, and manage trading robots for MetaTrader 5."
-             },
-             {
-               question: "How do I create a trading robot?",
-               answer: "Simply describe your trading strategy in natural language, and our AI will generate professional MQL5 code that you can deploy to MetaTrader 5."
-             },
-             {
-               question: "Is QuantForge AI free to use?",
-               answer: "Yes, QuantForge AI offers free access to generate and manage trading robots. You only need your own API keys for the AI service."
-             },
-             {
-               question: "What programming languages are supported?",
-               answer: "QuantForge AI specializes in MQL5 (MetaQuotes Language 5) for MetaTrader 5 Expert Advisors and custom indicators."
-             },
-             {
-               question: "Can I use the generated robots with any broker?",
-               answer: "Yes, the generated MQL5 robots work with any broker that supports MetaTrader 5 platform."
-             },
-             {
-               question: "How accurate are the trading strategies?",
-               answer: "The AI generates strategies based on your requirements and market analysis. However, all strategies should be thoroughly tested on demo accounts before live trading."
-             },
-             {
-               question: "What types of trading strategies can I create?",
-               answer: "You can create various strategies including trend following, mean reversion, breakout, scalping, and custom indicator-based strategies."
-             },
-             {
-               question: "Is my data secure?",
-               answer: "Yes, all data is encrypted and stored securely. You can also use local storage mode for complete privacy."
-             }
-           ])
-         ]}
+        readingTime={30}
+        wordCount={5000}
+        faqs={faqs}
+        breadcrumbs={[
+          { name: 'Home', url: 'https://quanforge.ai/' },
+          { name: 'Wiki', url: 'https://quanforge.ai/wiki' }
+        ]}
+        tags={['Documentation', 'MQL5', 'Trading', 'Tutorial', 'Guide']}
+        category="Education"
       />
       <div className="flex flex-col md:flex-row h-full bg-dark-bg">
         {/* Sidebar / Navigation */}

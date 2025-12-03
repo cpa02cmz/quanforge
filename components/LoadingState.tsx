@@ -21,9 +21,9 @@ export const LoadingState: React.FC<LoadingStateProps> = memo(({
     <div className={`flex flex-col items-center justify-center p-8 ${className}`}>
       <div className={`animate-spin rounded-full border-b-2 border-brand-500 ${sizeClasses[size]}`}></div>
       {message && (
-        <p className="mt-4 text-gray-400 text-sm">{message}</p>
+        <p className="mt-4 text-gray-400 text-sm font-medium">{message}</p>
       )}
-</div>
+    </div>
   );
 });
 
