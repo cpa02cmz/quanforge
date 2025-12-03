@@ -499,3 +499,162 @@ export const optimizeTwitterCard = (title: string, description: string, image?: 
   'twitter:site': '@quanforge',
   'twitter:creator': '@quanforge'
 });
+
+// Enhanced structured data templates for better SEO
+export const enhancedStructuredDataTemplates = {
+  organization: {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "QuantForge AI",
+    "description": "Advanced MQL5 Trading Robot Generator powered by AI",
+    "url": "https://quanforge.ai",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://quanforge.ai/logo.png",
+      "width": 512,
+      "height": 512
+    },
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer service",
+      "availableLanguage": ["English", "Indonesian"]
+    },
+    "sameAs": [
+      "https://twitter.com/quanforge",
+      "https://github.com/quanforge",
+      "https://linkedin.com/company/quanforge"
+    ],
+    "foundingDate": "2024",
+    "areaServed": "Worldwide",
+    "knowsAbout": [
+      "MQL5 Programming",
+      "MetaTrader 5",
+      "Algorithmic Trading",
+      "AI Code Generation",
+      "Forex Trading",
+      "Expert Advisors",
+      "Trading Robots",
+      "Financial Technology"
+    ]
+  },
+
+  financialProduct: (name: string, description: string) => ({
+    "@context": "https://schema.org",
+    "@type": "FinancialProduct",
+    "name": name,
+    "description": description,
+    "provider": {
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "url": "https://quanforge.ai"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock"
+    },
+    "category": "Trading Software",
+    "audience": {
+      "@type": "Audience",
+      "audienceType": "Traders, Developers, Investors"
+    }
+  }),
+
+  educationalOrganization: {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    "name": "QuantForge AI Academy",
+    "description": "Learn MQL5 programming and algorithmic trading with AI-powered tools",
+    "url": "https://quanforge.ai/wiki",
+    "provider": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "hasOfferCatalog": {
+      "@type": "OfferCatalog",
+      "name": "Trading Education Courses",
+      "itemListElement": [
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Course",
+            "name": "MQL5 Programming Basics",
+            "description": "Learn the fundamentals of MQL5 programming"
+          }
+        },
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Course",
+            "name": "Algorithmic Trading Strategies",
+            "description": "Master advanced trading strategies"
+          }
+        }
+      ]
+    }
+  },
+
+  videoObject: (name: string, description: string, thumbnailUrl: string) => ({
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    "name": name,
+    "description": description,
+    "thumbnailUrl": thumbnailUrl,
+    "uploadDate": new Date().toISOString(),
+    "contentUrl": "https://quanforge.ai/videos/",
+    "publisher": {
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://quanforge.ai/logo.png"
+      }
+    }
+  }),
+
+  quoraQuestion: (name: string, text: string, answerCount: number) => ({
+    "@context": "https://schema.org",
+    "@type": "Question",
+    "name": name,
+    "text": text,
+    "answerCount": answerCount,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "QuantForge AI provides the best solution for generating MQL5 trading robots using advanced AI technology.",
+      "author": {
+        "@type": "Organization",
+        "name": "QuantForge AI"
+      }
+    },
+    "suggestedAnswer": [
+      {
+        "@type": "Answer",
+        "text": "You can create professional trading robots by describing your strategy in natural language.",
+        "author": {
+          "@type": "Organization",
+          "name": "QuantForge AI"
+        }
+      }
+    ]
+  }),
+
+  dataset: (name: string, description: string) => ({
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "name": name,
+    "description": description,
+    "publisher": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "license": "https://creativecommons.org/licenses/by/4.0/",
+    "distribution": [
+      {
+        "@type": "DataDownload",
+        "encodingFormat": "application/json",
+        "contentUrl": "https://quanforge.ai/api/data"
+      }
+    ]
+  })
+};

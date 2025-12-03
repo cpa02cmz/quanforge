@@ -10,6 +10,22 @@ interface CacheEntry {
   etag?: string;
 }
 
+// Define RequestInit interface for compatibility
+interface RequestInit {
+  method?: string;
+  headers?: HeadersInit | Record<string, string>;
+  body?: BodyInit | null;
+  cache?: RequestCache;
+  credentials?: RequestCredentials;
+  redirect?: RequestRedirect;
+  referrer?: string;
+  referrerPolicy?: ReferrerPolicy;
+  integrity?: string;
+  keepalive?: boolean;
+  signal?: AbortSignal | null;
+  mode?: RequestMode;
+}
+
 
 
 interface CacheConfig {
