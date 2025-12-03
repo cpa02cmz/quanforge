@@ -7,6 +7,7 @@ import { robotCache } from './advancedCache';
 import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { smartCache } from './smartCache';
+import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
 
 // Connection retry configuration
 const RETRY_CONFIG = {
@@ -405,34 +406,36 @@ async getRobots() {
           return { data: cached, error: null };
         }
         
-        return withRetry(async () => {
-          const client = await getClient();
-          const result = client
-            .from('robots')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(100); // Add reasonable limit to prevent performance issues
-          
-          if (result.data && !result.error) {
-            // Create index for performance
-            robotIndexManager.getIndex(result.data);
-            robotCache.set(cacheKey, result.data, {
-              ttl: 300000,
-              tags: ['robots', 'list'],
-              priority: 'high'
-            });
-          }
-         
-         const duration = performance.now() - startTime;
-         performanceMonitor.record('getRobots', duration);
-         
-         // Log slow operations only in development
-         if (import.meta.env.DEV && duration > 500) {
-           console.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
-         }
-         
-         return result;
-       }, 'getRobots');
+return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
+          return withRetry(async () => {
+            const client = await getClient();
+            const result = client
+              .from('robots')
+              .select('*')
+              .order('created_at', { ascending: false })
+              .limit(100); // Add reasonable limit to prevent performance issues
+            
+            if (result.data && !result.error) {
+              // Create index for performance
+              robotIndexManager.getIndex(result.data);
+              robotCache.set(cacheKey, result.data, {
+                ttl: 300000,
+                tags: ['robots', 'list'],
+                priority: 'high'
+              });
+            }
+           
+           const duration = performance.now() - startTime;
+           performanceMonitor.record('getRobots', duration);
+           
+           // Log slow operations only in development
+           if (import.meta.env.DEV && duration > 500) {
+             console.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
+           }
+           
+           return result;
+          }, 'getRobots');
+        });
      } catch (error) {
        const duration = performance.now() - startTime;
        performanceMonitor.record('getRobots', duration);
