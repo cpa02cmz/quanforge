@@ -5,7 +5,7 @@ import { mockDb } from '../services/supabase';
 import { Robot, UserSession } from '../types';
 import { useToast } from '../components/Toast';
 import { useTranslation } from '../services/i18n';
-import { SEOHead, structuredDataTemplates } from '../utils/seo';
+import { SEOHead, structuredDataTemplates } from '../utils/seoEnhanced';
 import { createScopedLogger } from '../utils/logger';
 import { VirtualScrollList } from '../components/VirtualScrollList';
 import { RobotCard } from '../components/RobotCard';

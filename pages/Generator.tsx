@@ -7,7 +7,7 @@ import { StrategyConfig } from '../components/StrategyConfig';
 import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
 import { BacktestPanel } from '../components/BacktestPanel';
 import { useTranslation } from '../services/i18n';
-import { SEOHead, structuredDataTemplates } from '../utils/seo';
+import { SEOHead, structuredDataTemplates } from '../utils/seoEnhanced';
 import { performanceMonitor } from '../utils/performance';
 
 // Lazy load chart components to reduce initial bundle size

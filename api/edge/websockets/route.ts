@@ -123,6 +123,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Create WebSocket pair
+    // @ts-ignore - WebSocketPair is available in edge runtime
     const { 0: client, 1: server } = new WebSocketPair();
     const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
