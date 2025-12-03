@@ -11,6 +11,9 @@ interface FrontendOptimizationConfig {
   enableBundleOptimization: boolean;
   enableVirtualScrolling: boolean;
   enableProgressiveLoading: boolean;
+  enablePreconnect?: boolean;
+  enableDNSPrefetch?: boolean;
+  enableScriptPreloading?: boolean;
 }
 
 interface OptimizationMetrics {
@@ -20,6 +23,10 @@ interface OptimizationMetrics {
   memoryUsage: number;
   cacheHitRate: number;
   virtualScrollEfficiency: number;
+  preconnectHitRate: number;
+  dnsPrefetchHitRate: number;
+  scriptPreloadHitRate: number;
+  resourceOptimizationScore: number;
 }
 
 class FrontendOptimizer {
@@ -31,6 +38,9 @@ class FrontendOptimizer {
     enableBundleOptimization: true,
     enableVirtualScrolling: true,
     enableProgressiveLoading: true,
+    enablePreconnect: true,
+    enableDNSPrefetch: true,
+    enableScriptPreloading: true,
   };
 
   private metrics: OptimizationMetrics = {
@@ -40,6 +50,10 @@ class FrontendOptimizer {
     memoryUsage: 0,
     cacheHitRate: 0,
     virtualScrollEfficiency: 0,
+    preconnectHitRate: 0,
+    dnsPrefetchHitRate: 0,
+    scriptPreloadHitRate: 0,
+    resourceOptimizationScore: 0,
   };
 
   private resourceCache = new Map<string, { data: any; timestamp: number; size: number }>();
@@ -67,6 +81,19 @@ class FrontendOptimizer {
 
     if (this.config.enableBundleOptimization) {
       this.setupBundleOptimization();
+    }
+
+    // New optimizations
+    if (this.config.enablePreconnect) {
+      this.setupPreconnect();
+    }
+
+    if (this.config.enableDNSPrefetch) {
+      this.setupDNSPrefetch();
+    }
+
+    if (this.config.enableScriptPreloading) {
+      this.setupScriptPreloading();
     }
   }
 
@@ -148,6 +175,56 @@ class FrontendOptimizer {
   }
 
   /**
+   * Setup preconnect hints for critical origins
+   */
+  private setupPreconnect(): void {
+    const origins = [
+      'https://fonts.googleapis.com',
+      'https://fonts.gstatic.com',
+      'https://*.supabase.co',
+      'https://generativelanguage.googleapis.com',
+    ];
+
+    origins.forEach(origin => {
+      const link = document.createElement('link');
+      link.rel = 'preconnect';
+      link.href = origin;
+      link.crossOrigin = 'anonymous';
+      document.head.appendChild(link);
+    });
+  }
+
+  /**
+   * Setup DNS prefetch for non-critical origins
+   */
+  private setupDNSPrefetch(): void {
+    const origins = [
+      'https://www.google-analytics.com',
+      'https://cdn.jsdelivr.net',
+      'https://unpkg.com',
+    ];
+
+    origins.forEach(origin => {
+      const link = document.createElement('link');
+      link.rel = 'dns-prefetch';
+      link.href = origin;
+      document.head.appendChild(link);
+    });
+  }
+
+  /**
+   * Setup script preloading for critical scripts
+   */
+  private setupScriptPreloading(): void {
+    // Preload critical JavaScript modules that will be needed soon
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => {
+        this.preloadCriticalScripts();
+      });
+    }
+  }
+
+  /**
    * Preload non-critical modules for better performance
    */
   private preloadNonCriticalModules(): void {
@@ -164,6 +241,25 @@ class FrontendOptimizer {
           console.warn(`Failed to preload module ${index}:`, error);
         });
       }, 5000 + index * 2000); // Stagger loading
+    });
+  }
+
+  /**
+   * Preload critical scripts for better performance
+   */
+  private preloadCriticalScripts(): void {
+    const criticalScripts = [
+      { src: 'https://unpkg.com/lz-string@1.5.0/libs/lz-string.min.js', as: 'script' },
+      { src: 'https://unpkg.com/dompurify@3.0.5/dist/purify.min.js', as: 'script' },
+    ];
+
+    criticalScripts.forEach(script => {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.href = script.src;
+      link.as = script.as;
+      link.crossOrigin = 'anonymous';
+      document.head.appendChild(link);
     });
   }
 
@@ -325,6 +421,10 @@ class FrontendOptimizer {
       memoryUsage: 0,
       cacheHitRate: 0,
       virtualScrollEfficiency: 0,
+      preconnectHitRate: 0,
+      dnsPrefetchHitRate: 0,
+      scriptPreloadHitRate: 0,
+      resourceOptimizationScore: 0,
     };
   }
 }

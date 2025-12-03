@@ -15,8 +15,8 @@ interface EdgeMonitorConfig {
     cpuUsage: number;
   };
   notificationChannels: ('console' | 'webhook' | 'email')[];
-  webhookUrl?: string;
-  emailRecipients?: string[];
+  webhookUrl: string | undefined;
+  emailRecipients: string[] | undefined;
 }
 
 interface HealthCheckResult {
@@ -348,17 +348,17 @@ class EdgeMonitoringService {
 
     // Track JavaScript errors
     window.addEventListener('error', (event) => {
-      this.createAlert({
-        type: 'error',
-        severity: 'medium',
-        message: `JavaScript error: ${event.message}`,
-        region: this.detectCurrentRegion(),
-        metrics: {
-          lineNumber: event.lineno,
-          columnNumber: event.colno,
-          filename: event.filename
-        }
-      });
+       this.createAlert({
+         type: 'error',
+         severity: 'medium',
+         message: `JavaScript error: ${(event as ErrorEvent).message}`,
+         region: this.detectCurrentRegion(),
+         metrics: {
+           lineNumber: (event as ErrorEvent).lineno || 0,
+           columnNumber: (event as ErrorEvent).colno || 0,
+           filenameLength: (event as ErrorEvent).filename ? (event as ErrorEvent).filename.length : 0
+         }
+       });
     });
 
     // Track promise rejections
@@ -467,12 +467,12 @@ class EdgeMonitoringService {
     console.log(`📧 Email alert sent to ${this.config.emailRecipients?.join(', ')}:`, alert.message);
   }
 
-  private detectCurrentRegion(): string {
-    // Try to detect region from various sources
-    return (window as any).__VERCEL_REGION || 
-           process.env.VERCEL_REGION || 
-           'unknown';
-  }
+   private detectCurrentRegion(): string {
+     // Try to detect region from various sources
+     return (window as any).__VERCEL_REGION || 
+            (process.env && process.env['VERCEL_REGION']) || 
+            'unknown';
+   }
 
   // Public API methods
   public getHealthStatus(): Record<string, HealthCheckResult> {
@@ -557,37 +557,48 @@ class EdgeMonitoringService {
       if (!healthByRegion[hc.region]) {
         healthByRegion[hc.region] = { healthy: 0, degraded: 0, unhealthy: 0 };
       }
-      healthByRegion[hc.region][hc.status]++;
+       (healthByRegion[hc.region] as any)[hc.status]++;
     });
 
-    const performanceByRegion: Record<string, { avgResponseTime: number; avgErrorRate: number }> = {};
-    this.performanceMetrics.forEach(metric => {
-      if (!performanceByRegion[metric.region]) {
-        performanceByRegion[metric.region] = { avgResponseTime: 0, avgErrorRate: 0, count: 0 };
-      }
-      const region = performanceByRegion[metric.region] as any;
-      region.avgResponseTime += metric.responseTime;
-      region.avgErrorRate += metric.errorRate;
-      region.count++;
-    });
+     const performanceByRegion: Record<string, { avgResponseTime: number; avgErrorRate: number; count: number }> = {};
+     this.performanceMetrics.forEach(metric => {
+       if (!performanceByRegion[metric.region]) {
+         performanceByRegion[metric.region] = { avgResponseTime: 0, avgErrorRate: 0, count: 0 };
+       }
+        const perfRegion = performanceByRegion[metric.region];
+        if (perfRegion) {
+          perfRegion.avgResponseTime += metric.responseTime;
+          perfRegion.avgErrorRate += metric.errorRate;
+          perfRegion.count++;
+        }
+     });
 
     // Calculate averages
-    Object.values(performanceByRegion).forEach((region: any) => {
+    Object.values(performanceByRegion).forEach(region => {
       region.avgResponseTime /= region.count;
       region.avgErrorRate /= region.count;
-      delete region.count;
+      // We'll delete count after processing
+    });
+    
+    // Create a new object without the count property for the final result
+    const finalPerformanceByRegion: Record<string, { avgResponseTime: number; avgErrorRate: number }> = {};
+    Object.entries(performanceByRegion).forEach(([regionKey, region]) => {
+      finalPerformanceByRegion[regionKey] = {
+        avgResponseTime: region.avgResponseTime,
+        avgErrorRate: region.avgErrorRate
+      };
     });
 
     const recentAlerts = alerts
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, 10);
 
-    return {
-      summary,
-      healthByRegion,
-      performanceByRegion,
-      recentAlerts
-    };
+     return {
+       summary,
+       healthByRegion,
+       performanceByRegion: finalPerformanceByRegion,
+       recentAlerts
+     };
   }
 
   public stopMonitoring(): void {

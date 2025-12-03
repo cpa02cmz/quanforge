@@ -24,6 +24,87 @@ export class ValidationService {
   private static readonly MIN_DURATION = 1;
   private static readonly MAX_LEVERAGE = 1000;
   private static readonly MIN_LEVERAGE = 1;
+  
+  // Cached regex patterns for performance in chat validation
+  private static readonly XSS_PATTERNS = [
+    /javascript:/gi,
+    /vbscript:/gi,
+    /data:text\/html/gi,
+    /&#x?0*(58|106|0*74|0*42|0*6a);?/gi,  // Hex/decimal encoded chars
+  ];
+  
+  private static readonly MQL5_DANGEROUS_PATTERNS = [
+    // File system operations
+    /FileFind\s*\(|FileOpen\s*\(|FileClose\s*\(|FileDelete\s*\(|FileCopy\s*\(|FileMove\s*\(/i,
+    /FileIsExist\s*\(|FileIsLineEnding\s*\(|FileIsEnding\s*\(/i,
+    /FileRead\s*\(|FileWrite\s*\(|FileFlush\s*\(/i,
+    
+    // Network operations
+    /WebRequest\s*\(|SocketCreate\s*\(|SocketConnect\s*\(|SocketSend\s*\(|SocketReceive\s*\(/i,
+    /InternetOpen\s*\(|InternetConnect\s*\(|HttpOpenRequest\s*\(/i,
+    
+    // System operations
+    /ShellExecute\s*\(|WinExec\s*\(|CreateProcess\s*\(/i,
+    /System\s*\(|Exec\s*\(|Popen\s*\(/i,
+    
+    // Memory operations
+    /memcpy\s*\(|memset\s*\(|malloc\s*\(|free\s*\(/i,
+    /GetMemory\s*\(|FreeMemory\s*\(/i,
+    
+    // Registry operations
+    /RegOpenKey\s*\(|RegCreateKey\s*\(|RegSetValue\s*\(|RegGetValue\s*\(/i,
+    
+    // Dangerous imports
+    /#import\s+["\']?(?!user32\.dll|kernel32\.dll|gdi32\.dll|msvcrt\.dll)[^"\']*["\']?/i,
+    /Import\s+["\']?(?!user32\.dll|kernel32\.dll|gdi32\.dll|msvcrt\.dll)[^"\']*["\']?/i,
+    
+    // Resource operations
+    /ResourceCreate\s*\(|ResourceSave\s*\(|ResourceRead\s*\(/i,
+    
+    // Global variable manipulation
+    /GlobalVariableSet\s*\(|GlobalVariableGet\s*\(|GlobalVariableDel\s*\(/i,
+    /GlobalVariablesFlush\s*\(|GlobalVariableTemp\s*\(/i,
+    
+    // Terminal information access
+    /TerminalInfoInteger\s*\(|TerminalInfoString\s*\(/i,
+    /AccountInfo\s*\(|AccountInfoInteger\s*\(|AccountInfoDouble\s*\(/i,
+    
+    // Dangerous MQL5 functions
+    /SendNotification\s*\(|SendMail\s*\(|SendFTP\s*\(/i,
+    /Alert\s*\(|Comment\s*\(|Print\s*\(/i, // Can be used for social engineering
+    
+    // Chart manipulation
+    /ChartApplyTemplate\s*\(|ChartSave\s*\(|ChartScreenShot\s*\(/i,
+    
+    // Trade operations that could be exploited
+    /OrderSend\s*\(|OrderClose\s*\(|OrderModify\s*\(/i,
+    /PositionOpen\s*\(|PositionClose\s*\(|PositionModify\s*\(/i,
+    
+    // String operations that could lead to code injection
+    /StringConcatenate\s*\(|StringTrimLeft\s*\(|StringTrimRight\s*\(/i,
+    
+    // Array operations that could lead to memory issues
+    /ArrayCopy\s*\(|ArrayFill\s*\(|ArraySort\s*\(/i,
+    
+    // Time functions that could be used for timing attacks
+    /GetTickCount\s*\(|TimeCurrent\s*\(|TimeLocal\s*\(/i,
+    
+    // Math functions that could be used for computational attacks
+    /MathRand\s*\(|MathSrand\s*\(/i,
+  ];
+  
+  private static readonly OBFUSCATION_PATTERNS = [
+    /0x[0-9a-fA-F]+/g,  // Hex encoded content
+    /[A-Za-z0-9+\/]{20,}={0,2}/g,  // Potential base64
+    /\\u[0-9a-fA-F]{4}/g,  // Unicode escapes
+    /\\x[0-9a-fA-F]{2}/g,  // Hex escapes
+  ];
+  
+  private static readonly SUSPICIOUS_KEYWORDS = new Set([
+    'password', 'secret', 'key', 'token', 'auth', 'credential',
+    'exploit', 'hack', 'crack', 'bypass', 'inject', 'payload',
+    'malware', 'virus', 'trojan', 'backdoor', 'rootkit'
+  ]);
 
    static validateStrategyParams(params: StrategyParams): ValidationError[] {
      const errors: ValidationError[] = [];
@@ -238,138 +319,55 @@ if (input && seenNames.has(input.name)) {
           return errors;
         }
 
-        // Additional regex patterns for edge cases DOMPurify might miss
-        const xssPatterns = [
-          /javascript:/gi,
-          /vbscript:/gi,
-          /data:text\/html/gi,
-          /&#x?0*(58|106|0*74|0*42|0*6a);?/gi,  // Hex/decimal encoded chars
-        ];
+         // Check remaining XSS patterns using cached patterns
+         for (const pattern of ValidationService.XSS_PATTERNS) {
+           if (pattern.test(message)) {
+            errors.push({
+              field: 'message',
+              message: 'Message contains potentially unsafe content'
+            });
+            return errors; // Return early on first match
+          }
+        }
 
-        // Check remaining XSS patterns
-        for (const pattern of xssPatterns) {
+        // Check for obfuscated patterns (base64, hex encoding, etc.) using cached patterns
+        for (const pattern of ValidationService.OBFUSCATION_PATTERNS) {
+          const matches = message.match(pattern);
+          if (matches && matches.length > 3) { // Allow a few legitimate uses
+            errors.push({
+              field: 'message',
+              message: 'Message contains potentially obfuscated content'
+            });
+            return errors; // Return early
+          }
+        }
+
+        // Then check for dangerous MQL5 patterns using cached patterns
+        for (const pattern of ValidationService.MQL5_DANGEROUS_PATTERNS) {
           if (pattern.test(message)) {
-           errors.push({
-             field: 'message',
-             message: 'Message contains potentially unsafe content'
-           });
-           return errors; // Return early on first match
-         }
-       }
+            errors.push({
+              field: 'message',
+              message: 'Message contains potentially dangerous MQL5 operations'
+            });
+            return errors; // Return early
+          }
+        }
 
-       // Enhanced MQL5-specific security validation with more sophisticated patterns
-       const mql5DangerousPatterns = [
-         // File system operations
-         /FileFind\s*\(|FileOpen\s*\(|FileClose\s*\(|FileDelete\s*\(|FileCopy\s*\(|FileMove\s*\(/i,
-         /FileIsExist\s*\(|FileIsLineEnding\s*\(|FileIsEnding\s*\(/i,
-         /FileRead\s*\(|FileWrite\s*\(|FileFlush\s*\(/i,
-         
-         // Network operations
-         /WebRequest\s*\(|SocketCreate\s*\(|SocketConnect\s*\(|SocketSend\s*\(|SocketReceive\s*\(/i,
-         /InternetOpen\s*\(|InternetConnect\s*\(|HttpOpenRequest\s*\(/i,
-         
-         // System operations
-         /ShellExecute\s*\(|WinExec\s*\(|CreateProcess\s*\(/i,
-         /System\s*\(|Exec\s*\(|Popen\s*\(/i,
-         
-         // Memory operations
-         /memcpy\s*\(|memset\s*\(|malloc\s*\(|free\s*\(/i,
-         /GetMemory\s*\(|FreeMemory\s*\(/i,
-         
-         // Registry operations
-         /RegOpenKey\s*\(|RegCreateKey\s*\(|RegSetValue\s*\(|RegGetValue\s*\(/i,
-         
-         // Dangerous imports
-         /#import\s+["\']?(?!user32\.dll|kernel32\.dll|gdi32\.dll|msvcrt\.dll)[^"\']*["\']?/i,
-         /Import\s+["\']?(?!user32\.dll|kernel32\.dll|gdi32\.dll|msvcrt\.dll)[^"\']*["\']?/i,
-         
-         // Resource operations
-         /ResourceCreate\s*\(|ResourceSave\s*\(|ResourceRead\s*\(/i,
-         
-         // Global variable manipulation
-         /GlobalVariableSet\s*\(|GlobalVariableGet\s*\(|GlobalVariableDel\s*\(/i,
-         /GlobalVariablesFlush\s*\(|GlobalVariableTemp\s*\(/i,
-         
-         // Terminal information access
-         /TerminalInfoInteger\s*\(|TerminalInfoString\s*\(/i,
-         /AccountInfo\s*\(|AccountInfoInteger\s*\(|AccountInfoDouble\s*\(/i,
-         
-         // Dangerous MQL5 functions
-         /SendNotification\s*\(|SendMail\s*\(|SendFTP\s*\(/i,
-         /Alert\s*\(|Comment\s*\(|Print\s*\(/i, // Can be used for social engineering
-         
-         // Chart manipulation
-         /ChartApplyTemplate\s*\(|ChartSave\s*\(|ChartScreenShot\s*\(/i,
-         
-         // Trade operations that could be exploited
-         /OrderSend\s*\(|OrderClose\s*\(|OrderModify\s*\(/i,
-         /PositionOpen\s*\(|PositionClose\s*\(|PositionModify\s*\(/i,
-         
-         // String operations that could lead to code injection
-         /StringConcatenate\s*\(|StringTrimLeft\s*\(|StringTrimRight\s*\(/i,
-         
-         // Array operations that could lead to memory issues
-         /ArrayCopy\s*\(|ArrayFill\s*\(|ArraySort\s*\(/i,
-         
-         // Time functions that could be used for timing attacks
-         /GetTickCount\s*\(|TimeCurrent\s*\(|TimeLocal\s*\(/i,
-         
-         // Math functions that could be used for computational attacks
-         /MathRand\s*\(|MathSrand\s*\(/i,
-       ];
+        // Additional heuristic checks with cached suspicious keywords
+        const lowerMessage = message.toLowerCase();
+        let suspiciousCount = 0;
+        for (const keyword of ValidationService.SUSPICIOUS_KEYWORDS) {
+          if (lowerMessage.includes(keyword)) {
+            suspiciousCount++;
+          }
+        }
 
-       // Check for obfuscated patterns (base64, hex encoding, etc.)
-       const obfuscationPatterns = [
-         /0x[0-9a-fA-F]+/g,  // Hex encoded content
-         /[A-Za-z0-9+\/]{20,}={0,2}/g,  // Potential base64
-         /\\u[0-9a-fA-F]{4}/g,  // Unicode escapes
-         /\\x[0-9a-fA-F]{2}/g,  // Hex escapes
-       ];
-
-       // First check for obfuscation
-       for (const pattern of obfuscationPatterns) {
-         const matches = message.match(pattern);
-         if (matches && matches.length > 3) { // Allow a few legitimate uses
-           errors.push({
-             field: 'message',
-             message: 'Message contains potentially obfuscated content'
-           });
-           return errors; // Return early
-         }
-       }
-
-       // Then check for dangerous MQL5 patterns
-       for (const pattern of mql5DangerousPatterns) {
-         if (pattern.test(message)) {
-           errors.push({
-             field: 'message',
-             message: 'Message contains potentially dangerous MQL5 operations'
-           });
-           return errors; // Return early
-         }
-       }
-
-       // Additional heuristic checks with a Set for faster lookups
-       const suspiciousKeywords = new Set([
-         'password', 'secret', 'key', 'token', 'auth', 'credential',
-         'exploit', 'hack', 'crack', 'bypass', 'inject', 'payload',
-         'malware', 'virus', 'trojan', 'backdoor', 'rootkit'
-       ]);
-
-       const lowerMessage = message.toLowerCase();
-       let suspiciousCount = 0;
-       for (const keyword of suspiciousKeywords) {
-         if (lowerMessage.includes(keyword)) {
-           suspiciousCount++;
-         }
-       }
-
-       if (suspiciousCount > 2) { // Allow some false positives
-         errors.push({
-           field: 'message',
-           message: 'Message contains suspicious content'
-         });
-       }
+        if (suspiciousCount > 2) { // Allow some false positives
+          errors.push({
+            field: 'message',
+            message: 'Message contains suspicious content'
+          });
+        }
 
         return errors;
       }

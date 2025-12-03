@@ -2,41 +2,43 @@
  * Lazy loading utilities for optimized bundle splitting
  */
 
-import { lazy } from 'react';
+import { lazy, LazyExoticComponent, ComponentType } from 'react';
+
+// Define types for lazy loaded components
+type LazyComponent = LazyExoticComponent<ComponentType<any>>;
 
 // Lazy load heavy components to reduce initial bundle size
-export const lazyLoadComponents = {
+export const lazyLoadComponents: Record<string, LazyComponent> = {
   // Chart and visualization components
-  ChartComponents: lazy(() => import('../components/ChartComponents').then(m => ({ default: m.ChartComponents }))),
-  BacktestPanel: lazy(() => import('../components/BacktestPanel').then(m => ({ default: m.BacktestPanel }))),
+  ChartComponents: lazy(() => import('../components/ChartComponents').then(m => ({ default: m.ChartComponents! }))),
+  BacktestPanel: lazy(() => import('../components/BacktestPanel').then(m => ({ default: m.BacktestPanel! }))),
   
   // Editor and AI components
-  CodeEditor: lazy(() => import('../components/CodeEditor').then(m => ({ default: m.CodeEditor }))),
-  ChatInterface: lazy(() => import('../components/ChatInterface').then(m => ({ default: m.ChatInterface }))),
+  CodeEditor: lazy(() => import('../components/CodeEditor').then(m => ({ default: m.CodeEditor! }))),
+  ChatInterface: lazy(() => import('../components/ChatInterface').then(m => ({ default: m.ChatInterface! }))),
   
   // Modal components
-  AISettingsModal: lazy(() => import('../components/AISettingsModal').then(m => ({ default: m.AISettingsModal }))),
-  DatabaseSettingsModal: lazy(() => import('../components/DatabaseSettingsModal').then(m => ({ default: m.DatabaseSettingsModal }))),
+  AISettingsModal: lazy(() => import('../components/AISettingsModal').then(m => ({ default: m.AISettingsModal! }))),
+  DatabaseSettingsModal: lazy(() => import('../components/DatabaseSettingsModal').then(m => ({ default: m.DatabaseSettingsModal! }))),
   
   // Advanced components
-  VirtualScrollList: lazy(() => import('../components/VirtualScrollList').then(m => ({ default: m.VirtualScrollList }))),
+  VirtualScrollList: lazy(() => import('../components/VirtualScrollList').then(m => ({ default: m.VirtualScrollList! }))),
   
   // Page components
-  Generator: lazy(() => import('../pages/Generator').then(m => ({ default: m.Generator }))),
-  Dashboard: lazy(() => import('../pages/Dashboard').then(m => ({ default: m.Dashboard }))),
+  Generator: lazy(() => import('../pages/Generator').then(m => ({ default: m.Generator! }))),
+  Dashboard: lazy(() => import('../pages/Dashboard').then(m => ({ default: m.Dashboard! }))),
   
   // Service utilities (commented out as they are not components)
   // PerformanceMonitor: lazy(() => import('../services/performanceMonitorEnhanced')),
   // SecurityManager: lazy(() => import('../services/securityManager')),
-};
+} as const;
 
 // Preload critical components
 export const preloadComponent = (componentName: keyof typeof lazyLoadComponents) => {
   const component = lazyLoadComponents[componentName];
-  if (component && typeof component === 'function') {
-    // Trigger preload by accessing the component
-    component.preload?.();
-  }
+  // React.lazy components don't have a preload method - this is a no-op for now
+  // The components are preloaded when they're first accessed
+  return component;
 };
 
 // Preload multiple components in parallel
@@ -48,9 +50,20 @@ export const preloadCriticalComponents = async () => {
   ] as const;
 
   const preloadPromises = criticalComponents.map(name => {
-    return import(`../components/${name}.tsx`).catch(error => {
-      console.warn(`Failed to preload component ${name}:`, error);
-    });
+    if (name === 'ChartComponents') {
+      return import('../components/ChartComponents').catch(error => {
+        console.warn(`Failed to preload component ${name}:`, error);
+      });
+    } else if (name === 'CodeEditor') {
+      return import('../components/CodeEditor').catch(error => {
+        console.warn(`Failed to preload component ${name}:`, error);
+      });
+    } else if (name === 'ChatInterface') {
+      return import('../components/ChatInterface').catch(error => {
+        console.warn(`Failed to preload component ${name}:`, error);
+      });
+    }
+    return Promise.resolve();
   });
 
   await Promise.allSettled(preloadPromises);

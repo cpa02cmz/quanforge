@@ -74,17 +74,56 @@ export class ApiDeduplicator {
   }
 
   /**
-   * Generate a cache key from parameters
+   * Generate a cache key from parameters with improved hashing for complex objects
    */
   static generateKey(endpoint: string, params?: Record<string, any>): string {
     if (!params) return endpoint;
     
+    // Create a deterministic string from parameters
     const sortedParams = Object.keys(params)
       .sort()
-      .map(key => `${key}:${JSON.stringify(params[key])}`)
+      .map(key => {
+        const value = params[key];
+        // Handle different data types for more accurate key generation
+        if (value === null || value === undefined) {
+          return `${key}:null`;
+        } else if (typeof value === 'object') {
+          // For objects, create a consistent string representation
+          return `${key}:${JSON.stringify(value, Object.keys(value).sort())}`;
+        } else {
+          return `${key}:${String(value)}`;
+        }
+      })
       .join('|');
     
     return `${endpoint}?${sortedParams}`;
+  }
+
+  /**
+   * Generate a cache key with deep object hashing for complex structures
+   */
+  static generateDeepKey(endpoint: string, params?: any): string {
+    if (!params) return endpoint;
+    
+    // For complex nested objects, use a more sophisticated hashing approach
+    const jsonString = JSON.stringify(params, (_key, val) => {
+      if (val instanceof RegExp) return `__REGEXP ${val.toString()}`;
+      if (typeof val === 'function') return `__FUNCTION ${val.name || 'anonymous'}`;
+      if (val instanceof Date) return `__DATE ${val.toISOString()}`;
+      if (val instanceof Map) return `__MAP ${JSON.stringify(Array.from(val.entries()))}`;
+      if (val instanceof Set) return `__SET ${JSON.stringify(Array.from(val))}`;
+      return val;
+    }, 0); // No indentation to reduce string length
+    
+    // Generate a simple hash of the string
+    let hash = 0;
+    for (let i = 0; i < jsonString.length; i++) {
+      const char = jsonString.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash |= 0; // Convert to 32bit integer
+    }
+    
+    return `${endpoint}#${hash >>> 0}`; // Convert to unsigned 32-bit integer
   }
 
   /**
@@ -139,6 +178,32 @@ export class ApiDeduplicator {
   }
 
   /**
+   * Cancel pending requests by pattern matching
+   */
+  cancelRequestsByPattern(pattern: string): number {
+    let cancelledCount = 0;
+    const keysToCancel: string[] = [];
+
+    this.pendingRequests.forEach((_, key) => {
+      if (key.includes(pattern)) {
+        keysToCancel.push(key);
+      }
+    });
+
+    keysToCancel.forEach(key => {
+      const request = this.pendingRequests.get(key);
+      if (request) {
+        request.reject(new Error(`Request cancelled by pattern: ${pattern}`));
+      }
+      this.pendingRequests.delete(key);
+      cancelledCount++;
+    });
+
+    logger.info(`Cancelled ${cancelledCount} requests matching pattern: ${pattern}`);
+    return cancelledCount;
+  }
+
+  /**
    * Clean up expired requests
    */
   private cleanupExpiredRequests(): void {
@@ -181,7 +246,9 @@ export const useApiDeduplicator = () => {
     deduplicate: apiDeduplicator.deduplicate.bind(apiDeduplicator),
     isPending: apiDeduplicator.isPending.bind(apiDeduplicator),
     cancelRequest: apiDeduplicator.cancelRequest.bind(apiDeduplicator),
+    cancelRequestsByPattern: apiDeduplicator.cancelRequestsByPattern.bind(apiDeduplicator),
     getPendingCount: apiDeduplicator.getPendingCount.bind(apiDeduplicator),
-    generateKey: ApiDeduplicator.generateKey
+    generateKey: ApiDeduplicator.generateKey,
+    generateDeepKey: ApiDeduplicator.generateDeepKey
   };
 };
