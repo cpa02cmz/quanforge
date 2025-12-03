@@ -849,35 +849,282 @@ class EnhancedSupabaseConnectionPool {
     return coldStarts / this.acquireTimes.length;
   }
 
-  /**
-   * Enhanced cleanup for edge environment
-   */
-  protected async cleanupForEdge(): Promise<void> {
-    // Force cleanup of idle connections more aggressively
-    const now = Date.now();
-    const connectionsToRemove: string[] = [];
+   /**
+    * Enhanced cleanup for edge environment
+    */
+   protected async cleanupForEdge(): Promise<void> {
+     // Force cleanup of idle connections more aggressively
+     const now = Date.now();
+     const connectionsToRemove: string[] = [];
 
-    for (const [id, connection] of this.connections.values()) {
-      // More aggressive cleanup for edge
-      if (connection.inUse || this.stats.totalConnections <= this.config.minConnections) {
-        continue;
-      }
+     for (const [id, connection] of this.connections.values()) {
+       // More aggressive cleanup for edge
+       if (connection.inUse || this.stats.totalConnections <= this.config.minConnections) {
+         continue;
+       }
 
-      // Remove if idle for more than 30 seconds or unhealthy
-      if (!connection.healthy || (now - connection.lastUsed) > 30000) {
-        connectionsToRemove.push(id);
-      }
-    }
+       // Remove if idle for more than 30 seconds or unhealthy
+       if (!connection.healthy || (now - connection.lastUsed) > 30000) {
+         connectionsToRemove.push(id);
+       }
+     }
 
-    connectionsToRemove.forEach(id => {
-      this.connections.delete(id);
-      console.debug(`Edge cleanup: removed connection ${id}`);
-    });
+     connectionsToRemove.forEach(id => {
+       this.connections.delete(id);
+       console.debug(`Edge cleanup: removed connection ${id}`);
+     });
 
-    if (connectionsToRemove.length > 0) {
-      this.updateStats();
-    }
-  }
+     if (connectionsToRemove.length > 0) {
+       this.updateStats();
+     }
+   }
+   
+   /**
+    * Get connection efficiency metrics
+    */
+   getConnectionEfficiency(): {
+     utilizationRate: number;
+     avgResponseTime: number;
+     idleConnectionRate: number;
+     connectionTurnoverRate: number;
+   } {
+     const totalConnections = this.stats.totalConnections;
+     if (totalConnections === 0) {
+       return {
+         utilizationRate: 0,
+         avgResponseTime: 0,
+         idleConnectionRate: 0,
+         connectionTurnoverRate: 0
+       };
+     }
+     
+     const utilizationRate = this.stats.activeConnections / totalConnections;
+     const idleConnectionRate = this.stats.idleConnections / totalConnections;
+     
+     return {
+       utilizationRate,
+       avgResponseTime: this.stats.avgAcquireTime,
+       idleConnectionRate,
+       connectionTurnoverRate: this.calculateConnectionTurnoverRate()
+     };
+   }
+   
+   /**
+    * Calculate connection turnover rate (how often connections are created/released)
+    */
+   private calculateConnectionTurnoverRate(): number {
+     // Calculate based on acquire times and connection creation patterns
+     // Higher rate indicates more frequent connection creation/reuse
+     if (this.acquireTimes.length < 2) return 0;
+     
+     // Calculate rate based on how frequently connections are acquired
+     const timeWindow = 60000; // 1 minute window
+     const recentAcquires = this.acquireTimes.filter(time => 
+       time > (Date.now() - timeWindow)
+     );
+     
+     return recentAcquires.length / (timeWindow / 1000); // per second
+   }
+   
+   /**
+    * Optimize pool size based on usage patterns
+    */
+   async optimizePoolSize(): Promise<{
+     currentSize: number;
+     recommendedSize: number;
+     adjustmentNeeded: boolean;
+     reason: string;
+   }> {
+     const efficiency = this.getConnectionEfficiency();
+     const currentSize = this.stats.totalConnections;
+     
+     // Calculate recommended size based on usage patterns
+     let recommendedSize = this.config.minConnections;
+     
+     // Increase size if utilization is consistently high
+     if (efficiency.utilizationRate > 0.9) {
+       recommendedSize = Math.min(
+         this.config.maxConnections,
+         Math.ceil(currentSize * 1.5) // Increase by 50%
+       );
+       return {
+         currentSize,
+         recommendedSize,
+         adjustmentNeeded: true,
+         reason: 'High connection utilization detected (>90%)'
+       };
+     }
+     
+     // Decrease size if utilization is consistently low and we have more than min
+     if (efficiency.utilizationRate < 0.3 && currentSize > this.config.minConnections) {
+       recommendedSize = Math.max(
+         this.config.minConnections,
+         Math.ceil(currentSize * 0.7) // Decrease by 30%
+       );
+       return {
+         currentSize,
+         recommendedSize,
+         adjustmentNeeded: true,
+         reason: 'Low connection utilization detected (<30%)'
+       };
+     }
+     
+     // If we have too many idle connections
+     if (efficiency.idleConnectionRate > 0.7 && currentSize > this.config.minConnections) {
+       recommendedSize = Math.max(
+         this.config.minConnections,
+         Math.ceil(currentSize * 0.8) // Reduce by 20%
+       );
+       return {
+         currentSize,
+         recommendedSize,
+         adjustmentNeeded: true,
+         reason: 'High idle connection rate detected (>70%)'
+       };
+     }
+     
+     return {
+       currentSize,
+       recommendedSize: currentSize,
+       adjustmentNeeded: false,
+       reason: 'Current pool size is optimal'
+     };
+   }
+   
+   /**
+    * Get connection health summary
+    */
+   getConnectionHealth(): {
+     total: number;
+     healthy: number;
+     unhealthy: number;
+     healthPercentage: number;
+     regionalDistribution: Record<string, { total: number; healthy: number }>;
+   } {
+     const connections = Array.from(this.connections.values());
+     const healthy = connections.filter(c => c.healthy).length;
+     const unhealthy = connections.length - healthy;
+     
+     // Calculate regional distribution
+     const regionalDistribution: Record<string, { total: number; healthy: number }> = {};
+     
+     for (const conn of connections) {
+       const region = conn.region || 'unknown';
+       if (!regionalDistribution[region]) {
+         regionalDistribution[region] = { total: 0, healthy: 0 };
+       }
+       regionalDistribution[region].total++;
+       if (conn.healthy) {
+         regionalDistribution[region].healthy++;
+       }
+     }
+     
+     return {
+       total: connections.length,
+       healthy,
+       unhealthy,
+       healthPercentage: connections.length > 0 ? (healthy / connections.length) * 100 : 0,
+       regionalDistribution
+     };
+   }
+   
+   /**
+    * Perform proactive health checks and cleanup
+    */
+   async performHealthCheckAndCleanup(): Promise<{
+     checked: number;
+     fixed: number;
+     removed: number;
+     errors: number;
+   }> {
+     const connections = Array.from(this.connections.values());
+     let fixed = 0;
+     let removed = 0;
+     let errors = 0;
+     
+     for (const connection of connections) {
+       if (connection.inUse) continue; // Don't check in-use connections
+       
+       try {
+         const isHealthy = await this.healthCheck(connection);
+         if (!isHealthy && !connection.healthy) {
+           // Connection is unhealthy and was already marked as such
+           // Remove it if it's been unhealthy for too long
+           if (Date.now() - connection.lastUsed > this.config.idleTimeout) {
+             this.connections.delete(connection.id);
+             removed++;
+             console.debug(`Removed unhealthy connection ${connection.id}`);
+           }
+         } else if (!connection.healthy && isHealthy) {
+           // Connection was unhealthy but is now healthy
+           fixed++;
+         }
+       } catch (error) {
+         errors++;
+         console.error(`Error during health check for connection ${connection.id}:`, error);
+       }
+     }
+     
+     this.updateStats();
+     
+     return {
+       checked: connections.length,
+       fixed,
+       removed,
+       errors
+     };
+   }
+   
+   /**
+    * Adjust connection pool based on load patterns
+    */
+   async adjustPoolForLoad(loadFactor: 'low' | 'medium' | 'high' | 'peak'): Promise<void> {
+     const currentSize = this.stats.totalConnections;
+     let targetSize = currentSize;
+     
+     switch (loadFactor) {
+       case 'low':
+         targetSize = Math.max(this.config.minConnections, Math.ceil(currentSize * 0.6));
+         break;
+       case 'medium':
+         // Keep current size or adjust based on efficiency
+         const efficiency = this.getConnectionEfficiency();
+         if (efficiency.utilizationRate > 0.8) {
+           targetSize = Math.min(this.config.maxConnections, Math.ceil(currentSize * 1.2));
+         } else if (efficiency.utilizationRate < 0.3) {
+           targetSize = Math.max(this.config.minConnections, Math.ceil(currentSize * 0.8));
+         }
+         break;
+       case 'high':
+         targetSize = Math.min(this.config.maxConnections, Math.ceil(currentSize * 1.3));
+         break;
+       case 'peak':
+         targetSize = this.config.maxConnections;
+         break;
+     }
+     
+     // Adjust pool size
+     if (targetSize > currentSize) {
+       // Create additional connections
+       const needed = targetSize - currentSize;
+       const promises = [];
+       for (let i = 0; i < needed; i++) {
+         promises.push(this.createConnection());
+       }
+       await Promise.allSettled(promises);
+     } else if (targetSize < currentSize) {
+       // Remove excess connections (only idle and healthy ones)
+       const idleConnections = Array.from(this.connections.values())
+         .filter(c => !c.inUse && c.healthy)
+         .slice(0, currentSize - targetSize);
+         
+       idleConnections.forEach(conn => {
+         this.connections.delete(conn.id);
+       });
+     }
+     
+     console.log(`Pool adjusted from ${currentSize} to ${targetSize} connections for ${loadFactor} load`);
+   }
 }
 
 export const enhancedConnectionPool = EnhancedSupabaseConnectionPool.getInstance();
