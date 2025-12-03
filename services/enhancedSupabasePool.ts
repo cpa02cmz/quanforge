@@ -45,13 +45,13 @@ class EnhancedSupabaseConnectionPool {
     timestamp: number;
   }> = [];
   private config: ConnectionConfig = {
-    maxConnections: 20,
-    minConnections: 5,
-    acquireTimeout: 10000,
-    idleTimeout: 300000, // 5 minutes
-    healthCheckInterval: 60000, // 1 minute
-    retryAttempts: 3,
-    retryDelay: 1000
+    maxConnections: 50, // Increased for better edge performance
+    minConnections: 10, // Increased minimum for edge regions
+    acquireTimeout: 5000, // Reduced for faster failover
+    idleTimeout: 180000, // 3 minutes - reduced for edge efficiency
+    healthCheckInterval: 30000, // 30 seconds - more frequent health checks
+    retryAttempts: 5, // Increased retry attempts for edge reliability
+    retryDelay: 500 // Reduced retry delay for faster recovery
   };
   private stats: PoolStats = {
     totalConnections: 0,
@@ -62,8 +62,8 @@ class EnhancedSupabaseConnectionPool {
     avgAcquireTime: 0,
     hitRate: 0
   };
-  private healthCheckTimer: NodeJS.Timeout | null = null;
-  private cleanupTimer: NodeJS.Timeout | null = null;
+  private healthCheckTimer: number | null = null;
+  private cleanupTimer: number | null = null;
   private acquireTimes: number[] = [];
 
   private constructor() {
@@ -108,10 +108,13 @@ class EnhancedSupabaseConnectionPool {
     }
 
     const id = this.generateConnectionId();
+    
+    // Enhanced connection configuration for edge optimization
     const client = new SupabaseClient(settings.url, settings.anonKey, {
       auth: {
         persistSession: false,
-        autoRefreshToken: false
+        autoRefreshToken: false,
+        detectSessionInUrl: false
       },
       db: {
         schema: 'public'
@@ -119,7 +122,16 @@ class EnhancedSupabaseConnectionPool {
       global: {
         headers: {
           'X-Connection-ID': id,
-          'X-Connection-Region': region || 'default'
+          'X-Connection-Region': region || process.env.VERCEL_REGION || 'default',
+          'X-Edge-Optimized': 'true',
+          'X-Client-Info': 'quantforge-edge/1.0.0',
+          'X-Priority': 'high'
+        }
+      },
+      // Edge-specific options
+      realtime: {
+        params: {
+          edge: 'true'
         }
       }
     });
@@ -142,17 +154,28 @@ class EnhancedSupabaseConnectionPool {
 
   async acquire(region?: string): Promise<SupabaseClient> {
     const startTime = performance.now();
+    const preferredRegion = region || process.env.VERCEL_REGION || 'default';
 
-    // Try to find an available connection
-    let connection = this.getAvailableConnection(region);
+    // Try to find an available connection with enhanced selection logic
+    let connection = this.getOptimalConnection(preferredRegion);
 
     if (!connection) {
       // Try to create a new connection if under limit
       if (this.stats.totalConnections < this.config.maxConnections) {
         try {
-          connection = await this.createConnection(region);
+          connection = await this.createConnection(preferredRegion);
+          console.debug(`Created new connection for region: ${preferredRegion}`);
         } catch (error) {
           console.warn('Failed to create new connection:', error);
+          
+          // Fallback: try to create connection without region preference
+          if (this.stats.totalConnections < this.config.maxConnections) {
+            try {
+              connection = await this.createConnection();
+            } catch (fallbackError) {
+              console.warn('Fallback connection creation failed:', fallbackError);
+            }
+          }
         }
       }
 
@@ -163,16 +186,26 @@ class EnhancedSupabaseConnectionPool {
     }
 
     if (!connection) {
-      throw new Error('Unable to acquire database connection');
+      throw new Error(`Unable to acquire database connection for region: ${preferredRegion}`);
     }
 
-    // Mark connection as in use
+    // Mark connection as in use and update metadata
     connection.inUse = true;
     connection.lastUsed = Date.now();
+    
+    // Update region if different (for connection reuse)
+    if (connection.region !== preferredRegion) {
+      connection.region = preferredRegion;
+    }
 
     // Record acquire time
     const acquireTime = performance.now() - startTime;
     this.recordAcquireTime(acquireTime);
+
+    // Log slow acquisitions
+    if (acquireTime > 1000) {
+      console.warn(`Slow connection acquisition: ${acquireTime.toFixed(2)}ms for region ${preferredRegion}`);
+    }
 
     this.updateStats();
 
@@ -197,6 +230,44 @@ class EnhancedSupabaseConnectionPool {
     }
 
     return null;
+  }
+
+  /**
+   * Get optimal connection based on region, health, and recent usage
+   */
+  private getOptimalConnection(region?: string): Connection | null {
+    const now = Date.now();
+    const candidates: Array<{ connection: Connection; score: number }> = [];
+
+    for (const connection of this.connections.values()) {
+      if (connection.inUse || !connection.healthy) {
+        continue;
+      }
+
+      let score = 0;
+
+      // Region preference (highest priority)
+      if (region && connection.region === region) {
+        score += 1000;
+      }
+
+      // Recent usage penalty (prefer less recently used)
+      const idleTime = now - connection.lastUsed;
+      score += Math.min(idleTime / 1000, 100); // Max 100 points for idle time
+
+      // Connection age preference (prefer established connections)
+      const age = now - connection.created;
+      if (age > 60000) { // More than 1 minute old
+        score += 50;
+      }
+
+      candidates.push({ connection, score });
+    }
+
+    // Sort by score (highest first) and return the best
+    candidates.sort((a, b) => b.score - a.score);
+    
+    return candidates.length > 0 ? candidates[0].connection : null;
   }
 
   private async waitForConnection(): Promise<Connection> {
@@ -248,15 +319,41 @@ class EnhancedSupabaseConnectionPool {
 
   private async healthCheck(connection: Connection): Promise<boolean> {
     try {
-      // Simple health check - try to execute a lightweight query
-      const { error } = await connection.client
+      const startTime = performance.now();
+      
+      // Enhanced health check with multiple validation steps
+      // 1. Basic connectivity test
+      const { error: pingError } = await connection.client
         .from('robots')
         .select('id')
         .limit(1)
         .single();
 
-      connection.healthy = !error;
-      return connection.healthy;
+      if (pingError) {
+        connection.healthy = false;
+        return false;
+      }
+
+      // 2. Performance check - should be fast for healthy connection
+      const responseTime = performance.now() - startTime;
+      if (responseTime > 2000) { // 2 second threshold
+        console.warn(`Connection ${connection.id} slow response: ${responseTime.toFixed(2)}ms`);
+        connection.healthy = false;
+        return false;
+      }
+
+      // 3. Auth check (if applicable)
+      try {
+        await connection.client.auth.getSession();
+      } catch (authError) {
+        // Auth errors are not critical for connection health
+        console.debug(`Auth check failed for connection ${connection.id}:`, authError);
+      }
+
+      connection.healthy = true;
+      connection.lastUsed = Date.now(); // Update last used on successful health check
+      
+      return true;
     } catch (error) {
       connection.healthy = false;
       console.warn(`Connection ${connection.id} health check failed:`, error);
@@ -265,7 +362,7 @@ class EnhancedSupabaseConnectionPool {
   }
 
   private startHealthChecks(): void {
-    this.healthCheckTimer = setInterval(async () => {
+    this.healthCheckTimer = window.setInterval(async () => {
       const healthCheckPromises = Array.from(this.connections.values())
         .map(async (connection) => {
           const wasHealthy = connection.healthy;
@@ -284,7 +381,7 @@ class EnhancedSupabaseConnectionPool {
   }
 
   private startCleanup(): void {
-    this.cleanupTimer = setInterval(() => {
+    this.cleanupTimer = window.setInterval(() => {
       this.cleanupIdleConnections();
       this.cleanupWaitingQueue();
     }, 60000); // Run cleanup every minute
@@ -415,12 +512,12 @@ class EnhancedSupabaseConnectionPool {
 
   async closeAll(): Promise<void> {
     if (this.healthCheckTimer) {
-      clearInterval(this.healthCheckTimer);
+      window.clearInterval(this.healthCheckTimer);
       this.healthCheckTimer = null;
     }
 
     if (this.cleanupTimer) {
-      clearInterval(this.cleanupTimer);
+      window.clearInterval(this.cleanupTimer);
       this.cleanupTimer = null;
     }
 
