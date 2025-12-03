@@ -14,182 +14,67 @@ export default defineConfig({
       },
       output: {
         manualChunks: (id) => {
-          // Advanced vendor chunks for optimal edge caching and tree-shaking
+          // Consolidated chunk strategy for optimal HTTP/2 performance
           if (id.includes('node_modules')) {
-            // React ecosystem - ultra-granular splitting for maximum caching efficiency
-            if (id.includes('react')) {
-              // React hooks and utilities - separate for better caching
-              if (id.includes('use') || id.includes('hooks') || id.includes('memo') || id.includes('callback')) {
-                return 'vendor-react-hooks';
-              }
-              // React DOM specific
-              if (id.includes('react-dom')) {
-                return 'vendor-react-dom';
-              }
-              // React router - separate for route-based splitting
-              if (id.includes('react-router')) {
-                return 'vendor-react-router';
-              }
-              // React core - smallest possible chunk
-              return 'vendor-react-core';
+            // React ecosystem - consolidated for better caching
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'vendor-react';
             }
             
-            // Charts library - highly optimized splitting
+            // Charts library - consolidated to reduce HTTP overhead
             if (id.includes('recharts')) {
-              // Core charts - most commonly used, smallest chunk
-              if (id.includes('BarChart') || id.includes('LineChart') || id.includes('AreaChart')) {
-                return 'vendor-charts-core';
-              }
-              // Chart utilities - shared components
-              if (id.includes('Tooltip') || id.includes('Legend') || id.includes('ResponsiveContainer') || id.includes('CartesianGrid')) {
-                return 'vendor-charts-utils';
-              }
-              // Financial charts - heavy, load on demand
-              if (id.includes('CandlestickChart') || id.includes('ComposedChart') || id.includes('ScatterChart')) {
-                return 'vendor-charts-financial';
-              }
-              // Technical indicators - specialized features
-              if (id.includes('ReferenceLine') || id.includes('Brush') || id.includes('CrossHair') || id.includes('ErrorBar')) {
-                return 'vendor-charts-indicators';
-              }
-              // Advanced chart features - load last
-              return 'vendor-charts-advanced';
+              return 'vendor-charts';
             }
             
-            // AI services - optimized for dynamic loading
+            // AI services
             if (id.includes('@google/genai')) {
-              return 'vendor-ai-gemini';
+              return 'vendor-ai';
             }
             
-            // Supabase - modular splitting for better tree-shaking
+            // Supabase - consolidated
             if (id.includes('@supabase')) {
-              if (id.includes('realtime-js')) {
-                return 'vendor-supabase-realtime';
-              }
-              if (id.includes('storage-js')) {
-                return 'vendor-supabase-storage';
-              }
-              if (id.includes('functions-js')) {
-                return 'vendor-supabase-functions';
-              }
-              if (id.includes('auth-js')) {
-                return 'vendor-supabase-auth';
-              }
-              return 'vendor-supabase-core';
+              return 'vendor-supabase';
             }
             
-            // Security and validation utilities
+            // Security utilities
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'vendor-security';
-            }
-            
-            // Development and testing tools - excluded from production chunks
-            if (id.includes('typescript') || id.includes('@types') || id.includes('@testing-library') || id.includes('vitest') || id.includes('eslint')) {
-              return 'dev-tools-excluded';
-            }
-            
-            // Edge and Vercel specific modules
-            if (id.includes('edge') || id.includes('vercel')) {
-              return 'vendor-edge-runtime';
-            }
-            
-            // Web workers and background processing
-            if (id.includes('worker') || id.includes('web-worker')) {
-              return 'vendor-web-workers';
-            }
-            
-            // Date and time utilities
-            if (id.includes('date') || id.includes('moment') || id.includes('dayjs')) {
-              return 'vendor-date-utils';
-            }
-            
-            // HTTP and network utilities
-            if (id.includes('axios') || id.includes('fetch') || id.includes('request')) {
-              return 'vendor-network';
             }
             
             // All other node_modules
             return 'vendor-misc';
           }
           
-          // Enhanced app chunks with better separation
+          // App chunks - simplified for better performance
           if (id.includes('services/')) {
-            // Core database services - critical path
-            if (id.includes('supabase') || id.includes('database') || id.includes('cache')) {
-              return 'services-database-critical';
-            }
-            // AI and simulation services
-            if (id.includes('gemini') || id.includes('simulation') || id.includes('ai')) {
+            if (id.includes('gemini') || id.includes('ai')) {
               return 'services-ai';
             }
-            // Edge and performance services - critical for edge deployment
-            if (id.includes('edge') || id.includes('performance') || id.includes('vercel')) {
-              return 'services-edge-critical';
-            }
-            // Security services
-            if (id.includes('security') || id.includes('validation')) {
-              return 'services-security';
+            if (id.includes('supabase') || id.includes('database')) {
+              return 'services-db';
             }
             return 'services-other';
           }
           
-          // Enhanced component chunks for optimal lazy loading
           if (id.includes('components/')) {
-            // Heavy components - isolated for lazy loading
             if (id.includes('CodeEditor') || id.includes('ChatInterface')) {
               return 'components-heavy';
             }
-            // Chart and visualization components
-            if (id.includes('BacktestPanel') || id.includes('ChartComponents')) {
+            if (id.includes('Chart') || id.includes('Backtest')) {
               return 'components-charts';
             }
-            // Modal components
-            if (id.includes('Modal') || id.includes('AISettingsModal') || id.includes('DatabaseSettingsModal')) {
-              return 'components-modals';
-            }
-            // Form and configuration components
-            if (id.includes('StrategyConfig') || id.includes('NumericInput')) {
-              return 'components-forms';
-            }
-            // Layout and core UI components
-            if (id.includes('Layout') || id.includes('Auth') || id.includes('LoadingState') || id.includes('ErrorBoundary')) {
-              return 'components-core';
-            }
-            return 'components-other';
+            return 'components-ui';
           }
           
-          // Enhanced page chunks with better route splitting
           if (id.includes('pages/')) {
-            if (id.includes('Generator')) {
-              return 'page-generator';
+            if (id.includes('Generator') || id.includes('Dashboard')) {
+              return 'pages-main';
             }
-            if (id.includes('Dashboard')) {
-              return 'page-dashboard';
-            }
-            // Static pages grouped together
-            if (id.includes('About') || id.includes('FAQ') || id.includes('Features') || id.includes('Wiki') || id.includes('Blog')) {
-              return 'page-static';
-            }
-            return 'pages-other';
+            return 'pages-static';
           }
           
-          // Enhanced utility chunks
           if (id.includes('utils/')) {
-            if (id.includes('lazyLoader') || id.includes('performance')) {
-              return 'utils-performance';
-            }
-            if (id.includes('seo') || id.includes('enhancedSEO')) {
-              return 'utils-seo';
-            }
-            if (id.includes('security') || id.includes('validation')) {
-              return 'utils-security';
-            }
-            return 'utils-other';
-          }
-          
-          // Constants and assets
-          if (id.includes('constants/') || id.includes('translations/')) {
-            return 'assets-i18n';
+            return 'utils';
           }
           
           return 'chunk-default';
