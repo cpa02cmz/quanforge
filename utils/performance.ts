@@ -296,13 +296,13 @@ private recordInteraction(name: string, duration: number) {
       return null;
     }
     
- // Track memory usage over time
-     async monitorMemoryUsage(intervalMs: number = 30000): Promise<void> { // Default 30 seconds
-if (!('memory' in performance)) {
+// Track memory usage over time with proper cleanup
+     async monitorMemoryUsage(intervalMs: number = 30000): Promise<() => void> { // Default 30 seconds
+ if (!('memory' in performance)) {
           if (import.meta.env.DEV) {
             logger.warn('Memory monitoring not supported in this browser');
           }
-          return;
+          return () => {}; // Return no-op cleanup function
         }
       
       const memoryInterval = setInterval(() => {
@@ -319,11 +319,40 @@ if (!('memory' in performance)) {
               // Record high memory usage event
               this.recordMetric('high_memory_event', 1);
             }
+            
+            // Auto-cleanup if memory is critically high
+            if (memory.utilization > 90) {
+              this.performEmergencyCleanup();
+            }
         }
       }, intervalMs);
       
-      // Store interval for potential cleanup
-      (globalThis as any).__memoryMonitoringInterval = memoryInterval;
+      // Return cleanup function
+      return () => {
+        clearInterval(memoryInterval);
+      };
+    }
+    
+    // Emergency cleanup for critical memory situations
+    private performEmergencyCleanup(): void {
+      try {
+        // Clear performance metrics history
+        this.metrics.length = 0;
+        
+        // Disconnect all performance observers
+        this.observers.forEach(observer => observer.disconnect());
+        this.observers.length = 0;
+        
+        // Force garbage collection if available
+        if ('gc' in globalThis) {
+          (globalThis as any).gc();
+        }
+        
+        logger.warn('Emergency memory cleanup performed');
+        this.recordMetric('emergency_cleanup', 1);
+      } catch (error) {
+        logger.warn('Failed to perform emergency cleanup:', error);
+      }
     }
     
     // Enhanced metrics for React component performance

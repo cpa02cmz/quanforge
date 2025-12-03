@@ -153,42 +153,52 @@ const stopGeneration = () => {
          // Use AbortController for request cancellation
          const controller = new AbortController();
          
-         mockDb.getRobots().then(({ data }) => {
-             if (controller.signal.aborted) return;
-             const found = data.find((r: Robot) => r.id === id);
-             if (found) {
-                 dispatch({ type: 'LOAD_ROBOT', payload: found });
-                 
-if (!found.analysis_result && found.code) {
-                      loadGeminiService().then(({ analyzeStrategy }) => {
-                          if (!controller.signal.aborted) {
-                              return analyzeStrategy(found.code);
-                          }
-                          return Promise.reject(new Error('Aborted'));
-                      }).then(analysis => {
+// Optimized parallel loading with Promise.all
+          const loadRobot = async () => {
+              try {
+                  // Load robots data
+                  const { data: robots } = await mockDb.getRobots();
+                  if (controller.signal.aborted) return;
+                  
+                  const found = robots.find((r: Robot) => r.id === id);
+                  if (!found) {
+                      showToast("Robot not found", "error");
+                      navigate('/generator');
+                      return;
+                  }
+                  
+                  // Load robot data first
+                  dispatch({ type: 'LOAD_ROBOT', payload: found });
+                  
+                  // Parallel load analysis if needed
+                  if (!found.analysis_result && found.code) {
+                      try {
+                          const { analyzeStrategy } = await loadGeminiService();
+                          if (controller.signal.aborted) return;
+                          
+                          const analysis = await analyzeStrategy(found.code);
                           if (!controller.signal.aborted && analysis) {
                               dispatch({ type: 'SET_ANALYSIS', payload: analysis });
                           }
-                      }).catch((err: any) => {
+                      } catch (err: any) {
                           if (!controller.signal.aborted) {
                               logger.error('Error analyzing strategy:', err);
                           }
-                      });
+                      }
                   }
-             } else {
-                 showToast("Robot not found", "error");
-                 navigate('/generator'); // Redirect to new if not found
-             }
-         }).catch(error => {
-             if (!controller.signal.aborted) {
-                 logger.error('Error loading robot:', error);
-                 showToast("Error loading robot", "error");
-             }
-         }).finally(() => {
-             if (!controller.signal.aborted) {
-                 dispatch({ type: 'SET_LOADING', payload: false });
-             }
-         });
+              } catch (error) {
+                  if (!controller.signal.aborted) {
+                      logger.error('Error loading robot:', error);
+                      showToast("Error loading robot", "error");
+                  }
+              } finally {
+                  if (!controller.signal.aborted) {
+                      dispatch({ type: 'SET_LOADING', payload: false });
+                  }
+              }
+          };
+          
+          loadRobot();
          
          return () => {
              controller.abort();
