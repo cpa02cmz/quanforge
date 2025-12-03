@@ -1,7 +1,4 @@
-/**
- * Database Performance Monitor
- * Monitors and optimizes database performance for Supabase integration
- */
+import { SupabaseClient } from '@supabase/supabase-js';
 
 interface DatabaseMetrics {
   queryTime: number;
@@ -13,7 +10,35 @@ interface DatabaseMetrics {
   throughput: number;
 }
 
+interface QueryPerformanceMetrics {
+  queryId: string;
+  tableName: string;
+  operation: 'select' | 'insert' | 'update' | 'delete';
+  executionTime: number;
+  resultSize: number;
+  startTime: number;
+  endTime: number;
+  parameters: Record<string, any>;
+  success: boolean;
+  error: string | undefined;
+  userId: string | undefined;
+  cached: boolean;
+}
 
+interface DatabasePerformanceSummary {
+  totalQueries: number;
+  avgExecutionTime: number;
+  slowQueries: number; // Queries > 500ms
+  cacheHitRate: number;
+  mostExpensiveQueries: QueryPerformanceMetrics[];
+  queryDistribution: {
+    select: number;
+    insert: number;
+    update: number;
+    delete: number;
+  };
+  performanceTrend: number[]; // Last 10 query times
+}
 
 interface PerformanceAlert {
   type: 'slow_query' | 'high_error_rate' | 'connection_exhaustion' | 'cache_miss';
@@ -35,11 +60,14 @@ class DatabasePerformanceMonitor {
     throughput: 0,
   };
   private queryHistory: Array<{ query: string; time: number; timestamp: number }> = [];
+  private detailedMetrics: QueryPerformanceMetrics[] = [];
   private alerts: PerformanceAlert[] = [];
   private monitoringInterval: NodeJS.Timeout | null = null;
   private readonly SLOW_QUERY_THRESHOLD = 1000; // 1 second
   private readonly HIGH_ERROR_RATE_THRESHOLD = 0.05; // 5%
   private readonly MAX_QUERY_HISTORY = 1000;
+  private readonly MAX_DETAILED_METRICS = 10000; // Limit to prevent memory issues
+  private readonly PERFORMANCE_TREND_SIZE = 10;
 
   private constructor() {
     this.startMonitoring();
@@ -60,7 +88,72 @@ class DatabasePerformanceMonitor {
     }, 30000); // Monitor every 30 seconds
   }
 
-  // Record query execution
+  // Enhanced record query with detailed metrics
+  recordDetailedQuery(input: { 
+    queryId: string;
+    tableName: string;
+    operation: 'select' | 'insert' | 'update' | 'delete';
+    resultSize: number;
+    parameters: Record<string, any>;
+    error: string | undefined;
+    userId: string | undefined;
+    cached: boolean;
+    startTime: number; 
+    endTime: number; 
+  }): void {
+    const executionTime = input.endTime - input.startTime;
+    const success = !input.error;
+    
+    // Create metric object step by step to avoid type issues
+    const metric = {
+      queryId: input.queryId,
+      tableName: input.tableName,
+      operation: input.operation,
+      resultSize: input.resultSize,
+      parameters: input.parameters,
+      error: input.error,
+      userId: input.userId,
+      cached: input.cached,
+      startTime: input.startTime,
+      endTime: input.endTime,
+      executionTime: executionTime,
+      success: success,
+    } as QueryPerformanceMetrics;
+
+    this.detailedMetrics.push(metric);
+
+    // Maintain size limit
+    if (this.detailedMetrics.length > this.MAX_DETAILED_METRICS) {
+      this.detailedMetrics = this.detailedMetrics.slice(-this.MAX_DETAILED_METRICS);
+    }
+
+    // Also record in the original query history for backward compatibility
+    this.queryHistory.push({
+      query: this.sanitizeQuery(input.queryId),
+      time: executionTime,
+      timestamp: Date.now(),
+    });
+
+    // Maintain query history size
+    if (this.queryHistory.length > this.MAX_QUERY_HISTORY) {
+      this.queryHistory = this.queryHistory.slice(-this.MAX_QUERY_HISTORY);
+    }
+
+    // Update metrics
+    this.updateQueryMetrics(executionTime, success);
+
+    // Check for slow queries
+    if (executionTime > this.SLOW_QUERY_THRESHOLD) {
+      this.createAlert('slow_query', 'medium', `Slow query detected: ${executionTime}ms`, {
+        query: input.queryId,
+        executionTime,
+        tableName: input.tableName,
+        operation: input.operation,
+      });
+    }
+  }
+
+  // Record query execution (original method for backward compatibility)
   recordQuery(query: string, executionTime: number, success: boolean): void {
     this.queryHistory.push({
       query: this.sanitizeQuery(query),
@@ -386,6 +479,138 @@ class DatabasePerformanceMonitor {
     };
   }
 
+  /**
+   * Get enhanced performance summary with detailed metrics
+   */
+  getEnhancedPerformanceSummary(): DatabasePerformanceSummary {
+    if (this.detailedMetrics.length === 0) {
+      return {
+        totalQueries: 0,
+        avgExecutionTime: 0,
+        slowQueries: 0,
+        cacheHitRate: 0,
+        mostExpensiveQueries: [],
+        queryDistribution: { select: 0, insert: 0, update: 0, delete: 0 },
+        performanceTrend: [],
+      };
+    }
+
+    const totalQueries = this.detailedMetrics.length;
+    const totalExecutionTime = this.detailedMetrics.reduce((sum, m) => sum + m.executionTime, 0);
+    const avgExecutionTime = totalExecutionTime / totalQueries;
+    
+    const slowQueries = this.detailedMetrics.filter(m => m.executionTime > 500).length; // Using 500ms as slow threshold for enhanced metrics
+    const cachedQueries = this.detailedMetrics.filter(m => m.cached).length;
+    const cacheHitRate = totalQueries > 0 ? (cachedQueries / totalQueries) * 100 : 0;
+
+    // Query distribution
+    const queryDistribution = {
+      select: this.detailedMetrics.filter(m => m.operation === 'select').length,
+      insert: this.detailedMetrics.filter(m => m.operation === 'insert').length,
+      update: this.detailedMetrics.filter(m => m.operation === 'update').length,
+      delete: this.detailedMetrics.filter(m => m.operation === 'delete').length,
+    };
+
+    // Most expensive queries
+    const mostExpensiveQueries = [...this.detailedMetrics]
+      .sort((a, b) => b.executionTime - a.executionTime)
+      .slice(0, 10);
+
+    // Performance trend (last N queries)
+    const performanceTrend = this.detailedMetrics
+      .slice(-this.PERFORMANCE_TREND_SIZE)
+      .map(m => m.executionTime);
+
+    return {
+      totalQueries,
+      avgExecutionTime,
+      slowQueries,
+      cacheHitRate,
+      mostExpensiveQueries,
+      queryDistribution,
+      performanceTrend,
+    };
+  }
+
+  /**
+   * Get optimization recommendations based on detailed metrics
+   */
+  getOptimizationRecommendations(): string[] {
+    const recommendations: string[] = [];
+    const summary = this.getEnhancedPerformanceSummary();
+
+    if (summary.avgExecutionTime > 1000) {
+      recommendations.push(`Average query time is high (${summary.avgExecutionTime.toFixed(2)}ms). Consider adding indexes.`);
+    }
+
+    if (summary.slowQueries > 0) {
+      const slowQueryPercent = (summary.slowQueries / summary.totalQueries) * 100;
+      recommendations.push(`${summary.slowQueries} queries (${slowQueryPercent.toFixed(2)}%) are taking >500ms. Review these for optimization.`);
+    }
+
+    if (summary.cacheHitRate < 50) {
+      recommendations.push(`Cache hit rate is low (${summary.cacheHitRate.toFixed(2)}%). Consider optimizing cache strategies.`);
+    }
+
+    // Check for specific patterns that might indicate optimization opportunities
+    const selectQueries = this.detailedMetrics.filter(m => m.operation === 'select');
+    if (selectQueries.length > 0) {
+      const avgSelectTime = selectQueries.reduce((sum, q) => sum + q.executionTime, 0) / selectQueries.length;
+      if (avgSelectTime > 500) {
+        recommendations.push(`SELECT operations are slow (avg ${avgSelectTime.toFixed(2)}ms). Consider adding indexes on frequently queried fields.`);
+      }
+    }
+
+    return recommendations;
+  }
+
+  /**
+   * Monitor and optimize query performance in real-time
+   */
+  async monitorAndOptimizeQuery<T>(
+    _client: SupabaseClient,
+    tableName: string,
+    operation: 'select' | 'insert' | 'update' | 'delete',
+    queryExecutor: () => Promise<T>,
+    parameters: Record<string, any> = {},
+    userId?: string
+  ): Promise<T> {
+    const startTime = performance.now();
+    let error: string | undefined;
+    let result: T | null = null;
+    let cached = false;
+
+    try {
+      result = await queryExecutor();
+      // If this is a cached result, set cached flag
+      // This would be determined by the caching layer, for now we'll implement it as false
+    } catch (err: any) {
+      error = err.message || 'Unknown error';
+      throw err;
+    } finally {
+      const endTime = performance.now();
+      
+      // For now, we'll assume no caching for this implementation
+      // In a real implementation, you'd check if the result came from cache
+      cached = false;
+
+       this.recordDetailedQuery({
+        queryId: `query_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        tableName,
+        operation,
+        parameters,
+        userId,
+        startTime,
+        endTime,
+        resultSize: result !== null && Array.isArray(result) ? result.length : result !== null && typeof result === 'object' ? 1 : 0,
+        cached,
+        error,
+      });
+    }
+
+    return result as T;
+  }
+
   // Reset metrics
   resetMetrics(): void {
     this.metrics = {
@@ -398,6 +623,7 @@ class DatabasePerformanceMonitor {
       throughput: 0,
     };
     this.queryHistory = [];
+    this.detailedMetrics = [];
     this.alerts = [];
   }
 
@@ -411,3 +637,4 @@ class DatabasePerformanceMonitor {
 }
 
 export const databasePerformanceMonitor = DatabasePerformanceMonitor.getInstance();
+export { DatabasePerformanceMonitor };
