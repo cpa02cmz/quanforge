@@ -11,6 +11,9 @@ import { SEOHead, structuredDataTemplates } from './utils/seo';
 import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
 import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
 import { frontendOptimizer } from './services/frontendOptimizer';
+import { edgeAnalytics } from './services/edgeAnalytics';
+import { edgeMonitoring } from './services/edgeMonitoring';
+import { edgeOptimizer } from './services/edgeFunctionOptimizer';
 
 // Lazy load components for better code splitting
 const Auth = lazy(() => import('./components/Auth').then(module => ({ default: module.Auth })));
@@ -33,8 +36,24 @@ export default function App() {
      vercelEdgeOptimizer.enableEdgeSSR();
      vercelEdgeOptimizer.setupEdgeErrorHandling();
      
-// Initialize Frontend Optimizer
-      frontendOptimizer.warmUp().catch(err => logger.warn('Frontend optimizer warmup failed:', err));
+     // Initialize Frontend Optimizer
+     frontendOptimizer.warmUp().catch(err => logger.warn('Frontend optimizer warmup failed:', err));
+     
+     // Initialize Edge Analytics
+     edgeAnalytics.trackCustomEvent('app_initialization', {
+       timestamp: Date.now(),
+       userAgent: navigator.userAgent,
+       region: 'unknown' // Will be detected by edge analytics
+     });
+     
+     // Initialize Edge Monitoring
+     const monitoringStatus = edgeMonitoring.getMonitoringStatus();
+     logger.info('Edge monitoring status:', monitoringStatus);
+     
+     // Initialize Edge Function Optimizer
+     edgeOptimizer.warmupAllFunctions().catch((err: any) => 
+       logger.warn('Edge function warmup failed:', err)
+     );
     
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
