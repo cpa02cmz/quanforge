@@ -168,10 +168,13 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = React.memo(({
                                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
                                     </div>
                                 }>
-                                    <ChartComponents 
-                                        data={result.equityCurve} 
-                                        totalReturn={result.totalReturn}
-                                    />
+                             <ChartComponents 
+                                 data={result.equityCurve} 
+                                 totalReturn={result.totalReturn}
+                                 riskData={undefined}
+                                 analysis={undefined}
+                                 t={undefined}
+                             />
                                 </Suspense>
                             </div>
                         </div>

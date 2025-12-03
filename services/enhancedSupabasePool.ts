@@ -212,25 +212,7 @@ class EnhancedSupabaseConnectionPool {
     return connection.client;
   }
 
-  private _getAvailableConnection(region?: string): Connection | null {
-    // Prefer connections from the same region
-    if (region) {
-      for (const connection of this.connections.values()) {
-        if (!connection.inUse && connection.healthy && connection.region === region) {
-          return connection;
-        }
-      }
-    }
 
-    // Fall back to any available connection
-    for (const connection of this.connections.values()) {
-      if (!connection.inUse && connection.healthy) {
-        return connection;
-      }
-    }
-
-    return null;
-  }
 
   /**
    * Get optimal connection based on region, health, and recent usage

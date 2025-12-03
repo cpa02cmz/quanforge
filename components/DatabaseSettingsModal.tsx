@@ -61,57 +61,9 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
         }
     };
 
-    const _handleExport = async () => {
-        try {
-            const json = await dbUtils.exportDatabase();
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `quantforge_backup_${settings.mode}_${Date.now()}.json`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast('Database exported successfully', 'success');
-        } catch (e: any) {
-            showToast(`Export failed: ${e.message}`, 'error');
-        }
-    };
 
-    const _handleImport = async () => {
-        // Create file input programmatically
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'application/json';
-        
-        input.onchange = async (e: any) => {
-            const file = e.target.files[0];
-            if (!file) return;
 
-            // Security Check: Limit file size to 5MB to prevent main thread freeze
-            if (file.size > 5 * 1024 * 1024) {
-                showToast("File too large. Max limit is 5MB.", "error");
-                return;
-            }
 
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                const text = event.target?.result as string;
-                setIsLoading(true);
-                const res = await dbUtils.importDatabase(text, true);
-                setIsLoading(false);
-
-                if (res.success) {
-                    showToast(`Imported ${res.count} robots successfully`, 'success');
-                    loadStats();
-                } else {
-                    showToast(`Import failed: ${res.error}`, 'error');
-                }
-            };
-            reader.readAsText(file);
-        };
-        input.click();
-    };
 
     const handleMigration = async () => {
         if (!window.confirm("This will upload all local robots to your Supabase account. Continue?")) return;

@@ -270,16 +270,69 @@ class FrontendOptimizer {
     this.metrics.memoryUsage = this.getCurrentMemoryUsage();
   }
 
-  /**
-   * Get current memory usage if available
-   */
-  private getCurrentMemoryUsage(): number {
-    if ('memory' in performance) {
-      const memory = (performance as any).memory;
-      return memory ? memory.usedJSHeapSize : 0;
-    }
-    return 0;
-  }
+   /**
+    * Get current memory usage if available
+    */
+   private getCurrentMemoryUsage(): number {
+     if ('memory' in performance) {
+       const memory = (performance as any).memory;
+       return memory ? memory.usedJSHeapSize : 0;
+     }
+     return 0;
+   }
+   
+   /**
+    * Optimize rendering performance by batching DOM updates
+    */
+   batchDOMUpdates(updateFn: () => void): void {
+     if ('requestIdleCallback' in window) {
+       // Use requestIdleCallback if available for better performance
+       requestIdleCallback(() => {
+         updateFn();
+       }, { timeout: 100 });
+     } else {
+       // Fallback to requestAnimationFrame
+       requestAnimationFrame(() => {
+         updateFn();
+       });
+     }
+   }
+   
+   /**
+    * Optimize event handling by debouncing and throttling
+    */
+   createOptimizedEventHandler<T extends Event>(
+     handler: (event: T) => void,
+     options: { debounce?: number; throttle?: number; passive?: boolean } = {}
+   ): (event: T) => void {
+     let timeoutId: number | null = null;
+     let lastExecution = 0;
+     
+     return (event: T) => {
+       const now = Date.now();
+       
+       // Throttle: ensure minimum time between executions
+       if (options.throttle && now - lastExecution < options.throttle) {
+         return;
+       }
+       
+       // Debounce: delay execution and cancel previous
+       if (options.debounce) {
+         if (timeoutId !== null) {
+           clearTimeout(timeoutId);
+         }
+         
+         timeoutId = window.setTimeout(() => {
+           handler(event);
+           lastExecution = Date.now();
+           timeoutId = null;
+         }, options.debounce);
+       } else {
+         handler(event);
+         lastExecution = Date.now();
+       }
+     };
+   }
 
   /**
    * Get optimization metrics

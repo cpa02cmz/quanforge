@@ -395,19 +395,39 @@ private recordInteraction(name: string, duration: number) {
       }
     }
     
-    // Cleanup all resources and prevent memory leaks
-    cleanup(): void {
-      this.stopMemoryMonitoring();
-      this.metrics = [];
-      this.observers.forEach(observer => {
-        try {
-          observer.disconnect();
-        } catch (e) {
-          // Ignore errors during cleanup
-        }
-      });
-      this.observers = [];
-    }
+     // Cleanup all resources and prevent memory leaks
+     cleanup(): void {
+       this.stopMemoryMonitoring();
+       
+       // Clear metrics array efficiently
+       this.metrics.length = 0;
+       
+       // Disconnect all observers
+       this.observers.forEach(observer => {
+         try {
+           observer.disconnect();
+         } catch (e) {
+           // Ignore errors during cleanup
+           if (import.meta.env.DEV) {
+             console.warn('Error disconnecting observer during cleanup:', e);
+           }
+         }
+       });
+       this.observers = [];
+       
+       // Clear any remaining performance entries
+       if (this.isSupported) {
+         try {
+           performance.clearMarks();
+           performance.clearMeasures();
+           performance.clearResourceTimings();
+         } catch (e) {
+           if (import.meta.env.DEV) {
+             console.warn('Error clearing performance entries:', e);
+           }
+         }
+       }
+     }
 }
 
 // Singleton instance

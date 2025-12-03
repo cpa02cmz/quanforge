@@ -291,9 +291,9 @@ structuredData={[
                                 </div>
                             </div>
                         }>
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                <ChartComponents riskData={riskData} analysis={analysis} t={t} />
-                            </div>
+                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                 <ChartComponents riskData={riskData} analysis={analysis} t={t} data={undefined} totalReturn={undefined} />
+                             </div>
                         </Suspense>
                     )}
                 </div>
