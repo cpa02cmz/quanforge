@@ -757,26 +757,37 @@ class EnhancedSupabaseConnectionPool {
   /**
    * Get edge warming statistics
    */
-  getEdgeWarmingStats(): {
-    enabled: boolean;
-    regions: string[];
-    warmedRegions: string[];
-    lastWarmup?: number;
-    nextWarmup?: number;
-  } {
-    const warmedRegions = Array.from(this.connections.values())
-      .filter(conn => conn.region && conn.healthy)
-      .map(conn => conn.region!)
-      .filter((region, index, self) => self.indexOf(region) === index);
+   getEdgeWarmingStats(): {
+     enabled: boolean;
+     regions: string[];
+     warmedRegions: string[];
+     lastWarmup?: number;
+     nextWarmup?: number;
+   } {
+     const warmedRegions = Array.from(this.connections.values())
+       .filter(conn => conn.region && conn.healthy)
+       .map(conn => conn.region!)
+       .filter((region, index, self) => self.indexOf(region) === index);
 
-    return {
-      enabled: this.config.connectionWarming || false,
-      regions: this.edgeRegions,
-      warmedRegions,
-      lastWarmup: this.edgeWarmingTimer ? Date.now() - 300000 : undefined,
-      nextWarmup: this.edgeWarmingTimer ? Date.now() + 300000 : undefined
-    };
-  }
+     const stats: {
+       enabled: boolean;
+       regions: string[];
+       warmedRegions: string[];
+       lastWarmup?: number;
+       nextWarmup?: number;
+     } = {
+       enabled: this.config.connectionWarming || false,
+       regions: this.edgeRegions,
+       warmedRegions,
+     };
+     
+     if (this.edgeWarmingTimer) {
+       stats.lastWarmup = Date.now() - 300000;
+       stats.nextWarmup = Date.now() + 300000;
+     }
+     
+     return stats;
+   }
 
   /**
    * Force immediate edge warming
@@ -857,7 +868,8 @@ class EnhancedSupabaseConnectionPool {
      const now = Date.now();
      const connectionsToRemove: string[] = [];
 
-     for (const [id, connection] of this.connections.values()) {
+      for (const connection of this.connections.values()) {
+        const id = connection.id;
        // More aggressive cleanup for edge
        if (connection.inUse || this.stats.totalConnections <= this.config.minConnections) {
          continue;
