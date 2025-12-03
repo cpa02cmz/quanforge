@@ -126,16 +126,27 @@
   "functions": {
     "api/**/*.ts": {
       "runtime": "edge",
-"regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1", "arn1", "gru1", "cle1"],
+      "regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1", "arn1", "gru1", "cle1"],
       "maxDuration": 30,
       "memory": 512,
       "includeFiles": ["public/**/*"],
-      "excludeFiles": ["**/*.test.*", "**/*.spec.*"]
+      "excludeFiles": ["**/*.test.*", "**/*.spec.*"],
+      "cache": "max-age=300, s-maxage=600",
+      "invocationCount": 10,
+      "environment": {
+        "EDGE_CACHE_ENABLED": "true",
+        "SUPABASE_POOL_SIZE": "20",
+        "EDGE_REGION_AFFINITY": "true",
+        "CONNECTION_WARMING": "true"
+      }
     },
     "app/**/*.ts": {
       "runtime": "nodejs20.x",
       "memory": 1024,
-      "maxDuration": 30
+      "maxDuration": 30,
+      "environment": {
+        "NODE_OPTIONS": "--max-old-space-size=1024"
+      }
     }
   },
   "build": {
@@ -165,6 +176,19 @@
     }
   },
   "crons": [],
+  "experimental": {
+    "edgeFunctions": {
+      "warm": true,
+      "maxConcurrency": 1000,
+      "incrementalCache": true,
+      "streaming": true
+    },
+    "allowedHosts": [
+      "quanforge.ai",
+      "*.quanforge.ai",
+      "*.supabase.co"
+    ]
+  },
   "rewrites": [
     {
       "source": "/api/supabase/(.*)",
@@ -174,5 +198,14 @@
       "source": "/cdn/(.*)",
       "destination": "https://assets.quanforge.ai/$1"
     }
-  ]
+  ],
+  "edge": {
+    "runtime": "edge",
+    "regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1", "arn1", "gru1", "cle1"],
+    "framework": "vite",
+    "devCommand": "npm run dev",
+    "buildCommand": "npm run build:edge",
+    "outputDirectory": "dist",
+    "installCommand": "npm ci"
+  }
 }

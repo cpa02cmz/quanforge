@@ -14,6 +14,10 @@ interface ConnectionConfig {
   healthCheckInterval: number;
   retryAttempts: number;
   retryDelay: number;
+  // Edge-specific optimizations
+  enableConnectionDraining?: boolean;
+  regionAffinity?: boolean;
+  connectionWarming?: boolean;
 }
 
 interface Connection {
@@ -46,13 +50,17 @@ class EnhancedSupabaseConnectionPool {
     timestamp: number;
   }> = [];
   private config: ConnectionConfig = {
-    maxConnections: 75, // Increased for better edge performance
-    minConnections: 15, // Increased minimum for edge regions
-    acquireTimeout: 3000, // Reduced for faster failover
-    idleTimeout: 120000, // 2 minutes - reduced for edge efficiency
-    healthCheckInterval: 15000, // 15 seconds - more frequent health checks
-    retryAttempts: 7, // Increased retry attempts for edge reliability
-    retryDelay: 250 // Reduced retry delay for faster recovery
+    maxConnections: 8, // Optimized for serverless edge environment
+    minConnections: 2, // Reduced minimum for edge efficiency
+    acquireTimeout: 1000, // 1 second - optimized for edge functions
+    idleTimeout: 60000, // 1 minute - faster cleanup for serverless
+    healthCheckInterval: 15000, // 15 seconds - frequent health checks
+    retryAttempts: 2, // Fewer retries for edge environment
+    retryDelay: 200, // Faster retry for edge recovery
+    // Add missing edge optimizations
+    enableConnectionDraining: true,
+    regionAffinity: true,
+    connectionWarming: true
   };
   private stats: PoolStats = {
     totalConnections: 0,
@@ -109,6 +117,7 @@ class EnhancedSupabaseConnectionPool {
     }
 
     const id = this.generateConnectionId();
+    const preferredRegion = region || process.env['VERCEL_REGION'] || 'default';
     
     // Enhanced connection configuration for edge optimization
     const client = new SupabaseClient(settings.url, settings.anonKey, {
@@ -123,16 +132,19 @@ class EnhancedSupabaseConnectionPool {
       global: {
         headers: {
           'X-Connection-ID': id,
-          'X-Connection-Region': region || process.env['VERCEL_REGION'] || 'default',
+          'X-Connection-Region': preferredRegion,
           'X-Edge-Optimized': 'true',
           'X-Client-Info': 'quantforge-edge/1.0.0',
-          'X-Priority': 'high'
+          'X-Priority': 'high',
+          'X-Connection-Pool': 'enhanced',
+          'X-Serverless-Optimized': 'true'
         }
       },
       // Edge-specific options
       realtime: {
         params: {
-          edge: 'true'
+          edge: 'true',
+          region: preferredRegion
         }
       }
     });
@@ -330,7 +342,7 @@ class EnhancedSupabaseConnectionPool {
 
       // 2. Performance check - should be fast for healthy connection
       const responseTime = performance.now() - startTime;
-      if (responseTime > 2000) { // 2 second threshold
+      if (responseTime > 1000) { // 1 second threshold for edge environment
         console.warn(`Connection ${connection.id} slow response: ${responseTime.toFixed(2)}ms`);
         connection.healthy = false;
         return false;

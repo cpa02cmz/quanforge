@@ -12,6 +12,20 @@ interface SecurityConfig {
     algorithm: string;
     keyRotationInterval: number;
   };
+  // Add missing edge-specific security configuration
+  edgeRateLimiting: {
+    enabled: boolean;
+    requestsPerSecond: number;
+    burstLimit: number;
+  };
+  regionBlocking: {
+    enabled: boolean;
+    blockedRegions: string[];
+  };
+  botDetection: {
+    enabled: boolean;
+    suspiciousPatterns: string[];
+  };
 }
 
 interface ValidationResult {
@@ -39,6 +53,23 @@ class SecurityManager {
       algorithm: 'AES-256-GCM',
       keyRotationInterval: 43200000, // 12 hours - more frequent rotation
     },
+    // Add missing edge security configurations
+    edgeRateLimiting: {
+      enabled: true,
+      requestsPerSecond: 10,
+      burstLimit: 20
+    },
+    regionBlocking: {
+      enabled: true,
+      blockedRegions: ['CN', 'RU', 'IR', 'KP'] // Example blocked regions
+    },
+    botDetection: {
+      enabled: true,
+      suspiciousPatterns: [
+        'sqlmap', 'nikto', 'nmap', 'masscan', 'dirb', 'gobuster', 
+        'wfuzz', 'burp', 'owasp', 'scanner', 'bot', 'crawler', 'spider'
+      ]
+    }
   };
   private rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
@@ -1136,6 +1167,180 @@ class SecurityManager {
       wafStats,
       cspStats,
       rateLimitStats
+    };
+  }
+
+  /**
+   * Edge-specific Web Application Firewall (WAF) setup
+   */
+  setupEdgeWAF(): void {
+    // Add edge-specific threat detection
+    // Monitor for edge-specific attack patterns
+    this.monitorEdgeThreats();
+  }
+
+  /**
+   * Monitor edge-specific threats
+   */
+  private monitorEdgeThreats(): void {
+    // Monitor request patterns for edge abuse
+    if (typeof window !== 'undefined') {
+      setInterval(() => {
+        this.analyzeEdgeRequestPatterns();
+      }, 30000); // Check every 30 seconds
+    }
+  }
+
+  /**
+   * Analyze edge request patterns for anomalies
+   */
+  private analyzeEdgeRequestPatterns(): void {
+    const recentRequests = this.getRecentEdgeRequests();
+    
+    // Check for unusual patterns
+    const anomalies = this.detectEdgeAnomalies(recentRequests);
+    
+    if (anomalies.length > 0) {
+      this.triggerSecurityAlert('Edge Anomaly Detected', { anomalies });
+    }
+  }
+
+  /**
+   * Get recent edge requests for analysis
+   */
+  private getRecentEdgeRequests(): Array<{ timestamp: number; region: string; endpoint: string }> {
+    // In a real implementation, this would pull from edge metrics
+    const stored = localStorage.getItem('edge_requests');
+    return stored ? JSON.parse(stored) : [];
+  }
+
+  /**
+   * Detect anomalies in edge request patterns
+   */
+  private detectEdgeAnomalies(requests: Array<{ timestamp: number; region: string; endpoint: string }>): string[] {
+    const anomalies: string[] = [];
+    const now = Date.now();
+    const recentRequests = requests.filter(r => now - r.timestamp < 60000); // Last minute
+
+    // Check for rapid region hopping
+    const regions = new Set(recentRequests.map(r => r.region));
+    if (regions.size > 5) {
+      anomalies.push('Rapid region hopping detected');
+    }
+
+    // Check for unusual request frequency
+    if (recentRequests.length > 100) {
+      anomalies.push('High frequency edge requests detected');
+    }
+
+    return anomalies;
+  }
+
+  /**
+   * Enhanced edge rate limiting
+   */
+  checkEdgeRateLimit(identifier: string, region: string): { 
+    allowed: boolean; 
+    resetTime?: number; 
+    remainingRequests?: number;
+    reason?: string;
+  } {
+    if (!this.config.edgeRateLimiting.enabled) {
+      return { allowed: true };
+    }
+
+    const now = Date.now();
+    const key = `edge_${identifier}_${region}`;
+    const record = this.rateLimitMap.get(key);
+
+    // Check region blocking
+    if (this.config.regionBlocking.enabled && 
+        this.config.regionBlocking.blockedRegions.includes(region)) {
+      return { 
+        allowed: false, 
+        reason: 'Region blocked',
+        remainingRequests: 0
+      };
+    }
+
+    const windowMs = 1000; // 1 second window for edge rate limiting
+    const maxRequests = this.config.edgeRateLimiting.requestsPerSecond;
+
+    if (!record || now > record.resetTime) {
+      // New window
+      this.rateLimitMap.set(key, {
+        count: 1,
+        resetTime: now + windowMs,
+      });
+      return { 
+        allowed: true, 
+        remainingRequests: maxRequests - 1 
+      };
+    }
+
+    if (record.count >= maxRequests) {
+      return { 
+        allowed: false, 
+        resetTime: record.resetTime,
+        remainingRequests: 0,
+        reason: 'Edge rate limit exceeded'
+      };
+    }
+
+    record.count++;
+    return { 
+      allowed: true, 
+      remainingRequests: maxRequests - record.count 
+    };
+  }
+
+  /**
+   * Bot detection for edge functions
+   */
+  detectEdgeBot(userAgent: string, _ip: string, requestPattern: any): { 
+    isBot: boolean; 
+    confidence: number; 
+    botType?: string;
+  } {
+    if (!this.config.botDetection.enabled) {
+      return { isBot: false, confidence: 0 };
+    }
+
+    let confidence = 0;
+    let botType = '';
+
+    // Check user agent patterns
+    const suspiciousPatterns = this.config.botDetection.suspiciousPatterns;
+    for (const pattern of suspiciousPatterns) {
+      const regex = new RegExp(pattern, 'gi');
+      if (regex.test(userAgent)) {
+        confidence += 30;
+        botType = pattern;
+      }
+    }
+
+    // Check request patterns
+    if (requestPattern.requestFrequency > 10) { // More than 10 requests per second
+      confidence += 40;
+      botType = botType || 'high-frequency';
+    }
+
+    // Check for consistent timing (bot-like behavior)
+    if (requestPattern.consistentTiming) {
+      confidence += 20;
+      botType = botType || 'automated';
+    }
+
+    // Check for missing headers (common with simple bots)
+    if (requestPattern.missingHeaders) {
+      confidence += 10;
+      botType = botType || 'simple-bot';
+    }
+
+    return {
+      isBot: confidence > 50,
+      confidence: Math.min(confidence, 100),
+      botType
     };
   }
 
