@@ -26,14 +26,25 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
   const itemHeight = 280; // Height of each robot card
   const overscan = 5; // Number of items to render outside viewport
 
-  // Filter robots with memoization
-  const filteredRobots = useMemo(() => 
-    robots.filter(robot => {
-      const matchesSearch = robot.name.toLowerCase().includes(searchTerm.toLowerCase());
+  // Filter robots with memoization and performance optimization
+  const filteredRobots = useMemo(() => {
+    const startTime = performance.now();
+    
+    const result = robots.filter(robot => {
+      const robotName = robot.name.toLowerCase();
+      const searchTermLower = searchTerm.toLowerCase();
+      const matchesSearch = searchTerm === '' || robotName.includes(searchTermLower);
       const matchesType = filterType === 'All' || (robot.strategy_type || 'Custom') === filterType;
       return matchesSearch && matchesType;
-    }), [robots, searchTerm, filterType]
-  );
+    });
+    
+    const duration = performance.now() - startTime;
+    if (duration > 16) { // More than one frame at 60fps
+      console.warn(`VirtualScrollList filter took ${duration.toFixed(2)}ms for ${robots.length} items`);
+    }
+    
+    return result;
+  }, [robots, searchTerm, filterType]);
 
   // Calculate visible range
   const visibleRange = useMemo(() => {
@@ -45,10 +56,14 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
     return { startIndex, endIndex };
   }, [scrollTop, containerHeight, itemHeight, filteredRobots.length, overscan]);
 
-  // Handle scroll events with throttling
+  // Handle scroll events with throttling for performance
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    setScrollTop(e.currentTarget.scrollTop);
-  }, []);
+    const newScrollTop = e.currentTarget.scrollTop;
+    // Only update state if scroll position changed significantly to avoid unnecessary re-renders
+    if (Math.abs(newScrollTop - scrollTop) > itemHeight / 2) {
+      setScrollTop(newScrollTop);
+    }
+  }, [scrollTop, itemHeight]);
 
   // Update container height on resize
   useEffect(() => {
@@ -96,7 +111,7 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
        <div 
          style={{
            position: 'absolute',
-           top: 0,
+           top: `${visibleRange.startIndex * itemHeight}px`,
            left: 0,
            right: 0,
            contain: 'layout style paint' // CSS containment for better performance
@@ -108,10 +123,10 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
            
            return (
              <div
-               key={robot.id}
+               key={`${robot.id}-${actualIndex}`} // Include index to ensure uniqueness
                style={{
                  position: 'absolute',
-                 top: `${top}px`,
+                 top: `${top - (visibleRange.startIndex * itemHeight)}px`, // Relative to container
                  left: 0,
                  right: 0,
                  height: `${itemHeight}px`,
