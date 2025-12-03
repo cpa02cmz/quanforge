@@ -120,7 +120,7 @@ class VercelEdgeOptimizer {
 
   private setupIntelligentPrefetching(): void {
     // Prefetch resources based on user behavior
-    let idleTimeout: number;
+    
     
     const prefetchWhenIdle = () => {
       if ('requestIdleCallback' in window) {
@@ -382,7 +382,7 @@ const entries = list.getEntries();
     // Apply caching headers to fetch requests
     const originalFetch = window.fetch;
     window.fetch = async (input, init) => {
-      const url = typeof input === 'string' ? input : input.url;
+      const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input.url);
       
       for (const [pattern, strategy] of Object.entries(cacheStrategies)) {
         if (url.includes(pattern)) {
@@ -403,11 +403,7 @@ const entries = list.getEntries();
 
   private setupStaticAssetCaching(): void {
     // Long-term caching for static assets
-    const staticAssetPatterns = [
-      /\.(js|css|woff2?|ttf|eot)$/,
-      /\.(png|jpg|jpeg|gif|webp|svg|ico)$/,
-      /\.(mp4|webm|ogg|mp3|wav)$/,
-    ];
+    
 
     // Service worker for offline caching
     if ('serviceWorker' in navigator) {
@@ -511,7 +507,7 @@ const entries = list.getEntries();
 
   private getCurrentRegion(): string {
     // Detect current edge region
-    return process.env.VERCEL_REGION || 'unknown';
+    return process.env['VERCEL_REGION'] || 'unknown';
   }
 
   private getOptimizedCache(key: string): any | null {
@@ -615,7 +611,7 @@ const entries = list.getEntries();
 
   private setupTreeShaking(): void {
     // Mark unused functions for tree shaking
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env['NODE_ENV'] === 'production') {
       // Enable tree shaking optimizations
       console.debug('Tree shaking enabled for production build');
     }
@@ -623,7 +619,7 @@ const entries = list.getEntries();
 
   private setupMinification(): void {
     // Enable minification for production
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env['NODE_ENV'] === 'production') {
       // Additional minification settings would be handled by build tools
       console.debug('Minification enabled for production build');
     }

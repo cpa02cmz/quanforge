@@ -122,7 +122,7 @@ class EnhancedSupabaseConnectionPool {
       global: {
         headers: {
           'X-Connection-ID': id,
-          'X-Connection-Region': region || process.env.VERCEL_REGION || 'default',
+          'X-Connection-Region': region || process.env['VERCEL_REGION'] || 'default',
           'X-Edge-Optimized': 'true',
           'X-Client-Info': 'quantforge-edge/1.0.0',
           'X-Priority': 'high'
@@ -154,7 +154,7 @@ class EnhancedSupabaseConnectionPool {
 
   async acquire(region?: string): Promise<SupabaseClient> {
     const startTime = performance.now();
-    const preferredRegion = region || process.env.VERCEL_REGION || 'default';
+    const preferredRegion = region || process.env['VERCEL_REGION'] || 'default';
 
     // Try to find an available connection with enhanced selection logic
     let connection = this.getOptimalConnection(preferredRegion);
@@ -212,7 +212,7 @@ class EnhancedSupabaseConnectionPool {
     return connection.client;
   }
 
-  private getAvailableConnection(region?: string): Connection | null {
+  private _getAvailableConnection(region?: string): Connection | null {
     // Prefer connections from the same region
     if (region) {
       for (const connection of this.connections.values()) {
@@ -267,7 +267,7 @@ class EnhancedSupabaseConnectionPool {
     // Sort by score (highest first) and return the best
     candidates.sort((a, b) => b.score - a.score);
     
-    return candidates.length > 0 ? candidates[0].connection : null;
+    return candidates.length > 0 ? (candidates[0]?.connection || null) : null;
   }
 
   private async waitForConnection(): Promise<Connection> {

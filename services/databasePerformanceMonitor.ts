@@ -13,13 +13,7 @@ interface DatabaseMetrics {
   throughput: number;
 }
 
-interface QueryPlan {
-  query: string;
-  executionTime: number;
-  plan: any;
-  indexes: string[];
-  optimizations: string[];
-}
+
 
 interface PerformanceAlert {
   type: 'slow_query' | 'high_error_rate' | 'connection_exhaustion' | 'cache_miss';

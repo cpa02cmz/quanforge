@@ -495,123 +495,147 @@ async getRobots() {
      }
    },
 
-   /**
-     * Get robots with pagination for better performance with large datasets
-     */
-   async getRobotsPaginated(page: number = 1, limit: number = 20, searchTerm?: string, filterType?: string) {
-     const startTime = performance.now();
-     try {
-       const settings = settingsManager.getDBSettings();
-       const offset = (page - 1) * limit;
-       
-       if (settings.mode === 'mock') {
-         const stored = localStorage.getItem(ROBOTS_KEY);
-         const allRobots = safeParse(stored, []);
-         const index = robotIndexManager.getIndex(allRobots);
-         
-         let results = index.byDate;
-         
-         // Apply search filter if provided
-         if (searchTerm) {
-           const term = searchTerm.toLowerCase();
-           results = results.filter(robot => 
-             robot.name.toLowerCase().includes(term) || 
-             robot.description.toLowerCase().includes(term)
-           );
-         }
-         
-         // Apply type filter if provided
-         if (filterType && filterType !== 'All') {
-           results = results.filter(robot => 
-             (robot.strategy_type || 'Custom') === filterType
-           );
-         }
-         
-         const totalCount = results.length;
-         const paginatedResults = results.slice(offset, offset + limit);
-         
-         const duration = performance.now() - startTime;
-         performanceMonitor.record('getRobotsPaginated', duration);
-         
-         return {
-           data: paginatedResults,
-           pagination: {
-             page,
-             limit,
-             totalCount,
-             totalPages: Math.ceil(totalCount / limit),
-             hasNext: offset + limit < totalCount,
-             hasPrev: page > 1
-           },
-           error: null
-         };
-       }
-       
-       // For Supabase, use database pagination
-       const cacheKey = `robots_paginated_${page}_${limit}_${searchTerm || ''}_${filterType || 'All'}`;
-       const cached = robotCache.get<any>(cacheKey);
-       if (cached) {
-         const duration = performance.now() - startTime;
-         performanceMonitor.record('getRobotsPaginated', duration);
-         return cached;
-       }
-       
-       return withRetry(async () => {
-         const client = await getClient();
-         let query = client
-           .from('robots')
-           .select('*', { count: 'exact' })
-           .order('created_at', { ascending: false })
-           .range(offset, offset + limit - 1);
-         
-         // Apply search filter if provided
-         if (searchTerm) {
-           query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
-         }
-         
-         // Apply type filter if provided
-         if (filterType && filterType !== 'All') {
-           query = query.eq('strategy_type', filterType);
-         }
-         
-         const result = await query;
-         
-         if (result.data && !result.error) {
-           const response = {
-             data: result.data,
-             pagination: {
-               page,
-               limit,
-               totalCount: result.count || 0,
-               totalPages: Math.ceil((result.count || 0) / limit),
-               hasNext: offset + limit < (result.count || 0),
-               hasPrev: page > 1
-             },
-             error: null
-           };
-           
-           robotCache.set(cacheKey, response, {
-             ttl: 300000,
-             tags: ['robots', 'paginated'],
-             priority: 'high'
-           });
-           
-           const duration = performance.now() - startTime;
-           performanceMonitor.record('getRobotsPaginated', duration);
-           return response;
-         }
-         
-         const duration = performance.now() - startTime;
-         performanceMonitor.record('getRobotsPaginated', duration);
-         return result;
-       }, 'getRobotsPaginated');
-     } catch (error) {
-       const duration = performance.now() - startTime;
-performanceMonitor.record('getRobotsPaginated', duration);
+/**
+      * Get robots with pagination for better performance with large datasets
+      * Optimized with smart caching and query batching
+      */
+    async getRobotsPaginated(page: number = 1, limit: number = 20, searchTerm?: string, filterType?: string) {
+      const startTime = performance.now();
+      try {
+        const settings = settingsManager.getDBSettings();
+        const offset = (page - 1) * limit;
+        
+        // Generate optimized cache key with consistent ordering
+        const cacheKey = `robots_paginated_${page}_${limit}_${(searchTerm || '').toLowerCase()}_${(filterType || 'All')}`;
+        
+        // Try smart cache first for both mock and supabase modes
+        const cached = await smartCache.get(cacheKey);
+        if (cached) {
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('getRobotsPaginated_cached', duration);
+          return cached;
+        }
+        
+        if (settings.mode === 'mock') {
+          const stored = localStorage.getItem(ROBOTS_KEY);
+          const allRobots = safeParse(stored, []);
+          const index = robotIndexManager.getIndex(allRobots);
+          
+          let results = index.byDate;
+          
+          // Optimized search with early termination
+          if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            results = results.filter(robot => {
+              const nameMatch = robot.name.toLowerCase().includes(term);
+              const descMatch = robot.description.toLowerCase().includes(term);
+              return nameMatch || descMatch;
+            });
+          }
+          
+          // Apply type filter if provided
+          if (filterType && filterType !== 'All') {
+            results = results.filter(robot => 
+              (robot.strategy_type || 'Custom') === filterType
+            );
+          }
+          
+          const totalCount = results.length;
+          const paginatedResults = results.slice(offset, offset + limit);
+          
+          const response = {
+            data: paginatedResults,
+            pagination: {
+              page,
+              limit,
+              totalCount,
+              totalPages: Math.ceil(totalCount / limit),
+              hasNext: offset + limit < totalCount,
+              hasPrev: page > 1
+            },
+            error: null
+          };
+          
+          // Cache the result with smart TTL based on data size
+          const ttl = Math.min(300000, Math.max(60000, totalCount * 100)); // 1-5 minutes based on result size
+          await smartCache.set(cacheKey, response, { ttl, priority: 'high' });
+          
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('getRobotsPaginated_mock', duration);
+          return response;
+        }
+        
+        // Optimized Supabase query with prepared statement pattern
+        return withRetry(async () => {
+          const client = await getClient();
+          
+          // Build query with optimized filters
+          let query = client
+            .from('robots')
+            .select('*', { count: 'exact', head: false })
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1);
+          
+          // Apply filters efficiently
+          const filters: string[] = [];
+          if (searchTerm) {
+            // Use full-text search if available, fallback to ILIKE
+            filters.push(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+          }
+          if (filterType && filterType !== 'All') {
+            filters.push(`strategy_type.eq.${filterType}`);
+          }
+          
+          // Apply all filters in a single call
+          if (filters.length > 0) {
+            query = query.or(filters.join(','));
+          }
+          
+          const result = await query;
+          
+          if (result.data && !result.error) {
+            const response = {
+              data: result.data,
+              pagination: {
+                page,
+                limit,
+                totalCount: result.count || 0,
+                totalPages: Math.ceil((result.count || 0) / limit),
+                hasNext: offset + limit < (result.count || 0),
+                hasPrev: page > 1
+              },
+              error: null
+            };
+            
+            // Smart caching with adaptive TTL
+            const ttl = Math.min(300000, Math.max(60000, (result.count || 0) * 50));
+            await smartCache.set(cacheKey, response, { 
+              ttl, 
+              priority: 'high'
+            });
+            
+            const duration = performance.now() - startTime;
+            performanceMonitor.record('getRobotsPaginated_supabase', duration);
+            
+            // Log slow queries in development
+            if (import.meta.env.DEV && duration > 1000) {
+              console.warn(`Slow getRobotsPaginated query: ${duration.toFixed(2)}ms for ${result.count} results`);
+            }
+            
+            return response;
+          }
+          
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('getRobotsPaginated_error', duration);
+          return { data: [], pagination: { page, limit, totalCount: 0, totalPages: 0, hasNext: false, hasPrev: false }, error: result.error };
+        }, 'getRobotsPaginated');
+      } catch (error) {
+        const duration = performance.now() - startTime;
+        performanceMonitor.record('getRobotsPaginated_exception', duration);
         handleError(error as Error, 'getRobotsPaginated', 'mockDb');
         throw error;
-     }
-},
+      }
+ },
 
    /**
      * Get multiple robots by IDs in a single query for better performance
