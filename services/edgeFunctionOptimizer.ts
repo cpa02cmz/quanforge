@@ -145,8 +145,8 @@ class EdgeFunctionOptimizer {
    * Generate warmup requests for a function
    */
   private generateWarmupRequests(functionName: string): WarmupRequest[] {
-    const baseUrl = process.env.VERCEL_URL || 'localhost:3000';
-    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const baseUrl = process.env['VERCEL_URL'] || 'localhost:3000';
+    const protocol = process.env['NODE_ENV'] === 'production' ? 'https' : 'http';
 
     switch (functionName) {
       case 'api/supabase':
@@ -223,16 +223,21 @@ class EdgeFunctionOptimizer {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-        const response = await fetch(request.url, {
+        const fetchOptions: RequestInit = {
           method: request.method,
           headers: {
             ...request.headers,
             'x-edge-region': region,
             'x-vercel-region': region,
           },
-          body: request.body,
           signal: controller.signal,
-        });
+        };
+        
+        if (request.body) {
+          fetchOptions.body = request.body;
+        }
+        
+        const response = await fetch(request.url, fetchOptions);
 
         clearTimeout(timeoutId);
 

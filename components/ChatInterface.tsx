@@ -116,17 +116,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
 
   // Lightweight Markdown Formatter
   // Memoized to prevent unnecessary re-renders
-  const formatMessageContent = useCallback((content: string) => {
-    const lines = content.split('\n');
-    const elements = [];
+  const formatMessageContent = useCallback((content: string): React.ReactElement[] => {
+    if (!content) return [];
     
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line) continue;
+    const lines = content.split('\n');
+    const elements: React.ReactElement[] = [];
+    
+    // Optimize by using forEach instead of for loop with better memory management
+    lines.forEach((line, i) => {
+      if (!line) return;
+      
+      const trimmedLine = line.trim();
       
       // Handle Lists
-      if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-        const listContent = line.trim().substring(2);
+      if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+        const listContent = trimmedLine.substring(2);
         elements.push(
           <div key={i} className="flex items-start ml-2 mb-1">
             <span className="mr-2 text-brand-500">•</span>
@@ -135,13 +139,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
         );
       }
       // Standard Paragraph (with empty line handling)
-      else if (line.trim() === '') {
+      else if (trimmedLine === '') {
         elements.push(<div key={i} className="h-2" />);
       }
       else {
         elements.push(<div key={i} className="mb-1">{parseInlineStyles(line)}</div>);
       }
-    }
+    });
     
     return elements;
   }, []);

@@ -277,13 +277,14 @@ FINAL REMINDERS:
 3. If changing logic, rewrite the full file.
 `;
 
-            // Build base components
+            // Build base components with optimized calculation
             const paramsContext = this.buildParamsContext(strategyParams);
             let codeContext = this.buildCodeContext(currentCode);
             
+            // Calculate total length more efficiently
             const baseLength = paramsContext.length + codeContext.length + prompt.length + footerReminder.length;
             
-            // Early truncation if base context is too large
+            // Early truncation with better buffer management
             if (baseLength > TokenBudgetManager.MAX_CONTEXT_CHARS) {
                 if (import.meta.env.DEV) {
                     console.warn("Base context exceeds token budget, truncating code block");
@@ -293,7 +294,7 @@ FINAL REMINDERS:
             }
             
             const currentBaseLength = paramsContext.length + codeContext.length + prompt.length + footerReminder.length;
-            const remainingBudget = TokenBudgetManager.MAX_CONTEXT_CHARS - currentBaseLength;
+            const remainingBudget = Math.max(TokenBudgetManager.MAX_CONTEXT_CHARS - currentBaseLength, 0);
             
             // Build history with remaining budget
             const historyContent = this.buildHistoryContext(history, prompt, Math.max(remainingBudget, 0));
