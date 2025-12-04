@@ -1,19 +1,5 @@
 {
   "version": 2,
-  "routes": [
-    {
-      "src": "/home",
-      "dest": "/"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
   "headers": [
     {
       "source": "/assets/(.*)",
@@ -138,9 +124,9 @@
       "ENABLE_EDGE_METRICS": "true",
       "EDGE_METRICS_ENDPOINT": "/api/edge-metrics",
       "PERFORMANCE_SAMPLE_RATE": "0.05",
-"SUPABASE_CONNECTION_POOL_SIZE": "2",
-        "SUPABASE_QUERY_TIMEOUT": "1500",
-        "SUPABASE_CACHE_TTL": "120000",
+      "SUPABASE_CONNECTION_POOL_SIZE": "2",
+      "SUPABASE_QUERY_TIMEOUT": "1500",
+      "SUPABASE_CACHE_TTL": "120000",
       "CHUNK_SIZE_LIMIT": "150000",
       "ENABLE_CODE_SPLITTING": "true",
       "ENABLE_BUNDLE_ANALYSIS": "true",
