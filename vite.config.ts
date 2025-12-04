@@ -14,70 +14,41 @@ export default defineConfig({
       },
       output: {
         manualChunks: (id) => {
-          // Enhanced chunking for better Vercel edge performance
+          // Optimized chunking strategy - consolidate smaller chunks
           if (id.includes('node_modules')) {
-            // React ecosystem - optimized for edge caching
+            // Consolidate React ecosystem
             if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
-              return 'react-vendor';
+              return 'vendor-react';
             }
-            // Supabase - isolated for better connection pooling
-            if (id.includes('@supabase')) {
-              return 'supabase-vendor';
+            // Consolidate AI and chart libraries
+            if (id.includes('@google/genai') || id.includes('recharts')) {
+              return 'vendor-ai-charts';
             }
-            // AI services - lazy loaded for edge optimization
-            if (id.includes('@google/genai')) {
-              return 'ai-vendor';
-            }
-            // Chart libraries - loaded on demand
-            if (id.includes('recharts')) {
-              return 'chart-vendor';
-            }
-            // Security utilities - bundled together
-            if (id.includes('dompurify') || id.includes('lz-string')) {
-              return 'security-vendor';
+            // Consolidate database and security utilities
+            if (id.includes('@supabase') || id.includes('dompurify') || id.includes('lz-string')) {
+              return 'vendor-data-security';
             }
             // All other vendor libraries
             return 'vendor-misc';
           }
           
-          // Enhanced service chunking for edge functions
+          // Consolidated service chunking to reduce HTTP overhead
           if (id.includes('services/')) {
-            // AI-specific services - isolated for edge optimization
+            // Consolidate all services into fewer chunks
             if (id.includes('gemini') || id.includes('ai') || id.includes('gpt')) {
               return 'services-ai';
             }
-            // Database and edge services - optimized for Supabase
-            if (id.includes('supabase') || id.includes('database') || id.includes('db') || id.includes('edge') || id.includes('cdn') || id.includes('vercel')) {
-              return 'services-data';
-            }
-            // Performance and security services
-            if (id.includes('cache') || id.includes('performance') || id.includes('optimization') || id.includes('security') || id.includes('auth') || id.includes('validation')) {
-              return 'services-core';
-            }
-            // All other services
-            return 'services-misc';
+            // Consolidate data and core services
+            return 'services-core';
           }
           
-          // Component chunking with edge optimization
+          // Consolidated component chunking
           if (id.includes('components/')) {
             // Heavy components isolated
-            if (id.includes('ChatInterface')) {
-              return 'component-chat';
+            if (id.includes('ChatInterface') || id.includes('CodeEditor')) {
+              return 'components-heavy';
             }
-            if (id.includes('CodeEditor')) {
-              return 'component-editor';
-            }
-            if (id.includes('Backtest') || id.includes('Simulation') || id.includes('Chart') || id.includes('Analysis')) {
-              return 'component-charts';
-            }
-            if (id.includes('StrategyConfig') || id.includes('Market') || id.includes('Ticker')) {
-              return 'component-trading';
-            }
-            // UI components consolidated
-            if (id.includes('Modal') || id.includes('Dialog') || id.includes('Toast') || id.includes('ErrorBoundary') || id.includes('LoadingState')) {
-              return 'component-ui';
-            }
-            // Core components
+            // All other components consolidated
             return 'components-core';
           }
           
@@ -169,14 +140,22 @@ export default defineConfig({
         drop_console: process.env['NODE_ENV'] === 'production',
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.info', 'console.debug'],
-        passes: 1, // Single pass for faster builds
+        passes: 2, // Double pass for better compression
+        unsafe: true, // Enable unsafe optimizations
+        unsafe_comps: true,
+        unsafe_Function: true,
+        unsafe_math: true,
+        unsafe_proto: true,
+        unsafe_regexp: true
       },
-      mangle: true,
+      mangle: {
+        safari10: true // Enable Safari 10 compatibility
+      },
       format: {
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 100, // Further reduced for optimal edge performance
+    chunkSizeWarningLimit: 500, // Increased to reduce chunk fragmentation
     target: 'esnext', // Updated targets for better performance and modern features
     reportCompressedSize: true,
     cssCodeSplit: true,
