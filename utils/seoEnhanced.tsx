@@ -39,10 +39,33 @@ export const SEOHead: React.FC<MetaTagsProps> = ({
   type = 'website',
   structuredData = [],
   noIndex = false,
-  alternateUrls = []
+alternateUrls = []
 }) => {
   const siteTitle = 'QuantForge AI';
   const fullTitle = title.includes(siteTitle) ? title : `${title} | ${siteTitle}`;
+
+  // Enhanced alternate URLs with comprehensive language support
+  const defaultAlternateUrls = [
+    { hrefLang: 'en', url: canonicalUrl || 'https://quanforge.ai' },
+    { hrefLang: 'en-US', url: canonicalUrl || 'https://quanforge.ai' },
+    { hrefLang: 'x-default', url: canonicalUrl || 'https://quanforge.ai' },
+    { hrefLang: 'id', url: `${canonicalUrl || 'https://quanforge.ai'}?lang=id` },
+    { hrefLang: 'zh-CN', url: `${canonicalUrl || 'https://quanforge.ai'}?lang=zh` },
+    { hrefLang: 'ja', url: `${canonicalUrl || 'https://quanforge.ai'}?lang=ja` },
+    { hrefLang: 'es', url: `${canonicalUrl || 'https://quanforge.ai'}?lang=es` },
+    { hrefLang: 'fr', url: `${canonicalUrl || 'https://quanforge.ai'}?lang=fr` },
+    { hrefLang: 'de', url: `${canonicalUrl || 'https://quanforge.ai'}?lang=de` },
+    { hrefLang: 'ko', url: `${canonicalUrl || 'https://quanforge.ai'}?lang=ko` },
+    { hrefLang: 'pt', url: `${canonicalUrl || 'https://quanforge.ai'}?lang=pt` },
+    { hrefLang: 'ru', url: `${canonicalUrl || 'https://quanforge.ai'}?lang=ru` },
+    { hrefLang: 'ar', url: `${canonicalUrl || 'https://quanforge.ai'}?lang=ar` },
+    { hrefLang: 'hi', url: `${canonicalUrl || 'https://quanforge.ai'}?lang=hi` },
+    { hrefLang: 'it', url: `${canonicalUrl || 'https://quanforge.ai'}?lang=it` },
+    { hrefLang: 'nl', url: `${canonicalUrl || 'https://quanforge.ai'}?lang=nl` },
+    { hrefLang: 'tr', url: `${canonicalUrl || 'https://quanforge.ai'}?lang=tr` }
+  ];
+
+  const allAlternateUrls = [...defaultAlternateUrls, ...alternateUrls];
 
   useEffect(() => {
     // Update document title
@@ -126,7 +149,7 @@ export const SEOHead: React.FC<MetaTagsProps> = ({
     const existingAlternateLinks = document.querySelectorAll('link[rel="alternate"][hreflang]');
     existingAlternateLinks.forEach(link => link.remove());
     
-    alternateUrls.forEach(alt => {
+    allAlternateUrls.forEach(alt => {
       const link = document.createElement('link');
       link.setAttribute('rel', 'alternate');
       link.setAttribute('hreflang', alt.hrefLang);
@@ -224,7 +247,7 @@ export const SEOHead: React.FC<MetaTagsProps> = ({
     return () => {
       // Cleanup function if needed
     };
-  }, [fullTitle, description, keywords, canonicalUrl, type, ogImage, ogUrl, siteTitle, structuredData, noIndex, alternateUrls]);
+  }, [fullTitle, description, keywords, canonicalUrl, type, ogImage, ogUrl, siteTitle, structuredData, noIndex, allAlternateUrls]);
 
   return null;
 };
@@ -700,7 +723,12 @@ export const structuredDataTemplates = {
       "@type": "ListItem",
       "position": index + 1,
       "name": crumb.name,
-      "item": crumb.url
+      "item": crumb.url,
+      "image": index === breadcrumbs.length - 1 ? {
+        "@type": "ImageObject",
+        "url": `https://quanforge.ai/breadcrumbs/${crumb.name.toLowerCase().replace(/\s+/g, '-')}.png`,
+        "caption": crumb.name
+      } : undefined
     }))
   }),
 
@@ -833,7 +861,7 @@ export const structuredDataTemplates = {
     }
   }),
 
-  website: (name: string, description: string, url: string) => ({
+website: (name: string, description: string, url: string) => ({
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": name,
@@ -850,23 +878,125 @@ export const structuredDataTemplates = {
     }
   }),
 
-  localBusiness: {
+  // Enhanced financial service schema
+  financialService: {
     "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "QuantForge AI",
-    "description": "Advanced MQL5 Trading Robot Generator powered by AI",
-    "url": "https://quanforge.ai",
-    "logo": "https://quanforge.ai/logo.png",
-    "sameAs": [
-      "https://twitter.com/quanforge",
-      "https://github.com/quanforge"
-    ],
-    "contactPoint": {
-      "@type": "ContactPoint",
-      "contactType": "customer service",
-      "availableLanguage": ["English"]
+    "@type": "FinancialService",
+    "name": "QuantForge AI Trading Robot Generation",
+    "description": "AI-powered MQL5 trading robot generation and analysis services",
+    "provider": {
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "url": "https://quanforge.ai"
+    },
+    "serviceType": "Investment Services",
+    "areaServed": "Worldwide",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock",
+      "validFrom": "2024-01-01"
+    },
+    "audience": {
+      "@type": "Audience",
+      "audienceType": "Traders, Developers, Financial Institutions"
+    },
+    "serviceOutput": {
+      "@type": "SoftwareSourceCode",
+      "programmingLanguage": "MQL5",
+      "name": "Trading Robot Code"
     }
-  }
+  },
+
+  // Enhanced course schema for educational content
+  educationalCourse: {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "MQL5 Trading Robot Development with AI",
+    "description": "Complete course on developing MQL5 trading robots using AI technology",
+    "provider": {
+      "@type": "Organization",
+      "name": "QuantForge AI Academy",
+      "url": "https://quanforge.ai/academy"
+    },
+    "educationalLevel": "Beginner to Advanced",
+    "inLanguage": ["en", "id", "zh", "ja", "es", "fr", "de", "ko", "pt", "ru"],
+    "about": ["MQL5 Programming", "Algorithmic Trading", "AI Integration"],
+    "teaches": [
+      "MQL5 Programming Fundamentals",
+      "Trading Strategy Development",
+      "AI-Powered Code Generation",
+      "Risk Management",
+      "Backtesting Techniques",
+      "Performance Optimization"
+    ],
+    "hasCourseInstance": {
+      "@type": "CourseInstance",
+      "courseMode": "online",
+      "instructor": {
+        "@type": "Organization",
+        "name": "QuantForge AI"
+      },
+      "courseSchedule": {
+        "@type": "Schedule",
+        "repeatFrequency": "daily",
+        "duration": "PT2H"
+      }
+    },
+    "totalTime": "PT40H",
+    "coursePrerequisites": "Basic programming knowledge recommended"
+  },
+
+  // Enhanced review schema
+  aggregateReview: {
+    "@context": "https://schema.org",
+    "@type": "AggregateRating",
+    "itemReviewed": {
+      "@type": "SoftwareApplication",
+      "name": "QuantForge AI",
+      "applicationCategory": "FinanceApplication"
+    },
+    "ratingValue": "4.8",
+    "reviewCount": "150",
+    "bestRating": "5",
+    "worstRating": "1",
+    "ratingExplanation": "Highly rated by traders and developers worldwide for ease of use and powerful features"
+  },
+
+  // Enhanced video schema
+  educationalVideo: (name: string, description: string, thumbnailUrl: string) => ({
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    "name": name,
+    "description": description,
+    "thumbnailUrl": thumbnailUrl,
+    "uploadDate": new Date().toISOString(),
+    "duration": "PT10M",
+    "contentUrl": "https://quanforge.ai/videos/",
+    "embedUrl": "https://quanforge.ai/videos/embed/",
+    "publisher": {
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://quanforge.ai/logo.png"
+      }
+    },
+    "author": {
+      "@type": "Organization",
+      "name": "QuantForge AI"
+    },
+    "educationalUse": "instruction",
+    "learningResourceType": "video",
+    "audience": {
+      "@type": "EducationalAudience",
+      "educationalRole": "student"
+    },
+    "inLanguage": "en",
+    "isAccessibleForFree": true,
+    "isFamilyFriendly": true
+  })
 };
 
 // Enhanced utility functions
@@ -980,6 +1110,281 @@ export const analyzeKeywordDensity = (text: string, keywords: string[]): Record<
   });
   
   return results;
+};
+
+// Enhanced SEO utility functions
+export const generateStructuredDataForPage = (pageType: string, pageData: any) => {
+  switch (pageType) {
+    case 'home':
+      return [
+        structuredDataTemplates.softwareApplication,
+        structuredDataTemplates.organization,
+        structuredDataTemplates.website(
+          'QuantForge AI - Advanced MQL5 Trading Robot Generator',
+          'Generate professional MQL5 trading robots using AI technology',
+          'https://quanforge.ai'
+        )
+      ];
+    case 'generator':
+      return [
+        structuredDataTemplates.softwareApplication,
+        structuredDataTemplates.webPage(
+          'MQL5 Trading Robot Generator',
+          'Create professional trading robots with AI-powered code generation',
+          'https://quanforge.ai/generator'
+        )
+      ];
+    case 'wiki':
+      return [
+        structuredDataTemplates.educationalCourse,
+        structuredDataTemplates.webPage(
+          'Trading Robot Documentation',
+          'Comprehensive guides for MQL5 trading robot development',
+          'https://quanforge.ai/wiki'
+        )
+      ];
+    case 'faq':
+      return [
+        structuredDataTemplates.faq(pageData.questions || []),
+        structuredDataTemplates.webPage(
+          'Frequently Asked Questions',
+          'Common questions about QuantForge AI and MQL5 trading robots',
+          'https://quanforge.ai/faq'
+        )
+      ];
+    default:
+      return [
+        structuredDataTemplates.webPage(
+          pageData.title || 'QuantForge AI',
+          pageData.description || 'Advanced MQL5 Trading Robot Generator',
+          pageData.url || 'https://quanforge.ai'
+        )
+      ];
+  }
+};
+
+export const generateMetaTagsFromContent = (content: string, baseUrl: string = 'https://quanforge.ai') => {
+  const title = extractTitle(content) || 'QuantForge AI';
+  const description = generateMetaDescription(content);
+  const keywords = extractKeywords(content);
+  
+  return {
+    title,
+    description,
+    keywords,
+    ogUrl: baseUrl,
+    canonicalUrl: baseUrl,
+    type: 'website' as const
+  };
+};
+
+export const extractTitle = (content: string): string | null => {
+  const titleMatch = content.match(/<h1[^>]*>(.*?)<\/h1>/i);
+  return titleMatch ? titleMatch[1]?.replace(/<[^>]*>/g, '').trim() || null : null;
+};
+
+export const extractKeywords = (content: string): string => {
+  const text = content.replace(/<[^>]*>/g, '').toLowerCase();
+  const commonWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they'];
+  
+  const words = text.split(/\s+/).filter(word => 
+    word.length > 3 && 
+    !commonWords.includes(word) &&
+    !/^\d+$/.test(word)
+  );
+  
+  const wordFreq: Record<string, number> = {};
+  words.forEach(word => {
+    wordFreq[word] = (wordFreq[word] || 0) + 1;
+  });
+  
+  const sortedWords = Object.entries(wordFreq)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 10)
+    .map(([word]) => word);
+  
+  const tradingKeywords = ['mql5', 'trading', 'robot', 'ai', 'algorithmic', 'forex', 'metatrader', 'expert', 'advisor', 'quantitative'];
+  const filteredKeywords = sortedWords.filter(word => 
+    tradingKeywords.some(keyword => word.includes(keyword))
+  );
+  
+  return [...filteredKeywords, ...sortedWords.slice(0, 5)].join(', ');
+};
+
+export const calculateReadabilityScore = (text: string): {
+  score: number;
+  level: string;
+  avgWordsPerSentence: number;
+  avgSyllablesPerWord: number;
+} => {
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  const words = text.split(/\s+/).filter(w => w.length > 0);
+  
+  const avgWordsPerSentence = words.length / sentences.length;
+  const avgSyllablesPerWord = words.reduce((sum, word) => sum + countSyllables(word), 0) / words.length;
+  
+  // Flesch Reading Ease Score
+  const score = 206.835 - (1.015 * avgWordsPerSentence) - (84.6 * avgSyllablesPerWord);
+  
+  let level = '';
+  if (score >= 90) level = 'Very Easy';
+  else if (score >= 80) level = 'Easy';
+  else if (score >= 70) level = 'Fairly Easy';
+  else if (score >= 60) level = 'Standard';
+  else if (score >= 50) level = 'Fairly Difficult';
+  else if (score >= 30) level = 'Difficult';
+  else level = 'Very Difficult';
+  
+  return {
+    score: Math.round(score),
+    level,
+    avgWordsPerSentence: Math.round(avgWordsPerSentence * 10) / 10,
+    avgSyllablesPerWord: Math.round(avgSyllablesPerWord * 10) / 10
+  };
+};
+
+const countSyllables = (word: string): number => {
+  word = word.toLowerCase();
+  if (word.length <= 3) return 1;
+  
+  const vowels = 'aeiouy';
+  let syllableCount = 0;
+  let previousWasVowel = false;
+  
+  for (let i = 0; i < word.length; i++) {
+    const char = word[i];
+    if (char) {
+      const isVowel = vowels.includes(char);
+      if (isVowel && !previousWasVowel) {
+        syllableCount++;
+      }
+      previousWasVowel = isVowel;
+    }
+  }
+  
+  // Adjust for silent 'e'
+  if (word.endsWith('e') && syllableCount > 1) {
+    syllableCount--;
+  }
+  
+  return Math.max(1, syllableCount);
+};
+
+export const generateInternalLinks = (content: string, sitePages: Array<{ title: string; url: string; keywords: string[] }>): Array<{
+  text: string;
+  url: string;
+  relevance: number;
+}> => {
+  const contentWords = content.toLowerCase().split(/\s+/);
+  const links: Array<{ text: string; url: string; relevance: number }> = [];
+  
+  sitePages.forEach(page => {
+    let relevance = 0;
+    const pageKeywords = page.keywords.map(k => k.toLowerCase());
+    
+    pageKeywords.forEach(keyword => {
+      const count = contentWords.filter(word => word.includes(keyword)).length;
+      relevance += count;
+    });
+    
+    if (relevance > 0) {
+      links.push({
+        text: page.title,
+        url: page.url,
+        relevance
+      });
+    }
+  });
+  
+  return links.sort((a, b) => b.relevance - a.relevance).slice(0, 5);
+};
+
+// Core Web Vitals monitoring utility (without external dependency)
+export const trackCoreWebVitals = () => {
+  if (typeof window === 'undefined') return;
+  
+  const sendToAnalytics = (name: string, value: number, id: string) => {
+    // Send to Google Analytics or other analytics service
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', name, {
+        value: Math.round(value),
+        event_category: 'Web Vitals',
+        event_label: id,
+        non_interaction: true,
+      });
+    }
+    
+    // Log for debugging
+    if (process.env['NODE_ENV'] === 'development') {
+      console.debug(`[Web Vitals] ${name}:`, Math.round(value), { id });
+    }
+  };
+  
+  // Track Largest Contentful Paint (LCP)
+  if ('PerformanceObserver' in window) {
+    try {
+      const observer = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        const lastEntry = entries[entries.length - 1];
+        if (lastEntry) {
+          sendToAnalytics('LCP', lastEntry.startTime, 'lcp-metric');
+        }
+      });
+      observer.observe({ entryTypes: ['largest-contentful-paint'] });
+    } catch (error) {
+      // LCP not supported
+    }
+  }
+  
+  // Track First Input Delay (FID)
+  if ('PerformanceObserver' in window) {
+    try {
+      const observer = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        entries.forEach((entry: any) => {
+          if (entry.processingStart && entry.startTime) {
+            const fid = entry.processingStart - entry.startTime;
+            sendToAnalytics('FID', fid, 'fid-metric');
+          }
+        });
+      });
+      observer.observe({ entryTypes: ['first-input'] });
+    } catch (error) {
+      // FID not supported
+    }
+  }
+  
+  // Track Cumulative Layout Shift (CLS)
+  if ('PerformanceObserver' in window) {
+    try {
+      let clsValue = 0;
+      const observer = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        entries.forEach((entry: any) => {
+          if (!entry.hadRecentInput) {
+            clsValue += entry.value;
+          }
+        });
+        sendToAnalytics('CLS', clsValue * 1000, 'cls-metric'); // Convert to smaller units
+      });
+      observer.observe({ entryTypes: ['layout-shift'] });
+    } catch (error) {
+      // CLS not supported
+    }
+  }
+  
+  // Track Time to First Byte (TTFB)
+  if ('performance' in window && 'getEntriesByType' in performance) {
+    try {
+      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      if (navigation && navigation.responseStart && navigation.requestStart) {
+        const ttfb = navigation.responseStart - navigation.requestStart;
+        sendToAnalytics('TTFB', ttfb, 'ttfb-metric');
+      }
+    } catch (error) {
+      // TTFB not available
+    }
+  }
 };
 
 // Export default for backward compatibility

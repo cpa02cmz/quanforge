@@ -4,9 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { edgeOptimizationService } from '../../../services/edgeOptimizationService';
-import { enhancedConnectionPool } from '../../../services/enhancedSupabasePool';
-import { globalCache } from '../../../services/unifiedCacheManager';
+import { edgeOptimizationService } from '../../services/edgeOptimizationService';
+import { enhancedConnectionPool } from '../../services/enhancedSupabasePool';
+import { globalCache } from '../../services/unifiedCacheManager';
 
 export async function GET(request: NextRequest) {
   const startTime = performance.now();
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     };
 
     switch (action) {
-      case 'metrics':
+      case 'metrics': {
         const metrics = await edgeOptimizationService.getMetrics();
         response.metrics = metrics;
         
@@ -34,13 +34,15 @@ export async function GET(request: NextRequest) {
           response.recommendations = edgeOptimizationService.getRecommendations();
         }
         break;
+      }
 
-      case 'health':
+      case 'health': {
         const healthStatus = edgeOptimizationService.getHealthStatus();
         response.health = healthStatus;
         break;
+      }
 
-      case 'connections':
+      case 'connections': {
         const poolStats = enhancedConnectionPool.getStats();
         const detailedStats = detailed ? await enhancedConnectionPool.getDetailedStats() : null;
         const edgeMetrics = enhancedConnectionPool.getEdgeMetrics();
@@ -51,8 +53,9 @@ export async function GET(request: NextRequest) {
           ...(detailed && { detailed: detailedStats })
         };
         break;
+      }
 
-      case 'cache':
+      case 'cache': {
         const cacheMetrics = globalCache.getMetrics();
         response.cache = {
           metrics: cacheMetrics,
@@ -60,8 +63,9 @@ export async function GET(request: NextRequest) {
           keys: globalCache.keys().slice(0, 50) // Limit keys for performance
         };
         break;
+      }
 
-      case 'performance':
+      case 'performance': {
         const perfMetrics = await edgeOptimizationService.getMetrics();
         response.performance = perfMetrics.performance;
         
@@ -77,10 +81,12 @@ export async function GET(request: NextRequest) {
             }));
         }
         break;
+      }
 
-      case 'recommendations':
+      case 'recommendations': {
         response.recommendations = edgeOptimizationService.getRecommendations();
         break;
+      }
 
       default:
         throw new Error(`Unknown action: ${action}`);
@@ -138,29 +144,33 @@ export async function POST(request: NextRequest) {
     };
 
     switch (action) {
-      case 'optimize':
+      case 'optimize': {
         await edgeOptimizationService.forceOptimization();
         response.message = 'Edge optimization completed';
         break;
+      }
 
-      case 'warmup':
+      case 'warmup': {
         await enhancedConnectionPool.forceEdgeWarming();
         response.message = 'Edge connection warm-up completed';
         break;
+      }
 
-      case 'health-check':
+      case 'health-check': {
         const healthResult = await enhancedConnectionPool.forceHealthCheck();
         response.health = healthResult;
         response.message = 'Health check completed';
         break;
+      }
 
-      case 'cleanup':
-        await enhancedConnectionPool.cleanupForEdge();
+      case 'cleanup': {
+        await enhancedConnectionPool.drainConnections();
         globalCache.clear();
         response.message = 'Edge cleanup completed';
         break;
+      }
 
-      case 'config-update':
+      case 'config-update': {
         if (!params || !params.config) {
           throw new Error('Configuration parameters required');
         }
@@ -168,8 +178,9 @@ export async function POST(request: NextRequest) {
         response.message = 'Configuration updated';
         response.config = params.config;
         break;
+      }
 
-      case 'cache-invalidate':
+      case 'cache-invalidate': {
         const patterns = params?.patterns || [];
         if (patterns.length === 0) {
           globalCache.clear();
@@ -181,16 +192,19 @@ export async function POST(request: NextRequest) {
         }
         response.message = `Cache invalidated for ${patterns.length || 'all'} patterns`;
         break;
+      }
 
-      case 'connection-drain':
+      case 'connection-drain': {
         await enhancedConnectionPool.drainConnections();
         response.message = 'Connection drain completed';
         break;
+      }
 
-      case 'predictive-warmup':
+      case 'predictive-warmup': {
         await enhancedConnectionPool.predictiveWarming();
         response.message = 'Predictive warm-up completed';
         break;
+      }
 
       default:
         throw new Error(`Unknown action: ${action}`);
