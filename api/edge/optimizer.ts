@@ -28,7 +28,7 @@ export default async function edgeHandler(request: Request): Promise<Response> {
       'x-edge-region': region,
       'x-edge-cache': 'enabled',
       'x-edge-optimized': 'true',
-      'cache-control': 'public, max-age=300, s-maxage=600', // 5min client, 10min edge
+      'cache-control': 'public, max-age=300, s-maxage=1800, stale-while-revalidate=300', // 5min client, 30min edge
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'access-control-allow-headers': 'Content-Type, Authorization, x-edge-region',
@@ -260,7 +260,7 @@ async function handleHealthCheck(region: string): Promise<EdgeResponse> {
       edge: {
         optimized: true,
         cache: vercelEdgeOptimizer.getConfig().enableEdgeCaching,
-        regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
+        regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'],
       },
       database: await checkDatabaseHealth(),
     };

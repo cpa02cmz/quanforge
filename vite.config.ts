@@ -185,9 +185,9 @@ output: {
         drop_console: process.env['NODE_ENV'] === 'production',
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn', 'console.error'],
-        passes: 3, // Optimized for build performance
+        passes: 3, // Balanced for build performance
         // Enhanced optimizations for Vercel Edge
-        inline: 3,
+        inline: true,
         reduce_funcs: true,
         reduce_vars: true,
         sequences: true,
@@ -218,7 +218,15 @@ output: {
         // Edge-specific optimizations
         keep_fargs: false,
         keep_fnames: false,
-        ecma: 2020
+        ecma: 2020,
+        // Additional aggressive optimizations
+        pure_getters: true,
+        unsafe: true,
+        unsafe_comps: true,
+        unsafe_Function: true,
+        unsafe_math: true,
+        unsafe_proto: true,
+        unsafe_regexp: true
       },
       mangle: {
         safari10: true,
@@ -237,13 +245,13 @@ output: {
         comments: false
       }
     },
-chunkSizeWarningLimit: 120, // Further optimized for edge performance
+chunkSizeWarningLimit: 100, // Further reduced for optimal edge performance
     target: ['es2020', 'edge101'], // More specific targets for edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
     // Enhanced edge optimization
-    assetsInlineLimit: 512, // 512B for better edge performance
+    assetsInlineLimit: 256, // Reduced to 256B for better edge performance
     modulePreload: {
       polyfill: false
     },
