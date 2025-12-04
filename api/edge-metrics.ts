@@ -1,5 +1,3 @@
-import { NextRequest, NextResponse } from 'next/server';
-
 interface EdgeMetrics {
   region: string;
   timestamp: string;
@@ -16,20 +14,13 @@ interface EdgeMetrics {
 const metricsStore: EdgeMetrics[] = [];
 const MAX_METRICS = 1000; // Keep last 1000 metrics
 
-export const config = {
-  runtime: 'edge',
-  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'],
-};
-
-export default async function handler(req: NextRequest) {
+export async function GET(request: Request) {
   const startTime = Date.now();
   
   try {
-    const url = new URL(req.url);
-    const region = req.headers.get('x-vercel-region') || 'unknown';
-    const userAgent = req.headers.get('user-agent') || 'unknown';
-    
-    if (req.method === 'GET') {
+    const url = new URL(request.url);
+    const region = request.headers.get('x-vercel-region') || 'unknown';
+    const userAgent = request.headers.get('user-agent') || 'unknown';
       // Return aggregated metrics
       const recentMetrics = metricsStore.slice(-100); // Last 100 metrics
       
@@ -50,18 +41,18 @@ export default async function handler(req: NextRequest) {
         region,
       };
       
-      return NextResponse.json(aggregated, {
+      return Response.json(aggregated, {
         headers: {
           'Cache-Control': 'public, max-age=60, s-maxage=300',
           'X-Edge-Metrics': 'realtime',
           'X-Region': region,
         }
       });
-    }
-    
-    if (req.method === 'POST') {
-      // Record new metrics
-      const body = await req.json();
+  }
+  
+  if (request.method === 'POST') {
+    // Record new metrics
+    const body = await request.json();
       const metric: EdgeMetrics = {
         region,
         timestamp: new Date().toISOString(),
@@ -81,18 +72,60 @@ export default async function handler(req: NextRequest) {
         metricsStore.splice(0, metricsStore.length - MAX_METRICS);
       }
       
-      return NextResponse.json({ success: true, recorded: true }, {
+      return Response.json({ success: true, recorded: true }, {
         headers: {
           'Cache-Control': 'no-cache',
           'X-Edge-Metrics': 'recorded',
         }
       });
+  }
+  
+  return Response.json({ error: 'Method not allowed' }, { status: 405 });
+  
+} catch (error) {
+  console.error('Edge metrics error:', error);
+  return Response.json({ error: 'Internal server error' }, { status: 500 });
+}
+}
+
+export async function POST(request: Request) {
+  const startTime = Date.now();
+  
+  try {
+    const url = new URL(request.url);
+    const region = request.headers.get('x-vercel-region') || 'unknown';
+    const userAgent = request.headers.get('user-agent') || 'unknown';
+    
+    // Record new metrics
+    const body = await request.json();
+    const metric: EdgeMetrics = {
+      region,
+      timestamp: new Date().toISOString(),
+      responseTime: Date.now() - startTime,
+      cacheStatus: request.headers.get('x-edge-cache-status') || 'UNKNOWN',
+      endpoint: body.endpoint || url.pathname,
+      userAgent,
+      latency: body.latency || 0,
+      memoryUsage: body.memoryUsage,
+      cacheHitRate: body.cacheHitRate,
+    };
+    
+    metricsStore.push(metric);
+    
+    // Keep only recent metrics
+    if (metricsStore.length > MAX_METRICS) {
+      metricsStore.splice(0, metricsStore.length - MAX_METRICS);
     }
     
-    return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+    return Response.json({ success: true, recorded: true }, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'X-Edge-Metrics': 'recorded',
+      }
+    });
     
   } catch (error) {
     console.error('Edge metrics error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

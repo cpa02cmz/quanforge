@@ -1,4 +1,3 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { edgeConnectionPool } from '../services/edgeSupabasePool';
 
 interface HealthStatus {
@@ -23,16 +22,11 @@ interface HealthStatus {
 
 const startTime = Date.now();
 
-export const config = {
-  runtime: 'edge',
-  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'],
-};
-
-export default async function handler(req: NextRequest) {
+export async function GET(request: Request) {
   const requestStart = Date.now();
   
   try {
-    const region = req.headers.get('x-vercel-region') || 'unknown';
+    const region = request.headers.get('x-vercel-region') || 'unknown';
     
     // Perform health checks
     const checks = await Promise.allSettled([
@@ -84,7 +78,7 @@ export default async function handler(req: NextRequest) {
     
     const statusCode = status === 'healthy' ? 200 : status === 'degraded' ? 200 : 503;
     
-    return NextResponse.json(healthStatus, {
+    return Response.json(healthStatus, {
       status: statusCode,
       headers: {
         'Cache-Control': 'no-cache',
@@ -97,7 +91,7 @@ export default async function handler(req: NextRequest) {
   } catch (error) {
     console.error('Health check error:', error);
     
-    return NextResponse.json({
+    return Response.json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
       error: error instanceof Error ? error.message : 'Unknown error',
