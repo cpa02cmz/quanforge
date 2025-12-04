@@ -204,6 +204,5 @@
       "source": "/cdn/(.*)",
       "destination": "https://assets.quanforge.ai/$1"
     }
-  ],
-  
+  ]
 }
