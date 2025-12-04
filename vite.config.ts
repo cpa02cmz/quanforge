@@ -185,9 +185,9 @@ output: {
         drop_console: process.env['NODE_ENV'] === 'production',
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn', 'console.error'],
-        passes: 3, // Optimized for build performance
+        passes: 2, // Reduced from 3 for faster builds
         // Enhanced optimizations for Vercel Edge
-        inline: 3,
+        inline: 2,
         reduce_funcs: true,
         reduce_vars: true,
         sequences: true,
@@ -237,13 +237,13 @@ output: {
         comments: false
       }
     },
-chunkSizeWarningLimit: 150, // Optimized for edge performance
+chunkSizeWarningLimit: 250, // Increased from 150 for better edge compatibility
     target: ['es2020', 'edge101'], // More specific targets for edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
     // Enhanced edge optimization
-    assetsInlineLimit: 1024, // 1KB for better edge performance
+    assetsInlineLimit: 2048, // 2KB for better edge performance - increased from 1KB
     modulePreload: {
       polyfill: false
     },

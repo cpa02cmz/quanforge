@@ -35,14 +35,14 @@ class SupabaseConnectionPool {
   private readReplicas: Map<string, ReadReplicaConfig> = new Map();
   private healthStatus: Map<string, ConnectionHealth> = new Map();
   private config: ConnectionPoolConfig = {
-    minConnections: 2, // Optimized for Vercel Edge
-    maxConnections: 6, // Reduced for serverless environment
-    idleTimeout: 120000, // 2 minutes (optimized for serverless)
-    healthCheckInterval: 15000, // 15 seconds (reduced frequency for edge)
-    connectionTimeout: 1500, // 1.5 seconds (faster failover for edge)
-    acquireTimeout: 1000, // 1 second (quicker acquisition)
-    retryAttempts: 3, // Reduced retries for edge reliability
-    retryDelay: 1000, // Optimized retry delay for edge environments
+    minConnections: 1, // Optimized for Vercel Edge - reduced from 2
+    maxConnections: 3, // Reduced for serverless environment - from 6 to 3
+    idleTimeout: 60000, // 1 minute (optimized for serverless) - from 2 minutes
+    healthCheckInterval: 30000, // 30 seconds (reduced frequency for edge) - from 15 seconds
+    connectionTimeout: 1000, // 1 second (faster failover for edge) - from 1.5 seconds
+    acquireTimeout: 500, // 0.5 seconds (quicker acquisition) - from 1 second
+    retryAttempts: 2, // Reduced retries for edge reliability - from 3 to 2
+    retryDelay: 500, // Optimized retry delay for edge environments - from 1 second
   };
   private healthCheckTimer: NodeJS.Timeout | null = null;
   private readReplicaIndex = 0;
@@ -322,8 +322,8 @@ private startHealthChecks(): void {
           errorCount: isHealthy ? 0 : currentHealth.errorCount + 1,
         });
 
-        // Remove unhealthy connections after 3 failed checks
-        if (!isHealthy && currentHealth.errorCount >= 2) {
+        // Remove unhealthy connections after 2 failed checks (reduced from 3 for faster cleanup)
+        if (!isHealthy && currentHealth.errorCount >= 1) {
           this.clients.delete(connectionId);
           this.healthStatus.delete(connectionId);
           console.warn(`Removed unhealthy connection: ${connectionId}`);
@@ -352,25 +352,29 @@ private startHealthChecks(): void {
     }
   }
 
-  // Add connection warming for edge regions with warmup queries
+  // Add connection warming for edge regions with warmup queries - optimized for performance
   async warmEdgeConnections(): Promise<void> {
     const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'];
-    const warmupQueries = ['SELECT 1', 'SELECT COUNT(*) FROM robots LIMIT 1'];
+    // Simplified warmup queries for faster edge initialization
+    const warmupQueries = ['SELECT 1'];
     
-    const warmPromises = regions.map(async (region) => {
-      try {
-        const client = await this.getClient(`edge_${region}`);
-        // Pre-warm with multiple lightweight queries
-        for (const query of warmupQueries) {
-          await client.rpc('exec_sql', { query });
+    // Limit concurrent warmups to prevent edge function timeouts
+    const batchSize = 2;
+    for (let i = 0; i < regions.length; i += batchSize) {
+      const batch = regions.slice(i, i + batchSize);
+      const warmPromises = batch.map(async (region) => {
+        try {
+          const client = await this.getClient(`edge_${region}`);
+          // Single lightweight query for faster warmup
+          await client.from('robots').select('id').limit(1);
+          console.log(`Edge connection warmed for region: ${region}`);
+        } catch (error) {
+          console.warn(`Failed to warm edge connection for ${region}:`, error);
         }
-        console.log(`Edge connection warmed for region: ${region}`);
-      } catch (error) {
-        console.warn(`Failed to warm edge connection for ${region}:`, error);
-      }
-    });
-    
-    await Promise.allSettled(warmPromises);
+      });
+      
+      await Promise.allSettled(warmPromises);
+    }
   }
 
   // Enhanced edge-optimized connection acquisition with geographic optimization

@@ -1,14 +1,5 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
   "routes": [
     {
       "src": "/home",
@@ -117,7 +108,6 @@
       ]
     }
   ],
-  "regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1", "arn1", "gru1", "cle1"],
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
@@ -126,31 +116,7 @@
   "functions": {
     "api/**/*.ts": {
       "runtime": "edge",
-"regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1", "arn1", "gru1", "cle1"],
-      "maxDuration": 60,
-      "memory": 1024,
-      "includeFiles": ["public/**/*"],
-      "excludeFiles": ["**/*.test.*", "**/*.spec.*"],
-      "cache": "max-age=300, s-maxage=600, stale-while-revalidate=120",
-      "environment": {
-        "EDGE_CACHE_ENABLED": "true",
-        "SUPABASE_POOL_SIZE": "4",
-        "EDGE_REGION_AFFINITY": "true",
-        "CONNECTION_WARMING": "true",
-        "EDGE_KEEP_WARM": "true",
-        "PREWARM_CONCURRENT": "2",
-        "EDGE_MEMORY_POOL": "true",
-        "EDGE_OPTIMIZATION_LEVEL": "balanced",
-        "PREDICTIVE_CACHING": "false",
-        "EDGE_METRICS_ENABLED": "true",
-        "EDGE_CACHE_TTL": "900",
-        "EDGE_MAX_CONNECTIONS": "8",
-        "EDGE_MIN_CONNECTIONS": "2",
-        "EDGE_HEALTH_CHECK_INTERVAL": "30000",
-        "EDGE_CACHE_STRATEGY": "optimized",
-        "ENABLE_EDGE_CACHE": "true",
-        "CONNECTION_POOL_SIZE": "4"
-      }
+      "maxDuration": 30
     }
   },
   "build": {
@@ -172,9 +138,9 @@
       "ENABLE_EDGE_METRICS": "true",
       "EDGE_METRICS_ENDPOINT": "/api/edge-metrics",
       "PERFORMANCE_SAMPLE_RATE": "0.05",
-      "SUPABASE_CONNECTION_POOL_SIZE": "4",
-      "SUPABASE_QUERY_TIMEOUT": "3000",
-      "SUPABASE_CACHE_TTL": "180000",
+"SUPABASE_CONNECTION_POOL_SIZE": "2",
+        "SUPABASE_QUERY_TIMEOUT": "1500",
+        "SUPABASE_CACHE_TTL": "120000",
       "CHUNK_SIZE_LIMIT": "150000",
       "ENABLE_CODE_SPLITTING": "true",
       "ENABLE_BUNDLE_ANALYSIS": "true",
@@ -182,19 +148,6 @@
     }
   },
   "crons": [],
-  "experimental": {
-    "edgeFunctions": {
-      "warm": true,
-      "maxConcurrency": 1000,
-      "incrementalCache": true,
-      "streaming": true
-    },
-    "allowedHosts": [
-      "quanforge.ai",
-      "*.quanforge.ai",
-      "*.supabase.co"
-    ]
-  },
   "rewrites": [
     {
       "source": "/api/supabase/(.*)",
@@ -204,6 +157,5 @@
       "source": "/cdn/(.*)",
       "destination": "https://assets.quanforge.ai/$1"
     }
-  ],
-  
+  ]
 }

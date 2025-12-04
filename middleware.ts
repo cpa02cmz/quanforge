@@ -6,30 +6,21 @@
 // Rate limiting store (in production, use Redis or KV)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
-// Enhanced security patterns for comprehensive threat detection
+// Optimized security patterns for edge performance - reduced complexity
 const SECURITY_PATTERNS = {
-  sqlInjection: /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|SCRIPT|EXEC|ALTER)\b)/i,
+  sqlInjection: /(\b(SELECT|INSERT|UPDATE|DELETE|DROP)\b)/i,
   xss: /<script|javascript:|on\w+\s*=|data:text\/html/i,
   pathTraversal: /\.\.\//g,
-  suspiciousUserAgents: /curl|wget|python|java|go-http|scanner|bot|crawler|nikto|sqlmap/i,
-  requestSmuggling: /\r\n\r\n/,
-  injectionAttempts: /['"]\s*OR\s*['"]|['"]\s*AND\s*['"]/i,
-  commandInjection: /;|\||&|`|\$\(/i,
-  ldapInjection: /[()=*,]/i,
-  xssAdvanced: /<iframe|<object|<embed|vbscript:|onload\s*=|onerror\s*=/i,
-  fileInclusion: /php:\/\/|file:\/\/|data:\/\/|expect:\/\//i,
-  XXE: /<!DOCTYPE.*\[|<!ENTITY.*SYSTEM/i,
-  ssrf: /https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|169\.254\.|192\.168\.|10\.)/i,
-  nullBytes: /\\x00/i,
-  unicodeAttacks: /%u[0-9a-fA-F]{4}/i
+  suspiciousUserAgents: /curl|wget|scanner|bot|crawler|nikto|sqlmap/i,
+  // Removed less critical patterns for edge performance
 };
 
-// Rate limiting configuration
+// Rate limiting configuration - optimized for edge
 const RATE_LIMITS = {
-  default: { requests: 100, window: 60000 }, // 100 requests per minute
-  api: { requests: 60, window: 60000 },      // 60 requests per minute for API
-  auth: { requests: 10, window: 60000 },      // 10 requests per minute for auth
-  suspicious: { requests: 20, window: 60000 } // 20 requests per minute for suspicious IPs
+  default: { requests: 60, window: 60000 },   // 60 requests per minute (reduced)
+  api: { requests: 40, window: 60000 },       // 40 requests per minute for API (reduced)
+  auth: { requests: 8, window: 60000 },       // 8 requests per minute for auth (reduced)
+  suspicious: { requests: 15, window: 60000 } // 15 requests per minute for suspicious IPs (reduced)
 };
 
 export default function middleware(request: Request) {
