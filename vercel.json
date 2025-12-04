@@ -127,14 +127,14 @@
     "api/**/*.ts": {
       "runtime": "edge",
       "regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1"],
-      "maxDuration": 30,
-      "memory": 512,
+      "maxDuration": 45,
+      "memory": 1024,
       "includeFiles": ["public/**/*"],
       "excludeFiles": ["**/*.test.*", "**/*.spec.*"],
       "cache": "max-age=300, s-maxage=600, stale-while-revalidate=120",
       "environment": {
         "EDGE_CACHE_ENABLED": "true",
-        "SUPABASE_POOL_SIZE": "6",
+        "SUPABASE_POOL_SIZE": "8",
         "EDGE_REGION_AFFINITY": "true",
         "CONNECTION_WARMING": "true",
         "EDGE_KEEP_WARM": "true",
@@ -144,9 +144,10 @@
         "PREDICTIVE_CACHING": "true",
         "EDGE_METRICS_ENABLED": "true",
         "EDGE_CACHE_TTL": "3600",
-        "EDGE_MAX_CONNECTIONS": "6",
+        "EDGE_MAX_CONNECTIONS": "8",
         "EDGE_MIN_CONNECTIONS": "2",
-        "EDGE_HEALTH_CHECK_INTERVAL": "15000"
+        "EDGE_HEALTH_CHECK_INTERVAL": "15000",
+        "EDGE_CACHE_STRATEGY": "aggressive"
       }
     }
   },

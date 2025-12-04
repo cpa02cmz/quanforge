@@ -164,13 +164,13 @@ export default defineConfig({
         comments: false
       }
     },
-chunkSizeWarningLimit: 500, // Increased to accommodate consolidated chunks
+chunkSizeWarningLimit: 300, // Reduced for better edge performance
     target: ['es2020', 'edge101'], // More specific targets for edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
     // Enhanced edge optimization
-    assetsInlineLimit: 4096, // 4KB for better edge caching
+    assetsInlineLimit: 2048, // 2KB for better edge performance
     modulePreload: {
       polyfill: false
     },
@@ -222,7 +222,11 @@ chunkSizeWarningLimit: 500, // Increased to accommodate consolidated chunks
       'node:querystring',
       'node:assert',
       'node:os',
-      'node:process'
+      'node:process',
+      // Heavy dependencies for dynamic loading
+      '@supabase/realtime-js',
+      '@supabase/storage-js',
+      'recharts/es6'
     ]
   },
   // Edge optimization for Vercel deployment

@@ -74,6 +74,19 @@ CREATE INDEX IF NOT EXISTS idx_robots_backtest_settings ON robots USING GIN(back
 CREATE INDEX IF NOT EXISTS idx_robots_active ON robots(created_at DESC) WHERE is_active = true;
 CREATE INDEX IF NOT EXISTS idx_robots_public ON robots(view_count DESC, created_at DESC) WHERE is_public = true;
 
+-- Additional partial indexes for common filtered queries
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_active_recent 
+ON robots(created_at DESC) 
+WHERE is_active = true AND created_at > NOW() - INTERVAL '30 days';
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_popular_active
+ON robots(view_count DESC, created_at DESC) 
+WHERE is_public = true AND is_active = true AND view_count > 10;
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_user_recent_active
+ON robots(user_id, created_at DESC) 
+WHERE is_active = true AND created_at > NOW() - INTERVAL '90 days';
+
 -- =====================================================
 -- 3. TRIGGERS FOR AUTOMATIC UPDATES
 -- =====================================================

@@ -20,7 +20,7 @@ interface QueryMetrics {
 class QueryOptimizer {
   private queryCache = new Map<string, { data: any; timestamp: number; ttl: number; hits: number }>();
   private queryMetrics: QueryMetrics[] = [];
-  private readonly DEFAULT_TTL = 300000; // 5 minutes - optimized for edge
+  private readonly DEFAULT_TTL = 600000; // 10 minutes - extended for better cache hit rates
   private readonly MAX_METRICS = 1000;
   private cacheHitRate = 0;
   private totalQueries = 0;
@@ -50,7 +50,7 @@ class QueryOptimizer {
 
   // Check and maintain cache size limits - optimized for edge
   private maintainCacheSize(newEntrySize: number): void {
-    const maxCacheSize = 10 * 1024 * 1024; // 10MB - optimized for edge constraints
+    const maxCacheSize = 25 * 1024 * 1024; // 25MB - increased for better caching
     let currentSize = 0;
     
     // Calculate current size

@@ -14,8 +14,8 @@ const __dirname = path.dirname(__filename);
 
 const DIST_DIR = path.join(process.cwd(), 'dist');
 const PRELOAD_FILE = path.join(DIST_DIR, 'preload-hints.html');
-const CRITICAL_CSS_THRESHOLD = 2 * 1024; // 2KB
-const CRITICAL_JS_THRESHOLD = 5 * 1024; // 5KB
+const CRITICAL_CSS_THRESHOLD = 1.5 * 1024; // 1.5KB
+const CRITICAL_JS_THRESHOLD = 3 * 1024; // 3KB
 
 function analyzeBundle() {
   const assets = {};

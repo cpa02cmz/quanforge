@@ -50,9 +50,9 @@ class EnhancedSupabaseConnectionPool {
     timestamp: number;
   }> = [];
   private config: ConnectionConfig = {
-    maxConnections: 6, // Further optimized for edge memory constraints
-    minConnections: 1, // Minimum for edge efficiency
-    acquireTimeout: 5000, // 5 seconds - optimized for edge functions
+    maxConnections: 8, // Increased for better concurrency and high traffic
+    minConnections: 2, // Ensure warm connections for better performance
+    acquireTimeout: 3000, // Reduced timeout for faster failover
     idleTimeout: 30000, // 30 seconds - faster cleanup for serverless
     healthCheckInterval: 15000, // 15 seconds - frequent health checks
     retryAttempts: 2, // Fewer retries for edge environment
