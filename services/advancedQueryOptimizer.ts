@@ -432,18 +432,18 @@ export class AdvancedQueryOptimizer {
   /**
    * Set value in cache
    */
-  private setCache<T>(key: string, data: T, ttl: number = 300000): void {
-    this.queryCache.set(key, {
-      data,
-      timestamp: Date.now(),
-      ttl
-    });
+   public setCache<T>(key: string, data: T, ttl: number = 300000): void {
+     this.queryCache.set(key, {
+       data,
+       timestamp: Date.now(),
+       ttl
+     });
 
-    // Cleanup old cache entries periodically
-    if (this.queryCache.size > 1000) {
-      this.cleanupCache();
-    }
-  }
+     // Cleanup old cache entries periodically
+     if (this.queryCache.size > 1000) {
+       this.cleanupCache();
+     }
+   }
 
   /**
    * Cleanup expired cache entries
