@@ -789,173 +789,172 @@ class DatabaseOptimizer {
       // Placeholder implementation
       return { success: true, data: null };
     }
-    }
-   
-    /**
-     * Get query optimization recommendations based on current performance
-     */
-    async getQueryOptimizationRecommendations(
-      client: SupabaseClient
-    ): Promise<{ 
-      recommendations: string[]; 
-      severity: 'low' | 'medium' | 'high';
-      impact: 'performance' | 'cost' | 'reliability';
-    }> {
-      const recommendations: string[] = [];
-      
-      // Check for missing indexes based on common query patterns
-      try {
-        // Get query performance metrics
-        const { data: slowQueries, error } = await client
-          .from('pg_stat_statements') // This is a PostgreSQL extension for query stats
-          .select('query, mean_time, calls')
-          .order('mean_time', { ascending: false })
-          .limit(5);
-        
-        if (!error && slowQueries && slowQueries.length > 0) {
-          // Check for queries without indexes
-          slowQueries.forEach((query: any) => {
-            if (query.mean_time > 100 && query.calls > 100) { // Slow and frequently called
-              recommendations.push(`Query taking ${query.mean_time.toFixed(2)}ms avg time with ${query.calls} calls may need indexing: ${query.query.substring(0, 100)}...`);
-            }
-          });
-        }
-      } catch (err) {
-        // pg_stat_statements might not be available, which is fine
-        console.debug('Query statistics not available for optimization recommendations');
-      }
-      
-      // Add general recommendations based on our metrics
-      const metrics = this.getOptimizationMetrics();
-      if (metrics.queryResponseTime > 1000) {
-        recommendations.push('Average query response time is high (>1 second). Consider adding indexes or optimizing queries.');
-      }
-      
-      if (metrics.cacheHitRate < 30) {
-        recommendations.push('Cache hit rate is low (<30%). Consider optimizing cache strategies for frequently accessed data.');
-      }
-      
-      // Additional optimization checks
-      try {
-        // Check for table bloat and suggest vacuum/analyze
-        const { data: tableStats, error: tableError } = await client
-          .from('pg_stat_user_tables')
-          .select('relname, n_tup_ins, n_tup_upd, n_tup_del, n_tup_hot_upd')
-          .gt('n_tup_del', 1000) // Tables with significant deletions
-          .limit(10);
-        
-        if (!tableError && tableStats && tableStats.length > 0) {
-          tableStats.forEach((table: any) => {
-            recommendations.push(`Table "${table.relname}" has ${table.n_tup_del} deleted rows, consider VACUUM operation for optimization.`);
-          });
-        }
-      } catch (err) {
-        console.debug('Table statistics not available for optimization recommendations');
-      }
-      
-      return {
-        recommendations,
-        severity: recommendations.length > 5 ? 'high' : recommendations.length > 2 ? 'medium' : 'low',
-        impact: 'performance'
-      };
-    }
     
     /**
-     * Advanced query optimization with materialized views and performance insights
-     */
-    async getAdvancedOptimizationInsights(client: SupabaseClient): Promise<{
-      performanceInsights: any[];
-      materializedViewRecommendations: string[];
-      indexRecommendations: string[];
-    }> {
-      const performanceInsights: any[] = [];
-      const materializedViewRecommendations: string[] = [];
-      const indexRecommendations: string[] = [];
-      
-      try {
-        // Get strategy performance insights from materialized view if available
-        const { data: strategyInsights, error: strategyError } = await client
-          .rpc('get_strategy_performance_insights');
-        
-        if (!strategyError && strategyInsights) {
-          performanceInsights.push(...strategyInsights);
-        }
-      } catch (err) {
-        console.debug('Strategy performance insights not available');
-      }
-      
-      // Suggest materialized views for complex aggregations
-      materializedViewRecommendations.push(
-        'CREATE MATERIALIZED VIEW IF NOT EXISTS robots_summary_cache AS SELECT strategy_type, COUNT(*) as count, AVG(view_count) as avg_views FROM robots GROUP BY strategy_type;',
-        'CREATE MATERIALIZED VIEW IF NOT EXISTS user_activity_summary AS SELECT user_id, COUNT(*) as robot_count, MAX(updated_at) as last_activity FROM robots GROUP BY user_id;'
-      );
-      
-      // Suggest additional indexes based on common query patterns
-      indexRecommendations.push(
-        'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_strategy_created ON robots(strategy_type, created_at DESC);',
-        'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_user_updated ON robots(user_id, updated_at DESC);',
-        'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_name_search ON robots USING gin(to_tsvector(\'english\', name));'
-      );
-      
-      return {
-        performanceInsights,
-        materializedViewRecommendations,
-        indexRecommendations
-      };
-    }
-    
-    /**
-     * Run comprehensive database optimization including VACUUM, ANALYZE, and maintenance
-     */
-    async runComprehensiveOptimization(client: SupabaseClient): Promise<{ success: boolean; message: string; details?: any }> {
-      try {
-        const startTime = Date.now();
-        
-        // Run ANALYZE to update statistics
-        await client.rpc('pg_stat_reset');
-        
-        // Get table statistics and run optimization where needed
-        const { data: tables, error: tableError } = await client
-          .from('pg_stat_user_tables')
-          .select('relname, seq_scan, idx_scan, n_tup_ins, n_tup_upd, n_tup_del')
-          .gt('n_tup_del', 1000);
-        
-        if (!tableError && tables) {
-          // For each table with significant changes, suggest optimization
-          for (const table of tables) {
-            if (table.n_tup_del > 1000) {
-              // In a real implementation, we would run VACUUM ANALYZE on the table
-              console.log(`Table ${table.relname} has ${table.n_tup_del} deleted tuples, optimization recommended`);
-            }
-          }
-        }
-        
-        // Update query optimizer statistics
-        const queryAnalysis = queryOptimizer.getPerformanceAnalysis();
-        
-        const duration = Date.now() - startTime;
-        
-        return {
-          success: true,
-          message: `Comprehensive optimization completed in ${duration}ms`,
-          details: {
-            operations: ['statistics_update', 'query_analysis'],
-            duration: duration,
-            analyzedTables: tables ? tables.length : 0,
-            slowQueryCount: queryAnalysis.slowQueries.length
-          }
-        };
-      } catch (error) {
-        return {
-          success: false,
-          message: `Comprehensive optimization failed: ${error}`,
-        };
-      }
-    }
-}
-
-// Singleton instance
-export const databaseOptimizer = new DatabaseOptimizer();
-
-// Export the class for potential instantiation with custom config
-export { DatabaseOptimizer };
+      * Get query optimization recommendations based on current performance
+      */
+     async getQueryOptimizationRecommendations(
+       client: SupabaseClient
+     ): Promise<{ 
+       recommendations: string[]; 
+       severity: 'low' | 'medium' | 'high';
+       impact: 'performance' | 'cost' | 'reliability';
+     }> {
+       const recommendations: string[] = [];
+       
+       // Check for missing indexes based on common query patterns
+       try {
+         // Get query performance metrics
+         const { data: slowQueries, error } = await client
+           .from('pg_stat_statements') // This is a PostgreSQL extension for query stats
+           .select('query, mean_time, calls')
+           .order('mean_time', { ascending: false })
+           .limit(5);
+         
+         if (!error && slowQueries && slowQueries.length > 0) {
+           // Check for queries without indexes
+           slowQueries.forEach((query: any) => {
+             if (query.mean_time > 100 && query.calls > 100) { // Slow and frequently called
+               recommendations.push(`Query taking ${query.mean_time.toFixed(2)}ms avg time with ${query.calls} calls may need indexing: ${query.query.substring(0, 100)}...`);
+             }
+           });
+         }
+       } catch (err) {
+         // pg_stat_statements might not be available, which is fine
+         console.debug('Query statistics not available for optimization recommendations');
+       }
+       
+       // Add general recommendations based on our metrics
+       const metrics = this.getOptimizationMetrics();
+       if (metrics.queryResponseTime > 1000) {
+         recommendations.push('Average query response time is high (>1 second). Consider adding indexes or optimizing queries.');
+       }
+       
+       if (metrics.cacheHitRate < 30) {
+         recommendations.push('Cache hit rate is low (<30%). Consider optimizing cache strategies for frequently accessed data.');
+       }
+       
+       // Additional optimization checks
+       try {
+         // Check for table bloat and suggest vacuum/analyze
+         const { data: tableStats, error: tableError } = await client
+           .from('pg_stat_user_tables')
+           .select('relname, n_tup_ins, n_tup_upd, n_tup_del, n_tup_hot_upd')
+           .gt('n_tup_del', 1000) // Tables with significant deletions
+           .limit(10);
+         
+         if (!tableError && tableStats && tableStats.length > 0) {
+           tableStats.forEach((table: any) => {
+             recommendations.push(`Table "${table.relname}" has ${table.n_tup_del} deleted rows, consider VACUUM operation for optimization.`);
+           });
+         }
+       } catch (err) {
+         console.debug('Table statistics not available for optimization recommendations');
+       }
+       
+       return {
+         recommendations,
+         severity: recommendations.length > 5 ? 'high' : recommendations.length > 2 ? 'medium' : 'low',
+         impact: 'performance'
+       };
+     }
+     
+     /**
+      * Advanced query optimization with materialized views and performance insights
+      */
+     async getAdvancedOptimizationInsights(client: SupabaseClient): Promise<{
+       performanceInsights: any[];
+       materializedViewRecommendations: string[];
+       indexRecommendations: string[];
+     }> {
+       const performanceInsights: any[] = [];
+       const materializedViewRecommendations: string[] = [];
+       const indexRecommendations: string[] = [];
+       
+       try {
+         // Get strategy performance insights from materialized view if available
+         const { data: strategyInsights, error: strategyError } = await client
+           .rpc('get_strategy_performance_insights');
+         
+         if (!strategyError && strategyInsights) {
+           performanceInsights.push(...strategyInsights);
+         }
+       } catch (err) {
+         console.debug('Strategy performance insights not available');
+       }
+       
+       // Suggest materialized views for complex aggregations
+       materializedViewRecommendations.push(
+         'CREATE MATERIALIZED VIEW IF NOT EXISTS robots_summary_cache AS SELECT strategy_type, COUNT(*) as count, AVG(view_count) as avg_views FROM robots GROUP BY strategy_type;',
+         'CREATE MATERIALIZED VIEW IF NOT EXISTS user_activity_summary AS SELECT user_id, COUNT(*) as robot_count, MAX(updated_at) as last_activity FROM robots GROUP BY user_id;'
+       );
+       
+       // Suggest additional indexes based on common query patterns
+       indexRecommendations.push(
+         'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_strategy_created ON robots(strategy_type, created_at DESC);',
+         'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_user_updated ON robots(user_id, updated_at DESC);',
+         'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_name_search ON robots USING gin(to_tsvector(\'english\', name));'
+       );
+       
+       return {
+         performanceInsights,
+         materializedViewRecommendations,
+         indexRecommendations
+       };
+     }
+     
+     /**
+      * Run comprehensive database optimization including VACUUM, ANALYZE, and maintenance
+      */
+     async runComprehensiveOptimization(client: SupabaseClient): Promise<{ success: boolean; message: string; details?: any }> {
+       try {
+         const startTime = Date.now();
+         
+         // Run ANALYZE to update statistics
+         await client.rpc('pg_stat_reset');
+         
+         // Get table statistics and run optimization where needed
+         const { data: tables, error: tableError } = await client
+           .from('pg_stat_user_tables')
+           .select('relname, seq_scan, idx_scan, n_tup_ins, n_tup_upd, n_tup_del')
+           .gt('n_tup_del', 1000);
+         
+         if (!tableError && tables) {
+           // For each table with significant changes, suggest optimization
+           for (const table of tables) {
+             if (table.n_tup_del > 1000) {
+               // In a real implementation, we would run VACUUM ANALYZE on the table
+               console.log(`Table ${table.relname} has ${table.n_tup_del} deleted tuples, optimization recommended`);
+             }
+           }
+         }
+         
+         // Update query optimizer statistics
+         const queryAnalysis = queryOptimizer.getPerformanceAnalysis();
+         
+         const duration = Date.now() - startTime;
+         
+         return {
+           success: true,
+           message: `Comprehensive optimization completed in ${duration}ms`,
+           details: {
+             operations: ['statistics_update', 'query_analysis'],
+             duration: duration,
+             analyzedTables: tables ? tables.length : 0,
+             slowQueryCount: queryAnalysis.slowQueries.length
+           }
+         };
+       } catch (error) {
+         return {
+           success: false,
+           message: `Comprehensive optimization failed: ${error}`,
+         };
+       }
+     }
+   }
+ 
+ // Singleton instance
+ export const databaseOptimizer = new DatabaseOptimizer();
+ 
+ // Export the class for potential instantiation with custom config
+ export { DatabaseOptimizer };

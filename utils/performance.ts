@@ -418,54 +418,126 @@ private recordInteraction(name: string, duration: number) {
      }
      
      // Performance health check
-     async performHealthCheck(): Promise<{
-       score: number;
-       issues: string[];
-       suggestions: string[];
-     }> {
-       const webVitals = this.getWebVitals();
-       const memory = this.getMemoryUsage();
-       
-       let score = 100;
-       const issues: string[] = [];
-       const suggestions: string[] = [];
-       
-       // Check LCP
-       if (webVitals.lcp && webVitals.lcp > 2500) {
-         score -= 25;
-         issues.push(`LCP is ${webVitals.lcp}ms (should be < 2500ms)`);
-         suggestions.push('Optimize critical rendering path and reduce server response time');
-       }
-       
-       // Check FID
-       if (webVitals.fid && webVitals.fid > 100) {
-         score -= 20;
-         issues.push(`FID is ${webVitals.fid}ms (should be < 100ms)`);
-         suggestions.push('Reduce JavaScript execution time and break long tasks');
-       }
-       
-       // Check CLS
-       if (webVitals.cls && webVitals.cls > 0.1) {
-         score -= 15;
-         issues.push(`CLS is ${webVitals.cls} (should be < 0.1)`);
-         suggestions.push('Reserve space for images and avoid dynamic content injection');
-       }
-       
-       // Check memory usage
-       if (memory && memory.utilization > 80) {
-         score -= 10;
-         issues.push(`Memory usage is ${memory.utilization.toFixed(1)}% (high)`);
-         suggestions.push('Consider implementing memory cleanup and optimize data structures');
-       }
-       
-       score = Math.max(0, score);
-       
-       return {
-         score,
-         issues,
-         suggestions
-       };
-     }
+      async performHealthCheck(): Promise<{
+        score: number;
+        issues: string[];
+        suggestions: string[];
+      }> {
+        const webVitals = this.getWebVitals();
+        const memory = this.getMemoryUsage();
+        
+        let score = 100;
+        const issues: string[] = [];
+        const suggestions: string[] = [];
+        
+        // Check LCP
+        if (webVitals.lcp && webVitals.lcp > 2500) {
+          score -= 25;
+          issues.push(`LCP is ${webVitals.lcp}ms (should be < 2500ms)`);
+          suggestions.push('Optimize critical rendering path and reduce server response time');
+        }
+        
+        // Check FID
+        if (webVitals.fid && webVitals.fid > 100) {
+          score -= 20;
+          issues.push(`FID is ${webVitals.fid}ms (should be < 100ms)`);
+          suggestions.push('Reduce JavaScript execution time and break long tasks');
+        }
+        
+        // Check CLS
+        if (webVitals.cls && webVitals.cls > 0.1) {
+          score -= 15;
+          issues.push(`CLS is ${webVitals.cls} (should be < 0.1)`);
+          suggestions.push('Reserve space for images and avoid dynamic content injection');
+        }
+        
+        // Check memory usage
+        if (memory && memory.utilization > 80) {
+          score -= 10;
+          issues.push(`Memory usage is ${memory.utilization.toFixed(1)}% (high)`);
+          suggestions.push('Consider implementing memory cleanup and optimize data structures');
+        }
+        
+        score = Math.max(0, score);
+        
+        return {
+          score,
+          issues,
+          suggestions
+        };
+      }
+      
+      // Comprehensive performance report with detailed metrics
+      async generatePerformanceReport(): Promise<{
+        coreWebVitals: Partial<PageLoadMetrics>;
+        resourceTiming: PerformanceResourceTiming[];
+        navigationTiming: PerformanceNavigationTiming;
+        memoryUsage: any;
+        interactionMetrics: PerformanceMetric[];
+        bundleSize: number;
+        cacheEfficiency: number;
+        score: number;
+      }> {
+        // Fetch all metrics
+        const coreWebVitals = this.getWebVitals();
+        const navigationTiming = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+        const resourceTiming = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
+        const memoryUsage = this.getMemoryUsage();
+        const interactionMetrics = this.metrics.filter(m => m.name.startsWith('interaction_'));
+        
+        // Calculate bundle size
+        const jsResources = resourceTiming.filter(r => r.name.includes('.js'));
+        const bundleSize = jsResources.reduce((sum, resource) => sum + resource.transferSize, 0);
+        
+        // Calculate cache efficiency (simplified calculation)
+        const cacheEfficiency = this.calculateCacheEfficiency();
+        
+        // Generate overall score
+        const healthCheck = await this.performHealthCheck();
+        
+        return {
+          coreWebVitals,
+          resourceTiming,
+          navigationTiming,
+          memoryUsage,
+          interactionMetrics,
+          bundleSize,
+          cacheEfficiency,
+          score: healthCheck.score
+        };
+      }
+      
+      // Calculate cache efficiency based on performance measures
+      private calculateCacheEfficiency(): number {
+        // Simplified cache efficiency calculation
+        // In a real implementation, this would track cache hits vs misses
+        try {
+          const cacheHits = parseInt(localStorage.getItem('cache_hits') || '0');
+          const cacheMisses = parseInt(localStorage.getItem('cache_misses') || '0');
+          const total = cacheHits + cacheMisses;
+          
+          if (total === 0) return 0;
+          return (cacheHits / total) * 100;
+        } catch (e) {
+          return 0; // Return 0 if localStorage is not available
+        }
+      }
+      
+      // Track cache performance
+      trackCachePerformance(hit: boolean): void {
+        try {
+          const hits = parseInt(localStorage.getItem('cache_hits') || '0');
+          const misses = parseInt(localStorage.getItem('cache_misses') || '0');
+          
+          if (hit) {
+            localStorage.setItem('cache_hits', (hits + 1).toString());
+          } else {
+            localStorage.setItem('cache_misses', (misses + 1).toString());
+          }
+        } catch (e) {
+          // Ignore errors if localStorage is not available
+        }
+      }
    
 // Stop memory monitoring
     stopMemoryMonitoring(): void {
