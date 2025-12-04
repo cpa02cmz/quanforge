@@ -167,7 +167,14 @@
         "EDGE_ADAPTIVE_WARMING": "true",
         "EDGE_PREDICTIVE_PREFETCH": "true",
         "EDGE_SMART_CACHING": "true",
-        "EDGE_HEALTH_MONITORING": "continuous"
+        "EDGE_HEALTH_MONITORING": "continuous",
+        "EDGE_BROTLI_LEVEL": "11",
+        "EDGE_BROTLI_WINDOW": "22",
+        "EDGE_BROTLI_CHUNK": "0",
+        "EDGE_COMPRESSION_THRESHOLD": "1024",
+        "EDGE_GZIP_LEVEL": "9",
+        "EDGE_COMPRESSION_STRATEGY": "adaptive",
+        "EDGE_MIN_COMPRESSION_SIZE": "512"
       }
     },
     "api/edge/**/*.ts": {
@@ -220,7 +227,16 @@
       "ENABLE_PREDICTIVE_PREFETCH": "true",
       "ENABLE_ADVANCED_MINIFICATION": "true",
       "ENABLE_DEAD_CODE_ELIMINATION": "true",
-      "ENABLE_MODULE_CONCATENATION": "true"
+      "ENABLE_MODULE_CONCATENATION": "true",
+      "BROTLI_COMPRESSION_LEVEL": "11",
+      "BROTLI_WINDOW_SIZE": "22",
+      "BROTLI_CHUNK_SIZE": "0",
+      "COMPRESSION_THRESHOLD": "1024",
+      "GZIP_COMPRESSION_LEVEL": "9",
+      "ENABLE_ADAPTIVE_COMPRESSION": "true",
+      "MIN_COMPRESSION_SIZE": "512",
+      "EDGE_WEB_WORKER_ENABLED": "true",
+      "PREDICTIVE_PRELOADING_ENABLED": "true"
     }
   },
   "crons": [],
