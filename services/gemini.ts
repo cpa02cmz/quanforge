@@ -8,6 +8,9 @@ import { settingsManager } from "./settingsManager";
 import { getActiveKey } from "../utils/apiKeyUtils";
 import { handleError } from "../utils/errorHandler";
 import { apiDeduplicator } from "./apiDeduplicator";
+import { createScopedLogger } from "../utils/logger";
+
+const logger = createScopedLogger('gemini');
 
 // Enhanced cache with TTL and size management
 interface CacheEntry<T> {
@@ -163,6 +166,40 @@ class LRUCache<T> {
 
 const analysisCache = new LRUCache<StrategyAnalysis>();
 const enhancedAnalysisCache = new EnhancedCache<StrategyAnalysis>(200); // Larger cache size for better performance
+
+// Semantic cache for generateMQL5Code responses
+const mql5ResponseCache = new EnhancedCache<{ thinking?: string, content: string }>(300); // Cache for MQL5 generation responses
+
+// Create semantic cache key for similar prompts
+const createSemanticCacheKey = (prompt: string, currentCode?: string, strategyParams?: StrategyParams, settings?: AISettings): string => {
+  // Normalize prompt by removing common variations and focusing on core intent
+  const normalizedPrompt = prompt
+    .toLowerCase()
+    .replace(/\b(create|generate|build|make|write)\b/g, '') // Remove action words
+    .replace(/\b(robot|expert advisor|ea|bot|script)\b/g, '') // Remove object words
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  // Extract key parameters for caching
+  const keyParams = {
+    symbol: strategyParams?.symbol || 'any',
+    timeframe: strategyParams?.timeframe || 'any',
+    riskPercent: strategyParams?.riskPercent || 0,
+    stopLoss: strategyParams?.stopLoss || 0,
+    takeProfit: strategyParams?.takeProfit || 0
+  };
+  
+  // Create hash from normalized components
+  const components = [
+    normalizedPrompt.substring(0, 200), // First 200 chars of normalized prompt
+    currentCode ? currentCode.substring(0, 100) : 'none', // First 100 chars of current code
+    JSON.stringify(keyParams),
+    settings?.provider || 'google',
+    settings?.modelName || 'default'
+  ];
+  
+  return createHash(components.join('|'));
+};
 
 // Request deduplication to prevent duplicate API calls
 class RequestDeduplicator {
@@ -647,13 +684,23 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
        return { content: "Please provide a strategy description or request." };
      }
 
+     // Create semantic cache key for similar prompts
+     const semanticKey = createSemanticCacheKey(sanitizedPrompt, currentCode, validatedParams, settings);
+     
+     // Check semantic cache first
+     const cachedResponse = mql5ResponseCache.get(semanticKey);
+     if (cachedResponse) {
+       logger.debug('Semantic cache hit for MQL5 generation');
+       return cachedResponse;
+     }
+
      const fullPrompt = buildContextPrompt(sanitizedPrompt, currentCode, validatedParams, history);
      let rawResponse = "";
 
      // Create deduplication key for this specific request with more comprehensive parameters
      const requestKey = createHash(`${prompt}-${currentCode?.substring(0, 200)}-${JSON.stringify(strategyParams)}-${history.length}-${settings.provider}-${settings.modelName}`);
      
-// Use request deduplication to prevent duplicate API calls
+ // Use request deduplication to prevent duplicate API calls
       rawResponse = await apiDeduplicator.deduplicate(requestKey, async () => {
        if (settings.provider === 'openai') {
            return await callOpenAICompatible(settings, fullPrompt, signal);
@@ -662,7 +709,12 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
        }
      });
      
-     return extractThinking(rawResponse);
+     const response = extractThinking(rawResponse);
+     
+     // Cache the response with semantic key and longer TTL for similar prompts
+     mql5ResponseCache.set(semanticKey, response, 900000); // 15 minutes TTL
+     
+     return response;
 
    } catch (error: any) {
      if (error.name === 'AbortError') throw error;

@@ -12,53 +12,86 @@ export default defineConfig({
       input: {
         main: './index.html'
       },
-      output: {
-        manualChunks: (id) => {
-          // Optimized vendor chunks for reduced HTTP requests
-          if (id.includes('node_modules')) {
-            // Consolidated React ecosystem
-            if (id.includes('react')) {
-              return 'vendor-react';
+output: {
+          manualChunks: (id) => {
+            // Optimized vendor chunks for reduced HTTP requests
+            if (id.includes('node_modules')) {
+              // Consolidated React ecosystem
+              if (id.includes('react')) {
+                return 'vendor-react';
+              }
+              // Consolidated charts library
+              if (id.includes('recharts')) {
+                return 'vendor-charts';
+              }
+              // Consolidated AI services
+              if (id.includes('@google/genai')) {
+                return 'vendor-ai';
+              }
+              // Supabase - consolidated
+              if (id.includes('@supabase')) {
+                return 'vendor-supabase';
+              }
+              // Security utilities
+              if (id.includes('dompurify') || id.includes('lz-string')) {
+                return 'vendor-security';
+              }
+              // All other node_modules
+              return 'vendor-misc';
             }
-            // Consolidated charts library
-            if (id.includes('recharts')) {
-              return 'vendor-charts';
+            
+            // Enhanced app chunks with better separation
+            if (id.includes('services/')) {
+              // Service-specific chunks for better caching
+              if (id.includes('gemini') || id.includes('ai')) {
+                return 'services-ai';
+              }
+              if (id.includes('supabase') || id.includes('database')) {
+                return 'services-db';
+              }
+              if (id.includes('cache') || id.includes('performance')) {
+                return 'services-performance';
+              }
+              return 'services-core';
             }
-            // Consolidated AI services
-            if (id.includes('@google/genai')) {
-              return 'vendor-ai';
+            
+            if (id.includes('components/')) {
+              // Component-specific chunks for lazy loading
+              if (id.includes('ChatInterface')) {
+                return 'component-chat';
+              }
+              if (id.includes('CodeEditor')) {
+                return 'component-editor';
+              }
+              if (id.includes('Backtest')) {
+                return 'component-backtest';
+              }
+              if (id.includes('StrategyConfig')) {
+                return 'component-config';
+              }
+              if (id.includes('Chart')) {
+                return 'component-charts';
+              }
+              return 'components-core';
             }
-            // Supabase - consolidated
-            if (id.includes('@supabase')) {
-              return 'vendor-supabase';
+            
+            if (id.includes('pages/')) {
+              return 'pages';
             }
-            // Security utilities
-            if (id.includes('dompurify') || id.includes('lz-string')) {
-              return 'vendor-security';
+            
+            if (id.includes('utils/')) {
+              // Validation utilities consolidated
+              if (id.includes('validation')) {
+                return 'utils-validation';
+              }
+              if (id.includes('performance') || id.includes('monitor')) {
+                return 'utils-performance';
+              }
+              return 'utils-core';
             }
-            // All other node_modules
-            return 'vendor-misc';
-          }
-          
-          // Simplified app chunks
-          if (id.includes('services/')) {
-            return 'services';
-          }
-          
-          if (id.includes('components/')) {
-            return 'components';
-          }
-          
-          if (id.includes('pages/')) {
-            return 'pages';
-          }
-          
-          if (id.includes('utils/')) {
-            return 'utils';
-          }
-          
-          return 'chunk-default';
-        },
+            
+            return 'chunk-default';
+          },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: (assetInfo) => {

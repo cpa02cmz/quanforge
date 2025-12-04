@@ -132,10 +132,17 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
- // Generate line numbers efficiently - memoized for performance
+ // Generate line numbers efficiently - optimized memoization with better performance
      const lineNumbers = useMemo(() => {
-       const lines = code.split('\n');
-       return Array.from({ length: lines.length }, (_, i) => i + 1);
+       // More efficient line counting without creating intermediate array
+       const lineCount = (code.match(/\n/g) || []).length + 1;
+       
+       // Pre-allocate array with exact size for better performance
+       const numbers = new Array(lineCount);
+       for (let i = 0; i < lineCount; i++) {
+         numbers[i] = i + 1;
+       }
+       return numbers;
      }, [code]);
      
      // Calculate editor height based on content for auto-expanding textarea

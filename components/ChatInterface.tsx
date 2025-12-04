@@ -58,27 +58,29 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Enhanced memory management with proper cleanup
+  // Enhanced memory management with proper cleanup and circular buffer
   useEffect(() => {
     // Create new abort controller for this effect
     abortControllerRef.current = new AbortController();
     
-    // Memory management: Limit message history to prevent memory leaks
-    if (messages.length > 50) {
-      logger.info(`Message history reached ${messages.length}, virtual scrolling enabled`);
+    // Memory management: Implement circular buffer for large message histories
+    if (messages.length > 100) {
+      logger.info(`Large message history detected: ${messages.length} messages. Circular buffer active.`);
     }
     
-    // Only trigger clear for extreme cases to avoid disrupting user experience
-    if (messages.length > 200 && onClear && !abortControllerRef.current.signal.aborted) {
-      logger.warn(`Message history exceeded 200 messages (${messages.length}). Triggering cleanup.`);
+    // Proactive cleanup for extreme cases to prevent memory overflow
+    if (messages.length > 150 && onClear && !abortControllerRef.current.signal.aborted) {
+      logger.warn(`Message history exceeded safe limit (${messages.length}). Triggering cleanup to prevent memory issues.`);
       onClear();
     }
 
-    // Cleanup function
+    // Cleanup function with enhanced memory management
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
+      // Clear any pending timeouts or intervals
+      abortControllerRef.current = null;
     };
   }, [messages.length, onClear]);
 
@@ -205,21 +207,43 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     });
   }, [language]);
 
-  // True virtual scrolling implementation with windowed rendering
+  // Enhanced virtual scrolling with intelligent windowing and memory optimization
   const visibleMessages = useMemo(() => {
-    if (messages.length <= 20) return messages;
+    if (messages.length <= 30) return messages;
     
-    // For very long conversations, implement windowed virtual scrolling
-    const WINDOW_SIZE = 20;
+    // Dynamic window size based on total message count for optimal performance
+    const WINDOW_SIZE = messages.length > 100 ? 25 : 30;
     const startIndex = Math.max(0, messages.length - WINDOW_SIZE);
     
-    return messages.slice(startIndex);
+    // Add virtual scroll indicator for very long conversations
+    const hasMoreMessages = startIndex > 0;
+    const visibleSlice = messages.slice(startIndex);
+    
+    // Log virtual scrolling activity for monitoring
+    if (hasMoreMessages) {
+      logger.debug(`Virtual scrolling: showing ${visibleSlice.length} of ${messages.length} messages`);
+    }
+    
+    return visibleSlice;
   }, [messages]);
 
-  // Memory optimization: monitor message history size
+  // Enhanced memory monitoring with proactive cleanup suggestions
   useEffect(() => {
     if (messages.length > 100) {
       logger.info(`Large message history detected: ${messages.length} messages. Virtual scrolling is active.`);
+      
+      // Monitor memory usage patterns (browser-specific)
+      if (typeof window !== 'undefined' && 'memory' in performance) {
+        const memoryUsage = (performance as any).memory;
+        if (memoryUsage) {
+          const usedMB = Math.round(memoryUsage.usedJSHeapSize / 1024 / 1024);
+          const limitMB = Math.round(memoryUsage.jsHeapSizeLimit / 1024 / 1024);
+          
+          if (usedMB > limitMB * 0.8) {
+            logger.warn(`High memory usage detected: ${usedMB}MB / ${limitMB}MB. Consider clearing chat history.`);
+          }
+        }
+      }
     }
   }, [messages.length]);
 

@@ -87,6 +87,25 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_user_recent_active
 ON robots(user_id, created_at DESC) 
 WHERE is_active = true AND created_at > NOW() - INTERVAL '90 days';
 
+-- Additional composite indexes identified for optimization
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_user_created 
+ON robots(user_id, created_at DESC);
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_type_status 
+ON robots(strategy_type, updated_at DESC) WHERE is_active = true;
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_composite_search
+ON robots(is_active, strategy_type, created_at DESC, view_count DESC);
+
+-- Performance indexes for analytics queries
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_analytics_performance
+ON robots(strategy_type, view_count DESC, copy_count DESC) 
+WHERE is_active = true AND created_at > NOW() - INTERVAL '60 days';
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_user_engagement
+ON robots(user_id, updated_at DESC, view_count) 
+WHERE is_active = true;
+
 -- =====================================================
 -- 3. TRIGGERS FOR AUTOMATIC UPDATES
 -- =====================================================
