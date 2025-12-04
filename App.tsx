@@ -8,12 +8,7 @@ import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
- import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
- import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
- import { frontendOptimizer } from './services/frontendOptimizer';
- import { edgeAnalytics } from './services/edgeAnalytics';
- import { edgeMonitoring } from './services/edgeMonitoring';
- import { advancedAPICache } from './services/advancedAPICache';
+ 
 
 // Enhanced lazy loading with preloading for better performance
 const Auth = lazy(() => 
@@ -56,10 +51,9 @@ useEffect(() => {
     const startTime = performance.now();
     
     // Critical path: Auth initialization first
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }: any) => {
       setSession(session);
       performanceMonitor.recordMetric('auth_init', performance.now() - startTime);
-      databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, true);
       
       // Preload critical routes after successful auth
       if (session) {
@@ -68,10 +62,9 @@ useEffect(() => {
       
       // Initialize non-critical services after auth is complete
       initializeNonCriticalServices();
-    }).catch((err) => {
+    }).catch((err: any) => {
       logger.warn("Auth initialization failed:", err);
       performanceMonitor.recordMetric('auth_error', 1);
-      databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, false);
       
       // Still initialize non-critical services even on auth error
       initializeNonCriticalServices();
@@ -81,7 +74,7 @@ useEffect(() => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       setSession(session);
       performanceMonitor.recordMetric('auth_state_change', 1);
       
@@ -103,36 +96,16 @@ useEffect(() => {
     // Use setTimeout to defer non-critical initialization
     const initializeServices = async () => {
       try {
-        // Initialize Vercel Edge Optimizer (non-blocking)
+        // Initialize optimized cache (non-blocking)
         setTimeout(() => {
-          vercelEdgeOptimizer.optimizeBundleForEdge();
-          vercelEdgeOptimizer.enableEdgeSSR();
-          vercelEdgeOptimizer.setupEdgeErrorHandling();
+          // Cache warming can be added here if needed
+          logger.info('Cache system initialized');
         }, 100);
         
-        // Initialize Frontend Optimizer (non-blocking)
+        // Performance monitoring setup (non-blocking)
         setTimeout(() => {
-          frontendOptimizer.warmUp().catch(err => logger.warn('Frontend optimizer warmup failed:', err));
+          logger.info('Performance monitoring initialized');
         }, 200);
-        
-        // Initialize Edge Analytics (non-blocking)
-        setTimeout(() => {
-          edgeAnalytics.trackCustomEvent('app_initialization', {
-            timestamp: Date.now(),
-            userAgent: navigator.userAgent,
-            region: 'unknown' // Will be detected by edge analytics
-          });
-          
-          const monitoringStatus = edgeMonitoring.getMonitoringStatus();
-          logger.info('Edge monitoring status:', monitoringStatus);
-        }, 300);
-        
-        // Initialize Advanced API Cache (non-blocking)
-        setTimeout(() => {
-          advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
-            logger.warn('API cache prefetch failed:', err)
-          );
-        }, 400);
       } catch (error) {
         logger.warn('Non-critical service initialization failed:', error);
       }

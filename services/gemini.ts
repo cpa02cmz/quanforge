@@ -7,7 +7,26 @@ import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } fr
 import { settingsManager } from "./settingsManager";
 import { getActiveKey } from "../utils/apiKeyUtils";
 import { handleError } from "../utils/errorHandler";
-import { apiDeduplicator } from "./apiDeduplicator";
+
+// Simple API deduplicator to prevent duplicate calls
+class SimpleAPIDeduplicator {
+  private pending = new Map<string, Promise<any>>();
+
+  async deduplicate<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    if (this.pending.has(key)) {
+      return this.pending.get(key);
+    }
+    
+    const promise = fn().finally(() => {
+      this.pending.delete(key);
+    });
+    
+    this.pending.set(key, promise);
+    return promise;
+  }
+}
+
+const apiDeduplicator = new SimpleAPIDeduplicator();
 
 // Enhanced cache with TTL and size management
 interface CacheEntry<T> {
