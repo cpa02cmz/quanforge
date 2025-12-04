@@ -14,7 +14,7 @@ export default defineConfig({
       },
       output: {
         manualChunks: (id) => {
-          // Enhanced vendor chunks for optimal edge caching and tree-shaking
+// Enhanced vendor chunks for optimal edge caching and tree-shaking
           if (id.includes('node_modules')) {
             // React ecosystem - split more granularly for better caching
             if (id.includes('react') && !id.includes('react-dom') && !id.includes('react-router')) {
@@ -61,119 +61,57 @@ export default defineConfig({
               }
               return 'vendor-ai-core';
             }
-            // Enhanced Supabase splitting for better tree-shaking
-            if (id.includes('@supabase/realtime-js')) {
-              return 'vendor-supabase-realtime';
             }
-            if (id.includes('@supabase/storage-js')) {
-              return 'vendor-supabase-storage';
-            }
-            if (id.includes('@supabase/functions-js')) {
-              return 'vendor-supabase-functions';
-            }
+            
+            // Supabase - consolidated
             if (id.includes('@supabase')) {
-              return 'vendor-supabase-core';
+              return 'vendor-supabase';
             }
-            // Security and utilities - consolidated
+            
+            // Security utilities
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'vendor-security';
             }
-            // Development tools - excluded from production
-            if (id.includes('typescript') || id.includes('@types') || id.includes('@testing-library') || id.includes('vitest') || id.includes('eslint')) {
-              return 'dev-tools-excluded';
+            
+// Charts library - consolidated to reduce HTTP overhead
+            if (id.includes('recharts')) {
+              return 'vendor-charts';
             }
             
-            // Add missing edge-specific chunks
-            if (id.includes('edge') || id.includes('vercel')) {
-              return 'vendor-edge-runtime';
-            }
-            
-            // Add missing optimization for web workers
-            if (id.includes('worker') || id.includes('web-worker')) {
-              return 'vendor-web-workers';
-            }
             // All other node_modules
             return 'vendor-misc';
           }
           
-          // Enhanced app chunks with better separation
+          // App chunks - simplified for better performance
           if (id.includes('services/')) {
-            // Core database services - critical path
-            if (id.includes('supabase') || id.includes('database') || id.includes('cache')) {
-              return 'services-database-critical';
-            }
-            // AI and simulation services
-            if (id.includes('gemini') || id.includes('simulation') || id.includes('ai')) {
+            if (id.includes('gemini') || id.includes('ai')) {
               return 'services-ai';
             }
-            // Edge and performance services - critical for edge deployment
-            if (id.includes('edge') || id.includes('performance') || id.includes('vercel')) {
-              return 'services-edge-critical';
-            }
-            // Security services
-            if (id.includes('security') || id.includes('validation')) {
-              return 'services-security';
+            if (id.includes('supabase') || id.includes('database')) {
+              return 'services-db';
             }
             return 'services-other';
           }
           
-          // Enhanced component chunks for optimal lazy loading
           if (id.includes('components/')) {
-            // Heavy components - isolated for lazy loading
             if (id.includes('CodeEditor') || id.includes('ChatInterface')) {
               return 'components-heavy';
             }
-            // Chart and visualization components
-            if (id.includes('BacktestPanel') || id.includes('ChartComponents')) {
+            if (id.includes('Chart') || id.includes('Backtest')) {
               return 'components-charts';
             }
-            // Modal components
-            if (id.includes('Modal') || id.includes('AISettingsModal') || id.includes('DatabaseSettingsModal')) {
-              return 'components-modals';
-            }
-            // Form and configuration components
-            if (id.includes('StrategyConfig') || id.includes('NumericInput')) {
-              return 'components-forms';
-            }
-            // Layout and core UI components
-            if (id.includes('Layout') || id.includes('Auth') || id.includes('LoadingState') || id.includes('ErrorBoundary')) {
-              return 'components-core';
-            }
-            return 'components-other';
+            return 'components-ui';
           }
           
-          // Enhanced page chunks with better route splitting
           if (id.includes('pages/')) {
-            if (id.includes('Generator')) {
-              return 'page-generator';
+            if (id.includes('Generator') || id.includes('Dashboard')) {
+              return 'pages-main';
             }
-            if (id.includes('Dashboard')) {
-              return 'page-dashboard';
-            }
-            // Static pages grouped together
-            if (id.includes('About') || id.includes('FAQ') || id.includes('Features') || id.includes('Wiki') || id.includes('Blog')) {
-              return 'page-static';
-            }
-            return 'pages-other';
+            return 'pages-static';
           }
           
-          // Enhanced utility chunks
           if (id.includes('utils/')) {
-            if (id.includes('lazyLoader') || id.includes('performance')) {
-              return 'utils-performance';
-            }
-            if (id.includes('seo') || id.includes('enhancedSEO')) {
-              return 'utils-seo';
-            }
-            if (id.includes('security') || id.includes('validation')) {
-              return 'utils-security';
-            }
-            return 'utils-other';
-          }
-          
-          // Constants and assets
-          if (id.includes('constants/') || id.includes('translations/')) {
-            return 'assets-i18n';
+            return 'utils';
           }
           
           return 'chunk-default';
@@ -283,13 +221,13 @@ export default defineConfig({
         comments: false
       }
     },
-chunkSizeWarningLimit: 250, // Increased to accommodate essential libraries
+chunkSizeWarningLimit: 200, // Optimized for better edge performance
     target: ['es2020', 'edge101'], // More specific targets for edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
     // Enhanced edge optimization
-    assetsInlineLimit: 1024, // 1KB for better caching and smaller initial chunks
+    assetsInlineLimit: 512, // 0.5KB for optimal edge caching
     modulePreload: {
       polyfill: false
     },

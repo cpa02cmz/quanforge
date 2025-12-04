@@ -64,12 +64,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     abortControllerRef.current = new AbortController();
     
     // Memory management: Limit message history to prevent memory leaks
-    if (messages.length > 100) {
-      logger.info(`Trimming message history from ${messages.length} to 50 to prevent memory leaks`);
-      // Use a more efficient approach - just notify parent to trim
-      if (onClear && !abortControllerRef.current.signal.aborted) {
-        onClear();
-      }
+    if (messages.length > 50) {
+      logger.info(`Message history reached ${messages.length}, virtual scrolling enabled`);
+    }
+    
+    // Only trigger clear for extreme cases to avoid disrupting user experience
+    if (messages.length > 200 && onClear && !abortControllerRef.current.signal.aborted) {
+      logger.warn(`Message history exceeded 200 messages (${messages.length}). Triggering cleanup.`);
+      onClear();
     }
 
     // Cleanup function
@@ -98,7 +100,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   const sanitizeInput = (input: string): string => {
     return DOMPurify.sanitize(input, {
       ALLOWED_TAGS: [],
-      ALLOWED_ATTR: []
+      ALLOWED_ATTR: [],
+      KEEP_CONTENT: true
     });
   };
 
@@ -202,17 +205,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     });
   }, [language]);
 
-  // Enhanced virtual scrolling for better performance
+  // True virtual scrolling implementation with windowed rendering
   const visibleMessages = useMemo(() => {
-    if (messages.length <= 50) return messages;
-    // Show the most recent 50 messages with memory optimization
-    return messages.slice(-50);
+    if (messages.length <= 20) return messages;
+    
+    // For very long conversations, implement windowed virtual scrolling
+    const WINDOW_SIZE = 20;
+    const startIndex = Math.max(0, messages.length - WINDOW_SIZE);
+    
+    return messages.slice(startIndex);
   }, [messages]);
 
-  // Memory optimization: cleanup old message references
+  // Memory optimization: monitor message history size
   useEffect(() => {
-    if (messages.length > 200) {
-      logger.warn(`Message history exceeded 200 messages (${messages.length}). Consider implementing pagination.`);
+    if (messages.length > 100) {
+      logger.info(`Large message history detected: ${messages.length} messages. Virtual scrolling is active.`);
     }
   }, [messages.length]);
 
