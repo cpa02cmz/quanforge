@@ -14,44 +14,51 @@ export default defineConfig({
       },
 output: {
           manualChunks: (id) => {
-            // Consolidated vendor chunking for fewer network requests
+            // Aggressive chunking for optimal bundle size and caching
             if (id.includes('node_modules')) {
-              // Core vendor libraries - consolidated for better caching
-              if (id.includes('@supabase') || id.includes('@google/genai')) {
-                return 'vendor-core';
+              // AI services isolated for dynamic loading
+              if (id.includes('@google/genai')) {
+                return 'ai-services';
               }
-              if (id.includes('react')) {
-                return 'vendor-react';
+              // Database services isolated
+              if (id.includes('@supabase')) {
+                return 'database-services';
               }
+              // React core consolidated
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+                return 'react-core';
+              }
+              // Chart libraries isolated - loaded on demand
               if (id.includes('recharts')) {
-                return 'vendor-charts';
+                return 'chart-libs';
               }
+              // Security utilities
               if (id.includes('dompurify') || id.includes('lz-string')) {
-                return 'vendor-security';
+                return 'security-utils';
               }
-              // All other node_modules
-              return 'vendor-libs';
+              // All other vendor libraries
+              return 'vendor-misc';
             }
             
             // Enhanced app chunks with granular separation
             if (id.includes('services/')) {
-              // AI-specific services
+              // AI-specific services isolated for dynamic loading
               if (id.includes('gemini') || id.includes('ai') || id.includes('gpt')) {
                 return 'services-ai';
               }
-              // Database services
+              // Database services consolidated
               if (id.includes('supabase') || id.includes('database') || id.includes('db')) {
                 return 'services-database';
               }
-              // Cache and performance services
+              // Cache and performance services consolidated
               if (id.includes('cache') || id.includes('performance') || id.includes('optimization')) {
                 return 'services-performance';
               }
-              // Security services
+              // Security services consolidated
               if (id.includes('security') || id.includes('auth') || id.includes('validation')) {
                 return 'services-security';
               }
-              // Edge services
+              // Edge services consolidated
               if (id.includes('edge') || id.includes('cdn') || id.includes('vercel')) {
                 return 'services-edge';
               }

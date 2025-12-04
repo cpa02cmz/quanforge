@@ -8,6 +8,8 @@ import { createScopedLogger } from '../utils/logger';
 
 const logger = createScopedLogger('ChatInterface');
 
+
+
 interface ChatInterfaceProps {
   messages: Message[];
   onSendMessage: (content: string) => void;
@@ -59,6 +61,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   const abortControllerRef = useRef<AbortController | null>(null);
   const memoryMonitorRef = useRef<NodeJS.Timeout | null>(null);
   const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
 
   // Enhanced memory management with proper cleanup and circular buffer
   useEffect(() => {
@@ -117,6 +120,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
         clearTimeout(cleanupTimeoutRef.current);
         cleanupTimeoutRef.current = null;
       }
+      
+      
       
       // Clear references
       abortControllerRef.current = null;
