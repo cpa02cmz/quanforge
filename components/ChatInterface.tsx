@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect, memo, useCallback, useMemo } from 'react';
+import React, { lazy, Suspense, useState, useRef, useEffect, memo, useCallback, useMemo } from 'react';
 import DOMPurify from 'dompurify';
 import { Message, MessageRole } from '../types';
 import { loadSuggestedStrategies } from '../constants';
@@ -8,7 +8,15 @@ import { createScopedLogger } from '../utils/logger';
 
 const logger = createScopedLogger('ChatInterface');
 
-
+// Loading fallback component
+const ChatInterfaceLoading = () => (
+  <div className="flex items-center justify-center h-64 bg-dark-bg border border-dark-border rounded-2xl">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500 mx-auto mb-3"></div>
+      <p className="text-gray-400 text-sm">Loading chat interface...</p>
+    </div>
+  </div>
+);
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -280,7 +288,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   }, [messages.length]);
 
   return (
-    <div className="flex flex-col h-full bg-dark-surface border-r border-dark-border">
+    <Suspense fallback={<ChatInterfaceLoading />}>
+      <div className="flex flex-col h-full bg-dark-surface border-r border-dark-border">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-dark-border bg-dark-surface shrink-0">
           <h2 className="text-sm font-bold text-white flex items-center gap-2">
@@ -335,7 +344,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
                 </div>
             </div>
         )}
-        {visibleMessages.map((msg) => (
+        {visibleMessages.slice(-50).map((msg) => ( // Limit to last 50 messages for performance
             <MemoizedMessage key={msg.id} msg={msg} formatMessageContent={formatMessageContent} />
         ))}
         {isLoading && (
@@ -385,5 +394,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
         </form>
       </div>
     </div>
+    </Suspense>
   );
 });

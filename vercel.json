@@ -76,7 +76,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.vercel-insights.com https://*.supabase.co https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: https://*.supabase.co https://www.google-analytics.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://googleapis.com https://www.google-analytics.com https://region1.google-analytics.com; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.vercel-insights.com https://*.supabase.co https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: https://*.supabase.co https://www.google-analytics.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://googleapis.com https://www.google-analytics.com https://region1.google-analytics.com https://generativelanguage.googleapis.com; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests; require-trusted-types-for 'script';"
         },
         {
           "key": "Strict-Transport-Security",
@@ -100,7 +100,7 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), ambient-light-sensor=()"
+          "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), ambient-light-sensor=(), interest-cohort=(), browsing-topics=()"
         },
         {
           "key": "Cross-Origin-Embedder-Policy",
@@ -126,7 +126,7 @@
   "functions": {
     "api/**/*.ts": {
       "runtime": "edge",
-"regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1"],
+      "regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1"],
       "maxDuration": 30,
       "memory": 512,
       "includeFiles": ["public/**/*"],
@@ -134,22 +134,27 @@
       "cache": "max-age=300, s-maxage=1800, stale-while-revalidate=300",
       "environment": {
         "EDGE_CACHE_ENABLED": "true",
-"SUPABASE_POOL_SIZE": "6",
-          "EDGE_REGION_AFFINITY": "true",
-          "CONNECTION_WARMING": "true",
-          "EDGE_KEEP_WARM": "true",
-          "PREWARM_CONCURRENT": "3",
-          "EDGE_MEMORY_POOL": "true",
-          "EDGE_OPTIMIZATION_LEVEL": "performance",
-          "PREDICTIVE_CACHING": "true",
+        "SUPABASE_POOL_SIZE": "6",
+        "EDGE_REGION_AFFINITY": "true",
+        "CONNECTION_WARMING": "true",
+        "EDGE_KEEP_WARM": "true",
+        "PREWARM_CONCURRENT": "3",
+        "EDGE_MEMORY_POOL": "true",
+        "EDGE_OPTIMIZATION_LEVEL": "performance",
+        "PREDICTIVE_CACHING": "true",
         "EDGE_METRICS_ENABLED": "true",
-"EDGE_CACHE_TTL": "1800",
-          "EDGE_MAX_CONNECTIONS": "6",
-          "EDGE_MIN_CONNECTIONS": "3",
+        "EDGE_CACHE_TTL": "1800",
+        "EDGE_MAX_CONNECTIONS": "6",
+        "EDGE_MIN_CONNECTIONS": "3",
         "EDGE_HEALTH_CHECK_INTERVAL": "30000",
         "EDGE_CACHE_STRATEGY": "optimized",
         "ENABLE_EDGE_CACHE": "true",
-        "CONNECTION_POOL_SIZE": "4"
+        "CONNECTION_POOL_SIZE": "4",
+        "NEXT_TELEMETRY_DISABLED": "1",
+        "VERCEL_ANALYTICS_ENABLED": "true",
+        "EDGE_FUNCTION_TIMEOUT": "25000",
+        "EDGE_WARMUP_STRATEGY": "predictive",
+        "EDGE_DEDUPLICATION_ENABLED": "true"
       }
     }
   },
@@ -166,7 +171,7 @@
       "VITE_ENABLE_COMPRESSION": "true",
       "VITE_ENABLE_WEB_VITALS": "true",
       "VITE_ENABLE_PERFORMANCE_MONITORING": "true",
-      "VITE_ENABLE_BUNDLE_ANALYZER": "true",
+      "VITE_ENABLE_BUNDLE_ANALYZER": "false",
       "VITE_ENABLE_PRELOAD": "true",
       "VITE_ENABLE_PREFETCH": "true",
       "ENABLE_EDGE_METRICS": "true",
@@ -178,7 +183,12 @@
       "CHUNK_SIZE_LIMIT": "150000",
       "ENABLE_CODE_SPLITTING": "true",
       "ENABLE_BUNDLE_ANALYSIS": "true",
-      "OPTIMIZE_CRITICAL_PATH": "true"
+      "OPTIMIZE_CRITICAL_PATH": "true",
+      "NEXT_TELEMETRY_DISABLED": "1",
+      "VERCEL_ANALYTICS_ENABLED": "true",
+      "BUILD_OPTIMIZATION": "aggressive",
+      "TREESHAKING_LEVEL": "maximum",
+      "COMPRESSION_LEVEL": "maximum"
     }
   },
   "crons": [],
