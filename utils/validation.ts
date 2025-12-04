@@ -31,85 +31,93 @@ export class ValidationService {
   private static readonly RATE_LIMIT_MAX_REQUESTS = 10;
   
   // Cached regex patterns for performance in chat validation
+  // Compiled regex patterns for better performance
   private static readonly XSS_PATTERNS = [
-    /javascript:/gi,
-    /vbscript:/gi,
-    /data:text\/html/gi,
-    /&#x?0*(58|106|0*74|0*42|0*6a);?/gi,  // Hex/decimal encoded chars
-  ];
-  
-  private static readonly MQL5_DANGEROUS_PATTERNS = [
-    // File system operations
-    /FileFind\s*\(|FileOpen\s*\(|FileClose\s*\(|FileDelete\s*\(|FileCopy\s*\(|FileMove\s*\(/i,
-    /FileIsExist\s*\(|FileIsLineEnding\s*\(|FileIsEnding\s*\(/i,
-    /FileRead\s*\(|FileWrite\s*\(|FileFlush\s*\(/i,
-    
-    // Network operations
-    /WebRequest\s*\(|SocketCreate\s*\(|SocketConnect\s*\(|SocketSend\s*\(|SocketReceive\s*\(/i,
-    /InternetOpen\s*\(|InternetConnect\s*\(|HttpOpenRequest\s*\(/i,
-    
-    // System operations
-    /ShellExecute\s*\(|WinExec\s*\(|CreateProcess\s*\(/i,
-    /System\s*\(|Exec\s*\(|Popen\s*\(/i,
-    
-    // Memory operations
-    /memcpy\s*\(|memset\s*\(|malloc\s*\(|free\s*\(/i,
-    /GetMemory\s*\(|FreeMemory\s*\(/i,
-    
-    // Registry operations
-    /RegOpenKey\s*\(|RegCreateKey\s*\(|RegSetValue\s*\(|RegGetValue\s*\(/i,
-    
-    // Dangerous imports
-    /#import\s+["\']?(?!user32\.dll|kernel32\.dll|gdi32\.dll|msvcrt\.dll)[^"\']*["\']?/i,
-    /Import\s+["\']?(?!user32\.dll|kernel32\.dll|gdi32\.dll|msvcrt\.dll)[^"\']*["\']?/i,
-    
-    // Resource operations
-    /ResourceCreate\s*\(|ResourceSave\s*\(|ResourceRead\s*\(/i,
-    
-    // Global variable manipulation
-    /GlobalVariableSet\s*\(|GlobalVariableGet\s*\(|GlobalVariableDel\s*\(/i,
-    /GlobalVariablesFlush\s*\(|GlobalVariableTemp\s*\(/i,
-    
-    // Terminal information access
-    /TerminalInfoInteger\s*\(|TerminalInfoString\s*\(/i,
-    /AccountInfo\s*\(|AccountInfoInteger\s*\(|AccountInfoDouble\s*\(/i,
-    
-    // Dangerous MQL5 functions
-    /SendNotification\s*\(|SendMail\s*\(|SendFTP\s*\(/i,
-    /Alert\s*\(|Comment\s*\(|Print\s*\(/i, // Can be used for social engineering
-    
-    // Chart manipulation
-    /ChartApplyTemplate\s*\(|ChartSave\s*\(|ChartScreenShot\s*\(/i,
-    
-    // Trade operations that could be exploited
-    /OrderSend\s*\(|OrderClose\s*\(|OrderModify\s*\(/i,
-    /PositionOpen\s*\(|PositionClose\s*\(|PositionModify\s*\(/i,
-    
-    // String operations that could lead to code injection
-    /StringConcatenate\s*\(|StringTrimLeft\s*\(|StringTrimRight\s*\(/i,
-    
-    // Array operations that could lead to memory issues
-    /ArrayCopy\s*\(|ArrayFill\s*\(|ArraySort\s*\(/i,
-    
-    // Time functions that could be used for timing attacks
-    /GetTickCount\s*\(|TimeCurrent\s*\(|TimeLocal\s*\(/i,
-    
-    // Math functions that could be used for computational attacks
-    /MathRand\s*\(|MathSrand\s*\(/i,
-  ];
-  
-  private static readonly OBFUSCATION_PATTERNS = [
-    /0x[0-9a-fA-F]+/g,  // Hex encoded content
-    /[A-Za-z0-9+\/]{20,}={0,2}/g,  // Potential base64
-    /\\u[0-9a-fA-F]{4}/g,  // Unicode escapes
-    /\\x[0-9a-fA-F]{2}/g,  // Hex escapes
-  ];
-  
-  private static readonly SUSPICIOUS_KEYWORDS = new Set([
-    'password', 'secret', 'key', 'token', 'auth', 'credential',
-    'exploit', 'hack', 'crack', 'bypass', 'inject', 'payload',
-    'malware', 'virus', 'trojan', 'backdoor', 'rootkit'
-  ]);
+     /javascript:/gi,
+     /vbscript:/gi,
+     /data:text\/html/gi,
+     /&#x?0*(58|106|0*74|0*42|0*6a);?/gi,  // Hex/decimal encoded chars
+   ];
+   
+   // Pre-compiled dangerous MQL5 patterns for performance
+   private static readonly MQL5_DANGEROUS_PATTERNS = [
+     // File system operations
+     /FileFind\s*\(|FileOpen\s*\(|FileClose\s*\(|FileDelete\s*\(|FileCopy\s*\(|FileMove\s*\(/i,
+     /FileIsExist\s*\(|FileIsLineEnding\s*\(|FileIsEnding\s*\(/i,
+     /FileRead\s*\(|FileWrite\s*\(|FileFlush\s*\(/i,
+     
+     // Network operations
+     /WebRequest\s*\(|SocketCreate\s*\(|SocketConnect\s*\(|SocketSend\s*\(|SocketReceive\s*\(/i,
+     /InternetOpen\s*\(|InternetConnect\s*\(|HttpOpenRequest\s*\(/i,
+     
+     // System operations
+     /ShellExecute\s*\(|WinExec\s*\(|CreateProcess\s*\(/i,
+     /System\s*\(|Exec\s*\(|Popen\s*\(/i,
+     
+     // Memory operations
+     /memcpy\s*\(|memset\s*\(|malloc\s*\(|free\s*\(/i,
+     /GetMemory\s*\(|FreeMemory\s*\(/i,
+     
+     // Registry operations
+     /RegOpenKey\s*\(|RegCreateKey\s*\(|RegSetValue\s*\(|RegGetValue\s*\(/i,
+     
+     // Dangerous imports
+     /#import\s+["\']?(?!user32\.dll|kernel32\.dll|gdi32\.dll|msvcrt\.dll)[^"\']*["\']?/i,
+     /Import\s+["\']?(?!user32\.dll|kernel32\.dll|gdi32\.dll|msvcrt\.dll)[^"\']*["\']?/i,
+     
+     // Resource operations
+     /ResourceCreate\s*\(|ResourceSave\s*\(|ResourceRead\s*\(/i,
+     
+     // Global variable manipulation
+     /GlobalVariableSet\s*\(|GlobalVariableGet\s*\(|GlobalVariableDel\s*\(/i,
+     /GlobalVariablesFlush\s*\(|GlobalVariableTemp\s*\(/i,
+     
+     // Terminal information access
+     /TerminalInfoInteger\s*\(|TerminalInfoString\s*\(/i,
+     /AccountInfo\s*\(|AccountInfoInteger\s*\(|AccountInfoDouble\s*\(/i,
+     
+     // Dangerous MQL5 functions
+     /SendNotification\s*\(|SendMail\s*\(|SendFTP\s*\(/i,
+     /Alert\s*\(|Comment\s*\(|Print\s*\(/i, // Can be used for social engineering
+     
+     // Chart manipulation
+     /ChartApplyTemplate\s*\(|ChartSave\s*\(|ChartScreenShot\s*\(/i,
+     
+     // Trade operations that could be exploited
+     /OrderSend\s*\(|OrderClose\s*\(|OrderModify\s*\(/i,
+     /PositionOpen\s*\(|PositionClose\s*\(|PositionModify\s*\(/i,
+     
+     // String operations that could lead to code injection
+     /StringConcatenate\s*\(|StringTrimLeft\s*\(|StringTrimRight\s*\(/i,
+     
+     // Array operations that could lead to memory issues
+     /ArrayCopy\s*\(|ArrayFill\s*\(|ArraySort\s*\(/i,
+     
+     // Time functions that could be used for timing attacks
+     /GetTickCount\s*\(|TimeCurrent\s*\(|TimeLocal\s*\(/i,
+     
+     // Math functions that could be used for computational attacks
+     /MathRand\s*\(|MathSrand\s*\(/i,
+   ];
+   
+   // Pre-compiled obfuscation patterns
+   private static readonly OBFUSCATION_PATTERNS = [
+     /0x[0-9a-fA-F]+/g,  // Hex encoded content
+     /[A-Za-z0-9+\/]{20,}={0,2}/g,  // Potential base64
+     /\\u[0-9a-fA-F]{4}/g,  // Unicode escapes
+     /\\x[0-9a-fA-F]{2}/g,  // Hex escapes
+   ];
+   
+   // Use Set for O(1) lookup performance
+   private static readonly SUSPICIOUS_KEYWORDS = new Set([
+     'password', 'secret', 'key', 'token', 'auth', 'credential',
+     'exploit', 'hack', 'crack', 'bypass', 'inject', 'payload',
+     'malware', 'virus', 'trojan', 'backdoor', 'rootkit'
+   ]);
+   
+   // Caching for expensive validation operations
+   private static validationCache = new Map<string, { result: ValidationError[], timestamp: number }>();
+   private static readonly CACHE_TTL = 30000; // 30 seconds TTL
 
    static validateStrategyParams(params: StrategyParams): ValidationError[] {
      const errors: ValidationError[] = [];
@@ -263,31 +271,40 @@ if (input && seenNames.has(input.name)) {
     return errors;
   }
 
-  static validateRobotName(name: string): ValidationError[] {
-    const errors: ValidationError[] = [];
-
-     if (!name || !name.trim()) {
-       errors.push({
-         field: 'name',
-         message: 'Robot name is required'
-       });
-       return errors; // Return early if name is empty
+   static validateRobotName(name: string): ValidationError[] {
+     // Use cache to avoid re-validating the same name
+     const cacheKey = `robotName:${name}`;
+     const cached = ValidationService.validationCache.get(cacheKey);
+     if (cached && (Date.now() - cached.timestamp) < ValidationService.CACHE_TTL) {
+       return cached.result;
      }
 
-     if (name.length < 3) {
-       errors.push({
-         field: 'name',
-         message: 'Robot name must be at least 3 characters long'
-       });
-     } else if (name.length > 100) {
-       errors.push({
-         field: 'name',
-         message: 'Robot name must not exceed 100 characters'
-       });
-     }
+     const errors: ValidationError[] = [];
 
-    return errors;
-  }
+      if (!name || !name.trim()) {
+        errors.push({
+          field: 'name',
+          message: 'Robot name is required'
+        });
+        ValidationService.validationCache.set(cacheKey, { result: errors, timestamp: Date.now() });
+        return errors; // Return early if name is empty
+      }
+
+      if (name.length < 3) {
+        errors.push({
+          field: 'name',
+          message: 'Robot name must be at least 3 characters long'
+        });
+      } else if (name.length > 100) {
+        errors.push({
+          field: 'name',
+          message: 'Robot name must not exceed 100 characters'
+        });
+      }
+
+     ValidationService.validationCache.set(cacheKey, { result: errors, timestamp: Date.now() });
+     return errors;
+   }
 
     static validateChatMessageWithRateLimit(userId: string, message: string): ValidationError[] {
        const errors: ValidationError[] = [];
@@ -314,93 +331,107 @@ if (input && seenNames.has(input.name)) {
        return this.validateChatMessage(message);
      }
 
-     static validateChatMessage(message: string): ValidationError[] {
-       const errors: ValidationError[] = [];
+      static validateChatMessage(message: string): ValidationError[] {
+        // Use cache to avoid re-validating the same message
+        const cacheKey = `chat:${message.substring(0, 100)}:${message.length}`;
+        const cached = ValidationService.validationCache.get(cacheKey);
+        if (cached && (Date.now() - cached.timestamp) < ValidationService.CACHE_TTL) {
+          return cached.result;
+        }
 
-       if (!message || !message.trim()) {
-         errors.push({
-           field: 'message',
-           message: 'Message cannot be empty'
-         });
-         return errors;
-       }
+        const errors: ValidationError[] = [];
 
-       if (message.length > 10000) {
-         errors.push({
-           field: 'message',
-           message: 'Message is too long (max 10,000 characters)'
-         });
-         return errors;
-       }
-
-// Enhanced XSS prevention using DOMPurify for comprehensive sanitization
-        const sanitizedMessage = DOMPurify.sanitize(message, { 
-          ALLOWED_TAGS: [], 
-          ALLOWED_ATTR: [],
-          KEEP_CONTENT: true 
-        });
-        
-        // If sanitization removed content, there was likely XSS content
-        if (sanitizedMessage.length !== message.length) {
+        if (!message || !message.trim()) {
           errors.push({
             field: 'message',
-            message: 'Message contains potentially dangerous content'
+            message: 'Message cannot be empty'
           });
+          ValidationService.validationCache.set(cacheKey, { result: errors, timestamp: Date.now() });
           return errors;
         }
 
-         // Check remaining XSS patterns using cached patterns
-         for (const pattern of ValidationService.XSS_PATTERNS) {
-           if (pattern.test(message)) {
-            errors.push({
-              field: 'message',
-              message: 'Message contains potentially unsafe content'
-            });
-            return errors; // Return early on first match
-          }
-        }
-
-        // Check for obfuscated patterns (base64, hex encoding, etc.) using cached patterns
-        for (const pattern of ValidationService.OBFUSCATION_PATTERNS) {
-          const matches = message.match(pattern);
-          if (matches && matches.length > 3) { // Allow a few legitimate uses
-            errors.push({
-              field: 'message',
-              message: 'Message contains potentially obfuscated content'
-            });
-            return errors; // Return early
-          }
-        }
-
-        // Then check for dangerous MQL5 patterns using cached patterns
-        for (const pattern of ValidationService.MQL5_DANGEROUS_PATTERNS) {
-          if (pattern.test(message)) {
-            errors.push({
-              field: 'message',
-              message: 'Message contains potentially dangerous MQL5 operations'
-            });
-            return errors; // Return early
-          }
-        }
-
-        // Additional heuristic checks with cached suspicious keywords
-        const lowerMessage = message.toLowerCase();
-        let suspiciousCount = 0;
-        for (const keyword of ValidationService.SUSPICIOUS_KEYWORDS) {
-          if (lowerMessage.includes(keyword)) {
-            suspiciousCount++;
-          }
-        }
-
-        if (suspiciousCount > 2) { // Allow some false positives
+        if (message.length > 10000) {
           errors.push({
             field: 'message',
-            message: 'Message contains suspicious content'
+            message: 'Message is too long (max 10,000 characters)'
           });
+          ValidationService.validationCache.set(cacheKey, { result: errors, timestamp: Date.now() });
+          return errors;
         }
 
-        return errors;
-      }
+ // Enhanced XSS prevention using DOMPurify for comprehensive sanitization
+         const sanitizedMessage = DOMPurify.sanitize(message, { 
+           ALLOWED_TAGS: [], 
+           ALLOWED_ATTR: [],
+           KEEP_CONTENT: true 
+         });
+         
+         // If sanitization removed content, there was likely XSS content
+         if (sanitizedMessage.length !== message.length) {
+           errors.push({
+             field: 'message',
+             message: 'Message contains potentially dangerous content'
+           });
+           ValidationService.validationCache.set(cacheKey, { result: errors, timestamp: Date.now() });
+           return errors;
+         }
+
+          // Check remaining XSS patterns using cached patterns
+          for (const pattern of ValidationService.XSS_PATTERNS) {
+            if (pattern.test(message)) {
+             errors.push({
+               field: 'message',
+               message: 'Message contains potentially unsafe content'
+             });
+             ValidationService.validationCache.set(cacheKey, { result: errors, timestamp: Date.now() });
+             return errors; // Return early on first match
+           }
+         }
+
+         // Check for obfuscated patterns (base64, hex encoding, etc.) using cached patterns
+         for (const pattern of ValidationService.OBFUSCATION_PATTERNS) {
+           const matches = message.match(pattern);
+           if (matches && matches.length > 3) { // Allow a few legitimate uses
+             errors.push({
+               field: 'message',
+               message: 'Message contains potentially obfuscated content'
+             });
+             ValidationService.validationCache.set(cacheKey, { result: errors, timestamp: Date.now() });
+             return errors; // Return early
+           }
+         }
+
+         // Then check for dangerous MQL5 patterns using cached patterns
+         for (const pattern of ValidationService.MQL5_DANGEROUS_PATTERNS) {
+           if (pattern.test(message)) {
+             errors.push({
+               field: 'message',
+               message: 'Message contains potentially dangerous MQL5 operations'
+             });
+             ValidationService.validationCache.set(cacheKey, { result: errors, timestamp: Date.now() });
+             return errors; // Return early
+           }
+         }
+
+         // Additional heuristic checks with cached suspicious keywords
+         const lowerMessage = message.toLowerCase();
+         let suspiciousCount = 0;
+         for (const keyword of ValidationService.SUSPICIOUS_KEYWORDS) {
+           if (lowerMessage.includes(keyword)) {
+             suspiciousCount++;
+           }
+         }
+
+         if (suspiciousCount > 2) { // Allow some false positives
+           errors.push({
+             field: 'message',
+             message: 'Message contains suspicious content'
+           });
+         }
+
+         ValidationService.validationCache.set(cacheKey, { result: errors, timestamp: Date.now() });
+         return errors;
+       }
 
 static sanitizeInput(input: string): string {
      if (!input) return '';
@@ -478,40 +509,49 @@ static sanitizeInput(input: string): string {
      return errors;
    }
 
-static validateSymbol(symbol: string): ValidationError[] {
-      const errors: ValidationError[] = [];
+ static validateSymbol(symbol: string): ValidationError[] {
+       // Use cache to avoid re-validating the same symbol
+       const cacheKey = `symbol:${symbol}`;
+       const cached = ValidationService.validationCache.get(cacheKey);
+       if (cached && (Date.now() - cached.timestamp) < ValidationService.CACHE_TTL) {
+         return cached.result;
+       }
 
-      if (!symbol || !symbol.trim()) {
-        errors.push({
-          field: 'symbol',
-          message: 'Symbol is required'
-        });
-        return errors;
-      }
+       const errors: ValidationError[] = [];
 
-      const trimmedSymbol = symbol.trim().toUpperCase();
-      
-      // Use a single regex with OR pattern for better performance
-      const symbolPattern = /^(?:[A-Z]{6}|[A-Z]{3}\/[A-Z]{3}|[A-Z]{3,6}[A-Z]{3}|[A-Z]{2,5}[-_][A-Z]{2,5}|[A-Z]{3,6}USDT|[A-Z]{3,6}BUSD)$/;
-      
-      if (!symbolPattern.test(trimmedSymbol)) {
-        errors.push({
-          field: 'symbol',
-          message: 'Invalid symbol format. Use formats like: EURUSD, EUR/USD, XAUUSD, BTCUSDT'
-        });
-      }
+       if (!symbol || !symbol.trim()) {
+         errors.push({
+           field: 'symbol',
+           message: 'Symbol is required'
+         });
+         ValidationService.validationCache.set(cacheKey, { result: errors, timestamp: Date.now() });
+         return errors;
+       }
 
-      // Use Set for O(1) lookup instead of Array.includes for blacklisted symbols
-      const blacklistedSymbols = new Set(['TEST', 'DEMO', 'FAKE', 'INVALID']);
-      if (blacklistedSymbols.has(trimmedSymbol)) {
-        errors.push({
-          field: 'symbol',
-          message: 'Invalid symbol for trading'
-        });
-      }
+       const trimmedSymbol = symbol.trim().toUpperCase();
+       
+       // Use a single regex with OR pattern for better performance
+       const symbolPattern = /^(?:[A-Z]{6}|[A-Z]{3}\/[A-Z]{3}|[A-Z]{3,6}[A-Z]{3}|[A-Z]{2,5}[-_][A-Z]{2,5}|[A-Z]{3,6}USDT|[A-Z]{3,6}BUSD)$/;
+       
+       if (!symbolPattern.test(trimmedSymbol)) {
+         errors.push({
+           field: 'symbol',
+           message: 'Invalid symbol format. Use formats like: EURUSD, EUR/USD, XAUUSD, BTCUSDT'
+         });
+       }
 
-      return errors;
-    }
+       // Use Set for O(1) lookup instead of Array.includes for blacklisted symbols
+       const blacklistedSymbols = new Set(['TEST', 'DEMO', 'FAKE', 'INVALID']);
+       if (blacklistedSymbols.has(trimmedSymbol)) {
+         errors.push({
+           field: 'symbol',
+           message: 'Invalid symbol for trading'
+         });
+       }
+
+       ValidationService.validationCache.set(cacheKey, { result: errors, timestamp: Date.now() });
+       return errors;
+     }
 
   static isValid(errors: ValidationError[]): boolean {
     return errors.length === 0;

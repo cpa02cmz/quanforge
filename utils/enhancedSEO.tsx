@@ -1015,6 +1015,159 @@ export const optimizeTwitterCard = (title: string, description: string, image?: 
   'twitter:creator': '@quanforge'
 });
 
+// Real-time SEO monitoring and optimization
+export const SEOMonitor = {
+  // Track Core Web Vitals
+  trackCoreWebVitals: () => {
+    if (typeof window === 'undefined') return;
+
+    // Track LCP (Largest Contentful Paint)
+    if ('PerformanceObserver' in window) {
+      try {
+        const observer = new PerformanceObserver((list) => {
+          const entries = list.getEntries();
+          const lastEntry = entries[entries.length - 1];
+          if (lastEntry) {
+            console.log('LCP:', Math.round(lastEntry.startTime));
+            // Send to analytics
+            if ((window as any).gtag) {
+              (window as any).gtag('event', 'web_vitals', {
+                name: 'LCP',
+                value: Math.round(lastEntry.startTime),
+                event_category: 'Web Vitals'
+              });
+            }
+          }
+        });
+        observer.observe({ entryTypes: ['largest-contentful-paint'] });
+      } catch (e) {
+        console.warn('LCP tracking not supported');
+      }
+
+      // Track FID (First Input Delay)
+      try {
+        const fidObserver = new PerformanceObserver((list) => {
+          const entries = list.getEntries();
+          entries.forEach((entry: any) => {
+            console.log('FID:', Math.round(entry.processingStart - entry.startTime));
+            if ((window as any).gtag) {
+              (window as any).gtag('event', 'web_vitals', {
+                name: 'FID',
+                value: Math.round(entry.processingStart - entry.startTime),
+                event_category: 'Web Vitals'
+              });
+            }
+          });
+        });
+        fidObserver.observe({ entryTypes: ['first-input'] });
+      } catch (e) {
+        console.warn('FID tracking not supported');
+      }
+
+      // Track CLS (Cumulative Layout Shift)
+      try {
+        let clsValue = 0;
+        const clsObserver = new PerformanceObserver((list) => {
+          const entries = list.getEntries();
+          entries.forEach((entry: any) => {
+            if (!entry.hadRecentInput) {
+              clsValue += entry.value;
+            }
+          });
+          console.log('CLS:', Math.round(clsValue * 1000) / 1000);
+          if ((window as any).gtag) {
+            (window as any).gtag('event', 'web_vitals', {
+              name: 'CLS',
+              value: Math.round(clsValue * 1000) / 1000,
+              event_category: 'Web Vitals'
+            });
+          }
+        });
+        clsObserver.observe({ entryTypes: ['layout-shift'] });
+      } catch (e) {
+        console.warn('CLS tracking not supported');
+      }
+    }
+  },
+
+  // Monitor page performance
+  trackPagePerformance: () => {
+    if (typeof window === 'undefined' || !('performance' in window)) return;
+
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+        if (navigation) {
+          const metrics = {
+            domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
+            loadComplete: navigation.loadEventEnd - navigation.loadEventStart,
+            firstPaint: 0,
+            firstContentfulPaint: 0
+          };
+
+          // Get paint metrics
+          const paintEntries = performance.getEntriesByType('paint');
+          paintEntries.forEach((entry: any) => {
+            if (entry.name === 'first-paint') {
+              metrics.firstPaint = entry.startTime;
+            }
+            if (entry.name === 'first-contentful-paint') {
+              metrics.firstContentfulPaint = entry.startTime;
+            }
+          });
+
+          console.log('Page Performance Metrics:', metrics);
+          
+          // Send to analytics
+          if ((window as any).gtag) {
+            Object.entries(metrics).forEach(([key, value]) => {
+              (window as any).gtag('event', 'page_performance', {
+                metric_name: key,
+                value: Math.round(value),
+                event_category: 'Performance'
+              });
+            });
+          }
+        }
+      }, 0);
+    });
+  },
+
+  // Monitor SEO health
+  trackSEOHealth: () => {
+    if (typeof window === 'undefined') return;
+
+    // Check for missing alt tags
+    const imagesWithoutAlt = document.querySelectorAll('img:not([alt])');
+    if (imagesWithoutAlt.length > 0) {
+      console.warn(`Found ${imagesWithoutAlt.length} images without alt tags`);
+    }
+
+    // Check for missing title tags
+    if (!document.title || document.title.length === 0) {
+      console.warn('Missing or empty title tag');
+    }
+
+    // Check for missing meta description
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (!metaDescription || !metaDescription.getAttribute('content')) {
+      console.warn('Missing meta description');
+    }
+
+    // Check heading structure
+    const h1Count = document.querySelectorAll('h1').length;
+    if (h1Count === 0) {
+      console.warn('Missing H1 tag');
+    } else if (h1Count > 1) {
+      console.warn('Multiple H1 tags found');
+    }
+
+    // Check for internal links
+    const internalLinks = document.querySelectorAll('a[href^="/"], a[href^="' + window.location.origin + '"]');
+    console.log(`Found ${internalLinks.length} internal links`);
+  }
+};
+
 // Enhanced structured data templates for better SEO
 export const enhancedStructuredDataTemplates = {
   organization: {

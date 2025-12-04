@@ -29,21 +29,22 @@ interface CacheStats {
 import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
 
 export class AdvancedCache {
-  private cache = new Map<string, CacheEntry<any>>();
-  private stats = {
-    hits: 0,
-    misses: 0,
-    evictions: 0,
-    compressions: 0,
-  };
-  private config: CacheConfig = {
-    maxSize: 10 * 1024 * 1024, // 10MB (reduced for edge)
-    maxEntries: 500, // Reduced entries
-    defaultTTL: 180000, // 3 minutes (shorter for edge)
-    cleanupInterval: 30000, // 30 seconds
-    compressionThreshold: 512, // 0.5KB (more aggressive)
-  };
-  private cleanupTimer: NodeJS.Timeout | null = null;
+   private cache = new Map<string, CacheEntry<any>>();
+   private accessOrder: string[] = []; // Track access order for LRU
+   private stats = {
+     hits: 0,
+     misses: 0,
+     evictions: 0,
+     compressions: 0,
+   };
+   private config: CacheConfig = {
+     maxSize: 10 * 1024 * 1024, // 10MB (reduced for edge)
+     maxEntries: 500, // Reduced entries
+     defaultTTL: 180000, // 3 minutes (shorter for edge)
+     cleanupInterval: 30000, // 30 seconds
+     compressionThreshold: 512, // 0.5KB (more aggressive)
+   };
+   private cleanupTimer: NodeJS.Timeout | null = null;
 
   constructor(config?: Partial<CacheConfig>) {
     if (config) {
@@ -52,92 +53,112 @@ export class AdvancedCache {
     this.startCleanup();
   }
 
-  // Get data from cache
-  get<T>(key: string): T | null {
-    const entry = this.cache.get(key);
-    
-    if (!entry) {
-      this.stats.misses++;
-      return null;
-    }
+   // Get data from cache
+   get<T>(key: string): T | null {
+     const entry = this.cache.get(key);
+     
+     if (!entry) {
+       this.stats.misses++;
+       return null;
+     }
 
-    // Check if expired
-    if (Date.now() - entry.timestamp > entry.ttl) {
-      this.cache.delete(key);
-      this.stats.misses++;
-      return null;
-    }
+     // Check if expired
+     if (Date.now() - entry.timestamp > entry.ttl) {
+       this.cache.delete(key);
+       // Remove from access order list as well
+       const index = this.accessOrder.indexOf(key);
+       if (index !== -1) {
+         this.accessOrder.splice(index, 1);
+       }
+       this.stats.misses++;
+       return null;
+     }
 
-    // Update access statistics
-    entry.accessCount++;
-    entry.lastAccessed = Date.now();
-    
-    // Move to end (LRU)
-    this.cache.delete(key);
-    this.cache.set(key, entry);
-    
-    this.stats.hits++;
-    
-    // Decompress if needed
-    if (entry.compressed) {
-      try {
-        return decompressFromUTF16(entry.data as string) as T;
-      } catch (error) {
-        console.warn(`Failed to decompress cache entry: ${key}`, error);
-        this.cache.delete(key);
-        this.stats.misses++;
-        return null;
-      }
-    }
-    
-    return entry.data;
-  }
+     // Update access statistics
+     entry.accessCount++;
+     entry.lastAccessed = Date.now();
+     
+     // Update access order for LRU - move to end
+     const index = this.accessOrder.indexOf(key);
+     if (index !== -1) {
+       this.accessOrder.splice(index, 1);
+     }
+     this.accessOrder.push(key);
+     
+     this.stats.hits++;
+     
+     // Decompress if needed
+     if (entry.compressed) {
+       try {
+         return decompressFromUTF16(entry.data as string) as T;
+       } catch (error) {
+         console.warn(`Failed to decompress cache entry: ${key}`, error);
+         this.cache.delete(key);
+         const index = this.accessOrder.indexOf(key);
+         if (index !== -1) {
+           this.accessOrder.splice(index, 1);
+         }
+         this.stats.misses++;
+         return null;
+       }
+     }
+     
+     return entry.data;
+   }
 
-  // Set data in cache
-  set<T>(key: string, data: T, options?: {
-    ttl?: number;
-    tags?: string[];
-    priority?: 'low' | 'normal' | 'high';
-  }): void {
-    const serializedData = JSON.stringify(data);
-    const size = new Blob([serializedData]).size;
-    
-    // Check if data is too large
-    if (size > this.config.maxSize) {
-      console.warn(`Cache entry too large: ${key} (${size} bytes)`);
-      return;
-    }
+   // Set data in cache
+   set<T>(key: string, data: T, options?: {
+     ttl?: number;
+     tags?: string[];
+     priority?: 'low' | 'normal' | 'high';
+   }): void {
+     const serializedData = JSON.stringify(data);
+     const size = new Blob([serializedData]).size;
+     
+     // Check if data is too large
+     if (size > this.config.maxSize) {
+       console.warn(`Cache entry too large: ${key} (${size} bytes)`);
+       return;
+     }
 
-    let processedData = data;
-    let compressed = false;
+     let processedData = data;
+     let compressed = false;
 
-    // Compress large entries
-    if (size > this.config.compressionThreshold) {
-      try {
-        processedData = compressToUTF16(serializedData) as T;
-        compressed = true;
-        this.stats.compressions++;
-      } catch (error) {
-        console.warn(`Failed to compress cache entry: ${key}`, error);
-      }
-    }
+     // Compress large entries
+     if (size > this.config.compressionThreshold) {
+       try {
+         processedData = compressToUTF16(serializedData) as T;
+         compressed = true;
+         this.stats.compressions++;
+       } catch (error) {
+         console.warn(`Failed to compress cache entry: ${key}`, error);
+       }
+     }
 
-    const entry: CacheEntry<T> = {
-      data: processedData,
-      timestamp: Date.now(),
-      ttl: options?.ttl || this.config.defaultTTL,
-      accessCount: 1,
-      lastAccessed: Date.now(),
-      size,
-      tags: options?.tags || [],
-      compressed,
-    };
+     const entry: CacheEntry<T> = {
+       data: processedData,
+       timestamp: Date.now(),
+       ttl: options?.ttl || this.config.defaultTTL,
+       accessCount: 1,
+       lastAccessed: Date.now(),
+       size,
+       tags: options?.tags || [],
+       compressed,
+     };
 
-    // Ensure cache size limits
-    this.ensureCapacity(size);
+     // Remove existing key from access order if it exists
+     const existingIndex = this.accessOrder.indexOf(key);
+     if (existingIndex !== -1) {
+       this.accessOrder.splice(existingIndex, 1);
+     }
 
-    this.cache.set(key, entry);
-  }
+     // Ensure cache size limits
+     this.ensureCapacity(size);
+
+     this.cache.set(key, entry);
+     // Add to end of access order (most recently used)
+     this.accessOrder.push(key);
+   }
 
   // Delete cache entry
   delete(key: string): boolean {
@@ -225,35 +246,36 @@ this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
     }
   }
 
-  private ensureCapacity(newEntrySize: number): void {
-    let currentSize = Array.from(this.cache.values())
-      .reduce((sum, entry) => sum + entry.size, 0);
+   private ensureCapacity(newEntrySize: number): void {
+     let currentSize = Array.from(this.cache.values())
+       .reduce((sum, entry) => sum + entry.size, 0);
 
-    // Remove expired entries first
-    this.removeExpiredEntries();
+     // Remove expired entries first
+     this.removeExpiredEntries();
 
-    // Recalculate size after cleanup
-    currentSize = Array.from(this.cache.values())
-      .reduce((sum, entry) => sum + entry.size, 0);
+     // Recalculate size after cleanup
+     currentSize = Array.from(this.cache.values())
+       .reduce((sum, entry) => sum + entry.size, 0);
 
-    // If still over capacity, remove least recently used entries
-    while (
-      (currentSize + newEntrySize > this.config.maxSize) ||
-      this.cache.size >= this.config.maxEntries
-    ) {
-      const lruKey = this.getLRUKey();
-      if (lruKey) {
-        const removedEntry = this.cache.get(lruKey);
-        if (removedEntry) {
-          currentSize -= removedEntry.size;
-          this.cache.delete(lruKey);
-          this.stats.evictions++;
-        }
-      } else {
-        break;
-      }
-    }
-  }
+     // If still over capacity, remove least recently used entries
+     while (
+       (currentSize + newEntrySize > this.config.maxSize) ||
+       this.cache.size >= this.config.maxEntries
+     ) {
+       // Use access order for LRU - remove from the beginning (oldest)
+       const lruKey = this.accessOrder.shift(); // Remove oldest entry
+       if (lruKey) {
+         const removedEntry = this.cache.get(lruKey);
+         if (removedEntry) {
+           currentSize -= removedEntry.size;
+           this.cache.delete(lruKey);
+           this.stats.evictions++;
+         }
+       } else {
+         break;
+       }
+     }
+   }
 
   private removeExpiredEntries(): void {
     const now = Date.now();
@@ -297,19 +319,10 @@ this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
     }
   }
 
-  private getLRUKey(): string | null {
-    let lruKey: string | null = null;
-    let oldestAccess = Date.now();
-
-    for (const [key, entry] of this.cache) {
-      if (entry.lastAccessed < oldestAccess) {
-        oldestAccess = entry.lastAccessed;
-        lruKey = key;
-      }
-    }
-
-    return lruKey;
-  }
+   private getLRUKey(): string | null {
+     // Use the first item in access order (oldest) if available
+     return this.accessOrder.length > 0 ? this.accessOrder[0] : null;
+   }
 
   // Compression methods now use lz-string library
 

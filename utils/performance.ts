@@ -475,19 +475,48 @@ private recordInteraction(name: string, duration: number) {
       }
     }
     
-    // Cleanup all resources and prevent memory leaks
-    cleanup(): void {
-      this.stopMemoryMonitoring();
-      this.metrics = [];
-      this.observers.forEach(observer => {
-        try {
-          observer.disconnect();
-        } catch (e) {
-          // Ignore errors during cleanup
-        }
-      });
-      this.observers = [];
+   // Edge-specific performance tracking
+    trackEdgePerformance() {
+      if (typeof window !== 'undefined') {
+        // Track edge round-trip time
+        const startMark = `edge_request_${Date.now()}`;
+        performance.mark(startMark);
+        
+        // Send a ping to edge to measure round-trip time
+        fetch('/api/edge/ping', { method: 'HEAD', cache: 'no-store' })
+          .then(() => {
+            performance.mark(`edge_response_${Date.now()}`);
+            performance.measure('edge-round-trip', startMark, `edge_response_${Date.now()}`);
+            
+            const measure = performance.getEntriesByName('edge-round-trip')[0];
+            if (measure) {
+              this.recordMetric('edge_round_trip_ms', measure.duration);
+            }
+            
+            // Clean up marks
+            performance.clearMarks(startMark);
+            performance.clearMarks(`edge_response_${Date.now()}`);
+            performance.clearMeasures('edge-round-trip');
+          })
+          .catch(() => {
+            // Ignore errors for this measurement
+          });
+      }
     }
+    
+   // Cleanup all resources and prevent memory leaks
+     cleanup(): void {
+       this.stopMemoryMonitoring();
+       this.metrics = [];
+       this.observers.forEach(observer => {
+         try {
+           observer.disconnect();
+         } catch (e) {
+           // Ignore errors during cleanup
+         }
+       });
+       this.observers = [];
+     }
 }
 
 // Singleton instance

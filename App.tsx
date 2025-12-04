@@ -14,6 +14,7 @@ import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
  import { edgeAnalytics } from './services/edgeAnalytics';
  import { edgeMonitoring } from './services/edgeMonitoring';
  import { advancedAPICache } from './services/advancedAPICache';
+ import { seoOptimizer } from './services/seoOptimizer';
 
 // Enhanced lazy loading with preloading for better performance
 const Auth = lazy(() => 
@@ -103,17 +104,22 @@ useEffect(() => {
     // Use setTimeout to defer non-critical initialization
     const initializeServices = async () => {
       try {
+        // Initialize SEO Optimizer first (critical for performance)
+        setTimeout(() => {
+          seoOptimizer.initialize();
+        }, 100);
+        
         // Initialize Vercel Edge Optimizer (non-blocking)
         setTimeout(() => {
           vercelEdgeOptimizer.optimizeBundleForEdge();
           vercelEdgeOptimizer.enableEdgeSSR();
           vercelEdgeOptimizer.setupEdgeErrorHandling();
-        }, 100);
+        }, 200);
         
         // Initialize Frontend Optimizer (non-blocking)
         setTimeout(() => {
           frontendOptimizer.warmUp().catch(err => logger.warn('Frontend optimizer warmup failed:', err));
-        }, 200);
+        }, 300);
         
         // Initialize Edge Analytics (non-blocking)
         setTimeout(() => {
@@ -125,14 +131,14 @@ useEffect(() => {
           
           const monitoringStatus = edgeMonitoring.getMonitoringStatus();
           logger.info('Edge monitoring status:', monitoringStatus);
-        }, 300);
+        }, 400);
         
         // Initialize Advanced API Cache (non-blocking)
         setTimeout(() => {
           advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
             logger.warn('API cache prefetch failed:', err)
           );
-        }, 400);
+        }, 500);
       } catch (error) {
         logger.warn('Non-critical service initialization failed:', error);
       }

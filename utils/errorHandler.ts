@@ -346,65 +346,77 @@ export const errorRecovery = {
   },
   
   // Circuit breaker pattern implementation
-  createCircuitBreaker<T extends (...args: any[]) => Promise<any>>(
-    operation: T,
-    options: {
-      failureThreshold?: number;
-      timeout?: number;
-      resetTimeout?: number;
-    } = {}
-  ): T {
-    const { 
-      failureThreshold = 5, 
-      timeout = 10000, 
-      resetTimeout = 60000 
-    } = options;
-    
-    let failureCount = 0;
-    let lastFailureTime: number | null = null;
-    let state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';
-    
-    return (async (...args: Parameters<T>): Promise<ReturnType<T>> => {
-      const now = Date.now();
-      
-      // If OPEN and reset timeout has passed, move to HALF_OPEN
-      if (state === 'OPEN' && lastFailureTime && now - lastFailureTime > resetTimeout) {
-        state = 'HALF_OPEN';
-      }
-      
-      // If OPEN, fail fast
-      if (state === 'OPEN') {
-        throw new Error('Circuit breaker is OPEN');
-      }
-      
-      try {
-        const result = await Promise.race([
-          operation(...args),
-          new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Circuit breaker timeout')), timeout)
-          )
-        ]);
-        
-        // Success - reset failure count and close circuit
-        failureCount = 0;
-        state = 'CLOSED';
-        return result;
-      } catch (error) {
-        failureCount++;
-        lastFailureTime = now;
-        
-        // If failure threshold exceeded, open circuit
-        if (failureCount >= failureThreshold) {
-          state = 'OPEN';
-        } else {
-          // Move back to CLOSED if we were in HALF_OPEN and succeeded
-          state = 'HALF_OPEN'; // We actually remain half-open until success
-        }
-        
-        throw error;
-      }
-    }) as T;
-  }
+   createCircuitBreaker<T extends (...args: any[]) => Promise<any>>(
+     operation: T,
+     options: {
+       failureThreshold?: number;
+       timeout?: number;
+       resetTimeout?: number;
+       name?: string; // Name for debugging
+     } = {}
+   ): T {
+     const { 
+       failureThreshold = 5, 
+       timeout = 10000, 
+       resetTimeout = 60000,
+       name = 'circuit-breaker'
+     } = options;
+     
+     let failureCount = 0;
+     let lastFailureTime: number | null = null;
+     let state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';
+     let lastError: Error | null = null;
+     
+     return (async (...args: Parameters<T>): Promise<ReturnType<T>> => {
+       const now = Date.now();
+       
+       // If OPEN and reset timeout has passed, move to HALF_OPEN
+       if (state === 'OPEN' && lastFailureTime && now - lastFailureTime > resetTimeout) {
+         console.debug(`Circuit breaker ${name} transitioning from OPEN to HALF_OPEN`);
+         state = 'HALF_OPEN';
+       }
+       
+       // If OPEN, fail fast
+       if (state === 'OPEN') {
+         console.warn(`Circuit breaker ${name} is OPEN, failing fast`);
+         // Return last error or create a new one with context
+         throw lastError || new Error(`Circuit breaker ${name} is OPEN`);
+       }
+       
+       try {
+         const result = await Promise.race([
+           operation(...args),
+           new Promise<never>((_, reject) => 
+             setTimeout(() => reject(new Error(`Circuit breaker ${name} timeout`)), timeout)
+           )
+         ]);
+         
+         // Success - reset failure count and close circuit
+         if (state === 'HALF_OPEN') {
+           console.debug(`Circuit breaker ${name} transitioning from HALF_OPEN to CLOSED after success`);
+         }
+         failureCount = 0;
+         state = 'CLOSED';
+         lastError = null; // Clear last error on success
+         return result;
+       } catch (error) {
+         failureCount++;
+         lastFailureTime = now;
+         lastError = error instanceof Error ? error : new Error(String(error));
+         
+         // If failure threshold exceeded, open circuit
+         if (failureCount >= failureThreshold) {
+           console.warn(`Circuit breaker ${name} transitioning to OPEN after ${failureCount} failures`);
+           state = 'OPEN';
+         } else {
+           console.debug(`Circuit breaker ${name} failure #${failureCount}/${failureThreshold}, remaining closed`);
+           // Stay in current state for now
+         }
+         
+         throw error;
+       }
+     }) as T;
+   }
 };
 
 // Edge-specific error handling
