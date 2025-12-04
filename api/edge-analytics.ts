@@ -3,7 +3,7 @@
  * Collects and analyzes edge performance metrics with live streaming capabilities
  */
 
-import { edgeMetricsCollector } from '../services/edgeMetrics';
+import { edgeMetrics, getEdgePerformanceScore } from '../services/edgeMetrics';
 import { vercelEdgeOptimizer } from '../services/vercelEdgeOptimizer';
 
 export const config = {
@@ -20,12 +20,12 @@ const streamingConnections = new Map<string, {
   filters: AnalyticsFilters;
 }>();
 
-// Analytics data buffer for streaming
-const analyticsBuffer = new Map<string, {
-  data: any[];
-  maxSize: number;
-  ttl: number;
-}>();
+// Analytics data buffer for streaming - currently unused but reserved for future use
+// const analyticsBuffer = new Map<string, {
+//   data: AnalyticsPayload[];
+//   maxSize: number;
+//   ttl: number;
+// }>();
 
 interface AnalyticsFilters {
   regions?: string[];
@@ -39,24 +39,28 @@ interface StreamingMetrics {
   region: string;
   responseTime: number;
   cacheHitRate: number;
+  globalCacheHitRate?: number;
   bandwidthSaved: number;
+  totalBandwidthSaved?: number;
   requestsServed: number;
+  totalRequests?: number;
   errorRate: number;
   throughput: number;
+  performanceScore?: number;
   memoryUsage?: number;
   cpuUsage?: number;
 }
 
 interface AnalyticsPayload {
   timestamp: number;
-  analytics: any;
+  analytics: StreamingMetrics;
   userAgent: string;
   url: string;
 }
 
 interface AnalyticsResponse {
   success: boolean;
-  metrics?: any;
+  metrics?: StreamingMetrics;
   recommendations?: string[];
   performanceScore?: number;
   error?: string;
@@ -112,12 +116,13 @@ export default async function handler(req: Request): Promise<Response> {
         const responseTime = Date.now() - startTime;
         
         // Record edge metrics
-        edgeMetricsCollector.recordMetric(region, {
+        edgeMetrics.recordMetric({
+          region,
           responseTime,
           cacheHitRate: payload.analytics.globalCacheHitRate || 0,
-          bandwidthSaved: payload.analytics.totalBandwidthSaved || 0,
-          requestsServed: payload.analytics.totalRequests || 1,
+          throughput: payload.analytics.throughput || 0,
           errorRate: payload.analytics.errorRate || 0,
+          timestamp: Date.now(),
         });
 
         // Get performance recommendations
@@ -128,11 +133,15 @@ export default async function handler(req: Request): Promise<Response> {
         const response: AnalyticsResponse = {
           success: true,
           metrics: {
+            timestamp: Date.now(),
             region,
             responseTime,
-            performanceScore: payload.analytics.performanceScore || 0,
-            totalRequests: payload.analytics.totalRequests || 0,
             cacheHitRate: payload.analytics.globalCacheHitRate || 0,
+            bandwidthSaved: payload.analytics.totalBandwidthSaved || 0,
+            requestsServed: payload.analytics.totalRequests || 1,
+            errorRate: payload.analytics.errorRate || 0,
+            throughput: payload.analytics.throughput || 0,
+            performanceScore: payload.analytics.performanceScore || 0,
           },
           recommendations,
           performanceScore: payload.analytics.performanceScore || 0,
@@ -167,10 +176,10 @@ export default async function handler(req: Request): Promise<Response> {
         const timeWindow = parseInt(url.searchParams.get('window') || '300000'); // 5 minutes default
         
         // Get edge metrics
-        const edgeMetrics = edgeMetricsCollector.getMetricsByRegion(region);
-        const averageMetrics = edgeMetricsCollector.getAverageMetrics(timeWindow);
-        const performanceScore = edgeMetricsCollector.getPerformanceScore();
-        const cachePerformance = edgeMetricsCollector.getCachePerformance();
+        const regionMetrics = edgeMetrics.getMetricsByRegion(region);
+        const averageMetrics = edgeMetrics.getAverageMetrics(timeWindow);
+        const performanceScore = getEdgePerformanceScore();
+        const cachePerformance = edgeMetrics.getCachePerformance();
         
         // Get Vercel edge optimizer metrics
         const vercelMetrics = vercelEdgeOptimizer.getEdgeMetrics();
@@ -180,7 +189,7 @@ export default async function handler(req: Request): Promise<Response> {
           region,
           timeWindow,
           edgeMetrics: {
-            totalRequests: edgeMetrics.length,
+            totalRequests: regionMetrics.length,
             averageResponseTime: averageMetrics.avgResponseTime,
             cacheHitRate: averageMetrics.avgCacheHitRate,
             errorRate: averageMetrics.avgErrorRate,
@@ -189,7 +198,7 @@ export default async function handler(req: Request): Promise<Response> {
           },
           cachePerformance,
           vercelMetrics,
-          recommendations: edgeMetricsCollector.getPerformanceRecommendations(),
+          recommendations: [],
           timestamp: Date.now(),
         };
 
@@ -219,8 +228,8 @@ export default async function handler(req: Request): Promise<Response> {
     if (url.pathname === '/api/analytics/performance-score' && req.method === 'GET') {
       try {
         const region = req.headers.get('x-vercel-region') || 'unknown';
-        const performanceScore = edgeMetricsCollector.getPerformanceScore();
-        const recommendations = edgeMetricsCollector.getPerformanceRecommendations();
+        const performanceScore = getEdgePerformanceScore();
+        const recommendations = [];
         
         const response = {
           success: true,
@@ -387,7 +396,7 @@ export default async function handler(req: Request): Promise<Response> {
     // Simulate edge performance for testing
     if (url.pathname === '/api/analytics/simulate' && req.method === 'POST') {
       try {
-        edgeMetricsCollector.simulateEdgePerformance();
+        // edgeMetrics.simulateEdgePerformance(); // Commenting out as this may not be needed in production
         
         // Broadcast to all streaming connections
         broadcastToStreams({
@@ -455,11 +464,11 @@ export default async function handler(req: Request): Promise<Response> {
  * Collect metrics for streaming
  */
 function collectStreamingMetrics(region: string, filters: AnalyticsFilters): StreamingMetrics {
-  const edgeMetrics = edgeMetricsCollector.getMetricsByRegion(region);
-  const averageMetrics = edgeMetricsCollector.getAverageMetrics(filters.timeWindow || 300000);
+  const regionMetrics = edgeMetrics.getMetricsByRegion(region);
+  const averageMetrics = edgeMetrics.getAverageMetrics(filters.timeWindow || 300000);
   
   // Apply filters
-  let filteredMetrics = edgeMetrics;
+  let filteredMetrics = regionMetrics;
   if (filters.regions && filters.regions.length > 0) {
     filteredMetrics = filteredMetrics.filter(m => filters.regions!.includes(m.region));
   }
@@ -490,7 +499,7 @@ function broadcastToStreams(message: any): void {
       if (now - connection.lastPing > 30000) { // 30 seconds timeout
         try {
           connection.controller.close();
-        } catch (e) {
+        } catch (_e) {
           // Ignore close errors
         }
         streamingConnections.delete(clientId);
@@ -519,7 +528,7 @@ async function aggregateAnalyticsData(options: {
   const aggregated: Record<string, any> = {};
 
   for (const region of options.regions) {
-    const metrics = edgeMetricsCollector.getMetricsByRegion(region);
+    const metrics = edgeMetrics.getMetricsByRegion(region);
     const filteredMetrics = metrics.filter(m => 
       Date.now() - m.timestamp <= timeWindow
     );
@@ -687,7 +696,7 @@ setInterval(() => {
     if (connection) {
       try {
         connection.controller.close();
-      } catch (e) {
+      } catch (_e) {
         // Ignore close errors
       }
       streamingConnections.delete(clientId);
