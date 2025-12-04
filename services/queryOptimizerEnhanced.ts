@@ -1,7 +1,7 @@
 import { settingsManager } from './settingsManager';
 import { handleError } from '../utils/errorHandler';
-import { smartCache } from './smartCache';
-import { enhancedConnectionPool } from './enhancedSupabasePool';
+import { consolidatedCache } from './consolidatedCacheManager';
+import { connectionPool } from './supabaseConnectionPool';
 
 interface QueryOptimization {
   originalQuery: string;
@@ -70,6 +70,18 @@ export class QueryOptimizerEnhanced {
     this.setupPeriodicOptimization();
   }
 
+  private precomputeCommonQueries(): void {
+    // Placeholder for future optimization
+  }
+
+  private initializeIndexRecommendations(): void {
+    // Placeholder for future optimization
+  }
+
+  private setupPeriodicOptimization(): void {
+    // Placeholder for future optimization
+  }
+
   async batchQuery<T>(queries: BatchQuery[]): Promise<QueryResult<T>[]> {
     const results: QueryResult<T>[] = [];
     const cache = new Map<string, any>();
@@ -77,7 +89,7 @@ export class QueryOptimizerEnhanced {
     for (const { query, params, cacheKey, ttl = 300000 } of queries) {
       // Check cache first
       if (cacheKey) {
-        const cached = await smartCache.get(cacheKey);
+        const cached = await consolidatedCache.get(cacheKey);
         if (cached) {
           results.push({ data: cached, cached: true });
           continue;
@@ -92,7 +104,7 @@ export class QueryOptimizerEnhanced {
         if (query.includes('SELECT')) {
           result = await client
             .from('robots')
-            .select(query.replace('SELECT ', ''), params);
+            .select(query.replace('SELECT ', ''));
         } else if (query.includes('INSERT')) {
           result = await client
             .from('robots')
@@ -100,15 +112,15 @@ export class QueryOptimizerEnhanced {
         } else if (query.includes('UPDATE')) {
           result = await client
             .from('robots')
-            .update(params[1])
-            .eq('id', params[0]);
+            .update(params?.[1])
+            .eq('id', params?.[0]);
         } else {
           // Fallback to RPC for custom queries
           result = await client.rpc('exec_sql', { query, params });
         }
 
         if (cacheKey && result.data) {
-          await smartCache.set(cacheKey, result.data, { ttl });
+          await consolidatedCache.set(cacheKey, result.data, 'api');
         }
 
         results.push({ data: result.data, error: result.error, cached: false });
@@ -149,7 +161,7 @@ export class QueryOptimizerEnhanced {
 
     // Check cache
     if (cacheKey) {
-      const cached = await smartCache.get(finalCacheKey);
+      const cached = await consolidatedCache.get(finalCacheKey);
       if (cached) {
         return { data: cached, error: null, cached: true };
       }
@@ -167,7 +179,7 @@ export class QueryOptimizerEnhanced {
         // Full-text search for multi-word queries
         query = client
           .from(table)
-          .select(columns)
+          .select(columns as string)
           .textSearch('search_vector', sanitizedTerm)
           .order(orderBy, { ascending })
           .range(offset, offset + limit - 1);
@@ -175,7 +187,7 @@ export class QueryOptimizerEnhanced {
         // Simple search for single words
         query = client
           .from(table)
-          .select(columns)
+          .select(columns as string)
           .or(`name.ilike.%${sanitizedTerm}%,description.ilike.%${sanitizedTerm}%,strategy.ilike.%${sanitizedTerm}%`)
           .order(orderBy, { ascending })
           .range(offset, offset + limit - 1);
@@ -185,7 +197,7 @@ export class QueryOptimizerEnhanced {
 
       // Cache successful results
       if (cacheKey && result.data) {
-        await smartCache.set(finalCacheKey, result.data, { ttl });
+        await consolidatedCache.set(finalCacheKey, result.data, 'api');
       }
 
       return { data: result.data || [], error: result.error, cached: false };
@@ -199,7 +211,7 @@ export class QueryOptimizerEnhanced {
     const cacheKey = `prepared_${queryName}_${JSON.stringify(params)}`;
     
     // Check cache first
-    const cached = await smartCache.get(cacheKey);
+    const cached = await consolidatedCache.get(cacheKey);
     if (cached) {
       return cached;
     }
@@ -234,12 +246,10 @@ export class QueryOptimizerEnhanced {
           break;
         
         case 'get_popular_strategies':
-          result = await client
-            .from('robots')
-            .select('strategy, count(*)')
-            .group('strategy')
-            .order('count', { ascending: false })
-            .limit(params[0] || 5);
+          // Use RPC for complex queries
+          result = await client.rpc('get_popular_strategies', { 
+            limit: params[0] || 5 
+          });
           break;
         
         default:
@@ -248,7 +258,7 @@ export class QueryOptimizerEnhanced {
 
       // Cache successful results
       if (result.data) {
-        await smartCache.set(cacheKey, result.data, { ttl: 600000 }); // 10 minutes
+        await consolidatedCache.set(cacheKey, result.data, 'api');
       }
 
       return result;
@@ -267,7 +277,7 @@ export class QueryOptimizerEnhanced {
     const cacheKey = `monitor_${queryName}`;
     
     // Check if we have recent performance data
-    const perfData = await smartCache.get(cacheKey);
+    const perfData = await consolidatedCache.get(cacheKey);
     if (perfData && (Date.now() - perfData.timestamp) < 60000) {
       return { data: perfData.data, executionTime: perfData.executionTime, cached: true };
     }
@@ -277,11 +287,11 @@ export class QueryOptimizerEnhanced {
       const executionTime = performance.now() - startTime;
 
       // Cache performance data
-      await smartCache.set(cacheKey, {
+      await consolidatedCache.set(cacheKey, {
         data: result,
         executionTime,
         timestamp: Date.now()
-      }, { ttl: 60000 });
+      }, 'performance');
 
       return { data: result, executionTime, cached: false };
     } catch (error) {
@@ -384,9 +394,9 @@ export class QueryOptimizerEnhanced {
     return {
       batchQueueSize: totalQueries,
       activeBatches: this.batchQueue.size,
-      cacheHitRate: smartCache.getHitRate(),
+      cacheHitRate: 0, // TODO: Implement hit rate tracking in consolidated cache
     };
   }
 }
 
-export const queryOptimizer = QueryOptimizer.getInstance();
+export const queryOptimizer = new QueryOptimizerEnhanced();

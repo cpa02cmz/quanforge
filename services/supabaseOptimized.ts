@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { Robot, UserSession } from '../types';
+import { Robot } from '../types';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { securityManager } from './securityManager';
 import { logger } from '../utils/logger';
@@ -29,7 +29,6 @@ const SUPABASE_CONFIG = {
 
 // Query deduplication cache
 const queryCache = new Map<string, Promise<any>>();
-const pendingQueries = new Map<string, any[]>();
 
 class OptimizedSupabaseService {
   private supabase: any = null;
@@ -42,8 +41,8 @@ class OptimizedSupabaseService {
 
   private async initializeClient() {
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const supabaseUrl = process.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
 
       if (!supabaseUrl || !supabaseAnonKey) {
         logger.warn('Supabase credentials not found, using mock mode');
@@ -93,13 +92,13 @@ class OptimizedSupabaseService {
   // Batch query processing
   private async batchQuery<T>(queries: Array<{ key: string; query: () => Promise<T> }>): Promise<T[]> {
     const batchSize = Math.min(queries.length, SUPABASE_CONFIG.batchSize);
-    const batches = [];
+    const batches: Array<Array<{ key: string; query: () => Promise<T> }>> = [];
     
     for (let i = 0; i < queries.length; i += batchSize) {
       batches.push(queries.slice(i, i + batchSize));
     }
 
-    const results = [];
+    const results: T[] = [];
     for (const batch of batches) {
       const batchResults = await Promise.allSettled(
         batch.map(({ query }) => query())
@@ -107,7 +106,7 @@ class OptimizedSupabaseService {
       
       results.push(...batchResults.map(result => 
         result.status === 'fulfilled' ? result.value : null
-      ));
+      ) as T[]);
     }
 
     return results;
@@ -277,10 +276,9 @@ class OptimizedSupabaseService {
 
   // Cache invalidation helper
   private async invalidateRobotCache() {
-    const patterns = ['robots:*', 'robot:*'];
-    for (const pattern of patterns) {
-      await consolidatedCache.deletePattern(pattern);
-    }
+    // TODO: Implement pattern-based deletion in consolidated cache
+    // For now, clear all cache entries
+    await consolidatedCache.clear();
   }
 
   // Mock implementations for fallback

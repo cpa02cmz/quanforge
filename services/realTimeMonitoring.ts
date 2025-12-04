@@ -1,5 +1,5 @@
 import { handleError } from '../utils/errorHandler';
-import { smartCache } from './smartCache';
+import { consolidatedCache } from './consolidatedCacheManager';
 
 interface CoreWebVitals {
   lcp: number; // Largest Contentful Paint
@@ -16,7 +16,7 @@ interface PerformanceMetrics {
   connection: string;
   vitals: CoreWebVitals;
   resources: PerformanceResourceTiming[];
-  memory?: PerformanceMemory;
+  memory?: any;
   navigation: PerformanceNavigationTiming;
 }
 
@@ -108,7 +108,7 @@ class RealTimeMonitoring {
 
     // First Input Delay (FID)
     this.observePerformanceObserver('first-input', (entries) => {
-      const firstEntry = entries[0];
+      const firstEntry = entries[0] as any;
       this.updateMetric('fid', firstEntry.processingStart - firstEntry.startTime);
     });
 
@@ -173,7 +173,7 @@ class RealTimeMonitoring {
         lineno: event.lineno,
         colno: event.colno,
         stack: event.error?.stack
-      });
+      }).catch(err => console.error('Failed to record error:', err));
     });
 
     // Monitor promise rejections
@@ -181,7 +181,7 @@ class RealTimeMonitoring {
       this.recordError('promise', {
         reason: event.reason,
         stack: event.reason?.stack
-      });
+      }).catch(err => console.error('Failed to record rejection:', err));
     });
   }
 
@@ -253,7 +253,7 @@ class RealTimeMonitoring {
    */
   private checkMemoryUsage(): void {
     if ('memory' in performance) {
-      const memory = (performance as any).memory as PerformanceMemory;
+      const memory = (performance as any).memory;
       const usageRatio = memory.usedJSHeapSize / memory.jsHeapSizeLimit;
 
       if (usageRatio > 0.9) { // 90% memory usage
@@ -265,7 +265,7 @@ class RealTimeMonitoring {
   /**
    * Record error
    */
-  private recordError(type: string, details: any): void {
+  private async recordError(type: string, details: any): Promise<void> {
     const errorData = {
       type,
       details,
@@ -275,11 +275,7 @@ class RealTimeMonitoring {
     };
 
     // Cache error for reporting
-    smartCache.set(`error_${Date.now()}`, errorData, {
-      ttl: 24 * 60 * 60 * 1000, // 24 hours
-      priority: 'high',
-      tags: ['error', 'performance']
-    });
+    await consolidatedCache.set(`error_${Date.now()}`, errorData, 'performance', ['error', 'performance']);
 
     // Check error rate
     this.checkErrorRate();
@@ -434,11 +430,7 @@ class RealTimeMonitoring {
 
     try {
       // Cache metrics for batch reporting
-      await smartCache.set(`metrics_${Date.now()}`, currentMetrics, {
-        ttl: 24 * 60 * 60 * 1000, // 24 hours
-        priority: 'medium',
-        tags: ['metrics', 'performance']
-      });
+      await consolidatedCache.set(`metrics_${Date.now()}`, currentMetrics, 'performance', ['metrics', 'performance']);
 
       // Store in memory for real-time access
       this.metrics.push(currentMetrics);
