@@ -13,17 +13,26 @@ const CACHE_STRATEGIES = {
   STATIC: {
     cacheName: STATIC_CACHE,
     maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
-    maxEntries: 100
+    maxEntries: 100,
+    priority: 'high'
   },
   API: {
     cacheName: API_CACHE,
     maxAge: 5 * 60 * 1000, // 5 minutes
-    maxEntries: 50
+    maxEntries: 50,
+    priority: 'medium'
   },
   DYNAMIC: {
     cacheName: DYNAMIC_CACHE,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    maxEntries: 200
+    maxEntries: 200,
+    priority: 'low'
+  },
+  EDGE_OPTIMIZED: {
+    cacheName: 'quanforge-edge-optimized-v2',
+    maxAge: 15 * 60 * 1000, // 15 minutes
+    maxEntries: 75,
+    priority: 'high'
   }
 };
 
@@ -99,6 +108,7 @@ self.addEventListener('activate', (event) => {
           if (cacheName !== STATIC_CACHE && 
               cacheName !== API_CACHE && 
               cacheName !== DYNAMIC_CACHE &&
+              cacheName !== 'quanforge-edge-optimized-v2' &&
               cacheName !== CACHE_NAME) {
             console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
@@ -122,16 +132,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Handle different request types
-  if (isStaticAsset(request.url)) {
-    event.respondWith(handleStaticAsset(request));
-  } else if (isAPIRequest(request.url)) {
-    event.respondWith(handleAPIRequest(request));
-  } else if (isNavigationRequest(request.url)) {
-    event.respondWith(handleNavigationRequest(request));
-  } else {
-    event.respondWith(handleDynamicRequest(request));
-  }
+// Handle different request types
+if (isEdgeOptimizedRequest(request.url)) {
+  event.respondWith(handleEdgeOptimizedRequest(request));
+} else if (isStaticAsset(request.url)) {
+  event.respondWith(handleStaticAsset(request));
+} else if (isAPIRequest(request.url)) {
+  event.respondWith(handleAPIRequest(request));
+} else if (isNavigationRequest(request.url)) {
+  event.respondWith(handleNavigationRequest(request));
+} else {
+  event.respondWith(handleDynamicRequest(request));
+}
 });
 
 // Handle API requests with network-first strategy
@@ -310,6 +322,77 @@ async function handleDynamicRequest(request) {
   });
 }
 
+// Handle edge-optimized requests with aggressive caching
+async function handleEdgeOptimizedRequest(request) {
+  const cache = await caches.open(CACHE_STRATEGIES.EDGE_OPTIMIZED.cacheName);
+  const cachedResponse = await cache.match(request);
+  
+  // Always try to fetch from network to keep cache fresh
+  const networkPromise = fetch(request).then(async (networkResponse) => {
+    if (networkResponse.ok) {
+      // Cache the response with edge optimization headers
+      const responseToCache = new Response(networkResponse.body, {
+        status: networkResponse.status,
+        statusText: networkResponse.statusText,
+        headers: {
+          ...networkResponse.headers,
+          'X-Edge-Optimized': 'true',
+          'X-Edge-Cache-Status': 'fresh'
+        }
+      });
+      await cache.put(request, responseToCache.clone());
+    }
+    return networkResponse;
+  }).catch((error) => {
+    console.warn('Edge-optimized request failed:', error);
+    return null;
+  });
+  
+  // Return cached version if available (stale-while-revalidate pattern)
+  if (cachedResponse) {
+    // Add stale-while-revalidate header
+    const headers = new Headers(cachedResponse.headers);
+    headers.set('X-Served-By', 'edge-cache');
+    headers.set('X-Cache-Status', 'stale');
+    headers.set('X-Edge-Optimized', 'true');
+    
+    // Update cache in background
+    networkPromise.then((networkResponse) => {
+      if (networkResponse && networkResponse.ok) {
+        console.log('Edge cache updated for:', request.url);
+      }
+    });
+    
+    return new Response(cachedResponse.body, {
+      status: cachedResponse.status,
+      statusText: cachedResponse.statusText,
+      headers
+    });
+  }
+  
+  // Wait for network if no cache available
+  try {
+    const networkResponse = await networkPromise;
+    
+    if (networkResponse) {
+      return networkResponse;
+    }
+  } catch (error) {
+    console.warn('Network request failed:', error);
+  }
+  
+  // Fallback to any available cached response
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+  
+  // Return offline response
+  return new Response('Offline - Edge Cache', { 
+    status: 503, 
+    statusText: 'Service Unavailable' 
+  });
+}
+
 // Helper functions
 function isStaticAsset(url) {
   return url.includes('/assets/') || 
@@ -324,7 +407,27 @@ function isAPIRequest(url) {
 
 function isNavigationRequest(url) {
   return request.mode === 'navigate' || 
-         (request.method === 'GET' && request.headers.get('accept')?.includes('text/html'));
+       (request.method === 'GET' && request.headers.get('accept')?.includes('text/html'));
+}
+
+// Check if a request is for edge-optimized content
+function isEdgeOptimizedRequest(url) {
+  // Check for edge-specific endpoints or parameters
+  return url.includes('/api/edge/') || 
+         url.includes('/edge-analytics') || 
+         url.includes('/edge-optimize') ||
+         url.includes('edge=true') ||
+         url.includes('/api/analytics');
+}
+
+// Check if a request is for edge-optimized content
+function isEdgeOptimizedRequest(url) {
+  // Check for edge-specific endpoints or parameters
+  return url.includes('/api/edge/') || 
+         url.includes('/edge-analytics') || 
+         url.includes('/edge-optimize') ||
+         url.includes('edge=true') ||
+         url.includes('/api/analytics');
 }
 
 // Background sync for offline actions
