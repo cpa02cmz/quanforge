@@ -25,3 +25,4 @@ export * from './readReplicaManager';
 export * from './queryBatcher';
 export * from './edgeKVStorage';
 export * from './realTimeUXScoring';
+export * from './databaseQueryOptimizer';
