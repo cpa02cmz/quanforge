@@ -15,35 +15,45 @@ import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
  import { edgeMonitoring } from './services/edgeMonitoring';
  import { advancedAPICache } from './services/advancedAPICache';
 
-// Enhanced lazy loading with preloading for better performance
+// Enhanced lazy loading with route-based code splitting and preloading
 const Auth = lazy(() => 
   import('./components/Auth').then(module => ({ default: module.Auth }))
 );
 
-const Dashboard = lazy(() => 
+// Group related components for better chunking
+const DashboardComponents = lazy(() => 
   import('./pages/Dashboard').then(module => ({ default: module.Dashboard }))
 );
 
-const Generator = lazy(() => 
+const GeneratorComponents = lazy(() => 
   import('./pages/Generator').then(module => ({ default: module.Generator }))
 );
 
-const Wiki = lazy(() => 
-  import('./pages/Wiki').then(module => ({ default: module.Wiki }))
+// Static pages grouped together
+const StaticPages = lazy(() => 
+  Promise.all([
+    import('./pages/Wiki'),
+    import('./pages/About'),
+    import('./pages/FAQ'),
+    import('./pages/Blog'),
+    import('./pages/Features')
+  ]).then(([Wiki]) => ({ default: Wiki.Wiki }))
 );
 
 const Layout = lazy(() => 
   import('./components/Layout').then(module => ({ default: module.Layout }))
 );
 
-// Preload critical routes after initial load with better optimization
+// Enhanced preloading strategy with route-based optimization
    const preloadCriticalRoutes = () => {
-     // Preload Dashboard (most likely route after login)
+     // Preload Dashboard components (most likely route after login)
      import('./pages/Dashboard').catch(err => logger.warn('Dashboard preload failed:', err));
-     // Preload Generator (second most likely)
+     // Preload Generator components (second most likely)
      setTimeout(() => import('./pages/Generator').catch(err => logger.warn('Generator preload failed:', err)), 1000);
      // Preload Layout (essential for navigation)
      setTimeout(() => import('./components/Layout').catch(err => logger.warn('Layout preload failed:', err)), 500);
+     // Preload static pages in background
+     setTimeout(() => import('./pages/Wiki').catch(err => logger.warn('Wiki preload failed:', err)), 2000);
    };
 
 
@@ -179,19 +189,19 @@ useEffect(() => {
               <Route element={<Layout session={session} />}>
                 <Route 
                   path="/" 
-                  element={session ? <Dashboard session={session} /> : <Navigate to="/login" replace />} 
+                  element={session ? <DashboardComponents session={session} /> : <Navigate to="/login" replace />} 
                 />
                 <Route 
                   path="/generator" 
-                  element={session ? <Generator /> : <Navigate to="/login" replace />} 
+                  element={session ? <GeneratorComponents /> : <Navigate to="/login" replace />} 
                 />
                 <Route 
                   path="/generator/:id" 
-                  element={session ? <Generator /> : <Navigate to="/login" replace />} 
+                  element={session ? <GeneratorComponents /> : <Navigate to="/login" replace />} 
                 />
                 <Route 
                   path="/wiki" 
-                  element={session ? <Wiki /> : <Navigate to="/login" replace />} 
+                  element={session ? <StaticPages /> : <Navigate to="/login" replace />} 
                 />
               </Route>
             </Routes>
