@@ -112,7 +112,7 @@ export default defineConfig({
         drop_console: process.env['NODE_ENV'] === 'production',
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn', 'console.error'],
-        passes: 5, // Increased for maximum compression
+        passes: 3, // Optimized for build performance
         // Enhanced optimizations for Vercel Edge
         inline: 3,
         reduce_funcs: true,
@@ -164,7 +164,7 @@ export default defineConfig({
         comments: false
       }
     },
-chunkSizeWarningLimit: 300, // Reduced for better edge performance
+chunkSizeWarningLimit: 200, // Optimized for edge performance
     target: ['es2020', 'edge101'], // More specific targets for edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,

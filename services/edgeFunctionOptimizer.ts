@@ -56,7 +56,7 @@ class EdgeFunctionOptimizer {
         regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
         memory: 512,
         maxDuration: 30,
-        warmupInterval: 4 * 60 * 1000, // 4 minutes
+        warmupInterval: 5 * 60 * 1000, // 5 minutes - optimized for edge
         priority: 'high',
       },
       {
@@ -64,7 +64,7 @@ class EdgeFunctionOptimizer {
         regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
         memory: 256,
         maxDuration: 10,
-        warmupInterval: 5 * 60 * 1000, // 5 minutes
+        warmupInterval: 7 * 60 * 1000, // 7 minutes - optimized for edge
         priority: 'medium',
       },
       {
@@ -72,7 +72,7 @@ class EdgeFunctionOptimizer {
         regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
         memory: 128,
         maxDuration: 5,
-        warmupInterval: 6 * 60 * 1000, // 6 minutes
+        warmupInterval: 10 * 60 * 1000, // 10 minutes - optimized for edge
         priority: 'low',
       },
     ];
@@ -255,32 +255,32 @@ class EdgeFunctionOptimizer {
    * Schedule periodic warmups for all functions
    */
   private startPeriodicWarmups(): void {
-    // Warm up high priority functions every 2 minutes
+    // Warm up high priority functions every 5 minutes - optimized for edge
     setInterval(() => {
       this.configs.forEach((config, name) => {
         if (config.priority === 'high') {
           this.warmupFunction(name);
         }
       });
-    }, 2 * 60 * 1000);
+    }, 5 * 60 * 1000);
 
-    // Warm up medium priority functions every 5 minutes
+    // Warm up medium priority functions every 10 minutes - optimized for edge
     setInterval(() => {
       this.configs.forEach((config, name) => {
         if (config.priority === 'medium') {
           this.warmupFunction(name);
         }
       });
-    }, 5 * 60 * 1000);
+    }, 10 * 60 * 1000);
 
-    // Warm up low priority functions every 10 minutes
+    // Warm up low priority functions every 15 minutes - optimized for edge
     setInterval(() => {
       this.configs.forEach((config, name) => {
         if (config.priority === 'low') {
           this.warmupFunction(name);
         }
       });
-    }, 10 * 60 * 1000);
+    }, 15 * 60 * 1000);
   }
 
   /**
