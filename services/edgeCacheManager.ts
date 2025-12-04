@@ -56,15 +56,15 @@ export class EdgeCacheManager<T = any> {
     regionalStats: new Map<string, { hits: number; size: number }>(),
   };
   private config: EdgeCacheConfig = {
-    memoryMaxSize: 8 * 1024 * 1024, // 8MB - optimized for edge constraints
-    memoryMaxEntries: 500, // Reduced entries for edge memory
+    memoryMaxSize: 12 * 1024 * 1024, // 12MB - increased for better performance
+    memoryMaxEntries: 1000, // Increased entries for better caching
     persistentMaxSize: 50 * 1024 * 1024, // 50MB persistent cache
     persistentMaxEntries: 2000, // Reduced entries
-    defaultTTL: 30 * 60 * 1000, // 30 minutes - optimized for edge
-    cleanupInterval: 60000, // 1 minute - reduced cleanup frequency
-    compressionThreshold: 2048, // 2KB - optimized compression threshold
-    edgeRegions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
-    replicationFactor: 2, // Reduced replication for edge efficiency
+    defaultTTL: 45 * 60 * 1000, // 45 minutes - increased for better hit rates
+    cleanupInterval: 45000, // 45 seconds - more frequent cleanup
+    compressionThreshold: 1024, // 1KB - lower threshold for more compression
+    edgeRegions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'],
+    replicationFactor: 3, // Increased replication for better redundancy
   };
   private cleanupTimer: number | null = null;
   private dbName = 'edgeCacheManager';

@@ -19,10 +19,10 @@ class EdgeSupabasePool {
   private static instance: EdgeSupabasePool;
   private clientCache: Map<string, ClientCache> = new Map();
   private config: EdgeClientConfig = {
-    ttl: 30000, // 30 seconds - optimized for serverless
-    healthCheckInterval: 15000, // 15 seconds
-    connectionTimeout: 3000, // 3 seconds for faster failover
-    maxRetries: 2, // Reduced retries for edge reliability
+    ttl: 45000, // 45 seconds - increased for better performance
+    healthCheckInterval: 10000, // 10 seconds for faster detection
+    connectionTimeout: 1000, // 1 second for faster failover
+    maxRetries: 3, // Increased retries for better reliability
   };
   private healthCheckTimer: NodeJS.Timeout | null = null;
 
@@ -146,7 +146,7 @@ class EdgeSupabasePool {
 
   // Warm up connections for key regions
   async warmEdgeConnections(): Promise<void> {
-    const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'];
+    const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'];
     
     const warmPromises = regions.map(async (region) => {
       try {
