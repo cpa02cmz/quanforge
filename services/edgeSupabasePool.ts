@@ -19,10 +19,10 @@ class EdgeSupabasePool {
   private static instance: EdgeSupabasePool;
   private clientCache: Map<string, ClientCache> = new Map();
   private config: EdgeClientConfig = {
-    ttl: 90000, // 90 seconds - extended for better cache hit rates
-    healthCheckInterval: 10000, // 10 seconds for balanced detection
-    connectionTimeout: 1000, // 1 second for better reliability
-    maxRetries: 7, // Increased retries for better reliability
+    ttl: 60000, // 60 seconds - optimized for edge performance
+    healthCheckInterval: 15000, // 15 seconds for reduced overhead
+    connectionTimeout: 1500, // 1.5 seconds for better edge reliability
+    maxRetries: 5, // Reduced retries for faster failure detection
   };
   private healthCheckTimer: NodeJS.Timeout | null = null;
 

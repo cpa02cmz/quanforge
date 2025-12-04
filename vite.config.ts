@@ -176,13 +176,13 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 150, // Reduced for better edge performance
+    chunkSizeWarningLimit: 100, // Further reduced for optimal edge performance
     target: 'esnext', // Updated targets for better performance and modern features
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
     // Enhanced edge optimization
-    assetsInlineLimit: 256, // Optimized for edge performance with better balance
+    assetsInlineLimit: 128, // Reduced for better edge performance
     modulePreload: {
       polyfill: false
     },

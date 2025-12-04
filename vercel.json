@@ -126,9 +126,9 @@
   "functions": {
     "api/**/*.ts": {
       "runtime": "edge",
-      "regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1", "arn1", "gru1", "cle1", "syd1", "nrt1"],
-      "maxDuration": 90,
-      "memory": 1536,
+      "regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1"],
+      "maxDuration": 60,
+      "memory": 1024,
       "includeFiles": ["public/**/*"],
       "excludeFiles": ["**/*.test.*", "**/*.spec.*"],
       "cache": "max-age=600, s-maxage=1800, stale-while-revalidate=600",
@@ -144,8 +144,8 @@
         "PREDICTIVE_CACHING": "true",
         "EDGE_METRICS_ENABLED": "true",
         "EDGE_CACHE_TTL": "1800",
-        "EDGE_MAX_CONNECTIONS": "12",
-        "EDGE_MIN_CONNECTIONS": "4",
+        "EDGE_MAX_CONNECTIONS": "8",
+        "EDGE_MIN_CONNECTIONS": "2",
         "EDGE_HEALTH_CHECK_INTERVAL": "15000",
         "EDGE_CACHE_STRATEGY": "intelligent",
         "ENABLE_EDGE_CACHE": "true",

@@ -1,16 +1,16 @@
 
 import React, { useState, useEffect, memo, useMemo, lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
-import { ChatInterface } from '../components/ChatInterface';
-import { CodeEditor } from '../components/CodeEditor';
 import { StrategyConfig } from '../components/StrategyConfig';
 import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
-import { BacktestPanel } from '../components/BacktestPanel';
 import { useTranslation } from '../services/i18n';
 import { AdvancedSEO } from '../utils/advancedSEO';
 import { performanceMonitor } from '../utils/performance';
 
-// Lazy load chart components to reduce initial bundle size
+// Lazy load heavy components to reduce initial bundle size
+const ChatInterface = lazy(() => import('../components/ChatInterface').then(module => ({ default: module.ChatInterface })));
+const CodeEditor = lazy(() => import('../components/CodeEditor').then(module => ({ default: module.CodeEditor })));
+const BacktestPanel = lazy(() => import('../components/BacktestPanel').then(module => ({ default: module.BacktestPanel })));
 const ChartComponents = lazy(() => import('../components/ChartComponents').then(module => ({ default: module.ChartComponents })));
 
 export const Generator: React.FC = memo(() => {
@@ -228,27 +228,33 @@ export const Generator: React.FC = memo(() => {
             </button>
         </div>
 
-        <div className="flex-1 overflow-hidden relative">
-            {activeMainTab === 'editor' && (
-                <CodeEditor 
-                    code={code} 
-                    filename={robotName} 
-                    onChange={setCode}
-                    onRefine={handleRefineCode}
-                    onExplain={handleExplainCode} // Wired up here
-                />
-            )}
+<div className="flex-1 overflow-hidden relative">
+            <Suspense fallback={
+              <div className="flex items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+              </div>
+            }>
+              {activeMainTab === 'editor' && (
+                  <CodeEditor 
+                      code={code} 
+                      filename={robotName} 
+                      onChange={setCode}
+                      onRefine={handleRefineCode}
+                      onExplain={handleExplainCode} // Wired up here
+                  />
+              )}
 
-            {activeMainTab === 'simulation' && (
-                <BacktestPanel 
-                    settings={backtestSettings}
-                    onChange={setBacktestSettings}
-                    onRun={runSimulation}
-                    result={simulationResult}
-                    isRunning={isSimulating}
-                    analysisExists={!!analysis}
-                />
-            )}
+              {activeMainTab === 'simulation' && (
+                  <BacktestPanel 
+                      settings={backtestSettings}
+                      onChange={setBacktestSettings}
+                      onRun={runSimulation}
+                      result={simulationResult}
+                      isRunning={isSimulating}
+                      analysisExists={!!analysis}
+                  />
+              )}
+            </Suspense>
 
             {activeMainTab === 'analysis' && (
                 <div className="p-8 h-full overflow-y-auto bg-dark-bg custom-scrollbar">
