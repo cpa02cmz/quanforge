@@ -173,13 +173,13 @@ terserOptions: {
     comments: false
   }
 },
-chunkSizeWarningLimit: 300, // Optimized for edge deployment
-target: ['es2020', 'edge101'], // More specific targets for edge compatibility
+chunkSizeWarningLimit: 150, // Further optimized for edge deployment
+target: ['es2022', 'edge115'], // Updated targets for better performance and modern features
 reportCompressedSize: true,
 cssCodeSplit: true,
 cssMinify: true, // Add CSS minification
     // Enhanced edge optimization
-    assetsInlineLimit: 256, // Reduced to 256B for better edge performance
+    assetsInlineLimit: 128, // Further reduced to 128B for optimal edge performance
     modulePreload: {
       polyfill: false
     },

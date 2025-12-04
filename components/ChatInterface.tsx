@@ -1,5 +1,5 @@
 
-import React, { lazy, Suspense, useState, useRef, useEffect, memo, useCallback, useMemo } from 'react';
+import React, { Suspense, useState, useRef, useEffect, memo, useCallback, useMemo } from 'react';
 import DOMPurify from 'dompurify';
 import { Message, MessageRole } from '../types';
 import { loadSuggestedStrategies } from '../constants';
