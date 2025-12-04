@@ -35,14 +35,14 @@ class SupabaseConnectionPool {
   private readReplicas: Map<string, ReadReplicaConfig> = new Map();
   private healthStatus: Map<string, ConnectionHealth> = new Map();
   private config: ConnectionPoolConfig = {
-    minConnections: 2, // Optimized for Vercel Edge
-    maxConnections: 6, // Reduced for serverless environment
-    idleTimeout: 120000, // 2 minutes (optimized for serverless)
-    healthCheckInterval: 15000, // 15 seconds (reduced frequency for edge)
-    connectionTimeout: 1500, // 1.5 seconds (faster failover for edge)
-    acquireTimeout: 1000, // 1 second (quicker acquisition)
-    retryAttempts: 3, // Reduced retries for edge reliability
-    retryDelay: 1000, // Optimized retry delay for edge environments
+    minConnections: 1, // Optimized for edge serverless
+    maxConnections: 4, // Further reduced for edge constraints
+    idleTimeout: 60000, // 1 minute (optimized for edge)
+    healthCheckInterval: 10000, // 10 seconds (faster health checks)
+    connectionTimeout: 1000, // 1 second (faster failover)
+    acquireTimeout: 500, // 0.5 seconds (quicker acquisition)
+    retryAttempts: 2, // Reduced retries for edge reliability
+    retryDelay: 500, // Faster retry for edge environments
   };
   private healthCheckTimer: NodeJS.Timeout | null = null;
   private readReplicaIndex = 0;

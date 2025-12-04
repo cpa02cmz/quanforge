@@ -126,9 +126,9 @@
   "functions": {
     "api/**/*.ts": {
       "runtime": "edge",
-"regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1", "arn1", "gru1", "cle1"],
-      "maxDuration": 60,
-      "memory": 1024,
+"regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1"],
+      "maxDuration": 30,
+      "memory": 512,
       "includeFiles": ["public/**/*"],
       "excludeFiles": ["**/*.test.*", "**/*.spec.*"],
       "cache": "max-age=300, s-maxage=1800, stale-while-revalidate=300",

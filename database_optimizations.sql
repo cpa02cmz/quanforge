@@ -791,7 +791,77 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- =====================================================
--- 14. PERFORMANCE MONITORING FOR MATERIALIZED VIEWS
+-- 14. EDGE-OPTIMIZED MATERIALIZED VIEWS FOR VERCEL DEPLOYMENT
+-- =====================================================
+
+-- Materialized view for robot summary cache (optimized for edge)
+CREATE MATERIALIZED VIEW IF NOT EXISTS robots_summary_cache AS 
+SELECT 
+  strategy_type,
+  COUNT(*) as count,
+  AVG(view_count) as avg_views,
+  AVG(CASE WHEN rating IS NOT NULL THEN rating ELSE 0 END) as avg_rating,
+  MAX(created_at) as latest_created,
+  COUNT(CASE WHEN is_public = true THEN 1 END) as public_count
+FROM robots 
+WHERE deleted_at IS NULL
+GROUP BY strategy_type;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_robots_summary_cache_strategy ON robots_summary_cache(strategy_type);
+CREATE INDEX IF NOT EXISTS idx_robots_summary_cache_count ON robots_summary_cache(count DESC);
+
+-- Optimized search function for edge deployment
+CREATE OR REPLACE FUNCTION search_robots_optimized(
+  search_term TEXT DEFAULT NULL,
+  strategy_filter TEXT DEFAULT NULL,
+  limit_count INT DEFAULT 20,
+  offset_count INT DEFAULT 0
+)
+RETURNS TABLE (
+  id UUID,
+  name TEXT,
+  description TEXT,
+  strategy_type TEXT,
+  created_at TIMESTAMPTZ,
+  view_count BIGINT,
+  rating DECIMAL
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    r.id,
+    r.name,
+    r.description,
+    r.strategy_type,
+    r.created_at,
+    r.view_count,
+    r.rating
+  FROM robots r
+  WHERE 
+    r.deleted_at IS NULL
+    AND (strategy_filter IS NULL OR r.strategy_type = strategy_filter)
+    AND (
+      search_term IS NULL 
+      OR to_tsvector('english', r.name || ' ' || COALESCE(r.description, '')) @@ plainto_tsquery('english', search_term)
+    )
+  ORDER BY 
+    r.created_at DESC,
+    r.view_count DESC
+  LIMIT limit_count
+  OFFSET offset_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to refresh robot summary cache
+CREATE OR REPLACE FUNCTION refresh_robots_summary()
+RETURNS void AS $$
+BEGIN
+  REFRESH MATERIALIZED VIEW CONCURRENTLY robots_summary_cache;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =====================================================
+-- 15. PERFORMANCE MONITORING FOR MATERIALIZED VIEWS
 -- =====================================================
 
 -- Table to track materialized view refresh performance
