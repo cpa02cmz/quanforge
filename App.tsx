@@ -8,12 +8,13 @@ import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
- import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
- import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
- import { frontendOptimizer } from './services/frontendOptimizer';
- import { edgeAnalytics } from './services/edgeAnalytics';
- import { edgeMonitoring } from './services/edgeMonitoring';
- import { advancedAPICache } from './services/advancedAPICache';
+  import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
+  import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
+  import { frontendOptimizer } from './services/frontendOptimizer';
+  import { edgeAnalytics } from './services/edgeAnalytics';
+  import { edgeMonitoring } from './services/edgeMonitoring';
+  import { advancedAPICache } from './services/advancedAPICache';
+  import { edgeCacheOptimizer } from './services/edgeCacheOptimizer';
 
 // Enhanced lazy loading with preloading for better performance
 const Auth = lazy(() => 
@@ -127,12 +128,20 @@ useEffect(() => {
           logger.info('Edge monitoring status:', monitoringStatus);
         }, 300);
         
-        // Initialize Advanced API Cache (non-blocking)
-        setTimeout(() => {
-          advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
-            logger.warn('API cache prefetch failed:', err)
-          );
-        }, 400);
+         // Initialize Advanced API Cache (non-blocking)
+         setTimeout(() => {
+           advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
+             logger.warn('API cache prefetch failed:', err)
+           );
+           
+           // Initialize Edge Cache Optimizer
+           edgeCacheOptimizer.prewarmCache([
+             { key: 'robots-list', loader: () => fetch('/api/robots').then(r => r.json()) },
+             { key: 'strategies-list', loader: () => fetch('/api/strategies').then(r => r.json()) }
+           ]).catch((err: Error) => 
+             logger.warn('Edge cache prewarm failed:', err)
+           );
+         }, 400);
       } catch (error) {
         logger.warn('Non-critical service initialization failed:', error);
       }

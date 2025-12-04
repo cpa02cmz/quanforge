@@ -45,7 +45,6 @@ class SupabaseConnectionPool {
     retryDelay: 500, // Faster retry for edge environments
   };
   private healthCheckTimer: NodeJS.Timeout | null = null;
-  private readReplicaIndex = 0;
 
   private constructor() {
     this.initializeReadReplicas();
@@ -211,7 +210,9 @@ class SupabaseConnectionPool {
 
     // Select highest scoring replica
     const selectedReplica = healthyReplicas[0];
-    selectedReplica.lastUsed = Date.now();
+    if (selectedReplica) {
+      selectedReplica.lastUsed = Date.now();
+    }
     
     return selectedReplica || null;
   }
@@ -222,7 +223,7 @@ class SupabaseConnectionPool {
     // Geographic proximity scoring (increased priority for region match)
     const currentRegion = typeof window !== 'undefined' 
       ? 'client' 
-      : process.env.VERCEL_REGION || 'unknown';
+      : (process.env as any)['VERCEL_REGION'] || 'unknown';
     
     if (replica.region === currentRegion) {
       score += 2000; // Increased priority for region match
@@ -306,8 +307,6 @@ private startHealthChecks(): void {
       try {
         const startTime = Date.now();
         const isHealthy = await this.testConnection(client);
-        const responseTimeMeasured = Date.now() - startTime;
-        
         const currentHealth = this.healthStatus.get(connectionId) || {
           isHealthy: false,
           lastCheck: 0,
@@ -318,7 +317,7 @@ private startHealthChecks(): void {
         this.healthStatus.set(connectionId, {
           isHealthy,
           lastCheck: Date.now(),
-          responseTime: responseTimeMeasured,
+          responseTime: Date.now() - startTime,
           errorCount: isHealthy ? 0 : currentHealth.errorCount + 1,
         });
 
@@ -397,37 +396,39 @@ private startHealthChecks(): void {
     }
   }
 
-  // Get optimal connection with geographic scoring
-  private getOptimalConnection(region?: string): { connection: SupabaseClient; score: number } | null {
-    const candidates: Array<{ connection: SupabaseClient; score: number; connectionId: string }> = [];
-    
-    for (const [connectionId, connection] of this.clients) {
-      const health = this.healthStatus.get(connectionId);
-      if (!connection || !health?.isHealthy) continue;
-      
-      let score = 0;
-      
-      // Geographic proximity scoring
-      if (region && connectionId.includes(region)) {
-        score += 2000; // Increased priority for region match
-      }
-      
-      // Latency-based scoring
-      const regionLatency = this.getRegionLatency(region || 'unknown');
-      score += Math.max(0, 1000 - regionLatency);
-      
-      // Connection age and health
-      if (health.isHealthy) score += 500;
-      if (Date.now() - health.lastCheck > 30000) score += 200;
-      
-      candidates.push({ connection, score, connectionId });
-    }
-    
-    if (candidates.length === 0) return null;
-    
-    const best = candidates.sort((a, b) => b.score - a.score)[0];
-    return { connection: best.connection, score: best.score };
-  }
+   // Get optimal connection with geographic scoring (currently unused but kept for future use)
+   private getOptimalConnection(region?: string): { connection: SupabaseClient; score: number } | null {
+     const candidates: Array<{ connection: SupabaseClient; score: number; connectionId: string }> = [];
+     
+     for (const [connectionId, connection] of this.clients) {
+       const health = this.healthStatus.get(connectionId);
+       if (!connection || !health?.isHealthy) continue;
+       
+       let score = 0;
+       
+       // Geographic proximity scoring
+       if (region && connectionId.includes(region)) {
+         score += 2000; // Increased priority for region match
+       }
+       
+       // Latency-based scoring
+       const regionLatency = this.getRegionLatency(region || 'unknown');
+       score += Math.max(0, 1000 - regionLatency);
+       
+       // Connection age and health
+       if (health.isHealthy) score += 500;
+       if (Date.now() - health.lastCheck > 30000) score += 200;
+       
+       candidates.push({ connection, score, connectionId });
+     }
+     
+     if (candidates.length === 0) return null;
+     
+     const sortedCandidates = candidates.sort((a, b) => b.score - a.score);
+     const best = sortedCandidates[0];
+     if (!best) return null;
+     return { connection: best.connection, score: best.score };
+   }
 
   // Enhanced connection metrics with edge-specific data and read replica info
   getDetailedConnectionMetrics(): {
