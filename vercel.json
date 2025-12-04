@@ -7,10 +7,6 @@
       "config": {
         "distDir": "dist"
       }
-    },
-    {
-      "src": "workers/aiWorker.ts",
-      "use": "@vercel/worker"
     }
   ],
   "routes": [
