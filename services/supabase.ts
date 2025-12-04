@@ -7,6 +7,7 @@ import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
+import { optimizedSupabase } from './supabaseOptimized';
 
 // Enhanced connection retry configuration with exponential backoff
 const RETRY_CONFIG = {

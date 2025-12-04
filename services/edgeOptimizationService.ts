@@ -6,6 +6,8 @@
 import { enhancedConnectionPool } from './enhancedSupabasePool';
 import { edgeConnectionPool } from './edgeSupabasePool';
 import { globalCache } from './unifiedCacheManager';
+import { logger } from '../utils/logger';
+import { performanceMonitor } from '../utils/performance';
 
 interface EdgeOptimizationConfig {
   enablePredictiveCaching: boolean;
