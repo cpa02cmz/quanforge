@@ -297,12 +297,12 @@ class EdgeRequestCoalescer {
   }
 }
 
-// Global instance for edge usage
+// Global instance for edge usage - optimized for performance
 export const edgeRequestCoalescer = new EdgeRequestCoalescer({
-  maxWaitTime: 50,
-  maxBatchSize: 10,
+  maxWaitTime: 25, // Reduced for faster response
+  maxBatchSize: 6, // Reduced for edge efficiency
   enableMetrics: true,
-  cleanupInterval: 30000,
+  cleanupInterval: 15000, // Faster cleanup
 });
 
 // Export factory function for creating instances

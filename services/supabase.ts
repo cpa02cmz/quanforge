@@ -2,7 +2,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { Robot, UserSession } from '../types';
-import { enhancedConnectionPool } from './enhancedSupabasePool';
+import { optimizedSupabasePool } from './optimizedSupabasePool';
 import { robotCache } from './optimizedLRUCache';
 import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
@@ -241,8 +241,8 @@ const getClient = async () => {
 
     if (settings.mode === 'supabase' && settings.url && settings.anonKey) {
         try {
-            // Use unified enhanced connection pool with fallback mechanism
-            const client = await enhancedConnectionPool.acquire('default');
+            // Use optimized connection pool with fallback mechanism
+            const client = await optimizedSupabasePool.acquire('default');
             activeClient = client;
         } catch (e) {
             console.error("Connection pool failed, using mock client", e);
