@@ -258,34 +258,34 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     });
   }, [language]);
 
-  // Enhanced virtual scrolling with intelligent windowing and memory optimization
-  const visibleMessages = useMemo(() => {
-    // Adaptive window size based on viewport and memory constraints
-    const VIEWPORT_SIZE = 20; // Messages visible in viewport
-    const BUFFER_SIZE = 10;   // Extra messages for smooth scrolling
-    const MAX_MESSAGES = 200; // Increased limit with better memory management
-    const WINDOW_SIZE = VIEWPORT_SIZE + (BUFFER_SIZE * 2);
-    
-    if (messages.length <= MAX_MESSAGES) {
-      return messages;
-    }
-    
-    // For very long conversations, implement sliding window
-    const recentMessages = messages.slice(-MAX_MESSAGES);
-    
-    if (recentMessages.length <= WINDOW_SIZE) {
-      return recentMessages;
-    }
-    
-    // Return the most recent window of messages
-    const startIndex = recentMessages.length - WINDOW_SIZE;
-    const visibleSlice = recentMessages.slice(startIndex);
-    
-    // Log virtual scrolling activity for monitoring
-    logger.debug(`Virtual scrolling: showing ${visibleSlice.length} of ${messages.length} total messages (${recentMessages.length} in memory)`);
-    
-    return visibleSlice;
-  }, [messages]);
+   // Enhanced virtual scrolling with intelligent windowing and memory optimization
+   const visibleMessages = useMemo(() => {
+     // Adaptive window size based on viewport and memory constraints
+     const VIEWPORT_SIZE = 15; // Reduced for better performance
+     const BUFFER_SIZE = 5;    // Reduced for better performance
+     const MAX_MESSAGES = 150; // Reduced maximum with better memory management
+     const WINDOW_SIZE = VIEWPORT_SIZE + (BUFFER_SIZE * 2);
+     
+     if (messages.length <= WINDOW_SIZE) {
+       return messages;
+     }
+     
+     // For very long conversations, implement sliding window
+     const recentMessages = messages.slice(-MAX_MESSAGES);
+     
+     if (recentMessages.length <= WINDOW_SIZE) {
+       return recentMessages;
+     }
+     
+     // Return the most recent window of messages
+     const startIndex = recentMessages.length - WINDOW_SIZE;
+     const visibleSlice = recentMessages.slice(startIndex);
+     
+     // Log virtual scrolling activity for monitoring
+     logger.debug(`Virtual scrolling: showing ${visibleSlice.length} of ${messages.length} total messages (${recentMessages.length} in memory)`);
+     
+     return visibleSlice;
+   }, [messages]);
 
   // Simplified memory monitoring - consolidated with main effect
   // This effect is now redundant as memory monitoring is handled above
