@@ -24,12 +24,63 @@ const SECURITY_PATTERNS = {
   unicodeAttacks: /%u[0-9a-fA-F]{4}/i
 };
 
-// Rate limiting configuration
+// Rate limiting configuration with region-based policies
 const RATE_LIMITS = {
   default: { requests: 100, window: 60000 }, // 100 requests per minute
   api: { requests: 60, window: 60000 },      // 60 requests per minute for API
   auth: { requests: 10, window: 60000 },      // 10 requests per minute for auth
   suspicious: { requests: 20, window: 60000 } // 20 requests per minute for suspicious IPs
+};
+
+// Region-based security policies
+const REGION_SECURITY_POLICIES = {
+  // High-risk regions - stricter limits
+  'CN': { 
+    rateLimitMultiplier: 0.5, 
+    enhancedScanning: true, 
+    blockSuspicious: true,
+    requiredHeaders: ['user-agent', 'accept-language'],
+    maxRequestSize: 5 * 1024 * 1024 // 5MB
+  },
+  'RU': { 
+    rateLimitMultiplier: 0.7, 
+    enhancedScanning: true, 
+    blockSuspicious: false,
+    requiredHeaders: ['user-agent'],
+    maxRequestSize: 8 * 1024 * 1024 // 8MB
+  },
+  // Standard regions - normal limits
+  'US': { 
+    rateLimitMultiplier: 1.0, 
+    enhancedScanning: false, 
+    blockSuspicious: false,
+    requiredHeaders: [],
+    maxRequestSize: 10 * 1024 * 1024 // 10MB
+  },
+  'EU': { 
+    rateLimitMultiplier: 1.0, 
+    enhancedScanning: false, 
+    blockSuspicious: false,
+    requiredHeaders: [],
+    maxRequestSize: 10 * 1024 * 1024 // 10MB
+  },
+  // Asia-Pacific regions - moderate limits
+  'APAC': { 
+    rateLimitMultiplier: 0.8, 
+    enhancedScanning: true, 
+    blockSuspicious: false,
+    requiredHeaders: ['user-agent'],
+    maxRequestSize: 8 * 1024 * 1024 // 8MB
+  }
+};
+
+// Country to region mapping
+const COUNTRY_TO_REGION = {
+  'CN': 'CN', 'HK': 'APAC', 'TW': 'APAC', 'SG': 'APAC', 'JP': 'APAC', 'KR': 'APAC',
+  'RU': 'RU', 'BY': 'RU', 'KZ': 'RU',
+  'US': 'US', 'CA': 'US', 'MX': 'US',
+  'GB': 'EU', 'DE': 'EU', 'FR': 'EU', 'IT': 'EU', 'ES': 'EU', 'NL': 'EU', 'SE': 'EU', 'NO': 'EU', 'DK': 'EU', 'FI': 'EU',
+  'AU': 'APAC', 'NZ': 'APAC', 'IN': 'APAC', 'TH': 'APAC', 'MY': 'APAC', 'ID': 'APAC', 'PH': 'APAC', 'VN': 'APAC'
 };
 
 export default function middleware(request: Request) {
@@ -41,6 +92,15 @@ export default function middleware(request: Request) {
                    'unknown';
   const region = request.headers.get('x-vercel-region') || 'unknown';
   const country = request.headers.get('x-vercel-ip-country') || 'unknown';
+  
+  // Determine region security policy
+  const regionPolicy = getRegionSecurityPolicy(country);
+  
+  // Apply region-based pre-checks
+  const regionCheckResult = applyRegionSecurityChecks(request, country, regionPolicy);
+  if (!regionCheckResult.allowed) {
+    return createSecurityResponse('REGION_POLICY_VIOLATION', regionCheckResult.reason);
+  }
 
   // Enhanced prewarming for edge functions
   if (request.headers.get('x-purpose') === 'prefetch' || 
@@ -62,8 +122,8 @@ export default function middleware(request: Request) {
   // Security analysis
   const securityAnalysis = analyzeRequest(request, userAgent, clientIP);
   
-  // Apply rate limiting
-  const rateLimitResult = applyRateLimit(clientIP, url.pathname, securityAnalysis.isSuspicious);
+  // Apply region-based rate limiting
+  const rateLimitResult = applyRegionBasedRateLimit(clientIP, url.pathname, securityAnalysis.isSuspicious, country);
   
   if (rateLimitResult.blocked) {
     return createRateLimitResponse(rateLimitResult);
@@ -866,6 +926,87 @@ function getDynamicCacheConfig(region: string, deviceType: string) {
   }
   
   return baseConfig;
+}
+
+/**
+ * Get region security policy based on country
+ */
+function getRegionSecurityPolicy(country: string) {
+  const region = COUNTRY_TO_REGION[country as keyof typeof COUNTRY_TO_REGION] || 'US';
+  return REGION_SECURITY_POLICIES[region as keyof typeof REGION_SECURITY_POLICIES] || REGION_SECURITY_POLICIES.US;
+}
+
+/**
+ * Apply region-based security checks
+ */
+function applyRegionSecurityChecks(request: Request, country: string, policy: any) {
+  const userAgent = request.headers.get('user-agent') || '';
+  
+  // Check required headers
+  for (const header of policy.requiredHeaders) {
+    if (!request.headers.get(header)) {
+      return {
+        allowed: false,
+        reason: `Missing required header: ${header} for region ${country}`
+      };
+    }
+  }
+  
+  // Check request size
+  const contentLength = request.headers.get('content-length');
+  if (contentLength && parseInt(contentLength) > policy.maxRequestSize) {
+    return {
+      allowed: false,
+      reason: `Request size exceeds limit for region ${country}`
+    };
+  }
+  
+  // Enhanced scanning for high-risk regions
+  if (policy.enhancedScanning) {
+    const suspiciousPatterns = [
+      /vpn/i,
+      /proxy/i,
+      /tor/i,
+      /anonymous/i
+    ];
+    
+    for (const pattern of suspiciousPatterns) {
+      if (pattern.test(userAgent)) {
+        if (policy.blockSuspicious) {
+          return {
+            allowed: false,
+            reason: `Suspicious user agent detected for region ${country}`
+          };
+        }
+        break;
+      }
+    }
+  }
+  
+  return { allowed: true };
+}
+
+/**
+ * Apply region-based rate limiting
+ */
+function applyRegionBasedRateLimit(clientIP: string, pathname: string, isSuspicious: boolean, country: string) {
+  const policy = getRegionSecurityPolicy(country);
+  const baseResult = applyRateLimit(clientIP, pathname, isSuspicious);
+  
+  // Apply region-specific multiplier
+  const adjustedLimit = Math.floor(baseResult.limit * policy.rateLimitMultiplier);
+  const adjustedRemaining = Math.max(0, adjustedLimit - (baseResult.limit - baseResult.remaining));
+  
+  return {
+    ...baseResult,
+    limit: adjustedLimit,
+    remaining: adjustedRemaining,
+    regionPolicy: {
+      country,
+      multiplier: policy.rateLimitMultiplier,
+      enhancedScanning: policy.enhancedScanning
+    }
+  };
 }
 
 /**

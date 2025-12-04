@@ -664,18 +664,89 @@ class EnhancedSupabaseConnectionPool {
   }
 
   /**
-   * Initialize edge connection warming
+   * Initialize edge connection warming with intelligent scheduling
    */
   private async initializeEdgeWarming(): Promise<void> {
     // Delay initial warm-up to allow for application startup
     setTimeout(() => {
-      this.warmEdgeConnections();
+      this.warmEdgeConnectionsEnhanced();
     }, 5000);
 
-    // Schedule periodic warming
+    // Schedule periodic warming with adaptive intervals
+    this.scheduleAdaptiveWarming();
+    
+    // Schedule predictive warming based on usage patterns
+    this.schedulePredictiveWarming();
+  }
+
+  /**
+   * Schedule adaptive warming based on current performance metrics
+   */
+  private scheduleAdaptiveWarming(): void {
+    const adaptiveInterval = this.calculateAdaptiveWarmingInterval();
+    
     this.edgeWarmingTimer = window.setInterval(() => {
-      this.warmEdgeConnections();
-    }, 300000); // Every 5 minutes
+      this.warmEdgeConnectionsEnhanced();
+      
+      // Re-calculate interval for next cycle
+      if (this.edgeWarmingTimer) {
+        window.clearInterval(this.edgeWarmingTimer);
+        this.scheduleAdaptiveWarming();
+      }
+    }, adaptiveInterval);
+  }
+
+  /**
+   * Calculate adaptive warming interval based on performance
+   */
+  private calculateAdaptiveWarmingInterval(): number {
+    const stats = this.getStats();
+    const coldStartRate = this.calculateColdStartRate();
+    
+    // More frequent warming if high cold start rate
+    if (coldStartRate > 0.3) {
+      return 120000; // 2 minutes
+    } else if (coldStartRate > 0.1) {
+      return 180000; // 3 minutes
+    } else if (stats.hitRate < 0.8) {
+      return 240000; // 4 minutes
+    } else {
+      return 300000; // 5 minutes (default)
+    }
+  }
+
+  /**
+   * Schedule predictive warming based on time and usage patterns
+   */
+  private schedulePredictiveWarming(): void {
+    // Schedule predictive warming every 15 minutes
+    window.setInterval(() => {
+      this.predictiveWarming();
+    }, 900000);
+    
+    // Schedule time-based warming for business hours
+    this.scheduleBusinessHoursWarming();
+  }
+
+  /**
+   * Schedule warming during business hours
+   */
+  private scheduleBusinessHoursWarming(): void {
+    const checkAndWarm = () => {
+      const currentHour = new Date().getHours();
+      const currentDay = new Date().getDay();
+      
+      // Business hours: Monday-Friday, 9 AM - 6 PM
+      const isBusinessHours = currentDay >= 1 && currentDay <= 5 && currentHour >= 9 && currentHour < 18;
+      
+      if (isBusinessHours) {
+        // More aggressive warming during business hours
+        this.warmEdgeConnectionsEnhanced();
+      }
+    };
+    
+    // Check every 30 minutes during business hours
+    window.setInterval(checkAndWarm, 1800000);
   }
 
   /**
