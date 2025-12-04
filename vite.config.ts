@@ -47,9 +47,19 @@ export default defineConfig({
               // Advanced chart features
               return 'vendor-charts-advanced';
             }
-            // AI services - isolated for better tree-shaking
+            // Enhanced AI services splitting for better tree-shaking
             if (id.includes('@google/genai')) {
-              return 'vendor-ai-gemini-dynamic';
+              // Split AI library more granularly
+              if (id.includes('generators') || id.includes('generate')) {
+                return 'vendor-ai-generators';
+              }
+              if (id.includes('models') || id.includes('model')) {
+                return 'vendor-ai-models';
+              }
+              if (id.includes('chat') || id.includes('conversation')) {
+                return 'vendor-ai-chat';
+              }
+              return 'vendor-ai-core';
             }
             // Enhanced Supabase splitting for better tree-shaking
             if (id.includes('@supabase/realtime-js')) {

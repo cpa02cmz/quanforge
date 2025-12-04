@@ -1096,7 +1096,7 @@ class EnhancedSupabaseConnectionPool {
   }
 
   /**
-   * Enhanced connection draining for edge optimization
+   * Enhanced connection draining for edge optimization with predictive analysis
    */
   async drainConnections(): Promise<void> {
     if (!this.config.enableConnectionDraining) {
@@ -1104,13 +1104,29 @@ class EnhancedSupabaseConnectionPool {
     }
 
     const now = Date.now();
-    const unhealthyConnections = Array.from(this.connections.values())
-      .filter(conn => !conn.healthy || now - conn.lastUsed > this.config.idleTimeout);
+    const usagePatterns = this.analyzeUsagePatterns();
     
-    const drainPromises = unhealthyConnections.map(async (conn) => {
+    // Enhanced draining logic with predictive analysis
+    const connectionsToDrain = Array.from(this.connections.values())
+      .filter(conn => {
+        // Always drain unhealthy connections
+        if (!conn.healthy) return true;
+        
+        // Drain connections idle beyond timeout
+        if (now - conn.lastUsed > this.config.idleTimeout) return true;
+        
+        // Predictive draining: drain low-priority region connections during peak hours
+        if (conn.region && usagePatterns.lowPriorityRegions.includes(conn.region)) {
+          return now - conn.lastUsed > this.config.idleTimeout * 0.5; // 50% of normal timeout
+        }
+        
+        return false;
+      });
+    
+    const drainPromises = connectionsToDrain.map(async (conn) => {
       try {
-        await this.closeConnection(conn.id);
-        console.debug(`Drained connection ${conn.id} (healthy: ${conn.healthy})`);
+        await this.gracefulShutdownConnection(conn);
+        console.debug(`Drained connection ${conn.id} (healthy: ${conn.healthy}, region: ${conn.region})`);
       } catch (error) {
         console.warn(`Failed to drain connection ${conn.id}:`, error);
       }
@@ -1120,6 +1136,90 @@ class EnhancedSupabaseConnectionPool {
     
     // Also drain read replicas if they're idle
     await this.drainReadReplicas();
+  }
+
+  /**
+   * Analyze usage patterns for predictive optimization
+   */
+  private analyzeUsagePatterns(): {
+    topRegions: string[];
+    lowPriorityRegions: string[];
+    peakHours: boolean;
+    avgUsage: number;
+  } {
+    const connections = Array.from(this.connections.values());
+    const regionUsage: Record<string, number> = {};
+    
+    // Analyze region usage
+    connections.forEach(conn => {
+      if (conn.region) {
+        regionUsage[conn.region] = (regionUsage[conn.region] || 0) + 1;
+      }
+    });
+    
+    // Sort regions by usage
+    const sortedRegions = Object.entries(regionUsage)
+      .sort(([, a], [, b]) => b - a)
+      .map(([region]) => region);
+    
+    // Determine peak hours (simplified - in real implementation, use time-based analysis)
+    const currentHour = new Date().getHours();
+    const peakHours = currentHour >= 9 && currentHour <= 17; // Business hours
+    
+    const avgUsage = connections.length > 0 ? 
+      connections.reduce((sum, conn) => sum + (conn.inUse ? 1 : 0), 0) / connections.length : 0;
+    
+    return {
+      topRegions: sortedRegions.slice(0, 3),
+      lowPriorityRegions: sortedRegions.slice(-2),
+      peakHours,
+      avgUsage
+    };
+  }
+
+  /**
+   * Graceful shutdown with retry logic
+   */
+  private async gracefulShutdownConnection(connection: Connection): Promise<void> {
+    const maxWaitTime = 5000; // 5 seconds max wait
+    const startTime = Date.now();
+    
+    // Wait for connection to become idle
+    while (connection.inUse && (Date.now() - startTime) < maxWaitTime) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    // Force close if still in use after timeout
+    if (connection.inUse) {
+      console.warn(`Force closing connection ${connection.id} - still in use after timeout`);
+    }
+    
+    await this.closeConnection(connection.id);
+  }
+
+  /**
+   * Predictive connection warming based on usage patterns
+   */
+  async predictiveWarming(): Promise<void> {
+    const usagePatterns = this.analyzeUsagePatterns();
+    const predictedRegions = usagePatterns.topRegions.slice(0, 3);
+    
+    console.log('Starting predictive connection warming for regions:', predictedRegions);
+    
+    const warmupPromises = predictedRegions.map(async (region, index) => {
+      // Stagger warmups to prevent overwhelming the system
+      await new Promise(resolve => setTimeout(resolve, index * 500));
+      
+      try {
+        await this.warmRegionConnectionEnhanced(region, 'high');
+        console.debug(`Predictive warm-up completed for region: ${region}`);
+      } catch (error) {
+        console.warn(`Predictive warm-up failed for region ${region}:`, error);
+      }
+    });
+    
+    await Promise.allSettled(warmupPromises);
+    console.log('Predictive connection warming completed');
   }
 
   /**
