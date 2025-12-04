@@ -13,154 +13,155 @@ export default defineConfig({
         main: './index.html'
       },
 output: {
-           manualChunks: (id) => {
-             // More granular vendor chunk splitting for better caching
-             if (id.includes('node_modules')) {
-               // React ecosystem split into smaller chunks
-               if (id.includes('react') && (id.includes('react/index') || id.includes('react-dom'))) {
-                 return 'vendor-react-core';
-               }
-               if (id.includes('react-router')) {
-                 return 'vendor-react-router';
-               }
-               if (id.includes('react-is')) {
-                 return 'vendor-react-utils';
-               }
-               
-               // Charts library isolated
-               if (id.includes('recharts')) {
-                 return 'vendor-charts';
-               }
-               
-               // AI services split
-               if (id.includes('@google/genai')) {
-                 return 'vendor-ai';
-               }
-               
-               // Supabase split into smaller chunks
-               if (id.includes('@supabase/supabase-js')) {
-                 return 'vendor-supabase-core';
-               }
-               if (id.includes('@supabase/realtime-js')) {
-                 return 'vendor-supabase-realtime';
-               }
-               if (id.includes('@supabase/storage-js')) {
-                 return 'vendor-supabase-storage';
-               }
-               
-               // Security utilities
-               if (id.includes('dompurify')) {
-                 return 'vendor-security-dompurify';
-               }
-               if (id.includes('lz-string')) {
-                 return 'vendor-security-compression';
-               }
-               
-               // Group smaller dependencies together to reduce HTTP requests
-               const smallDeps = [
-                 'scheduler', 'loose-envify', 'object-assign', 
-                 'prop-types', 'js-tokens', 'react-is', '@types/dompurify'
-               ];
-               if (smallDeps.some(dep => id.includes(dep))) {
-                 return 'vendor-common';
-               }
-               
-               // All other node_modules
-               return 'vendor-misc';
-             }
-             
-             // Enhanced app chunks with granular separation
-             if (id.includes('services/')) {
-               // AI-specific services
-               if (id.includes('gemini') || id.includes('ai') || id.includes('gpt')) {
-                 return 'services-ai';
-               }
-               // Database services
-               if (id.includes('supabase') || id.includes('database') || id.includes('db')) {
-                 return 'services-database';
-               }
-               // Cache and performance services
-               if (id.includes('cache') || id.includes('performance') || id.includes('optimization')) {
-                 return 'services-performance';
-               }
-               // Security services
-               if (id.includes('security') || id.includes('auth') || id.includes('validation')) {
-                 return 'services-security';
-               }
-               // Edge services
-               if (id.includes('edge') || id.includes('cdn') || id.includes('vercel')) {
-                 return 'services-edge';
-               }
-               // Core services
-               return 'services-core';
-             }
-             
-             if (id.includes('components/')) {
-               // Heavy components isolated
-               if (id.includes('ChatInterface')) {
-                 return 'component-chat';
-               }
-               if (id.includes('CodeEditor')) {
-                 return 'component-editor';
-               }
-               if (id.includes('Backtest') || id.includes('Simulation')) {
-                 return 'component-backtest';
-               }
-               if (id.includes('StrategyConfig')) {
-                 return 'component-config';
-               }
-               if (id.includes('Chart') || id.includes('Analysis')) {
-                 return 'component-charts';
-               }
-               if (id.includes('Market') || id.includes('Ticker')) {
-                 return 'component-market';
-               }
-               // UI components
-               if (id.includes('Modal') || id.includes('Dialog') || id.includes('Toast')) {
-                 return 'component-ui';
-               }
-               // Core components
-               return 'components-core';
-             }
-             
-             // Route-based code splitting
-             if (id.includes('pages/')) {
-               if (id.includes('Generator')) {
-                 return 'route-generator';
-               }
-               if (id.includes('Dashboard')) {
-                 return 'route-dashboard';
-               }
-               if (id.includes('About') || id.includes('FAQ') || id.includes('Wiki')) {
-                 return 'route-static';
-               }
-               return 'pages';
-             }
-             
-             if (id.includes('utils/')) {
-               // Validation utilities
-               if (id.includes('validation') || id.includes('security')) {
-                 return 'utils-validation';
-               }
-               // Performance utilities
-               if (id.includes('performance') || id.includes('monitor') || id.includes('analytics')) {
-                 return 'utils-performance';
-               }
-               // SEO utilities
-               if (id.includes('seo') || id.includes('meta') || id.includes('structured')) {
-                 return 'utils-seo';
-               }
-               // Core utilities
-               return 'utils-core';
-             }
-             
-             // Constants and translations
-             if (id.includes('constants/') || id.includes('translations/')) {
-               return 'assets-constants';
-             }
-             
-             return 'chunk-default';
-           },
+          manualChunks: (id) => {
+            // Aggressive vendor chunk splitting for better caching
+            if (id.includes('node_modules')) {
+              // React ecosystem split into smaller chunks
+              if (id.includes('react') && id.includes('react-dom')) {
+                return 'vendor-react-core';
+              }
+              if (id.includes('react') && id.includes('react-router')) {
+                return 'vendor-react-router';
+              }
+              if (id.includes('react') && id.includes('react-is')) {
+                return 'vendor-react-utils';
+              }
+              
+              // Charts library isolated
+              if (id.includes('recharts')) {
+                return 'vendor-charts';
+              }
+              
+              // AI services split
+              if (id.includes('@google/genai')) {
+                return 'vendor-ai';
+              }
+              
+              // Supabase split into smaller chunks
+              if (id.includes('@supabase/supabase-js')) {
+                return 'vendor-supabase-core';
+              }
+              if (id.includes('@supabase/realtime-js')) {
+                return 'vendor-supabase-realtime';
+              }
+              if (id.includes('@supabase/storage-js')) {
+                return 'vendor-supabase-storage';
+              }
+              
+              // Security utilities
+              if (id.includes('dompurify')) {
+                return 'vendor-security-dompurify';
+              }
+              if (id.includes('lz-string')) {
+                return 'vendor-security-compression';
+              }
+              
+              // Testing utilities isolated
+              if (id.includes('@testing-library')) {
+                return 'vendor-testing';
+              }
+              
+              // Build tools isolated
+              if (id.includes('terser') || id.includes('vite') || id.includes('esbuild')) {
+                return 'vendor-build';
+              }
+              
+              // All other node_modules
+              return 'vendor-misc';
+            }
+            
+            // Enhanced app chunks with granular separation
+            if (id.includes('services/')) {
+              // AI-specific services
+              if (id.includes('gemini') || id.includes('ai') || id.includes('gpt')) {
+                return 'services-ai';
+              }
+              // Database services
+              if (id.includes('supabase') || id.includes('database') || id.includes('db')) {
+                return 'services-database';
+              }
+              // Cache and performance services
+              if (id.includes('cache') || id.includes('performance') || id.includes('optimization')) {
+                return 'services-performance';
+              }
+              // Security services
+              if (id.includes('security') || id.includes('auth') || id.includes('validation')) {
+                return 'services-security';
+              }
+              // Edge services
+              if (id.includes('edge') || id.includes('cdn') || id.includes('vercel')) {
+                return 'services-edge';
+              }
+              // Core services
+              return 'services-core';
+            }
+            
+            if (id.includes('components/')) {
+              // Heavy components isolated
+              if (id.includes('ChatInterface')) {
+                return 'component-chat';
+              }
+              if (id.includes('CodeEditor')) {
+                return 'component-editor';
+              }
+              if (id.includes('Backtest') || id.includes('Simulation')) {
+                return 'component-backtest';
+              }
+              if (id.includes('StrategyConfig')) {
+                return 'component-config';
+              }
+              if (id.includes('Chart') || id.includes('Analysis')) {
+                return 'component-charts';
+              }
+              if (id.includes('Market') || id.includes('Ticker')) {
+                return 'component-market';
+              }
+              // UI components
+              if (id.includes('Modal') || id.includes('Dialog') || id.includes('Toast')) {
+                return 'component-ui';
+              }
+              // Core components
+              return 'components-core';
+            }
+            
+            // Route-based code splitting
+            if (id.includes('pages/')) {
+              if (id.includes('Generator')) {
+                return 'route-generator';
+              }
+              if (id.includes('Dashboard')) {
+                return 'route-dashboard';
+              }
+              if (id.includes('About') || id.includes('FAQ') || id.includes('Wiki')) {
+                return 'route-static';
+              }
+              return 'pages';
+            }
+            
+            if (id.includes('utils/')) {
+              // Validation utilities
+              if (id.includes('validation') || id.includes('security')) {
+                return 'utils-validation';
+              }
+              // Performance utilities
+              if (id.includes('performance') || id.includes('monitor') || id.includes('analytics')) {
+                return 'utils-performance';
+              }
+              // SEO utilities
+              if (id.includes('seo') || id.includes('meta') || id.includes('structured')) {
+                return 'utils-seo';
+              }
+              // Core utilities
+              return 'utils-core';
+            }
+            
+            // Constants and translations
+            if (id.includes('constants/') || id.includes('translations/')) {
+              return 'assets-constants';
+            }
+            
+            return 'chunk-default';
+          },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: (assetInfo) => {
@@ -201,12 +202,12 @@ output: {
         warn(warning);
       },
       // Enhanced tree-shaking with aggressive optimizations
-       treeshake: {
-         moduleSideEffects: false,
-         propertyReadSideEffects: false,
-         tryCatchDeoptimization: false,
-         unknownGlobalSideEffects: false
-       }
+      treeshake: {
+        moduleSideEffects: false,
+        propertyReadSideEffects: false,
+        tryCatchDeoptimization: false,
+        unknownGlobalSideEffects: false
+      }
     },
     minify: 'terser',
     terserOptions: {
@@ -266,24 +267,24 @@ output: {
         comments: false
       }
     },
-    chunkSizeWarningLimit: 300, // Increase to reduce number of small chunks
-     target: ['es2020', 'edge101'], // More specific targets for edge compatibility
-     reportCompressedSize: true,
-     cssCodeSplit: true,
-     cssMinify: true, // Add CSS minification
-     // Enhanced edge optimization
-     assetsInlineLimit: 4096, // Increase to 4KB for fewer requests
-     modulePreload: {
-       polyfill: false
-     },
-     // Additional build optimizations
-     emptyOutDir: true,
-     // Dynamic import optimization
-     dynamicImportVarsOptions: {
-       warnOnError: false
-     },
-     // Enhanced tree-shaking is handled in rollupOptions
-   },
+chunkSizeWarningLimit: 250, // More aggressive for better performance
+    target: ['es2020', 'edge101'], // More specific targets for edge compatibility
+    reportCompressedSize: true,
+    cssCodeSplit: true,
+    cssMinify: true, // Add CSS minification
+    // Enhanced edge optimization
+    assetsInlineLimit: 2048, // 2KB for better edge performance
+    modulePreload: {
+      polyfill: false
+    },
+    // Additional build optimizations
+    emptyOutDir: true,
+    // Dynamic import optimization
+    dynamicImportVarsOptions: {
+      warnOnError: false
+    },
+    // Enhanced tree-shaking is handled in rollupOptions
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
