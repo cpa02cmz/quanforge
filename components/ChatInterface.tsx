@@ -71,50 +71,56 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
 
-  // Enhanced memory management with unified cleanup and circular buffer
+  // Enhanced memory management with proper cleanup and memory leak prevention
   useEffect(() => {
     // Create new abort controller for this effect
     abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
     
     // Unified memory monitoring with adaptive intervals
     const startMemoryMonitoring = () => {
-      if (memoryMonitorRef.current) return; // Already monitoring
+      if (memoryMonitorRef.current || signal.aborted) return; // Already monitoring or aborted
       
       // Adaptive monitoring frequency based on message count
       const interval = messages.length > 100 ? 5000 : 10000; // 5s for large, 10s for normal
       
       memoryMonitorRef.current = setInterval(() => {
-        if (abortControllerRef.current?.signal.aborted) return;
+        if (signal.aborted) return;
         
-        if (typeof window !== 'undefined' && 'memory' in performance) {
-          const memoryUsage = (performance as any).memory;
-          if (memoryUsage) {
-            const usedMB = Math.round(memoryUsage.usedJSHeapSize / 1024 / 1024);
-            const limitMB = Math.round(memoryUsage.jsHeapSizeLimit / 1024 / 1024);
-            const usagePercent = (usedMB / limitMB) * 100;
-            
-            if (usagePercent > 85) {
-              logger.warn(`High memory usage: ${usedMB}MB (${usagePercent.toFixed(1)}%).`);
+        try {
+          if (typeof window !== 'undefined' && 'memory' in performance) {
+            const memoryUsage = (performance as any).memory;
+            if (memoryUsage) {
+              const usedMB = Math.round(memoryUsage.usedJSHeapSize / 1024 / 1024);
+              const limitMB = Math.round(memoryUsage.jsHeapSizeLimit / 1024 / 1024);
+              const usagePercent = (usedMB / limitMB) * 100;
               
-              // Auto-cleanup if memory is critically high
-              if (usagePercent > 95 && onClear) {
-                logger.error(`Emergency cleanup triggered: ${usagePercent.toFixed(1)}%`);
-                onClear();
+              if (usagePercent > 85) {
+                logger.warn(`High memory usage: ${usedMB}MB (${usagePercent.toFixed(1)}%).`);
+                
+                // Auto-cleanup if memory is critically high
+                if (usagePercent > 95 && onClear && !signal.aborted) {
+                  logger.error(`Emergency cleanup triggered: ${usagePercent.toFixed(1)}%`);
+                  onClear();
+                }
               }
             }
           }
+        } catch (error) {
+          logger.error('Memory monitoring error:', error);
         }
       }, interval);
     };
     
     // Start monitoring for conversations with more than 30 messages
-    if (messages.length > 30) {
+    if (messages.length > 30 && !signal.aborted) {
       startMemoryMonitoring();
     }
     
     // Cleanup function with unified memory management
     return () => {
-      if (abortControllerRef.current) {
+      // Abort any ongoing operations
+      if (abortControllerRef.current && !signal.aborted) {
         abortControllerRef.current.abort();
       }
       
@@ -186,7 +192,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     
     return boldParts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="text-brand-300 font-bold">{part.slice(2, -2)}</strong>;
+        return <strong key={`bold-${i}`} className="text-brand-300 font-bold">{part.slice(2, -2)}</strong>;
       }
       
       // Then split by code markers using pre-compiled regex
@@ -194,12 +200,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
       return codeParts.map((subPart, j) => {
         if (subPart.startsWith('`') && subPart.endsWith('`')) {
           return (
-            <code key={`${i}-${j}`} className="bg-dark-bg border border-dark-border px-1 py-0.5 rounded text-xs font-mono text-brand-400">
+            <code key={`code-${i}-${j}`} className="bg-dark-bg border border-dark-border px-1 py-0.5 rounded text-xs font-mono text-brand-400">
               {subPart.slice(1, -1)}
             </code>
           );
         }
-        return <span key={`${i}-${j}`}>{subPart}</span>;
+        return <span key={`text-${i}-${j}`}>{subPart}</span>;
       });
     });
   }, [boldRegex, codeRegex]);
@@ -228,7 +234,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
       if (listRegex.test(trimmedLine)) {
         const listContent = trimmedLine.substring(2);
         elements.push(
-          <div key={i} className="flex items-start ml-2 mb-1">
+          <div key={`line-${i}`} className="flex items-start ml-2 mb-1">
             <span className="mr-2 text-brand-500">•</span>
             <span>{parseInlineStyles(listContent)}</span>
           </div>
@@ -236,10 +242,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
       }
       // Standard Paragraph (with empty line handling)
       else if (trimmedLine === '') {
-        elements.push(<div key={i} className="h-2" />);
+        elements.push(<div key={`empty-${i}`} className="h-2" />);
       }
       else {
-        elements.push(<div key={i} className="mb-1">{parseInlineStyles(line)}</div>);
+        elements.push(<div key={`para-${i}`} className="mb-1">{parseInlineStyles(line)}</div>);
       }
     });
     
@@ -287,13 +293,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     return visibleSlice;
   }, [messages]);
 
-  // Simplified memory monitoring - consolidated with main effect
-  // This effect is now redundant as memory monitoring is handled above
+  // Memory pressure event listener for cleanup coordination
   useEffect(() => {
-    // Log circular buffer activity for debugging
-    if (messages.length > 100) {
-      logger.info(`Circular buffer active: ${messages.length} total messages`);
-    }
+    const handleMemoryPressure = () => {
+      if (messages.length > 50) {
+        logger.info(`Memory pressure detected: ${messages.length} messages, consider clearing chat`);
+      }
+    };
+
+    window.addEventListener('memory-pressure', handleMemoryPressure);
+    
+    return () => {
+      window.removeEventListener('memory-pressure', handleMemoryPressure);
+    };
   }, [messages.length]);
 
   return (

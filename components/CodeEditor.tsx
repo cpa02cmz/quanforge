@@ -34,10 +34,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
     }
   }, [code, isEditing]);
 
-  // Sync scrolling between content and gutter
+  // Sync scrolling between content and gutter with debouncing for performance
   const handleScroll = useCallback(() => {
     if (contentRef.current && gutterRef.current) {
-      gutterRef.current.scrollTop = contentRef.current.scrollTop;
+      // Use requestAnimationFrame to prevent layout thrashing
+      requestAnimationFrame(() => {
+        if (contentRef.current && gutterRef.current) {
+          gutterRef.current.scrollTop = contentRef.current.scrollTop;
+        }
+      });
     }
   }, []);
 
@@ -111,10 +116,12 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
     }
   }, [onChange, handleDownload]);
 
-  // Handle Ctrl/Cmd + Plus and Minus for font size adjustment
+  // Handle Ctrl/Cmd + Plus and Minus for font size adjustment with proper cleanup
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
+      // Only handle when not focused on input elements
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && 
+          !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
         if (e.key === '+' || e.key === '=') {
           e.preventDefault();
           setFontSize(prev => Math.min(prev + 1, 24)); // Max font size 24px
@@ -128,11 +135,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
       }
     };
 
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    window.addEventListener('keydown', handleGlobalKeyDown, { passive: false });
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+    };
   }, []);
 
- // Generate line numbers efficiently - optimized with dependency on line count only
+ // Generate line numbers efficiently - optimized with proper dependency tracking
      const lineNumbers = useMemo(() => {
        // More efficient line counting without creating intermediate array
        const lineCount = (code.match(/\n/g) || []).length + 1;
@@ -143,7 +152,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
          numbers[i] = i + 1;
        }
        return numbers;
-     }, [code.match(/\n/g)?.length || 0]); // Only recalculate when line count changes
+     }, [code]); // Only recalculate when actual code content changes
      
      // Calculate editor height based on content for auto-expanding textarea
      const editorHeight = useMemo(() => {
@@ -151,8 +160,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
        
        // Calculate height based on number of lines with a minimum height
        const lines = code.split('\n').length;
-       return `${Math.max(lines * 26, 300)}px`; // 26px per line, minimum 300px
-     }, [code, isEditing]);
+       const lineHeight = fontSize * 1.625; // Use actual line height based on font size
+       return `${Math.max(lines * lineHeight, 300)}px`;
+     }, [code, isEditing, fontSize]);
 
   return (
     <div className="flex flex-col h-full bg-[#0d1117] text-gray-300 font-mono text-sm relative">

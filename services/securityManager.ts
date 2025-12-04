@@ -1,4 +1,5 @@
 import { Robot, StrategyParams, BacktestSettings } from '../types';
+import DOMPurify from 'dompurify';
 
 interface SecurityConfig {
   maxPayloadSize: number;
@@ -637,30 +638,7 @@ private validateRobotData(data: any): ValidationResult {
     return this.config.allowedOrigins.includes(origin);
   }
 
-// Validate API key format
-    validateAPIKey(key: string): boolean {
-      if (!key) return false;
-      
-      // Basic format validation for common API key patterns
-      const patterns = [
-        /^[a-zA-Z0-9_-]{20,}$/,  // Generic API key format
-        /^sk-[a-zA-Z0-9_-]{20,}$/,  // OpenAI-style
-        /^AI[0-9a-zA-Z]{20,}$/,  // Google-style
-        /^[\w-]{20,40}$/,  // General API key format
-        /^[\w]{32,64}$/,  // Common API key lengths
-        /^[\w]{20,}$/, // General format
-      ];
-      
-      const isValid = patterns.some(pattern => pattern.test(key));
-      
-      if (!isValid) return false;
-      
-      // Additional checks for common placeholder patterns
-      const lowerKey = key.toLowerCase();
-      const placeholders = ['your-', 'api-', 'key-', 'test', 'demo', 'sample', '123', 'xxx'];
-      
-      return !placeholders.some(placeholder => lowerKey.includes(placeholder));
-    }
+
    
    // Get security metrics
    getSecurityMetrics(): {
@@ -1351,8 +1329,8 @@ private validateRobotData(data: any): ValidationResult {
     };
   }
 
-  // Generic input sanitization method
-  sanitizeInput(input: string, type: 'text' | 'code' | 'symbol' | 'url' | 'token' | 'search' | 'email' = 'text'): string {
+  // Enhanced input sanitization with DOMPurify integration
+  sanitizeInput(input: string, type: 'text' | 'code' | 'symbol' | 'url' | 'token' | 'search' | 'email' | 'html' = 'text'): string {
     if (!input || typeof input !== 'string') {
       return '';
     }
@@ -1360,6 +1338,21 @@ private validateRobotData(data: any): ValidationResult {
     let sanitized = input.trim();
 
     switch (type) {
+      case 'html':
+        // Use DOMPurify for HTML sanitization
+        if (typeof DOMPurify !== 'undefined') {
+          sanitized = DOMPurify.sanitize(sanitized, {
+            ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'code', 'pre', 'br', 'p'],
+            ALLOWED_ATTR: ['class'],
+            KEEP_CONTENT: true
+          });
+        } else {
+          // Fallback if DOMPurify is not available
+          sanitized = sanitized.replace(/<[^>]*>/g, '');
+        }
+        sanitized = sanitized.substring(0, 1000);
+        break;
+
       case 'text':
         // Remove HTML tags and dangerous characters
         sanitized = sanitized.replace(/<[^>]*>/g, '');
@@ -1377,7 +1370,7 @@ private validateRobotData(data: any): ValidationResult {
 
       case 'symbol':
         // Only allow uppercase letters, numbers, and some special characters
-        sanitized = sanitized.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        sanitized = sanitized.toUpperCase().replace(/[^A-Z0-9/]/g, '');
         sanitized = sanitized.substring(0, 10);
         break;
 
@@ -1411,6 +1404,119 @@ private validateRobotData(data: any): ValidationResult {
 
     return sanitized;
   }
+
+  // CSRF token generation and validation
+  generateCSRFToken(sessionId: string): string {
+    const token = this.generateSecureToken();
+    const expiresAt = Date.now() + this.TOKEN_EXPIRY_MS;
+    
+    // Store token with expiration
+    this.csrfTokens.set(sessionId, { token, expiresAt });
+    
+    return token;
+  }
+
+  validateCSRFToken(sessionId: string, token: string): boolean {
+    const stored = this.csrfTokens.get(sessionId);
+    if (!stored || stored.expiresAt < Date.now()) {
+      this.csrfTokens.delete(sessionId);
+      return false;
+    }
+    return stored.token === token;
+  }
+
+  // Enhanced API key validation
+  validateAPIKey(apiKey: string, type: 'gemini' | 'supabase' | 'twelvedata' | 'generic' = 'generic'): boolean {
+    if (!apiKey || typeof apiKey !== 'string') {
+      return false;
+    }
+
+    // Check for placeholder values
+    const placeholders = ['your-api-key', 'api-key-here', 'xxx', 'test-key', 'demo', 'sample'];
+    if (placeholders.some(placeholder => apiKey.toLowerCase().includes(placeholder))) {
+      return false;
+    }
+
+    switch (type) {
+      case 'gemini':
+        // Gemini API keys typically start with 'AIza'
+        return /^AIza[A-Za-z0-9_-]{35}$/.test(apiKey);
+      
+      case 'supabase':
+        // Supabase keys are typically JWT tokens
+        return /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(apiKey);
+      
+      case 'twelvedata':
+        // Twelve Data API keys are typically alphanumeric
+        return /^[A-Za-z0-9]{32,}$/.test(apiKey);
+      
+      case 'generic':
+      default:
+        // Generic validation for common API key patterns
+        const patterns = [
+          /^[a-zA-Z0-9_-]{20,}$/,
+          /^sk-[a-zA-Z0-9_-]{20,}$/,
+          /^AI[0-9a-zA-Z]{20,}$/,
+          /^[\w-]{20,40}$/
+        ];
+        return patterns.some(pattern => pattern.test(apiKey)) && apiKey.length >= 20;
+    }
+  }
+
+  // Enhanced symbol validation
+  validateSymbol(symbol: string): boolean {
+    if (!symbol || typeof symbol !== 'string') {
+      return false;
+    }
+
+    const sanitized = this.sanitizeInput(symbol, 'symbol');
+    
+    // Common forex pairs pattern (EUR/USD, GBP/JPY, etc.)
+    const forexPattern = /^[A-Z]{3}\/[A-Z]{3}$/;
+    if (forexPattern.test(sanitized)) {
+      return true;
+    }
+
+    // Crypto pairs pattern (BTC/USD, ETH/USDT, etc.)
+    const cryptoPattern = /^[A-Z]{3,10}\/[A-Z]{3,10}$/;
+    if (cryptoPattern.test(sanitized)) {
+      return true;
+    }
+
+    // Stock symbols pattern (AAPL, GOOGL, etc.)
+    const stockPattern = /^[A-Z]{1,5}$/;
+    if (stockPattern.test(sanitized)) {
+      return true;
+    }
+
+    // Blacklist common invalid symbols
+    const blacklist = ['TEST', 'INVALID', 'DEMO', 'SAMPLE'];
+    return !blacklist.includes(sanitized);
+  }
+
+  // Generate secure random token
+  private generateSecureToken(): string {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    
+    // Fallback for older browsers
+    const array = new Uint8Array(32);
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      crypto.getRandomValues(array);
+    } else {
+      // Less secure fallback
+      for (let i = 0; i < array.length; i++) {
+        array[i] = Math.floor(Math.random() * 256);
+      }
+    }
+    
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  // CSRF token storage
+  private csrfTokens = new Map<string, { token: string; expiresAt: number }>();
+  private readonly TOKEN_EXPIRY_MS = 3600000; // 1 hour
 
   // Hash string for rate limiting and caching
   hashString(input: string): string {
