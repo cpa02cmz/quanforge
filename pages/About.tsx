@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../services/i18n';
-import { PageMeta, enhancedStructuredData } from '../utils/pageMeta';
-import { generateTableOfContents } from '../utils/seoAnalytics';
+import { AdvancedSEO } from '../utils/advancedSEO';
+import { generateTableOfContents } from '../utils/seoEnhanced';
 
 const AboutComponent: React.FC = () => {
   const { language } = useTranslation();
@@ -113,32 +113,20 @@ const AboutComponent: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [currentContent.sections]);
 
-  const structuredData = [
-    enhancedStructuredData.organization,
-    enhancedStructuredData.webPage(
-      currentContent.title,
-      currentContent.description,
-      'https://quanforge.ai/about'
-    ),
-    enhancedStructuredData.article(
-      'About QuantForge AI',
-      currentContent.description,
-      'https://quanforge.ai/about',
-      'QuantForge AI',
-      '2023-01-01',
-      new Date().toISOString()
-    )
-  ];
-
   return (
     <>
-      <PageMeta
+      <AdvancedSEO
+        pageType="about"
         title={currentContent.title}
         description={currentContent.description}
-        keywords="QuantForge AI about, automated trading team, AI trading platform company, MQL5 generator company, trading robot developers, quantitative finance team"
+        keywords="QuantForge AI about, automated trading team, AI trading platform company, MQL5 generator company, trading robot developers, quantitative finance team, algorithmic trading experts"
         canonicalUrl="https://quanforge.ai/about"
-        structuredData={structuredData}
-        type="article"
+        type="website"
+        author="QuantForge AI"
+        publishDate="2023-01-01"
+        category="Company"
+        tags={['QuantForge AI', 'Trading Technology', 'AI', 'MQL5', 'Company']}
+        enableAnalytics={true}
       />
       
       <div className="min-h-screen bg-dark-bg text-white">

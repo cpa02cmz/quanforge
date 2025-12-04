@@ -50,8 +50,8 @@ export const createDynamicSupabaseClient = async (url: string, key: string, opti
   };
 
   // Add region-specific headers if available
-  if (typeof window === 'undefined' && process.env.VERCEL_REGION) {
-    defaultOptions.global.headers['X-Edge-Region'] = process.env.VERCEL_REGION;
+  if (typeof window === 'undefined' && process.env['VERCEL_REGION']) {
+    defaultOptions.global.headers['X-Edge-Region'] = process.env['VERCEL_REGION'];
   }
 
   return createClient(url, key, defaultOptions);
