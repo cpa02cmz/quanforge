@@ -117,7 +117,7 @@
       ]
     }
   ],
-  "regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1", "arn1", "gru1", "cle1"],
+  "regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1"],
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
@@ -126,32 +126,27 @@
   "functions": {
     "api/**/*.ts": {
       "runtime": "edge",
-      "regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1", "arn1", "gru1", "cle1"],
+      "regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1"],
       "maxDuration": 30,
       "memory": 512,
       "includeFiles": ["public/**/*"],
       "excludeFiles": ["**/*.test.*", "**/*.spec.*"],
       "cache": "max-age=300, s-maxage=600, stale-while-revalidate=120",
-      "invocationCount": 20,
       "environment": {
         "EDGE_CACHE_ENABLED": "true",
-        "SUPABASE_POOL_SIZE": "20",
+        "SUPABASE_POOL_SIZE": "6",
         "EDGE_REGION_AFFINITY": "true",
         "CONNECTION_WARMING": "true",
         "EDGE_KEEP_WARM": "true",
-        "PREWARM_CONCURRENT": "5",
+        "PREWARM_CONCURRENT": "3",
         "EDGE_MEMORY_POOL": "true",
         "EDGE_OPTIMIZATION_LEVEL": "maximum",
         "PREDICTIVE_CACHING": "true",
-        "EDGE_METRICS_ENABLED": "true"
-      }
-    },
-    "app/**/*.ts": {
-      "runtime": "nodejs20.x",
-      "memory": 1024,
-      "maxDuration": 30,
-      "environment": {
-        "NODE_OPTIONS": "--max-old-space-size=1024"
+        "EDGE_METRICS_ENABLED": "true",
+        "EDGE_CACHE_TTL": "3600",
+        "EDGE_MAX_CONNECTIONS": "6",
+        "EDGE_MIN_CONNECTIONS": "2",
+        "EDGE_HEALTH_CHECK_INTERVAL": "15000"
       }
     }
   },
@@ -205,13 +200,5 @@
       "destination": "https://assets.quanforge.ai/$1"
     }
   ],
-  "edge": {
-    "runtime": "edge",
-    "regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1", "arn1", "gru1", "cle1"],
-    "framework": "vite",
-    "devCommand": "npm run dev",
-    "buildCommand": "npm run build:edge",
-    "outputDirectory": "dist",
-    "installCommand": "npm ci"
-  }
+  
 }
