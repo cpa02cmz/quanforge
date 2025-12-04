@@ -375,28 +375,32 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
     }
 }
 
-// Enhanced token budgeting with incremental history management
+// Optimized token budgeting with efficient caching
   class TokenBudgetManager {
-      private static readonly MAX_CONTEXT_CHARS = 100000; // Reduced to optimize for performance while maintaining functionality
-      private static readonly MIN_HISTORY_CHARS = 1000; // Keep minimum history for context
+      private static readonly MAX_CONTEXT_CHARS = 100000;
+      private static readonly MIN_HISTORY_CHARS = 1000;
     
-    // Cache for frequently used context parts
-    private contextCache = new Map<string, { content: string, length: number, timestamp: number }>();
+    // LRU cache for context parts
+    private contextCache = new Map<string, { content: string, timestamp: number }>();
     private static readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+    private static readonly MAX_CACHE_SIZE = 20; // Reduced cache size
     
     private getCachedContext(key: string, builder: () => string): string {
         const cached = this.contextCache.get(key);
         const now = Date.now();
         
         if (cached && (now - cached.timestamp) < TokenBudgetManager.CACHE_TTL) {
+            // Move to end (LRU behavior)
+            this.contextCache.delete(key);
+            this.contextCache.set(key, cached);
             return cached.content;
         }
         
         const content = builder();
-        this.contextCache.set(key, { content, length: content.length, timestamp: now });
+        this.contextCache.set(key, { content, timestamp: now });
         
-        // Cleanup old cache entries
-        if (this.contextCache.size > 50) {
+        // LRU cleanup
+        if (this.contextCache.size > TokenBudgetManager.MAX_CACHE_SIZE) {
             const oldestKey = this.contextCache.keys().next().value;
             if (oldestKey) {
                 this.contextCache.delete(oldestKey);

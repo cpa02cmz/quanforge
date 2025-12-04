@@ -264,33 +264,23 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     });
   }, [language]);
 
-  // Enhanced virtual scrolling with intelligent windowing and memory optimization
+  // Optimized virtual scrolling with stable windowing
   const visibleMessages = useMemo(() => {
-    // Adaptive window size based on viewport and memory constraints
-    const VIEWPORT_SIZE = 20; // Messages visible in viewport
-    const BUFFER_SIZE = 10;   // Extra messages for smooth scrolling
-    const MAX_MESSAGES = 100; // Reduced limit for better memory management
+    const VIEWPORT_SIZE = 20;
+    const BUFFER_SIZE = 10;
+    const MAX_MESSAGES = 100;
     const WINDOW_SIZE = VIEWPORT_SIZE + (BUFFER_SIZE * 2);
     
-    if (messages.length <= MAX_MESSAGES) {
+    // Early return for small conversations
+    if (messages.length <= WINDOW_SIZE) {
       return messages;
     }
     
-    // For very long conversations, implement sliding window
-    const recentMessages = messages.slice(-MAX_MESSAGES);
+    // Use sliding window for large conversations
+    const totalMessages = Math.min(messages.length, MAX_MESSAGES);
+    const startIndex = Math.max(0, totalMessages - WINDOW_SIZE);
     
-    if (recentMessages.length <= WINDOW_SIZE) {
-      return recentMessages;
-    }
-    
-    // Return the most recent window of messages
-    const startIndex = recentMessages.length - WINDOW_SIZE;
-    const visibleSlice = recentMessages.slice(startIndex);
-    
-    // Log virtual scrolling activity for monitoring
-    logger.debug(`Virtual scrolling: showing ${visibleSlice.length} of ${messages.length} total messages (${recentMessages.length} in memory)`);
-    
-    return visibleSlice;
+    return messages.slice(startIndex, startIndex + WINDOW_SIZE);
   }, [messages]);
 
   // Memory pressure event listener for cleanup coordination
