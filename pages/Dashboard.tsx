@@ -5,7 +5,7 @@ import { mockDb } from '../services/supabase';
 import { Robot, UserSession } from '../types';
 import { useToast } from '../components/Toast';
 import { useTranslation } from '../services/i18n';
-import { AdvancedSEO } from '../utils/advancedSEO';
+import { QuantForgeSEO } from '../utils/quantForgeSEO';
 import { createScopedLogger } from '../utils/logger';
 import { VirtualScrollList } from '../components/VirtualScrollList';
 
@@ -250,13 +250,12 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
 
   return (
 <>
-<AdvancedSEO 
-          pageType="homepage"
+<QuantForgeSEO 
+          pageType="home"
           title="Dashboard - Trading Robots Management | QuantForge AI"
           description="Manage your MQL5 trading robots and Expert Advisors. View, edit, duplicate, and analyze your automated trading strategies with advanced AI-powered tools."
           keywords="trading robot dashboard, MQL5 management, Expert Advisor dashboard, automated trading portfolio, forex robot management, MT5 EA portfolio, trading algorithm dashboard, quantitative trading portfolio, AI trading management"
           canonicalUrl="https://quanforge.ai/"
-          enableAnalytics={true}
         />
       <div className="p-8 max-w-7xl mx-auto" role="main" aria-label="Trading robots dashboard">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">

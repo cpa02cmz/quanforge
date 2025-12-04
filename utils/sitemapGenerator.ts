@@ -1,5 +1,44 @@
 import { writeFileSync } from 'fs';
 
+// Enhanced sitemap generator for QuantForge AI
+export interface SitemapURL {
+  url: string;
+  lastmod?: string;
+  changefreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
+  priority?: number;
+  images?: SitemapImage[];
+  videos?: SitemapVideo[];
+  alternates?: Array<{ hreflang: string; url: string }>;
+}
+
+export interface SitemapImage {
+  loc: string;
+  title?: string;
+  caption?: string;
+  geo_location?: string;
+  license?: string;
+}
+
+export interface SitemapVideo {
+  title: string;
+  description: string;
+  thumbnail_loc: string;
+  content_loc?: string;
+  duration?: number;
+  publication_date?: string;
+}
+
+export interface SitemapConfig {
+  baseUrl: string;
+  outputDir: string;
+  defaultChangefreq: SitemapURL['changefreq'];
+  defaultPriority: number;
+  includeImages: boolean;
+  includeVideos: boolean;
+  includeAlternates: boolean;
+  supportedLanguages: Array<{ code: string; url: string }>;
+}
+
 interface SitemapEntry {
   url: string;
   lastmod?: string;

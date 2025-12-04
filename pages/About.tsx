@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../services/i18n';
-import { AdvancedSEO } from '../utils/advancedSEO';
+import { QuantForgeSEO } from '../utils/quantForgeSEO';
 import { generateTableOfContents } from '../utils/seoEnhanced';
 
 const AboutComponent: React.FC = () => {
@@ -115,18 +115,12 @@ const AboutComponent: React.FC = () => {
 
   return (
     <>
-      <AdvancedSEO
+      <QuantForgeSEO
         pageType="about"
         title={currentContent.title}
         description={currentContent.description}
         keywords="QuantForge AI about, automated trading team, AI trading platform company, MQL5 generator company, trading robot developers, quantitative finance team, algorithmic trading experts"
         canonicalUrl="https://quanforge.ai/about"
-        type="website"
-        author="QuantForge AI"
-        publishDate="2023-01-01"
-        category="Company"
-        tags={['QuantForge AI', 'Trading Technology', 'AI', 'MQL5', 'Company']}
-        enableAnalytics={true}
       />
       
       <div className="min-h-screen bg-dark-bg text-white">
