@@ -11,6 +11,9 @@ import { performanceMonitorEnhanced } from '../../services/performanceMonitorEnh
 export const config = {
   runtime: 'edge',
   regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
+  maxDuration: 15,
+  memory: 512,
+  cache: 'max-age=300, s-maxage=900, stale-while-revalidate=300',
 };
 
 // Strategy templates (in production, these would come from a database)

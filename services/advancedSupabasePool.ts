@@ -386,7 +386,7 @@ class AdvancedSupabasePool {
     let activeConnections = 0;
     let idleConnections = 0;
     let unhealthyConnections = 0;
-    let totalResponseTime = 0;
+    const totalResponseTime = 0;
     let totalErrors = 0;
     let totalRequests = 0;
     const regionDistribution: Record<string, number> = {};

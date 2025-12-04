@@ -295,6 +295,8 @@ export default defineConfig({
       'recharts/es6/chart/AreaChart',
       'recharts/es6/chart/LineChart',
       'recharts/es6/chart/BarChart',
+      '@google/genai/dist/generators',
+      'dompurify/dist/purify.cjs',
       // Additional heavy modules
       '@testing-library/jest-dom',
       '@testing-library/react',
