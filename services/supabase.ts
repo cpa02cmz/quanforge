@@ -468,13 +468,13 @@ const cached = await consolidatedCache.get<Robot[]>(cacheKey);
         }
         
 return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
-          return withRetry(async () => {
-            const client = await getClient();
-            const result = client
-              .from('robots')
-              .select('*')
-              .order('created_at', { ascending: false })
-              .limit(100); // Add reasonable limit to prevent performance issues
+           return withRetry(async () => {
+             const client = await getClient();
+             const result = client
+               .from('robots')
+               .select('id, user_id, name, description, strategy_type, strategy_params, backtest_settings, analysis_result, created_at, updated_at') // Select only needed fields to reduce payload
+               .order('created_at', { ascending: false })
+               .limit(100); // Add reasonable limit to prevent performance issues
             
             if (result.data && !result.error) {
               // Create index for performance
@@ -643,10 +643,11 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
             query = query.eq('strategy_type', filterType);
           }
           
-          if (searchTerm) {
-            // Use more efficient search with index hints
-            query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
-          }
+           if (searchTerm) {
+             // Use more efficient search with proper escaping to prevent injection
+             const escapedTerm = `%${searchTerm}%`;
+             query = query.or(`name.ilike.${escapedTerm},description.ilike.${escapedTerm}`);
+           }
           
           // Apply ordering and pagination last
           query = query

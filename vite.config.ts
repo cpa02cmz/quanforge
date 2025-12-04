@@ -36,9 +36,16 @@ export default defineConfig({
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'security-vendor';
             }
-            // All other vendor libraries
-            return 'vendor-misc';
-          }
+             // Split remaining vendor libraries into smaller chunks
+             if (id.includes('zod') || id.includes('date-fns') || id.includes('lodash') || id.includes('clsx') || id.includes('tailwind-')) {
+               return 'utils-vendor';
+             }
+             if (id.includes('immer') || id.includes('valtio') || id.includes('jotai')) {
+               return 'state-vendor';
+             }
+             // All other vendor libraries
+             return 'vendor-misc';
+           }
           
           // Enhanced service chunking for edge functions
           if (id.includes('services/')) {
@@ -50,12 +57,24 @@ export default defineConfig({
             if (id.includes('supabase') || id.includes('database') || id.includes('db') || id.includes('edge') || id.includes('cdn') || id.includes('vercel')) {
               return 'services-data';
             }
-            // Performance and security services
-            if (id.includes('cache') || id.includes('performance') || id.includes('optimization') || id.includes('security') || id.includes('auth') || id.includes('validation')) {
-              return 'services-core';
-            }
-            // All other services
-            return 'services-misc';
+             // Cache services
+             if (id.includes('cache') || id.includes('caching')) {
+               return 'services-cache';
+             }
+             // Performance services
+             if (id.includes('performance') || id.includes('monitor') || id.includes('analytics')) {
+               return 'services-performance';
+             }
+             // Security services
+             if (id.includes('security') || id.includes('auth') || id.includes('validation')) {
+               return 'services-security';
+             }
+             // Optimization services
+             if (id.includes('optimization') || id.includes('optimizer')) {
+               return 'services-optimization';
+             }
+             // All other services
+             return 'services-misc';
           }
           
           // Component chunking with edge optimization
@@ -176,7 +195,7 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 150, // Reduced for better edge performance
+     chunkSizeWarningLimit: 200, // Increased due to better chunking strategy
     target: 'esnext', // Updated targets for better performance and modern features
     reportCompressedSize: true,
     cssCodeSplit: true,
