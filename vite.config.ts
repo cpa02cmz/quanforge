@@ -162,24 +162,25 @@ output: {
       }
     },
 minify: 'terser',
-terserOptions: {
+  terserOptions: {
   compress: {
     drop_console: process.env['NODE_ENV'] === 'production',
     drop_debugger: true,
     pure_funcs: ['console.log', 'console.info', 'console.debug'],
+    passes: 1, // Single pass for faster builds
   },
   mangle: true,
   format: {
-    comments: false
+    comments: false,
   }
 },
-chunkSizeWarningLimit: 150, // Further optimized for edge deployment
-target: ['es2022', 'edge115'], // Updated targets for better performance and modern features
+chunkSizeWarningLimit: 200, // Optimized for edge deployment with larger chunks
+  target: 'esnext', // Updated targets for better performance and modern features
 reportCompressedSize: true,
 cssCodeSplit: true,
 cssMinify: true, // Add CSS minification
     // Enhanced edge optimization
-    assetsInlineLimit: 128, // Further reduced to 128B for optimal edge performance
+    assetsInlineLimit: 256, // Optimized for edge performance with better balance
     modulePreload: {
       polyfill: false
     },

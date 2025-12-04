@@ -15,6 +15,8 @@ export function middleware(request: NextRequest) {
   response.headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
   response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
   response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+  response.headers.set('X-Edge-Version', '3.0.0');
+  response.headers.set('X-Powered-By', 'QuantForge-AI-Edge');
   
   // Region-based caching and optimization
   const region = request.geo?.region || request.headers.get('x-vercel-ip-country') || 'unknown';
@@ -25,21 +27,28 @@ export function middleware(request: NextRequest) {
   if (url.pathname.startsWith('/api/')) {
     // API routes - intelligent caching based on endpoint
     if (url.pathname.includes('/edge-metrics') || url.pathname.includes('/health')) {
-      response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=60');
-    } else {
+      response.headers.set('Cache-Control', 'public, max-age=120, s-maxage=600, stale-while-revalidate=120');
+      response.headers.set('X-Edge-Cache-Tag', 'api-metrics');
+    } else if (url.pathname.includes('/robots') || url.pathname.includes('/strategies')) {
       response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=900, stale-while-revalidate=300');
+      response.headers.set('X-Edge-Cache-Tag', 'api-data');
+    } else {
+      response.headers.set('Cache-Control', 'public, max-age=600, s-maxage=1800, stale-while-revalidate=600');
+      response.headers.set('X-Edge-Cache-Tag', 'api-general');
     }
-  } else if (url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+  } else if (url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|webp|avif|woff|woff2|ttf|eot)$/)) {
     // Static assets - long cache with edge optimization
     response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
     response.headers.set('X-Edge-Cache-Tag', 'static-asset');
+    // Add Vary Accept-Encoding for better compression
+    response.headers.set('Vary', 'Accept-Encoding');
   } else if (url.pathname === '/' || url.pathname.includes('/dashboard') || url.pathname.includes('/generator')) {
     // Critical pages - shorter cache for dynamic content
-    response.headers.set('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=120');
+    response.headers.set('Cache-Control', 'public, max-age=180, s-maxage=600, stale-while-revalidate=180');
     response.headers.set('X-Edge-Cache-Tag', 'critical-page');
   } else {
     // Other pages - moderate cache
-    response.headers.set('Cache-Control', 'public, max-age=600, s-maxage=1800, stale-while-revalidate=600');
+    response.headers.set('Cache-Control', 'public, max-age=900, s-maxage=3600, stale-while-revalidate=900');
     response.headers.set('X-Edge-Cache-Tag', 'page');
   }
   
