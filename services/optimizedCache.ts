@@ -1,5 +1,4 @@
 import { createScopedLogger } from '../utils/logger';
-import { securityManager } from './securityManager';
 
 const logger = createScopedLogger('OptimizedCache');
 
@@ -57,7 +56,7 @@ export class OptimizedCache {
   };
   private samplingRate = 0.1; // Sample 10% of operations for metrics
 
-  constructor(name: string, options: { maxSize?: number; defaultTTL?: number } = {}) {
+  constructor(_name: string, options: { maxSize?: number; defaultTTL?: number } = {}) {
     this.maxSize = options.maxSize || 10 * 1024 * 1024; // 10MB default
     this.defaultTTL = options.defaultTTL || 300000; // 5 minutes default
 
@@ -92,10 +91,11 @@ export class OptimizedCache {
       entry.lastAccessed = Date.now();
       this.accessOrder.set(key, ++this.accessCounter);
 
-      // Validate cached data for security
-      const validation = securityManager.sanitizeAndValidate(entry.data, 'robot');
-      if (!validation.isValid) {
-        logger.warn(`Invalid cached data detected for key: ${key}`, validation.errors);
+      // Basic validation - ensure data is serializable
+      try {
+        JSON.stringify(entry.data);
+      } catch {
+        logger.warn(`Invalid cached data detected for key: ${key}`);
         this.delete(key);
         this.recordMetric('misses');
         return null;
@@ -126,10 +126,11 @@ export class OptimizedCache {
       const tags = options.tags || [];
       const priority = options.priority || 'normal';
       
-      // Validate data before caching
-      const validation = securityManager.sanitizeAndValidate(data, 'robot');
-      if (!validation.isValid) {
-        logger.warn(`Attempted to cache invalid data for key: ${key}`, validation.errors);
+      // Basic validation - ensure data is serializable
+      try {
+        JSON.stringify(data);
+      } catch {
+        logger.warn(`Attempted to cache invalid data for key: ${key}`);
         return;
       }
 
@@ -361,7 +362,7 @@ class CacheFactory {
   }
 
   static destroyAll(): void {
-    for (const [name, instance] of this.instances) {
+    for (const [, instance] of this.instances) {
       instance.destroy();
     }
     this.instances.clear();

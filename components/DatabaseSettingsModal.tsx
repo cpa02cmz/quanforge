@@ -75,7 +75,7 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
                 showToast(`Successfully migrated ${res.count} robots to Cloud.`, 'success');
                 loadStats();
             } else {
-                showToast(`Migration failed: ${res.error}`, 'error');
+                showToast(`Migration failed: ${res.message}`, 'error');
             }
         } catch (e: any) {
              showToast(`Migration error: ${e.message}`, 'error');

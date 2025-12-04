@@ -14,7 +14,7 @@ export default defineConfig({
       },
       output: {
         manualChunks: (id) => {
-// Enhanced vendor chunks for optimal edge caching and tree-shaking
+          // Enhanced vendor chunks for optimal edge caching and tree-shaking
           if (id.includes('node_modules')) {
             // React ecosystem - split more granularly for better caching
             if (id.includes('react') && !id.includes('react-dom') && !id.includes('react-router')) {
@@ -26,41 +26,15 @@ export default defineConfig({
             if (id.includes('react-router')) {
               return 'vendor-react-router';
             }
-            // Enhanced Charts splitting - more granular for better performance
+            
+            // Charts library - consolidated to reduce HTTP overhead
             if (id.includes('recharts')) {
-              // Core chart components - most commonly used
-              if (id.includes('BarChart') || id.includes('LineChart') || id.includes('AreaChart')) {
-                return 'vendor-charts-core';
-              }
-              // Chart components and utilities
-              if (id.includes('Tooltip') || id.includes('Legend') || id.includes('ResponsiveContainer')) {
-                return 'vendor-charts-components';
-              }
-              // Candlestick and financial charts - heavy components
-              if (id.includes('CandlestickChart') || id.includes('ComposedChart')) {
-                return 'vendor-charts-financial';
-              }
-              // Technical indicators and advanced features
-              if (id.includes('ReferenceLine') || id.includes('Brush') || id.includes('CrossHair')) {
-                return 'vendor-charts-indicators';
-              }
-              // Advanced chart features
-              return 'vendor-charts-advanced';
+              return 'vendor-charts';
             }
+            
             // Enhanced AI services splitting for better tree-shaking
             if (id.includes('@google/genai')) {
-              // Split AI library more granularly
-              if (id.includes('generators') || id.includes('generate')) {
-                return 'vendor-ai-generators';
-              }
-              if (id.includes('models') || id.includes('model')) {
-                return 'vendor-ai-models';
-              }
-              if (id.includes('chat') || id.includes('conversation')) {
-                return 'vendor-ai-chat';
-              }
-              return 'vendor-ai-core';
-            }
+              return 'vendor-ai';
             }
             
             // Supabase - consolidated
@@ -71,11 +45,6 @@ export default defineConfig({
             // Security utilities
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'vendor-security';
-            }
-            
-// Charts library - consolidated to reduce HTTP overhead
-            if (id.includes('recharts')) {
-              return 'vendor-charts';
             }
             
             // All other node_modules
@@ -169,50 +138,41 @@ export default defineConfig({
         drop_console: process.env['NODE_ENV'] === 'production',
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn', 'console.error'],
-        passes: 5, // Increased for maximum compression
-        // Enhanced optimizations for Vercel Edge
-        inline: 3,
+        passes: 3,
+        inline: 2,
         reduce_funcs: true,
         reduce_vars: true,
         sequences: true,
         dead_code: true,
-        // Advanced optimizations
         join_vars: true,
         collapse_vars: true,
-        negate_iife: true,
         evaluate: true,
         booleans: true,
         loops: true,
         unused: true,
         hoist_funs: true,
         if_return: true,
-        // Additional edge optimizations
         switches: true,
         typeofs: true,
         comparisons: true,
         conditionals: true,
         side_effects: true,
-        // New optimizations for better tree-shaking
         toplevel: true,
-        // Add missing optimizations for better compression
         arrows: true,
         computed_props: true,
         hoist_props: true,
         properties: true,
-        // Edge-specific optimizations
         keep_fargs: false,
         keep_fnames: false,
         ecma: 2020
       },
       mangle: {
         safari10: true,
-        // Enhanced mangling for better compression
         toplevel: true,
         properties: {
           regex: /^_/
         },
         reserved: ['React', 'useState', 'useEffect', 'useRef', 'useCallback', 'useMemo', 'lazy'],
-        // Add missing mangling options
         keep_classnames: false,
         keep_fnames: false,
         module: false
