@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState, useMemo, useCallback, useLayoutEffect } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback, useLayoutEffect, memo } from 'react';
 import { useTranslation } from '../services/i18n';
 
 interface CodeEditorProps {
@@ -11,7 +11,7 @@ interface CodeEditorProps {
   onExplain?: () => void; // New Prop
 }
 
-export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnly = false, filename = "ExpertAdvisor", onChange, onRefine, onExplain }) => {
+export const CodeEditor: React.FC<CodeEditorProps> = memo(({ code, readOnly = false, filename = "ExpertAdvisor", onChange, onRefine, onExplain }) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
