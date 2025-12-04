@@ -47,10 +47,16 @@ class AIWorkerManager {
     this.initializationPromise = new Promise((resolve, reject) => {
       try {
         // Create worker from the TypeScript file
-        this.worker = new Worker(
-          new URL('../workers/aiWorker.ts', import.meta.url),
-          { type: 'module' }
-        );
+        try {
+          this.worker = new Worker(
+            new URL('../workers/aiWorker.ts', import.meta.url),
+            { type: 'module' }
+          );
+        } catch (error) {
+          logger.error('Failed to create worker with import.meta.url, trying fallback:', error);
+          // Fallback for environments where import.meta.url might not work as expected
+          this.worker = new Worker('/workers/aiWorker.js', { type: 'module' });
+        }
 
         this.worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
           this.handleWorkerMessage(event);
