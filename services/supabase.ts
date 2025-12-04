@@ -3,11 +3,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { Robot, UserSession } from '../types';
 import { edgeConnectionPool } from './edgeSupabasePool';
-import { robotCache } from './optimizedLRUCache';
 import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
-import { smartCache } from './smartCache';
-import { globalCache } from './unifiedCacheManager';
+import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
 
 // Enhanced connection retry configuration with exponential backoff
@@ -459,7 +457,7 @@ async getRobots() {
        }
         
         const cacheKey = 'robots_list';
-const cached = robotCache.get(cacheKey) as Robot[] | undefined;
+const cached = await consolidatedCache.get<Robot[]>(cacheKey);
         if (cached) {
           // Create index for performance
           robotIndexManager.getIndex(cached);
@@ -481,11 +479,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
             if (result.data && !result.error) {
               // Create index for performance
               robotIndexManager.getIndex(result.data);
-              robotCache.set(cacheKey, result.data, {
-                ttl: 300000,
-                tags: ['robots', 'list'],
-                priority: 'high'
-              });
+              await consolidatedCache.set(cacheKey, result.data, 'api', ['robots', 'list']);
             }
            
            const duration = performance.now() - startTime;
@@ -542,8 +536,8 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
          
          const results = await Promise.all(batch);
          
-         // Clear relevant caches
-         robotCache.clearByTags(['robots']);
+// Clear relevant caches
+          await consolidatedCache.invalidateByTags(['robots']);
          
          const duration = performance.now() - startTime;
          performanceMonitor.record('batchUpdateRobots', duration);
@@ -574,8 +568,8 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
         // Generate optimized cache key with consistent ordering
         const cacheKey = `robots_paginated_${page}_${limit}_${(searchTerm || '').toLowerCase()}_${(filterType || 'All')}`;
         
-        // Try unified cache first for both mock and supabase modes
-        const cached = globalCache.get(cacheKey);
+        // Try consolidated cache first for both mock and supabase modes
+        const cached = await consolidatedCache.get(cacheKey);
         if (cached) {
           const duration = performance.now() - startTime;
           performanceMonitor.record('getRobotsPaginated_cached', duration);
@@ -628,7 +622,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
           
           // Cache the result with smart TTL based on data size
           const ttl = Math.min(300000, Math.max(60000, totalCount * 100)); // 1-5 minutes based on result size
-          await smartCache.set(cacheKey, response, { ttl, priority: 'high' });
+          await consolidatedCache.set(cacheKey, response, ttl, ['robots', 'paginated']);
           
           const duration = performance.now() - startTime;
           performanceMonitor.record('getRobotsPaginated_mock', duration);
@@ -677,10 +671,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
             
             // Smart caching with adaptive TTL
             const ttl = Math.min(300000, Math.max(60000, (result.count || 0) * 50));
-            await smartCache.set(cacheKey, response, { 
-              ttl, 
-              priority: 'high'
-            });
+            await consolidatedCache.set(cacheKey, response, ttl, ['robots', 'paginated']);
             
             const duration = performance.now() - startTime;
             performanceMonitor.record('getRobotsPaginated_supabase', duration);
@@ -723,13 +714,13 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
          return { data: robots, error: null };
        }
        
-       const cacheKey = `robots_batch_${ids.sort().join('_')}`;
-       const cached = robotCache.get(cacheKey) as Robot[] | undefined;
-       if (cached) {
-         const duration = performance.now() - startTime;
-         performanceMonitor.record('getRobotsByIds', duration);
-         return { data: cached, error: null };
-       }
+const cacheKey = `robots_batch_${ids.sort().join('_')}`;
+        const cached = await consolidatedCache.get<Robot[]>(cacheKey);
+        if (cached) {
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('getRobotsByIds', duration);
+          return { data: cached, error: null };
+        }
        
        return withRetry(async () => {
          const client = await getClient();
@@ -739,13 +730,9 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
            .in('id', ids)
            .order('created_at', { ascending: false });
          
-         if (result.data && !result.error) {
-           robotCache.set(cacheKey, result.data, {
-             ttl: 300000,
-             tags: ['robots', 'batch'],
-             priority: 'high'
-           });
-         }
+if (result.data && !result.error) {
+            await consolidatedCache.set(cacheKey, result.data, 'api', ['robots', 'batch']);
+          }
          
          const duration = performance.now() - startTime;
          performanceMonitor.record('getRobotsByIds', duration);
@@ -798,7 +785,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
             robotIndexManager.clear(); // Clear index since data changed
             
             // Clear cache after save
-            robotCache.clearByTags(['robots', 'list']);
+            await consolidatedCache.invalidateByTags(['robots', 'list']);
             
             return { data: [newRobot], error: null };
         } catch (e: any) {
@@ -813,7 +800,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
         const result = client.from('robots').insert([sanitizedRobot]).select();
         
         // Invalidate cache after save
-        robotCache.clearByTags(['robots', 'list']);
+        await consolidatedCache.invalidateByTags(['robots', 'list']);
         
         const duration = performance.now() - startTime;
         performanceMonitor.record('saveRobot', duration);

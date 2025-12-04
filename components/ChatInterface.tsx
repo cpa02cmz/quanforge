@@ -258,22 +258,31 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     });
   }, [language]);
 
-  // Enhanced virtual scrolling with intelligent windowing and circular buffer
+  // Enhanced virtual scrolling with intelligent windowing and memory optimization
   const visibleMessages = useMemo(() => {
-    // Implement circular buffer for very long conversations
-    const MAX_MESSAGES = 100;
-    const WINDOW_SIZE = 30;
+    // Adaptive window size based on viewport and memory constraints
+    const VIEWPORT_SIZE = 20; // Messages visible in viewport
+    const BUFFER_SIZE = 10;   // Extra messages for smooth scrolling
+    const MAX_MESSAGES = 200; // Increased limit with better memory management
+    const WINDOW_SIZE = VIEWPORT_SIZE + (BUFFER_SIZE * 2);
     
     if (messages.length <= MAX_MESSAGES) {
       return messages;
     }
     
-    // Circular buffer: keep only the most recent messages
-    const startIndex = Math.max(0, messages.length - WINDOW_SIZE);
-    const visibleSlice = messages.slice(startIndex);
+    // For very long conversations, implement sliding window
+    const recentMessages = messages.slice(-MAX_MESSAGES);
+    
+    if (recentMessages.length <= WINDOW_SIZE) {
+      return recentMessages;
+    }
+    
+    // Return the most recent window of messages
+    const startIndex = recentMessages.length - WINDOW_SIZE;
+    const visibleSlice = recentMessages.slice(startIndex);
     
     // Log virtual scrolling activity for monitoring
-    logger.debug(`Circular buffer: showing ${visibleSlice.length} of ${messages.length} messages`);
+    logger.debug(`Virtual scrolling: showing ${visibleSlice.length} of ${messages.length} total messages (${recentMessages.length} in memory)`);
     
     return visibleSlice;
   }, [messages]);
@@ -344,7 +353,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
                 </div>
             </div>
         )}
-        {visibleMessages.slice(-50).map((msg) => ( // Limit to last 50 messages for performance
+        {visibleMessages.map((msg) => (
             <MemoizedMessage key={msg.id} msg={msg} formatMessageContent={formatMessageContent} />
         ))}
         {isLoading && (
