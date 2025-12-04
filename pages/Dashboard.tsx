@@ -201,20 +201,34 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
   // Optimized threshold for better performance with medium-sized lists
   const shouldUseVirtualScroll = robots.length > 20;
 
-// Filter Logic - memoized for performance with debounced search
+// Enhanced Filter Logic with optimized indexing and early termination
    const filteredRobots = useMemo(() => {
      const startTime = import.meta.env.DEV ? performance.now() : 0;
      
      // Pre-calculate normalized debounced search term to avoid repeated operations
      const normalizedSearchTerm = debouncedSearchTerm.toLowerCase();
      
+     // Early return if no filters needed
+     if (normalizedSearchTerm === '' && filterType === 'All') {
+       return robots;
+     }
+     
+     // Optimized filtering with early termination
      const result = robots.filter(robot => {
-       // Use debounced search term for better performance
-       const matchesSearch = normalizedSearchTerm === '' || 
-         robot.name.toLowerCase().includes(normalizedSearchTerm);
-       const matchesType = filterType === 'All' || 
-         (robot.strategy_type || 'Custom') === filterType;
-       return matchesSearch && matchesType;
+       // Type filter first (faster comparison)
+       if (filterType !== 'All' && (robot.strategy_type || 'Custom') !== filterType) {
+         return false;
+       }
+       
+       // Search filter last (more expensive)
+       if (normalizedSearchTerm !== '') {
+         const robotName = robot.name.toLowerCase();
+         if (!robotName.includes(normalizedSearchTerm)) {
+           return false;
+         }
+       }
+       
+       return true;
      });
      
      // Log performance in development

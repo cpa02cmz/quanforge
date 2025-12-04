@@ -18,11 +18,17 @@ output: {
             if (id.includes('node_modules')) {
               // AI services isolated for dynamic loading
               if (id.includes('@google/genai')) {
-                return 'ai-services';
+                return 'ai-services-genai';
               }
               // Database services isolated
-              if (id.includes('@supabase')) {
-                return 'database-services';
+              if (id.includes('@supabase/supabase-js')) {
+                return 'supabase-core';
+              }
+              if (id.includes('@supabase/realtime-js')) {
+                return 'supabase-realtime';
+              }
+              if (id.includes('@supabase/storage-js')) {
+                return 'supabase-storage';
               }
               // React core consolidated
               if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
@@ -180,72 +186,7 @@ output: {
       }
     },
     minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: process.env['NODE_ENV'] === 'production',
-        drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn', 'console.error'],
-        passes: 3, // Balanced for build performance
-        // Enhanced optimizations for Vercel Edge
-        inline: true,
-        reduce_funcs: true,
-        reduce_vars: true,
-        sequences: true,
-        dead_code: true,
-        // Advanced optimizations
-        join_vars: true,
-        collapse_vars: true,
-        negate_iife: true,
-        evaluate: true,
-        booleans: true,
-        loops: true,
-        unused: true,
-        hoist_funs: true,
-        if_return: true,
-        // Additional edge optimizations
-        switches: true,
-        typeofs: true,
-        comparisons: true,
-        conditionals: true,
-        side_effects: true,
-        // New optimizations for better tree-shaking
-        toplevel: true,
-        // Add missing optimizations for better compression
-        arrows: true,
-        computed_props: true,
-        hoist_props: true,
-        properties: true,
-        // Edge-specific optimizations
-        keep_fargs: false,
-        keep_fnames: false,
-        ecma: 2020,
-        // Additional aggressive optimizations
-        pure_getters: true,
-        unsafe: true,
-        unsafe_comps: true,
-        unsafe_Function: true,
-        unsafe_math: true,
-        unsafe_proto: true,
-        unsafe_regexp: true
-      },
-      mangle: {
-        safari10: true,
-        // Enhanced mangling for better compression
-        toplevel: true,
-        properties: {
-          regex: /^_/
-        },
-        reserved: ['React', 'useState', 'useEffect', 'useRef', 'useCallback', 'useMemo', 'lazy'],
-        // Add missing mangling options
-        keep_classnames: false,
-        keep_fnames: false,
-        module: false
-      },
-      format: {
-        comments: false
-      }
-    },
-chunkSizeWarningLimit: 100, // Further reduced for optimal edge performance
+chunkSizeWarningLimit: 50, // Optimized for edge deployment
     target: ['es2020', 'edge101'], // More specific targets for edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,
