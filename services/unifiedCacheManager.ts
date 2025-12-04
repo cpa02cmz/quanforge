@@ -1,17 +1,30 @@
-// Unified cache interface
-interface CacheEntry<T> {
+// Unified cache interface with enhanced edge optimization
+import { compress, decompress } from 'lz-string';
+
+interface CacheEntry<T = any> {
   data: T;
   timestamp: number;
   ttl: number;
   accessCount: number;
   lastAccessed: number;
+  tags: string[];
+  region?: string;
+  compressed?: boolean;
+  size: number;
+  etag?: string;
+  priority: 'high' | 'medium' | 'low';
 }
 
 interface CacheOptions {
   maxSize?: number;
+  maxMemorySize?: number;
   defaultTTL?: number;
-  enableMetrics?: boolean;
+  cleanupInterval?: number;
+  compressionThreshold?: number;
   enableCompression?: boolean;
+  enableMetrics?: boolean;
+  enablePersistence?: boolean;
+  syncAcrossTabs?: boolean;
 }
 
 interface CacheMetrics {
@@ -20,8 +33,12 @@ interface CacheMetrics {
   sets: number;
   deletes: number;
   evictions: number;
+  compressions: number;
   hitRate: number;
   memoryUsage: number;
+  avgAccessTime: number;
+  regionStats: Record<string, { hits: number; misses: number }>;
+  tagStats: Record<string, number>;
 }
 
 interface CacheStrategy {
@@ -31,37 +48,52 @@ interface CacheStrategy {
   onEvict?: (key: string, data: any) => void;
 }
 
-// Unified Cache Manager
+// Enhanced Unified Cache Manager for edge optimization
 export class UnifiedCacheManager {
-  private cache = new Map<string, CacheEntry<any>>();
-  private maxSize: number;
-  private defaultTTL: number;
+  private cache = new Map<string, CacheEntry>();
   private metrics: CacheMetrics;
-  private enableMetrics: boolean;
-  private strategies = new Map<string, CacheStrategy>();
-  private compressionEnabled: boolean;
-  private cleanupInterval: NodeJS.Timeout | null;
+  private options: Required<CacheOptions>;
+  private cleanupTimer: number | null = null;
+  private accessTimes: number[] = [];
+  private storageKey = 'quantforge-unified-cache';
 
   constructor(options: CacheOptions = {}) {
-    this.maxSize = options.maxSize || 1000;
-    this.defaultTTL = options.defaultTTL || 5 * 60 * 1000; // 5 minutes
-    this.enableMetrics = options.enableMetrics || false;
-    this.compressionEnabled = options.enableCompression || false;
-    
+    this.options = {
+      maxSize: 1000,
+      maxMemorySize: 10 * 1024 * 1024, // 10MB
+      defaultTTL: 5 * 60 * 1000, // 5 minutes
+      cleanupInterval: 60000, // 1 minute
+      compressionThreshold: 1024, // 1KB
+      enableCompression: true,
+      enableMetrics: true,
+      enablePersistence: true,
+      syncAcrossTabs: true,
+      ...options
+    };
+
     this.metrics = {
       hits: 0,
       misses: 0,
       sets: 0,
       deletes: 0,
       evictions: 0,
+      compressions: 0,
       hitRate: 0,
-      memoryUsage: 0
+      memoryUsage: 0,
+      avgAccessTime: 0,
+      regionStats: {},
+      tagStats: {}
     };
 
-    // Start cleanup interval
-    this.cleanupInterval = setInterval(() => {
-      this.cleanup();
-    }, 60000); // Cleanup every minute
+    this.startCleanup();
+    
+    if (this.options.enablePersistence) {
+      this.loadFromStorage();
+    }
+
+    if (this.options.syncAcrossTabs && typeof window !== 'undefined') {
+      window.addEventListener('storage', this.handleStorageChange);
+    }
   }
 
   // Register a caching strategy
@@ -69,90 +101,143 @@ export class UnifiedCacheManager {
     this.strategies.set(name, strategy);
   }
 
-  // Get data from cache
-  get<T>(key: string): T | null {
+  // Get data from cache with enhanced edge optimization
+  async get<T = any>(key: string, region?: string): Promise<T | null> {
+    const startTime = performance.now();
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
-      if (this.enableMetrics) this.metrics.misses++;
+      this.recordMiss(region);
       return null;
     }
 
     // Check if entry is expired
     if (Date.now() - entry.timestamp > entry.ttl) {
       this.cache.delete(key);
-      if (this.enableMetrics) this.metrics.misses++;
+      this.recordMiss(region);
       return null;
     }
 
-    // Update access metrics
+    // Check region specificity
+    if (entry.region && entry.region !== region) {
+      this.recordMiss(region);
+      return null;
+    }
+
+    // Update access statistics
     entry.accessCount++;
     entry.lastAccessed = Date.now();
-    
-    if (this.enableMetrics) {
-      this.metrics.hits++;
-      this.updateHitRate();
+
+    // Decompress if needed
+    let data: any = entry.data;
+    if (entry.compressed) {
+      try {
+        const decompressed = await decompress(entry.data);
+        data = JSON.parse(decompressed);
+      } catch (error) {
+        console.warn('Failed to decompress cached data:', error);
+        this.cache.delete(key);
+        this.recordMiss(region);
+        return null;
+      }
     }
 
-    return entry.data;
+    this.recordHit(region);
+    this.recordAccessTime(performance.now() - startTime);
+    this.updateTagStats(entry.tags, 'hit');
+
+    return data as T;
   }
 
-  // Set data in cache
-  set<T>(key: string, data: T, ttl?: number, strategyName?: string): void {
-    // Check if strategy allows caching
-    if (strategyName) {
-      const strategy = this.strategies.get(strategyName);
-      if (strategy && !strategy.shouldCache(key, data)) {
-        return;
+  // Set data in cache with enhanced edge optimization
+  async set<T = any>(
+    key: string,
+    data: T,
+    ttl?: number,
+    tags: string[] = [],
+    region?: string,
+    priority: 'high' | 'medium' | 'low' = 'medium'
+  ): Promise<void> {
+    // Process data (compression if needed)
+    let processedData: any = data;
+    let compressed = false;
+    let size = this.calculateSize(data);
+
+    if (this.options.enableCompression && size > this.options.compressionThreshold) {
+      try {
+        const jsonString = JSON.stringify(data);
+        const compressedData = compress(jsonString);
+        const compressedSize = compressedData.length * 2;
+
+        // Only use compression if it reduces size
+        if (compressedSize < size * 0.8) {
+          processedData = compressedData;
+          compressed = true;
+          size = compressedSize;
+          this.metrics.compressions++;
+        }
+      } catch (error) {
+        console.warn('Compression failed:', error);
       }
     }
 
-    // Determine TTL
-    let finalTTL = ttl || this.defaultTTL;
-    if (strategyName) {
-      const strategy = this.strategies.get(strategyName);
-      if (strategy) {
-        finalTTL = strategy.getTTL(key, data);
-      }
-    }
+    // Ensure capacity
+    await this.ensureCapacity(size);
 
-    // Check if cache is full
-    if (this.cache.size >= this.maxSize && !this.cache.has(key)) {
-      this.evictLRU();
-    }
-
+    // Create cache entry
     const entry: CacheEntry<T> = {
-      data: this.compressionEnabled ? this.compress(data) : data,
+      data: processedData,
       timestamp: Date.now(),
-      ttl: finalTTL,
-      accessCount: 1,
-      lastAccessed: Date.now()
+      ttl: ttl || this.options.defaultTTL,
+      accessCount: 0,
+      lastAccessed: Date.now(),
+      tags,
+      region,
+      compressed,
+      size,
+      priority
     };
 
     this.cache.set(key, entry);
-    
-    if (this.enableMetrics) {
-      this.metrics.sets++;
-      this.updateMemoryUsage();
+    this.metrics.sets++;
+    this.updateMemoryUsage();
+    this.updateTagStats(tags, 'set');
+
+    if (this.options.enablePersistence) {
+      this.saveToStorage();
     }
   }
 
   // Delete data from cache
-  delete(key: string): boolean {
+  async delete(key: string): Promise<boolean> {
+    const entry = this.cache.get(key);
     const deleted = this.cache.delete(key);
-    if (deleted && this.enableMetrics) {
+    
+    if (deleted) {
       this.metrics.deletes++;
       this.updateMemoryUsage();
+      
+      if (entry) {
+        this.updateTagStats(entry.tags, 'delete');
+      }
+      
+      if (this.options.enablePersistence) {
+        this.saveToStorage();
+      }
     }
+    
     return deleted;
   }
 
   // Clear all cache
-  clear(): void {
+  async clear(): Promise<void> {
+    const size = this.cache.size;
     this.cache.clear();
-    if (this.enableMetrics) {
-      this.metrics.deletes += this.cache.size;
-      this.updateMemoryUsage();
+    this.metrics.deletes += size;
+    this.updateMemoryUsage();
+
+    if (this.options.enablePersistence) {
+      this.removeFromStorage();
     }
   }
 
@@ -174,44 +259,136 @@ export class UnifiedCacheManager {
     return this.cache.size;
   }
 
-  // Get cache metrics
-  getMetrics(): CacheMetrics {
-    return { ...this.metrics };
-  }
-
   // Get all keys
   keys(): string[] {
     return Array.from(this.cache.keys());
   }
 
-  // Evict least recently used items
-  private evictLRU(): void {
-    let lruKey: string | null = null;
-    let lruTime = Date.now();
+  // Invalidate entries by tags
+  async invalidateByTags(tags: string[]): Promise<number> {
+    let invalidated = 0;
 
     for (const [key, entry] of this.cache.entries()) {
-      if (entry.lastAccessed < lruTime) {
-        lruTime = entry.lastAccessed;
-        lruKey = key;
+      if (tags.some(tag => entry.tags.includes(tag))) {
+        this.cache.delete(key);
+        invalidated++;
+        this.updateTagStats(entry.tags, 'invalidate');
       }
     }
 
-    if (lruKey) {
-      const evictedEntry = this.cache.get(lruKey);
-      this.cache.delete(lruKey);
+    this.metrics.deletes += invalidated;
+    this.updateMemoryUsage();
+
+    if (invalidated > 0 && this.options.enablePersistence) {
+      this.saveToStorage();
+    }
+
+    return invalidated;
+  }
+
+  // Invalidate entries by region
+  async invalidateByRegion(region: string): Promise<number> {
+    let invalidated = 0;
+
+    for (const [key, entry] of this.cache.entries()) {
+      if (entry.region === region) {
+        this.cache.delete(key);
+        invalidated++;
+        this.updateTagStats(entry.tags, 'invalidate');
+      }
+    }
+
+    this.metrics.deletes += invalidated;
+    this.updateMemoryUsage();
+
+    if (invalidated > 0 && this.options.enablePersistence) {
+      this.saveToStorage();
+    }
+
+    return invalidated;
+  }
+
+  // Get cache metrics
+  getMetrics(): CacheMetrics {
+    this.updateHitRate();
+    this.updateAvgAccessTime();
+    return { ...this.metrics };
+  }
+
+  // Enhanced utility-based eviction
+  private async evictLeastUseful(): Promise<void> {
+    const entries = Array.from(this.cache.entries());
+    
+    // Calculate utility score for each entry
+    const scoredEntries = entries.map(([key, entry]) => {
+      const age = Date.now() - entry.timestamp;
+      const timeSinceAccess = Date.now() - entry.lastAccessed;
+      const accessFrequency = entry.accessCount / (age / 1000 || 1);
       
-      if (this.enableMetrics) {
-        this.metrics.evictions++;
-        this.updateMemoryUsage();
-      }
+      // Priority weights
+      const priorityWeight = entry.priority === 'high' ? 1000 : 
+                           entry.priority === 'medium' ? 500 : 100;
+      
+      // Utility score: higher is more useful
+      const utilityScore = (
+        accessFrequency * 100 + // Access frequency weight
+        priorityWeight + // Priority weight
+        (entry.size / 1024) * -1 + // Size penalty
+        (timeSinceAccess / 1000) * -10 // Recent access bonus
+      );
 
-      // Call strategy onEvict callback
-      for (const strategy of this.strategies.values()) {
-        if (strategy.onEvict && evictedEntry) {
-          strategy.onEvict(lruKey, evictedEntry.data);
-        }
-      }
+      return { key, entry, utilityScore };
+    });
+
+    // Sort by utility score (lowest first)
+    scoredEntries.sort((a, b) => a.utilityScore - b.utilityScore);
+
+    // Evict least useful entries (bottom 10%)
+    const toEvict = Math.ceil(scoredEntries.length * 0.1);
+    for (let i = 0; i < toEvict && i < scoredEntries.length; i++) {
+      const entry = scoredEntries[i];
+      if (!entry) continue;
+      
+      this.cache.delete(entry.key);
+      this.metrics.evictions++;
+      this.updateTagStats(entry.entry.tags, 'evict');
     }
+
+    this.updateMemoryUsage();
+  }
+
+  // Ensure cache capacity with intelligent eviction
+  private async ensureCapacity(requiredSize: number): Promise<void> {
+    while (this.shouldEvict(requiredSize)) {
+      await this.evictLeastUseful();
+    }
+  }
+
+  // Determine if eviction is needed
+  private shouldEvict(requiredSize: number): boolean {
+    return (
+      this.cache.size >= this.options.maxSize ||
+      this.metrics.memoryUsage + requiredSize > this.options.maxMemorySize
+    );
+  }
+
+  // Calculate approximate size of data
+  private calculateSize(data: any): number {
+    if (typeof data === 'string') {
+      return data.length * 2; // UTF-16
+    }
+    return JSON.stringify(data).length * 2;
+  }
+
+  // Start cleanup timer
+  private startCleanup(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+    }
+    
+    this.cleanupTimer = window.setInterval(() => {
+      this.cleanup();
+    }, this.options.cleanupInterval);
   }
 
   // Cleanup expired entries
@@ -226,13 +403,75 @@ export class UnifiedCacheManager {
     }
 
     for (const key of keysToDelete) {
+      const entry = this.cache.get(key);
       this.cache.delete(key);
+      if (entry) {
+        this.updateTagStats(entry.tags, 'expire');
+      }
     }
 
-    if (keysToDelete.length > 0 && this.enableMetrics) {
+    if (keysToDelete.length > 0) {
       this.metrics.evictions += keysToDelete.length;
       this.updateMemoryUsage();
+      
+      if (this.options.enablePersistence) {
+        this.saveToStorage();
+      }
     }
+  }
+
+  // Record cache hit
+  private recordHit(region?: string): void {
+    this.metrics.hits++;
+    if (region) {
+      if (!this.metrics.regionStats[region]) {
+        this.metrics.regionStats[region] = { hits: 0, misses: 0 };
+      }
+      this.metrics.regionStats[region].hits++;
+    }
+  }
+
+  // Record cache miss
+  private recordMiss(region?: string): void {
+    this.metrics.misses++;
+    if (region) {
+      if (!this.metrics.regionStats[region]) {
+        this.metrics.regionStats[region] = { hits: 0, misses: 0 };
+      }
+      this.metrics.regionStats[region].misses++;
+    }
+  }
+
+  // Record access time
+  private recordAccessTime(time: number): void {
+    this.accessTimes.push(time);
+    
+    // Keep only last 100 measurements
+    if (this.accessTimes.length > 100) {
+      this.accessTimes = this.accessTimes.slice(-100);
+    }
+  }
+
+  // Update tag statistics
+  private updateTagStats(tags: string[], operation: 'hit' | 'set' | 'delete' | 'invalidate' | 'evict' | 'expire'): void {
+    tags.forEach(tag => {
+      if (!this.metrics.tagStats[tag]) {
+        this.metrics.tagStats[tag] = 0;
+      }
+      
+      switch (operation) {
+        case 'hit':
+        case 'set':
+          this.metrics.tagStats[tag]++;
+          break;
+        case 'delete':
+        case 'invalidate':
+        case 'evict':
+        case 'expire':
+          this.metrics.tagStats[tag] = Math.max(0, this.metrics.tagStats[tag] - 1);
+          break;
+      }
+    });
   }
 
   // Update hit rate
@@ -241,29 +480,100 @@ export class UnifiedCacheManager {
     this.metrics.hitRate = total > 0 ? this.metrics.hits / total : 0;
   }
 
-  // Update memory usage (rough estimate)
-  private updateMemoryUsage(): void {
-    let totalSize = 0;
-    for (const [key, entry] of this.cache.entries()) {
-      totalSize += key.length * 2; // String size
-      totalSize += JSON.stringify(entry.data).length * 2;
-      totalSize += 64; // Estimated overhead
+  // Update average access time
+  private updateAvgAccessTime(): void {
+    if (this.accessTimes.length > 0) {
+      this.metrics.avgAccessTime = this.accessTimes.reduce((sum, time) => sum + time, 0) / this.accessTimes.length;
     }
-    this.metrics.memoryUsage = totalSize;
   }
 
-  // Simple compression (placeholder)
-  private compress(data: any): any {
-    // In a real implementation, you might use a compression library
-    return data;
+  // Update memory usage
+  private updateMemoryUsage(): void {
+    this.metrics.memoryUsage = Array.from(this.cache.values())
+      .reduce((total, entry) => total + entry.size, 0);
   }
+
+  // Save cache to localStorage
+  private saveToStorage(): void {
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const serializable = Array.from(this.cache.entries()).map(([key, entry]) => [
+          key,
+          {
+            ...entry,
+            data: entry.compressed ? entry.data : JSON.stringify(entry.data)
+          }
+        ]);
+        localStorage.setItem(this.storageKey, JSON.stringify(serializable));
+      } catch (error) {
+        console.error('Failed to save cache to storage:', error);
+      }
+    }
+  }
+
+  // Load cache from localStorage
+  private loadFromStorage(): void {
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(this.storageKey);
+        if (stored) {
+          const data = JSON.parse(stored);
+          this.cache = new Map(data.map(([key, entry]: [string, any]) => [
+            key,
+            {
+              ...entry,
+              data: entry.compressed ? entry.data : JSON.parse(entry.data)
+            }
+          ]));
+          this.updateMemoryUsage();
+        }
+      } catch (error) {
+        console.error('Failed to load cache from storage:', error);
+      }
+    }
+  }
+
+  // Remove cache from localStorage
+  private removeFromStorage(): void {
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.removeItem(this.storageKey);
+      } catch (error) {
+        console.error('Failed to remove cache from storage:', error);
+      }
+    }
+  }
+
+  // Handle storage changes for tab sync
+  private handleStorageChange = (event: StorageEvent) => {
+    if (event.key === this.storageKey && event.newValue) {
+      try {
+        const data = JSON.parse(event.newValue);
+        this.cache = new Map(data.map(([key, entry]: [string, any]) => [
+          key,
+          {
+            ...entry,
+            data: entry.compressed ? entry.data : JSON.parse(entry.data)
+          }
+        ]));
+        this.updateMemoryUsage();
+      } catch (error) {
+        console.error('Failed to sync cache from storage:', error);
+      }
+    }
+  };
 
   // Destroy cache manager
   destroy(): void {
-    if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval);
-      this.cleanupInterval = null;
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
     }
+    
+    if (this.options.syncAcrossTabs && typeof window !== 'undefined') {
+      window.removeEventListener('storage', this.handleStorageChange);
+    }
+    
     this.clear();
   }
 }
@@ -337,10 +647,36 @@ globalCache.registerStrategy('ai_response', CacheStrategies.AI_RESPONSE);
 globalCache.registerStrategy('user_data', CacheStrategies.USER_DATA);
 globalCache.registerStrategy('static_data', CacheStrategies.STATIC_DATA);
 
-// Export convenience functions
-export const cacheGet = <T>(key: string): T | null => globalCache.get<T>(key);
-export const cacheSet = <T>(key: string, data: T, ttl?: number): void => globalCache.set(key, data, ttl);
-export const cacheDelete = (key: string): boolean => globalCache.delete(key);
-export const cacheClear = (): void => globalCache.clear();
-export const cacheHas = (key: string): boolean => globalCache.has(key);
-export const cacheMetrics = (): CacheMetrics => globalCache.getMetrics();
+// Enhanced convenience functions
+export const cacheGet = <T>(key: string, region?: string): Promise<T | null> => 
+  globalCache.get<T>(key, region);
+
+export const cacheSet = <T>(
+  key: string, 
+  data: T, 
+  ttl?: number, 
+  tags?: string[], 
+  region?: string,
+  priority?: 'high' | 'medium' | 'low'
+): Promise<void> => 
+  globalCache.set(key, data, ttl, tags, region, priority);
+
+export const cacheDelete = (key: string): Promise<boolean> => 
+  globalCache.delete(key);
+
+export const cacheClear = (): Promise<void> => 
+  globalCache.clear();
+
+export const cacheHas = (key: string): boolean => 
+  globalCache.has(key);
+
+export const cacheMetrics = () => 
+  globalCache.getMetrics();
+
+export const cacheInvalidateByTags = (tags: string[]): Promise<number> => 
+  globalCache.invalidateByTags(tags);
+
+export const cacheInvalidateByRegion = (region: string): Promise<number> => 
+  globalCache.invalidateByRegion(region);
+
+export type { CacheOptions, CacheMetrics };

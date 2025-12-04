@@ -125,35 +125,46 @@ class EnhancedSupabaseConnectionPool {
     const id = this.generateConnectionId();
     const preferredRegion = region || process.env['VERCEL_REGION'] || 'default';
     
+    // Use dynamic loader for better bundle optimization
+    const { createDynamicSupabaseClient } = await import('./dynamicSupabaseLoader');
+    
     // Enhanced connection configuration for edge optimization
-    const client = new SupabaseClient(settings.url, settings.anonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false
-      },
-      db: {
-        schema: 'public'
-      },
-      global: {
-        headers: {
-          'X-Connection-ID': id,
-          'X-Connection-Region': preferredRegion,
-          'X-Edge-Optimized': 'true',
-          'X-Client-Info': 'quantforge-edge/1.0.0',
-          'X-Priority': 'high',
-          'X-Connection-Pool': 'enhanced',
-          'X-Serverless-Optimized': 'true'
-        }
-      },
-      // Edge-specific options
-      realtime: {
-        params: {
-          edge: 'true',
-          region: preferredRegion
+    const client = await createDynamicSupabaseClient(
+      settings.url, 
+      settings.anonKey,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+          flowType: 'pkce', // Enhanced security for edge
+        },
+        db: {
+          schema: 'public'
+        },
+        global: {
+          headers: {
+            'X-Connection-ID': id,
+            'X-Connection-Region': preferredRegion,
+            'X-Edge-Optimized': 'true',
+            'X-Client-Info': 'quantforge-edge/1.0.0',
+            'X-Priority': 'high',
+            'X-Connection-Pool': 'enhanced',
+            'X-Serverless-Optimized': 'true',
+            'X-Edge-Pool-Version': '2.0',
+            'X-Connection-Timestamp': Date.now().toString(),
+          }
+        },
+        // Edge-specific options
+        realtime: {
+          params: {
+            edge: 'true',
+            region: preferredRegion,
+            pool: 'enhanced'
+          }
         }
       }
-    });
+    );
 
     const connection: Connection = {
       id,

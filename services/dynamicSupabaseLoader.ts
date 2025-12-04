@@ -19,13 +19,17 @@ export const getSupabaseClient = async () => {
   return supabaseClientPromise;
 };
 
-// Dynamic client creation
-export const createDynamicSupabaseClient = async (url: string, key: string) => {
+// Dynamic client creation with enhanced edge optimization
+export const createDynamicSupabaseClient = async (url: string, key: string, options: any = {}) => {
   const createClient = await getSupabaseClient();
-  return createClient(url, key, {
+  
+  // Enhanced configuration for Vercel Edge optimization
+  const defaultOptions = {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
+      detectSessionInUrl: false, // Better for edge functions
+      flowType: 'pkce', // More secure for edge
     },
     db: {
       schema: 'public',
@@ -35,7 +39,22 @@ export const createDynamicSupabaseClient = async (url: string, key: string) => {
         eventsPerSecond: 10,
       },
     },
-  });
+    global: {
+      headers: {
+        'X-Client-Info': 'quantforge-ai/1.0.0',
+        'X-Edge-Optimized': 'true',
+      },
+    },
+    // Edge-specific optimizations
+    ...options,
+  };
+
+  // Add region-specific headers if available
+  if (typeof window === 'undefined' && process.env.VERCEL_REGION) {
+    defaultOptions.global.headers['X-Edge-Region'] = process.env.VERCEL_REGION;
+  }
+
+  return createClient(url, key, defaultOptions);
 };
 
 // Export types for TypeScript compatibility
