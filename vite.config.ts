@@ -197,13 +197,13 @@ output: {
         comments: false
       }
     },
-chunkSizeWarningLimit: 200, // Optimized for edge performance
+chunkSizeWarningLimit: 300, // Optimized for edge performance
     target: ['es2020', 'edge101'], // More specific targets for edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
     // Enhanced edge optimization
-    assetsInlineLimit: 2048, // 2KB for better edge performance
+    assetsInlineLimit: 4096, // 4KB for better edge performance
     modulePreload: {
       polyfill: false
     },
