@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action') || 'metrics';
     const detailed = searchParams.get('detailed') === 'true';
 
-    let response: any = {
+    const response: any = {
       success: true,
       region,
       timestamp: Date.now(),
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
     const { action, params } = body;
     const region = request.headers.get('x-vercel-region') || 'unknown';
 
-    let response: any = {
+    const response: any = {
       success: true,
       action,
       region,

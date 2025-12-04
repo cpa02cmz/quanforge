@@ -449,6 +449,21 @@ export class EdgeCacheManager<T = any> {
   }
 
   /**
+   * Semantic cache invalidation based on entity and action
+   */
+  async invalidateSemantic(entity: string, action: 'create' | 'update' | 'delete', id?: string): Promise<void> {
+    const patterns = [
+      `${entity}_list`,
+      `${entity}_search`,
+      `${entity}_filter`,
+      id ? `${entity}_${id}` : null,
+      `${entity}_analytics`
+    ].filter(Boolean);
+    
+    await this.invalidateIntelligent(patterns, { cascade: true, dependencies: true });
+  }
+
+  /**
    * Warm up cache with predicted data and intelligent prioritization
    */
   async warmup(keys: string[], options?: {
