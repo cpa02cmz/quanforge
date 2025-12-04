@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
   response.headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
   response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
   response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
-  response.headers.set('X-Edge-Version', '3.1.0');
+  response.headers.set('X-Edge-Version', '3.2.0');
   response.headers.set('X-Powered-By', 'QuantForge-AI-Edge-Optimized');
   
   // Enhanced region-based caching and optimization
@@ -87,7 +87,7 @@ export function middleware(request: NextRequest) {
   const responseTime = performance.now() - startTime;
   response.headers.set('X-Response-Time', responseTime.toFixed(2));
   response.headers.set('X-Edge-Timestamp', new Date().toISOString());
-  response.headers.set('X-Edge-Version', '3.1.0');
+  response.headers.set('X-Edge-Version', '3.2.0');
   response.headers.set('X-Edge-Processing-Time', responseTime.toFixed(2));
   
   // Enhanced security and bot detection

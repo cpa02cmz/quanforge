@@ -36,13 +36,13 @@ class SupabaseConnectionPool {
   private healthStatus: Map<string, ConnectionHealth> = new Map();
   private config: ConnectionPoolConfig = {
     minConnections: 1, // Optimized for edge serverless
-    maxConnections: 4, // Further reduced for edge constraints
-    idleTimeout: 60000, // 1 minute (optimized for edge)
-    healthCheckInterval: 10000, // 10 seconds (faster health checks)
-    connectionTimeout: 1000, // 1 second (faster failover)
-    acquireTimeout: 500, // 0.5 seconds (quicker acquisition)
+    maxConnections: 3, // Further reduced for edge constraints
+    idleTimeout: 45000, // 45 seconds (optimized for edge)
+    healthCheckInterval: 15000, // 15 seconds (faster health checks)
+    connectionTimeout: 800, // 0.8 seconds (faster failover)
+    acquireTimeout: 300, // 0.3 seconds (quicker acquisition)
     retryAttempts: 2, // Reduced retries for edge reliability
-    retryDelay: 500, // Faster retry for edge environments
+    retryDelay: 300, // Faster retry for edge environments
   };
   private healthCheckTimer: NodeJS.Timeout | null = null;
   private readReplicaIndex = 0;
@@ -352,25 +352,22 @@ private startHealthChecks(): void {
     }
   }
 
-  // Add connection warming for edge regions with warmup queries
+  // Add connection warming for edge regions with optimized warmup queries
   async warmEdgeConnections(): Promise<void> {
     const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'];
-    const warmupQueries = ['SELECT 1', 'SELECT COUNT(*) FROM robots LIMIT 1'];
     
-    const warmPromises = regions.map(async (region) => {
+    const warmupPromises = regions.map(async (region) => {
       try {
         const client = await this.getClient(`edge_${region}`);
-        // Pre-warm with multiple lightweight queries
-        for (const query of warmupQueries) {
-          await client.rpc('exec_sql', { query });
-        }
+        // Lightweight warmup query optimized for edge
+        await client.from('robots').select('id').limit(1);
         console.log(`Edge connection warmed for region: ${region}`);
       } catch (error) {
         console.warn(`Failed to warm edge connection for ${region}:`, error);
       }
     });
     
-    await Promise.allSettled(warmPromises);
+    await Promise.allSettled(warmupPromises);
   }
 
   // Enhanced edge-optimized connection acquisition with geographic optimization

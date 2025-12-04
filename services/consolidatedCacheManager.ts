@@ -67,15 +67,15 @@ export class ConsolidatedCacheManager {
 
   constructor(options: CacheOptions = {}) {
     this.options = {
-      maxSize: 1000,
-      maxMemorySize: 10 * 1024 * 1024, // 10MB
-      defaultTTL: 5 * 60 * 1000, // 5 minutes
-      cleanupInterval: 60000, // 1 minute
-      compressionThreshold: 1024, // 1KB
+      maxSize: 500, // Reduced for edge constraints
+      maxMemorySize: 5 * 1024 * 1024, // 5MB - optimized for edge
+      defaultTTL: 3 * 60 * 1000, // 3 minutes - shorter for edge
+      cleanupInterval: 30000, // 30 seconds - faster cleanup for edge
+      compressionThreshold: 512, // 512B - lower threshold for edge
       enableCompression: true,
-      enableMetrics: true,
-      enablePersistence: true,
-      syncAcrossTabs: true,
+      enableMetrics: process.env['NODE_ENV'] === 'development', // Disable in production for edge
+      enablePersistence: false, // Disable for edge deployment
+      syncAcrossTabs: false, // Disable for edge deployment
       ...options
     };
 
