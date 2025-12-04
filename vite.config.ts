@@ -170,9 +170,29 @@ export default defineConfig({
         drop_console: process.env['NODE_ENV'] === 'production',
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.info', 'console.debug'],
-        passes: 1, // Single pass for faster builds
+        passes: 2, // Double pass for better compression
+        sequences: true,
+        properties: true,
+        dead_code: true,
+        conditionals: true,
+        comparisons: true,
+        evaluate: true,
+        booleans: true,
+        loops: true,
+        unused: true,
+        hoist_funs: true,
+        if_return: true,
+        join_vars: true,
+        collapse_vars: true,
+        reduce_vars: true,
+        module: true,
+        ecma: 2020,
       },
-      mangle: true,
+      mangle: {
+        properties: {
+          regex: /^_/, // Mangle private properties
+        },
+      },
       format: {
         comments: false,
       }
