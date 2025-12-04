@@ -125,29 +125,7 @@
   "functions": {
     "api/**/*.ts": {
       "runtime": "edge",
-      "maxDuration": 30,
-      "memory": 512,
-      "includeFiles": ["public/**/*"],
-      "excludeFiles": ["**/*.test.*", "**/*.spec.*"],
-      "environment": {
-        "EDGE_CACHE_ENABLED": "true",
-        "SUPABASE_POOL_SIZE": "4",
-        "EDGE_REGION_AFFINITY": "true",
-        "CONNECTION_WARMING": "true",
-        "EDGE_KEEP_WARM": "true",
-        "PREWARM_CONCURRENT": "2",
-        "EDGE_MEMORY_POOL": "true",
-        "EDGE_OPTIMIZATION_LEVEL": "balanced",
-        "PREDICTIVE_CACHING": "false",
-        "EDGE_METRICS_ENABLED": "true",
-        "EDGE_CACHE_TTL": "300",
-        "EDGE_MAX_CONNECTIONS": "4",
-        "EDGE_MIN_CONNECTIONS": "1",
-        "EDGE_HEALTH_CHECK_INTERVAL": "30000",
-        "EDGE_CACHE_STRATEGY": "optimized",
-        "ENABLE_EDGE_CACHE": "true",
-        "CONNECTION_POOL_SIZE": "4"
-      }
+      "maxDuration": 30
     }
   },
   "build": {
