@@ -269,7 +269,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     // Adaptive window size based on viewport and memory constraints
     const VIEWPORT_SIZE = 20; // Messages visible in viewport
     const BUFFER_SIZE = 10;   // Extra messages for smooth scrolling
-    const MAX_MESSAGES = 200; // Increased limit with better memory management
+    const MAX_MESSAGES = 100; // Reduced limit for better memory management
     const WINDOW_SIZE = VIEWPORT_SIZE + (BUFFER_SIZE * 2);
     
     if (messages.length <= MAX_MESSAGES) {

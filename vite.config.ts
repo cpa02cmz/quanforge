@@ -216,7 +216,7 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 250, // More aggressive optimization for edge performance
+    chunkSizeWarningLimit: 150, // More aggressive optimization for edge performance
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
