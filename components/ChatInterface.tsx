@@ -57,6 +57,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const memoryMonitorRef = useRef<NodeJS.Timeout | null>(null);
+  const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Enhanced memory management with proper cleanup and circular buffer
   useEffect(() => {
@@ -74,12 +76,49 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
       onClear();
     }
 
+    // Start memory monitoring for large conversations
+    if (messages.length > 50) {
+      memoryMonitorRef.current = setInterval(() => {
+        if (typeof window !== 'undefined' && 'memory' in performance) {
+          const memoryUsage = (performance as any).memory;
+          if (memoryUsage) {
+            const usedMB = Math.round(memoryUsage.usedJSHeapSize / 1024 / 1024);
+            const limitMB = Math.round(memoryUsage.jsHeapSizeLimit / 1024 / 1024);
+            const usagePercent = (usedMB / limitMB) * 100;
+            
+            if (usagePercent > 85) {
+              logger.warn(`Critical memory usage: ${usedMB}MB (${usagePercent.toFixed(1)}%). Suggesting cleanup.`);
+              
+              // Auto-cleanup if memory is critically high
+              if (usagePercent > 95 && onClear && !abortControllerRef.current?.signal.aborted) {
+                logger.error(`Emergency cleanup triggered due to memory pressure: ${usagePercent.toFixed(1)}%`);
+                onClear();
+              }
+            }
+          }
+        }
+      }, 10000); // Check every 10 seconds
+    }
+
     // Cleanup function with enhanced memory management
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      // Clear any pending timeouts or intervals
+      
+      // Clear memory monitoring
+      if (memoryMonitorRef.current) {
+        clearInterval(memoryMonitorRef.current);
+        memoryMonitorRef.current = null;
+      }
+      
+      // Clear any pending cleanup timeouts
+      if (cleanupTimeoutRef.current) {
+        clearTimeout(cleanupTimeoutRef.current);
+        cleanupTimeoutRef.current = null;
+      }
+      
+      // Clear references
       abortControllerRef.current = null;
     };
   }, [messages.length, onClear]);
@@ -238,14 +277,32 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
         if (memoryUsage) {
           const usedMB = Math.round(memoryUsage.usedJSHeapSize / 1024 / 1024);
           const limitMB = Math.round(memoryUsage.jsHeapSizeLimit / 1024 / 1024);
+          const usagePercent = (usedMB / limitMB) * 100;
           
-          if (usedMB > limitMB * 0.8) {
-            logger.warn(`High memory usage detected: ${usedMB}MB / ${limitMB}MB. Consider clearing chat history.`);
+          if (usagePercent > 80) {
+            logger.warn(`High memory usage detected: ${usedMB}MB / ${limitMB}MB (${usagePercent.toFixed(1)}%). Consider clearing chat history.`);
+            
+            // Schedule delayed cleanup if memory is high
+            if (usagePercent > 90 && onClear && !cleanupTimeoutRef.current) {
+              logger.info(`Scheduling automatic cleanup in 30 seconds due to high memory usage.`);
+              cleanupTimeoutRef.current = setTimeout(() => {
+                if (onClear && !abortControllerRef.current?.signal.aborted) {
+                  logger.warn(`Automatic cleanup executed due to sustained high memory usage.`);
+                  onClear();
+                }
+                cleanupTimeoutRef.current = null;
+              }, 30000);
+            }
+          } else if (usagePercent < 70 && cleanupTimeoutRef.current) {
+            // Cancel scheduled cleanup if memory usage drops
+            clearTimeout(cleanupTimeoutRef.current);
+            cleanupTimeoutRef.current = null;
+            logger.info(`Memory usage normalized. Canceling scheduled cleanup.`);
           }
         }
       }
     }
-  }, [messages.length]);
+  }, [messages.length, onClear]);
 
   return (
     <div className="flex flex-col h-full bg-dark-surface border-r border-dark-border">

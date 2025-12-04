@@ -81,7 +81,7 @@ class EdgeSupabasePool {
   private getCacheKey(connectionId: string): string {
     const region = typeof window !== 'undefined' 
       ? 'client' 
-      : process.env.VERCEL_REGION || 'unknown';
+      : process.env['VERCEL_REGION'] || 'unknown';
     return `${region}_${connectionId}`;
   }
 
@@ -176,7 +176,8 @@ class EdgeSupabasePool {
 
     const regions: { [region: string]: number } = {};
     for (const [key] of this.clientCache) {
-      const region = key.split('_')[0];
+      const parts = key.split('_');
+      const region = parts[0] || 'unknown';
       regions[region] = (regions[region] || 0) + 1;
     }
 
