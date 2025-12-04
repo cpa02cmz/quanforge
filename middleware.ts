@@ -596,33 +596,260 @@ function applyGeographicOptimizations(response: Response, country: string, regio
 }
 
 /**
- * Apply cache optimizations based on request characteristics
+ * Apply advanced cache optimizations based on request characteristics
  */
 function applyCacheOptimizations(response: Response, request: Request, securityAnalysis: any, botInfo: any) {
   const url = request.nextUrl;
+  const region = request.headers.get('x-vercel-region') || 'unknown';
+  const deviceType = response.headers.get('X-Device-Type') || 'unknown';
+  
+  // Generate intelligent cache key
+  const cacheKey = generateCacheKey(request, securityAnalysis, botInfo);
+  response.headers.set('X-Cache-Key', cacheKey);
   
   // Different cache strategies for different content types
   if (url.pathname.startsWith('/api/')) {
-    // API endpoints - shorter cache for authenticated, longer for public
-    if (securityAnalysis.isSuspicious) {
-      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-    } else {
-      response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=600');
-    }
+    // Enhanced API caching with intelligent invalidation
+    applyAPICacheOptimizations(response, url, securityAnalysis, region);
   } else if (url.pathname.startsWith('/static/') || url.pathname.includes('.')) {
-    // Static assets - long cache
-    response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    // Static assets - long cache with compression hints
+    applyStaticAssetCacheOptimizations(response, url);
   } else {
     // Dynamic content - moderate cache with validation
-    if (botInfo.isBot) {
-      response.headers.set('Cache-Control', 'public, max-age=3600, s-maxage=7200');
-    } else {
-      response.headers.set('Cache-Control', 'public, max-age=180, s-maxage=300, stale-while-revalidate=60');
+    applyDynamicContentCacheOptimizations(response, request, botInfo, region, deviceType);
+  }
+  
+  // Enhanced edge cache tags for intelligent invalidation
+  const cacheTags = generateCacheTags(url.pathname, region, deviceType, securityAnalysis);
+  response.headers.set('Edge-Cache-Tag', cacheTags);
+  
+  // Add CDN cache hints
+  applyCDNCacheHints(response, url, region);
+}
+
+/**
+ * Generate intelligent cache key based on request context
+ */
+function generateCacheKey(request: Request, securityAnalysis: any, botInfo: any): string {
+  const url = request.nextUrl;
+  const region = request.headers.get('x-vercel-region') || 'unknown';
+  const deviceType = request.headers.get('x-device-type') || 'unknown';
+  
+  let key = `${url.pathname}:${region}:${deviceType}`;
+  
+  // Add user agent family for bot-specific caching
+  if (botInfo.isBot) {
+    key += `:bot-${botInfo.type}`;
+  }
+  
+  // Add security level for suspicious requests
+  if (securityAnalysis.isSuspicious) {
+    key += ':suspicious';
+  }
+  
+  // Add query parameters for API requests (whitelisted only)
+  if (url.pathname.startsWith('/api/')) {
+    const whitelistedParams = ['page', 'limit', 'sort', 'filter'];
+    const searchParams = new URLSearchParams(url.search);
+    const filteredParams = Array.from(searchParams.entries())
+      .filter(([key]) => whitelistedParams.includes(key))
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}=${value}`)
+      .join('&');
+    
+    if (filteredParams) {
+      key += `:${filteredParams}`;
     }
   }
   
-  // Edge cache tags
-  response.headers.set('Edge-Cache-Tag', `region-${request.headers.get('x-vercel-region')},device-${response.headers.get('X-Device-Type')}`);
+  // Hash the key for consistency
+  return btoa(key).replace(/[^a-zA-Z0-9]/g, '').substring(0, 32);
+}
+
+/**
+ * Apply API-specific cache optimizations
+ */
+function applyAPICacheOptimizations(response: Response, url: URL, securityAnalysis: any, region: string) {
+  if (securityAnalysis.isSuspicious) {
+    // No caching for suspicious requests
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    response.headers.set('X-API-Cache-Strategy', 'disabled');
+  } else {
+    // Enhanced API caching with region-specific TTL
+    const apiType = getAPIType(url.pathname);
+    const cacheConfig = getAPICacheConfig(apiType, region);
+    
+    response.headers.set('Cache-Control', 
+      `public, max-age=${cacheConfig.maxAge}, s-maxage=${cacheConfig.sMaxAge}, stale-while-revalidate=${cacheConfig.staleWhileRevalidate}`
+    );
+    
+    // Add API-specific headers
+    response.headers.set('X-API-Cache-Strategy', cacheConfig.strategy);
+    response.headers.set('X-API-Type', apiType);
+    response.headers.set('X-API-Region-Optimized', 'true');
+    
+    // Add Vary header for proper cache variation
+    response.headers.set('Vary', 'Accept-Encoding, X-Region, X-Device-Type');
+  }
+}
+
+/**
+ * Apply static asset cache optimizations
+ */
+function applyStaticAssetCacheOptimizations(response: Response, url: URL) {
+  const ext = url.pathname.split('.').pop()?.toLowerCase();
+  
+  // Base static asset caching
+  response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+  
+  // Add compression hints
+  response.headers.set('Compress', 'true');
+  response.headers.set('Edge-Compress', 'br'); // Brotli compression preferred
+  
+  // Content-specific optimizations
+  if (['js', 'css'].includes(ext || '')) {
+    response.headers.set('X-Content-Optimization', 'minified-compressed');
+  } else if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'avif'].includes(ext || '')) {
+    response.headers.set('X-Content-Optimization', 'image-optimized');
+    response.headers.set('Accept-CH', 'DPR, Viewport-Width, Width');
+  } else if (['woff2', 'woff', 'ttf', 'eot'].includes(ext || '')) {
+    response.headers.set('X-Content-Optimization', 'font-compressed');
+  }
+}
+
+/**
+ * Apply dynamic content cache optimizations
+ */
+function applyDynamicContentCacheOptimizations(response: Response, request: Request, botInfo: any, region: string, deviceType: string) {
+  if (botInfo.isBot) {
+    // Longer cache for SEO bots
+    response.headers.set('Cache-Control', 'public, max-age=3600, s-maxage=7200, stale-while-revalidate=300');
+    response.headers.set('X-Dynamic-Cache-Strategy', 'bot-optimized');
+  } else {
+    // Adaptive cache based on region and device
+    const cacheConfig = getDynamicCacheConfig(region, deviceType);
+    response.headers.set('Cache-Control', 
+      `public, max-age=${cacheConfig.maxAge}, s-maxage=${cacheConfig.sMaxAge}, stale-while-revalidate=${cacheConfig.staleWhileRevalidate}`
+    );
+    response.headers.set('X-Dynamic-Cache-Strategy', cacheConfig.strategy);
+  }
+  
+  // Add proper Vary headers
+  response.headers.set('Vary', 'Accept-Encoding, Cookie, X-Region, X-Device-Type, User-Agent');
+}
+
+/**
+ * Generate intelligent cache tags for invalidation
+ */
+function generateCacheTags(pathname: string, region: string, deviceType: string, securityAnalysis: any): string {
+  const tags = [`region-${region}`, `device-${deviceType}`];
+  
+  // Content-specific tags
+  if (pathname.startsWith('/api/')) {
+    tags.push('api', getAPIType(pathname));
+  } else if (pathname.startsWith('/static/')) {
+    tags.push('static');
+  } else {
+    tags.push('dynamic');
+  }
+  
+  // Page-specific tags
+  const pageName = pathname.split('/')[1] || 'home';
+  if (pageName) {
+    tags.push(`page-${pageName}`);
+  }
+  
+  // Security tags
+  if (securityAnalysis.isSuspicious) {
+    tags.push('suspicious');
+  }
+  
+  // Version tag for cache invalidation
+  tags.push(`version-${process.env.NEXT_PUBLIC_APP_VERSION || '1'}`);
+  
+  return tags.join(', ');
+}
+
+/**
+ * Apply CDN cache hints
+ */
+function applyCDNCacheHints(response: Response, url: URL, region: string) {
+  // Region-specific CDN preferences
+  const cdnPreferences = {
+    'hkg1': 'asia-primary',
+    'sin1': 'asia-secondary',
+    'iad1': 'us-east-primary',
+    'sfo1': 'us-west-primary',
+    'fra1': 'europe-primary',
+    'cle1': 'us-east-secondary',
+    'arn1': 'us-south-primary',
+    'gru1': 'south-america-primary'
+  };
+  
+  const cdnPreference = cdnPreferences[region as keyof typeof cdnPreferences] || 'global';
+  response.headers.set('X-CDN-Preference', cdnPreference);
+  
+  // Content delivery optimizations
+  if (url.pathname.includes('.js') || url.pathname.includes('.css')) {
+    response.headers.set('X-CDN-Optimization', 'bundle-optimized');
+  } else if (url.pathname.includes('/api/')) {
+    response.headers.set('X-CDN-Optimization', 'api-optimized');
+  }
+}
+
+/**
+ * Get API type for cache configuration
+ */
+function getAPIType(pathname: string): string {
+  if (pathname.includes('robots')) return 'robots';
+  if (pathname.includes('generate')) return 'generate';
+  if (pathname.includes('auth')) return 'auth';
+  if (pathname.includes('analytics')) return 'analytics';
+  if (pathname.includes('market-data')) return 'market-data';
+  return 'general';
+}
+
+/**
+ * Get API cache configuration based on type and region
+ */
+function getAPICacheConfig(apiType: string, region: string) {
+  const configs = {
+    robots: { maxAge: 300, sMaxAge: 600, staleWhileRevalidate: 120, strategy: 'standard' },
+    generate: { maxAge: 60, sMaxAge: 300, staleWhileRevalidate: 60, strategy: 'conservative' },
+    auth: { maxAge: 0, sMaxAge: 0, staleWhileRevalidate: 0, strategy: 'disabled' },
+    analytics: { maxAge: 600, sMaxAge: 1800, staleWhileRevalidate: 300, strategy: 'aggressive' },
+    'market-data': { maxAge: 30, sMaxAge: 120, staleWhileRevalidate: 30, strategy: 'realtime' },
+    general: { maxAge: 300, sMaxAge: 600, staleWhileRevalidate: 120, strategy: 'standard' }
+  };
+  
+  const baseConfig = configs[apiType as keyof typeof configs] || configs.general;
+  
+  // Region-specific adjustments
+  if (['hkg1', 'sin1'].includes(region)) {
+    // Asia regions - slightly longer cache due to higher latency
+    return { ...baseConfig, maxAge: baseConfig.maxAge * 1.2, sMaxAge: baseConfig.sMaxAge * 1.2 };
+  }
+  
+  return baseConfig;
+}
+
+/**
+ * Get dynamic content cache configuration
+ */
+function getDynamicCacheConfig(region: string, deviceType: string) {
+  const baseConfig = { maxAge: 180, sMaxAge: 300, staleWhileRevalidate: 60, strategy: 'adaptive' };
+  
+  // Device-specific adjustments
+  if (deviceType === 'mobile') {
+    return { ...baseConfig, maxAge: baseConfig.maxAge * 1.3, strategy: 'mobile-optimized' };
+  }
+  
+  // Region-specific adjustments
+  if (['hkg1', 'sin1'].includes(region)) {
+    return { ...baseConfig, maxAge: baseConfig.maxAge * 1.2, strategy: 'asia-optimized' };
+  }
+  
+  return baseConfig;
 }
 
 /**

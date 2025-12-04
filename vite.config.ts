@@ -14,30 +14,53 @@ export default defineConfig({
       },
       output: {
         manualChunks: (id) => {
-// Consolidated chunk strategy for optimal HTTP/2 performance
+// Enhanced vendor chunks for optimal edge caching and tree-shaking
           if (id.includes('node_modules')) {
-             // React ecosystem - split for better caching and loading
-             if (id.includes('react') && id.includes('react-jsx')) {
-               return 'vendor-react-jsx';
-             }
-             if (id.includes('react') && id.includes('react-dom')) {
-               return 'vendor-react-dom';
-             }
-             if (id.includes('react') && !id.includes('react-dom') && !id.includes('jsx')) {
-               return 'vendor-react-core';
-             }
-             if (id.includes('react-router')) {
-               return 'vendor-react-router';
-             }
-            
-            // Charts library - consolidated to reduce HTTP overhead
-            if (id.includes('recharts')) {
-              return 'vendor-charts';
+            // React ecosystem - split more granularly for better caching
+            if (id.includes('react') && !id.includes('react-dom') && !id.includes('react-router')) {
+              return 'vendor-react-core';
             }
-            
-            // AI services
+            if (id.includes('react-dom')) {
+              return 'vendor-react-dom';
+            }
+            if (id.includes('react-router')) {
+              return 'vendor-react-router';
+            }
+            // Enhanced Charts splitting - more granular for better performance
+            if (id.includes('recharts')) {
+              // Core chart components - most commonly used
+              if (id.includes('BarChart') || id.includes('LineChart') || id.includes('AreaChart')) {
+                return 'vendor-charts-core';
+              }
+              // Chart components and utilities
+              if (id.includes('Tooltip') || id.includes('Legend') || id.includes('ResponsiveContainer')) {
+                return 'vendor-charts-components';
+              }
+              // Candlestick and financial charts - heavy components
+              if (id.includes('CandlestickChart') || id.includes('ComposedChart')) {
+                return 'vendor-charts-financial';
+              }
+              // Technical indicators and advanced features
+              if (id.includes('ReferenceLine') || id.includes('Brush') || id.includes('CrossHair')) {
+                return 'vendor-charts-indicators';
+              }
+              // Advanced chart features
+              return 'vendor-charts-advanced';
+            }
+            // Enhanced AI services splitting for better tree-shaking
             if (id.includes('@google/genai')) {
-              return 'vendor-ai';
+              // Split AI library more granularly
+              if (id.includes('generators') || id.includes('generate')) {
+                return 'vendor-ai-generators';
+              }
+              if (id.includes('models') || id.includes('model')) {
+                return 'vendor-ai-models';
+              }
+              if (id.includes('chat') || id.includes('conversation')) {
+                return 'vendor-ai-chat';
+              }
+              return 'vendor-ai-core';
+            }
             }
             
             // Supabase - consolidated
