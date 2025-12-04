@@ -9,23 +9,45 @@ export function middleware(request: NextRequest) {
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('X-DNS-Prefetch-Control', 'off');
+  response.headers.set('X-Download-Options', 'noopen');
+  response.headers.set('X-Permitted-Cross-Domain-Policies', 'none');
+  response.headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
+  response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
   
   // Region-based caching and optimization
   const region = request.geo?.region || request.headers.get('x-vercel-ip-country') || 'unknown';
   response.headers.set('X-Edge-Region', region);
   
-  // Edge caching hints
+  // Edge caching hints with enhanced strategy
   const url = request.nextUrl;
   if (url.pathname.startsWith('/api/')) {
-    // API routes - shorter cache for dynamic content
-    response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=120');
+    // API routes - intelligent caching based on endpoint
+    if (url.pathname.includes('/edge-metrics') || url.pathname.includes('/health')) {
+      response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=60');
+    } else {
+      response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=900, stale-while-revalidate=300');
+    }
   } else if (url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
-    // Static assets - long cache
+    // Static assets - long cache with edge optimization
     response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    response.headers.set('X-Edge-Cache-Tag', 'static-asset');
+  } else if (url.pathname === '/' || url.pathname.includes('/dashboard') || url.pathname.includes('/generator')) {
+    // Critical pages - shorter cache for dynamic content
+    response.headers.set('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=120');
+    response.headers.set('X-Edge-Cache-Tag', 'critical-page');
+  } else {
+    // Other pages - moderate cache
+    response.headers.set('Cache-Control', 'public, max-age=600, s-maxage=1800, stale-while-revalidate=600');
+    response.headers.set('X-Edge-Cache-Tag', 'page');
   }
   
   // Performance monitoring headers
-  response.headers.set('X-Response-Time', Date.now().toString());
+  const responseTime = Date.now();
+  response.headers.set('X-Response-Time', responseTime.toString());
+  response.headers.set('X-Edge-Timestamp', new Date().toISOString());
+  response.headers.set('X-Edge-Version', '2.0.0');
   
   // Security enhancements
   const userAgent = request.headers.get('user-agent') || '';

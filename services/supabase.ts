@@ -323,6 +323,55 @@ class PerformanceMonitor {
 
 const performanceMonitor = new PerformanceMonitor();
 
+// Enhanced performance monitoring with edge metrics
+class EdgePerformanceTracker {
+  private metrics: Map<string, number[]> = new Map();
+  
+  recordMetric(operation: string, value: number) {
+    if (!this.metrics.has(operation)) {
+      this.metrics.set(operation, []);
+    }
+    const values = this.metrics.get(operation)!;
+    values.push(value);
+    
+    // Keep only last 100 values
+    if (values.length > 100) {
+      values.splice(0, values.length - 100);
+    }
+  }
+  
+  getAverage(operation: string): number {
+    const values = this.metrics.get(operation) || [];
+    return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+  }
+  
+  getPercentile(operation: string, percentile: number): number {
+    const values = this.metrics.get(operation) || [];
+    if (values.length === 0) return 0;
+    
+    const sorted = [...values].sort((a, b) => a - b);
+    const index = Math.floor(sorted.length * (percentile / 100));
+    return sorted[Math.min(index, sorted.length - 1)] || 0;
+  }
+  
+  getAllMetrics() {
+    const result: Record<string, { avg: number; p95: number; p99: number; count: number }> = {};
+    
+    for (const [operation] of this.metrics) {
+      result[operation] = {
+        avg: this.getAverage(operation),
+        p95: this.getPercentile(operation, 95),
+        p99: this.getPercentile(operation, 99),
+        count: this.metrics.get(operation)!.length,
+      };
+    }
+    
+    return result;
+  }
+}
+
+const edgePerformanceTracker = new EdgePerformanceTracker();
+
 // Index structure for faster searching and filtering
 interface RobotIndex {
   byId: Map<string, Robot>;
@@ -416,6 +465,7 @@ const cached = robotCache.get(cacheKey) as Robot[] | undefined;
           robotIndexManager.getIndex(cached);
           const duration = performance.now() - startTime;
           performanceMonitor.record('getRobots', duration);
+          edgePerformanceTracker.recordMetric('getRobots', duration);
           return { data: cached, error: null };
         }
         

@@ -19,10 +19,10 @@ class EdgeSupabasePool {
   private static instance: EdgeSupabasePool;
   private clientCache: Map<string, ClientCache> = new Map();
   private config: EdgeClientConfig = {
-    ttl: 45000, // 45 seconds - increased for better performance
-    healthCheckInterval: 10000, // 10 seconds for faster detection
-    connectionTimeout: 1000, // 1 second for faster failover
-    maxRetries: 3, // Increased retries for better reliability
+    ttl: 60000, // 60 seconds - optimized for better performance
+    healthCheckInterval: 7500, // 7.5 seconds for faster detection
+    connectionTimeout: 750, // 0.75 seconds for faster failover
+    maxRetries: 5, // Increased retries for better reliability
   };
   private healthCheckTimer: NodeJS.Timeout | null = null;
 
@@ -144,20 +144,50 @@ class EdgeSupabasePool {
     });
   }
 
-  // Warm up connections for key regions
+  // Warm up connections for key regions with enhanced parallel processing
   async warmEdgeConnections(): Promise<void> {
     const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'];
     
-    const warmPromises = regions.map(async (region) => {
-      try {
-        await this.getEdgeClient('warmup', region);
-        console.log(`Edge connection warmed for region: ${region}`);
-      } catch (error) {
-        console.warn(`Failed to warm edge connection for ${region}:`, error);
-      }
-    });
+    // Process regions in batches for better resource management
+    const batchSize = 3;
+    const results: { region: string; success: boolean; latency: number }[] = [];
     
-    await Promise.allSettled(warmPromises);
+    for (let i = 0; i < regions.length; i += batchSize) {
+      const batch = regions.slice(i, i + batchSize);
+      
+      const batchPromises = batch.map(async (region) => {
+        const startTime = Date.now();
+        try {
+          await this.getEdgeClient('warmup', region);
+          const latency = Date.now() - startTime;
+          console.log(`✅ Edge connection warmed for region: ${region} (${latency}ms)`);
+          return { region, success: true, latency };
+        } catch (error) {
+          const latency = Date.now() - startTime;
+          console.warn(`❌ Failed to warm edge connection for ${region}:`, error);
+          return { region, success: false, latency };
+        }
+      });
+      
+      const batchResults = await Promise.allSettled(batchPromises);
+      batchResults.forEach((result) => {
+        if (result.status === 'fulfilled') {
+          results.push(result.value);
+        }
+      });
+      
+      // Small delay between batches to prevent overwhelming
+      if (i + batchSize < regions.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    // Log warming summary
+    const successCount = results.filter(r => r.success).length;
+    const avgLatency = results.reduce((sum, r) => sum + r.latency, 0) / results.length;
+    console.log(`🔥 Edge warming completed: ${successCount}/${regions.length} regions successful, avg latency: ${avgLatency.toFixed(2)}ms`);
+    
+    return;
   }
 
   // Get connection metrics
