@@ -36,8 +36,14 @@ export default defineConfig({
             if (id.includes('@google/genai')) {
               return 'ai-vendor';
             }
-            // Chart libraries - loaded on demand
+            // Chart libraries - split more granularly
             if (id.includes('recharts')) {
+              if (id.includes('AreaChart') || id.includes('LineChart')) {
+                return 'chart-core';
+              }
+              if (id.includes('PieChart') || id.includes('BarChart')) {
+                return 'chart-misc';
+              }
               return 'chart-vendor';
             }
             // Security utilities - bundled together
@@ -75,10 +81,16 @@ export default defineConfig({
             if (id.includes('CodeEditor')) {
               return 'component-editor';
             }
-            if (id.includes('Backtest') || id.includes('Simulation') || id.includes('Chart') || id.includes('Analysis')) {
+            if (id.includes('Backtest') || id.includes('Simulation')) {
+              return 'component-backtest';
+            }
+            if (id.includes('Chart') || id.includes('Analysis')) {
               return 'component-charts';
             }
-            if (id.includes('StrategyConfig') || id.includes('Market') || id.includes('Ticker')) {
+            if (id.includes('StrategyConfig')) {
+              return 'component-config';
+            }
+            if (id.includes('Market') || id.includes('Ticker')) {
               return 'component-trading';
             }
             // UI components consolidated
@@ -204,7 +216,7 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 300, // Optimized for edge performance
+    chunkSizeWarningLimit: 250, // More aggressive optimization for edge performance
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification

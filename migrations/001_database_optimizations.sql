@@ -74,6 +74,43 @@ CREATE INDEX IF NOT EXISTS idx_robots_view_count ON robots(view_count DESC);
 CREATE INDEX IF NOT EXISTS idx_robots_copy_count ON robots(copy_count DESC);
 
 -- =====================================================
+-- 2.1 ENHANCED INDEXES FOR ADDITIONAL PERFORMANCE
+-- =====================================================
+
+-- Partial indexes for better performance on active recent data
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_active_recent 
+ON robots(created_at DESC) 
+WHERE is_active = true AND created_at > NOW() - INTERVAL '30 days';
+
+-- Expression indexes for common queries on JSONB data
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_risk_score 
+ON robots(((analysis_result->>'riskScore')::NUMERIC)) 
+WHERE (analysis_result->>'riskScore') IS NOT NULL;
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_profit_potential 
+ON robots(((analysis_result->>'profitPotential')::NUMERIC)) 
+WHERE (analysis_result->>'profitPotential') IS NOT NULL;
+
+-- Composite indexes for pagination optimization
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_user_pagination 
+ON robots(user_id, created_at DESC, id) 
+WHERE is_active = true;
+
+-- Strategy parameter indexes for common filters
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_stop_loss 
+ON robots(((strategy_params->>'stopLoss')::NUMERIC)) 
+WHERE (strategy_params->>'stopLoss') IS NOT NULL;
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_take_profit 
+ON robots(((strategy_params->>'takeProfit')::NUMERIC)) 
+WHERE (strategy_params->>'takeProfit') IS NOT NULL;
+
+-- Index for chat history searches
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_chat_history 
+ON robots USING GIN(chat_history) 
+WHERE chat_history IS NOT NULL;
+
+-- =====================================================
 -- 3. TRIGGERS FOR AUTOMATIC UPDATES
 -- =====================================================
 
@@ -153,13 +190,15 @@ ORDER BY r.view_count DESC, r.copy_count DESC;
 -- 5. SEARCH FUNCTIONS
 -- =====================================================
 
--- Enhanced search function
+-- Enhanced search function with CTE optimization
 CREATE OR REPLACE FUNCTION search_robots(
     search_query TEXT DEFAULT '',
     strategy_filter TEXT DEFAULT NULL,
     user_filter UUID DEFAULT NULL,
     limit_count INTEGER DEFAULT 20,
-    offset_count INTEGER DEFAULT 0
+    offset_count INTEGER DEFAULT 0,
+    sort_by TEXT DEFAULT 'created_at',
+    sort_direction TEXT DEFAULT 'DESC'
 )
 RETURNS TABLE (
     id UUID,
@@ -173,7 +212,131 @@ RETURNS TABLE (
     copy_count INTEGER,
     risk_score NUMERIC,
     profit_potential NUMERIC,
-    search_rank REAL
+    search_rank REAL,
+    total_count BIGINT
+) AS $$
+BEGIN
+    RETURN QUERY
+    WITH filtered_robots AS (
+        SELECT 
+            r.id,
+            r.user_id,
+            r.name,
+            r.description,
+            r.strategy_type,
+            r.created_at,
+            r.updated_at,
+            r.view_count,
+            r.copy_count,
+            (r.analysis_result->>'riskScore')::NUMERIC as risk_score,
+            (r.analysis_result->>'profitPotential')::NUMERIC as profit_potential,
+            ts_rank(r.search_vector, plainto_tsquery('english', search_query)) as search_rank,
+            COUNT(*) OVER() as total_count
+        FROM robots r
+        WHERE 
+            r.is_active = true
+            AND (user_filter IS NULL OR r.user_id = user_filter)
+            AND (strategy_filter IS NULL OR r.strategy_type = strategy_filter)
+            AND (
+                search_query IS NULL OR search_query = '' OR
+                r.search_vector @@ plainto_tsquery('english', search_query)
+            )
+    ),
+    ordered_robots AS (
+        SELECT * FROM filtered_robots
+        ORDER BY 
+            CASE 
+                WHEN sort_by = 'created_at' AND sort_direction = 'ASC' THEN fr.created_at
+                WHEN sort_by = 'created_at' AND sort_direction = 'DESC' THEN fr.created_at
+                WHEN sort_by = 'view_count' AND sort_direction = 'ASC' THEN fr.view_count
+                WHEN sort_by = 'view_count' AND sort_direction = 'DESC' THEN fr.view_count
+                WHEN sort_by = 'risk_score' AND sort_direction = 'ASC' THEN fr.risk_score
+                WHEN sort_by = 'risk_score' AND sort_direction = 'DESC' THEN fr.risk_score
+                WHEN sort_by = 'search_rank' AND sort_direction = 'ASC' THEN fr.search_rank
+                WHEN sort_by = 'search_rank' AND sort_direction = 'DESC' THEN fr.search_rank
+                ELSE fr.created_at
+            END ASC,
+            CASE 
+                WHEN sort_by = 'created_at' AND sort_direction = 'DESC' THEN fr.created_at
+                WHEN sort_by = 'view_count' AND sort_direction = 'DESC' THEN fr.view_count
+                WHEN sort_by = 'risk_score' AND sort_direction = 'DESC' THEN fr.risk_score
+                WHEN sort_by = 'search_rank' AND sort_direction = 'DESC' THEN fr.search_rank
+                ELSE fr.created_at
+            END DESC
+    )
+    SELECT * FROM ordered_robots
+    LIMIT limit_count
+    OFFSET offset_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =====================================================
+-- 6. ANALYTICS FUNCTIONS
+-- =====================================================
+
+-- Robot analytics function with enhanced metrics
+CREATE OR REPLACE FUNCTION get_robot_analytics(target_user_id UUID DEFAULT NULL)
+RETURNS TABLE (
+    total_robots BIGINT,
+    active_robots BIGINT,
+    public_robots BIGINT,
+    avg_risk_score NUMERIC,
+    avg_profit_potential NUMERIC,
+    most_used_strategy TEXT,
+    total_views BIGINT,
+    total_copies BIGINT,
+    avg_code_size NUMERIC,
+    robots_this_month BIGINT,
+    robots_last_month BIGINT,
+    growth_rate NUMERIC
+) AS $$
+BEGIN
+    RETURN QUERY
+    WITH monthly_stats AS (
+        SELECT 
+            COUNT(*) FILTER (WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE)) as this_month,
+            COUNT(*) FILTER (WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') 
+                           AND created_at < DATE_TRUNC('month', CURRENT_DATE)) as last_month
+        FROM robots
+        WHERE target_user_id IS NULL OR user_id = target_user_id
+    )
+    SELECT 
+        COUNT(*) as total_robots,
+        COUNT(*) FILTER (WHERE is_active = true) as active_robots,
+        COUNT(*) FILTER (WHERE is_public = true) as public_robots,
+        AVG((analysis_result->>'riskScore')::NUMERIC) as avg_risk_score,
+        AVG((analysis_result->>'profitPotential')::NUMERIC) as avg_profit_potential,
+        mode() WITHIN GROUP (ORDER BY strategy_type) as most_used_strategy,
+        SUM(view_count) as total_views,
+        SUM(copy_count) as total_copies,
+        AVG(LENGTH(code)) as avg_code_size,
+        ms.this_month as robots_this_month,
+        ms.last_month as robots_last_month,
+        CASE 
+            WHEN ms.last_month > 0 
+            THEN ROUND(((ms.this_month - ms.last_month)::NUMERIC / ms.last_month) * 100, 2)
+            ELSE 0 
+        END as growth_rate
+    FROM robots r
+    CROSS JOIN monthly_stats ms
+    WHERE target_user_id IS NULL OR r.user_id = target_user_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Batch robot retrieval function for efficient multi-robot queries
+CREATE OR REPLACE FUNCTION get_robots_by_ids(robot_ids UUID[])
+RETURNS TABLE (
+    id UUID,
+    user_id UUID,
+    name TEXT,
+    description TEXT,
+    strategy_type TEXT,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ,
+    view_count INTEGER,
+    copy_count INTEGER,
+    risk_score NUMERIC,
+    profit_potential NUMERIC
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -188,54 +351,11 @@ BEGIN
         r.view_count,
         r.copy_count,
         (r.analysis_result->>'riskScore')::NUMERIC as risk_score,
-        (r.analysis_result->>'profitPotential')::NUMERIC as profit_potential,
-        ts_rank(r.search_vector, plainto_tsquery('english', search_query)) as search_rank
+        (r.analysis_result->>'profitPotential')::NUMERIC as profit_potential
     FROM robots r
-    WHERE 
-        r.is_active = true
-        AND (user_filter IS NULL OR r.user_id = user_filter)
-        AND (strategy_filter IS NULL OR r.strategy_type = strategy_filter)
-        AND (
-            search_query IS NULL OR search_query = '' OR
-            r.search_vector @@ plainto_tsquery('english', search_query)
-        )
-    ORDER BY 
-        CASE WHEN search_query IS NOT NULL AND search_query != '' THEN search_rank ELSE 0 END DESC,
-        r.created_at DESC
-    LIMIT limit_count
-    OFFSET offset_count;
-END;
-$$ LANGUAGE plpgsql;
-
--- =====================================================
--- 6. ANALYTICS FUNCTIONS
--- =====================================================
-
--- Robot analytics function
-CREATE OR REPLACE FUNCTION get_robot_analytics(target_user_id UUID DEFAULT NULL)
-RETURNS TABLE (
-    total_robots BIGINT,
-    active_robots BIGINT,
-    public_robots BIGINT,
-    avg_risk_score NUMERIC,
-    avg_profit_potential NUMERIC,
-    most_used_strategy TEXT,
-    total_views BIGINT,
-    total_copies BIGINT
-) AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        COUNT(*) as total_robots,
-        COUNT(*) FILTER (WHERE is_active = true) as active_robots,
-        COUNT(*) FILTER (WHERE is_public = true) as public_robots,
-        AVG((analysis_result->>'riskScore')::NUMERIC) as avg_risk_score,
-        AVG((analysis_result->>'profitPotential')::NUMERIC) as avg_profit_potential,
-        mode() WITHIN GROUP (ORDER BY strategy_type) as most_used_strategy,
-        SUM(view_count) as total_views,
-        SUM(copy_count) as total_copies
-    FROM robots
-    WHERE target_user_id IS NULL OR user_id = target_user_id;
+    WHERE r.id = ANY(robot_ids)
+    AND r.is_active = true
+    ORDER BY array_position(robot_ids, r.id);
 END;
 $$ LANGUAGE plpgsql;
 
