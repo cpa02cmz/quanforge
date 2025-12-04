@@ -188,8 +188,8 @@ export default defineConfig({
       compress: {
         drop_console: process.env['NODE_ENV'] === 'production',
         drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug'],
-        passes: 2, // Double pass for better compression
+        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'],
+        passes: 3, // Triple pass for better compression
         sequences: true,
         properties: true,
         dead_code: true,
@@ -206,6 +206,12 @@ export default defineConfig({
         reduce_vars: true,
         module: true,
         ecma: 2020,
+        // Additional compression options for bundle size
+        arrows: true,
+        inline: true,
+        reduce_funcs: true,
+        toplevel: true,
+        typeofs: false, // Avoid transforming typeof to void 0
       },
       mangle: {
         properties: {
@@ -216,7 +222,7 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 150, // More aggressive optimization for edge performance
+    chunkSizeWarningLimit: 100, // More aggressive optimization for edge performance
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
@@ -230,7 +236,8 @@ export default defineConfig({
     // Dynamic import optimization
     dynamicImportVarsOptions: {
       warnOnError: false
-    }
+    },
+    
   },
   resolve: {
     alias: {

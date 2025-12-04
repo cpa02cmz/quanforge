@@ -258,6 +258,11 @@ export class EdgeCacheManager<T = any> {
     return null;
   }
 
+  private async setToRegionalCache(key: string, entry: EdgeCacheEntry<T>, region: string): Promise<void> {
+    const regionalKey = `regional:${region}:${key}`;
+    this.edgeCache.set(regionalKey, { ...entry, region });
+  }
+
   /**
    * Get from neighboring edge regions for fallback
    */
@@ -313,17 +318,18 @@ export class EdgeCacheManager<T = any> {
   }
 
 /**
-   * Initialize edge cache with enhanced warming
-   */
-  async initialize(): Promise<void> {
-    await this.initializeIndexedDB();
-    this.startCleanupTimer();
-    
-    // Warm edge cache with critical data and predictive warming
-    await this.warmEdgeCache();
-    await this.predictiveCacheWarming();
-  }
-  }
+     * Initialize edge cache with enhanced warming
+     */
+    async initialize(): Promise<void> {
+      // Initialize persistent cache (this method exists)
+      await this.initPersistentCache();
+      
+      // Start cleanup timer (this method exists)
+      this.startCleanup();
+      
+      // Initialize regional stats (this method exists)
+      this.initializeRegionalStats();
+    }
 
   /**
    * Get neighboring regions for fallback

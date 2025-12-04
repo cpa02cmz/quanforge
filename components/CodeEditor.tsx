@@ -154,15 +154,19 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
        return numbers;
      }, [code]); // Only recalculate when actual code content changes
      
-     // Calculate editor height based on content for auto-expanding textarea
-     const editorHeight = useMemo(() => {
-       if (!isEditing) return 'auto';
-       
-       // Calculate height based on number of lines with a minimum height
-       const lines = code.split('\n').length;
-       const lineHeight = fontSize * 1.625; // Use actual line height based on font size
-       return `${Math.max(lines * lineHeight, 300)}px`;
-     }, [code, isEditing, fontSize]);
+// Calculate editor height based on content for auto-expanding textarea
+      const editorHeight = useMemo(() => {
+        if (!isEditing) return 'auto';
+        
+        // Calculate height based on number of lines with a minimum height
+        // Use a more efficient approach to count lines
+        let lineCount = 1;
+        for (let i = 0; i < code.length; i++) {
+          if (code[i] === '\n') lineCount++;
+        }
+        const lineHeight = fontSize * 1.625; // Use actual line height based on font size
+        return `${Math.max(lineCount * lineHeight, 300)}px`;
+      }, [code, isEditing, fontSize]);
 
   return (
     <div className="flex flex-col h-full bg-[#0d1117] text-gray-300 font-mono text-sm relative">

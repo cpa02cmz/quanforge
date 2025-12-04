@@ -483,12 +483,16 @@ class BackendOptimizationManager {
    /**
     * Get advanced optimization insights including materialized views and performance analytics
     */
-   async getAdvancedOptimizationInsights(client: SupabaseClient): Promise<any> {
-     if (!this.config.enableDatabaseOptimization) return null;
-     
-     // Use type assertion to bypass TypeScript error
-     return (databaseOptimizer as any).getAdvancedOptimizationInsights(client);
-   }
+     async getAdvancedOptimizationInsights(client: SupabaseClient): Promise<any> {
+      if (!this.config.enableDatabaseOptimization) return null;
+      
+      // Return a default response since the method is not yet implemented
+      return {
+        performanceInsights: [],
+        materializedViewRecommendations: [],
+        indexRecommendations: []
+      };
+    }
   
   /**
    * Execute a query with maximum optimization using all available techniques

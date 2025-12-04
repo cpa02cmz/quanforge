@@ -48,133 +48,84 @@ class DatabaseOptimizer {
   private optimizationHistory: Array<{
     operation: string;
     executionTime: number;
-    resultSize: number;
-    cached: boolean;
     timestamp: number;
   }> = [];
-  
-  private readonly MAX_HISTORY = 1000;
 
-  constructor(config?: Partial<OptimizationConfig>) {
-    if (config) {
-      this.config = { ...this.config, ...config };
+  /**
+   * Optimize robot search queries with caching and indexing
+   */
+  async searchRobotsOptimized(
+    client: SupabaseClient,
+    searchTerm: string,
+    options: {
+      userId?: string;
+      strategyType?: string;
+      limit?: number;
+      offset?: number;
+    } = {}
+  ): Promise<{ data: Robot[] | null; error: any }> {
+    if (!securityManager.validateInput(searchTerm, 'search')) {
+      return { data: null, error: { message: 'Invalid search term' } };
     }
+    
+    // Sanitize and prepare search term
+    const sanitizedTerm = searchTerm.trim().toLowerCase();
+    if (sanitizedTerm.length < 2) {
+      return { data: null, error: { message: 'Search term too short' } };
+    }
+    
+    // Use the existing queryOptimizer for optimized search
+    const result = await queryOptimizer.searchRobotsOptimized(
+      client,
+      sanitizedTerm,
+      {
+        strategyType: options.strategyType,
+        userId: options.userId,
+      }
+    );
+    
+    this.updateMetrics(result.metrics);
+    
+    return {
+      data: result.data,
+      error: result.error
+    };
   }
 
-    /**
-     * Optimized robot search with full-text search capabilities
-     */
-    async searchRobotsOptimized(
-      client: SupabaseClient,
-      searchTerm: string,
-      options: {
-        userId?: string;
-        strategyType?: string;
-        limit?: number;
-        offset?: number;
-        sortBy?: 'created_at' | 'updated_at' | 'name' | 'view_count';
-        sortOrder?: 'asc' | 'desc';
-      } = {}
-    ): Promise<{ data: Robot[] | null; error: any; metrics: OptimizationMetrics }> {
-      const startTime = performance.now();
-      
-      // Validate inputs for security
-      const validation = securityManager.sanitizeAndValidate(
-        { searchTerm, ...options },
-        'robot'
-      );
-      
-      if (!validation.isValid) {
-        return { 
-          data: null, 
-          error: new Error(`Validation failed: ${validation.errors.join(', ')}`),
-          metrics: this.metrics 
-        };
-      }
-      
-      const sanitizedTerm = validation.sanitizedData.searchTerm || '';
-      const sanitizedOptions = validation.sanitizedData;
-      
-      // Create intelligent cache key with semantic hashing
-      const cacheKey = this.generateSemanticCacheKey('search', {
-        term: sanitizedTerm,
-        userId: sanitizedOptions.userId || 'all',
-        strategyType: sanitizedOptions.strategyType || 'all',
-        limit: sanitizedOptions.limit || 20,
-        sortBy: sanitizedOptions.sortBy || 'created_at',
-        sortOrder: sanitizedOptions.sortOrder || 'desc'
-      });
-      
-      // Try cache first if enabled
-      if (this.config.enableQueryCaching) {
-        const cached = robotCache.get<any>(cacheKey);
-        if (cached) {
-          const executionTime = performance.now() - startTime;
-          this.recordOptimization('searchRobotsOptimized', executionTime, cached.data.length, true);
-          return { 
-            data: cached.data, 
-            error: null, 
-            metrics: this.metrics 
-          };
-        }
-      }
-      
-      try {
-        // Use the existing queryOptimizer for optimized search
-        const result = await queryOptimizer.searchRobotsOptimized(
-          client,
-          sanitizedTerm,
-          {
-            strategyType: sanitizedOptions.strategyType,
-            userId: sanitizedOptions.userId,
-            dateRange: undefined, // Add date range if needed
-          }
-        );
-        
-        const executionTime = performance.now() - startTime;
-        
-        // Cache result if successful and caching is enabled
-        if (!result.error && result.data && this.config.enableQueryCaching) {
-          robotCache.set(cacheKey, { data: result.data }, {
-            ttl: 300000, // 5 minutes
-            tags: ['robots', 'search'],
-            priority: 'normal'
-          });
-        }
-        
-        // Record optimization metrics
-        this.recordOptimization(
-          'searchRobotsOptimized',
-          executionTime,
-          Array.isArray(result.data) ? result.data.length : 0,
-          result.metrics?.cacheHit || false
-        );
-        
-        // Update metrics
-        this.metrics.totalOptimizedQueries++;
-        this.metrics.queryResponseTime = executionTime;
-        
-        return { 
-          data: result.data, 
-          error: result.error, 
-          metrics: this.metrics 
-        };
-      } catch (error) {
-        const executionTime = performance.now() - startTime;
-        this.recordOptimization(
-          'searchRobotsOptimized',
-          executionTime,
-          0,
-          false
-        );
-        
-        return { 
-          data: null, 
-          error, 
-          metrics: this.metrics 
-        };
-      }
-    }
+  /**
+   * Optimize robot listing queries with advanced filtering and caching
+   */
+  async listRobotsOptimized(
+    client: SupabaseClient,
+    options: {
+      userId?: string;
+      strategyType?: string;
+      limit?: number;
+      offset?: number;
+      searchTerm?: string;
+      orderBy?: 'created_at' | 'updated_at' | 'name';
+      orderDirection?: 'asc' | 'desc';
+    } = {}
+  ): Promise<{ data: Robot[] | null; error: any; metrics: any }> {
+    // Use the existing queryOptimizer for the database query
+    const result = await queryOptimizer.getRobotsOptimized(client, {
+      userId: options.userId,
+      strategyType: options.strategyType,
+      searchTerm: options.searchTerm,
+      limit: options.limit,
+      offset: options.offset,
+      orderBy: options.orderBy,
+      orderDirection: options.orderDirection
+    });
+    
+    this.updateMetrics(result.metrics);
+    
+    return {
+      data: result.data,
+      error: result.error,
+      metrics: result.metrics
+    };
+  }
 
   /**
    * Batch insert operation with optimization
@@ -185,772 +136,460 @@ class DatabaseOptimizer {
     records: T[],
     options: {
       batchSize?: number;
-      validateEach?: boolean;
+      validateRecords?: boolean;
     } = {}
-  ): Promise<{ data: T[] | null; error: any; metrics: OptimizationMetrics }> {
+  ): Promise<{ data: T[] | null; error: any; metrics: any }> {
     const startTime = performance.now();
-    const batchSize = options.batchSize || 50;
-    const validateEach = options.validateEach || false;
+    const batchSize = options.batchSize || 100;
     
-    if (validateEach) {
-      // Validate each record if required
+    // Validate records if requested
+    if (options.validateRecords) {
       for (const record of records) {
-        const validation = securityManager.sanitizeAndValidate(record, 'robot' as any);
-        if (!validation.isValid) {
-          const executionTime = performance.now() - startTime;
-          this.recordOptimization('batchInsertOptimized', executionTime, 0, false);
-          return { 
-            data: null, 
-            error: new Error(`Validation failed for record: ${validation.errors.join(', ')}`),
-            metrics: this.metrics 
-          };
+        if (!securityManager.validateInput(record, 'record')) {
+          return { data: null, error: { message: 'Invalid record data' }, metrics: { executionTime: 0 } };
         }
       }
     }
     
-    try {
-      const result = await queryOptimizer.batchInsert(client, table, records, batchSize);
-      
-      const executionTime = performance.now() - startTime;
-      const efficiency = records.length > 0 ? (records.length / executionTime) * 1000 : 0;
-      
-      this.metrics.batchEfficiency = efficiency;
-      
-      this.recordOptimization(
-        'batchInsertOptimized',
-        executionTime,
-        Array.isArray(result.data) ? result.data.length : 0,
-        false
-      );
-      
-      return { 
-        data: result.data, 
-        error: result.error, 
-        metrics: this.metrics 
-      };
-    } catch (error) {
-      const executionTime = performance.now() - startTime;
-      this.recordOptimization('batchInsertOptimized', executionTime, 0, false);
-      
-      return { 
-        data: null, 
-        error, 
-        metrics: this.metrics 
-      };
-    }
-  }
-
-   /**
-    * Optimized paginated robot query with enhanced error handling and proper count
-    */
-   async getRobotsPaginatedOptimized(
-     client: SupabaseClient,
-     options: {
-       userId?: string;
-       strategyType?: string;
-       searchTerm?: string;
-       limit?: number;
-       offset?: number;
-       sortBy?: 'created_at' | 'updated_at' | 'name';
-       sortOrder?: 'asc' | 'desc';
-       includeAnalytics?: boolean;
-     } = {}
-   ): Promise<{ 
-     data: Robot[] | null; 
-     error: any; 
-     metrics: OptimizationMetrics;
-     pagination: {
-       page: number;
-       limit: number;
-       total: number;
-       totalPages: number;
-       hasNext: boolean;
-       hasPrev: boolean;
-     };
-   }> {
-     const startTime = performance.now();
-     const page = Math.floor((options.offset || 0) / (options.limit || 20)) + 1;
-     const limit = options.limit || 20;
-     const offset = options.offset || 0;
-     
-     // Create cache key for this query
-     const cacheKey = `robots_paginated_${page}_${limit}_${options.searchTerm || ''}_${options.strategyType || 'All'}_${options.userId || 'All'}`;
-     
-     // Try cache first if enabled
-     if (this.config.enableQueryCaching) {
-       const cached = robotCache.get<any>(cacheKey);
-       if (cached) {
-         const executionTime = performance.now() - startTime;
-         this.recordOptimization('getRobotsPaginatedOptimized', executionTime, cached.data.length, true);
-         
-         return {
-           ...cached,
-           metrics: this.metrics
-         };
-       }
-     }
-     
-     try {
-       // Get total count for proper pagination
-       let countQuery = client.from('robots').select('*', { count: 'exact', head: true });
-       
-       if (options.userId) {
-         countQuery = countQuery.eq('user_id', options.userId);
-       }
-       
-       if (options.strategyType && options.strategyType !== 'All') {
-         countQuery = countQuery.eq('strategy_type', options.strategyType);
-       }
-       
-       if (options.searchTerm) {
-         countQuery = countQuery.or(`name.ilike.%${options.searchTerm}%,description.ilike.%${options.searchTerm}%`);
-       }
-       
-       const { count: totalCount, error: countError } = await countQuery;
-       if (countError) {
-         console.error('Count query failed:', countError);
-       }
-       
-       // Use query optimizer for the database query
-       const result = await queryOptimizer.getRobotsOptimized(client, {
-         userId: options.userId,
-         strategyType: options.strategyType,
-         searchTerm: options.searchTerm,
-         limit: limit,
-         offset: offset,
-         orderBy: options.sortBy,
-         orderDirection: options.sortOrder,
-       });
-       
-       if (result.error) {
-         const executionTime = performance.now() - startTime;
-         this.recordOptimization('getRobotsPaginatedOptimized', executionTime, 0, false);
-         
-         return {
-           data: null,
-           error: result.error,
-           metrics: this.metrics,
-           pagination: {
-             page,
-             limit,
-             total: totalCount || 0,
-             totalPages: totalCount ? Math.ceil(totalCount / limit) : 0,
-             hasNext: false,
-             hasPrev: false,
-           }
-         };
-       }
-       
-       // Calculate pagination metadata based on actual total count
-       const total = totalCount || (result.data ? result.data.length : 0);
-       const totalPages = totalCount ? Math.ceil(totalCount / limit) : Math.ceil(total / limit);
-       const hasNext = offset + limit < total;
-       const hasPrev = page > 1;
-       
-       const response = {
-         data: result.data,
-         error: null,
-         metrics: this.metrics,
-         pagination: {
-           page,
-           limit,
-           total,
-           totalPages,
-           hasNext,
-           hasPrev,
-         }
-       };
-       
-       // Cache the result if caching is enabled
-       if (this.config.enableQueryCaching) {
-         robotCache.set(cacheKey, response, {
-           ttl: 300000, // 5 minutes
-           tags: ['robots', 'paginated'],
-           priority: 'high'
-         });
-       }
-       
-       const executionTime = performance.now() - startTime;
-       this.recordOptimization(
-         'getRobotsPaginatedOptimized',
-         executionTime,
-         Array.isArray(result.data) ? result.data.length : 0,
-         result.metrics.cacheHit
-       );
-       
-       return response;
-     } catch (error) {
-       const executionTime = performance.now() - startTime;
-       this.recordOptimization('getRobotsPaginatedOptimized', executionTime, 0, false);
-       
-       return {
-         data: null,
-         error,
-         metrics: this.metrics,
-         pagination: {
-           page,
-           limit,
-           total: 0,
-           totalPages: 0,
-           hasNext: false,
-           hasPrev: false,
-         }
-       };
-     }
-   }
-
-  /**
-   * Advanced analytics query optimization
-   */
-  async getRobotAnalyticsOptimized(
-    client: SupabaseClient,
-    options: {
-      userId?: string;
-      strategyType?: string;
-      dateRange?: { start: string; end: string };
-      includePerformance?: boolean;
-    } = {}
-  ): Promise<{ data: any; error: any; metrics: OptimizationMetrics }> {
-    const startTime = performance.now();
+    const result = await queryOptimizer.batchInsert(client, table, records, batchSize);
     
-    try {
-      // This would typically call a stored procedure or optimized view
-      // For now, we'll create a simulated optimized analytics query
-      let query = client.from('robots').select('*');
-      
-      if (options.userId) {
-        query = query.eq('user_id', options.userId);
-      }
-      
-      if (options.strategyType && options.strategyType !== 'All') {
-        query = query.eq('strategy_type', options.strategyType);
-      }
-      
-      if (options.dateRange) {
-        query = query.gte('created_at', options.dateRange.start).lte('created_at', options.dateRange.end);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) {
-        const executionTime = performance.now() - startTime;
-        this.recordOptimization('getRobotAnalyticsOptimized', executionTime, 0, false);
-        
-        return {
-          data: null,
-          error,
-          metrics: this.metrics
-        };
-      }
-      
-      // Process analytics data
-      const analytics = this.processAnalytics(data as Robot[], options);
-      
-      const executionTime = performance.now() - startTime;
-      this.recordOptimization(
-        'getRobotAnalyticsOptimized',
-        executionTime,
-        Array.isArray(data) ? data.length : 0,
-        false
-      );
-      
-      return {
-        data: analytics,
-        error: null,
-        metrics: this.metrics
-      };
-    } catch (error) {
-      const executionTime = performance.now() - startTime;
-      this.recordOptimization('getRobotAnalyticsOptimized', executionTime, 0, false);
-      
-      return {
-        data: null,
-        error,
-        metrics: this.metrics
-      };
-    }
-  }
-
-  private processAnalytics(robots: Robot[], options: any) {
-    const analytics = {
-      totalRobots: robots.length,
-      byStrategyType: {} as Record<string, number>,
-      byDate: {} as Record<string, number>,
-      avgRobotSize: 0,
-      totalCodeSize: 0,
-    };
+    const executionTime = performance.now() - startTime;
     
-    // Group by strategy type
-    for (const robot of robots) {
-      const type = robot.strategy_type || 'Custom';
-      analytics.byStrategyType[type] = (analytics.byStrategyType[type] || 0) + 1;
-      
-      // Count by date (for date range analytics)
-      const date = new Date(robot.created_at).toISOString().split('T')[0];
-      analytics.byDate[date] = (analytics.byDate[date] || 0) + 1;
-      
-      // Calculate code size
-      if (robot.code) {
-        analytics.totalCodeSize += robot.code.length;
-      }
-    }
-    
-    analytics.avgRobotSize = robots.length > 0 ? analytics.totalCodeSize / robots.length : 0;
-    
-    return analytics;
-  }
-
-  /**
-   * Record optimization metrics
-   */
-  private recordOptimization(
-    operation: string,
-    executionTime: number,
-    resultSize: number,
-    wasCached: boolean
-  ): void {
-    // Add to history
-    this.optimizationHistory.push({
-      operation,
+    this.updateMetrics({
       executionTime,
-      resultSize,
-      cached: wasCached,
-      timestamp: Date.now(),
+      resultCount: Array.isArray(result.data) ? result.data.length : 0,
+      cacheHit: false,
+      queryHash: `batch_insert_${table}_${records.length}`
     });
     
-    // Keep history within limits
-    if (this.optimizationHistory.length > this.MAX_HISTORY) {
-      this.optimizationHistory = this.optimizationHistory.slice(-this.MAX_HISTORY);
-    }
-    
-    // Update metrics
-    const cacheHits = this.optimizationHistory.filter(h => h.cached).length;
-    this.metrics.cacheHitRate = (cacheHits / this.optimizationHistory.length) * 100;
+    return {
+      data: result.data,
+      error: result.error,
+      metrics: { executionTime }
+    };
   }
 
   /**
-   * Get optimization metrics
+   * Update optimization metrics
+   */
+  private updateMetrics(queryMetrics: any): void {
+    this.metrics.totalOptimizedQueries++;
+    this.metrics.queryResponseTime = 
+      (this.metrics.queryResponseTime + queryMetrics.executionTime) / this.metrics.totalOptimizedQueries;
+    
+    // Store in history
+    this.optimizationHistory.push({
+      operation: 'query_execution',
+      executionTime: queryMetrics.executionTime,
+      timestamp: Date.now()
+    });
+    
+    // Keep only recent history
+    if (this.optimizationHistory.length > 1000) {
+      this.optimizationHistory = this.optimizationHistory.slice(-1000);
+    }
+  }
+
+  /**
+   * Get current optimization metrics
    */
   getOptimizationMetrics(): OptimizationMetrics {
+    // Calculate cache hit rate from queryOptimizer
+    const analysis = queryOptimizer.getPerformanceAnalysis();
+    this.metrics.cacheHitRate = analysis.cacheHitRate;
+    
     return { ...this.metrics };
   }
 
   /**
-   * Get detailed optimization history
+   * Optimize query execution by batching similar operations
    */
-  getOptimizationHistory(): Array<{
-    operation: string;
-    executionTime: number;
-    resultSize: number;
-    cached: boolean;
-    timestamp: number;
+  async executeBatchedQueries<T>(
+    client: SupabaseClient,
+    operations: Array<{ 
+      table: string; 
+      operation: 'select' | 'insert' | 'update' | 'delete'; 
+      params: any 
+    }>
+  ): Promise<Array<{ data: T | null; error: any }>> {
+    if (!this.config.enableQueryBatching) {
+      // Execute operations individually if batching is disabled
+      const results: Array<{ data: T | null; error: any }> = [];
+      for (const op of operations) {
+        let result: { data: T | null; error: any };
+        switch (op.operation) {
+          case 'select':
+            const selectResult = await client.from(op.table).select('*').match(op.params);
+            result = { data: selectResult.data as T | null, error: selectResult.error };
+            break;
+          case 'insert':
+            const insertResult = await client.from(op.table).insert(op.params);
+            result = { data: insertResult.data as T | null, error: insertResult.error };
+            break;
+          case 'update':
+            const updateResult = await client.from(op.table).update(op.params.data).match(op.params.filter);
+            result = { data: updateResult.data as T | null, error: updateResult.error };
+            break;
+          case 'delete':
+            const deleteResult = await client.from(op.table).delete().match(op.params);
+            result = { data: deleteResult.data as T | null, error: deleteResult.error };
+            break;
+          default:
+            result = { data: null, error: { message: 'Invalid operation' } };
+        }
+        results.push(result);
+      }
+      return results;
+    }
+
+    // Group similar queries for optimization
+    const groupedOperations = this.groupSimilarQueries(operations);
+    const results: Array<{ data: T | null; error: any }> = [];
+
+    for (const group of groupedOperations) {
+      if (group.length === 1) {
+        // Execute single operation
+        const op = group[0];
+        let result: { data: T | null; error: any };
+        switch (op.operation) {
+          case 'select':
+            const selectResult = await client.from(op.table).select('*').match(op.params);
+            result = { data: selectResult.data as T | null, error: selectResult.error };
+            break;
+          case 'insert':
+            const insertResult = await client.from(op.table).insert(op.params);
+            result = { data: insertResult.data as T | null, error: insertResult.error };
+            break;
+          case 'update':
+            const updateResult = await client.from(op.table).update(op.params.data).match(op.params.filter);
+            result = { data: updateResult.data as T | null, error: updateResult.error };
+            break;
+          case 'delete':
+            const deleteResult = await client.from(op.table).delete().match(op.params);
+            result = { data: deleteResult.data as T | null, error: deleteResult.error };
+            break;
+          default:
+            result = { data: null, error: { message: 'Invalid operation' } };
+        }
+        results.push(result);
+      } else {
+        // Execute batched operations (simplified implementation)
+        const batchResult = await this.executeBatchedQuery<T>(group);
+        results.push(...batchResult);
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Group similar queries for batching
+   */
+  private groupSimilarQueries<T>(queries: Array<{ 
+    table: string; 
+    operation: 'select' | 'insert' | 'update' | 'delete'; 
+    params: any 
+  }>): Array<Array<{ 
+    table: string; 
+    operation: 'select' | 'insert' | 'update' | 'delete'; 
+    params: any 
+  }>> {
+    const groups: Array<Array<{ 
+      table: string; 
+      operation: 'select' | 'insert' | 'update' | 'delete'; 
+      params: any 
+    }>> = [];
+    
+    for (const query of queries) {
+      let foundGroup = false;
+      
+      // Try to find existing group with similar operation
+      for (const group of groups) {
+        if (this.areQueriesSimilar(group[0], query)) {
+          group.push(query);
+          foundGroup = true;
+          break;
+        }
+      }
+      
+      if (!foundGroup) {
+        groups.push([query]);
+      }
+    }
+    
+    return groups;
+  }
+
+  /**
+   * Check if two queries are similar enough for batching
+   */
+  private areQueriesSimilar(
+    query1: { table: string; operation: string; params: any }, 
+    query2: { table: string; operation: string; params: any }
+  ): boolean {
+    // Queries are similar if they have the same table and operation type
+    return query1.table === query2.table && query1.operation === query2.operation;
+  }
+
+  /**
+   * Execute batched query
+   */
+  private async executeBatchedQuery<T>(queries: Array<{ 
+    table: string; 
+    operation: 'select' | 'insert' | 'update' | 'delete'; 
+    params: any 
+  }>): Promise<Array<{ data: T | null; error: any }>> {
+    // Implementation would combine queries into a single database operation
+    console.log(`Executing batched query for ${queries.length} operations`);
+    return queries.map(() => ({ data: null as T | null, error: null }));
+  }
+
+  /**
+   * Execute a single query (placeholder implementation)
+   */
+  private async executeQuery<T>(operation: string, params: any): Promise<T> {
+    // Placeholder implementation
+    return { data: null, error: null } as any;
+  }
+ 
+  /**
+   * Get query optimization recommendations based on current performance
+   */
+  async getQueryOptimizationRecommendations(
+    client: SupabaseClient
+  ): Promise<{ 
+    recommendations: string[]; 
+    severity: 'low' | 'medium' | 'high';
+    impact: 'performance' | 'cost' | 'reliability';
   }> {
-    return [...this.optimizationHistory];
-  }
-
-  /**
-   * Clear optimization history
-   */
-  clearHistory(): void {
-    this.optimizationHistory = [];
-  }
-
-  /**
-   * Get optimization recommendations based on history
-   */
-  getOptimizationRecommendations(): string[] {
     const recommendations: string[] = [];
     
-    if (this.metrics.cacheHitRate < 50) {
-      recommendations.push('Increase cache hit rate by optimizing frequently accessed queries');
-    }
-    
-    if (this.metrics.queryResponseTime > 500) {
-      recommendations.push('Query response time is high, consider adding more indexes');
-    }
-    
-    if (this.optimizationHistory.length > 0) {
-      const avgTime = this.optimizationHistory.reduce((sum, h) => sum + h.executionTime, 0) / 
-                      this.optimizationHistory.length;
+    // Check for missing indexes based on common query patterns
+    try {
+      // Get query performance metrics
+      const { data: slowQueries, error } = await client
+        .from('pg_stat_statements') // This is a PostgreSQL extension for query stats
+        .select('query, mean_time, calls')
+        .order('mean_time', { ascending: false })
+        .limit(5);
       
-      if (avgTime > 300) {
-        recommendations.push('Average execution time is high, optimize database queries');
+      if (!error && slowQueries && slowQueries.length > 0) {
+        // Check for queries without indexes
+        slowQueries.forEach((query: any) => {
+          if (query.mean_time > 100 && query.calls > 100) { // Slow and frequently called
+            recommendations.push(`Query taking ${query.mean_time.toFixed(2)}ms avg time with ${query.calls} calls may need indexing: ${query.query.substring(0, 100)}...`);
+          }
+        });
       }
+    } catch (err) {
+      // pg_stat_statements might not be available, which is fine
+      console.debug('Query statistics not available for optimization recommendations');
+    }
+    
+    // Add general recommendations based on our metrics
+    const metrics = this.getOptimizationMetrics();
+    if (metrics.queryResponseTime > 1000) {
+      recommendations.push('Average query response time is high (>1 second). Consider adding indexes or optimizing queries.');
+    }
+    
+    if (metrics.cacheHitRate < 30) {
+      recommendations.push('Cache hit rate is low (<30%). Consider optimizing cache strategies for frequently accessed data.');
+    }
+    
+    // Additional optimization checks
+    try {
+      // Check for table bloat and suggest vacuum/analyze
+      const { data: tableStats, error: tableError } = await client
+        .from('pg_stat_user_tables')
+        .select('relname, n_tup_ins, n_tup_upd, n_tup_del, n_tup_hot_upd')
+        .gt('n_tup_del', 1000) // Tables with significant deletions
+        .limit(10);
+      
+      if (!tableError && tableStats && tableStats.length > 0) {
+        tableStats.forEach((table: any) => {
+          recommendations.push(`Table "${table.relname}" has ${table.n_tup_del} deleted rows, consider VACUUM operation for optimization.`);
+        });
+      }
+    } catch (err) {
+      console.debug('Table statistics not available for optimization recommendations');
+    }
+    
+    return {
+      recommendations,
+      severity: recommendations.length > 5 ? 'high' : recommendations.length > 2 ? 'medium' : 'low',
+      impact: 'performance'
+    };
+  }
+  
+  /**
+   * Advanced query optimization with materialized views and performance insights
+   */
+  async getAdvancedOptimizationInsights(client: SupabaseClient): Promise<{
+    performanceInsights: any[];
+    materializedViewRecommendations: string[];
+    indexRecommendations: string[];
+  }> {
+    const performanceInsights: any[] = [];
+    const materializedViewRecommendations: string[] = [];
+    const indexRecommendations: string[] = [];
+    
+    try {
+      // Get strategy performance insights from materialized view if available
+      const { data: strategyInsights, error: strategyError } = await client
+        .rpc('get_strategy_performance_insights');
+      
+      if (!strategyError && strategyInsights) {
+        performanceInsights.push(...strategyInsights);
+      }
+    } catch (err) {
+      console.debug('Strategy performance insights not available');
+    }
+    
+    // Suggest materialized views for complex aggregations
+    materializedViewRecommendations.push(
+      'CREATE MATERIALIZED VIEW IF NOT EXISTS robots_summary_cache AS SELECT strategy_type, COUNT(*) as count, AVG(view_count) as avg_views FROM robots GROUP BY strategy_type;',
+      'CREATE MATERIALIZED VIEW IF NOT EXISTS user_activity_summary AS SELECT user_id, COUNT(*) as robot_count, MAX(updated_at) as last_activity FROM robots GROUP BY user_id;'
+    );
+    
+    // Suggest additional indexes based on common query patterns
+    indexRecommendations.push(
+      'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_strategy_created ON robots(strategy_type, created_at DESC);',
+      'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_user_updated ON robots(user_id, updated_at DESC);',
+      'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_name_search ON robots USING gin(to_tsvector(\'english\', name));'
+    );
+    
+    return {
+      performanceInsights,
+      materializedViewRecommendations,
+      indexRecommendations
+    };
+  }
+  
+  /**
+   * Run comprehensive database optimization including VACUUM, ANALYZE, and maintenance
+   */
+  async runComprehensiveOptimization(client: SupabaseClient): Promise<{ success: boolean; message: string; details?: any }> {
+    try {
+      const startTime = Date.now();
+      
+      // Run ANALYZE to update statistics
+      await client.rpc('pg_stat_reset');
+      
+      // Get table statistics and run optimization where needed
+      const { data: tables, error: tableError } = await client
+        .from('pg_stat_user_tables')
+        .select('relname, seq_scan, idx_scan, n_tup_ins, n_tup_upd, n_tup_del')
+        .gt('n_tup_del', 1000);
+      
+      if (!tableError && tables) {
+        // For each table with significant changes, suggest optimization
+        for (const table of tables) {
+          if (table.n_tup_del > 1000) {
+            // In a real implementation, we would run VACUUM ANALYZE on the table
+            console.log(`Table ${table.relname} has ${table.n_tup_del} deleted tuples, optimization recommended`);
+          }
+        }
+      }
+      
+      // Update query optimizer statistics
+      const queryAnalysis = queryOptimizer.getPerformanceAnalysis();
+      
+      const duration = Date.now() - startTime;
+      
+      return {
+        success: true,
+        message: `Comprehensive optimization completed in ${duration}ms`,
+        details: {
+          operations: ['statistics_update', 'query_analysis'],
+          duration: duration,
+          analyzedTables: tables ? tables.length : 0,
+          slowQueryCount: queryAnalysis.slowQueries.length
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Comprehensive optimization failed: ${error}`,
+      };
+    }
+  }
+  
+  /**
+   * Run database maintenance operations
+   */
+  async runDatabaseMaintenance(client: SupabaseClient): Promise<{ success: boolean; message: string }> {
+    try {
+      // Run ANALYZE to update table statistics
+      const { error: analyzeError } = await client.rpc('pg_stat_reset');
+      if (analyzeError) {
+        console.error('Error running ANALYZE:', analyzeError);
+      }
+      
+      // Get tables that need maintenance
+      const { data: tables, error: tableError } = await client
+        .from('pg_stat_user_tables')
+        .select('relname, n_tup_del')
+        .gt('n_tup_del', 5000); // Tables with significant deletions
+      
+      if (!tableError && tables) {
+        for (const table of tables) {
+          console.log(`Table ${table.relname} has ${table.n_tup_del} deleted tuples, maintenance recommended`);
+          // In a real scenario, we would run VACUUM operations here
+        }
+      }
+      
+      return {
+        success: true,
+        message: 'Database maintenance completed'
+      };
+    } catch (error) {
+      console.error('Database maintenance failed:', error);
+      return {
+        success: false,
+        message: `Database maintenance failed: ${error}`
+      };
+    }
+  }
+  
+  /**
+   * Get general optimization recommendations
+   */
+  getOptimizationRecommendations(): Array<{ 
+    category: string; 
+    recommendation: string; 
+    priority: 'low' | 'medium' | 'high'; 
+    impact: string 
+  }> {
+    const metrics = this.getOptimizationMetrics();
+    const recommendations: Array<{ 
+      category: string; 
+      recommendation: string; 
+      priority: 'low' | 'medium' | 'high'; 
+      impact: string 
+    }> = [];
+    
+    // Cache-related recommendations
+    if (metrics.cacheHitRate < 30) {
+      recommendations.push({
+        category: 'cache',
+        recommendation: 'Increase cache hit rate by optimizing frequently accessed data',
+        priority: 'high' as 'low' | 'medium' | 'high',
+        impact: 'Performance improvement'
+      });
+    }
+    
+    // Query performance recommendations
+    if (metrics.queryResponseTime > 500) {
+      recommendations.push({
+        category: 'query',
+        recommendation: 'Optimize slow queries by adding indexes or rewriting',
+        priority: 'high' as 'low' | 'medium' | 'high',
+        impact: 'Response time improvement'
+      });
     }
     
     return recommendations;
   }
-
-   /**
-    * Run database maintenance and optimization tasks
-    */
-   async runDatabaseMaintenance(client: SupabaseClient): Promise<{ success: boolean; message: string; details?: any }> {
-     try {
-       // This would typically include:
-       // - Vacuum and analyze operations
-       // - Index optimization
-       // - Statistics updates
-       // - Cleanup of temporary data
-       
-       // For now, we'll simulate maintenance operations
-       const startTime = Date.now();
-       
-       // Update statistics (would call ANALYZE in real implementation)
-       await client.rpc('pg_stat_reset');
-       
-       const duration = Date.now() - startTime;
-       
-       return {
-         success: true,
-         message: `Database maintenance completed in ${duration}ms`,
-         details: {
-           operations: ['statistics_update'],
-           duration: duration,
-         }
-       };
-     } catch (error) {
-       return {
-         success: false,
-         message: `Database maintenance failed: ${error}`,
-       };
-     }
-   }
-   
-/**
-     * Optimize database connection pooling for better performance
-     */
-    async optimizeConnectionPool(): Promise<void> {
-      // Enhanced connection pool optimization
-      const poolConfig = {
-        minConnections: 2,
-        maxConnections: 10,
-        connectionTimeout: 30000,
-        idleTimeout: 600000,
-        acquireTimeout: 10000,
-        reapInterval: 30000,
-        createTimeout: 5000,
-        destroyTimeout: 5000,
-        createRetryInterval: 200
-      };
-      
-      // Apply connection pool optimizations
-      console.log('Enhanced connection pool optimization completed', poolConfig);
-    }
-
-    /**
-     * Generate semantic cache key for intelligent caching
-     */
-    private generateSemanticCacheKey(operation: string, params: Record<string, any>): string {
-      // Create a normalized parameter object
-      const normalizedParams = Object.keys(params)
-        .sort()
-        .reduce((result, key) => {
-          const value = params[key];
-          // Normalize values for consistent caching
-          if (typeof value === 'string') {
-            result[key] = value.toLowerCase().trim();
-          } else if (typeof value === 'number') {
-            result[key] = value.toString();
-          } else if (value === null || value === undefined) {
-            result[key] = 'null';
-          } else {
-            result[key] = JSON.stringify(value);
-          }
-          return result;
-        }, {} as Record<string, string>);
-      
-      // Create semantic hash
-      const paramString = JSON.stringify(normalizedParams);
-      const semanticHash = this.simpleHash(paramString);
-      
-      return `${operation}_${semanticHash}`;
-    }
-
-    /**
-     * Simple hash function for cache key generation
-     */
-    private simpleHash(str: string): string {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32-bit integer
-      }
-      return Math.abs(hash).toString(36);
-    }
-
-    /**
-     * Predictive cache warming based on usage patterns
-     */
-    async predictiveCacheWarming(): Promise<void> {
-      if (!this.config.enablePredictiveCaching) return;
-      
-      // Analyze recent query patterns
-      const recentQueries = this.optimizationHistory
-        .filter(entry => Date.now() - entry.timestamp < 3600000) // Last hour
-        .sort((a, b) => b.executionTime - a.executionTime)
-        .slice(0, 10); // Top 10 queries
-      
-      // Pre-warm cache for frequently accessed patterns
-      for (const query of recentQueries) {
-        if (query.executionTime > 100) { // Only warm slow queries
-          await this.warmCacheForQuery(query.operation);
-        }
-      }
-    }
-
-    /**
-     * Warm cache for specific query pattern
-     */
-    private async warmCacheForQuery(operation: string): Promise<void> {
-      // Implementation would pre-execute common queries and cache results
-      console.log(`Warming cache for operation: ${operation}`);
-    }
-
-    /**
-     * Intelligent query batching for similar operations
-     */
-    async batchSimilarQueries(queries: Array<{
-      operation: string;
-      params: Record<string, any>;
-    }>): Promise<any[]> {
-      if (!this.config.enableQueryBatching) {
-        // Execute queries individually
-        return Promise.all(queries.map(q => this.executeQuery(q.operation, q.params)));
-      }
-      
-      // Group similar queries for batching
-      const groupedQueries = this.groupSimilarQueries(queries);
-      const results: any[] = [];
-      
-      for (const group of groupedQueries) {
-        if (group.length === 1) {
-          // Execute single query
-          const result = await this.executeQuery(group[0].operation, group[0].params);
-          results.push(result);
-        } else {
-          // Execute batched query
-          const batchResult = await this.executeBatchedQuery(group);
-          results.push(...batchResult);
-        }
-      }
-      
-      return results;
-    }
-
-    /**
-     * Group similar queries for batching
-     */
-    private groupSimilarQueries(queries: Array<{ operation: string; params: Record<string, any> }>): Array<Array<{ operation: string; params: Record<string, any } }>> {
-      const groups: Array<Array<{ operation: string; params: Record<string, any } }>> = [];
-      
-      for (const query of queries) {
-        let foundGroup = false;
-        
-        // Try to find existing group with similar operation
-        for (const group of groups) {
-          if (this.areQueriesSimilar(group[0], query)) {
-            group.push(query);
-            foundGroup = true;
-            break;
-          }
-        }
-        
-        if (!foundGroup) {
-          groups.push([query]);
-        }
-      }
-      
-      return groups;
-    }
-
-    /**
-     * Check if two queries are similar enough for batching
-     */
-    private areQueriesSimilar(query1: { operation: string; params: Record<string, any> }, query2: { operation: string; params: Record<string, any> }): boolean {
-      // Queries are similar if they have the same operation and similar parameter structure
-      return query1.operation === query2.operation && 
-             Object.keys(query1.params).length === Object.keys(query2.params).length;
-    }
-
-    /**
-     * Execute batched query
-     */
-    private async executeBatchedQuery(queries: Array<{ operation: string; params: Record<string, any> }>): Promise<any[]> {
-      // Implementation would combine queries into a single database operation
-      console.log(`Executing batched query for ${queries.length} operations`);
-      return queries.map(() => ({ success: true, data: null }));
-    }
-
-    /**
-     * Execute a single query (placeholder implementation)
-     */
-    private async executeQuery(operation: string, params: Record<string, any>): Promise<any> {
-      // Placeholder implementation
-      return { success: true, data: null };
-    }
-   
-    /**
-     * Get query optimization recommendations based on current performance
-     */
-    async getQueryOptimizationRecommendations(
-      client: SupabaseClient
-    ): Promise<{ 
-      recommendations: string[]; 
-      severity: 'low' | 'medium' | 'high';
-      impact: 'performance' | 'cost' | 'reliability';
-    }> {
-      const recommendations: string[] = [];
-      
-      // Check for missing indexes based on common query patterns
-      try {
-        // Get query performance metrics
-        const { data: slowQueries, error } = await client
-          .from('pg_stat_statements') // This is a PostgreSQL extension for query stats
-          .select('query, mean_time, calls')
-          .order('mean_time', { ascending: false })
-          .limit(5);
-        
-        if (!error && slowQueries && slowQueries.length > 0) {
-          // Check for queries without indexes
-          slowQueries.forEach((query: any) => {
-            if (query.mean_time > 100 && query.calls > 100) { // Slow and frequently called
-              recommendations.push(`Query taking ${query.mean_time.toFixed(2)}ms avg time with ${query.calls} calls may need indexing: ${query.query.substring(0, 100)}...`);
-            }
-          });
-        }
-      } catch (err) {
-        // pg_stat_statements might not be available, which is fine
-        console.debug('Query statistics not available for optimization recommendations');
-      }
-      
-      // Add general recommendations based on our metrics
-      const metrics = this.getOptimizationMetrics();
-      if (metrics.queryResponseTime > 1000) {
-        recommendations.push('Average query response time is high (>1 second). Consider adding indexes or optimizing queries.');
-      }
-      
-      if (metrics.cacheHitRate < 30) {
-        recommendations.push('Cache hit rate is low (<30%). Consider optimizing cache strategies for frequently accessed data.');
-      }
-      
-      // Additional optimization checks
-      try {
-        // Check for table bloat and suggest vacuum/analyze
-        const { data: tableStats, error: tableError } = await client
-          .from('pg_stat_user_tables')
-          .select('relname, n_tup_ins, n_tup_upd, n_tup_del, n_tup_hot_upd')
-          .gt('n_tup_del', 1000) // Tables with significant deletions
-          .limit(10);
-        
-        if (!tableError && tableStats && tableStats.length > 0) {
-          tableStats.forEach((table: any) => {
-            recommendations.push(`Table "${table.relname}" has ${table.n_tup_del} deleted rows, consider VACUUM operation for optimization.`);
-          });
-        }
-      } catch (err) {
-        console.debug('Table statistics not available for optimization recommendations');
-      }
-      
-      return {
-        recommendations,
-        severity: recommendations.length > 5 ? 'high' : recommendations.length > 2 ? 'medium' : 'low',
-        impact: 'performance'
-      };
-    }
-    
-    /**
-     * Advanced query optimization with materialized views and performance insights
-     */
-    async getAdvancedOptimizationInsights(client: SupabaseClient): Promise<{
-      performanceInsights: any[];
-      materializedViewRecommendations: string[];
-      indexRecommendations: string[];
-    }> {
-      const performanceInsights: any[] = [];
-      const materializedViewRecommendations: string[] = [];
-      const indexRecommendations: string[] = [];
-      
-      try {
-        // Get strategy performance insights from materialized view if available
-        const { data: strategyInsights, error: strategyError } = await client
-          .rpc('get_strategy_performance_insights');
-        
-        if (!strategyError && strategyInsights) {
-          performanceInsights.push(...strategyInsights);
-        }
-      } catch (err) {
-        console.debug('Strategy performance insights not available');
-      }
-      
-      // Suggest materialized views for complex aggregations
-      materializedViewRecommendations.push(
-        'CREATE MATERIALIZED VIEW IF NOT EXISTS robots_summary_cache AS SELECT strategy_type, COUNT(*) as count, AVG(view_count) as avg_views FROM robots GROUP BY strategy_type;',
-        'CREATE MATERIALIZED VIEW IF NOT EXISTS user_activity_summary AS SELECT user_id, COUNT(*) as robot_count, MAX(updated_at) as last_activity FROM robots GROUP BY user_id;'
-      );
-      
-      // Suggest additional indexes based on common query patterns
-      indexRecommendations.push(
-        'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_strategy_created ON robots(strategy_type, created_at DESC);',
-        'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_user_updated ON robots(user_id, updated_at DESC);',
-        'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_robots_name_search ON robots USING gin(to_tsvector(\'english\', name));'
-      );
-      
-      return {
-        performanceInsights,
-        materializedViewRecommendations,
-        indexRecommendations
-      };
-    }
-    
-    /**
-     * Run comprehensive database optimization including VACUUM, ANALYZE, and maintenance
-     */
-    async runComprehensiveOptimization(client: SupabaseClient): Promise<{ success: boolean; message: string; details?: any }> {
-      try {
-        const startTime = Date.now();
-        
-        // Run ANALYZE to update statistics
-        await client.rpc('pg_stat_reset');
-        
-        // Get table statistics and run optimization where needed
-        const { data: tables, error: tableError } = await client
-          .from('pg_stat_user_tables')
-          .select('relname, seq_scan, idx_scan, n_tup_ins, n_tup_upd, n_tup_del')
-          .gt('n_tup_del', 1000);
-        
-        if (!tableError && tables) {
-          // For each table with significant changes, suggest optimization
-          for (const table of tables) {
-            if (table.n_tup_del > 1000) {
-              // In a real implementation, we would run VACUUM ANALYZE on the table
-              console.log(`Table ${table.relname} has ${table.n_tup_del} deleted tuples, optimization recommended`);
-            }
-          }
-        }
-        
-        // Update query optimizer statistics
-        const queryAnalysis = queryOptimizer.getPerformanceAnalysis();
-        
-        const duration = Date.now() - startTime;
-        
-        return {
-          success: true,
-          message: `Comprehensive optimization completed in ${duration}ms`,
-          details: {
-            operations: ['statistics_update', 'query_analysis'],
-            duration: duration,
-            analyzedTables: tables ? tables.length : 0,
-            slowQueryCount: queryAnalysis.slowQueries.length
-          }
-        };
-      } catch (error) {
-        return {
-          success: false,
-          message: `Comprehensive optimization failed: ${error}`,
-        };
-      }
-    }
 }
 
 // Singleton instance
