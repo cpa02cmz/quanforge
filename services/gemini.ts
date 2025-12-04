@@ -29,139 +29,210 @@ import { createScopedLogger } from "../utils/logger";
 const logger = createScopedLogger('gemini');
 
 // Enhanced cache with TTL and size management
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-  ttl: number;
-}
+ interface CacheEntry<T> {
+   data: T;
+   timestamp: number;
+   ttl: number;
+ }
 
-class EnhancedCache<T> {
-  private cache = new Map<string, CacheEntry<T>>();
-  private readonly maxSize: number;
-  
-  constructor(maxSize: number = 100) {
-    this.maxSize = maxSize;
-  }
-  
-  get(key: string): T | null {
-    const entry = this.cache.get(key);
-    if (!entry) return null;
-    
-    // Check if entry is expired
-    if (Date.now() - entry.timestamp > entry.ttl) {
-      this.cache.delete(key);
-      return null;
-    }
-    
-    return entry.data;
-  }
-  
-  set(key: string, data: T, ttl: number = 300000): void { // Default 5 minutes TTL
-    // Remove oldest entries if we're at max size
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      if (firstKey) this.cache.delete(firstKey);
-    }
-    
-    this.cache.set(key, { data, timestamp: Date.now(), ttl });
-  }
-  
-  clear(): void {
-    this.cache.clear();
-  }
-  
-  has(key: string): boolean {
-    return this.cache.has(key);
-  }
-  
-  size(): number {
-    return this.cache.size;
-  }
-  
-  keys(): string[] {
-    return Array.from(this.cache.keys());
-  }
-}
+ class EnhancedCache<T> {
+   private cache = new Map<string, CacheEntry<T>>();
+   private readonly maxSize: number;
+   
+   constructor(maxSize: number = 100) {
+     this.maxSize = maxSize;
+   }
+   
+   get(key: string): T | null {
+     const entry = this.cache.get(key);
+     if (!entry) return null;
+     
+     // Check if entry is expired
+     if (Date.now() - entry.timestamp > entry.ttl) {
+       this.cache.delete(key);
+       return null;
+     }
+     
+     return entry.data;
+   }
+   
+   set(key: string, data: T, ttl: number = 300000): void { // Default 5 minutes TTL
+     // Remove oldest entries if we're at max size
+     if (this.cache.size >= this.maxSize) {
+       const firstKey = this.cache.keys().next().value;
+       if (firstKey) this.cache.delete(firstKey);
+     }
+     
+     this.cache.set(key, { data, timestamp: Date.now(), ttl });
+   }
+   
+   clear(): void {
+     this.cache.clear();
+   }
+   
+   has(key: string): boolean {
+     return this.cache.has(key);
+   }
+   
+   size(): number {
+     return this.cache.size;
+   }
+   
+   keys(): string[] {
+     return Array.from(this.cache.keys());
+   }
+   
+   // Add delete method to support the TokenBudgetManager usage
+   delete(key: string): boolean {
+     return this.cache.delete(key);
+   }
+ }
 
 // Enhanced security utilities for input sanitization and validation
-const sanitizePrompt = (prompt: string): string => {
-  if (!prompt || typeof prompt !== 'string') {
-    throw new Error('Invalid prompt: must be a non-empty string');
-  }
-  
-  // Remove potentially dangerous patterns with enhanced regex
-  const sanitized = prompt
-    // Remove script tags and content
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    // Remove javascript: protocol and variants
-    .replace(/javascript\s*:/gi, '')
-    .replace(/vbscript\s*:/gi, '')
-    .replace(/data\s*:\s*text\/html/gi, '')
-    // Remove event handlers
-    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-    .replace(/on\w+\s*=\s*[^>\s]*/gi, '')
-    // Remove iframe and object tags
-    .replace(/<iframe\b[^>]*>.*?<\/iframe>/gi, '')
-    .replace(/<object\b[^>]*>.*?<\/object>/gi, '')
-    .replace(/<embed\b[^>]*>/gi, '')
-    // Remove meta tags with refresh
-    .replace(/<meta\s+http-equiv\s*=\s*["']refresh["'][^>]*>/gi, '')
-    // Remove CSS expressions
-    .replace(/expression\s*\(/gi, '')
-    // Remove @import and other CSS injections
-    .replace(/@import\s+[^;]+;/gi, '')
-    // Remove HTML comments that might hide scripts
-    .replace(/<!--[\s\S]*?-->/g, '')
-    // Normalize whitespace
-    .replace(/\s+/g, ' ')
-    .trim();
-  
-  // Enhanced validation with character checks
-  const hasInvalidChars = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(sanitized);
-  if (hasInvalidChars) {
-    throw new Error('Invalid characters detected in prompt');
-  }
-  
-  // Check for potential injection patterns
-  const suspiciousPatterns = [
-    /eval\s*\(/gi,
-    /function\s*\(/gi,
-    /document\./gi,
-    /window\./gi,
-    /localStorage/gi,
-    /sessionStorage/gi,
-    /cookie/gi,
-    /location\./gi,
-    /navigator\./gi
-  ];
-  
-  const hasSuspiciousContent = suspiciousPatterns.some(pattern => pattern.test(sanitized));
-  if (hasSuspiciousContent) {
-    logger.warn('Suspicious content detected in prompt, applying additional sanitization');
-    // Additional sanitization for suspicious content
-    return sanitized.replace(/[<>]/g, '').substring(0, 2000);
-  }
-  
-  // Enforce length limits to prevent token exhaustion attacks
-  if (sanitized.length > 10000) {
-    throw new Error('Prompt too long: maximum 10,000 characters allowed');
-  }
-  
-  if (sanitized.length < 10) {
-    throw new Error('Prompt too short: minimum 10 characters required');
-  }
-  
-  // Rate limiting check (simple implementation)
-  const now = Date.now();
-  const promptKey = `prompt_${Math.floor(now / 60000)}`; // Per minute bucket
-  const currentCount = parseInt(localStorage.getItem(promptKey) || '0');
-  if (currentCount >= 30) { // Max 30 prompts per minute
-    throw new Error('Rate limit exceeded: please wait before sending another prompt');
-  }
-  localStorage.setItem(promptKey, (currentCount + 1).toString());
-  
-  return sanitized;
-};
+ const sanitizePrompt = (prompt: string): string => {
+   if (!prompt || typeof prompt !== 'string') {
+     throw new Error('Invalid prompt: must be a non-empty string');
+   }
+   
+   // Remove potentially dangerous patterns with enhanced regex
+   const sanitized = prompt
+     // Remove script tags and content
+     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+     // Remove javascript: protocol and variants
+     .replace(/javascript\s*:/gi, '')
+     .replace(/vbscript\s*:/gi, '')
+     .replace(/data\s*:\s*text\/html/gi, '')
+     // Remove event handlers
+     .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
+     .replace(/on\w+\s*=\s*[^>\s]*/gi, '')
+     // Remove iframe and object tags
+     .replace(/<iframe\b[^>]*>.*?<\/iframe>/gi, '')
+     .replace(/<object\b[^>]*>.*?<\/object>/gi, '')
+     .replace(/<embed\b[^>]*>/gi, '')
+     // Remove meta tags with refresh
+     .replace(/<meta\s+http-equiv\s*=\s*["']refresh["'][^>]*>/gi, '')
+     // Remove CSS expressions
+     .replace(/expression\s*\(/gi, '')
+     // Remove @import and other CSS injections
+     .replace(/@import\s+[^;]+;/gi, '')
+     // Remove HTML comments that might hide scripts
+     .replace(/<!--[\s\S]*?-->/g, '')
+     // Remove potential code injection patterns
+     .replace(/eval\s*\([^)]*\)/gi, '')
+     .replace(/Function\s*\([^)]*\)/gi, '')
+     .replace(/setTimeout\s*\([^)]*\)/gi, '')
+     .replace(/setInterval\s*\([^)]*\)/gi, '')
+     .replace(/new\s+Function\s*\([^)]*\)/gi, '')
+     // Additional dangerous patterns
+     .replace(/process\./gi, '')
+     .replace(/require\s*\([^)]*\)/gi, '')
+     .replace(/import\s+.*from/gi, '')
+     .replace(/exec\s*\([^)]*\)/gi, '')
+     .replace(/spawn\s*\([^)]*\)/gi, '')
+     .replace(/child_process/gi, '')
+     .replace(/fs\./gi, '')
+     .replace(/path\./gi, '')
+     .replace(/vm\./gi, '')
+     .replace(/vm2/gi, '')
+     .replace(/node:.*\./gi, '')
+     // Normalize whitespace
+     .replace(/\s+/g, ' ')
+     .trim();
+   
+   // Enhanced validation with character checks
+   const hasInvalidChars = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(sanitized);
+   if (hasInvalidChars) {
+     throw new Error('Invalid characters detected in prompt');
+   }
+   
+   // Check for potential injection patterns
+   const suspiciousPatterns = [
+     /eval\s*\(/gi,
+     /function\s*\(/gi,
+     /document\./gi,
+     /window\./gi,
+     /localStorage/gi,
+     /sessionStorage/gi,
+     /cookie/gi,
+     /location\./gi,
+     /navigator\./gi,
+     /XMLHttpRequest/gi,
+     /fetch\s*\(/gi,
+     /import\s+/gi,
+     /require\s*\(/gi,
+     /exec\s*\(/gi,
+     /spawn\s*\(/gi,
+     /fork\s*\(/gi,
+     /child_process/gi,
+     /fs\./gi,
+     /process\./gi,
+     /vm\./gi,
+     /node:/gi,
+     /require/gi
+   ];
+   
+   const hasSuspiciousContent = suspiciousPatterns.some(pattern => pattern.test(sanitized));
+   if (hasSuspiciousContent) {
+     logger.warn('Suspicious content detected in prompt, applying additional sanitization');
+     // Additional sanitization for suspicious content
+     return sanitized.replace(/[<>]/g, '').substring(0, 2000);
+   }
+   
+   // Enforce length limits to prevent token exhaustion attacks
+   if (sanitized.length > 10000) {
+     throw new Error('Prompt too long: maximum 10,000 characters allowed');
+   }
+   
+   if (sanitized.length < 10) {
+     throw new Error('Prompt too short: minimum 10 characters required');
+   }
+   
+   // Check for potential prompt injection attempts
+   const promptInjectionPatterns = [
+     /ignore\s+.*\s+previous/i,
+     /disregard\s+.*\s+above/i,
+     /forget\s+.*\s+instructions/i,
+     /system\s+prompt/i,
+     /role\s+play/i,
+     /act\s+as/i,
+     /you\s+are\s+now/i,
+     /your\s+new\s+role/i,
+     /override\s+.*\s+rules/i,
+     /bypass\s+.*\s+security/i,
+     /security\s+settings/i,
+     /prompt\s+rules/i,
+     /instruction\s+rules/i,
+     /output\s+format/i,
+     /response\s+format/i,
+     /output\s+rules/i,
+     /response\s+rules/i,
+     /print\s+"?system"?/i,
+     /print\s+"?ignore"?/i,
+     /output\s+"?ignore"?/i,
+     /print\s+"?disregard"?/i,
+     /output\s+"?disregard"?/i,
+     /print\s+"?forget"?/i,
+     /output\s+"?forget"?/i
+   ];
+   
+   for (const pattern of promptInjectionPatterns) {
+     if (pattern.test(sanitized)) {
+       logger.warn('Prompt injection attempt detected');
+       throw new Error('Prompt injection attempt detected');
+     }
+   }
+   
+   // Rate limiting check (simple implementation)
+   const now = Date.now();
+   const promptKey = `prompt_${Math.floor(now / 60000)}`; // Per minute bucket
+   const currentCount = parseInt(localStorage.getItem(promptKey) || '0');
+   if (currentCount >= 30) { // Max 30 prompts per minute
+     throw new Error('Rate limit exceeded: please wait before sending another prompt');
+   }
+   localStorage.setItem(promptKey, (currentCount + 1).toString());
+   
+   return sanitized;
+ };
 
 // Enhanced input validation for strategy parameters
 const validateStrategyParams = (params: StrategyParams): StrategyParams => {
@@ -375,13 +446,17 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
 }
 
 // Enhanced token budgeting with incremental history management
-  class TokenBudgetManager {
-      private static readonly MAX_CONTEXT_CHARS = 100000; // Reduced to optimize for performance while maintaining functionality
-      private static readonly MIN_HISTORY_CHARS = 1000; // Keep minimum history for context
-    
-    // Cache for frequently used context parts
-    private contextCache = new Map<string, { content: string, length: number, timestamp: number }>();
-    private static readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+class TokenBudgetManager {
+        private static readonly MAX_CONTEXT_CHARS = 100000; // Reduced to optimize for performance while maintaining functionality
+        private static readonly MIN_HISTORY_CHARS = 1000; // Keep minimum history for context
+      
+      // Cache for frequently used context parts with better performance
+      private contextCache: EnhancedCache<{ content: string, length: number, timestamp: number }>;
+      private static readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+      
+      constructor() {
+        this.contextCache = new EnhancedCache<{ content: string, length: number, timestamp: number }>(100);
+      }
     
     private getCachedContext(key: string, builder: () => string): string {
         const cached = this.contextCache.get(key);
@@ -394,13 +469,13 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
         const content = builder();
         this.contextCache.set(key, { content, length: content.length, timestamp: now });
         
-        // Cleanup old cache entries
-        if (this.contextCache.size > 50) {
-            const oldestKey = this.contextCache.keys().next().value;
-            if (oldestKey) {
-                this.contextCache.delete(oldestKey);
-            }
-        }
+// Cleanup old cache entries
+         if (this.contextCache.size() > 50) {
+             const oldestKey = this.contextCache.keys()[0]; // Get first key instead of using iterator
+             if (oldestKey) {
+                 this.contextCache.delete(oldestKey);
+             }
+         }
         
         return content;
     }
