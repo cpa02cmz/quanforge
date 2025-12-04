@@ -63,24 +63,24 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
 
-  // Enhanced memory management with proper cleanup and circular buffer
+  // Enhanced memory management with proper cleanup and circular buffer - optimized for edge
   useEffect(() => {
     // Create new abort controller for this effect
     abortControllerRef.current = new AbortController();
     
-    // Memory management: Implement circular buffer for large message histories
-    if (messages.length > 100) {
+    // Memory management: Implement circular buffer for large message histories - reduced threshold
+    if (messages.length > 50) {
       logger.info(`Large message history detected: ${messages.length} messages. Circular buffer active.`);
     }
     
-    // Proactive cleanup for extreme cases to prevent memory overflow
-    if (messages.length > 150 && onClear && !abortControllerRef.current.signal.aborted) {
+    // Proactive cleanup for extreme cases to prevent memory overflow - reduced threshold
+    if (messages.length > 75 && onClear && !abortControllerRef.current.signal.aborted) {
       logger.warn(`Message history exceeded safe limit (${messages.length}). Triggering cleanup to prevent memory issues.`);
       onClear();
     }
 
-    // Start memory monitoring for large conversations
-    if (messages.length > 50) {
+    // Start memory monitoring for large conversations - reduced threshold and frequency
+    if (messages.length > 25) {
       memoryMonitorRef.current = setInterval(() => {
         if (typeof window !== 'undefined' && 'memory' in performance) {
           const memoryUsage = (performance as any).memory;
@@ -89,18 +89,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
             const limitMB = Math.round(memoryUsage.jsHeapSizeLimit / 1024 / 1024);
             const usagePercent = (usedMB / limitMB) * 100;
             
-            if (usagePercent > 85) {
+            // Lower threshold for edge environment
+            if (usagePercent > 75) {
               logger.warn(`Critical memory usage: ${usedMB}MB (${usagePercent.toFixed(1)}%). Suggesting cleanup.`);
               
-              // Auto-cleanup if memory is critically high
-              if (usagePercent > 95 && onClear && !abortControllerRef.current?.signal.aborted) {
+              // Auto-cleanup if memory is critically high - lower threshold
+              if (usagePercent > 85 && onClear && !abortControllerRef.current?.signal.aborted) {
                 logger.error(`Emergency cleanup triggered due to memory pressure: ${usagePercent.toFixed(1)}%`);
                 onClear();
               }
             }
           }
         }
-      }, 10000); // Check every 10 seconds
+      }, 15000); // Check every 15 seconds (reduced frequency for edge)
     }
 
     // Cleanup function with enhanced memory management

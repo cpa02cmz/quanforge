@@ -37,11 +37,11 @@ export class AdvancedCache {
     compressions: 0,
   };
   private config: CacheConfig = {
-    maxSize: 10 * 1024 * 1024, // 10MB (reduced for edge)
-    maxEntries: 500, // Reduced entries
-    defaultTTL: 180000, // 3 minutes (shorter for edge)
-    cleanupInterval: 30000, // 30 seconds
-    compressionThreshold: 512, // 0.5KB (more aggressive)
+    maxSize: 5 * 1024 * 1024, // 5MB (further reduced for edge)
+    maxEntries: 250, // Further reduced entries
+    defaultTTL: 120000, // 2 minutes (shorter for edge)
+    cleanupInterval: 20000, // 20 seconds (more frequent cleanup)
+    compressionThreshold: 256, // 0.25KB (more aggressive compression)
   };
   private cleanupTimer: NodeJS.Timeout | null = null;
 

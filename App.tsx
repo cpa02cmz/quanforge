@@ -15,7 +15,7 @@ import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
  import { edgeMonitoring } from './services/edgeMonitoring';
  import { advancedAPICache } from './services/advancedAPICache';
 
-// Enhanced lazy loading with preloading for better performance
+// Enhanced lazy loading with preloading for better performance - optimized for edge
 const Auth = lazy(() => 
   import('./components/Auth').then(module => ({ default: module.Auth }))
 );
@@ -36,14 +36,25 @@ const Layout = lazy(() =>
   import('./components/Layout').then(module => ({ default: module.Layout }))
 );
 
-// Preload critical routes after initial load with better optimization
+// Lazy load heavy components for better performance - commented out until used
+// const ChartComponents = lazy(() => 
+//   import('./components/ChartComponents').then(module => ({ default: module.ChartComponents }))
+// );
+
+// const BacktestPanel = lazy(() => 
+//   import('./components/BacktestPanel').then(module => ({ default: module.BacktestPanel }))
+// );
+
+// Preload critical routes after initial load with better optimization - optimized for edge
    const preloadCriticalRoutes = () => {
      // Preload Dashboard (most likely route after login)
      import('./pages/Dashboard').catch(err => logger.warn('Dashboard preload failed:', err));
-     // Preload Generator (second most likely)
-     setTimeout(() => import('./pages/Generator').catch(err => logger.warn('Generator preload failed:', err)), 1000);
-     // Preload Layout (essential for navigation)
-     setTimeout(() => import('./components/Layout').catch(err => logger.warn('Layout preload failed:', err)), 500);
+     // Preload Generator (second most likely) - delayed for edge
+     setTimeout(() => import('./pages/Generator').catch(err => logger.warn('Generator preload failed:', err)), 2000);
+     // Preload Layout (essential for navigation) - delayed for edge
+     setTimeout(() => import('./components/Layout').catch(err => logger.warn('Layout preload failed:', err)), 1000);
+     // Preload ChartComponents only when needed - commented out until used
+     // setTimeout(() => import('./components/ChartComponents').catch(err => logger.warn('ChartComponents preload failed:', err)), 3000);
    };
 
 
