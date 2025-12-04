@@ -7,6 +7,7 @@ import { robotCache } from './optimizedLRUCache';
 import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { smartCache } from './smartCache';
+import { globalCache } from './unifiedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
 
 // Connection retry configuration
@@ -507,8 +508,8 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
         // Generate optimized cache key with consistent ordering
         const cacheKey = `robots_paginated_${page}_${limit}_${(searchTerm || '').toLowerCase()}_${(filterType || 'All')}`;
         
-        // Try smart cache first for both mock and supabase modes
-        const cached = await smartCache.get(cacheKey);
+        // Try unified cache first for both mock and supabase modes
+        const cached = globalCache.get(cacheKey);
         if (cached) {
           const duration = performance.now() - startTime;
           performanceMonitor.record('getRobotsPaginated_cached', duration);
@@ -522,21 +523,25 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
           
           let results = index.byDate;
           
-          // Optimized search with early termination
+          // Enhanced search with optimized filtering and early termination
           if (searchTerm) {
             const term = searchTerm.toLowerCase();
+            const searchTerms = term.split(' ').filter(t => t.length > 0); // Split for multi-word search
+            
             results = results.filter(robot => {
-              const nameMatch = robot.name.toLowerCase().includes(term);
-              const descMatch = robot.description.toLowerCase().includes(term);
-              return nameMatch || descMatch;
+              // Check name match first (higher priority)
+              const nameMatch = searchTerms.every(t => robot.name.toLowerCase().includes(t));
+              if (nameMatch) return true;
+              
+              // Check description match
+              const descMatch = searchTerms.every(t => robot.description.toLowerCase().includes(t));
+              return descMatch;
             });
           }
           
-          // Apply type filter if provided
+          // Apply type filter if provided (optimized with direct comparison)
           if (filterType && filterType !== 'All') {
-            results = results.filter(robot => 
-              (robot.strategy_type || 'Custom') === filterType
-            );
+            results = results.filter(robot => robot.strategy_type === filterType);
           }
           
           const totalCount = results.length;

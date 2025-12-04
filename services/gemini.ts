@@ -83,19 +83,64 @@ class EnhancedCache<T> {
   }
 }
 
-// Security utilities for input sanitization and validation
+// Enhanced security utilities for input sanitization and validation
 const sanitizePrompt = (prompt: string): string => {
   if (!prompt || typeof prompt !== 'string') {
     throw new Error('Invalid prompt: must be a non-empty string');
   }
   
-  // Remove potentially dangerous patterns
+  // Remove potentially dangerous patterns with enhanced regex
   const sanitized = prompt
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
-    .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/on\w+\s*=/gi, '') // Remove event handlers
-    .replace(/data:text\/html/gi, '') // Remove data URLs
+    // Remove script tags and content
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    // Remove javascript: protocol and variants
+    .replace(/javascript\s*:/gi, '')
+    .replace(/vbscript\s*:/gi, '')
+    .replace(/data\s*:\s*text\/html/gi, '')
+    // Remove event handlers
+    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
+    .replace(/on\w+\s*=\s*[^>\s]*/gi, '')
+    // Remove iframe and object tags
+    .replace(/<iframe\b[^>]*>.*?<\/iframe>/gi, '')
+    .replace(/<object\b[^>]*>.*?<\/object>/gi, '')
+    .replace(/<embed\b[^>]*>/gi, '')
+    // Remove meta tags with refresh
+    .replace(/<meta\s+http-equiv\s*=\s*["']refresh["'][^>]*>/gi, '')
+    // Remove CSS expressions
+    .replace(/expression\s*\(/gi, '')
+    // Remove @import and other CSS injections
+    .replace(/@import\s+[^;]+;/gi, '')
+    // Remove HTML comments that might hide scripts
+    .replace(/<!--[\s\S]*?-->/g, '')
+    // Normalize whitespace
+    .replace(/\s+/g, ' ')
     .trim();
+  
+  // Enhanced validation with character checks
+  const hasInvalidChars = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(sanitized);
+  if (hasInvalidChars) {
+    throw new Error('Invalid characters detected in prompt');
+  }
+  
+  // Check for potential injection patterns
+  const suspiciousPatterns = [
+    /eval\s*\(/gi,
+    /function\s*\(/gi,
+    /document\./gi,
+    /window\./gi,
+    /localStorage/gi,
+    /sessionStorage/gi,
+    /cookie/gi,
+    /location\./gi,
+    /navigator\./gi
+  ];
+  
+  const hasSuspiciousContent = suspiciousPatterns.some(pattern => pattern.test(sanitized));
+  if (hasSuspiciousContent) {
+    logger.warn('Suspicious content detected in prompt, applying additional sanitization');
+    // Additional sanitization for suspicious content
+    return sanitized.replace(/[<>]/g, '').substring(0, 2000);
+  }
   
   // Enforce length limits to prevent token exhaustion attacks
   if (sanitized.length > 10000) {
@@ -106,9 +151,19 @@ const sanitizePrompt = (prompt: string): string => {
     throw new Error('Prompt too short: minimum 10 characters required');
   }
   
+  // Rate limiting check (simple implementation)
+  const now = Date.now();
+  const promptKey = `prompt_${Math.floor(now / 60000)}`; // Per minute bucket
+  const currentCount = parseInt(localStorage.getItem(promptKey) || '0');
+  if (currentCount >= 30) { // Max 30 prompts per minute
+    throw new Error('Rate limit exceeded: please wait before sending another prompt');
+  }
+  localStorage.setItem(promptKey, (currentCount + 1).toString());
+  
   return sanitized;
 };
 
+// Enhanced input validation for strategy parameters
 const validateStrategyParams = (params: StrategyParams): StrategyParams => {
   if (!params || typeof params !== 'object') {
     throw new Error('Invalid strategy parameters');
@@ -134,6 +189,41 @@ const validateStrategyParams = (params: StrategyParams): StrategyParams => {
   }
   
   return validated;
+};
+
+// Enhanced input validation for strategy parameters (boolean check)
+export const isValidStrategyParams = (params: any): boolean => {
+  if (!params || typeof params !== 'object') {
+    return false;
+  }
+  
+  // Validate required fields
+  const requiredFields = ['timeframe', 'symbol', 'riskPercent', 'stopLoss', 'takeProfit'];
+  for (const field of requiredFields) {
+    if (!(field in params) || params[field] === null || params[field] === undefined) {
+      return false;
+    }
+  }
+  
+  // Validate numeric ranges
+  if (params.riskPercent < 0.1 || params.riskPercent > 100) {
+    return false;
+  }
+  
+  if (params.stopLoss < 1 || params.stopLoss > 1000) {
+    return false;
+  }
+  
+  if (params.takeProfit < 1 || params.takeProfit > 1000) {
+    return false;
+  }
+  
+  // Validate symbol format
+  if (!/^[A-Z]{6}$|^[A-Z]{3}\/[A-Z]{3}$|^[A-Z]{6}$/.test(params.symbol)) {
+    return false;
+  }
+  
+  return true;
 };
 
 // Advanced cache for strategy analysis to avoid repeated API calls
