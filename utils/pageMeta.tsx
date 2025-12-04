@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { SEOHead, structuredDataTemplates } from './seoEnhanced';
 
 interface PageMetaProps {
@@ -17,6 +17,8 @@ interface PageMetaProps {
   publishedTime?: string;
   articleSection?: string;
   readingTime?: string;
+  pageType?: string;
+  tags?: string[];
 }
 
 // Enhanced page meta component with comprehensive SEO optimization
@@ -30,7 +32,9 @@ export const PageMeta: React.FC<PageMetaProps> = ({
   type = 'website',
   structuredData = [],
   noIndex = false,
-  alternateUrls = []
+  alternateUrls = [],
+  pageType,
+  tags = []
 }) => {
   // Default alternate URLs for internationalization
   const defaultAlternateUrls = [
@@ -41,16 +45,68 @@ export const PageMeta: React.FC<PageMetaProps> = ({
 
   const allAlternateUrls = [...defaultAlternateUrls, ...alternateUrls];
 
+  // Enhanced structured data generation
+  const finalStructuredData = useMemo(() => {
+    const baseData: Record<string, any>[] = [
+      enhancedStructuredData.softwareApplication,
+      enhancedStructuredData.organization,
+      enhancedStructuredData.webPage(
+        title || 'QuantForge AI - Advanced MQL5 Trading Robot Generator',
+        description || 'Generate professional MQL5 trading robots and Expert Advisors using AI. Powered by Google Gemini 3.0/2.5.',
+        canonicalUrl || 'https://quanforge.ai'
+      )
+    ];
+
+    // Add page-specific structured data
+    if (pageType === 'blog' || type === 'article') {
+      baseData.push(enhancedStructuredData.article(
+        title || 'QuantForge AI Blog',
+        description || 'Latest insights on AI-powered trading and MQL5 development',
+        canonicalUrl || 'https://quanforge.ai',
+        'QuantForge AI'
+      ));
+    }
+
+    if (pageType === 'faq') {
+      baseData.push(enhancedStructuredData.faq([]));
+    }
+
+    if (tags.length > 0 && baseData[0]) {
+      baseData[0]['keywords'] = tags.join(', ');
+    }
+
+    return [...baseData, ...structuredData];
+  }, [title, description, canonicalUrl, pageType, type, structuredData, tags]);
+
+  // Enhanced meta keywords
+  const enhancedKeywords = useMemo(() => {
+    const baseKeywords = [
+      'MQL5 generator', 'MetaTrader 5', 'trading robot', 'Expert Advisor', 
+      'AI trading', 'automated trading', 'forex robot', 'algorithmic trading',
+      'Gemini AI', 'trading strategy generator', 'MT5 EA', 'quantitative trading'
+    ];
+
+    if (keywords) {
+      baseKeywords.unshift(keywords);
+    }
+
+    if (tags.length > 0) {
+      baseKeywords.push(...tags);
+    }
+
+    return baseKeywords.join(', ');
+  }, [keywords, tags]);
+
   return (
     <SEOHead
       title={title}
       description={description}
-      keywords={keywords}
+      keywords={enhancedKeywords}
       ogImage={ogImage}
       ogUrl={ogUrl}
       canonicalUrl={canonicalUrl}
       type={type}
-      structuredData={structuredData}
+      structuredData={finalStructuredData}
       noIndex={noIndex}
       alternateUrls={allAlternateUrls}
     />
