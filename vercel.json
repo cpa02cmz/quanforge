@@ -129,7 +129,6 @@
       "memory": 512,
       "includeFiles": ["public/**/*"],
       "excludeFiles": ["**/*.test.*", "**/*.spec.*"],
-      "cache": "max-age=300, s-maxage=600, stale-while-revalidate=120",
       "environment": {
         "EDGE_CACHE_ENABLED": "true",
         "SUPABASE_POOL_SIZE": "4",
