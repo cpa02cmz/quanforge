@@ -10,11 +10,13 @@ import { smartCache } from './smartCache';
 import { globalCache } from './unifiedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
 
-// Connection retry configuration
+// Enhanced connection retry configuration with exponential backoff
 const RETRY_CONFIG = {
   maxRetries: 5,
   retryDelay: 500,
   backoffMultiplier: 1.5,
+  maxDelay: 10000, // Cap at 10 seconds
+  jitter: true, // Add jitter to prevent thundering herd
 };
 
 // Cache configuration
@@ -208,7 +210,7 @@ const cache = new LRUCache<any>(CACHE_CONFIG.ttl, CACHE_CONFIG.maxSize);
 
 
 
-// Retry wrapper for Supabase operations
+// Enhanced retry wrapper with exponential backoff and jitter
 const withRetry = async <T>(
   operation: () => Promise<T>,
   operationName: string
@@ -221,13 +223,25 @@ const withRetry = async <T>(
     } catch (error: any) {
       lastError = error;
       
+      // Don't retry on certain errors
+      if (error?.code === 'PGRST116' || error?.status === 404) {
+        throw error; // Not found errors shouldn't be retried
+      }
+      
       if (attempt === RETRY_CONFIG.maxRetries) {
         console.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, error);
         throw error;
       }
       
-      // Exponential backoff
-      const delay = RETRY_CONFIG.retryDelay * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt);
+      // Enhanced exponential backoff with jitter
+      let delay = RETRY_CONFIG.retryDelay * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt);
+      delay = Math.min(delay, RETRY_CONFIG.maxDelay);
+      
+      // Add jitter to prevent thundering herd
+      if (RETRY_CONFIG.jitter) {
+        delay = delay * (0.5 + Math.random() * 0.5);
+      }
+      
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
@@ -242,8 +256,10 @@ const getClient = async () => {
 
     if (settings.mode === 'supabase' && settings.url && settings.anonKey) {
         try {
-            // Use optimized connection pool with fallback mechanism
-            const client = await edgeConnectionPool.getClient('default');
+            // Use optimized connection pool with enhanced retry mechanism
+            const client = await withRetry(async () => {
+                return await edgeConnectionPool.getClient('default');
+            }, 'getClient');
             activeClient = client;
         } catch (e) {
             console.error("Connection pool failed, using mock client", e);

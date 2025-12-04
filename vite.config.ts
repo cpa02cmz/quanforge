@@ -14,62 +14,48 @@ export default defineConfig({
       },
 output: {
           manualChunks: (id) => {
-            // Aggressive chunking for optimal bundle size and caching
+            // Optimized chunking for better bundle consolidation
             if (id.includes('node_modules')) {
+              // Consolidated React vendor chunk
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
+                return 'react-vendor';
+              }
+              // Consolidated Supabase vendor chunk
+              if (id.includes('@supabase')) {
+                return 'supabase-vendor';
+              }
               // AI services isolated for dynamic loading
               if (id.includes('@google/genai')) {
-                return 'ai-services-genai';
-              }
-              // Database services isolated
-              if (id.includes('@supabase/supabase-js')) {
-                return 'supabase-core';
-              }
-              if (id.includes('@supabase/realtime-js')) {
-                return 'supabase-realtime';
-              }
-              if (id.includes('@supabase/storage-js')) {
-                return 'supabase-storage';
-              }
-              // React core consolidated
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-                return 'react-core';
+                return 'ai-vendor';
               }
               // Chart libraries isolated - loaded on demand
               if (id.includes('recharts')) {
-                return 'chart-libs';
+                return 'chart-vendor';
               }
-              // Security utilities
+              // Security utilities consolidated
               if (id.includes('dompurify') || id.includes('lz-string')) {
-                return 'security-utils';
+                return 'security-vendor';
               }
               // All other vendor libraries
               return 'vendor-misc';
             }
             
-            // Enhanced app chunks with granular separation
+            // Consolidated app chunks for better performance
             if (id.includes('services/')) {
               // AI-specific services isolated for dynamic loading
               if (id.includes('gemini') || id.includes('ai') || id.includes('gpt')) {
                 return 'services-ai';
               }
-              // Database services consolidated
-              if (id.includes('supabase') || id.includes('database') || id.includes('db')) {
-                return 'services-database';
+              // Database and edge services consolidated
+              if (id.includes('supabase') || id.includes('database') || id.includes('db') || id.includes('edge') || id.includes('cdn') || id.includes('vercel')) {
+                return 'services-data';
               }
-              // Cache and performance services consolidated
-              if (id.includes('cache') || id.includes('performance') || id.includes('optimization')) {
-                return 'services-performance';
+              // Performance and security services consolidated
+              if (id.includes('cache') || id.includes('performance') || id.includes('optimization') || id.includes('security') || id.includes('auth') || id.includes('validation')) {
+                return 'services-core';
               }
-              // Security services consolidated
-              if (id.includes('security') || id.includes('auth') || id.includes('validation')) {
-                return 'services-security';
-              }
-              // Edge services consolidated
-              if (id.includes('edge') || id.includes('cdn') || id.includes('vercel')) {
-                return 'services-edge';
-              }
-              // Core services
-              return 'services-core';
+              // All other services
+              return 'services-misc';
             }
             
             if (id.includes('components/')) {
@@ -80,20 +66,14 @@ output: {
               if (id.includes('CodeEditor')) {
                 return 'component-editor';
               }
-              if (id.includes('Backtest') || id.includes('Simulation')) {
-                return 'component-backtest';
-              }
-              if (id.includes('StrategyConfig')) {
-                return 'component-config';
-              }
-              if (id.includes('Chart') || id.includes('Analysis')) {
+              if (id.includes('Backtest') || id.includes('Simulation') || id.includes('Chart') || id.includes('Analysis')) {
                 return 'component-charts';
               }
-              if (id.includes('Market') || id.includes('Ticker')) {
-                return 'component-market';
+              if (id.includes('StrategyConfig') || id.includes('Market') || id.includes('Ticker')) {
+                return 'component-trading';
               }
-              // UI components
-              if (id.includes('Modal') || id.includes('Dialog') || id.includes('Toast')) {
+              // UI components consolidated
+              if (id.includes('Modal') || id.includes('Dialog') || id.includes('Toast') || id.includes('ErrorBoundary') || id.includes('LoadingState')) {
                 return 'component-ui';
               }
               // Core components
@@ -108,24 +88,20 @@ output: {
               if (id.includes('Dashboard')) {
                 return 'route-dashboard';
               }
-              if (id.includes('About') || id.includes('FAQ') || id.includes('Wiki')) {
+              if (id.includes('About') || id.includes('FAQ') || id.includes('Wiki') || id.includes('Blog') || id.includes('Features')) {
                 return 'route-static';
               }
               return 'pages';
             }
             
             if (id.includes('utils/')) {
-              // Validation utilities
-              if (id.includes('validation') || id.includes('security')) {
-                return 'utils-validation';
-              }
-              // Performance utilities
-              if (id.includes('performance') || id.includes('monitor') || id.includes('analytics')) {
+              // Performance and monitoring utilities consolidated
+              if (id.includes('performance') || id.includes('monitor') || id.includes('analytics') || id.includes('seo') || id.includes('meta') || id.includes('structured')) {
                 return 'utils-performance';
               }
-              // SEO utilities
-              if (id.includes('seo') || id.includes('meta') || id.includes('structured')) {
-                return 'utils-seo';
+              // Security and validation utilities consolidated
+              if (id.includes('validation') || id.includes('security') || id.includes('encryption') || id.includes('errorHandler')) {
+                return 'utils-security';
               }
               // Core utilities
               return 'utils-core';
@@ -185,12 +161,23 @@ output: {
         unknownGlobalSideEffects: false
       }
     },
-    minify: 'terser',
-chunkSizeWarningLimit: 50, // Optimized for edge deployment
-    target: ['es2020', 'edge101'], // More specific targets for edge compatibility
-    reportCompressedSize: true,
-    cssCodeSplit: true,
-    cssMinify: true, // Add CSS minification
+minify: 'terser',
+terserOptions: {
+  compress: {
+    drop_console: process.env['NODE_ENV'] === 'production',
+    drop_debugger: true,
+    pure_funcs: ['console.log', 'console.info', 'console.debug'],
+  },
+  mangle: true,
+  format: {
+    comments: false
+  }
+},
+chunkSizeWarningLimit: 300, // Optimized for edge deployment
+target: ['es2020', 'edge101'], // More specific targets for edge compatibility
+reportCompressedSize: true,
+cssCodeSplit: true,
+cssMinify: true, // Add CSS minification
     // Enhanced edge optimization
     assetsInlineLimit: 256, // Reduced to 256B for better edge performance
     modulePreload: {
