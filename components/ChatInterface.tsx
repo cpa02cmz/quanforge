@@ -71,17 +71,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
 
-  // Enhanced memory management with unified cleanup and circular buffer
+  // Optimized memory management with proper cleanup
   useEffect(() => {
     // Create new abort controller for this effect
     abortControllerRef.current = new AbortController();
     
-    // Unified memory monitoring with adaptive intervals
+    // Memory monitoring with adaptive intervals and cleanup
     const startMemoryMonitoring = () => {
       if (memoryMonitorRef.current) return; // Already monitoring
       
       // Adaptive monitoring frequency based on message count
-      const interval = messages.length > 100 ? 5000 : 10000; // 5s for large, 10s for normal
+      const interval = messages.length > 100 ? 10000 : 30000; // Reduced frequency
       
       memoryMonitorRef.current = setInterval(() => {
         if (abortControllerRef.current?.signal.aborted) return;
@@ -107,12 +107,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
       }, interval);
     };
     
-    // Start monitoring for conversations with more than 30 messages
-    if (messages.length > 30) {
+    // Start monitoring for conversations with more than 50 messages (increased threshold)
+    if (messages.length > 50) {
       startMemoryMonitoring();
     }
     
-    // Cleanup function with unified memory management
+    // Cleanup function with proper memory management
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -130,7 +130,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
         cleanupTimeoutRef.current = null;
       }
       
-      // Clear references
+      // Clear references to prevent memory leaks
       abortControllerRef.current = null;
     };
   }, [messages.length, onClear]);
@@ -258,11 +258,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     });
   }, [language]);
 
-  // Enhanced virtual scrolling with intelligent windowing and circular buffer
+  // Optimized virtual scrolling with improved circular buffer
   const visibleMessages = useMemo(() => {
     // Implement circular buffer for very long conversations
-    const MAX_MESSAGES = 100;
-    const WINDOW_SIZE = 30;
+    const MAX_MESSAGES = 50; // Reduced for better performance
+    const WINDOW_SIZE = 20;  // Smaller window for faster rendering
     
     if (messages.length <= MAX_MESSAGES) {
       return messages;
@@ -272,20 +272,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     const startIndex = Math.max(0, messages.length - WINDOW_SIZE);
     const visibleSlice = messages.slice(startIndex);
     
-    // Log virtual scrolling activity for monitoring
-    logger.debug(`Circular buffer: showing ${visibleSlice.length} of ${messages.length} messages`);
+    // Log virtual scrolling activity for monitoring (reduced frequency)
+    if (messages.length % 10 === 0) {
+      logger.debug(`Circular buffer: showing ${visibleSlice.length} of ${messages.length} messages`);
+    }
     
     return visibleSlice;
   }, [messages]);
 
-  // Simplified memory monitoring - consolidated with main effect
-  // This effect is now redundant as memory monitoring is handled above
-  useEffect(() => {
-    // Log circular buffer activity for debugging
-    if (messages.length > 100) {
-      logger.info(`Circular buffer active: ${messages.length} total messages`);
-    }
-  }, [messages.length]);
+  // Removed redundant effect - memory monitoring is now consolidated above
 
   return (
     <Suspense fallback={<ChatInterfaceLoading />}>
@@ -344,7 +339,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
                 </div>
             </div>
         )}
-        {visibleMessages.slice(-50).map((msg) => ( // Limit to last 50 messages for performance
+        {visibleMessages.map((msg) => ( // Already limited by circular buffer
             <MemoizedMessage key={msg.id} msg={msg} formatMessageContent={formatMessageContent} />
         ))}
         {isLoading && (

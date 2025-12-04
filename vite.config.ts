@@ -14,25 +14,25 @@ export default defineConfig({
       },
 output: {
           manualChunks: (id) => {
-            // Optimized chunking for better bundle consolidation
+            // Simplified chunking strategy for better performance
             if (id.includes('node_modules')) {
-              // Consolidated React vendor chunk
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
+              // Core React ecosystem
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
                 return 'react-vendor';
               }
-              // Consolidated Supabase vendor chunk
+              // Database and backend
               if (id.includes('@supabase')) {
                 return 'supabase-vendor';
               }
-              // AI services isolated for dynamic loading
+              // AI services
               if (id.includes('@google/genai')) {
                 return 'ai-vendor';
               }
-              // Chart libraries isolated - loaded on demand
+              // Charts and visualization
               if (id.includes('recharts')) {
                 return 'chart-vendor';
               }
-              // Security utilities consolidated
+              // Security and utilities
               if (id.includes('dompurify') || id.includes('lz-string')) {
                 return 'security-vendor';
               }
@@ -40,47 +40,29 @@ output: {
               return 'vendor-misc';
             }
             
-            // Consolidated app chunks for better performance
+            // App-specific chunks
             if (id.includes('services/')) {
-              // AI-specific services isolated for dynamic loading
-              if (id.includes('gemini') || id.includes('ai') || id.includes('gpt')) {
+              if (id.includes('gemini') || id.includes('ai')) {
                 return 'services-ai';
               }
-              // Database and edge services consolidated
-              if (id.includes('supabase') || id.includes('database') || id.includes('db') || id.includes('edge') || id.includes('cdn') || id.includes('vercel')) {
+              if (id.includes('supabase') || id.includes('database')) {
                 return 'services-data';
               }
-              // Performance and security services consolidated
-              if (id.includes('cache') || id.includes('performance') || id.includes('optimization') || id.includes('security') || id.includes('auth') || id.includes('validation')) {
-                return 'services-core';
-              }
-              // All other services
-              return 'services-misc';
+              return 'services-core';
             }
             
             if (id.includes('components/')) {
               // Heavy components isolated
-              if (id.includes('ChatInterface')) {
-                return 'component-chat';
+              if (id.includes('ChatInterface') || id.includes('CodeEditor')) {
+                return 'components-heavy';
               }
-              if (id.includes('CodeEditor')) {
-                return 'component-editor';
+              if (id.includes('Backtest') || id.includes('Chart') || id.includes('Analysis')) {
+                return 'components-charts';
               }
-              if (id.includes('Backtest') || id.includes('Simulation') || id.includes('Chart') || id.includes('Analysis')) {
-                return 'component-charts';
-              }
-              if (id.includes('StrategyConfig') || id.includes('Market') || id.includes('Ticker')) {
-                return 'component-trading';
-              }
-              // UI components consolidated
-              if (id.includes('Modal') || id.includes('Dialog') || id.includes('Toast') || id.includes('ErrorBoundary') || id.includes('LoadingState')) {
-                return 'component-ui';
-              }
-              // Core components
               return 'components-core';
             }
             
-            // Route-based code splitting
+            // Route-based splitting
             if (id.includes('pages/')) {
               if (id.includes('Generator')) {
                 return 'route-generator';
@@ -88,28 +70,12 @@ output: {
               if (id.includes('Dashboard')) {
                 return 'route-dashboard';
               }
-              if (id.includes('About') || id.includes('FAQ') || id.includes('Wiki') || id.includes('Blog') || id.includes('Features')) {
-                return 'route-static';
-              }
-              return 'pages';
+              return 'route-static';
             }
             
+            // Utilities
             if (id.includes('utils/')) {
-              // Performance and monitoring utilities consolidated
-              if (id.includes('performance') || id.includes('monitor') || id.includes('analytics') || id.includes('seo') || id.includes('meta') || id.includes('structured')) {
-                return 'utils-performance';
-              }
-              // Security and validation utilities consolidated
-              if (id.includes('validation') || id.includes('security') || id.includes('encryption') || id.includes('errorHandler')) {
-                return 'utils-security';
-              }
-              // Core utilities
               return 'utils-core';
-            }
-            
-            // Constants and translations
-            if (id.includes('constants/') || id.includes('translations/')) {
-              return 'assets-constants';
             }
             
             return 'chunk-default';

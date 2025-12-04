@@ -143,7 +143,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
          numbers[i] = i + 1;
        }
        return numbers;
-     }, [code.match(/\n/g)?.length || 0]); // Only recalculate when line count changes
+     }, [code]); // Simplified dependency - code changes are the main trigger
      
      // Calculate editor height based on content for auto-expanding textarea
      const editorHeight = useMemo(() => {
