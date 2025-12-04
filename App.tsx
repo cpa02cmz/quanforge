@@ -172,7 +172,6 @@ useEffect(() => {
           <SEOHead 
             structuredData={[
               structuredDataTemplates.softwareApplication,
-              structuredDataTemplates.localBusiness,
               structuredDataTemplates.webPage(
                 'QuantForge AI - Advanced MQL5 Trading Robot Generator',
                 'Generate professional MQL5 trading robots and Expert Advisors using AI. Powered by Google Gemini 3.0/2.5.',

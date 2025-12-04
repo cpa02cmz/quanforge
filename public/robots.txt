@@ -429,3 +429,33 @@ Crawl-delay: 1
 User-agent: Baiduspider
 Allow: /
 Crawl-delay: 2
+# Enhanced directives for Yandex
+User-agent: YandexBot
+Allow: /
+Crawl-delay: 2
+Host: https://quanforge.ai
+
+# Enhanced directives for Naver
+User-agent: Yeti
+Allow: /
+Crawl-delay: 2
+
+# Enhanced directives for Seznam
+User-agent: SeznamBot
+Allow: /
+Crawl-delay: 2
+
+# Enhanced directives for other international crawlers
+User-agent: YandexImages
+Allow: /images/
+Crawl-delay: 2
+
+User-agent: Googlebot-Image
+Allow: /images/
+Crawl-delay: 1
+
+# Enhanced sitemap directives for multiple sitemaps
+Sitemap: https://quanforge.ai/sitemap.xml
+Sitemap: https://quanforge.ai/sitemap-index.xml
+Sitemap: https://quanforge.ai/sitemap-images.xml
+Sitemap: https://quanforge.ai/sitemap-videos.xml
