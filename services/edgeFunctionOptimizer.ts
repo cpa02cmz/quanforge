@@ -423,6 +423,100 @@ class EdgeFunctionOptimizer {
   }
 
   /**
+   * Get optimal region for function execution based on real-time metrics
+   */
+  getOptimalRegion(functionName: string, userRegion?: string): string {
+    const config = this.configs.get(functionName);
+    if (!config) return 'iad1'; // Default fallback
+
+    // If user region is supported and healthy, use it
+    if (userRegion && config.regions.includes(userRegion)) {
+      const metrics = this.metrics.get(functionName);
+      if (metrics && metrics.errorRate < 0.05) {
+        return userRegion;
+      }
+    }
+
+    // Return first configured region as fallback
+    return config.regions[0];
+  }
+
+  /**
+   * Advanced predictive warming based on usage patterns
+   */
+  async predictiveWarming(): Promise<void> {
+    const currentHour = new Date().getHours();
+    const isPeakHour = currentHour >= 9 && currentHour <= 17; // Business hours
+
+    for (const [name, config] of this.configs) {
+      const metrics = this.metrics.get(name);
+      if (!metrics) continue;
+
+      // Increase warming frequency during peak hours for high-priority functions
+      if (isPeakHour && config.priority === 'high') {
+        const timeSinceLastWarmup = Date.now() - metrics.lastWarmup;
+        if (timeSinceLastWarmup > 3 * 60 * 1000) { // 3 minutes during peak
+          await this.warmupFunction(name);
+        }
+      }
+    }
+  }
+
+  /**
+   * Get comprehensive performance analytics
+   */
+  getPerformanceAnalytics(): {
+    totalFunctions: number;
+    healthyFunctions: number;
+    averageResponseTime: number;
+    averageErrorRate: number;
+    coldStartRate: number;
+    regionPerformance: Record<string, { avgLatency: number; errorRate: number }>;
+    recommendations: string[];
+  } {
+    let totalResponseTime = 0;
+    let totalErrorRate = 0;
+    let totalColdStarts = 0;
+    let totalRequests = 0;
+    let healthyFunctions = 0;
+
+    const regionPerformance: Record<string, { avgLatency: number; errorRate: number }> = {};
+
+    for (const [name, metrics] of this.metrics) {
+      totalResponseTime += metrics.averageResponseTime;
+      totalErrorRate += metrics.errorRate;
+      totalColdStarts += metrics.coldStartCount;
+      totalRequests += metrics.requestCount;
+
+      if (metrics.errorRate < 0.05 && metrics.averageResponseTime < 500) {
+        healthyFunctions++;
+      }
+
+      // Aggregate region performance (simplified)
+      const config = this.configs.get(name);
+      if (config) {
+        for (const region of config.regions) {
+          if (!regionPerformance[region]) {
+            regionPerformance[region] = { avgLatency: metrics.averageResponseTime, errorRate: metrics.errorRate };
+          }
+        }
+      }
+    }
+
+    const functionCount = this.configs.size;
+    
+    return {
+      totalFunctions: functionCount,
+      healthyFunctions,
+      averageResponseTime: functionCount > 0 ? totalResponseTime / functionCount : 0,
+      averageErrorRate: functionCount > 0 ? totalErrorRate / functionCount : 0,
+      coldStartRate: totalRequests > 0 ? totalColdStarts / totalRequests : 0,
+      regionPerformance,
+      recommendations: this.getOptimizationRecommendations()
+    };
+  }
+
+  /**
    * Optimize cold starts by reducing warmup intervals
    */
   private async optimizeColdStarts(): Promise<void> {

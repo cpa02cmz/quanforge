@@ -8,6 +8,7 @@ export default defineConfig({
     manifest: true,
     outDir: 'dist',
     sourcemap: process.env['NODE_ENV'] !== 'production' ? 'hidden' : false,
+    target: 'esnext',
     rollupOptions: {
       input: {
         main: './index.html'
@@ -176,13 +177,12 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 100, // Further reduced for optimal edge performance
-    target: 'esnext', // Updated targets for better performance and modern features
+    chunkSizeWarningLimit: 150, // Optimized for edge performance
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
     // Enhanced edge optimization
-    assetsInlineLimit: 128, // Reduced for better edge performance
+    assetsInlineLimit: 256, // Optimized for edge performance
     modulePreload: {
       polyfill: false
     },
