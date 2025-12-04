@@ -206,12 +206,37 @@ export class EdgeCacheManager<T = any> {
   }
 
   /**
-   * Get from CDN edge cache
+   * Get from CDN edge cache with Vercel Edge Cache API integration
    */
   private async getFromCDNCache(key: string, region: string): Promise<EdgeCacheEntry<T> | null> {
     const cdnKey = `cdn:${region}:${key}`;
-    const entry = this.edgeCache.get(cdnKey);
     
+    // Try Vercel Edge Cache first (if available in edge runtime)
+    if (typeof caches !== 'undefined') {
+      try {
+        const cache = await caches.open('edge-cache');
+        const response = await cache.match(cdnKey);
+        
+        if (response) {
+          const data = await response.json();
+          const entry: EdgeCacheEntry<T> = {
+            ...data,
+            timestamp: Date.now() - (response.headers.get('age') ? parseInt(response.headers.get('age')!) * 1000 : 0)
+          };
+          
+          if (this.isValidEntry(entry)) {
+            // Store in local edge cache for faster access
+            this.edgeCache.set(cdnKey, entry);
+            return entry;
+          }
+        }
+      } catch (error) {
+        console.debug('CDN cache lookup failed:', error);
+      }
+    }
+    
+    // Fallback to local edge cache
+    const entry = this.edgeCache.get(cdnKey);
     if (entry && this.isValidEntry(entry)) {
       return entry;
     }
@@ -253,11 +278,32 @@ export class EdgeCacheManager<T = any> {
   }
 
   /**
-   * Set to CDN cache
+   * Set to CDN cache with Vercel Edge Cache API integration
    */
   private async setToCDNCache(key: string, entry: EdgeCacheEntry<T>, region: string): Promise<void> {
     const cdnKey = `cdn:${region}:${key}`;
+    
+    // Store in local edge cache
     this.edgeCache.set(cdnKey, { ...entry, region });
+    
+    // Try to store in Vercel Edge Cache (if available)
+    if (typeof caches !== 'undefined') {
+      try {
+        const cache = await caches.open('edge-cache');
+        const response = new Response(JSON.stringify(entry), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': `public, max-age=${Math.floor(entry.ttl / 1000)}`,
+            'Edge-Cache-Tag': `region:${region},key:${key}`,
+            'X-Edge-Cache-Region': region,
+          }
+        });
+        
+        await cache.put(cdnKey, response);
+      } catch (error) {
+        console.debug('CDN cache storage failed:', error);
+      }
+    }
     
     // Update regional stats
     const stats = this.stats.regionalStats.get(region);
@@ -404,44 +450,69 @@ export class EdgeCacheManager<T = any> {
   }
 
   /**
-   * Warm up cache with predicted data
+   * Warm up cache with predicted data and intelligent prioritization
    */
   async warmup(keys: string[], options?: {
     region?: string;
     priority?: 'low' | 'normal' | 'high';
+    predictive?: boolean;
   }): Promise<{ warmed: number; failed: number }> {
     const region = options?.region || this.currentRegion;
     let warmed = 0;
     let failed = 0;
 
-    const warmupPromises = keys.map(async (key) => {
-      try {
-        // Check if already cached
-        const cached = await this.get(key, { region });
-        if (cached) {
-          warmed++;
-          return;
-        }
+    // Sort keys by priority if predictive warming is enabled
+    const sortedKeys = options?.predictive ? 
+      this.prioritizeKeysForWarmup(keys, region) : 
+      keys;
 
-        // Simulate fetching data (in real implementation, this would fetch from source)
-        const mockData = await this.fetchDataForWarmup(key);
-        if (mockData) {
-          await this.set(key, mockData, {
-            region,
-            priority: options?.priority || 'normal',
-            replicate: true,
-          });
-          warmed++;
-        } else {
+    // Process in batches to avoid overwhelming the system
+    const batchSize = options?.priority === 'high' ? 10 : 5;
+    
+    for (let i = 0; i < sortedKeys.length; i += batchSize) {
+      const batch = sortedKeys.slice(i, i + batchSize);
+      
+      const warmupPromises = batch.map(async (key) => {
+        try {
+          // Check if already cached
+          const cached = await this.get(key, { region });
+          if (cached) {
+            warmed++;
+            return;
+          }
+
+          // Fetch data with timeout
+          const mockData = await Promise.race([
+            this.fetchDataForWarmup(key),
+            new Promise<null>((_, reject) => 
+              setTimeout(() => reject(new Error('Warmup timeout')), 2000)
+            )
+          ]);
+          
+          if (mockData) {
+            await this.set(key, mockData, {
+              region,
+              priority: options?.priority || 'normal',
+              replicate: true,
+              ttl: this.getAdaptiveTTL(key, options?.priority),
+            });
+            warmed++;
+          } else {
+            failed++;
+          }
+        } catch (error) {
+          console.warn(`Failed to warmup cache for key ${key}:`, error);
           failed++;
         }
-      } catch (error) {
-        console.warn(`Failed to warmup cache for key ${key}:`, error);
-        failed++;
-      }
-    });
+      });
 
-    await Promise.allSettled(warmupPromises);
+      await Promise.allSettled(warmupPromises);
+      
+      // Small delay between batches to prevent rate limiting
+      if (i + batchSize < sortedKeys.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
     
     return { warmed, failed };
   }
@@ -782,6 +853,201 @@ export class EdgeCacheManager<T = any> {
   }
 
   /**
+   * Prioritize keys for warmup based on usage patterns and region
+   */
+  private prioritizeKeysForWarmup(keys: string[], region: string): string[] {
+    const stats = this.getStats();
+    const regionStats = stats.regionalStats.get(region);
+    
+    return keys.sort((a, b) => {
+      // Prioritize based on historical access patterns
+      const aAccess = this.getAccessScore(a, region);
+      const bAccess = this.getAccessScore(b, region);
+      
+      // Prioritize based on key type
+      const aTypeScore = this.getKeyTypeScore(a);
+      const bTypeScore = this.getKeyTypeScore(b);
+      
+      // Combine scores
+      const aScore = aAccess * 0.6 + aTypeScore * 0.4;
+      const bScore = bAccess * 0.6 + bTypeScore * 0.4;
+      
+      return bScore - aScore;
+    });
+  }
+
+  /**
+   * Get access score for a key in a specific region
+   */
+  private getAccessScore(key: string, region: string): number {
+    // Simulate access scoring based on key patterns
+    if (key.includes('robots_list')) return 100;
+    if (key.includes('strategies')) return 90;
+    if (key.includes('market_data')) return 85;
+    if (key.includes('user_session')) return 95;
+    if (key.includes('analytics')) return 70;
+    return 50;
+  }
+
+  /**
+   * Get score based on key type
+   */
+  private getKeyTypeScore(key: string): number {
+    if (key.includes('list') || key.includes('index')) return 90;
+    if (key.includes('search') || key.includes('filter')) return 80;
+    if (key.includes('detail') || key.includes('single')) return 70;
+    if (key.includes('config') || key.includes('settings')) return 85;
+    return 60;
+  }
+
+  /**
+   * Get adaptive TTL based on key type and priority
+   */
+  private getAdaptiveTTL(key: string, priority?: 'low' | 'normal' | 'high'): number {
+    let baseTTL = this.config.defaultTTL;
+    
+    // Adjust based on key type
+    if (key.includes('robots_list')) baseTTL *= 1.5;
+    if (key.includes('market_data')) baseTTL *= 0.5; // Market data changes frequently
+    if (key.includes('strategies')) baseTTL *= 1.2;
+    if (key.includes('user_session')) baseTTL *= 0.8;
+    
+    // Adjust based on priority
+    if (priority === 'high') baseTTL *= 1.3;
+    if (priority === 'low') baseTTL *= 0.7;
+    
+    return Math.min(Math.max(baseTTL, 5 * 60 * 1000), 2 * 60 * 60 * 1000); // 5min to 2hr range
+  }
+
+  /**
+   * Predictive cache warming based on usage patterns
+   */
+  async predictiveWarmup(region?: string): Promise<{ warmed: number; failed: number }> {
+    const targetRegion = region || this.currentRegion;
+    const stats = this.getStats();
+    
+    // Identify patterns and predict likely-to-be-accessed keys
+    const predictedKeys = this.predictAccessKeys(targetRegion, stats);
+    
+    if (predictedKeys.length === 0) {
+      return { warmed: 0, failed: 0 };
+    }
+    
+    console.log(`Predictive warmup for region ${targetRegion}: ${predictedKeys.length} keys`);
+    
+    return this.warmup(predictedKeys, {
+      region: targetRegion,
+      priority: 'normal',
+      predictive: true,
+    });
+  }
+
+  /**
+   * Predict keys that are likely to be accessed
+   */
+  private predictAccessKeys(region: string, stats: EdgeCacheStats): string[] {
+    const keys: string[] = [];
+    
+    // Base keys that are commonly accessed
+    const baseKeys = [
+      'robots_list',
+      'strategies_list',
+      'market_data_major_pairs',
+      'user_session_active',
+      'analytics_summary',
+    ];
+    
+    // Add keys based on regional access patterns
+    const regionStats = stats.regionalStats.get(region);
+    if (regionStats && regionStats.hits > 100) {
+      // High-traffic region gets more aggressive warming
+      baseKeys.push('robots_search_trending', 'strategies_popular', 'market_data_volatility');
+    }
+    
+    // Add time-based predictions
+    const hour = new Date().getHours();
+    if (hour >= 9 && hour <= 17) {
+      // Business hours - more trading activity
+      baseKeys.push('market_data_realtime', 'strategies_active_trading');
+    }
+    
+    return baseKeys;
+  }
+
+  /**
+   * Intelligent cache invalidation with cascade and dependency tracking
+   */
+  async invalidateIntelligent(patterns: string[], options?: {
+    region?: string;
+    cascade?: boolean;
+    dependencies?: boolean;
+  }): Promise<{ invalidated: number; cascaded: number }> {
+    const region = options?.region || this.currentRegion;
+    let invalidated = 0;
+    let cascaded = 0;
+
+    for (const pattern of patterns) {
+      // Count before invalidation
+      const beforeCount = this.countMatchingEntries(pattern);
+      
+      // Standard invalidation
+      await this.invalidate(pattern, { region, cascade: options?.cascade });
+      invalidated += beforeCount;
+
+      // Dependency-based invalidation
+      if (options?.dependencies) {
+        const dependencies = this.getDependencies(pattern);
+        for (const dep of dependencies) {
+          const depCount = this.countMatchingEntries(dep);
+          await this.invalidate(dep, { region, cascade: false });
+          cascaded += depCount;
+        }
+      }
+    }
+
+    return { invalidated, cascaded };
+  }
+
+  /**
+   * Count entries matching a pattern
+   */
+  private countMatchingEntries(pattern: string): number {
+    let count = 0;
+    
+    for (const key of this.memoryCache.keys()) {
+      if (this.matchesPattern(key, pattern)) count++;
+    }
+    
+    for (const key of this.edgeCache.keys()) {
+      if (this.matchesPattern(key, pattern)) count++;
+    }
+    
+    return count;
+  }
+
+  /**
+   * Get dependencies for a cache pattern
+   */
+  private getDependencies(pattern: string): string[] {
+    const dependencies: string[] = [];
+    
+    // Define dependency relationships
+    if (pattern.includes('robots')) {
+      dependencies.push('robots_list', 'robots_search', 'robots_filter', 'robots_stats');
+    }
+    
+    if (pattern.includes('strategies')) {
+      dependencies.push('strategies_list', 'strategies_config', 'strategies_performance');
+    }
+    
+    if (pattern.includes('market_data')) {
+      dependencies.push('market_data_summary', 'market_data_trending');
+    }
+    
+    return dependencies;
+  }
+
+  /**
    * Optimize cache configuration based on usage patterns
    */
   optimizeConfiguration(): void {
@@ -799,11 +1065,37 @@ export class EdgeCacheManager<T = any> {
       this.config.compressionThreshold = Math.max(this.config.compressionThreshold * 0.8, 1024);
     }
     
+    // Optimize replication factor based on regional performance
+    this.optimizeReplicationFactor(stats);
+    
     console.log('Cache configuration optimized:', {
       defaultTTL: this.config.defaultTTL,
       compressionThreshold: this.config.compressionThreshold,
       hitRate: stats.hitRate,
+      replicationFactor: this.config.replicationFactor,
     });
+  }
+
+  /**
+   * Optimize replication factor based on regional performance
+   */
+  private optimizeReplicationFactor(stats: EdgeCacheStats): void {
+    let totalRegionalHits = 0;
+    let activeRegions = 0;
+    
+    for (const [region, regionStats] of stats.regionalStats.entries()) {
+      if (regionStats.hits > 10) {
+        totalRegionalHits += regionStats.hits;
+        activeRegions++;
+      }
+    }
+    
+    // Adjust replication based on active regions and hit distribution
+    if (activeRegions > 3 && totalRegionalHits > 1000) {
+      this.config.replicationFactor = Math.min(this.config.replicationFactor + 1, 4);
+    } else if (activeRegions < 2) {
+      this.config.replicationFactor = Math.max(this.config.replicationFactor - 1, 1);
+    }
   }
 
   destroy(): void {
