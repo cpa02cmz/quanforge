@@ -14,100 +14,43 @@ export default defineConfig({
       },
       output: {
         manualChunks: (id) => {
-// Enhanced vendor chunks for optimal edge caching and tree-shaking
+          // Optimized vendor chunks for reduced HTTP requests
           if (id.includes('node_modules')) {
-            // React ecosystem - split more granularly for better caching
-            if (id.includes('react') && !id.includes('react-dom') && !id.includes('react-router')) {
-              return 'vendor-react-core';
+            // Consolidated React ecosystem
+            if (id.includes('react')) {
+              return 'vendor-react';
             }
-            if (id.includes('react-dom')) {
-              return 'vendor-react-dom';
-            }
-            if (id.includes('react-router')) {
-              return 'vendor-react-router';
-            }
-            // Enhanced Charts splitting - more granular for better performance
+            // Consolidated charts library
             if (id.includes('recharts')) {
-              // Core chart components - most commonly used
-              if (id.includes('BarChart') || id.includes('LineChart') || id.includes('AreaChart')) {
-                return 'vendor-charts-core';
-              }
-              // Chart components and utilities
-              if (id.includes('Tooltip') || id.includes('Legend') || id.includes('ResponsiveContainer')) {
-                return 'vendor-charts-components';
-              }
-              // Candlestick and financial charts - heavy components
-              if (id.includes('CandlestickChart') || id.includes('ComposedChart')) {
-                return 'vendor-charts-financial';
-              }
-              // Technical indicators and advanced features
-              if (id.includes('ReferenceLine') || id.includes('Brush') || id.includes('CrossHair')) {
-                return 'vendor-charts-indicators';
-              }
-              // Advanced chart features
-              return 'vendor-charts-advanced';
+              return 'vendor-charts';
             }
-            // Enhanced AI services splitting for better tree-shaking
+            // Consolidated AI services
             if (id.includes('@google/genai')) {
-              // Split AI library more granularly
-              if (id.includes('generators') || id.includes('generate')) {
-                return 'vendor-ai-generators';
-              }
-              if (id.includes('models') || id.includes('model')) {
-                return 'vendor-ai-models';
-              }
-              if (id.includes('chat') || id.includes('conversation')) {
-                return 'vendor-ai-chat';
-              }
-              return 'vendor-ai-core';
+              return 'vendor-ai';
             }
-            }
-            
             // Supabase - consolidated
             if (id.includes('@supabase')) {
               return 'vendor-supabase';
             }
-            
             // Security utilities
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'vendor-security';
             }
-            
-// Charts library - consolidated to reduce HTTP overhead
-            if (id.includes('recharts')) {
-              return 'vendor-charts';
-            }
-            
             // All other node_modules
             return 'vendor-misc';
           }
           
-          // App chunks - simplified for better performance
+          // Simplified app chunks
           if (id.includes('services/')) {
-            if (id.includes('gemini') || id.includes('ai')) {
-              return 'services-ai';
-            }
-            if (id.includes('supabase') || id.includes('database')) {
-              return 'services-db';
-            }
-            return 'services-other';
+            return 'services';
           }
           
           if (id.includes('components/')) {
-            if (id.includes('CodeEditor') || id.includes('ChatInterface')) {
-              return 'components-heavy';
-            }
-            if (id.includes('Chart') || id.includes('Backtest')) {
-              return 'components-charts';
-            }
-            return 'components-ui';
+            return 'components';
           }
           
           if (id.includes('pages/')) {
-            if (id.includes('Generator') || id.includes('Dashboard')) {
-              return 'pages-main';
-            }
-            return 'pages-static';
+            return 'pages';
           }
           
           if (id.includes('utils/')) {
@@ -221,13 +164,13 @@ export default defineConfig({
         comments: false
       }
     },
-chunkSizeWarningLimit: 200, // Optimized for better edge performance
+chunkSizeWarningLimit: 500, // Increased to accommodate consolidated chunks
     target: ['es2020', 'edge101'], // More specific targets for edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
     // Enhanced edge optimization
-    assetsInlineLimit: 512, // 0.5KB for optimal edge caching
+    assetsInlineLimit: 4096, // 4KB for better edge caching
     modulePreload: {
       polyfill: false
     },

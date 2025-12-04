@@ -6,12 +6,22 @@
 // Rate limiting store (in production, use Redis or KV)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
-// Security patterns for threat detection
+// Enhanced security patterns for comprehensive threat detection
 const SECURITY_PATTERNS = {
-  sqlInjection: /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|SCRIPT)\b)/i,
-  xss: /<script|javascript:|on\w+\s*=/i,
+  sqlInjection: /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|SCRIPT|EXEC|ALTER)\b)/i,
+  xss: /<script|javascript:|on\w+\s*=|data:text\/html/i,
   pathTraversal: /\.\.\//g,
-  suspiciousUserAgents: /curl|wget|python|java|go-http|scanner|bot|crawler/i
+  suspiciousUserAgents: /curl|wget|python|java|go-http|scanner|bot|crawler|nikto|sqlmap/i,
+  requestSmuggling: /\r\n\r\n/,
+  injectionAttempts: /['"]\s*OR\s*['"]|['"]\s*AND\s*['"]/i,
+  commandInjection: /;|\||&|`|\$\(/i,
+  ldapInjection: /[()=*,]/i,
+  xssAdvanced: /<iframe|<object|<embed|vbscript:|onload\s*=|onerror\s*=/i,
+  fileInclusion: /php:\/\/|file:\/\/|data:\/\/|expect:\/\//i,
+  XXE: /<!DOCTYPE.*\[|<!ENTITY.*SYSTEM/i,
+  ssrf: /https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|169\.254\.|192\.168\.|10\.)/i,
+  nullBytes: /\\x00/i,
+  unicodeAttacks: /%u[0-9a-fA-F]{4}/i
 };
 
 // Rate limiting configuration
@@ -127,28 +137,34 @@ function analyzeRequest(request: Request, userAgent: string, clientIP: string) {
   let isMalicious = false;
   const threats: string[] = [];
 
-  // Check for SQL injection
-  if (SECURITY_PATTERNS.sqlInjection.test(searchParams)) {
-    isMalicious = true;
-    threats.push('SQL_INJECTION');
-  }
+  // Enhanced security checks with comprehensive threat detection
+  const allPatterns = [
+    { pattern: SECURITY_PATTERNS.sqlInjection, threat: 'SQL_INJECTION', malicious: true },
+    { pattern: SECURITY_PATTERNS.xss, threat: 'XSS', malicious: true },
+    { pattern: SECURITY_PATTERNS.xssAdvanced, threat: 'ADVANCED_XSS', malicious: true },
+    { pattern: SECURITY_PATTERNS.pathTraversal, threat: 'PATH_TRAVERSAL', malicious: true },
+    { pattern: SECURITY_PATTERNS.requestSmuggling, threat: 'REQUEST_SMUGGLING', malicious: true },
+    { pattern: SECURITY_PATTERNS.injectionAttempts, threat: 'INJECTION_ATTEMPT', malicious: true },
+    { pattern: SECURITY_PATTERNS.commandInjection, threat: 'COMMAND_INJECTION', malicious: true },
+    { pattern: SECURITY_PATTERNS.ldapInjection, threat: 'LDAP_INJECTION', malicious: true },
+    { pattern: SECURITY_PATTERNS.fileInclusion, threat: 'FILE_INCLUSION', malicious: true },
+    { pattern: SECURITY_PATTERNS.XXE, threat: 'XXE', malicious: true },
+    { pattern: SECURITY_PATTERNS.ssrf, threat: 'SSRF', malicious: true },
+    { pattern: SECURITY_PATTERNS.nullBytes, threat: 'NULL_BYTE_INJECTION', malicious: true },
+    { pattern: SECURITY_PATTERNS.unicodeAttacks, threat: 'UNICODE_ATTACK', malicious: true },
+    { pattern: SECURITY_PATTERNS.suspiciousUserAgents, threat: 'SUSPICIOUS_USER_AGENT', malicious: false }
+  ];
 
-  // Check for XSS
-  if (SECURITY_PATTERNS.xss.test(searchParams)) {
-    isMalicious = true;
-    threats.push('XSS');
-  }
-
-  // Check for path traversal
-  if (SECURITY_PATTERNS.pathTraversal.test(url.pathname)) {
-    isMalicious = true;
-    threats.push('PATH_TRAVERSAL');
-  }
-
-  // Check for suspicious user agents
-  if (SECURITY_PATTERNS.suspiciousUserAgents.test(userAgent)) {
-    isSuspicious = true;
-    threats.push('SUSPICIOUS_USER_AGENT');
+  // Check all security patterns
+  for (const { pattern, threat, malicious } of allPatterns) {
+    if (pattern.test(searchParams) || pattern.test(url.pathname) || pattern.test(userAgent)) {
+      if (malicious) {
+        isMalicious = true;
+      } else {
+        isSuspicious = true;
+      }
+      threats.push(threat);
+    }
   }
 
   // Check for missing required headers
