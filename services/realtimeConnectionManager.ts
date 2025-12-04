@@ -105,7 +105,7 @@ class RealtimeConnectionManager {
     }
 
     // Create channel with optimized configuration
-    let realtimeChannel = connection.client.channel(channel, {
+    const realtimeChannel = connection.client.channel(channel, {
       config: {
         broadcast: { self: true },
         presence: { key: connectionId },

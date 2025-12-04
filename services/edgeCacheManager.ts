@@ -312,18 +312,17 @@ export class EdgeCacheManager<T = any> {
     }
   }
 
-  /**
-   * Set to regional cache
+/**
+   * Initialize edge cache with enhanced warming
    */
-  private async setToRegionalCache(key: string, entry: EdgeCacheEntry<T>, region: string): Promise<void> {
-    const regionalKey = `regional:${region}:${key}`;
-    this.edgeCache.set(regionalKey, { ...entry, region });
+  async initialize(): Promise<void> {
+    await this.initializeIndexedDB();
+    this.startCleanupTimer();
     
-    // Update regional stats
-    const stats = this.stats.regionalStats.get(region);
-    if (stats) {
-      stats.size += entry.size;
-    }
+    // Warm edge cache with critical data and predictive warming
+    await this.warmEdgeCache();
+    await this.predictiveCacheWarming();
+  }
   }
 
   /**
@@ -688,14 +687,86 @@ export class EdgeCacheManager<T = any> {
     const patterns: string[] = [];
     
     if (pattern.includes('robots')) {
-      patterns.push('robots_list', 'robots_search', 'robots_filter');
+      patterns.push('robots_list', 'robots_search', 'robots_filter', 'robots_analytics');
     }
     
     if (pattern.includes('strategies')) {
-      patterns.push('strategies_list', 'strategies_config');
+      patterns.push('strategies_list', 'strategies_config', 'strategies_performance');
+    }
+    
+    if (pattern.includes('market_data')) {
+      patterns.push('market_data_*', 'market_tickers', 'market_analytics');
     }
     
     return patterns;
+  }
+
+  /**
+   * Predictive cache warming based on usage patterns
+   */
+  private async predictiveCacheWarming(): Promise<void> {
+    const userPatterns = this.analyzeUserPatterns();
+    const criticalPaths = this.getCriticalPaths();
+    
+    // Warm based on user behavior patterns
+    for (const pattern of userPatterns) {
+      await this.warmCachePattern(pattern);
+    }
+    
+    // Warm critical application paths
+    for (const path of criticalPaths) {
+      await this.warmCriticalPath(path);
+    }
+  }
+
+  private analyzeUserPatterns(): string[] {
+    // Analyze common user access patterns
+    return [
+      'robots_list',
+      'strategies_config',
+      'market_data_major_pairs',
+      'user_preferences',
+      'ai_chat_history'
+    ];
+  }
+
+  private getCriticalPaths(): string[] {
+    // Define critical application paths
+    return [
+      'dashboard_config',
+      'generator_templates',
+      'authentication_state',
+      'system_health'
+    ];
+  }
+
+  private async warmCachePattern(pattern: string): Promise<void> {
+    try {
+      const data = await this.fetchDataForWarmup(pattern);
+      if (data) {
+        await this.set(pattern, data, {
+          ttl: this.config.defaultTTL * 2, // Extended TTL for warmed cache
+          replicate: true
+        });
+      }
+    } catch (error) {
+      console.warn(`Failed to warm cache pattern: ${pattern}`, error);
+    }
+  }
+
+  private async warmCriticalPath(path: string): Promise<void> {
+    try {
+      const data = await this.fetchDataForWarmup(path);
+      if (data) {
+        await this.set(path, data, {
+          ttl: this.config.defaultTTL * 3, // Extended TTL for critical paths
+          replicate: true,
+          priority: 'high'
+        });
+      }
+    } catch (error) {
+      console.warn(`Failed to warm critical path: ${path}`, error);
+    }
   }
 
   private async fetchDataForWarmup(key: string): Promise<T | null> {

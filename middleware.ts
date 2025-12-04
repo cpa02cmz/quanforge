@@ -21,7 +21,19 @@ const SECURITY_PATTERNS = {
   XXE: /<!DOCTYPE.*\[|<!ENTITY.*SYSTEM/i,
   ssrf: /https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|169\.254\.|192\.168\.|10\.)/i,
   nullBytes: /\\x00/i,
-  unicodeAttacks: /%u[0-9a-fA-F]{4}/i
+  unicodeAttacks: /%u[0-9a-fA-F]{4}/i,
+  // Enhanced patterns for advanced threat detection
+  advancedXSS: /[\x21-\x2F\x3A-\x40\x5B-\x60\x7B-\x7E]/g,
+  advancedInjection: /['"]\s*OR\s*['"]|['"]\s*AND\s*['"]|UNION\s+SELECT|INSERT\s+INTO|UPDATE\s+SET|DELETE\s+FROM/i,
+  csrfAttempts: /<form.*action.*=|<input.*type.*hidden|csrf_token|authenticity_token/i,
+  prototypePollution: /__proto__|constructor|prototype/i,
+  regexDoS: /(?:\*\+\*\+|\+\*\+\*|\(\?\:\(\?\!\=|\(\?\!\=)/i,
+  headerInjection: /\r\n\w+\s*:/i,
+  log4j: /\$\{jndi:(ldap|rmi|dns|corba|iiop):\/\//i,
+  shellShock: /\(\)\s*\{\s*:;\s*\};/i,
+  deserialization: /ACxEDu0005|O:d+:/i,
+  xssEncoding: /%3Cscript|%3E|&lt;|&gt;|&#x27|&#x2F;/i,
+  sqlAdvanced: /WAITFOR\s+DELAY|BENCHMARK\s*\(|SLEEP\s*\(|pg_sleep\s*\(/i
 };
 
 // Rate limiting configuration with region-based policies
@@ -29,7 +41,11 @@ const RATE_LIMITS = {
   default: { requests: 100, window: 60000 }, // 100 requests per minute
   api: { requests: 60, window: 60000 },      // 60 requests per minute for API
   auth: { requests: 10, window: 60000 },      // 10 requests per minute for auth
-  suspicious: { requests: 20, window: 60000 } // 20 requests per minute for suspicious IPs
+  suspicious: { requests: 20, window: 60000 }, // 20 requests per minute for suspicious IPs
+  // Adaptive rate limits based on user behavior
+  premium: { requests: 200, window: 60000 },  // Premium users
+  verified: { requests: 150, window: 60000 }, // Verified users
+  new_user: { requests: 50, window: 60000 }   // New users (first 24h)
 };
 
 // Region-based security policies
