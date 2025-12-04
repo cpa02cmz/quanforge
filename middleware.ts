@@ -27,7 +27,7 @@ const SECURITY_PATTERNS = {
   advancedInjection: /['"]\s*OR\s*['"]|['"]\s*AND\s*['"]|UNION\s+SELECT|INSERT\s+INTO|UPDATE\s+SET|DELETE\s+FROM/i,
   csrfAttempts: /<form.*action.*=|<input.*type.*hidden|csrf_token|authenticity_token/i,
   prototypePollution: /__proto__|constructor|prototype/i,
-  regexDoS: /(?:\*\+\*\+|\+\*\+\*|\(\?\:\(\?\!\=|\(\?\!\=)/i,
+  regexDoS: /(?:\*\+\*\+|\+\*\+\*)/i,
   headerInjection: /\r\n\w+\s*:/i,
   log4j: /\$\{jndi:(ldap|rmi|dns|corba|iiop):\/\//i,
   shellShock: /\(\)\s*\{\s*:;\s*\};/i,

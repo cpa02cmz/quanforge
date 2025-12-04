@@ -63,25 +63,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
 
-  // Enhanced memory management with proper cleanup and circular buffer
+  // Enhanced memory management with unified cleanup and circular buffer
   useEffect(() => {
     // Create new abort controller for this effect
     abortControllerRef.current = new AbortController();
     
-    // Memory management: Implement circular buffer for large message histories
-    if (messages.length > 100) {
-      logger.info(`Large message history detected: ${messages.length} messages. Circular buffer active.`);
-    }
-    
-    // Proactive cleanup for extreme cases to prevent memory overflow
-    if (messages.length > 150 && onClear && !abortControllerRef.current.signal.aborted) {
-      logger.warn(`Message history exceeded safe limit (${messages.length}). Triggering cleanup to prevent memory issues.`);
-      onClear();
-    }
-
-    // Start memory monitoring for large conversations
-    if (messages.length > 50) {
+    // Unified memory monitoring with adaptive intervals
+    const startMemoryMonitoring = () => {
+      if (memoryMonitorRef.current) return; // Already monitoring
+      
+      // Adaptive monitoring frequency based on message count
+      const interval = messages.length > 100 ? 5000 : 10000; // 5s for large, 10s for normal
+      
       memoryMonitorRef.current = setInterval(() => {
+        if (abortControllerRef.current?.signal.aborted) return;
+        
         if (typeof window !== 'undefined' && 'memory' in performance) {
           const memoryUsage = (performance as any).memory;
           if (memoryUsage) {
@@ -90,20 +86,25 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
             const usagePercent = (usedMB / limitMB) * 100;
             
             if (usagePercent > 85) {
-              logger.warn(`Critical memory usage: ${usedMB}MB (${usagePercent.toFixed(1)}%). Suggesting cleanup.`);
+              logger.warn(`High memory usage: ${usedMB}MB (${usagePercent.toFixed(1)}%).`);
               
               // Auto-cleanup if memory is critically high
-              if (usagePercent > 95 && onClear && !abortControllerRef.current?.signal.aborted) {
-                logger.error(`Emergency cleanup triggered due to memory pressure: ${usagePercent.toFixed(1)}%`);
+              if (usagePercent > 95 && onClear) {
+                logger.error(`Emergency cleanup triggered: ${usagePercent.toFixed(1)}%`);
                 onClear();
               }
             }
           }
         }
-      }, 10000); // Check every 10 seconds
+      }, interval);
+    };
+    
+    // Start monitoring for conversations with more than 30 messages
+    if (messages.length > 30) {
+      startMemoryMonitoring();
     }
-
-    // Cleanup function with enhanced memory management
+    
+    // Cleanup function with unified memory management
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -120,8 +121,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
         clearTimeout(cleanupTimeoutRef.current);
         cleanupTimeoutRef.current = null;
       }
-      
-      
       
       // Clear references
       abortControllerRef.current = null;
@@ -251,63 +250,34 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     });
   }, [language]);
 
-  // Enhanced virtual scrolling with intelligent windowing and memory optimization
+  // Enhanced virtual scrolling with intelligent windowing and circular buffer
   const visibleMessages = useMemo(() => {
-    if (messages.length <= 30) return messages;
+    // Implement circular buffer for very long conversations
+    const MAX_MESSAGES = 100;
+    const WINDOW_SIZE = 30;
     
-    // Dynamic window size based on total message count for optimal performance
-    const WINDOW_SIZE = messages.length > 100 ? 25 : 30;
+    if (messages.length <= MAX_MESSAGES) {
+      return messages;
+    }
+    
+    // Circular buffer: keep only the most recent messages
     const startIndex = Math.max(0, messages.length - WINDOW_SIZE);
-    
-    // Add virtual scroll indicator for very long conversations
-    const hasMoreMessages = startIndex > 0;
     const visibleSlice = messages.slice(startIndex);
     
     // Log virtual scrolling activity for monitoring
-    if (hasMoreMessages) {
-      logger.debug(`Virtual scrolling: showing ${visibleSlice.length} of ${messages.length} messages`);
-    }
+    logger.debug(`Circular buffer: showing ${visibleSlice.length} of ${messages.length} messages`);
     
     return visibleSlice;
   }, [messages]);
 
-  // Enhanced memory monitoring with proactive cleanup suggestions
+  // Simplified memory monitoring - consolidated with main effect
+  // This effect is now redundant as memory monitoring is handled above
   useEffect(() => {
+    // Log circular buffer activity for debugging
     if (messages.length > 100) {
-      logger.info(`Large message history detected: ${messages.length} messages. Virtual scrolling is active.`);
-      
-      // Monitor memory usage patterns (browser-specific)
-      if (typeof window !== 'undefined' && 'memory' in performance) {
-        const memoryUsage = (performance as any).memory;
-        if (memoryUsage) {
-          const usedMB = Math.round(memoryUsage.usedJSHeapSize / 1024 / 1024);
-          const limitMB = Math.round(memoryUsage.jsHeapSizeLimit / 1024 / 1024);
-          const usagePercent = (usedMB / limitMB) * 100;
-          
-          if (usagePercent > 80) {
-            logger.warn(`High memory usage detected: ${usedMB}MB / ${limitMB}MB (${usagePercent.toFixed(1)}%). Consider clearing chat history.`);
-            
-            // Schedule delayed cleanup if memory is high
-            if (usagePercent > 90 && onClear && !cleanupTimeoutRef.current) {
-              logger.info(`Scheduling automatic cleanup in 30 seconds due to high memory usage.`);
-              cleanupTimeoutRef.current = setTimeout(() => {
-                if (onClear && !abortControllerRef.current?.signal.aborted) {
-                  logger.warn(`Automatic cleanup executed due to sustained high memory usage.`);
-                  onClear();
-                }
-                cleanupTimeoutRef.current = null;
-              }, 30000);
-            }
-          } else if (usagePercent < 70 && cleanupTimeoutRef.current) {
-            // Cancel scheduled cleanup if memory usage drops
-            clearTimeout(cleanupTimeoutRef.current);
-            cleanupTimeoutRef.current = null;
-            logger.info(`Memory usage normalized. Canceling scheduled cleanup.`);
-          }
-        }
-      }
+      logger.info(`Circular buffer active: ${messages.length} total messages`);
     }
-  }, [messages.length, onClear]);
+  }, [messages.length]);
 
   return (
     <div className="flex flex-col h-full bg-dark-surface border-r border-dark-border">
