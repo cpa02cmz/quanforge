@@ -1,7 +1,23 @@
 
 // Dynamic import for Google GenAI to reduce initial bundle size
-let GoogleGenAI: any;
-let Type: any;
+type GoogleGenAIConstructor = new (options: { apiKey: string }) => {
+  models: {
+    generateContent: (options: {
+      model: string;
+      contents: string;
+      config?: Record<string, unknown>;
+    }) => Promise<{ text?: string }>;
+  };
+};
+
+type GenAIType = {
+  OBJECT: string;
+  NUMBER: string;
+  STRING: string;
+};
+
+let GoogleGenAI: GoogleGenAIConstructor | null = null;
+let Type: GenAIType | null = null;
 import { MQL5_SYSTEM_PROMPT } from "../constants";
 import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
 import { settingsManager } from "./settingsManager";
@@ -572,6 +588,7 @@ const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?
         if (!activeKey) throw new Error("Google API Key missing in settings.");
         
         const GoogleGenAIClass = await getGoogleGenAI();
+        if (!GoogleGenAIClass) throw new Error('Failed to load Google GenAI');
         const ai = new GoogleGenAIClass({ apiKey: activeKey });
         const systemInstruction = getEffectiveSystemPrompt(settings);
         
@@ -585,7 +602,7 @@ const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?
           config.temperature = temperature;
         }
 
-        const response = await ai.models.generateContent({
+        const response = await ai!.models.generateContent({
           model: settings.modelName || 'gemini-3-pro-preview',
           contents: fullPrompt,
           config
@@ -899,25 +916,26 @@ export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promi
                      textResponse = await callOpenAICompatible(settings, prompt, signal, 0.5, true);
  } else {
                       const GoogleGenAIClass = await getGoogleGenAI();
+                      if (!GoogleGenAIClass) throw new Error('Failed to load Google GenAI');
                       const ai = new GoogleGenAIClass({ apiKey: activeKey });
                      
                      if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
-                     const response = await ai.models.generateContent({
-                         model: settings.modelName || 'gemini-2.5-flash', 
-                         contents: prompt,
-                         config: {
-                             responseMimeType: "application/json",
-                             responseSchema: {
-                                 type: Type.OBJECT,
-                                 properties: {
-                                     riskScore: { type: Type.NUMBER, description: "1-10 risk rating" },
-                                     profitability: { type: Type.NUMBER, description: "1-10 potential profit rating" },
-                                     description: { type: Type.STRING, description: "Short summary of strategy logic" }
-                                 }
-                             }
-                         }
-                     });
+const response = await ai!.models.generateContent({
+                          model: settings.modelName || 'gemini-2.5-flash', 
+                          contents: prompt,
+                          config: {
+                              responseMimeType: "application/json",
+                              responseSchema: {
+                                  type: Type!.OBJECT,
+                                  properties: {
+                                      riskScore: { type: Type!.NUMBER, description: "1-10 risk rating" },
+                                      profitability: { type: Type!.NUMBER, description: "1-10 potential profit rating" },
+                                      description: { type: Type!.STRING, description: "Short summary of strategy logic" }
+                                  }
+                              }
+                          }
+                      });
                      textResponse = response.text || "{}";
                  }
              });
