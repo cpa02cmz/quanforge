@@ -246,8 +246,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     return elements;
   }, [listRegex, parseInlineStyles]);
 
+  interface SuggestedStrategy {
+    label: string;
+    prompt: string;
+  }
+
   // Get strategies based on current language
-  const [suggestedStrategies, setSuggestedStrategies] = useState<any[]>([]);
+  const [suggestedStrategies, setSuggestedStrategies] = useState<SuggestedStrategy[]>([]);
 
   useEffect(() => {
     loadSuggestedStrategies(language).then(strategies => {

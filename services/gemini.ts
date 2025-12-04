@@ -677,6 +677,11 @@ const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?
         const activeKey = getActiveKey(settings.apiKey);
         if (!activeKey) throw new Error("Google API Key missing in settings.");
         
+        // Validate inputs to prevent injection attacks
+        if (!fullPrompt || typeof fullPrompt !== 'string' || fullPrompt.length > 100000) {
+            throw new Error("Invalid prompt: must be a string between 1 and 100,000 characters");
+        }
+        
         const GoogleGenAIClass = await getGoogleGenAI();
         if (!GoogleGenAIClass) throw new Error('Failed to load Google GenAI');
         const ai = new GoogleGenAIClass({ apiKey: activeKey });
@@ -712,7 +717,8 @@ const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, si
         const activeKey = getActiveKey(settings.apiKey);
 
         if (!activeKey && !settings.baseUrl?.includes('localhost')) {
-             console.warn("API Key is empty for OpenAI Provider");
+             // Log to internal logger instead of console to avoid ESLint warnings
+             logger.warn("API Key is empty for OpenAI Provider");
         }
 
         const baseUrl = settings.baseUrl ? settings.baseUrl.replace(/\/$/, '') : 'https://api.openai.com/v1';
@@ -729,7 +735,7 @@ const payload = {
             ...(jsonMode ? { response_format: { type: "json_object" } } : {})
         };
 
-        const requestInit: import('node-fetch').RequestInit = {
+        const requestInit: RequestInit = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -746,7 +752,7 @@ const payload = {
             requestInit.signal = signal;
         }
 
-        const response = await fetch(url, requestInit as RequestInit);
+        const response = await fetch(url, requestInit);
         
         if (!response.ok) {
             throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
