@@ -1558,23 +1558,55 @@ private validateRobotData(data: any): ValidationResult {
     return false;
   }
 
-  // Safe JSON parsing with prototype pollution protection
-  safeJSONParse(jsonString: string): any {
-    try {
-      // First, parse the JSON
-      const parsed = JSON.parse(jsonString);
-      
-      // Then check for prototype pollution
-      if (this.isPrototypePollution(parsed)) {
-        throw new Error('Prototype pollution detected in JSON');
-      }
-      
-      return parsed;
-    } catch (error) {
-      console.error('JSON parsing error:', error);
-      return null;
-    }
-  }
-}
+   // Safe JSON parsing with prototype pollution protection
+   safeJSONParse(jsonString: string): any {
+     try {
+       // First, parse the JSON
+       const parsed = JSON.parse(jsonString);
+       
+       // Then check for prototype pollution
+       if (this.isPrototypePollution(parsed)) {
+         throw new Error('Prototype pollution detected in JSON');
+       }
+       
+       return parsed;
+     } catch (error) {
+       console.error('JSON parsing error:', error);
+       return null;
+     }
+   }
+   
+   /**
+    * Validate input based on type
+    */
+   validateInput(input: any, type: 'search' | 'record' | 'robot' | 'strategy' | 'backtest' | 'user' | 'text' | 'code' | 'symbol' | 'url' | 'token' | 'html' = 'text'): boolean {
+     if (input === null || input === undefined) {
+       return false;
+     }
+     
+     // Use existing validation methods based on type
+     switch (type) {
+       case 'search':
+         const searchValidation = this.sanitizeAndValidate({ searchTerm: input }, 'strategy');
+         return searchValidation.isValid && searchValidation.riskScore < 30;
+         
+       case 'record':
+         const recordValidation = this.sanitizeAndValidate(input, 'robot');
+         return recordValidation.isValid && recordValidation.riskScore < 50;
+         
+       case 'robot':
+       case 'strategy':
+       case 'backtest':
+       case 'user':
+         const validation = this.sanitizeAndValidate(input, type);
+         return validation.isValid && validation.riskScore < 70;
+         
+       default:
+         // For other types, use basic sanitization
+         const sanitized = this.sanitizeInput(String(input), type);
+         return sanitized.length > 0 && sanitized.length < 10000;
+     }
+   }
+ }
 
 export const securityManager = SecurityManager.getInstance();

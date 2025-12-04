@@ -66,10 +66,19 @@ export class MessageBuffer {
 
     // Get memory usage estimate
     getMemoryUsage(): number {
-        // Rough estimate in bytes
-        return this.buffer.reduce((total, msg) => {
-            return total + JSON.stringify(msg).length * 2; // 2 bytes per char (UTF-16)
-        }, 0);
+        // More accurate estimate in bytes using TextEncoder when available
+        if (typeof TextEncoder !== 'undefined') {
+            const encoder = new TextEncoder();
+            return this.buffer.reduce((total, msg) => {
+                const str = JSON.stringify(msg);
+                return total + encoder.encode(str).length;
+            }, 0);
+        } else {
+            // Fallback to character length estimation
+            return this.buffer.reduce((total, msg) => {
+                return total + JSON.stringify(msg).length * 2; // 2 bytes per char (UTF-16)
+            }, 0);
+        }
     }
 
     // Get buffer statistics
@@ -108,25 +117,25 @@ export class MessageBuffer {
 
 // Memory monitoring for message buffer
 export class MessageMemoryMonitor {
-    private static readonly WARNING_THRESHOLD_MB = 10; // 10MB
-    private static readonly CRITICAL_THRESHOLD_MB = 25; // 25MB
+    private static readonly WARNING_THRESHOLD_MB = 5; // Reduced to 5MB for better memory management
+    private static readonly CRITICAL_THRESHOLD_MB = 10; // Reduced to 10MB for better memory management
     private static checkInterval: NodeJS.Timeout | null = null;
 
-    static startMonitoring(buffer: MessageBuffer, intervalMs: number = 30000): void {
+    static startMonitoring(buffer: MessageBuffer, intervalMs: number = 15000): void { // Check more frequently
         this.checkInterval = setInterval(() => {
             const stats = buffer.getStats();
             const memoryUsageMB = stats.memoryUsageKB / 1024;
 
             if (memoryUsageMB > this.CRITICAL_THRESHOLD_MB) {
                 console.warn(`Critical message buffer memory usage: ${memoryUsageMB.toFixed(2)}MB`);
-                // Force cleanup
-                const recentMessages = buffer.getRecent(20); // Keep only 20 most recent
+                // Force aggressive cleanup
+                const recentMessages = buffer.getRecent(10); // Keep only 10 most recent
                 buffer.clear();
                 recentMessages.forEach(msg => buffer.add(msg));
             } else if (memoryUsageMB > this.WARNING_THRESHOLD_MB) {
                 console.warn(`High message buffer memory usage: ${memoryUsageMB.toFixed(2)}MB`);
-                // Trim older messages
-                const cutoffTime = Date.now() - (24 * 60 * 60 * 1000); // 24 hours ago
+                // Trim older messages more aggressively
+                const cutoffTime = Date.now() - (4 * 60 * 60 * 1000); // 4 hours ago instead of 24
                 const removed = buffer.trimOlderThan(cutoffTime);
                 if (removed > 0) {
                     console.log(`Trimmed ${removed} old messages to reduce memory usage`);
@@ -140,6 +149,11 @@ export class MessageMemoryMonitor {
             clearInterval(this.checkInterval);
             this.checkInterval = null;
         }
+    }
+    
+    // Method to get current monitoring status
+    static isMonitoring(): boolean {
+        return this.checkInterval !== null;
     }
 }
 
@@ -181,6 +195,18 @@ export const useMessageBuffer = (maxSize: number = 50) => {
     const trimOlderThan = useCallback((timestamp: number) => {
         return bufferRef.current.trimOlderThan(timestamp);
     }, []);
+    
+    // Add a method to manually trigger memory cleanup
+    const performMemoryCleanup = useCallback(() => {
+        const currentStats = bufferRef.current.getStats();
+        if (currentStats.memoryUsageKB > 2048) { // 2MB threshold
+            // Keep only the most recent 15 messages if memory is high
+            const recentMessages = bufferRef.current.getRecent(15);
+            bufferRef.current.clear();
+            recentMessages.forEach(msg => bufferRef.current.add(msg));
+            console.log('Manual memory cleanup performed');
+        }
+    }, []);
 
     return {
         addMessage,
@@ -188,6 +214,7 @@ export const useMessageBuffer = (maxSize: number = 50) => {
         getRecentMessages,
         clearMessages,
         getBufferStats,
-        trimOlderThan
+        trimOlderThan,
+        performMemoryCleanup
     };
 };
