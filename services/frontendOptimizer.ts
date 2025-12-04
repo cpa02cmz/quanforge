@@ -317,38 +317,68 @@ class FrontendOptimizer {
     return renderedItems;
   }
 
-  /**
-   * Progressive loading for large datasets
-   */
-  async progressiveLoad<T>(
-    loader: (offset: number, limit: number) => Promise<{ data: T[]; hasMore: boolean }>,
-    options?: { batchSize?: number; delay?: number }
-  ): Promise<T[]> {
-    if (!this.config.enableProgressiveLoading) {
-      const result = await loader(0, 100);
-      return result.data;
-    }
+   /**
+    * Progressive loading for large datasets
+    */
+   async progressiveLoad<T>(
+     loader: (offset: number, limit: number) => Promise<{ data: T[]; hasMore: boolean }>,
+     options?: { batchSize?: number; delay?: number; onProgress?: (progress: number, loaded: number, total?: number) => void }
+   ): Promise<T[]> {
+     if (!this.config.enableProgressiveLoading) {
+       const result = await loader(0, 100);
+       return result.data;
+     }
 
-    const batchSize = options?.batchSize || 20;
-    const delay = options?.delay || 100;
-    let offset = 0;
-    let allItems: T[] = [];
-    let hasMore = true;
+     const batchSize = options?.batchSize || 20;
+     const delay = options?.delay || 100;
+     const onProgress = options?.onProgress;
+     let offset = 0;
+     let allItems: T[] = [];
+     let hasMore = true;
+     let totalItems = 0;
 
-    while (hasMore) {
-      const result = await loader(offset, batchSize);
-      allItems = [...allItems, ...result.data];
-      hasMore = result.hasMore;
-      offset += batchSize;
+     // Estimate total if possible
+     if (offset === 0) {
+       // Try to get a count first if the loader supports it
+       try {
+         const firstBatch = await loader(0, 1);
+         if (firstBatch.hasMore) {
+           // If hasMore is true, we might have more than 1 item
+           // This is a simplified approach - in real implementation you might have a count endpoint
+           totalItems = -1; // Unknown
+         } else {
+           totalItems = firstBatch.data.length;
+         }
+       } catch (e) {
+         totalItems = -1; // Unknown
+       }
+     }
 
-      // Small delay to allow UI to update
-      if (hasMore) {
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
-    }
+     while (hasMore) {
+       const result = await loader(offset, batchSize);
+       allItems = [...allItems, ...result.data];
+       hasMore = result.hasMore;
+       offset += batchSize;
 
-    return allItems;
-  }
+       // Report progress
+       if (onProgress) {
+         const progress = totalItems > 0 ? Math.min(100, (allItems.length / totalItems) * 100) : -1;
+         onProgress(progress, allItems.length, totalItems);
+       }
+
+       // Small delay to allow UI to update
+       if (hasMore) {
+         await new Promise((resolve) => setTimeout(resolve, delay));
+       }
+     }
+
+     // Final progress update
+     if (onProgress) {
+       onProgress(100, allItems.length, allItems.length);
+     }
+
+     return allItems;
+   }
 
   /**
    * Optimize memory usage by cleaning up unused resources
