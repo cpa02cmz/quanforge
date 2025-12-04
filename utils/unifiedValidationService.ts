@@ -10,6 +10,7 @@ export interface ValidationError {
 export interface ValidationResult {
   isValid: boolean;
   errors: ValidationError[];
+  warnings?: string[];
 }
 
 export interface ValidationRule {
@@ -25,28 +26,69 @@ export interface ValidationRule {
 }
 
 export class UnifiedValidationService {
-  private static readonly TIMEFRAMES = ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'];
-  private static readonly SYMBOL_REGEX = /^[A-Z]{3,6}[\/]?[A-Z]{3,6}$/;
+  // Use Sets for O(1) lookup performance
+  private static readonly TIMEFRAMES = new Set(['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1']);
+  private static readonly SYMBOL_REGEX = /^(?:[A-Z]{6}|[A-Z]{3}\/[A-Z]{3}|[A-Z]{3,6}[A-Z]{3}|[A-Z]{2,5}[-_][A-Z]{2,5}|[A-Z]{3,6}USDT|[A-Z]{3,6}BUSD)$/;
   private static readonly NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
-  private static readonly MAX_RISK_PERCENT = 100;
-  private static readonly MIN_RISK_PERCENT = 0.01;
-  private static readonly MAX_STOP_LOSS = 1000;
-  private static readonly MIN_STOP_LOSS = 1;
-  private static readonly MAX_TAKE_PROFIT = 1000;
-  private static readonly MIN_TAKE_PROFIT = 1;
-  private static readonly MAX_MAGIC_NUMBER = 999999;
-  private static readonly MIN_MAGIC_NUMBER = 1;
-  private static readonly MAX_INITIAL_DEPOSIT = 10000000;
-  private static readonly MIN_INITIAL_DEPOSIT = 100;
-  private static readonly MAX_DURATION = 365;
-  private static readonly MIN_DURATION = 1;
-  private static readonly MAX_LEVERAGE = 1000;
-  private static readonly MIN_LEVERAGE = 1;
+  private static readonly API_KEY_PATTERNS = [
+    /^[A-Za-z0-9_-]{20,}$/,
+    /^[A-Za-z0-9]{32}$/,
+    /^[A-Za-z0-9_-]{40}$/
+  ];
+  
+  // Consolidated bounds for better maintainability
+  private static readonly BOUNDS = {
+    riskPercent: { min: 0.01, max: 100 },
+    stopLoss: { min: 1, max: 1000 },
+    takeProfit: { min: 1, max: 1000 },
+    magicNumber: { min: 1, max: 999999 },
+    initialDeposit: { min: 100, max: 10000000 },
+    duration: { min: 1, max: 365 },
+    leverage: { min: 1, max: 1000 },
+    messageLength: { max: 10000 },
+    nameLength: { min: 3, max: 100 }
+  } as const;
 
   // Rate limiting for chat validation
   private static rateLimiter = new Map<string, { count: number; resetTime: number }>();
-  private static readonly RATE_LIMIT_WINDOW = 60000; // 1 minute
-  private static readonly RATE_LIMIT_MAX_REQUESTS = 30;
+  private static readonly RATE_LIMIT = { window: 60000, maxRequests: 10 };
+
+  // Security patterns - compiled once for performance
+  private static readonly SECURITY_PATTERNS = {
+    xss: [
+      /javascript:/gi,
+      /vbscript:/gi,
+      /data:text\/html/gi,
+      /&#x?0*(58|106|0*74|0*42|0*6a);?/gi,
+    ],
+    mql5Dangerous: [
+      /FileFind\s*\(|FileOpen\s*\(|FileClose\s*\(|FileDelete\s*\(/i,
+      /WebRequest\s*\(|SocketCreate\s*\(|SocketConnect\s*\(/i,
+      /ShellExecute\s*\(|WinExec\s*\(|CreateProcess\s*\(/i,
+      /memcpy\s*\(|memset\s*\(|malloc\s*\(|free\s*\(/i,
+      /RegOpenKey\s*\(|RegCreateKey\s*\(|RegSetValue\s*\(/i,
+      /#import\s+["\']?(?!user32\.dll|kernel32\.dll)[^"\']*["\']?/i,
+      /SendNotification\s*\(|SendMail\s*\(|SendFTP\s*\(/i,
+      /OrderSend\s*\(|OrderClose\s*\(|OrderModify\s*\(/i,
+      /PositionOpen\s*\(|PositionClose\s*\(|PositionModify\s*\(/i,
+    ],
+    obfuscation: [
+      /0x[0-9a-fA-F]+/g,
+      /[A-Za-z0-9+\/]{20,}={0,2}/g,
+      /\\u[0-9a-fA-F]{4}/g,
+      /\\x[0-9a-fA-F]{2}/g,
+    ],
+    suspicious: new Set([
+      'password', 'secret', 'key', 'token', 'auth', 'credential',
+      'exploit', 'hack', 'crack', 'bypass', 'inject', 'payload',
+      'malware', 'virus', 'trojan', 'backdoor', 'rootkit'
+    ])
+  } as const;
+
+  private static readonly BLACKLISTED_SYMBOLS = new Set(['TEST', 'DEMO', 'FAKE', 'INVALID']);
+  private static readonly PLACEHOLDER_KEYS = new Set([
+    'your-api-key-here', '1234567890', 'abcdefghijk', 'test-key', 'demo-key', 'sample-key'
+  ]);
 
   // Core validation helpers
   static validateRequired(value: any, field: string): ValidationError | null {
@@ -125,14 +167,15 @@ export class UnifiedValidationService {
   // Strategy validation
   static validateStrategyParams(params: StrategyParams): ValidationResult {
     const errors: ValidationError[] = [];
+    const warnings: string[] = [];
 
     // Timeframe validation
-    const timeframeError = this.validateInSet(
-      params.timeframe, 
-      'timeframe', 
-      this.TIMEFRAMES
-    );
-    if (timeframeError) errors.push(timeframeError);
+    if (!this.TIMEFRAMES.has(params.timeframe)) {
+      errors.push({
+        field: 'timeframe',
+        message: `Invalid timeframe. Must be one of: ${Array.from(this.TIMEFRAMES).join(', ')}`
+      });
+    }
 
     // Symbol validation
     const symbolError = this.validateRegex(
@@ -143,43 +186,41 @@ export class UnifiedValidationService {
     );
     if (symbolError) errors.push(symbolError);
 
-    // Risk percent validation
+    // Range validations
     const riskError = this.validateRange(
       params.riskPercent, 
       'riskPercent', 
-      this.MIN_RISK_PERCENT, 
-      this.MAX_RISK_PERCENT
+      this.BOUNDS.riskPercent.min, 
+      this.BOUNDS.riskPercent.max
     );
     if (riskError) errors.push(riskError);
 
-    // Stop loss validation
     const stopLossError = this.validateRange(
       params.stopLoss, 
       'stopLoss', 
-      this.MIN_STOP_LOSS, 
-      this.MAX_STOP_LOSS
+      this.BOUNDS.stopLoss.min, 
+      this.BOUNDS.stopLoss.max
     );
     if (stopLossError) errors.push(stopLossError);
 
-    // Take profit validation
     const takeProfitError = this.validateRange(
       params.takeProfit, 
       'takeProfit', 
-      this.MIN_TAKE_PROFIT, 
-      this.MAX_TAKE_PROFIT
+      this.BOUNDS.takeProfit.min, 
+      this.BOUNDS.takeProfit.max
     );
     if (takeProfitError) errors.push(takeProfitError);
 
-    // Magic number validation
     const magicNumberError = this.validateRange(
       params.magicNumber, 
       'magicNumber', 
-      this.MIN_MAGIC_NUMBER, 
-      this.MAX_MAGIC_NUMBER
+      this.BOUNDS.magicNumber.min, 
+      this.BOUNDS.magicNumber.max
     );
     if (magicNumberError) errors.push(magicNumberError);
 
     // Custom inputs validation
+    const seenNames = new Set<string>();
     params.customInputs?.forEach((input, index) => {
       const prefix = `customInputs[${index}]`;
       
@@ -200,51 +241,138 @@ export class UnifiedValidationService {
         ['int', 'double', 'string', 'bool']
       );
       if (typeError) errors.push(typeError);
+
+      // Check for duplicate names
+      if (input.name && seenNames.has(input.name)) {
+        errors.push({ field: `${prefix}.name`, message: `Duplicate input name: "${input.name}"` });
+      } else if (input.name) {
+        seenNames.add(input.name);
+      }
     });
+
+    // Risk warnings
+    if (params.riskPercent > 10) {
+      warnings.push('High risk percentage detected (>10%). Consider using lower risk settings.');
+    }
+
+    if (params.stopLoss === 0) {
+      warnings.push('Stop loss is set to 0. This may result in unlimited losses.');
+    }
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
+      warnings
     };
   }
 
   // Backtest settings validation
   static validateBacktestSettings(settings: BacktestSettings): ValidationResult {
     const errors: ValidationError[] = [];
+    const warnings: string[] = [];
 
     const depositError = this.validateRange(
       settings.initialDeposit, 
       'initialDeposit', 
-      this.MIN_INITIAL_DEPOSIT, 
-      this.MAX_INITIAL_DEPOSIT
+      this.BOUNDS.initialDeposit.min, 
+      this.BOUNDS.initialDeposit.max
     );
     if (depositError) errors.push(depositError);
 
     const durationError = this.validateRange(
       settings.days, 
       'days', 
-      this.MIN_DURATION, 
-      this.MAX_DURATION
+      this.BOUNDS.duration.min, 
+      this.BOUNDS.duration.max
     );
     if (durationError) errors.push(durationError);
 
     const leverageError = this.validateRange(
       settings.leverage, 
       'leverage', 
-      this.MIN_LEVERAGE, 
-      this.MAX_LEVERAGE
+      this.BOUNDS.leverage.min, 
+      this.BOUNDS.leverage.max
     );
     if (leverageError) errors.push(leverageError);
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
+      warnings
     };
   }
 
-  // Chat message validation with rate limiting
+  // Enhanced API key validation
+  static validateApiKey(apiKey: string): ValidationResult {
+    const errors: ValidationError[] = [];
+    const warnings: string[] = [];
+
+    const requiredError = this.validateRequired(apiKey, 'apiKey');
+    if (requiredError) {
+      errors.push(requiredError);
+      return { isValid: false, errors, warnings };
+    }
+
+    // Format validation using patterns
+    const isValidFormat = this.API_KEY_PATTERNS.some(pattern => pattern.test(apiKey.trim()));
+    if (!isValidFormat) {
+      errors.push({ field: 'apiKey', message: 'Invalid API key format' });
+    }
+
+    // Placeholder check
+    const lowerKey = apiKey.toLowerCase();
+    if (this.PLACEHOLDER_KEYS.has(lowerKey) || 
+        Array.from(this.PLACEHOLDER_KEYS).some(placeholder => lowerKey.includes(placeholder))) {
+      errors.push({ field: 'apiKey', message: 'Please use a valid API key, not a placeholder' });
+    }
+
+    // Security warnings
+    if (apiKey.length < 20) {
+      warnings.push('API key appears to be short. Ensure it\'s a valid production key.');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings
+    };
+  }
+
+  // Enhanced symbol validation
+  static validateSymbol(symbol: string): ValidationResult {
+    const errors: ValidationError[] = [];
+    const warnings: string[] = [];
+
+    const requiredError = this.validateRequired(symbol, 'symbol');
+    if (requiredError) {
+      errors.push(requiredError);
+      return { isValid: false, errors, warnings };
+    }
+
+    const trimmedSymbol = symbol.trim().toUpperCase();
+    
+    if (!this.SYMBOL_REGEX.test(trimmedSymbol)) {
+      errors.push({
+        field: 'symbol',
+        message: 'Invalid symbol format. Use formats like: EURUSD, EUR/USD, XAUUSD, BTCUSDT'
+      });
+    }
+
+    if (this.BLACKLISTED_SYMBOLS.has(trimmedSymbol)) {
+      errors.push({ field: 'symbol', message: 'Invalid symbol for trading' });
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings
+    };
+  }
+
+  // Enhanced chat message validation with security checks
   static validateChatMessage(message: string, userId?: string): ValidationResult {
     const errors: ValidationError[] = [];
+    const warnings: string[] = [];
 
     // Rate limiting check
     if (userId) {
@@ -252,69 +380,132 @@ export class UnifiedValidationService {
       const userLimit = this.rateLimiter.get(userId);
       
       if (!userLimit || now > userLimit.resetTime) {
-        this.rateLimiter.set(userId, { count: 1, resetTime: now + this.RATE_LIMIT_WINDOW });
+        this.rateLimiter.set(userId, { count: 1, resetTime: now + this.RATE_LIMIT.window });
       } else {
         userLimit.count++;
-        if (userLimit.count > this.RATE_LIMIT_MAX_REQUESTS) {
+        if (userLimit.count > this.RATE_LIMIT.maxRequests) {
           errors.push({
             field: 'rateLimit',
-            message: `Rate limit exceeded. Maximum ${this.RATE_LIMIT_MAX_REQUESTS} messages per minute.`
+            message: `Rate limit exceeded. Maximum ${this.RATE_LIMIT.maxRequests} messages per minute.`
           });
         }
       }
     }
 
     // Content validation
-    const contentError = this.validateLength(message, 'message', 1, 5000);
+    const contentError = this.validateLength(message, 'message', 1, this.BOUNDS.messageLength.max);
     if (contentError) errors.push(contentError);
+
+    // Security validation
+    this.validateSecurity(message, errors, warnings);
 
     // Sanitize message
     const sanitized = this.sanitizeInput(message);
     if (sanitized !== message) {
-      // This indicates potentially harmful content was removed
-      console.warn('Message content was sanitized during validation');
+      warnings.push('Message content was sanitized during validation');
     }
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
+      warnings
     };
   }
 
-  // API key validation
-  static validateApiKey(apiKey: string, provider: string = 'google'): ValidationResult {
-    const errors: ValidationError[] = [];
-
-    const requiredError = this.validateRequired(apiKey, 'apiKey');
-    if (requiredError) {
-      errors.push(requiredError);
-      return { isValid: false, errors };
+  // Security validation helper
+  private static validateSecurity(message: string, errors: ValidationError[], warnings: string[]): void {
+    // XSS checks
+    for (const pattern of this.SECURITY_PATTERNS.xss) {
+      if (pattern.test(message)) {
+        errors.push({ field: 'message', message: 'Message contains potentially unsafe content' });
+        return;
+      }
     }
 
-    // Provider-specific validation
-    switch (provider) {
-      case 'google':
-        const googleLengthError = this.validateLength(apiKey, 'apiKey', 30, 50);
-        if (googleLengthError) errors.push(googleLengthError);
-        break;
-      case 'openai':
-        const openaiLengthError = this.validateLength(apiKey, 'apiKey', 40, 60);
-        if (openaiLengthError) errors.push(openaiLengthError);
-        break;
-      default:
-        const defaultLengthError = this.validateLength(apiKey, 'apiKey', 10, 100);
-        if (defaultLengthError) errors.push(defaultLengthError);
+    // Obfuscation checks
+    let obfuscationCount = 0;
+    for (const pattern of this.SECURITY_PATTERNS.obfuscation) {
+      const matches = message.match(pattern);
+      if (matches && matches.length > 3) {
+        obfuscationCount++;
+      }
+    }
+    
+    if (obfuscationCount > 0) {
+      warnings.push('Message contains potentially obfuscated content');
+    }
+
+    // MQL5 dangerous patterns
+    for (const pattern of this.SECURITY_PATTERNS.mql5Dangerous) {
+      if (pattern.test(message)) {
+        errors.push({ field: 'message', message: 'Message contains potentially dangerous MQL5 operations' });
+        return;
+      }
+    }
+
+    // Suspicious keywords
+    const lowerMessage = message.toLowerCase();
+    let suspiciousCount = 0;
+    for (const keyword of this.SECURITY_PATTERNS.suspicious) {
+      if (lowerMessage.includes(keyword)) {
+        suspiciousCount++;
+      }
+    }
+
+    if (suspiciousCount > 2) {
+      warnings.push('Message contains suspicious content');
+    }
+  }
+
+  // MQL5 code validation
+  static validateMQL5Code(code: string): ValidationResult {
+    const errors: ValidationError[] = [];
+    const warnings: string[] = [];
+
+    const requiredError = this.validateRequired(code, 'code');
+    if (requiredError) {
+      errors.push(requiredError);
+      return { isValid: false, errors, warnings };
+    }
+
+    // Essential MQL5 components
+    const essentialPatterns = {
+      onInit: /\bint\s+OnInit\s*\(\s*\)/g,
+      onTick: /\bvoid\s+OnTick\s*\(\s*\)/g,
+      onDeinit: /\bvoid\s+OnDeinit\s*\(\s*const\s+int\s+reason\s*\)/g
+    };
+
+    if (!essentialPatterns.onInit.test(code)) {
+      warnings.push('MQL5 code should contain an OnInit() function');
+    }
+
+    if (!essentialPatterns.onTick.test(code)) {
+      warnings.push('MQL5 code should contain an OnTick() function');
+    }
+
+    if (!essentialPatterns.onDeinit.test(code)) {
+      warnings.push('MQL5 code should contain an OnDeinit() function');
+    }
+
+    // Security checks
+    for (const pattern of this.SECURITY_PATTERNS.mql5Dangerous) {
+      if (pattern.test(code)) {
+        errors.push({ field: 'code', message: 'Code contains potentially dangerous MQL5 operations' });
+        break; // Stop after first dangerous pattern
+      }
     }
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
+      warnings
     };
   }
 
   // Generic validation using rules
   static validateWithRules(data: Record<string, any>, rules: ValidationRule[]): ValidationResult {
     const errors: ValidationError[] = [];
+    const warnings: string[] = [];
 
     rules.forEach(rule => {
       const value = data[rule.field];
@@ -362,7 +553,8 @@ export class UnifiedValidationService {
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
+      warnings
     };
   }
 
@@ -392,8 +584,18 @@ export class UnifiedValidationService {
     return {
       count: limit.count,
       resetTime: limit.resetTime,
-      remaining: Math.max(0, this.RATE_LIMIT_MAX_REQUESTS - limit.count)
+      remaining: Math.max(0, this.RATE_LIMIT.maxRequests - limit.count)
     };
+  }
+
+  // Clean up expired rate limit entries
+  static cleanupRateLimit(): void {
+    const now = Date.now();
+    for (const [userId, limit] of this.rateLimiter.entries()) {
+      if (now >= limit.resetTime) {
+        this.rateLimiter.delete(userId);
+      }
+    }
   }
 }
 

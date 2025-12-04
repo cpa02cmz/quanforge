@@ -738,11 +738,11 @@ class DatabaseOptimizer {
       return results;
     }
 
-    /**
+/**
      * Group similar queries for batching
      */
-    private groupSimilarQueries(queries: Array<{ operation: string; params: Record<string, any> }>): Array<Array<{ operation: string; params: Record<string, any } }>> {
-      const groups: Array<Array<{ operation: string; params: Record<string, any } }>> = [];
+    private groupSimilarQueries(queries: Array<{ operation: string; params: Record<string, any> }>): Array<Array<{ operation: string; params: Record<string, any> }>> {
+      const groups: Array<Array<{ operation: string; params: Record<string, any> }>> = [];
       
       for (const query of queries) {
         let foundGroup = false;
@@ -788,6 +788,7 @@ class DatabaseOptimizer {
     private async executeQuery(operation: string, params: Record<string, any>): Promise<any> {
       // Placeholder implementation
       return { success: true, data: null };
+    }
     }
    
     /**
