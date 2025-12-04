@@ -264,39 +264,44 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     });
   }, [language]);
 
-  // Optimized virtual scrolling with stable windowing
-  const visibleMessages = useMemo(() => {
-    const VIEWPORT_SIZE = 20;
-    const BUFFER_SIZE = 10;
-    const MAX_MESSAGES = 100;
-    const WINDOW_SIZE = VIEWPORT_SIZE + (BUFFER_SIZE * 2);
-    
-    // Early return for small conversations
-    if (messages.length <= WINDOW_SIZE) {
-      return messages;
-    }
-    
-    // Use sliding window for large conversations
-    const totalMessages = Math.min(messages.length, MAX_MESSAGES);
-    const startIndex = Math.max(0, totalMessages - WINDOW_SIZE);
-    
-    return messages.slice(startIndex, startIndex + WINDOW_SIZE);
-  }, [messages]);
+// Optimized virtual scrolling with stable windowing
+   const visibleMessages = useMemo(() => {
+     const VIEWPORT_SIZE = 20;
+     const BUFFER_SIZE = 10;
+     const MAX_MESSAGES = 100;
+     const WINDOW_SIZE = VIEWPORT_SIZE + (BUFFER_SIZE * 2);
+     
+     // Early return for small conversations
+     if (messages.length <= WINDOW_SIZE) {
+       return messages;
+     }
+     
+     // Use sliding window for large conversations - prioritize recent messages
+     const totalMessages = Math.min(messages.length, MAX_MESSAGES);
+     const startIndex = Math.max(0, totalMessages - WINDOW_SIZE);
+     
+     return messages.slice(startIndex, startIndex + WINDOW_SIZE);
+   }, [messages]);
 
-  // Memory pressure event listener for cleanup coordination
-  useEffect(() => {
-    const handleMemoryPressure = () => {
-      if (messages.length > 50) {
-        logger.info(`Memory pressure detected: ${messages.length} messages, consider clearing chat`);
-      }
-    };
+// Memory pressure event listener for cleanup coordination
+   useEffect(() => {
+     const handleMemoryPressure = () => {
+       if (messages.length > 50) {
+         logger.info(`Memory pressure detected: ${messages.length} messages, consider clearing chat`);
+       }
+     };
 
-    window.addEventListener('memory-pressure', handleMemoryPressure);
-    
-    return () => {
-      window.removeEventListener('memory-pressure', handleMemoryPressure);
-    };
-  }, [messages.length]);
+     // Check if memory pressure event is supported
+     if ('memory' in performance) {
+       window.addEventListener('memory-pressure', handleMemoryPressure);
+     }
+     
+     return () => {
+       if ('memory' in performance) {
+         window.removeEventListener('memory-pressure', handleMemoryPressure);
+       }
+     };
+   }, [messages.length]);
 
   return (
     <Suspense fallback={<ChatInterfaceLoading />}>
