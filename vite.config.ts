@@ -14,60 +14,23 @@ export default defineConfig({
       },
 output: {
           manualChunks: (id) => {
-            // Aggressive vendor chunk splitting for better caching
+            // Consolidated vendor chunking for fewer network requests
             if (id.includes('node_modules')) {
-              // React ecosystem split into smaller chunks
-              if (id.includes('react') && id.includes('react-dom')) {
-                return 'vendor-react-core';
+              // Core vendor libraries - consolidated for better caching
+              if (id.includes('@supabase') || id.includes('@google/genai')) {
+                return 'vendor-core';
               }
-              if (id.includes('react') && id.includes('react-router')) {
-                return 'vendor-react-router';
+              if (id.includes('react')) {
+                return 'vendor-react';
               }
-              if (id.includes('react') && id.includes('react-is')) {
-                return 'vendor-react-utils';
-              }
-              
-              // Charts library isolated
               if (id.includes('recharts')) {
                 return 'vendor-charts';
               }
-              
-              // AI services split
-              if (id.includes('@google/genai')) {
-                return 'vendor-ai';
+              if (id.includes('dompurify') || id.includes('lz-string')) {
+                return 'vendor-security';
               }
-              
-              // Supabase split into smaller chunks
-              if (id.includes('@supabase/supabase-js')) {
-                return 'vendor-supabase-core';
-              }
-              if (id.includes('@supabase/realtime-js')) {
-                return 'vendor-supabase-realtime';
-              }
-              if (id.includes('@supabase/storage-js')) {
-                return 'vendor-supabase-storage';
-              }
-              
-              // Security utilities
-              if (id.includes('dompurify')) {
-                return 'vendor-security-dompurify';
-              }
-              if (id.includes('lz-string')) {
-                return 'vendor-security-compression';
-              }
-              
-              // Testing utilities isolated
-              if (id.includes('@testing-library')) {
-                return 'vendor-testing';
-              }
-              
-              // Build tools isolated
-              if (id.includes('terser') || id.includes('vite') || id.includes('esbuild')) {
-                return 'vendor-build';
-              }
-              
               // All other node_modules
-              return 'vendor-misc';
+              return 'vendor-libs';
             }
             
             // Enhanced app chunks with granular separation
@@ -267,13 +230,13 @@ output: {
         comments: false
       }
     },
-chunkSizeWarningLimit: 250, // More aggressive for better performance
+chunkSizeWarningLimit: 150, // Optimized for edge performance
     target: ['es2020', 'edge101'], // More specific targets for edge compatibility
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
     // Enhanced edge optimization
-    assetsInlineLimit: 2048, // 2KB for better edge performance
+    assetsInlineLimit: 1024, // 1KB for better edge performance
     modulePreload: {
       polyfill: false
     },
