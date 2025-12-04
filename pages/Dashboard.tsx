@@ -9,6 +9,15 @@ import { EnhancedSEO } from '../utils/enhancedSEO';
 import { createScopedLogger } from '../utils/logger';
 import { VirtualScrollList } from '../components/VirtualScrollList';
 
+// Debounce utility for search optimization
+const debounce = <T extends (...args: any[]) => any>(func: T, delay: number): T => {
+  let timeoutId: NodeJS.Timeout;
+  return ((...args: any[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  }) as T;
+};
+
 const logger = createScopedLogger('Dashboard');
 
 // RobotCard component for better memoization
@@ -122,7 +131,14 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
   
   // Filter States
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
+
+  // Debounced search for performance optimization
+  const debouncedSetSearchTerm = useMemo(
+    () => debounce((value: string) => setDebouncedSearchTerm(value), 300),
+    []
+  );
 
   const { showToast } = useToast();
 
@@ -185,15 +201,15 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
   // Optimized threshold for better performance with medium-sized lists
   const shouldUseVirtualScroll = robots.length > 20;
 
-// Filter Logic - memoized for performance with optimization tracking
+// Filter Logic - memoized for performance with debounced search
    const filteredRobots = useMemo(() => {
      const startTime = import.meta.env.DEV ? performance.now() : 0;
      
-     // Pre-calculate normalized searchTerm to avoid repeated operations
-     const normalizedSearchTerm = searchTerm.toLowerCase();
+     // Pre-calculate normalized debounced search term to avoid repeated operations
+     const normalizedSearchTerm = debouncedSearchTerm.toLowerCase();
      
      const result = robots.filter(robot => {
-       // Use memoized search term to avoid recalculating
+       // Use debounced search term for better performance
        const matchesSearch = normalizedSearchTerm === '' || 
          robot.name.toLowerCase().includes(normalizedSearchTerm);
        const matchesType = filterType === 'All' || 
@@ -210,7 +226,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
      }
      
      return result;
-   }, [robots, searchTerm, filterType]);
+   }, [robots, debouncedSearchTerm, filterType]);
 
   // Derived list of unique strategy types for the dropdown - memoized
   const availableTypes = useMemo(() => 
@@ -251,7 +267,10 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
                       type="text" 
                       placeholder={t('dash_search_placeholder')}
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        debouncedSetSearchTerm(e.target.value);
+                      }}
                       className="w-full bg-dark-bg border border-dark-border rounded-lg pl-10 pr-4 py-2 text-white focus:ring-1 focus:ring-brand-500 outline-none placeholder-gray-600"
                       aria-label="Search trading robots"
                       id="robot-search"
