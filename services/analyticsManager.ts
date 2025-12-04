@@ -71,11 +71,11 @@ export class AnalyticsManager {
 
   constructor(config?: Partial<AnalyticsConfig>) {
     this.config = {
-      batchSize: 50,
-      flushInterval: 30000, // 30 seconds
+      batchSize: 25, // Reduced for edge constraints
+      flushInterval: 15000, // 15 seconds - faster for edge
       enableRealTime: true,
-      enablePersistence: true,
-      sampleRate: 1.0, // 100% sampling
+      enablePersistence: false, // Disable for edge deployment
+      sampleRate: 0.1, // 10% sampling - optimized for edge
       debugMode: process.env['NODE_ENV'] === 'development',
       ...config
     };
@@ -537,6 +537,15 @@ export class AnalyticsManager {
       oldestEvent: this.events.length > 0 ? Math.min(...this.events.map(e => e.timestamp)) : null,
       newestEvent: this.events.length > 0 ? Math.max(...this.events.map(e => e.timestamp)) : null
     };
+  }
+
+  // Add edge-specific performance tracking
+  public trackEdgePerformance(metric: string, value: number, region?: string): void {
+    this.trackEvent(`edge_performance_${metric}`, 'performance', metric, value, {
+      region,
+      edgeOptimized: true,
+      timestamp: Date.now()
+    });
   }
 
   // Clear all events

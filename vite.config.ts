@@ -23,6 +23,13 @@ export default defineConfig({
             }
             // Supabase - isolated for better connection pooling
             if (id.includes('@supabase')) {
+              // Separate realtime and storage for better caching
+              if (id.includes('@supabase/realtime-js')) {
+                return 'supabase-realtime';
+              }
+              if (id.includes('@supabase/storage-js')) {
+                return 'supabase-storage';
+              }
               return 'supabase-vendor';
             }
             // AI services - lazy loaded for edge optimization
@@ -197,7 +204,7 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 150, // Optimized for edge performance
+    chunkSizeWarningLimit: 300, // Optimized for edge performance
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
