@@ -89,6 +89,17 @@ const sanitizePrompt = (prompt: string): string => {
     throw new Error('Invalid prompt: must be a non-empty string');
   }
   
+  const len = prompt.length;
+  
+  // Early length check to avoid unnecessary processing
+  if (len > 10000) {
+    throw new Error('Prompt too long: maximum 10,000 characters allowed');
+  }
+  
+  if (len < 10) {
+    throw new Error('Prompt too short: minimum 10 characters required');
+  }
+  
   // Remove potentially dangerous patterns with enhanced regex
   const sanitized = prompt
     // Remove script tags and content
@@ -122,46 +133,55 @@ const sanitizePrompt = (prompt: string): string => {
     throw new Error('Invalid characters detected in prompt');
   }
   
-  // Check for potential injection patterns
-  const suspiciousPatterns = [
-    /eval\s*\(/gi,
-    /function\s*\(/gi,
-    /document\./gi,
-    /window\./gi,
-    /localStorage/gi,
-    /sessionStorage/gi,
-    /cookie/gi,
-    /location\./gi,
-    /navigator\./gi
+  // Check for potential injection patterns - optimized to stop at first match
+  const injectionPatterns = [
+    /eval\s*\(/i,
+    /function\s*\(/i,
+    /document\./i,
+    /window\./i,
+    /localStorage/i,
+    /sessionStorage/i,
+    /cookie/i,
+    /location\./i,
+    /navigator\./i
   ];
   
-  const hasSuspiciousContent = suspiciousPatterns.some(pattern => pattern.test(sanitized));
-  if (hasSuspiciousContent) {
-    logger.warn('Suspicious content detected in prompt, applying additional sanitization');
-    // Additional sanitization for suspicious content
-    return sanitized.replace(/[<>]/g, '').substring(0, 2000);
+  for (const pattern of injectionPatterns) {
+    if (pattern.test(sanitized)) {
+      logger.warn('Suspicious content detected in prompt, applying additional sanitization');
+      // Additional sanitization for suspicious content
+      return sanitized.replace(/[<>]/g, '').substring(0, 2000);
+    }
   }
   
-  // Enforce length limits to prevent token exhaustion attacks
-  if (sanitized.length > 10000) {
-    throw new Error('Prompt too long: maximum 10,000 characters allowed');
+  // Rate limiting check (simple implementation) - optimized with Map for better performance
+  if (!rateLimitCache) {
+    rateLimitCache = new Map();
   }
   
-  if (sanitized.length < 10) {
-    throw new Error('Prompt too short: minimum 10 characters required');
-  }
-  
-  // Rate limiting check (simple implementation)
   const now = Date.now();
-  const promptKey = `prompt_${Math.floor(now / 60000)}`; // Per minute bucket
-  const currentCount = parseInt(localStorage.getItem(promptKey) || '0');
+  const minuteKey = Math.floor(now / 60000); // Per minute bucket
+  const currentCount = rateLimitCache.get(minuteKey) || 0;
+  
   if (currentCount >= 30) { // Max 30 prompts per minute
     throw new Error('Rate limit exceeded: please wait before sending another prompt');
   }
-  localStorage.setItem(promptKey, (currentCount + 1).toString());
+  
+  rateLimitCache.set(minuteKey, currentCount + 1);
+  
+  // Clean up old entries (older than 5 minutes)
+  const fiveMinutesAgo = Math.floor((now - 300000) / 60000);
+  for (const key of rateLimitCache.keys()) {
+    if (key < fiveMinutesAgo) {
+      rateLimitCache.delete(key);
+    }
+  }
   
   return sanitized;
 };
+
+// Rate limiting cache for better performance
+let rateLimitCache: Map<number, number> | null = null;
 
 // Enhanced input validation for strategy parameters
 const validateStrategyParams = (params: StrategyParams): StrategyParams => {
@@ -191,35 +211,35 @@ const validateStrategyParams = (params: StrategyParams): StrategyParams => {
   return validated;
 };
 
-// Enhanced input validation for strategy parameters (boolean check)
+// Enhanced input validation for strategy parameters (boolean check) - optimized
 export const isValidStrategyParams = (params: any): boolean => {
   if (!params || typeof params !== 'object') {
     return false;
   }
   
+  // Direct property access is faster than array iteration
+  const { timeframe, symbol, riskPercent, stopLoss, takeProfit } = params;
+  
   // Validate required fields
-  const requiredFields = ['timeframe', 'symbol', 'riskPercent', 'stopLoss', 'takeProfit'];
-  for (const field of requiredFields) {
-    if (!(field in params) || params[field] === null || params[field] === undefined) {
-      return false;
-    }
+  if (timeframe == null || symbol == null || riskPercent == null || stopLoss == null || takeProfit == null) {
+    return false;
   }
   
   // Validate numeric ranges
-  if (params.riskPercent < 0.1 || params.riskPercent > 100) {
+  if (typeof riskPercent !== 'number' || riskPercent < 0.1 || riskPercent > 100) {
     return false;
   }
   
-  if (params.stopLoss < 1 || params.stopLoss > 1000) {
+  if (typeof stopLoss !== 'number' || stopLoss < 1 || stopLoss > 1000) {
     return false;
   }
   
-  if (params.takeProfit < 1 || params.takeProfit > 1000) {
+  if (typeof takeProfit !== 'number' || takeProfit < 1 || takeProfit > 1000) {
     return false;
   }
   
-  // Validate symbol format
-  if (!/^[A-Z]{6}$|^[A-Z]{3}\/[A-Z]{3}$|^[A-Z]{6}$/.test(params.symbol)) {
+  // Validate symbol format with optimized regex
+  if (typeof symbol !== 'string' || !/^(?:[A-Z]{6}|[A-Z]{3}\/[A-Z]{3})$/.test(symbol)) {
     return false;
   }
   
@@ -628,10 +648,25 @@ ${footerReminder}
     clearCache(): void {
         this.contextCache.clear();
     }
+    
+    // Efficient cleanup of expired entries
+    cleanup(): void {
+        const now = Date.now();
+        for (const [key, entry] of this.contextCache.entries()) {
+            if (now - entry.timestamp > TokenBudgetManager.CACHE_TTL) {
+                this.contextCache.delete(key);
+            }
+        }
+    }
 }
 
 // Global instance
 const tokenBudgetManager = new TokenBudgetManager();
+
+// Set up periodic cleanup of expired cache entries
+setInterval(() => {
+  tokenBudgetManager.cleanup();
+}, 300000); // Clean up every 5 minutes
 
 /**
  * Builds the full context prompt string with enhanced Token Budgeting.
@@ -1065,13 +1100,14 @@ const response = await ai!.models.generateContent({
        });
 }
 
-// Helper function for creating hash-like keys for caching
+// Optimized helper function for creating hash-like keys for caching
 function createHash(str: string): string {
+    if (!str) return 'empty';
     let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32bit integer
+    const len = str.length;
+    for (let i = 0; i < len; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0; // Convert to 32bit integer
     }
     return Math.abs(hash).toString(36);
 }
