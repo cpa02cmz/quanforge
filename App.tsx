@@ -7,7 +7,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
-import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
+import { QuantForgeSEO } from './utils/quantForgeSEO';
  import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
  import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
  import { frontendOptimizer } from './services/frontendOptimizer';
@@ -169,15 +169,8 @@ useEffect(() => {
     <ErrorBoundary>
       <ToastProvider>
         <BrowserRouter>
-          <SEOHead 
-            structuredData={[
-              structuredDataTemplates.softwareApplication,
-              structuredDataTemplates.webPage(
-                'QuantForge AI - Advanced MQL5 Trading Robot Generator',
-                'Generate professional MQL5 trading robots and Expert Advisors using AI. Powered by Google Gemini 3.0/2.5.',
-                'https://quanforge.ai'
-              )
-            ]}
+          <QuantForgeSEO 
+            pageType="home"
           />
           <Suspense fallback={LoadingComponent}>
             <Routes>

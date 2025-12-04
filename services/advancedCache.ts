@@ -183,6 +183,15 @@ export class AdvancedCache {
       .map(([key, entry]) => ({ key, entry }));
   }
 
+  // Clear all cache entries
+  clear(): void {
+    this.cache.clear();
+    this.stats.hits = 0;
+    this.stats.misses = 0;
+    this.stats.evictions = 0;
+    this.stats.compressions = 0;
+  }
+
   // Preload cache with common queries
   async preload<T>(entries: Array<{
     key: string;
@@ -195,9 +204,9 @@ export class AdvancedCache {
         const data = await loader();
         this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
       } catch (error) {
-         if (process.env.NODE_ENV === 'development') {
-           console.warn(`Failed to preload cache entry: ${key}`, error);
-         }
+          if (process.env['NODE_ENV'] === 'development') {
+            console.warn(`Failed to preload cache entry: ${key}`, error);
+          }
       }
     });
 
@@ -332,10 +341,10 @@ this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
       }
     });
     
-     // Use logger instead of console.log for production safety
-     if (process.env.NODE_ENV === 'development') {
-       console.log(`Invalidated ${deletedCount} cache entries for region: ${region}`);
-     }
+      // Use logger instead of console.log for production safety
+      if (process.env['NODE_ENV'] === 'development') {
+        console.log(`Invalidated ${deletedCount} cache entries for region: ${region}`);
+      }
     return deletedCount;
   }
 

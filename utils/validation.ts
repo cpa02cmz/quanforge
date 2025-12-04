@@ -314,93 +314,120 @@ if (input && seenNames.has(input.name)) {
        return this.validateChatMessage(message);
      }
 
-     static validateChatMessage(message: string): ValidationError[] {
-       const errors: ValidationError[] = [];
+static validateChatMessage(message: string): ValidationError[] {
+        const errors: ValidationError[] = [];
 
-       if (!message || !message.trim()) {
-         errors.push({
-           field: 'message',
-           message: 'Message cannot be empty'
-         });
-         return errors;
-       }
-
-       if (message.length > 10000) {
-         errors.push({
-           field: 'message',
-           message: 'Message is too long (max 10,000 characters)'
-         });
-         return errors;
-       }
-
-// Enhanced XSS prevention using DOMPurify for comprehensive sanitization
-        const sanitizedMessage = DOMPurify.sanitize(message, { 
-          ALLOWED_TAGS: [], 
-          ALLOWED_ATTR: [],
-          KEEP_CONTENT: true 
-        });
-        
-        // If sanitization removed content, there was likely XSS content
-        if (sanitizedMessage.length !== message.length) {
+        if (!message || !message.trim()) {
           errors.push({
             field: 'message',
-            message: 'Message contains potentially dangerous content'
+            message: 'Message cannot be empty'
           });
           return errors;
         }
 
-         // Check remaining XSS patterns using cached patterns
-         for (const pattern of ValidationService.XSS_PATTERNS) {
-           if (pattern.test(message)) {
-            errors.push({
-              field: 'message',
-              message: 'Message contains potentially unsafe content'
-            });
-            return errors; // Return early on first match
-          }
-        }
-
-        // Check for obfuscated patterns (base64, hex encoding, etc.) using cached patterns
-        for (const pattern of ValidationService.OBFUSCATION_PATTERNS) {
-          const matches = message.match(pattern);
-          if (matches && matches.length > 3) { // Allow a few legitimate uses
-            errors.push({
-              field: 'message',
-              message: 'Message contains potentially obfuscated content'
-            });
-            return errors; // Return early
-          }
-        }
-
-        // Then check for dangerous MQL5 patterns using cached patterns
-        for (const pattern of ValidationService.MQL5_DANGEROUS_PATTERNS) {
-          if (pattern.test(message)) {
-            errors.push({
-              field: 'message',
-              message: 'Message contains potentially dangerous MQL5 operations'
-            });
-            return errors; // Return early
-          }
-        }
-
-        // Additional heuristic checks with cached suspicious keywords
-        const lowerMessage = message.toLowerCase();
-        let suspiciousCount = 0;
-        for (const keyword of ValidationService.SUSPICIOUS_KEYWORDS) {
-          if (lowerMessage.includes(keyword)) {
-            suspiciousCount++;
-          }
-        }
-
-        if (suspiciousCount > 2) { // Allow some false positives
+        if (message.length > 10000) {
           errors.push({
             field: 'message',
-            message: 'Message contains suspicious content'
+            message: 'Message is too long (max 10,000 characters)'
           });
+          return errors;
         }
 
-        return errors;
-      }
+        // Enhanced XSS prevention using DOMPurify for comprehensive sanitization
+         const sanitizedMessage = DOMPurify.sanitize(message, { 
+           ALLOWED_TAGS: [], 
+           ALLOWED_ATTR: [],
+           KEEP_CONTENT: true 
+         });
+         
+         // If sanitization removed content, there was likely XSS content
+         if (sanitizedMessage.length !== message.length) {
+           errors.push({
+             field: 'message',
+             message: 'Message contains potentially dangerous content'
+           });
+           return errors;
+         }
+
+          // Check remaining XSS patterns using cached patterns
+          for (const pattern of ValidationService.XSS_PATTERNS) {
+            if (pattern.test(message)) {
+             errors.push({
+               field: 'message',
+               message: 'Message contains potentially unsafe content'
+             });
+             return errors; // Return early on first match
+           }
+         }
+
+         // Check for obfuscated patterns (base64, hex encoding, etc.) using cached patterns
+         for (const pattern of ValidationService.OBFUSCATION_PATTERNS) {
+           const matches = message.match(pattern);
+           if (matches && matches.length > 3) { // Allow a few legitimate uses
+             errors.push({
+               field: 'message',
+               message: 'Message contains potentially obfuscated content'
+             });
+             return errors; // Return early
+           }
+         }
+
+         // Then check for dangerous MQL5 patterns using cached patterns
+         for (const pattern of ValidationService.MQL5_DANGEROUS_PATTERNS) {
+           if (pattern.test(message)) {
+             errors.push({
+               field: 'message',
+               message: 'Message contains potentially dangerous MQL5 operations'
+             });
+             return errors; // Return early
+           }
+         }
+
+         // Additional heuristic checks with cached suspicious keywords
+         const lowerMessage = message.toLowerCase();
+         let suspiciousCount = 0;
+         for (const keyword of ValidationService.SUSPICIOUS_KEYWORDS) {
+           if (lowerMessage.includes(keyword)) {
+             suspiciousCount++;
+           }
+         }
+
+         if (suspiciousCount > 2) { // Allow some false positives
+           errors.push({
+             field: 'message',
+             message: 'Message contains suspicious content'
+           });
+         }
+
+         // Enhanced performance: Check for potentially infinite loop patterns
+         const loopPattern = /(?:for|while|do)\s*\(.*?\)\s*{/gi;
+         const loopMatches = message.match(loopPattern);
+         if (loopMatches && loopMatches.length > 10) {
+           errors.push({
+             field: 'message',
+             message: 'Message contains too many loops, possibly leading to performance issues'
+           });
+         }
+
+         // Check for repeated patterns that might cause regex DoS
+         const repeatedPatterns = [
+           /(\w+)\s*\1\s*\1/gi, // Repeated words
+           /(\d+)\s*\1\s*\1/g,  // Repeated numbers
+           /([+\-*/%^&|]+)\s*\1\s*\1/g, // Repeated operators
+         ];
+         
+         for (const pattern of repeatedPatterns) {
+           if (pattern.test(message)) {
+             errors.push({
+               field: 'message',
+               message: 'Message contains potentially problematic repeated patterns'
+             });
+             break;
+           }
+         }
+
+         return errors;
+       }
 
 static sanitizeInput(input: string): string {
      if (!input) return '';
