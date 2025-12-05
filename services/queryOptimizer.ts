@@ -202,50 +202,369 @@ class QueryOptimizer {
      }
    }
 
-  // Optimized robot queries
-  async getRobotsOptimized(
-    client: SupabaseClient,
-    options: {
-      userId?: string;
-      strategyType?: string;
-      searchTerm?: string;
-      limit?: number;
-      offset?: number;
-      orderBy?: 'created_at' | 'updated_at' | 'name';
-      orderDirection?: 'asc' | 'desc';
-    } = {}
-  ): Promise<{ data: Robot[] | null; error: any; metrics: QueryMetrics }> {
-    // Create optimization object for this specific query
-    const optimization: QueryOptimization = {
-      selectFields: ['id', 'name', 'description', 'strategy_type', 'created_at', 'updated_at', 'user_id'],
-      limit: options.limit || 20,
-      offset: options.offset,
-      orderBy: {
-        column: options.orderBy || 'created_at',
-        ascending: options.orderDirection === 'asc',
-      },
-    };
+   // Optimized robot queries
+   async getRobotsOptimized(
+     client: SupabaseClient,
+     options: {
+       userId?: string;
+       strategyType?: string;
+       searchTerm?: string;
+       limit?: number;
+       offset?: number;
+       orderBy?: 'created_at' | 'updated_at' | 'name';
+       orderDirection?: 'asc' | 'desc';
+       isActive?: boolean;
+       isPublic?: boolean;
+     } = {}
+   ): Promise<{ data: Robot[] | null; error: any; metrics: QueryMetrics }> {
+     // Create optimization object for this specific query
+     const optimization: QueryOptimization = {
+       selectFields: ['id', 'name', 'description', 'strategy_type', 'created_at', 'updated_at', 'user_id', 'view_count', 'copy_count', 'code'],
+       limit: options.limit || 20,
+       offset: options.offset,
+       orderBy: {
+         column: options.orderBy || 'created_at',
+         ascending: options.orderDirection === 'asc',
+       },
+     };
 
-    const filters: Record<string, any> = {};
+     const filters: Record<string, any> = {};
 
-    if (options.userId) {
-      filters['user_id'] = options.userId;
-    }
+     if (options.userId) {
+       filters['user_id'] = options.userId;
+     }
 
-    if (options.strategyType && options.strategyType !== 'All') {
-      filters['strategy_type'] = options.strategyType;
-    }
+     if (options.strategyType && options.strategyType !== 'All') {
+       filters['strategy_type'] = options.strategyType;
+     }
 
-    if (options.searchTerm) {
-      // Use full-text search optimization
-      filters['or'] = `name.ilike.%${options.searchTerm}%,description.ilike.%${options.searchTerm}%`;
-    }
+     // Add active status filter
+     if (options.isActive !== undefined) {
+       filters['is_active'] = options.isActive;
+     } else {
+       // Default to active robots for performance
+       filters['is_active'] = true;
+     }
 
-    optimization.filters = filters;
-    
-    // Use the existing executeQuery method which handles caching
-    return this.executeQuery<Robot>(client, 'robots', optimization);
-  }
+     // Add public status filter
+     if (options.isPublic !== undefined) {
+       filters['is_public'] = options.isPublic;
+     }
+
+     if (options.searchTerm) {
+       // Use full-text search optimization with proper sanitization
+       const sanitizedTerm = options.searchTerm.replace(/[^\w\s]/gi, '');
+       if (sanitizedTerm.length > 0) {
+         filters['or'] = `name.ilike.%${sanitizedTerm}%,description.ilike.%${sanitizedTerm}%`;
+       }
+     }
+
+     optimization.filters = filters;
+     
+     // Use the existing executeQuery method which handles caching
+     return this.executeQuery<Robot>(client, 'robots', optimization);
+   }
+
+   /**
+    * Enhanced robot query for popular robots with optimized indexing
+    */
+   async getPopularRobots(
+     client: SupabaseClient,
+     options: {
+       limit?: number;
+       strategyType?: string;
+       minViews?: number;
+       activeOnly?: boolean;
+       publicOnly?: boolean;
+     } = {}
+   ): Promise<{ data: Robot[] | null; error: any; metrics: QueryMetrics }> {
+     const optimization: QueryOptimization = {
+       selectFields: ['id', 'name', 'description', 'strategy_type', 'created_at', 'updated_at', 'user_id', 'view_count', 'copy_count', 'code'],
+       limit: options.limit || 20,
+       orderBy: {
+         column: 'view_count',
+         ascending: false,
+       },
+     };
+
+     const filters: Record<string, any> = {};
+
+     // Filter by strategy type
+     if (options.strategyType && options.strategyType !== 'All') {
+       filters['strategy_type'] = options.strategyType;
+     }
+
+     // Filter by minimum view count
+     if (options.minViews !== undefined) {
+       filters['view_count'] = { gte: options.minViews };
+     }
+
+     // Active filter
+     if (options.activeOnly !== false) { // Default to true if not explicitly false
+       filters['is_active'] = true;
+     }
+
+     // Public filter
+     if (options.publicOnly !== false) { // Default to true if not explicitly false
+       filters['is_public'] = true;
+     }
+
+     optimization.filters = filters;
+     
+     const startTime = performance.now();
+     const queryHash = this.generateQueryHash(optimization);
+     
+     // Check cache first with enhanced tracking
+     this.totalQueries++;
+     const cached = this.queryCache.get(queryHash);
+     if (cached && Date.now() - cached.timestamp < cached.ttl) {
+       this.cacheHits++;
+       cached.hits++; // Track cache hit frequency
+       
+       // Update cache hit rate
+       this.cacheHitRate = (this.cacheHits / this.totalQueries) * 100;
+       
+       const metrics: QueryMetrics = {
+         executionTime: performance.now() - startTime,
+         resultCount: Array.isArray(cached.data) ? cached.data.length : 0,
+         cacheHit: true,
+         queryHash,
+       };
+       
+       this.recordMetrics(metrics);
+       return { data: cached.data as Robot[], error: null, metrics };
+     }
+
+     try {
+       // Create AbortController for timeout handling
+       const controller = new AbortController();
+       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+       // Build query with optimizations
+       let queryBuilder = client.from('robots').select(optimization.selectFields?.join(', ') || '*');
+
+       // Apply filters efficiently
+       if (optimization.filters) {
+         for (const [key, value] of Object.entries(optimization.filters)) {
+           if (value !== undefined && value !== null) {
+             if (Array.isArray(value)) {
+               queryBuilder = queryBuilder.in(key, value);
+             } else if (typeof value === 'object' && 'gte' in value) {
+               queryBuilder = queryBuilder.gte(key, value.gte);
+             } else if (typeof value === 'object' && 'lte' in value) {
+               queryBuilder = queryBuilder.lte(key, value.lte);
+             } else {
+               queryBuilder = queryBuilder.eq(key, value);
+             }
+           }
+         }
+       }
+
+       // Apply ordering
+       if (optimization.orderBy) {
+         queryBuilder = queryBuilder.order(optimization.orderBy.column, { 
+           ascending: optimization.orderBy.ascending 
+         });
+       }
+
+       // Apply pagination
+       if (optimization.limit) {
+         queryBuilder = queryBuilder.limit(optimization.limit);
+       }
+
+       if (optimization.offset) {
+         queryBuilder = queryBuilder.range(optimization.offset, optimization.offset + (optimization.limit || 10) - 1);
+       }
+
+       // Execute query with timeout
+       const result = await queryBuilder.abortSignal(controller.signal) as any;
+       clearTimeout(timeoutId);
+       
+       const { data, error } = result;
+
+       // Cache successful results with size management
+       if (!error && data) {
+         const dataSize = this.calculateSize(data);
+         this.maintainCacheSize(dataSize);
+         
+         this.queryCache.set(queryHash, {
+           data,
+           timestamp: Date.now(),
+           ttl: this.DEFAULT_TTL,
+           hits: 1,
+         });
+       }
+
+       const metrics: QueryMetrics = {
+         executionTime: performance.now() - startTime,
+         resultCount: Array.isArray(data) ? data.length : 0,
+         cacheHit: false,
+         queryHash,
+       };
+
+       this.recordMetrics(metrics);
+       return { data, error, metrics };
+     } catch (error: any) {
+       clearTimeout(setTimeout(() => {}, 0)); // Clear timeout if it exists
+       
+       // Handle timeout and other errors
+       const metrics: QueryMetrics = {
+         executionTime: performance.now() - startTime,
+         resultCount: 0,
+         cacheHit: false,
+         queryHash,
+       };
+       
+       this.recordMetrics(metrics);
+       
+       return { 
+         data: null, 
+         error: error.name === 'AbortError' ? new Error('Query timeout exceeded (30s)') : error, 
+         metrics 
+       };
+     }
+   }
+
+   /**
+    * Get robots by user with optimized performance for user-specific queries
+    */
+   async getUserRobots(
+     client: SupabaseClient,
+     userId: string,
+     options: {
+       limit?: number;
+       offset?: number;
+       strategyType?: string;
+       searchTerm?: string;
+       orderBy?: 'created_at' | 'updated_at' | 'name' | 'view_count';
+       orderDirection?: 'asc' | 'desc';
+       activeOnly?: boolean;
+     } = {}
+   ): Promise<{ data: Robot[] | null; error: any; metrics: QueryMetrics }> {
+      const optimization: QueryOptimization = {
+        selectFields: ['id', 'name', 'description', 'strategy_type', 'created_at', 'updated_at', 'view_count', 'copy_count', 'is_active', 'code'],
+        limit: options.limit || 50, // Higher default for user-specific queries
+        offset: options.offset,
+        orderBy: {
+          column: options.orderBy || 'created_at',
+          ascending: options.orderDirection === 'asc',
+        },
+      };
+
+     const filters: Record<string, any> = {
+       'user_id': userId,
+     };
+
+     if (options.strategyType && options.strategyType !== 'All') {
+       filters['strategy_type'] = options.strategyType;
+     }
+
+     if (options.activeOnly !== false) {
+       filters['is_active'] = true;
+     }
+
+     if (options.searchTerm) {
+       const sanitizedTerm = options.searchTerm.replace(/[^\w\s]/gi, '');
+       if (sanitizedTerm.length > 0) {
+         filters['or'] = `name.ilike.%${sanitizedTerm}%,description.ilike.%${sanitizedTerm}%`;
+       }
+     }
+
+     optimization.filters = filters;
+     
+     return this.executeQuery<Robot>(client, 'robots', optimization);
+   }
+
+   /**
+    * Get trending robots based on recent activity and engagement
+    */
+   async getTrendingRobots(
+     client: SupabaseClient,
+     options: {
+       limit?: number;
+       daysBack?: number;
+       minViews?: number;
+       strategyType?: string;
+     } = {}
+   ): Promise<{ data: Robot[] | null; error: any; metrics: QueryMetrics }> {
+     const daysBack = options.daysBack || 7; // Default to 7 days
+     const minViews = options.minViews || 10; // Default to 10 views
+     const limit = options.limit || 20;
+
+     // For trending, we'll use a more complex query that can't be fully optimized by the base method
+     const startTime = performance.now();
+     const queryHash = `trending_robots_${daysBack}_${minViews}_${limit}_${options.strategyType || 'all'}`;
+     
+     // Check cache first
+     this.totalQueries++;
+     const cached = this.queryCache.get(queryHash);
+     if (cached && Date.now() - cached.timestamp < cached.ttl) {
+       this.cacheHits++;
+       cached.hits++;
+       
+       this.cacheHitRate = (this.cacheHits / this.totalQueries) * 100;
+       
+       const metrics: QueryMetrics = {
+         executionTime: performance.now() - startTime,
+         resultCount: Array.isArray(cached.data) ? cached.data.length : 0,
+         cacheHit: true,
+         queryHash,
+       };
+       
+       this.recordMetrics(metrics);
+       return { data: cached.data as Robot[], error: null, metrics };
+     }
+
+     try {
+       // Build a complex query for trending robots
+       let queryBuilder = client
+         .from('robots')
+          .select('id, name, description, strategy_type, created_at, updated_at, user_id, view_count, copy_count, code')
+         .gte('created_at', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString())
+         .gte('view_count', minViews)
+         .eq('is_active', true)
+         .order('view_count', { ascending: false });
+
+       if (options.strategyType && options.strategyType !== 'All') {
+         queryBuilder = queryBuilder.eq('strategy_type', options.strategyType);
+       }
+
+       const result = await queryBuilder;
+       const { data, error } = result;
+
+       if (!error && data) {
+         const dataSize = this.calculateSize(data);
+         this.maintainCacheSize(dataSize);
+         
+         this.queryCache.set(queryHash, {
+           data,
+           timestamp: Date.now(),
+           ttl: this.DEFAULT_TTL,
+           hits: 1,
+         });
+       }
+
+       const metrics: QueryMetrics = {
+         executionTime: performance.now() - startTime,
+         resultCount: Array.isArray(data) ? data.length : 0,
+         cacheHit: false,
+         queryHash,
+       };
+
+       this.recordMetrics(metrics);
+       return { data, error, metrics };
+     } catch (error: any) {
+       const metrics: QueryMetrics = {
+         executionTime: performance.now() - startTime,
+         resultCount: 0,
+         cacheHit: false,
+         queryHash,
+       };
+       
+       this.recordMetrics(metrics);
+       return { data: null, error, metrics };
+     }
+   }
 
   // Batch operations for better performance
   async batchInsert<T>(
