@@ -6,8 +6,8 @@ import { createScopedLogger } from '../utils/logger';
 
 const logger = createScopedLogger('aiWorkerManager');
 
-type WorkerMessageType = 'BUILD_CONTEXT' | 'PROCESS_RESPONSE' | 'EXTRACT_CODE' | 'FORMAT_MESSAGE';
-type WorkerResponseType = 'CONTEXT_BUILT' | 'RESPONSE_PROCESSED' | 'CODE_EXTRACTED' | 'MESSAGE_FORMATTED' | 'ERROR';
+type WorkerMessageType = 'BUILD_CONTEXT' | 'PROCESS_RESPONSE' | 'EXTRACT_CODE' | 'FORMAT_MESSAGE' | 'GENERATE_CONTENT' | 'PARSE_RESPONSE';
+type WorkerResponseType = 'CONTEXT_BUILT' | 'RESPONSE_PROCESSED' | 'CODE_EXTRACTED' | 'MESSAGE_FORMATTED' | 'SUCCESS' | 'ERROR';
 
 interface WorkerMessage {
   type: WorkerMessageType;
@@ -46,16 +46,16 @@ class AIWorkerManager {
 
     this.initializationPromise = new Promise((resolve, reject) => {
       try {
-        // Create worker from the TypeScript file
+        // Create worker from the enhanced Gemini worker file
         try {
           this.worker = new Worker(
-            new URL('../workers/aiWorker.ts', import.meta.url),
+            new URL('../workers/geminiWorker.ts', import.meta.url),
             { type: 'module' }
           );
         } catch (error) {
-          logger.error('Failed to create worker with import.meta.url, trying fallback:', error);
+          logger.error('Failed to create Gemini worker with import.meta.url, trying fallback:', error);
           // Fallback for environments where import.meta.url might not work as expected
-          this.worker = new Worker('/workers/aiWorker.js', { type: 'module' });
+          this.worker = new Worker('/workers/geminiWorker.js', { type: 'module' });
         }
 
         this.worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
@@ -178,6 +178,35 @@ class AIWorkerManager {
       return result.formatted;
     } catch (error) {
       logger.error('Message formatting failed:', error);
+      throw error;
+    }
+  }
+
+  // Enhanced methods for Gemini worker integration
+  async generateContent(fullPrompt: string): Promise<{ response: string }> {
+    try {
+      const result = await this.sendMessage<{ response: string }>(
+        'GENERATE_CONTENT',
+        { fullPrompt },
+        60000 // 60 second timeout for content generation
+      );
+      return result;
+    } catch (error) {
+      logger.error('Content generation failed:', error);
+      throw error;
+    }
+  }
+
+  async parseGeminiResponse(response: string): Promise<{ code?: string; analysis?: any; thinking?: string }> {
+    try {
+      const result = await this.sendMessage<{ code?: string; analysis?: any; thinking?: string }>(
+        'PARSE_RESPONSE',
+        { response },
+        5000 // 5 second timeout for response parsing
+      );
+      return result;
+    } catch (error) {
+      logger.error('Response parsing failed:', error);
       throw error;
     }
   }
