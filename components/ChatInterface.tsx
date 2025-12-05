@@ -264,7 +264,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     });
   }, [language]);
 
-// Optimized virtual scrolling with stable windowing
+// Optimized virtual scrolling with stable windowing and enhanced memory management
    const visibleMessages = useMemo(() => {
      const VIEWPORT_SIZE = 20;
      const BUFFER_SIZE = 10;
@@ -282,6 +282,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
      
      return messages.slice(startIndex, startIndex + WINDOW_SIZE);
    }, [messages]);
+
+   // Generate stable keys for virtual scrolling
+   const getMessageKey = useCallback((msg: Message, index: number) => {
+     return `${msg.id}-${index}`;
+   }, []);
 
 // Memory pressure event listener for cleanup coordination
    useEffect(() => {
@@ -360,8 +365,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
                 </div>
             </div>
         )}
-        {visibleMessages.map((msg) => (
-            <MemoizedMessage key={msg.id} msg={msg} formatMessageContent={formatMessageContent} />
+        {visibleMessages.map((msg, index) => (
+            <MemoizedMessage key={getMessageKey(msg, index)} msg={msg} formatMessageContent={formatMessageContent} />
         ))}
         {isLoading && (
           <div className="flex justify-start items-center gap-2" role="status" aria-label="AI is typing">

@@ -61,24 +61,20 @@ export class EdgePerformanceMonitor {
     }
   ): Promise<T> {
     const startTime = performance.now();
-    const region = options?.region || process.env.VERCEL_REGION || 'unknown';
+    const region = options?.region || process.env['VERCEL_REGION'] || 'unknown';
     const coldStart = this.isColdStart();
-    
-    // Get initial memory usage
-    const initialMemory = this.getMemoryUsage();
     
     try {
       const result = await fn();
       const duration = performance.now() - startTime;
-      const finalMemory = this.getMemoryUsage();
-      const memoryDelta = finalMemory - initialMemory;
       
       // Record metrics
+      const currentMemory = this.getMemoryUsage();
       this.recordMetric({
         region,
         functionName: name,
         duration,
-        memoryUsage: finalMemory,
+        memoryUsage: currentMemory,
         coldStart,
         cacheHitRate: this.getCacheHitRate(name),
         timestamp: Date.now(),
@@ -90,7 +86,7 @@ export class EdgePerformanceMonitor {
           region,
           functionName: name,
           duration,
-          memoryUsage: finalMemory,
+          memoryUsage: currentMemory,
           coldStart,
           cacheHitRate: this.getCacheHitRate(name),
           timestamp: Date.now(),
@@ -139,7 +135,7 @@ export class EdgePerformanceMonitor {
    */
   private isColdStart(): boolean {
     // Check for cold start indicators
-    return !globalThis._edgeFunctionInitialized;
+    return !(globalThis as any)._edgeFunctionInitialized;
   }
 
   /**
@@ -293,8 +289,8 @@ export class EdgePerformanceMonitor {
     return {
       totalCalls: metrics.length,
       averageDuration: durations.reduce((sum, d) => sum + d, 0) / durations.length,
-      p95Duration: durations[Math.floor(durations.length * 0.95)],
-      p99Duration: durations[Math.floor(durations.length * 0.99)],
+      p95Duration: durations[Math.floor(durations.length * 0.95)] || 0,
+      p99Duration: durations[Math.floor(durations.length * 0.99)] || 0,
       averageMemoryUsage: memoryUsages.reduce((sum, m) => sum + m, 0) / memoryUsages.length,
       coldStartRate: coldStarts / metrics.length,
       cacheHitRate: cacheHits / metrics.length,
@@ -410,7 +406,7 @@ export class EdgePerformanceMonitor {
    */
   private initializeMetrics(): void {
     // Mark as initialized to detect cold starts
-    globalThis._edgeFunctionInitialized = true;
+    (globalThis as any)._edgeFunctionInitialized = true;
     
     // Log metrics periodically in development
     if (import.meta.env.DEV) {
