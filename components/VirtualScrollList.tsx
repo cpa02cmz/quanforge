@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Robot } from '../types';
+import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
 
 interface VirtualScrollListProps {
   robots: Robot[];
@@ -26,25 +27,31 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
   const itemHeight = 280; // Height of each robot card
   const overscan = 5; // Number of items to render outside viewport
 
-  // Filter robots with memoization and performance optimization
-  const filteredRobots = useMemo(() => {
-    const startTime = performance.now();
-    
-    const result = robots.filter(robot => {
-      const robotName = robot.name.toLowerCase();
-      const searchTermLower = searchTerm.toLowerCase();
-      const matchesSearch = searchTerm === '' || robotName.includes(searchTermLower);
-      const matchesType = filterType === 'All' || (robot.strategy_type || 'Custom') === filterType;
-      return matchesSearch && matchesType;
-    });
-    
-    const duration = performance.now() - startTime;
-    if (duration > 16) { // More than one frame at 60fps
-      console.warn(`VirtualScrollList filter took ${duration.toFixed(2)}ms for ${robots.length} items`);
-    }
-    
-    return result;
-  }, [robots, searchTerm, filterType]);
+   // Filter robots with memoization and performance optimization
+   const filteredRobots = useMemo(() => {
+     const startTime = performance.now();
+     
+     const result = frontendPerformanceOptimizer.memoizeComponent(
+       `filtered_robots_${searchTerm}_${filterType}_${robots.length}`,
+       () => {
+         return robots.filter(robot => {
+           const robotName = robot.name.toLowerCase();
+           const searchTermLower = searchTerm.toLowerCase();
+           const matchesSearch = searchTerm === '' || robotName.includes(searchTermLower);
+           const matchesType = filterType === 'All' || (robot.strategy_type || 'Custom') === filterType;
+           return matchesSearch && matchesType;
+         });
+       },
+       5000 // 5 second TTL for this filter result
+     );
+     
+     const duration = performance.now() - startTime;
+     if (duration > 16) { // More than one frame at 60fps
+       console.warn(`VirtualScrollList filter took ${duration.toFixed(2)}ms for ${robots.length} items`);
+     }
+     
+     return result;
+   }, [robots, searchTerm, filterType]);
 
   // Calculate visible range
   const visibleRange = useMemo(() => {

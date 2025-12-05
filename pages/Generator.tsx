@@ -6,6 +6,7 @@ import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
 import { useTranslation } from '../services/i18n';
 import { AdvancedSEO } from '../utils/advancedSEO';
 import { performanceMonitor } from '../utils/performance';
+import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
 
 // Lazy load heavy components to reduce initial bundle size
 const ChatInterface = lazy(() => import('../components/ChatInterface').then(module => ({ default: module.ChatInterface })));
@@ -17,12 +18,14 @@ export const Generator: React.FC = memo(() => {
   const { id } = useParams();
   const { t } = useTranslation();
 
-  // Cleanup performance monitoring on unmount
-  useEffect(() => {
-    return () => {
-      performanceMonitor.cleanup();
-    };
-  }, []);
+   // Cleanup performance monitoring on unmount
+   useEffect(() => {
+     return () => {
+       performanceMonitor.cleanup();
+       // Reset frontend performance optimizer on unmount
+       frontendPerformanceOptimizer.reset();
+     };
+   }, []);
   
   // Use Custom Hook for Logic
   const {
