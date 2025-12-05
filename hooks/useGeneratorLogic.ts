@@ -10,6 +10,7 @@ import { ValidationService } from '../utils/validation';
 import { createScopedLogger } from '../utils/logger';
 import { useMessageBuffer } from '../utils/messageBuffer';
 import { loadGeminiService, preloadGeminiService } from '../services/aiServiceLoader';
+import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
 
 const logger = createScopedLogger('useGeneratorLogic');
 
@@ -113,10 +114,12 @@ export const useGeneratorLogic = (id?: string) => {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  // Preload AI service for better UX
-  useEffect(() => {
-    preloadGeminiService();
-  }, []);
+   // Preload AI service for better UX
+   useEffect(() => {
+     preloadGeminiService();
+     // Also warm up the frontend performance optimizer when generator is loaded
+     frontendPerformanceOptimizer.warmUp().catch(err => logger.warn('Frontend performance optimizer warmup failed:', err));
+   }, []);
 
   const [state, dispatch] = useReducer(generatorReducer, initialState);
   

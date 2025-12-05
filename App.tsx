@@ -8,12 +8,13 @@ import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
- import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
- import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
- import { frontendOptimizer } from './services/frontendOptimizer';
- import { edgeAnalytics } from './services/edgeAnalytics';
- import { edgeMonitoring } from './services/edgeMonitoring';
- import { advancedAPICache } from './services/advancedAPICache';
+  import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
+  import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
+  import { frontendOptimizer } from './services/frontendOptimizer';
+  import { edgeAnalytics } from './services/edgeAnalytics';
+  import { edgeMonitoring } from './services/edgeMonitoring';
+  import { advancedAPICache } from './services/advancedAPICache';
+  import { frontendPerformanceOptimizer } from './services/frontendPerformanceOptimizer';
 
 // Enhanced lazy loading with route-based code splitting and preloading
 const Auth = lazy(() => 
@@ -115,49 +116,54 @@ useEffect(() => {
     };
   }, []);
 
-  // Separate non-critical service initialization to prevent blocking
-  const initializeNonCriticalServices = useCallback(() => {
-    // Use setTimeout to defer non-critical initialization
-    const initializeServices = async () => {
-      try {
-        // Initialize Vercel Edge Optimizer (non-blocking)
-        setTimeout(() => {
-          vercelEdgeOptimizer.optimizeBundleForEdge();
-          vercelEdgeOptimizer.enableEdgeSSR();
-          vercelEdgeOptimizer.setupEdgeErrorHandling();
-        }, 100);
-        
-        // Initialize Frontend Optimizer (non-blocking)
-        setTimeout(() => {
-          frontendOptimizer.warmUp().catch(err => logger.warn('Frontend optimizer warmup failed:', err));
-        }, 200);
-        
-        // Initialize Edge Analytics (non-blocking)
-        setTimeout(() => {
-          edgeAnalytics.trackCustomEvent('app_initialization', {
-            timestamp: Date.now(),
-            userAgent: navigator.userAgent,
-            region: 'unknown' // Will be detected by edge analytics
-          });
-          
-          const monitoringStatus = edgeMonitoring.getMonitoringStatus();
-          logger.info('Edge monitoring status:', monitoringStatus);
-        }, 300);
-        
-        // Initialize Advanced API Cache (non-blocking)
-        setTimeout(() => {
-          advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
-            logger.warn('API cache prefetch failed:', err)
-          );
-        }, 400);
-      } catch (error) {
-        logger.warn('Non-critical service initialization failed:', error);
-      }
-    };
-    
-    // Run initialization in background
-    initializeServices();
-  }, []);
+   // Separate non-critical service initialization to prevent blocking
+   const initializeNonCriticalServices = useCallback(() => {
+     // Use setTimeout to defer non-critical initialization
+     const initializeServices = async () => {
+       try {
+         // Initialize Vercel Edge Optimizer (non-blocking)
+         setTimeout(() => {
+           vercelEdgeOptimizer.optimizeBundleForEdge();
+           vercelEdgeOptimizer.enableEdgeSSR();
+           vercelEdgeOptimizer.setupEdgeErrorHandling();
+         }, 100);
+         
+         // Initialize Frontend Optimizer (non-blocking)
+         setTimeout(() => {
+           frontendOptimizer.warmUp().catch(err => logger.warn('Frontend optimizer warmup failed:', err));
+         }, 200);
+         
+         // Initialize Advanced Frontend Performance Optimizer (non-blocking)
+         setTimeout(() => {
+           frontendPerformanceOptimizer.warmUp().catch(err => logger.warn('Frontend performance optimizer warmup failed:', err));
+         }, 250);
+         
+         // Initialize Edge Analytics (non-blocking)
+         setTimeout(() => {
+           edgeAnalytics.trackCustomEvent('app_initialization', {
+             timestamp: Date.now(),
+             userAgent: navigator.userAgent,
+             region: 'unknown' // Will be detected by edge analytics
+           });
+           
+           const monitoringStatus = edgeMonitoring.getMonitoringStatus();
+           logger.info('Edge monitoring status:', monitoringStatus);
+         }, 300);
+         
+         // Initialize Advanced API Cache (non-blocking)
+         setTimeout(() => {
+           advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
+             logger.warn('API cache prefetch failed:', err)
+           );
+         }, 400);
+       } catch (error) {
+         logger.warn('Non-critical service initialization failed:', error);
+       }
+     };
+     
+     // Run initialization in background
+     initializeServices();
+   }, []);
 
    // Enhanced loading component with better UX
    const LoadingComponent = useMemo(() => (

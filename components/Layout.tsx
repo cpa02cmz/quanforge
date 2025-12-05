@@ -6,6 +6,7 @@ import { AISettingsModal } from './AISettingsModal';
 import { DatabaseSettingsModal } from './DatabaseSettingsModal';
 import { useTranslation } from '../services/i18n';
 import { UserSession } from '../types';
+import PerformanceInsights from './PerformanceInsights';
 
 interface LayoutProps {
   session: UserSession | null;
@@ -182,10 +183,11 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
              </button>
           </div>
         </header>
-        <div className="flex-1 overflow-y-auto">
-          <Outlet />
-        </div>
-      </main>
-    </div>
-  );
-});
+         <div className="flex-1 overflow-y-auto">
+           <Outlet />
+         </div>
+         <PerformanceInsights />
+       </main>
+     </div>
+   );
+ });

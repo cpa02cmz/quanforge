@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState, useMemo, useCallback, memo } from 'react';
+import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
 import { Link } from 'react-router-dom';
 import { mockDb } from '../services/supabase';
 import { Robot, UserSession } from '../types';
@@ -201,46 +202,53 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
   // Optimized threshold for better performance with medium-sized lists
   const shouldUseVirtualScroll = robots.length > 20;
 
-// Enhanced Filter Logic with optimized indexing and early termination
-   const filteredRobots = useMemo(() => {
-     const startTime = import.meta.env.DEV ? performance.now() : 0;
-     
-     // Pre-calculate normalized debounced search term to avoid repeated operations
-     const normalizedSearchTerm = debouncedSearchTerm.toLowerCase();
-     
-     // Early return if no filters needed
-     if (normalizedSearchTerm === '' && filterType === 'All') {
-       return robots;
-     }
-     
-     // Optimized filtering with early termination
-     const result = robots.filter(robot => {
-       // Type filter first (faster comparison)
-       if (filterType !== 'All' && (robot.strategy_type || 'Custom') !== filterType) {
-         return false;
-       }
-       
-       // Search filter last (more expensive)
-       if (normalizedSearchTerm !== '') {
-         const robotName = robot.name.toLowerCase();
-         if (!robotName.includes(normalizedSearchTerm)) {
-           return false;
-         }
-       }
-       
-       return true;
-     });
-     
-     // Log performance in development
-     if (import.meta.env.DEV && startTime) {
-       const duration = performance.now() - startTime;
-       if (duration > 10) { // Only log if filtering takes more than 10ms
-         logger.debug(`Filtering ${robots.length} robots took ${duration.toFixed(2)}ms`);
-       }
-     }
-     
-     return result;
-   }, [robots, debouncedSearchTerm, filterType]);
+   // Enhanced Filter Logic with optimized indexing and early termination
+    const filteredRobots = useMemo(() => {
+      const startTime = import.meta.env.DEV ? performance.now() : 0;
+      
+      // Use the performance optimizer to memoize this expensive operation
+      const result = frontendPerformanceOptimizer.memoizeComponent(
+        `filtered_robots_${debouncedSearchTerm}_${filterType}_${robots.length}`,
+        () => {
+          // Pre-calculate normalized debounced search term to avoid repeated operations
+          const normalizedSearchTerm = debouncedSearchTerm.toLowerCase();
+          
+          // Early return if no filters needed
+          if (normalizedSearchTerm === '' && filterType === 'All') {
+            return robots;
+          }
+          
+          // Optimized filtering with early termination
+          return robots.filter(robot => {
+            // Type filter first (faster comparison)
+            if (filterType !== 'All' && (robot.strategy_type || 'Custom') !== filterType) {
+              return false;
+            }
+            
+            // Search filter last (more expensive)
+            if (normalizedSearchTerm !== '') {
+              const robotName = robot.name.toLowerCase();
+              if (!robotName.includes(normalizedSearchTerm)) {
+                return false;
+              }
+            }
+            
+            return true;
+          });
+        },
+        5000 // 5 second TTL for this filter result
+      );
+      
+      // Log performance in development
+      if (import.meta.env.DEV && startTime) {
+        const duration = performance.now() - startTime;
+        if (duration > 10) { // Only log if filtering takes more than 10ms
+          logger.debug(`Filtering ${robots.length} robots took ${duration.toFixed(2)}ms`);
+        }
+      }
+      
+      return result;
+    }, [robots, debouncedSearchTerm, filterType]);
 
   // Derived list of unique strategy types for the dropdown - memoized
   const availableTypes = useMemo(() => 
