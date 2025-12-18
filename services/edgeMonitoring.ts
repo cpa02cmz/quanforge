@@ -462,7 +462,7 @@ class EdgeMonitoringService {
     }
   }
 
-  private async sendEmailNotification(alert: Alert): Promise<void> {
+  private async sendEmailNotification(_alert: Alert): Promise<void> {
     // In a real implementation, this would integrate with an email service
 // Removed for production: console.log(`📧 Email alert sent to ${this.config.emailRecipients?.join(', ')}:`, alert.message);
   }

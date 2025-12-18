@@ -5,7 +5,7 @@
 
 import { enhancedConnectionPool } from './enhancedSupabasePool';
 import { edgeConnectionPool } from './edgeSupabasePool';
-import { globalCache } from './unifiedCacheManager';
+import { consolidatedCache } from './consolidatedCacheManager';
 import { logger } from '../utils/logger';
 import { performanceMonitor } from '../utils/performance';
 
@@ -141,7 +141,7 @@ class EdgeOptimizationService {
   private async collectMetrics(): Promise<EdgeMetrics> {
     const poolStats = enhancedConnectionPool.getStats();
     const edgeMetrics = enhancedConnectionPool.getEdgeMetrics();
-    const cacheMetrics = globalCache.getMetrics();
+    const cacheMetrics = consolidatedCache.getMetrics();
     
     const metrics: EdgeMetrics = {
       region: this.currentRegion,
@@ -232,14 +232,14 @@ class EdgeOptimizationService {
 
   private optimizeCacheStrategy(): void {
     // Adjust cache TTL based on hit rate
-    const cacheMetrics = globalCache.getMetrics();
+    const cacheMetrics = consolidatedCache.getMetrics();
     
     if (this.config.cacheStrategy === 'aggressive') {
       // Increase cache TTL for better hit rates
-      globalCache.set('optimization_cache_ttl', Date.now(), 15 * 60 * 1000); // 15 minutes
+      consolidatedCache.set('optimization_cache_ttl', Date.now(), 15 * 60 * 1000); // 15 minutes
     } else if (this.config.cacheStrategy === 'conservative') {
       // Decrease cache TTL for fresher data
-      globalCache.set('optimization_cache_ttl', Date.now(), 2 * 60 * 1000); // 2 minutes
+      consolidatedCache.set('optimization_cache_ttl', Date.now(), 2 * 60 * 1000); // 2 minutes
     }
   }
 
@@ -286,7 +286,7 @@ class EdgeOptimizationService {
     ];
     
     commonKeys.forEach(key => {
-      globalCache.set(`predictive_${key}`, { timestamp: Date.now() }, 5 * 60 * 1000);
+      consolidatedCache.set(`predictive_${key}`, { timestamp: Date.now() }, 5 * 60 * 1000);
     });
   }
 

@@ -67,12 +67,12 @@ class MarketDataService {
           }
       };
 
-      this.binanceWs.onclose = (event) => {
+      this.binanceWs.onclose = (_event) => {
 // Removed for production: console.log(`Binance WS Closed. Code: ${event.code}, Reason: ${event.reason}`);
           this.scheduleBinanceReconnect();
       };
       
-      this.binanceWs.onerror = (err) => {
+      this.binanceWs.onerror = (_err) => {
 // Removed for production: console.warn("Binance WS Error", err);
       };
   }
@@ -182,7 +182,7 @@ class MarketDataService {
           }
       };
 
-      this.twelveDataWs.onclose = (event) => {
+      this.twelveDataWs.onclose = (_event) => {
 // Removed for production: console.log(`Twelve Data WS Closed. Code: ${event.code}, Reason: ${event.reason}`);
           // Only reconnect if we still have subscribers needing it and haven't exceeded max attempts
            if (this.twelveDataSubscriptions.size > 0 && this.twelveDataReconnectAttempts < this.maxReconnectAttempts) {
@@ -190,7 +190,7 @@ class MarketDataService {
            }
       };
 
-      this.twelveDataWs.onerror = (err) => {
+      this.twelveDataWs.onerror = (_err) => {
 // Removed for production: console.warn("Twelve Data WS Error", err);
       };
   }

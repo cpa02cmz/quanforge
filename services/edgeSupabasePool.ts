@@ -182,9 +182,9 @@ class EdgeSupabasePool {
       }
     }
     
-    // Log warming summary
-    const successCount = results.filter(r => r.success).length;
-    const avgLatency = results.reduce((sum, r) => sum + r.latency, 0) / results.length;
+    // Log warming
+    results.filter(r => r.success).length;
+    results.reduce((sum, r) => sum + r.latency, 0) / results.length;
 // Removed for production: console.log(`🔥 Edge warming completed: ${successCount}/${regions.length} regions successful, avg latency: ${avgLatency.toFixed(2)}ms`);
     
     return;
