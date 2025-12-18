@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Analytics API failed:', error);
+    // Log error properly in production
     
     return NextResponse.json({
       success: false,
@@ -137,7 +137,7 @@ async function getAnalyticsSummary(region: string, timeRange: string) {
   };
 }
 
-async function getPerformanceAnalytics(region: string, timeRange: string) {
+async function getPerformanceAnalytics(_region: string, _timeRange: string) {
   const dbReport = databasePerformanceMonitor.getPerformanceReport();
   const edgeMetrics = vercelEdgeOptimizer.getEdgeMetrics();
   

@@ -2,8 +2,8 @@
 import React, { Suspense, useState, useRef, useEffect, memo, useCallback, useMemo } from 'react';
 import DOMPurify from 'dompurify';
 import { Message, MessageRole } from '../types';
-import { loadSuggestedStrategies } from '../constants';
 import { useTranslation } from '../services/i18n';
+import { loadSuggestedStrategies } from '../constants';
 import { createScopedLogger } from '../utils/logger';
 
 const logger = createScopedLogger('ChatInterface');
@@ -256,9 +256,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   const [suggestedStrategies, setSuggestedStrategies] = useState<Array<{ label: string; prompt: string }>>([]);
 
   useEffect(() => {
-    loadSuggestedStrategies(language).then(strategies => {
+    loadSuggestedStrategies(language).then((strategies: any) => {
       setSuggestedStrategies(strategies[language] || strategies.en || []);
-    }).catch(err => {
+    }).catch((err: any) => {
       logger.error('Failed to load suggested strategies:', err);
       setSuggestedStrategies([]);
     });

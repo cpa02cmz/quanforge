@@ -7,7 +7,7 @@ import { createScopedLogger } from '../utils/logger';
 
 interface AIResponseCacheEntry {
   prompt: string;
-  response: any;
+  response: unknown;
   timestamp: number;
   ttl: number;
   strategy: string; // The strategy type for cache grouping
@@ -56,7 +56,7 @@ class AIResponseCache {
     return Math.abs(hash).toString(36);
   }
   
-  private compressData(data: any): any {
+  private compressData(data: unknown): unknown {
     if (!this.config.enableCompression) return data;
     
     try {
@@ -69,7 +69,7 @@ class AIResponseCache {
     }
   }
   
-  private decompressData(data: any): any {
+  private decompressData(data: unknown): unknown {
     if (!this.config.enableCompression) return data;
     
     try {
@@ -110,7 +110,7 @@ class AIResponseCache {
     }
   }
   
-  async get(prompt: string, strategy?: string): Promise<any | null> {
+  async get(prompt: string, strategy?: string): Promise<unknown | null> {
     this.cleanupExpired();
     
     const key = this.generateKey(prompt, strategy);
@@ -137,7 +137,7 @@ class AIResponseCache {
     }
   }
   
-  async set(prompt: string, response: any, strategy?: string, ttl?: number): Promise<void> {
+  async set(prompt: string, response: unknown, strategy?: string, ttl?: number): Promise<void> {
     this.cleanupExpired();
     
     const key = this.generateKey(prompt, strategy);
