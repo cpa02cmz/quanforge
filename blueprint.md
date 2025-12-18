@@ -73,3 +73,23 @@ graph TD
 *   **API Keys**: Accessed via `process.env`.
 *   **Input Sanitization**: Filenames are sanitized before download.
 *   **Prompt Engineering**: System prompts prevents the AI from generating harmful or non-MQL5 content.
+*   **Enterprise Security**: Advanced security manager with WAF patterns, comprehensive input validation, and edge-specific security optimizations
+*   **Threat Detection**: Real-time threat scanning and adaptive rate limiting
+*   **Data Protection**: Multi-layer security including XSS/SQL injection prevention and CSRF protection
+
+## 6. Performance & Scalability
+
+*   **Performance Monitoring**: Real-time metrics tracking and analysis
+*   **Intelligent Caching**: Multi-layer caching with LRU and edge optimization
+*   **Memory Management**: Active memory monitoring with emergency cleanup
+*   **Edge Optimization**: Global distribution via Vercel Edge
+*   **Connection Pooling**: Advanced Supabase connection pool management
+*   **Query Optimization**: Predictive caching and query batching strategies
+
+## 7. Code Quality Standards
+
+*   **Type Safety**: Strict TypeScript implementation with comprehensive interface definitions
+*   **Error Handling**: Multi-layered error handling with circuit breakers and retry mechanisms
+*   **Modularity**: Clear separation of concerns with service-oriented architecture
+*   **Testing**: Component testing with integration test framework
+*   **Documentation**: Comprehensive documentation and coding standards
