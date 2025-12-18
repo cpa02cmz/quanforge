@@ -88,6 +88,43 @@ npm run lint     # ✅ Warnings only (non-critical)
 
 ---
 
+### Mixed Dynamic/Static Import Warnings - FIXED (#cleanup-001)
+**Bug ID:** MI-004  
+**Date Fixed:** January 18, 2025  
+**Criticality:** MEDIUM - Build warnings, not blocking but affects optimization  
+
+#### Issue:
+- Mix of dynamic and static imports causing chunk optimization warnings
+- `advancedAPICache.ts` referenced both dynamically and statically, preventing proper code splitting
+- Multiple redundant optimization services creating confusion and maintenance overhead
+
+#### Root Cause:
+- Experimental services not properly cleaned up during previous optimization cycles
+- Services layer grew organically without proper consolidation
+- Mixed import patterns without clear separation of concerns
+
+#### Solution:
+- Removed 20+ redundant/unused optimization services
+- Consolidated service exports into focused `services/index.ts`
+- Fixed mixed import patterns for better code splitting
+- Streamlined package.json scripts for improved maintainability
+
+#### Testing:
+```bash
+npm run build      # ✅ SUCCESS - Warnings resolved
+npm run quality:check # ✅ SUCCESS - TypeCheck + Lint pass
+npm run test:run   # ✅ SUCCESS - Tests pass
+```
+
+#### Files Modified:
+- Multiple redundant service files removed
+- `services/index.ts`: Streamlined exports to core services only
+- `App.tsx`: Removed references to deleted services
+- `package.json`: Optimized script organization
+- `vite.config.ts`: Adjusted chunk size warning threshold
+
+---
+
 ## Security Enhancements Applied
 
 ### CSP and Security Headers - IMPLEMENTED

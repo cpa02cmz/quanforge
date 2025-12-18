@@ -1,27 +1,23 @@
-// Export all services for easier imports
+// Export all core services for easier imports
+
+// Core services - keep these minimal and focused
 export * from './supabase';
 export * from './gemini';
 export * from './aiServiceLoader';
-export * from './settingsManager';
+export * from './supabase-new';
 export * from './simulation';
+export * from './i18n';
+export * from './marketData';
+export * from './settingsManager';
+
+// Performance services
 export * from './vercelEdgeOptimizer';
 export * from './frontendOptimizer';
-export * from './edgeAnalytics';
-export * from './performanceMonitorEnhanced';
-export * from './realUserMonitoring';
-export * from './apiDeduplicator';
-export * from './advancedAPICache';
-export * from './databaseOptimizer';
-export * from './realtimeManager';
+export * from './performanceOptimizer';
+
+// Data services  
 export * from './edgeCacheManager';
-export * from './edgeSupabaseClient';
-export * from './marketData';
-export * from './edgeMonitoring';
-export * from './edgeRequestCoalescer';
-export * from './circuitBreaker';
-export * from './dataCompression';
-export * from './requestThrottler';
-export * from './readReplicaManager';
-export * from './queryBatcher';
-export * from './edgeKVStorage';
-export * from './realTimeUXScoring';
+export * from './unifiedCacheManager';
+
+// Optimizer services  
+export * from './databaseOptimizer';

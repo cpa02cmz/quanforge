@@ -75,18 +75,30 @@ graph TD
 *   **Prompt Engineering**: System prompts prevents the AI from generating harmful or non-MQL5 content.
 *   **Cross-Platform Compatibility**: All code works in browser, Node.js, and edge runtime environments.
 
-## 6. Rate Limiting & Performance
+## 6. Performance & Security Architecture
 
-*   **Enhanced Rate Limiter** (`utils/enhancedRateLimit.ts`):
-    *   Browser-compatible implementation using simple hash algorithm
-    *   Supports user-specific and global rate limiting
+*   **Advanced Caching System** (`services/edgeCacheManager.ts`):
+    *   Multi-layer semantic caching with intelligent matching
+    *   Edge cache replication for global performance
+    *   Tag-based invalidation and predictive warming
+    *   LRU eviction with compression optimization
+
+*   **Security & Rate Limiting** (`utils/enhancedRateLimit.ts`):
+    *   Browser-compatible hash implementation using djb2 algorithm
+    *   Configurable rate limiting with user-specific and global limits
+    *   CSRF protection and input sanitization
     *   Automatic cleanup and memory management
-    *   Works seamlessly in both browser and edge environments
 
 ## 7. Deployment Architecture
 
-*   **Vercel Configuration** (`vercel.json`):
-    *   Edge function runtime for API routes
-    *   Comprehensive security headers and CSP
-    *   Optimized caching strategies for API and static assets
-    *   Full schema compliance and cross-platform deployment support
+*   **Vercel Edge Functions** (`vercel.json`):
+    *   Modern functions configuration with schema compliance
+    *   Comprehensive Content Security Policy (CSP) headers
+    *   Edge-optimized API routes with global CDN distribution
+    *   Cross-platform deployment (browser, Node.js, edge runtime)
+
+*   **Bundle Optimization** (`vite.config.ts`):
+    *   Manual chunking strategy for optimal loading performance
+    *   Vendor library granulation to reduce initial payload
+    *   Component-level lazy loading for improved time-to-interactive
+    * - Performance budgeting with sub-100KB chunks

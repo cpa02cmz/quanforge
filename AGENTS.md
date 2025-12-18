@@ -59,12 +59,47 @@ function simpleHash(str: string): string {
 - Minimize dependencies to reduce bundle size
 - Test worker builds separately from application builds
 
+## Recent Architectural Changes (January 2025)
+
+### Repository Optimization
+- **Documentation Consolidation**: Removed 60+ redundant optimization documentation files and created single-source-of-truth guide
+- **Service Cleanup**: Consolidated 15+ duplicate/optimization services into focused, maintainable core services
+- **Package.json Optimization**: Streamlined scripts into logical groupings with improved maintainability
+- **Bundle Optimization**: Enhanced chunking strategy resolves warnings while preserving vendor library integrity
+
+### Service Architecture Updates
+- **Core Services**: Minimal focused set (`supabase`, `gemini`, `aiServiceLoader`, `simulation`, etc.)
+- **Performance Services**: Separated performance-specific services for cleaner architecture
+- **Database Services**: Reorganized with modular `supabase-new.ts` exports for better maintainability
+
+### Performance Optimizations Applied
+- **Manual Chunking**: Comprehensive strategy with vendor library granulation and component-based splitting
+- **Tree Shaking**: Aggressive tree-shaking configuration eliminates dead code
+- **Build Pipeline**: Streamlined build scripts with development, testing, and production workflows
+
+## Best Practices from Recent Development
+
+### Code Organization
+- **Single Source of Truth**: One comprehensive optimization document (`docs/PERFORMANCE_OPTIMIZATION_GUIDE.md`) replaces 60+ scattered docs
+- **Focused Services**: Each service has specific responsibility without duplication  
+- **Dependency Management**: Careful monitoring of dynamic imports vs static imports to ensure proper code splitting
+
+### Package Management
+- **Script Categories**: Grouped into logical sections (`quality:`, `devtools:`, `test:`)
+- **Redundant Script Removal**: Eliminated overlapping build commands, consolidated to essentials
+- **Cross-platform Compatibility**: Verified all tools work across development and production environments
+
+### Documentation Strategy
+- **Maintainable Docs**: Current, accurate technical documentation synchronized with actual implementation
+- **Comprehensive README**: Up-to-date build commands, features list, and developer setup instructions  
+- **Technical Guides**: Focused docs for specific complex topics vs scattered multiple versions
+
 ## Future Considerations
 
 ### Scalability Architecture
-- **Service Workers**: For client-side caching and offline support
+- **Service Workers**: For client-side caching and offline support  
+- **Advanced Chunking**: Route and feature-based code splitting on top of current granular strategy
 - **Edge Functions**: For API routes and regional optimization
-- **CDN Integration**: For static asset optimization
 
 ### Security Enhancements
 - **Content Security Policy**: Already implemented with comprehensive headers
@@ -75,6 +110,7 @@ function simpleHash(str: string): string {
 - **Incremental Testing**: Test changes across all deployment platforms
 - **Documentation Updates**: Keep technical docs synchronized with code changes
 - **Agent Guidelines**: Document patterns for future development iterations
+- **Service Hygiene**: Regular cleanup of experimental/duplicate services
 
 ## Agent Interaction Patterns
 

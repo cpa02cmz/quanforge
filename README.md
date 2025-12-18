@@ -44,17 +44,26 @@ QuantForge AI is a web-based platform that uses Google's Gemini 3.0/2.5 AI model
 ## Development
 
 ```bash
+# Install dependencies
+npm install
+
 # Start development server
 npm run dev
 
-# Type checking
-npm run typecheck
+# Quality checks
+npm run quality:check          # Type checking + linting
+npm run quality:fix            # Auto-fix linting issues
+npm run quality:check:full     # Complete quality check with tests
 
-# Build for production
-npm run build
+# Build & deployment
+npm run build:production       # Optimized production build
+npm run devtools:analyze      # Bundle size analysis
+npm run preview               # Preview production build
 
-# Preview production build
-npm run preview
+# Testing
+npm run test                   # Run tests in watch mode
+npm run test:coverage          # Generate coverage report
+npm run test:performance       # Performance tests
 ```
 
 ## Deployment
@@ -74,17 +83,18 @@ To deploy to Vercel:
 2. Configure environment variables in Vercel dashboard
 3. Deploy automatically on push to main branch
 
- ### Performance Optimizations
+ ### Performance & Security
 
- - **Code Splitting**: Automatic chunking of vendor libraries, components, and pages
- - **Caching**: Intelligent caching strategy for Supabase queries and API responses
- - **Bundle Optimization**: Tree-shaking and minification for reduced bundle size
- - **Lazy Loading**: Components are loaded on-demand for faster initial load
- - **Performance Monitoring**: Built-in performance metrics collection
- - **Enhanced Security**: Advanced API key encryption with additional obfuscation layers
- - **Input Validation**: Comprehensive XSS protection and input sanitization across all user inputs
- - **Error Handling**: Improved error boundaries and global error capture
- - **Database Performance**: Optimized indexing and caching mechanisms for large datasets
+The application features comprehensive optimizations for production deployment:
+
+- **Bundle Optimization**: Manual chunking with granular code splitting and vendor library optimization
+- **Advanced Caching**: Multi-layer semantic caching with LRU eviction and edge cache replication
+- **Performance Monitoring**: Real-time metrics collection with alerting and performance budgets
+- **Security Hardening**: Comprehensive CSP, XSS protection, and secure API key management
+- **Error Resilience**: Circuit breaker patterns, rate limiting, and graceful degradation
+- **Database Optimization**: Advanced query optimization with connection pooling and caching
+
+For detailed information about performance optimizations, see the [Performance Optimization Guide](docs/PERFORMANCE_OPTIMIZATION_GUIDE.md).
 
 ## Usage
 
