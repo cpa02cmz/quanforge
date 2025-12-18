@@ -105,9 +105,75 @@ After fixing bugs, verify:
 - [ ] No new linting warnings introduced (API edge functions still have warnings)
 - [x] Performance metrics not degraded
 
+## Open Bugs
+
+### Critical Security Vulnerabilities
+- **ID**: Bug-009
+- **Title**: XOR encryption vulnerability in secureStorage.ts
+- **Description**: Production code uses simple XOR encryption that is easily reversible and not secure
+- **Location**: utils/secureStorage.ts:21
+- **Status**: OPEN
+- **Priority**: CRITICAL
+- **Impact**: Sensitive data at risk of exposure
+- **Proposed Solution**: Replace with Web Crypto API AES-GCM encryption
+- **Analyst Reference**: Comprehensive analysis session December 2025
+
+### Architecture & Maintainability Issues
+- **ID**: Bug-010
+- **Title**: Monolithic service - supabase.ts (1,686 lines)
+- **Description**: Single service file violates single responsibility principle, maintainability, and testability
+- **Location**: services/supabase.ts
+- **Status**: OPEN
+- **Priority**: HIGH
+- **Impact**: Difficult to maintain, test, and debug; single point of failure
+- **Proposed Solution**: Break into focused modules (auth, data, cache, connection)
+
+- **ID**: Bug-011
+- **Title**: Service layer over-engineering (87 services)
+- **Description**: Too many fragmented service files indicate over-engineering and lack of clear boundaries
+- **Status**: OPEN
+- **Priority**: MEDIUM
+- **Impact**: Complex dependencies, difficult navigation, potential circular dependencies
+- **Proposed Solution**: Consolidate to ~30 focused modules with clear responsibilities
+
+### Security & Authentication Issues
+- **ID**: Bug-012
+- **Title**: Mock authentication system lacks proper security
+- **Description**: No proper session validation, revocation, or secure authentication mechanisms
+- **Status**: OPEN
+- **Priority**: HIGH
+- **Impact**: Authentication bypass, session hijacking risks
+- **Proposed Solution**: Implement JWT + refresh token system with proper security controls
+
+- **ID**: Bug-013
+- **Title**: API keys exposed in client-side bundle
+- **Description**: Sensitive API keys accessible in environment variables on client side
+- **Status**: OPEN
+- **Priority**: HIGH
+- **Impact**: API key leakage, unauthorized usage
+- **Proposed Solution**: Move sensitive operations to edge functions with server-side secret management
+
+### Performance Issues
+- **ID**: Bug-003
+- **Title**: Large bundle chunks (>100KB) causing performance concerns
+- **Description**: Several vendor chunks exceed recommended size
+- **Status**: OPEN
+- **Priority**: MEDIUM
+- **Proposed Solution**: Implement code splitting and lazy loading
+
+### Code Quality Issues  
+- **ID**: Bug-004
+- **Title**: ESLint warnings in API edge functions
+- **Description**: Multiple files have console statements and unused variables
+- **Status**: OPEN
+- **Priority**: LOW
+- **Proposed Solution**: Clean up console statements and unused parameters
+
 ## Known Limitations
 
-1. **Test Coverage**: Limited automated tests make regression testing challenging
-2. **Browser Compatibility**: Primarily tested in Chrome/Chromium
-3. **Edge Function Testing**: Local testing of edge functions is limited
-4. **Performance Monitoring**: Real-time metrics could be enhanced
+1. **Security**: Critical encryption vulnerabilities requiring immediate attention
+2. **Test Coverage**: Limited automated tests make regression testing challenging
+3. **Browser Compatibility**: Primarily tested in Chrome/Chromium
+4. **Edge Function Testing**: Local testing of edge functions is limited
+5. **Performance Monitoring**: Real-time metrics could be enhanced
+6. **Memory Management**: Complex caching layers require ongoing monitoring
