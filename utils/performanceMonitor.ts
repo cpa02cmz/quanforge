@@ -110,7 +110,7 @@ class PerformanceMonitor {
       if (!acc[metric.operation]) {
         acc[metric.operation] = [];
       }
-      acc[metric.operation].push(metric);
+      (acc[metric.operation] || []).push(metric);
       return acc;
     }, {} as Record<string, PerformanceMetrics[]>);
 
@@ -201,13 +201,13 @@ class PerformanceMonitor {
 export const performanceMonitor = new PerformanceMonitor();
 
 // Decorator for automatic performance monitoring
-export function measurePerformance(operationName?: string) {
+export function measurePerformance(_operationName?: string) {
   return function (target: unknown, propertyName: string, descriptor: PropertyDescriptor) {
     const method = descriptor.value;
     const constructorName = (target as any).constructor?.name || 'Unknown';
 
     descriptor.value = function (...args: unknown[]) {
-      const endTimer = performanceMonitor.startTimer(operation, {
+      const endTimer = performanceMonitor.startTimer(propertyName, {
         className: constructorName,
         methodName: propertyName
       });
