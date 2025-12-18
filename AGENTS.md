@@ -8,6 +8,21 @@
 **Solution Applied**: Browser-compatible simple hash algorithm  
 **Key Insight**: Always verify cross-platform compatibility when importing Node.js modules in frontend code
 
+### Vercel Deployment Schema Issues (2025-12-18)
+**Issue**: Multiple `vercel.json` schema validation errors blocking deployments  
+**Root Causes**: 
+- Conflicting `builds` and `functions` properties
+- Invalid `experimental` and `environment` properties  
+- Legacy configuration patterns
+**Solution Applied**: Cleaned up vercel.json with schema-compliant settings
+**Key Insight**: Deployment platform schemas evolve - remove deprecated properties proactively
+
+### PR Management & Red Flag Resolution (2025-12-18)
+**Issue**: PR #139 had red flags with failing deployments on both Vercel and Cloudflare Workers
+**Root Causes**: Build compatibility and deployment configuration conflicts
+**Solution Applied**: Systematic troubleshooting of build, schema, and deployment pipeline
+**Key Insight**: Address root causes systematically rather than symptom patches
+
 ### Recommended Development Patterns
 
 #### Browser Compatibility Checklist
@@ -72,3 +87,38 @@
 3. **Document Decisions**: Record why changes were made, not just what was changed
 4. **Think Cross-Platform**: Consider browser, server, and edge environments
 5. **Security Mindset**: Validate inputs, avoid exposing secrets, use secure defaults
+
+## Known Issues & Solutions
+
+### Build Compatibility
+- **Issue**: Node.js modules in frontend code
+- **Solution**: Use browser-compatible alternatives or Web APIs
+- **Detection**: Build failures with module resolution errors
+
+### Deployment Configuration
+- **Issue**: Platform schema validation failures
+- **Solution**: Review platform documentation and remove deprecated properties
+- **Detection**: Deployment logs show validation errors
+
+### Code Quality
+- **Issue**: 200+ ESLint warnings (console.log, unused vars, any types)
+- **Solution**: Incremental cleanup with focus on critical issues
+- **Detection**: `npm run lint` shows extensive warnings
+
+## Success Metrics
+
+- ✅ Build passes without errors
+- ✅ Type checking passes
+- ✅ Deployment pipelines functional
+- ✅ Cross-platform compatibility maintained
+- ✅ No regressions introduced
+- ✅ Documentation updated
+
+## Agent Contact & Handoff
+
+When handing off between agents:
+1. Always run final build test
+2. Update relevant documentation
+3. Note any temporary workarounds
+4. Flag any critical issues for follow-up
+5. Summarize decisions made and rationale

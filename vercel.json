@@ -1,14 +1,10 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm ci",
+  "devCommand": "npm run dev",
   "routes": [
     {
       "src": "/home",
@@ -80,26 +76,6 @@
       ]
     }
   ],
-  "framework": "vite",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm ci",
-  "devCommand": "npm run dev",
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "edge",
-      "maxDuration": 15,
-      "memory": 512
-    }
-  },
-  "build": {
-    "env": {
-      "NODE_ENV": "production",
-      "NEXT_TELEMETRY_DISABLED": "1",
-      "VERCEL_ANALYTICS_ENABLED": "true"
-    }
-  },
-  "crons": [],
   "rewrites": [
     {
       "source": "/api/supabase/(.*)",
