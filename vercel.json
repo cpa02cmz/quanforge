@@ -67,6 +67,10 @@
     {
       "source": "/api/supabase/(.*)",
       "destination": "/api/supabase/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
