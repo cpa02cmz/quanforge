@@ -240,19 +240,6 @@
     }
   },
   "crons": [],
-  "experimental": {
-    "edgeFunctions": {
-      "warm": true,
-      "maxConcurrency": 1000,
-      "incrementalCache": true,
-      "streaming": true
-    },
-    "allowedHosts": [
-      "quanforge.ai",
-      "*.quanforge.ai",
-      "*.supabase.co"
-    ]
-  },
   "rewrites": [
     {
       "source": "/api/supabase/(.*)",
