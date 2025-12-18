@@ -70,6 +70,10 @@ graph TD
 
 ## 5. Security & Safety
 
-*   **API Keys**: Accessed via `process.env`.
-*   **Input Sanitization**: Filenames are sanitized before download.
+*   **API Keys**: Accessed via `process.env` with rotation support.
+*   **Input Sanitization**: Comprehensive sanitization via `securityManager.ts` with XSS/SQL injection prevention.
 *   **Prompt Engineering**: System prompts prevents the AI from generating harmful or non-MQL5 content.
+*   **WAF Protection**: Web Application Firewall patterns for attack detection and prevention.
+*   **MQL5 Code Validation**: Dangerous function detection and sanitization in generated code.
+*   **Rate Limiting**: Multi-tier rate limiting with edge-specific controls.
+*   **CSRF Protection**: Token-based CSRF prevention for state-changing operations.

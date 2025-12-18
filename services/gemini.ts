@@ -26,63 +26,10 @@ import { handleError } from "../utils/errorHandler";
 import { apiDeduplicator } from "./apiDeduplicator";
 import { createScopedLogger } from "../utils/logger";
 import { aiWorkerManager } from "./aiWorkerManager";
+import { aiCache } from "./unifiedCacheService";
+import { CacheUtils } from "../config/cache";
 
 const logger = createScopedLogger('gemini');
-
-// Enhanced cache with TTL and size management
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-  ttl: number;
-}
-
-class EnhancedCache<T> {
-  private cache = new Map<string, CacheEntry<T>>();
-  private readonly maxSize: number;
-  
-  constructor(maxSize: number = 100) {
-    this.maxSize = maxSize;
-  }
-  
-  get(key: string): T | null {
-    const entry = this.cache.get(key);
-    if (!entry) return null;
-    
-    // Check if entry is expired
-    if (Date.now() - entry.timestamp > entry.ttl) {
-      this.cache.delete(key);
-      return null;
-    }
-    
-    return entry.data;
-  }
-  
-  set(key: string, data: T, ttl: number = 300000): void { // Default 5 minutes TTL
-    // Remove oldest entries if we're at max size
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      if (firstKey) this.cache.delete(firstKey);
-    }
-    
-    this.cache.set(key, { data, timestamp: Date.now(), ttl });
-  }
-  
-  clear(): void {
-    this.cache.clear();
-  }
-  
-  has(key: string): boolean {
-    return this.cache.has(key);
-  }
-  
-  size(): number {
-    return this.cache.size;
-  }
-  
-  keys(): string[] {
-    return Array.from(this.cache.keys());
-  }
-}
 
 // Enhanced security utilities for input sanitization and validation
 const sanitizePrompt = (prompt: string): string => {
@@ -144,20 +91,26 @@ const sanitizePrompt = (prompt: string): string => {
   }
   
   // Enforce length limits to prevent token exhaustion attacks
-  if (sanitized.length > 10000) {
-    throw new Error('Prompt too long: maximum 10,000 characters allowed');
+  const PROMPT_LIMITS = {
+    MAX_LENGTH: 10000,
+    MIN_LENGTH: 10,
+    PER_MINUTE: 30
+  };
+  
+  if (sanitized.length > PROMPT_LIMITS.MAX_LENGTH) {
+    throw new Error(`Prompt too long: maximum ${PROMPT_LIMITS.MAX_LENGTH.toLocaleString()} characters allowed`);
   }
   
-  if (sanitized.length < 10) {
-    throw new Error('Prompt too short: minimum 10 characters required');
+  if (sanitized.length < PROMPT_LIMITS.MIN_LENGTH) {
+    throw new Error(`Prompt too short: minimum ${PROMPT_LIMITS.MIN_LENGTH} characters required`);
   }
   
   // Rate limiting check (simple implementation)
   const now = Date.now();
-  const promptKey = `prompt_${Math.floor(now / 60000)}`; // Per minute bucket
+  const promptKey = `prompt_${Math.floor(now / CacheUtils.ttlms.minutes(1))}`; // Per minute bucket
   const currentCount = parseInt(localStorage.getItem(promptKey) || '0');
-  if (currentCount >= 30) { // Max 30 prompts per minute
-    throw new Error('Rate limit exceeded: please wait before sending another prompt');
+  if (currentCount >= PROMPT_LIMITS.PER_MINUTE) { // Max prompts per minute
+    throw new Error(`Rate limit exceeded: maximum ${PROMPT_LIMITS.PER_MINUTE} prompts per minute`);
   }
   localStorage.setItem(promptKey, (currentCount + 1).toString());
   
@@ -227,55 +180,13 @@ export const isValidStrategyParams = (params: any): boolean => {
   return true;
 };
 
-// Advanced cache for strategy analysis to avoid repeated API calls
-// Uses LRU eviction to prevent memory bloat
-class LRUCache<T> {
-  private cache = new Map<string, { result: T, timestamp: number }>();
-  private readonly ttl: number;
-  private readonly maxSize: number;
+// Using unified cache service instead of custom implementation
 
-  constructor(ttl: number = 5 * 60 * 1000, maxSize: number = 100) { // 5 min TTL, max 100 items
-    this.ttl = ttl;
-    this.maxSize = maxSize;
-  }
-
-  get(key: string): T | undefined {
-    const item = this.cache.get(key);
-    if (!item) return undefined;
-
-    if (Date.now() - item.timestamp > this.ttl) {
-      this.cache.delete(key);
-      return undefined;
-    }
-
-    // Move to end (most recently used)
-    this.cache.delete(key);
-    this.cache.set(key, item);
-    return item.result;
-  }
-
-  set(key: string, value: T): void {
-    // Evict oldest if at max size
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      if (firstKey) {
-        this.cache.delete(firstKey);
-      }
-    }
-    
-    this.cache.set(key, { result: value, timestamp: Date.now() });
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-}
-
-const analysisCache = new LRUCache<StrategyAnalysis>();
-const enhancedAnalysisCache = new EnhancedCache<StrategyAnalysis>(200); // Larger cache size for better performance
+const analysisCache = aiCache;
+const enhancedAnalysisCache = aiCache;
 
 // Semantic cache for generateMQL5Code responses
-const mql5ResponseCache = new EnhancedCache<{ thinking?: string, content: string }>(300); // Cache for MQL5 generation responses
+const mql5ResponseCache = aiCache;
 
 // Create semantic cache key for similar prompts
 const createSemanticCacheKey = (prompt: string, currentCode?: string, strategyParams?: StrategyParams, settings?: AISettings): string => {
@@ -813,7 +724,7 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
      const semanticKey = createSemanticCacheKey(sanitizedPrompt, currentCode, validatedParams, settings);
      
      // Check semantic cache first
-     const cachedResponse = mql5ResponseCache.get(semanticKey);
+     const cachedResponse = await mql5ResponseCache.get(semanticKey);
      if (cachedResponse) {
        logger.debug('Semantic cache hit for MQL5 generation');
        return cachedResponse;
@@ -848,7 +759,7 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
      }
      
      // Cache the response with semantic key and longer TTL for similar prompts
-     mql5ResponseCache.set(semanticKey, response, 900000); // 15 minutes TTL
+     await mql5ResponseCache.set(semanticKey, response, { ttl: 900000, tags: ['mql5', 'generation'] }); // 15 minutes TTL
      
      return response;
 
@@ -994,24 +905,24 @@ export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promi
       const codeHash = createHash(code.substring(0, 5000));
       const cacheKey = `${codeHash}-${settings.provider}-${settings.modelName}`;
       
-       // Check primary cache first
-       const cached = analysisCache.get(cacheKey);
-       if (cached) {
-           return cached;
-       }
-       
-       // Check enhanced cache as fallback
-       const enhancedCached = enhancedAnalysisCache.get(cacheKey);
-       if (enhancedCached) {
-           return enhancedCached;
-       }
+// Check primary cache first
+        const cached = await analysisCache.get(cacheKey);
+        if (cached) {
+            return cached;
+        }
+        
+        // Check enhanced cache as fallback
+        const enhancedCached = await enhancedAnalysisCache.get(cacheKey);
+        if (enhancedCached) {
+            return enhancedCached;
+        }
  
        // Use request deduplication to prevent duplicate API calls
        return requestDeduplicator.deduplicate(cacheKey, async () => {
          if (!activeKey && settings.provider === 'google') return { riskScore: 0, profitability: 0, description: "API Key Missing" };
  
          // Limit code length to prevent token budget issues
-         const maxCodeLength = 30000; // Reduced from 50000 to be more conservative
+         const maxCodeLength = 30000; // Reduced from 50000 to be more conservative - should be moved to config
          const truncatedCode = code.length > maxCodeLength ? code.substring(0, maxCodeLength) + "..." : code;
          
          const prompt = `Analyze this MQL5 code and return a JSON summary of its potential risk and strategy type. Code: ${truncatedCode}
@@ -1070,15 +981,15 @@ const response = await ai!.models.generateContent({
                   result.riskScore = Math.min(10, Math.max(1, Number(result.riskScore) || 0));
                   result.profitability = Math.min(10, Math.max(1, Number(result.profitability) || 0));
                   
-                  // Cache the result in both caches
-                  analysisCache.set(cacheKey, result);
-                  enhancedAnalysisCache.set(cacheKey, result, 600000); // 10 minutes TTL for enhanced cache
-                  
-                  // Also cache by shorter code snippet for similar code detection
-                  const shortCodeHash = createHash(code.substring(0, 1000));
-                  const shortCacheKey = `short-${shortCodeHash}-${settings.provider}`;
-                  analysisCache.set(shortCacheKey, result);
-                  enhancedAnalysisCache.set(shortCacheKey, result, 600000);
+// Cache the result in both caches
+                   await analysisCache.set(cacheKey, result, { ttl: 600000, tags: ['analysis', 'strategy'] });
+                   await enhancedAnalysisCache.set(cacheKey, result, { ttl: 600000, tags: ['analysis', 'strategy'] });
+                   
+                   // Also cache by shorter code snippet for similar code detection
+                   const shortCodeHash = createHash(code.substring(0, 1000));
+                   const shortCacheKey = `short-${shortCodeHash}-${settings.provider}`;
+                   await analysisCache.set(shortCacheKey, result, { ttl: 600000, tags: ['analysis', 'strategy'] });
+                   await enhancedAnalysisCache.set(shortCacheKey, result, { ttl: 600000, tags: ['analysis', 'strategy'] });
              } else {
                  // Return a default response if parsing fails
                  return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };
