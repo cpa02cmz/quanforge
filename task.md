@@ -60,7 +60,24 @@
     - [x] Coding Standards (`coding_standard.md`).
     - [x] Feature List (`fitur.md`).
 
+## Recent Agent Activity (December 2025)
+
+- [x] **PR #132 Analysis**: Identified and fixed Vercel deployment issue
+    - Removed invalid `experimental` property from vercel.json
+    - Resolved schema validation errors
+    - Build now passes successfully
+- [x] **Branch Management**: Set up develop branch from main
+- [x] **Documentation Updates**: Created AGENTS.md for future agent guidance
+- [x] **Code Review**: Analyzed multiple open PRs for deployment issues
+- [x] **PR #135 Red Flag Resolution**: Fixed Vercel deployment schema validation
+    - Identified experimental property causing validation failures
+    - Successfully tested local build to ensure no regressions
+    - Updated bug.md with fix documentation
+
 ## Pending / Future Tasks
 
 - [ ] **Community Sharing**: Share robots via public links.
 - [ ] **Direct MT5 Bridge**: WebSocket connection to local MetaTrader instance.
+- [ ] **PR Cleanup**: Review and merge pending open PRs with deployment fixes
+- [ ] **Test Coverage**: Add comprehensive unit and integration tests
+- [ ] **Performance Monitoring**: Enhanced real-time metrics and alerting
