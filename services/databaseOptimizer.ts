@@ -2,7 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Robot } from '../types';
 import { queryOptimizer } from './queryOptimizer';
 import { robotCache } from './advancedCache';
-import { securityManager } from './securityManager';
+import { securityManager } from './unifiedSecurityManager';
 
 interface OptimizationConfig {
   enableQueryCaching: boolean;
@@ -64,7 +64,8 @@ class DatabaseOptimizer {
       offset?: number;
     } = {}
   ): Promise<{ data: Robot[] | null; error: any }> {
-    if (!securityManager.validateInput(searchTerm, 'search')) {
+    const searchValidation = securityManager.validateInput(searchTerm, 'search');
+    if (!searchValidation.isValid) {
       return { data: null, error: { message: 'Invalid search term' } };
     }
     
@@ -145,7 +146,8 @@ class DatabaseOptimizer {
     // Validate records if requested
     if (options.validateRecords) {
       for (const record of records) {
-        if (!securityManager.validateInput(record, 'record')) {
+        const recordValidation = securityManager.sanitizeAndValidate(record, 'robot');
+        if (!recordValidation.isValid) {
           return { data: null, error: { message: 'Invalid record data' }, metrics: { executionTime: 0 } };
         }
       }

@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { Robot } from '../types';
 import { consolidatedCache } from './consolidatedCacheManager';
-import { securityManager } from './securityManager';
+import { securityManager } from './unifiedSecurityManager';
 import { logger } from '../utils/logger';
 import { performanceMonitor } from '../utils/performance';
 

@@ -1,6 +1,6 @@
 import { createScopedLogger } from '../utils/logger';
 import { AdvancedCache, CacheFactory } from './advancedCache';
-import { securityManager } from './securityManager';
+import { securityManager } from './unifiedSecurityManager';
 
 const logger = createScopedLogger('UnifiedCache');
 

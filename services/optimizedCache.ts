@@ -1,5 +1,5 @@
 import { createScopedLogger } from '../utils/logger';
-import { securityManager } from './securityManager';
+import { securityManager } from './unifiedSecurityManager';
 
 const logger = createScopedLogger('OptimizedCache');
 

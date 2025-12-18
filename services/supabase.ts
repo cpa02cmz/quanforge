@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { Robot, UserSession } from '../types';
 import { edgeConnectionPool } from './edgeSupabasePool';
-import { securityManager } from './securityManager';
+import { securityManager } from './unifiedSecurityManager';
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
