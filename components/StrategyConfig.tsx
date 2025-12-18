@@ -8,6 +8,7 @@ import { useToast } from './Toast';
 import { NumericInput } from './NumericInput';
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
+import { handleStrategyParamChange, handleCustomInputChange } from '../utils/formUtils';
 
 const logger = createScopedLogger('StrategyConfig');
 
@@ -39,19 +40,16 @@ const sanitizeInput = (input: string): string => {
     });
   };
 
-  const handleChange = useCallback((field: keyof StrategyParams, value: any) => {
+  const handleChange = useCallback((field: keyof StrategyParams, value: string | number | CustomInput[]) => {
      if (typeof value === 'string') {
        value = sanitizeInput(value);
      }
-     onChange({ ...params, [field]: value });
+     handleStrategyParamChange(params, onChange, field, value);
    }, [params, onChange]);
 
   const handleInputChange = useCallback((id: string, field: keyof CustomInput, value: string) => {
-    const newInputs = params.customInputs.map(input => 
-      input.id === id ? { ...input, [field]: value } : input
-    );
-    onChange({ ...params, customInputs: newInputs });
-  }, [params.customInputs, onChange]);
+    handleCustomInputChange(params, onChange, id, field, value);
+  }, [params, onChange]);
 
   const handleInputTypeChange = useCallback((id: string, newType: CustomInput['type']) => {
       let defaultValue = '0';

@@ -167,3 +167,159 @@ export const isUser = (obj: unknown): obj is User => {
     ('email' in obj ? typeof obj.email === 'string' : true)
   );
 };
+
+// Error handling types to replace 'any' usage
+export type ErrorSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+export type ErrorCategory = 
+  | 'network'
+  | 'validation'
+  | 'authentication'
+  | 'authorization'
+  | 'timeout'
+  | 'rate_limit'
+  | 'server_error'
+  | 'client_error'
+  | 'edge_error'
+  | 'database'
+  | 'unknown';
+
+export interface ErrorMetadata {
+  severity?: ErrorSeverity;
+  category?: ErrorCategory;
+  retryable?: boolean;
+  userId?: string;
+  sessionId?: string;
+  requestId?: string;
+  userAgent?: string;
+  url?: string;
+  timestamp?: string;
+  component?: string;
+  operation?: string;
+  attempt?: number;
+  maxAttempts?: number;
+  fallbackTriggered?: boolean;
+  edgeError?: boolean;
+  [key: string]: unknown;
+}
+
+export interface RetryOptions {
+  retries?: number;
+  fallback?: () => Promise<unknown> | unknown;
+  backoff?: 'linear' | 'exponential';
+  backoffBase?: number;
+  shouldRetry?: (error: unknown) => boolean;
+}
+
+export interface CircuitBreakerOptions {
+  failureThreshold?: number;
+  timeout?: number;
+  resetTimeout?: number;
+}
+
+export type CircuitBreakerState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+
+// Generic function types to replace 'any' in higher-order functions
+export type AsyncFunction<T extends readonly unknown[] = unknown[], R = unknown> = (
+  ...args: T
+) => Promise<R>;
+
+export type SyncFunction<T extends readonly unknown[] = unknown[], R = unknown> = (
+  ...args: T
+) => R;
+
+// Error handling result types
+export interface ErrorHandlingResult<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: Error;
+  metadata?: ErrorMetadata;
+}
+
+// Enhanced error context with strict typing
+export interface StrictErrorContext {
+  operation: string;
+  component?: string;
+  userId?: string;
+  additionalData?: Record<string, unknown>;
+  metadata?: ErrorMetadata;
+}
+
+// Service response types
+export interface ServiceResponse<T = unknown> {
+  data?: T;
+  error?: Error;
+  success: boolean;
+  metadata?: ErrorMetadata;
+}
+
+// API response wrapper types
+export interface APIResponse<T = unknown> {
+  data?: T;
+  error?: {
+    message: string;
+    code?: string | number;
+    details?: Record<string, unknown>;
+  };
+  success: boolean;
+  metadata?: {
+    requestId?: string;
+    timestamp?: string;
+    duration?: number;
+  };
+}
+
+// Cache-related types to replace 'any' in cache operations
+export interface CacheEntry<T = unknown> {
+  value: T;
+  timestamp: number;
+  ttl?: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CacheOptions {
+  ttl?: number;
+  maxSize?: number;
+  strategy?: 'lru' | 'fifo' | 'lfu';
+}
+
+// Performance monitoring types
+export interface PerformanceMetric {
+  name: string;
+  value: number;
+  unit: 'ms' | 'bytes' | 'count' | 'percent';
+  timestamp: number;
+  tags?: Record<string, string>;
+}
+
+export interface PerformanceReport {
+  metrics: PerformanceMetric[];
+  summary: {
+    totalOperations: number;
+    averageResponseTime: number;
+    errorRate: number;
+    memoryUsage?: number;
+  };
+  timestamp: number;
+}
+
+// Validation result types
+export interface ValidationResult {
+  isValid: boolean;
+  errors: ValidationError[];
+  warnings?: ValidationWarning[];
+}
+
+export interface ValidationError {
+  field?: string;
+  message: string;
+  code?: string;
+  value?: unknown;
+}
+
+export interface ValidationWarning {
+  field?: string;
+  message: string;
+  code?: string;
+  value?: unknown;
+}

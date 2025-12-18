@@ -11,6 +11,7 @@ import { createScopedLogger } from '../utils/logger';
 import { useMessageBuffer } from '../utils/messageBuffer';
 import { loadGeminiService, preloadGeminiService } from '../services/aiServiceLoader';
 import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
+import { getConfig } from '../config/appConfig';
 
 const logger = createScopedLogger('useGeneratorLogic');
 
@@ -518,7 +519,7 @@ const stopGeneration = () => {
           } finally {
               dispatch({ type: 'SET_SIMULATING', payload: false });
           }
-      }, 500);
+      }, getConfig.timeout('SIMULATION_DELAY'));
   };
 
   return {

@@ -1,8 +1,14 @@
+import { 
+  RetryOptions,
+  AsyncFunction
+} from '../types';
+import { getConfig } from '../config/appConfig';
+
 export interface ErrorContext {
   operation: string;
   component?: string;
   userId?: string;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }
 
 export interface ErrorInfo {
@@ -17,7 +23,7 @@ export interface ErrorInfo {
 export class ErrorHandler {
   private static instance: ErrorHandler;
   private errors: ErrorInfo[] = [];
-  private maxErrors = 50; // Keep only last 50 errors
+  private maxErrors = getConfig.ui('ERROR_HISTORY_SIZE'); // Keep configured number of errors
 
   private constructor() {
     // Store errors in localStorage for debugging
@@ -147,7 +153,12 @@ export class ErrorHandler {
 }
 
 // Convenience function for global error handling
-export const handleError = (error: Error | string, operation: string, component?: string, additionalData?: Record<string, any>) => {
+export const handleError = (
+  error: Error | string, 
+  operation: string, 
+  component?: string, 
+  additionalData?: Record<string, unknown>
+) => {
   const errorHandler = ErrorHandler.getInstance();
   errorHandler.handleError(error, { 
     operation, 
@@ -157,17 +168,11 @@ export const handleError = (error: Error | string, operation: string, component?
 };
 
 // Higher-order function for wrapping async functions with retry logic
-export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
+export const withErrorHandling = <T extends AsyncFunction>(
   fn: T,
   operation: string,
   component?: string,
-  options: {
-    retries?: number;
-    fallback?: () => Promise<ReturnType<T>> | ReturnType<T>;
-    backoff?: 'linear' | 'exponential';
-    backoffBase?: number;
-    shouldRetry?: (error: any) => boolean;
-  } = {}
+  options: RetryOptions = {}
 ): T => {
   const { 
     retries = 0, 
@@ -178,7 +183,7 @@ export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
   } = options;
   
   return (async (...args: Parameters<T>) => {
-    let lastError: any;
+    let lastError: unknown;
     
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -213,13 +218,14 @@ export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
     if (fallback) {
       try {
         console.warn(`Using fallback for ${operation} after ${retries + 1} attempts`);
-        return await fallback();
+        const fallbackResult = await fallback();
+        return fallbackResult as ReturnType<T>;
       } catch (fallbackError) {
         console.error(`Fallback failed for ${operation}:`, fallbackError);
       }
     }
     
-    throw lastError; // Re-throw the original error if no fallback worked
+    throw lastError as Error; // Re-throw the original error if no fallback worked
   }) as T;
 };
 
@@ -228,7 +234,7 @@ export const useErrorHandler = () => {
   const errorHandler = ErrorHandler.getInstance();
 
   return {
-    handleError: (error: Error | string, operation: string, component?: string, additionalData?: Record<string, any>) => {
+    handleError: (error: Error | string, operation: string, component?: string, additionalData?: Record<string, unknown>) => {
       errorHandler.handleError(error, { operation, component: component || 'unknown', ...(additionalData && { additionalData }) });
     },
     getErrors: () => errorHandler.getErrors(),
@@ -292,15 +298,15 @@ export const errorRecovery = {
     operation: () => Promise<T>, 
     maxRetries: number = 3,
     baseDelay: number = 1000,
-    shouldRetry?: (error: any) => boolean
+    shouldRetry?: (error: unknown) => boolean
   ): Promise<T> {
     let lastError: Error;
     
     for (let i = 0; i <= maxRetries; i++) {
       try {
         return await operation();
-      } catch (error: any) {
-        lastError = error;
+      } catch (error: unknown) {
+        lastError = error as Error;
         
         if (i === maxRetries) {
           throw error;
@@ -312,7 +318,7 @@ export const errorRecovery = {
         }
         
         // Don't retry on validation or auth errors
-        if (errorClassifier.isValidationError(error) || errorClassifier.isAuthError(error)) {
+        if (errorClassifier.isValidationError(lastError) || errorClassifier.isAuthError(lastError)) {
           throw error;
         }
         
@@ -346,7 +352,7 @@ export const errorRecovery = {
   },
   
   // Circuit breaker pattern implementation
-  createCircuitBreaker<T extends (...args: any[]) => Promise<any>>(
+  createCircuitBreaker<T extends AsyncFunction>(
     operation: T,
     options: {
       failureThreshold?: number;
@@ -388,7 +394,7 @@ export const errorRecovery = {
         // Success - reset failure count and close circuit
         failureCount = 0;
         state = 'CLOSED';
-        return result;
+        return result as ReturnType<T>;
       } catch (error) {
         failureCount++;
         lastFailureTime = now;
@@ -401,7 +407,7 @@ export const errorRecovery = {
           state = 'HALF_OPEN'; // We actually remain half-open until success
         }
         
-        throw error;
+        throw error as Error;
       }
     }) as T;
   }
