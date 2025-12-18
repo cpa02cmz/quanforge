@@ -1,5 +1,6 @@
 import { Robot, StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
+import { secureStorage } from '../utils/secureStorage';
 
 interface SecurityConfig {
   maxPayloadSize: number;
@@ -946,7 +947,8 @@ private validateRobotData(data: any): ValidationResult {
 
   private getCurrentAPIKey(): string {
     // Retrieve current API key from secure storage
-    return localStorage.getItem('current_api_key') || '';
+    const secureKey = secureStorage.get<string>('current_api_key');
+    return secureKey || localStorage.getItem('current_api_key') || '';
   }
 
   private generateSecureAPIKey(): string {
@@ -956,7 +958,11 @@ private validateRobotData(data: any): ValidationResult {
   }
 
   private storeAPIKey(key: string, expiresAt: number): void {
-    localStorage.setItem('current_api_key', key);
+    // Store API key securely with encryption
+    secureStorage.set('current_api_key', key, { 
+      encrypt: true, 
+      ttl: expiresAt - Date.now() 
+    });
     localStorage.setItem('api_key_expires', expiresAt.toString());
   }
 

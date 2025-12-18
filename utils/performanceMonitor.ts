@@ -6,7 +6,7 @@ interface PerformanceMetrics {
   endTime: number;
   duration: number;
   memoryUsage: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 interface PerformanceReport {
@@ -25,7 +25,7 @@ class PerformanceMonitor {
   private reportingThreshold = 200; // Increased from 100 to reduce overhead
   private samplingRate = 0.1; // Sample 10% of operations to reduce overhead
 
-  startTimer(operation: string, metadata?: Record<string, any>): () => PerformanceMetrics {
+  startTimer(operation: string, metadata?: Record<string, unknown>): () => PerformanceMetrics {
     // Skip monitoring for some operations to reduce overhead
     if (Math.random() > this.samplingRate) {
       return () => ({} as PerformanceMetrics);
@@ -180,25 +180,38 @@ class PerformanceMonitor {
   }
 
 // Web performance API integration
-    getWebVitals(): any {
-      if (typeof performance !== 'undefined' && 'getEntriesByType' in performance) {
-        // Use any type to avoid strict typing issues with performance entries
-        const performanceAPI: any = performance;
-        const navigationEntries = performanceAPI.getEntriesByType?.('navigation') || [];
-        const paintEntries = performanceAPI.getEntriesByType?.('paint') || [];
-        const resourceEntries = performanceAPI.getEntriesByType?.('resource') || [];
-        
-        // Calculate Core Web Vitals
-        let lcpValue = 0;
-        let clsValue = 0;
-        let fidValue = 0;
-        
-        // LCP (Largest Contentful Paint)
-        const lcpEntries = performanceAPI.getEntriesByType?.('largest-contentful-paint') || [];
-        if (lcpEntries.length > 0) {
-          const lcpEntry = lcpEntries[lcpEntries.length - 1];
-          lcpValue = lcpEntry.startTime;
+getWebVitals(): {
+    navigation?: {
+      domContentLoaded?: number;
+      loadComplete?: number;
+      firstByte?: number;
+    };
+    paint?: {
+      firstPaint?: PerformanceEntry | null;
+      firstContentfulPaint?: PerformanceEntry | null;
+    };
+  } {
+    try {
+      // Get performance entries
+      const navigationEntries = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      const paintEntries = performance.getEntriesByType('paint');
+
+      return {
+        navigation: {
+          domContentLoaded: navigationEntries?.domContentLoadedEventEnd - navigationEntries?.domContentLoadedEventStart,
+          loadComplete: navigationEntries?.loadEventEnd - navigationEntries?.loadEventStart,
+          firstByte: navigationEntries?.responseStart - navigationEntries?.requestStart,
+        },
+        paint: {
+          firstPaint: Array.isArray(paintEntries) ? paintEntries.find((entry) => entry.name === 'first-paint') : null,
+          firstContentfulPaint: Array.isArray(paintEntries) ? paintEntries.find((entry) => entry.name === 'first-contentful-paint') : null,
         }
+      };
+    } catch (error) {
+      console.warn('Web vitals not available:', error);
+      return {};
+    }
+  }
         
         // Calculate CLS (Cumulative Layout Shift)
         const layoutShiftEntries = performanceAPI.getEntriesByType?.('layout-shift') || [];

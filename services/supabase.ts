@@ -7,6 +7,7 @@ import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
+import { secureStorage } from '../utils/secureStorage';
 
 // Enhanced connection retry configuration with exponential backoff
 const RETRY_CONFIG = {
@@ -41,6 +42,18 @@ const safeParse = (data: string | null, fallback: any) => {
 
 // Helper: Try save to storage with Quota handling
 const trySaveToStorage = (key: string, value: string) => {
+    // Use secure storage for sensitive data
+    if (key.includes('session') || key.includes('auth')) {
+        const success = secureStorage.set(key, value, { 
+            encrypt: true, 
+            ttl: 24 * 60 * 60 * 1000 // 24 hours 
+        });
+        if (!success) {
+            throw new Error("Failed to secure sensitive data.");
+        }
+        return;
+    }
+    
     try {
         localStorage.setItem(key, value);
     } catch (e: any) {
@@ -80,6 +93,9 @@ const isValidRobot = (r: any): boolean => {
 // --- Mock Implementation ---
 
 const getMockSession = () => {
+  // Try secure storage first, fallback to localStorage
+  const secureData = secureStorage.get<string>(STORAGE_KEY);
+  if (secureData) return safeParse(secureData, null);
   return safeParse(localStorage.getItem(STORAGE_KEY), null);
 };
 
