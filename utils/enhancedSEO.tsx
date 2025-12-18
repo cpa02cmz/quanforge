@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { SEOHead, SEOAnalytics } from './seo';
+import { SEOHead, SEOAnalytics, structuredDataTemplates } from './seoEnhanced';
 
 interface EnhancedSEOProps {
   title?: string;
@@ -148,7 +148,7 @@ export const EnhancedSEO: React.FC<EnhancedSEOProps> = ({
     // Add basic structured data based on page type
     if (pageType === 'homepage') {
       data.push(structuredDataTemplates.softwareApplication);
-      data.push(structuredDataTemplates.localBusiness);
+      data.push(structuredDataTemplates.organization);
       data.push(structuredDataTemplates.webPage(finalTitle, finalDescription, finalCanonicalUrl));
     } else if (pageType === 'generator') {
       data.push(structuredDataTemplates.softwareApplication);

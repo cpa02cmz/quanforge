@@ -27,7 +27,7 @@ interface RobotCardProps {
   processingId: string | null;
   onDuplicate: (id: string) => void;
   onDelete: (id: string, name: string) => void;
-  t: (key: string, params?: Record<string, unknown>) => string;
+  t: (key: string, params?: Record<string, string>) => string;
 }
 
 const RobotCard: React.FC<RobotCardProps> = memo(({
@@ -340,7 +340,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
           processingId={processingId}
           onDuplicate={handleDuplicate}
           onDelete={handleDelete}
-          t={t}
+          t={t as (key: string, params?: Record<string, string | number | boolean | unknown>) => string}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
