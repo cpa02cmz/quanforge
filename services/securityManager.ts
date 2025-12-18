@@ -1,5 +1,6 @@
 import { Robot, StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
+import { ENV_CONFIG, isAllowedOrigin } from '../constants/envConfig';
 
 interface SecurityConfig {
   maxPayloadSize: number;
@@ -40,12 +41,7 @@ class SecurityManager {
   private static instance: SecurityManager;
   private config: SecurityConfig = {
     maxPayloadSize: 5 * 1024 * 1024, // Reduced to 5MB for better security
-    allowedOrigins: [
-      'https://quanforge.ai',
-      'https://www.quanforge.ai',
-      'http://localhost:3000',
-      'http://localhost:5173' // Vite dev server
-    ],
+    allowedOrigins: [], // Will be populated from environment
     rateLimiting: {
       windowMs: 60000, // 1 minute
       maxRequests: 100,
@@ -74,7 +70,10 @@ class SecurityManager {
   };
   private rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
-  private constructor() {}
+  private constructor() {
+    // Initialize allowed origins from environment configuration
+    this.config.allowedOrigins = ENV_CONFIG.ALLOWED_ORIGINS;
+  }
 
   static getInstance(): SecurityManager {
     if (!SecurityManager.instance) {
@@ -635,7 +634,8 @@ private validateRobotData(data: any): ValidationResult {
 
   // Origin validation
   validateOrigin(origin: string): boolean {
-    return this.config.allowedOrigins.includes(origin);
+    // Use the environment-aware origin validation
+    return isAllowedOrigin(origin) || this.config.allowedOrigins.includes(origin);
   }
 
 

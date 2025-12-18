@@ -3,6 +3,7 @@ import React, { useState, useEffect, memo } from 'react';
 import { AISettings, AIProvider, Language } from '../types';
 import { settingsManager, DEFAULT_AI_SETTINGS } from '../services/settingsManager';
 import { useToast } from './Toast';
+import { ENV_CONFIG } from '../constants/envConfig';
 // testAIConnection imported dynamically to avoid bundle issues
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
@@ -43,7 +44,7 @@ const PROVIDER_PRESETS: Record<string, Partial<AISettings>> = {
     },
     'local': {
         provider: 'openai',
-        baseUrl: 'http://localhost:11434/v1',
+        baseUrl: ENV_CONFIG.AI_LOCAL_BASE_URL,
         modelName: 'llama3'
     }
 };
@@ -65,7 +66,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, o
             else if (current.baseUrl?.includes('groq')) setActivePreset('groq');
             else if (current.baseUrl?.includes('openrouter')) setActivePreset('openrouter');
             else if (current.baseUrl?.includes('deepseek')) setActivePreset('deepseek');
-            else if (current.baseUrl?.includes('localhost')) setActivePreset('local');
+            else if (current.baseUrl?.includes('localhost') || current.baseUrl === ENV_CONFIG.AI_LOCAL_BASE_URL) setActivePreset('local');
             else setActivePreset('openai');
         }
     }, [isOpen]);
@@ -100,7 +101,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, o
     // };
 
     const handleTestConnection = async () => {
-        if (!settings.apiKey && !settings.baseUrl?.includes('localhost')) {
+        if (!settings.apiKey && !settings.baseUrl?.includes('localhost') && settings.baseUrl !== ENV_CONFIG.AI_LOCAL_BASE_URL) {
             showToast('Please enter an API Key first', 'error');
             return;
         }

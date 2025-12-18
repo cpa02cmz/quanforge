@@ -3,6 +3,8 @@
  * Optimizes Vercel Edge Functions for better performance and reduced cold starts
  */
 
+import { ENV_CONFIG } from '../constants/envConfig';
+
 interface EdgeFunctionConfig {
   name: string;
   regions: string[];
@@ -145,7 +147,7 @@ class EdgeFunctionOptimizer {
    * Generate warmup requests for a function
    */
   private generateWarmupRequests(functionName: string): WarmupRequest[] {
-    const baseUrl = process.env['VERCEL_URL'] || 'localhost:3000';
+    const baseUrl = ENV_CONFIG.EDGE_BASE_URL;
     const protocol = process.env['NODE_ENV'] === 'production' ? 'https' : 'http';
 
     switch (functionName) {

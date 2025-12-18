@@ -92,7 +92,7 @@ export type Language = 'en' | 'id';
 export interface AISettings {
   provider: AIProvider;
   apiKey: string;
-  baseUrl?: string; // For OpenAI compatible (e.g. http://localhost:11434/v1)
+  baseUrl?: string; // For OpenAI compatible (configured via VITE_AI_LOCAL_BASE_URL environment variable)
   modelName: string; // e.g. gemini-2.0-flash, gpt-4, deepseek-coder
   customInstructions?: string; // User-defined global prompt rules
   language: Language; // UI Language
