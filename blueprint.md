@@ -130,6 +130,12 @@ Based on systematic analysis of the entire codebase:
 2. **Multi-tenancy**: Design for multiple users/organizations
 3. **APM Integration**: Real-time performance monitoring
 
+### Documentation Navigation
+- **[Repository Index](REPOSITORY_INDEX.md)** - Comprehensive navigation guide
+- **[Optimization Guide](OPTIMIZATION_GUIDE.md)** - Performance and security details
+- **[Task Tracker](task.md)** - Development progress and status
+- **[Bug Tracker](bug.md)** - Issues and resolution tracking
+
 ## Agent Workflow
 
 ### Development Process

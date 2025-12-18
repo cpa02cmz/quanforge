@@ -24,6 +24,12 @@
 - [ ] **Direct MT5 Integration**: (Conceptual) Use a localized Python script to bridge the web app with a running MetaTrader terminal.
 - [ ] **Version Control**: Save history of code versions for a single robot (Undo/Redo).
 
+### Documentation Resources
+- **[Repository Index](REPOSITORY_INDEX.md)** - Complete navigation and reference guide
+- **[Optimization Guide](OPTIMIZATION_GUIDE.md)** - Current performance and security status
+- **[Blueprint](blueprint.md)** - Technical architecture details
+- **[AGENTS.md](AGENTS.md)** - AI agent development guidelines
+
 ## Recent Optimizations (v1.1)
 - [x] **Security Enhancement**: Removed environment variable exposure from client-side bundle
 - [x] **Type Safety**: Improved TypeScript typing across components and services
