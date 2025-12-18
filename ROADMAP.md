@@ -45,3 +45,10 @@
 - [x] **Component Memoization**: Extended React.memo to NumericInput, AISettingsModal, and DatabaseSettingsModal components
 - [x] **Error Handling Patterns**: Standardized error handling across services using the unified error handler utility
 - [x] **API Client Fixes**: Resolved async/await issues in Supabase client calls for better reliability
+
+## Deployment & Infrastructure (v1.4)
+- [x] **Vercel Schema Compliance**: Fixed critical deployment validation errors by removing unsupported configuration properties
+- [x] **Build System Stability**: Restored full build and deployment pipeline functionality
+- [x] **Configuration Standardization**: Documented deployment constraints and provider requirements
+- [x] **Agent Guidelines**: Created comprehensive development guidelines for future work
+- [x] **Bug Tracking**: Implemented systematic bug tracking and resolution documentation

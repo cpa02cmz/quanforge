@@ -59,8 +59,18 @@
 - [x] **Documentation**:
     - [x] Coding Standards (`coding_standard.md`).
     - [x] Feature List (`fitur.md`).
+- [x] **PR #139 Updates**:
+    - [x] **Critical Fix**: Resolved Vercel deployment schema validation errors
+    - [x] **Configuration Compliance**: Removed unsupported experimental/regions/cache/environment properties
+    - [x] **Build System**: Restored full build and deployment capability
+    - [x] **Documentation**: Created bug tracking system and agent guidelines for future development
 
 ## Pending / Future Tasks
 
 - [ ] **Community Sharing**: Share robots via public links.
 - [ ] **Direct MT5 Bridge**: WebSocket connection to local MetaTrader instance.
+- [ ] **Code Quality Improvements**: Address 200+ ESLint warnings (console statements, unused vars, any types)
+- [ ] **Performance Optimization**: Implement bundle splitting for large chunks (>100KB)
+- [ ] **Deployment Configuration**: Standardize Vercel schema compliance and validation
+- [ ] **Testing**: Add unit tests for critical utilities and services
+- [ ] **Documentation**: Create comprehensive bug tracking and maintenance procedures
