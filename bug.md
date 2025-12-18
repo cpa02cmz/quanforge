@@ -25,6 +25,25 @@
   - Location: Various components
   - Description: Inconsistent validation patterns could lead to security gaps
 
+### Medium Priority  
+- [BUG-003] Mixed validation approaches across components
+  - Status: Open  
+  - Impact: Low
+  - Location: Various components
+  - Description: Inconsistent validation patterns could lead to security gaps
+
+- [BUG-010] Duplicate method names causing build warnings
+  - Status: **FIXED** ✅ 
+  - Impact: Medium  
+  - Location: `services/unifiedSecurityManager.ts`
+  - Description: Renamed duplicate `checkRateLimit` to `checkRateLimitSync` for backward compatibility
+
+- [BUG-011] Vercel deployment schema validation errors
+  - Status: **FIXED** ✅
+  - Impact: High
+  - Location: `vercel.json` 
+  - Description: Removed unsupported `regions` properties from function configurations
+
 ### Low Priority
 - [BUG-004] Inconsistent documentation levels across modules
   - Status: Open
@@ -40,6 +59,8 @@
 - [BUG-007] Memory leaks in WebSocket connections - Fixed in v1.3
 - [BUG-008] Multiple security manager implementations causing inconsistency - Fixed in v1.4 
 - [BUG-009] Unused enhancedSecurityManager.ts file - Cleaned up in v1.4
+- [BUG-010] Duplicate method names causing build warnings - Fixed in v1.5
+- [BUG-011] Vercel deployment schema validation errors - Fixed in v1.5
 
 ## Bug Prevention Measures
 

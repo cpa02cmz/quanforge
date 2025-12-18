@@ -1583,7 +1583,7 @@ class UnifiedSecurityManager {
   /**
    * Backward compatibility method - check rate limit (synchronous)
    */
-  checkRateLimit(identifier: string): { allowed: boolean; resetTime?: number } {
+  checkRateLimitSync(identifier: string): { allowed: boolean; resetTime?: number } {
     const now = Date.now();
     const record = this.rateLimitStore.get(identifier);
 
