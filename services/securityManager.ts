@@ -930,13 +930,13 @@ private validateRobotData(data: any): ValidationResult {
   }
 
   // Advanced API key rotation
-  rotateAPIKeys(): { oldKey: string; newKey: string; expiresAt: number } {
-    const oldKey = this.getCurrentAPIKey();
+  async rotateAPIKeys(): Promise<{ oldKey: string; newKey: string; expiresAt: number }> {
+    const oldKey = await this.getCurrentAPIKey();
     const newKey = this.generateSecureAPIKey();
     const expiresAt = Date.now() + this.config.encryption.keyRotationInterval;
 
     // Store new key with expiration
-    this.storeAPIKey(newKey, expiresAt);
+    await this.storeAPIKey(newKey, expiresAt);
 
     return {
       oldKey,
@@ -945,9 +945,9 @@ private validateRobotData(data: any): ValidationResult {
     };
   }
 
-  private getCurrentAPIKey(): string {
+  private async getCurrentAPIKey(): Promise<string> {
     // Retrieve current API key from secure storage
-    const secureKey = secureStorage.get<string>('current_api_key');
+    const secureKey = await secureStorage.get<string>('current_api_key');
     return secureKey || localStorage.getItem('current_api_key') || '';
   }
 
@@ -957,9 +957,9 @@ private validateRobotData(data: any): ValidationResult {
     return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
   }
 
-  private storeAPIKey(key: string, expiresAt: number): void {
+  private async storeAPIKey(key: string, expiresAt: number): Promise<void> {
     // Store API key securely with encryption
-    secureStorage.set('current_api_key', key, { 
+    await secureStorage.set('current_api_key', key, { 
       encrypt: true, 
       ttl: expiresAt - Date.now() 
     });

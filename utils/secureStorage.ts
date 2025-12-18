@@ -8,7 +8,7 @@ interface SecureStorageOptions {
 }
 
 interface StorageItem<T = any> {
-  data: T;
+  data: T; // Can be original data or processed (encrypted/compressed) string
   timestamp: number;
   ttl?: number;
   encrypted: boolean;
@@ -16,27 +16,119 @@ interface StorageItem<T = any> {
   version: string;
 }
 
-// Simple XOR encryption (for demo - in production, use proper crypto)
-class SimpleEncryption {
-  private static readonly key = 'QuantForge2025SecureKey';
+// Production-grade Web Crypto API implementation
+class WebCryptoEncryption {
+  private static readonly ALGORITHM = 'AES-GCM';
+  private static readonly KEY_LENGTH = 256;
+  private static readonly IV_LENGTH = 12;
+  private static readonly SALT_LENGTH = 32;
+  private static readonly ITERATIONS = 100000;
+  private static readonly BASE_KEY = 'QuantForge2025SecureKey';
   
-  static encrypt(text: string): string {
+  private static async deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
+    const encoder = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(password),
+      'PBKDF2',
+      false,
+      ['deriveBits', 'deriveKey']
+    );
+    
+    return crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: this.ITERATIONS,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      {
+        name: this.ALGORITHM,
+        length: this.KEY_LENGTH
+      },
+      false,
+      ['encrypt', 'decrypt']
+    );
+  }
+  
+  private static generateSalt(): Uint8Array {
+    return crypto.getRandomValues(new Uint8Array(this.SALT_LENGTH));
+  }
+  
+  private static generateIV(): Uint8Array {
+    return crypto.getRandomValues(new Uint8Array(this.IV_LENGTH));
+  }
+  
+  static async encrypt(text: string): Promise<string> {
     if (!text) return text;
     
-    const keyBytes = new TextEncoder().encode(this.key);
-    const textBytes = new TextEncoder().encode(text);
-    const encrypted = new Uint8Array(textBytes.length);
-    
-    for (let i = 0; i < textBytes.length; i++) {
-      const textByte = textBytes[i];
-      const keyByte = keyBytes[i % keyBytes.length];
-      if (textByte !== undefined && keyByte !== undefined) {
-        encrypted[i] = textByte ^ keyByte;
-      }
+    try {
+      const salt = this.generateSalt();
+      const iv = this.generateIV();
+      const key = await this.deriveKey(this.BASE_KEY, salt);
+      
+      const encoder = new TextEncoder();
+      const data = encoder.encode(text);
+      
+      const encryptedData = await crypto.subtle.encrypt(
+        {
+          name: this.ALGORITHM,
+          iv: iv
+        },
+        key,
+        data
+      );
+      
+      // Combine salt + iv + encrypted data for storage
+      const combined = new Uint8Array(salt.length + iv.length + encryptedData.byteLength);
+      combined.set(salt, 0);
+      combined.set(iv, salt.length);
+      combined.set(new Uint8Array(encryptedData), salt.length + iv.length);
+      
+      return btoa(String.fromCharCode(...combined));
+    } catch (error) {
+      console.error('Encryption failed:', error);
+      throw new Error('Failed to encrypt data');
     }
-    
-    return btoa(String.fromCharCode(...encrypted));
   }
+  
+  static async decrypt(encryptedText: string): Promise<string> {
+    if (!encryptedText) return encryptedText;
+    
+    try {
+      const combined = new Uint8Array(
+        atob(encryptedText).split('').map(char => char.charCodeAt(0))
+      );
+      
+      // Extract salt, iv, and encrypted data
+      const salt = combined.slice(0, this.SALT_LENGTH);
+      const iv = combined.slice(this.SALT_LENGTH, this.SALT_LENGTH + this.IV_LENGTH);
+      const encryptedData = combined.slice(this.SALT_LENGTH + this.IV_LENGTH);
+      
+      const key = await this.deriveKey(this.BASE_KEY, salt);
+      
+      const decryptedData = await crypto.subtle.decrypt(
+        {
+          name: this.ALGORITHM,
+          iv: iv
+        },
+        key,
+        encryptedData
+      );
+      
+      const decoder = new TextDecoder();
+      return decoder.decode(decryptedData);
+    } catch (error) {
+      console.warn('Failed to decrypt data:', error);
+      throw new Error('Failed to decrypt data');
+    }
+  }
+}
+
+// Legacy XOR decryption for migration (marked as deprecated)
+class LegacyXORDecryption {
+  private static readonly key = 'QuantForge2025SecureKey';
   
   static decrypt(encryptedText: string): string {
     if (!encryptedText) return encryptedText;
@@ -48,21 +140,27 @@ class SimpleEncryption {
       );
       const decrypted = new Uint8Array(encrypted.length);
       
-for (let i = 0; i < encrypted.length; i++) {
-      const encryptedByte = encrypted[i];
-      const keyByte = keyBytes[i % keyBytes.length];
-      if (encryptedByte !== undefined && keyByte !== undefined) {
-        decrypted[i] = encryptedByte ^ keyByte;
+      for (let i = 0; i < encrypted.length; i++) {
+        const encryptedByte = encrypted[i];
+        const keyByte = keyBytes[i % keyBytes.length];
+        if (encryptedByte !== undefined && keyByte !== undefined) {
+          decrypted[i] = encryptedByte ^ keyByte;
+        }
       }
-    }
       
       return new TextDecoder().decode(decrypted);
     } catch (error) {
-      console.warn('Failed to decrypt data:', error);
+      console.warn('Failed to decrypt legacy data:', error);
       return '';
     }
   }
 }
+
+// Backward compatibility alias (deprecated)
+const SimpleEncryption = {
+  encrypt: async (text: string) => WebCryptoEncryption.encrypt(text),
+  decrypt: LegacyXORDecryption.decrypt
+};
 
 // Simple compression (basic run-length encoding)
 class SimpleCompression {
@@ -124,7 +222,7 @@ export class SecureStorage {
     return Date.now() - item.timestamp > item.ttl;
   }
   
-  private serializeItem<T>(data: T, options: SecureStorageOptions): string {
+  private async serializeItem<T>(data: T, options: SecureStorageOptions): Promise<string> {
     let processedData: string;
     
     try {
@@ -141,16 +239,16 @@ export class SecureStorage {
     
     // Encrypt if enabled
     if (options.encrypt) {
-      processedData = SimpleEncryption.encrypt(processedData);
+      processedData = await SimpleEncryption.encrypt(processedData);
     }
     
-    const item: StorageItem<T> = {
-      data: data as any, // Store original data for debugging
+    const item: StorageItem<string> = {
+      data: processedData, // Store processed (encrypted/compressed) data
       timestamp: Date.now(),
       ttl: options.ttl,
       encrypted: !!options.encrypt,
       compressed: !!options.compress,
-      version: '1.0'
+      version: '2.0' // Updated version for new crypto
     };
     
     const serialized = JSON.stringify(item);
@@ -162,7 +260,7 @@ export class SecureStorage {
     return serialized;
   }
   
-  private deserializeItem<T>(serialized: string): T | null {
+  private async deserializeItem<T>(serialized: string): Promise<T | null> {
     try {
       const item: StorageItem<T> = JSON.parse(serialized);
       
@@ -171,20 +269,51 @@ export class SecureStorage {
         return null;
       }
       
-      // For encrypted/compressed data, we need to use the stored processed data
-      // In a real implementation, you'd store the processed data separately
-      return item.data;
+      // Handle version-based decryption and decompression
+      let processedData: string;
+      
+      if (typeof item.data === 'string') {
+        processedData = item.data;
+      } else {
+        // Legacy format where data was stored as original object
+        processedData = JSON.stringify(item.data);
+      }
+      
+      if (item.encrypted) {
+        const isLegacy = item.version === '1.0';
+        
+        try {
+          if (isLegacy) {
+            processedData = await LegacyXORDecryption.decrypt(processedData);
+          } else {
+            processedData = await WebCryptoEncryption.decrypt(processedData);
+          }
+        } catch (error) {
+          console.warn('Failed to decrypt data, returning original:', error);
+          return item.data as T;
+        }
+      }
+      
+      if (item.compressed) {
+        try {
+          processedData = SimpleCompression.decompress(processedData);
+        } catch (error) {
+          console.warn('Failed to decompress data, using processed:', error);
+        }
+      }
+      
+      return JSON.parse(processedData);
     } catch (error) {
       console.error('Failed to deserialize item:', error);
       return null;
     }
   }
   
-  set<T>(key: string, data: T, options: Partial<SecureStorageOptions> = {}): boolean {
+  async set<T>(key: string, data: T, options: Partial<SecureStorageOptions> = {}): Promise<boolean> {
     try {
       const finalOptions = { ...this.defaultOptions, ...options };
       const storageKey = this.getKey(key);
-      const serialized = this.serializeItem(data, finalOptions);
+      const serialized = await this.serializeItem(data, finalOptions);
       
       localStorage.setItem(storageKey, serialized);
       return true;
@@ -194,14 +323,14 @@ export class SecureStorage {
     }
   }
   
-  get<T>(key: string, defaultValue: T | null = null): T | null {
+  async get<T>(key: string, defaultValue: T | null = null): Promise<T | null> {
     try {
       const storageKey = this.getKey(key);
       const serialized = localStorage.getItem(storageKey);
       
       if (!serialized) return defaultValue;
       
-      const data = this.deserializeItem<T>(serialized);
+      const data = await this.deserializeItem<T>(serialized);
       return data !== null ? data : defaultValue;
     } catch (error) {
       console.error(`Failed to retrieve data for key '${key}':`, error);

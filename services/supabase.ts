@@ -42,10 +42,10 @@ const safeParse = (data: string | null, fallback: any) => {
 };
 
 // Helper: Try save to storage with Quota handling
-const trySaveToStorage = (key: string, value: string) => {
+const trySaveToStorage = async (key: string, value: string) => {
     // Use secure storage for sensitive data
     if (key.includes('session') || key.includes('auth')) {
-        const success = secureStorage.set(key, value, { 
+        const success = await secureStorage.set(key, value, { 
             encrypt: true, 
             ttl: 24 * 60 * 60 * 1000 // 24 hours 
         });
@@ -93,9 +93,9 @@ const isValidRobot = (r: any): boolean => {
 
 // --- Mock Implementation ---
 
-const getMockSession = () => {
+const getMockSession = async () => {
   // Try secure storage first, fallback to localStorage
-  const secureData = secureStorage.get<string>(STORAGE_KEY);
+  const secureData = await secureStorage.get<string>(STORAGE_KEY);
   if (secureData) return safeParse(secureData, null);
   return safeParse(localStorage.getItem(STORAGE_KEY), null);
 };
@@ -314,7 +314,7 @@ const cache = new LRUCache<any>(CACHE_CONFIG.ttl, CACHE_CONFIG.maxSize, 'supabas
 // Enhanced retry wrapper with exponential backoff and jitter
 const withRetry = async <T>(
   operation: () => Promise<T>,
-  operationName: string
+  _operationName: string
 ): Promise<T> => {
   let lastError: any;
   
@@ -415,7 +415,7 @@ class PerformanceMonitor {
   logMetrics() {
     const allMetrics = this.getAllMetrics();
     console.group('Database Performance Metrics');
-    for (const [operation, metric] of Object.entries(allMetrics)) {
+    for (const [_operation, _metric] of Object.entries(allMetrics)) {
 // Removed for production: console.log(`${operation}: ${metric.count} calls, avg: ${metric.avgTime.toFixed(2)}ms`);
     }
     console.groupEnd();
