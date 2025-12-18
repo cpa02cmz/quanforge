@@ -13,6 +13,22 @@ This document tracks bugs discovered and fixed during development and agent acti
 - **Impact**: Resolved deployment failures for all new PRs
 - **PR Reference**: #132 (fixed by agent on develop branch)
 
+- **ID**: Bug-014
+- **Title**: Browser crypto compatibility build failure
+- **Description**: enhancedRateLimit.ts imported Node.js-only 'createHash' from crypto module, causing browser build failure
+- **Status**: FIXED
+- **Solution**: Replaced Node.js crypto.createHash with browser-compatible hash function
+- **Impact**: Restored build capability for browser environments
+- **PR Reference**: #139 (fixed by openCode agent)
+
+- **ID**: Bug-015
+- **Title**: Vercel deployment schema validation conflicts in PR #139
+- **Description**: Multiple conflicting properties in vercel.json: routes vs rewrites, builds vs functions, invalid regions
+- **Status**: FIXED
+- **Solution**: Removed conflicting properties and simplified configuration to schema-compliant minimal setup
+- **Impact**: Resolved deployment failures for PR #139, enabling successful Vercel deployment
+- **PR Reference**: #139 (fixed by openCode agent)
+
 - **ID**: Bug-002  
 - **Title**: Branch setup conflicts during merge operations
 - **Description**: develop branch had unrelated histories causing merge conflicts

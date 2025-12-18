@@ -92,6 +92,35 @@ This document provides insights and decisions for future AI agents working on th
 - [x] AGENTS.md updated with new insights
 - [x] Breaking changes documented
 
+## PR Management Guidelines (December 2025)
+
+### When Managing Red-Flag PRs
+1. **Identify Critical Issues**: Look for deployment failures, build errors, and schema validation issues
+2. **Systematic Approach**: Use incremental fixes - resolve one issue at a time and test after each fix
+3. **Build Verification**: Always test `npm run build` and `npm run typecheck` before considering PR fixed
+4. **Deployment Patience**: Vercel deployments can take 2-5 minutes to complete after configuration changes
+5. **Minimal Configuration**: When facing complex schema validation issues, start with minimal configuration and add features incrementally
+
+### Vercel Configuration Best Practices
+- **Avoid Conflicts**: Never use both `routes` and `rewrites` together
+- **Avoid Conflicts**: Never use both `builds` and `functions` together  
+- **Schema Compliance**: Stick to officially supported properties only
+- **Simplify First**: Start minimal, add complexity only when needed
+- **Test Locally**: Use `npm run build` to verify changes before pushing
+
+### Browser Compatibility Considerations
+- **Node.js vs Browser**: Never import Node.js-only modules in browser code (crypto, fs, path, etc.)
+- **Crypto Alternatives**: Use Web Crypto API or browser-compatible hash functions
+- **Build Testing**: Always test browser builds after adding new dependencies
+- **Cross-Platform**: Ensure code works in both Node.js and browser environments
+
+### Debugging Strategy
+1. **Build First**: Resolve build issues before deployment issues
+2. **Incremental Fixes**: One change per commit with clear commit messages
+3. **Check Logs**: Use `gh pr checks <number>` and deployment URLs for detailed error info
+4. **Simplify**: When stuck, remove complex configuration and add back incrementally
+5. **Document**: Record all fixes and solutions for future agents
+
 ## December 2025 Agent Activity - Repository Optimization
 
 ### Completed Optimizations
