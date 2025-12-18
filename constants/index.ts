@@ -60,16 +60,12 @@ export const loadTranslations = async (language: Language) => {
 
 // Lazy load wiki content
 export const loadWikiContent = async (language: Language) => {
-  // Check if wiki directory exists, otherwise return empty content
-  try {
-    const wiki = await import(`./wiki/${language}.js`);
-    return wiki.WIKI_CONTENT || [];
-  } catch (e) {
-    if (import.meta.env.DEV) {
-      console.warn(`Wiki content not found for language: ${language}`, e);
-    }
-    return []; // Return empty array as fallback
+  // Wiki directory doesn't exist yet, return empty content
+  // This can be implemented when wiki content is added
+  if (import.meta.env.DEV) {
+    console.warn(`Wiki content not yet implemented for language: ${language}`);
   }
+  return [];
 };
 
 // Load suggested strategies

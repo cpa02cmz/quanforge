@@ -17,9 +17,15 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
-            // React ecosystem - optimized for edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
-              return 'react-vendor';
+            // React ecosystem - split into smaller chunks for better caching
+            if (id.includes('react')) {
+              if (id.includes('react-dom')) {
+                return 'react-dom';
+              }
+              if (id.includes('react-router')) {
+                return 'react-router';
+              }
+              return 'react-core';
             }
             // Supabase - isolated for better connection pooling
             if (id.includes('@supabase')) {
@@ -32,17 +38,45 @@ export default defineConfig({
               }
               return 'supabase-vendor';
             }
-            // AI services - lazy loaded for edge optimization
+            // AI services - split into smaller chunks for better performance
             if (id.includes('@google/genai')) {
+              if (id.includes('generators/text')) {
+                return 'ai-text-gen';
+              }
+              if (id.includes('generators/') || id.includes('models/')) {
+                return 'ai-generators';
+              }
+              if (id.includes('functions/') || id.includes('chat/')) {
+                return 'ai-chat';
+              }
+              if (id.includes('embeddings/') || id.includes('vector/')) {
+                return 'ai-embeddings';
+              }
               return 'ai-vendor';
             }
-            // Chart libraries - split more granularly
+            // Chart libraries - split more granularly for performance
             if (id.includes('recharts')) {
-              if (id.includes('AreaChart') || id.includes('LineChart')) {
+              // Split individual chart components for better lazy loading
+              if (id.includes('chart/AreaChart') || id.includes('chart/LineChart')) {
                 return 'chart-core';
               }
-              if (id.includes('PieChart') || id.includes('BarChart')) {
+              if (id.includes('chart/PieChart') || id.includes('chart/BarChart')) {
                 return 'chart-misc';
+              }
+              if (id.includes('components/ResponsiveContainer')) {
+                return 'chart-responsive';
+              }
+              if (id.includes('components/Tooltip') || id.includes('components/Legend')) {
+                return 'chart-ui';
+              }
+              if (id.includes('cartesian/')) {
+                return 'chart-cartesian';
+              }
+              if (id.includes('polar/') || id.includes('radial/')) {
+                return 'chart-polar';
+              }
+              if (id.includes('shape/') || id.includes('util/')) {
+                return 'chart-utils';
               }
               return 'chart-vendor';
             }
@@ -50,7 +84,13 @@ export default defineConfig({
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'security-vendor';
             }
-            // All other vendor libraries
+            // Split vendor-misc into smaller chunks
+            if (id.includes('lodash') || id.includes('date-fns') || id.includes('moment')) {
+              return 'vendor-utils';
+            }
+            if (id.includes('axios') || id.includes('fetch') || id.includes('xhr')) {
+              return 'vendor-http';
+            }
             return 'vendor-misc';
           }
           

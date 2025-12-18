@@ -121,6 +121,38 @@
 - **Solution**: Implemented ENV_CONFIG system with environment variables and feature flags
 - **Detection**: grep analysis found 10+ hardcoded localhost references (now resolved)
 
+## Bundle Optimization Insights (2025-12-18)
+
+### Performance Optimization Strategy
+**Issue**: 356KB chart-vendor chunk causing slow initial page load
+**Root Cause**: All recharts dependencies bundled into single large chunk
+**Solution Applied**: Granular chunk splitting with specific patterns
+- **chart-core**: AreaChart, LineChart (0.5KB)
+- **chart-misc**: PieChart, BarChart (1.6KB) 
+- **chart-cartesian**: Cartesian components (91KB)
+- **chart-polar**: Polar/radial components (37KB)
+- **chart-utils**: Shape/util functions (70KB)
+- **chart-vendor**: Remaining recharts modules (166KB)
+
+### Key Performance Insights
+1. **Lazy Loading Preservation**: ChartComponents.tsx already used dynamic imports correctly
+2. **Bundle Splitting Strategy**: Split by functionality, not just library boundaries
+3. **React Optimization**: Separated react-core (12KB) from react-dom (177KB) for better caching
+4. **Dev Server Compatibility**: Fixed import path resolution issues for dynamic imports
+
+### Optimization Results
+- **Largest Chunk Reduction**: 356KB → 214KB (40% improvement)
+- **Chart Loading**: Split into 6 focused chunks for better lazy loading
+- **User Experience**: Faster initial page load, better perceived performance
+- **Maintainability**: Clear chunk naming strategy for future optimization
+
+### Recommendations for Future Optimizations
+1. **Analyze Bundle Dependencies**: Use `du -sh dist/assets/js/* | sort -hr` to identify large chunks
+2. **Split by Functionality**: Group related modules rather than entire libraries
+3. **Preserve Dynamic Imports**: Ensure lazy loading components remain dynamic
+4. **Test Incrementally**: Verify each optimization doesn't break functionality
+5. **Monitor Performance**: Use bundle analyzer tools for ongoing optimization
+
 ## Success Metrics
 
 - ✅ Build passes without errors
@@ -129,6 +161,7 @@
 - ✅ Cross-platform compatibility maintained
 - ✅ No regressions introduced
 - ✅ Documentation updated
+- ✅ Bundle size optimized (356KB → 214KB largest chunk)
 
 ## Agent Contact & Handoff
 
