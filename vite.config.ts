@@ -45,29 +45,56 @@ export default defineConfig({
             if (id.includes('@google/genai')) {
               return 'ai-vendor';
             }
-            // Chart libraries - split more granularly to reduce chunk sizes
+            // Chart libraries - aggressive split to reduce largest chunk
             if (id.includes('recharts')) {
-              // Chart components by feature - split further
-              if (id.includes('AreaChart')) {
-                return 'chart-area';
-              }
-              if (id.includes('LineChart')) {
-                return 'chart-line';
-              }
-              if (id.includes('ComposedChart')) {
-                return 'chart-composed';
-              }
-              if (id.includes('PieChart')) {
-                return 'chart-pie';
-              }
-              if (id.includes('BarChart')) {
-                return 'chart-bar';
-              }
-              if (id.includes('RadarChart')) {
-                return 'chart-radar';
-              }
-              if (id.includes('ScatterChart')) {
-                return 'chart-scatter';
+              // Split recharts more aggressively - isolate core primitives
+              if (id.includes('chart') || id.includes('Chart')) {
+                // Specific chart types - create separate chunks for each
+                if (id.includes('AreaChart') || id.includes('Area')) {
+                  return 'chart-area';
+                }
+                if (id.includes('LineChart') || id.includes('Line')) {
+                  return 'chart-line';
+                }
+                if (id.includes('PieChart') || id.includes('Pie')) {
+                  return 'chart-pie';
+                }
+                if (id.includes('BarChart') || id.includes('Bar')) {
+                  return 'chart-bar';
+                }
+                if (id.includes('ComposedChart')) {
+                  return 'chart-composed';
+                }
+                if (id.includes('RadarChart') || id.includes('Radar')) {
+                  return 'chart-radar';
+                }
+                if (id.includes('ScatterChart') || id.includes('Scatter')) {
+                  return 'chart-scatter';
+                }
+                if (id.includes('TreemapChart')) {
+                  return 'chart-treemap';
+                }
+                if (id.includes('FunnelChart')) {
+                  return 'chart-funnel';
+                }
+                // Split core chart primitives into their own chunks
+                if (id.includes('Cartesian') || id.includes('Polar') || id.includes('Funnel') || id.includes('Sankey')) {
+                  return 'chart-types-primitives';
+                }
+                if (id.includes('scale') || id.includes('time') || id.includes('data')) {
+                  return 'chart-data-utils';
+                }
+                if (id.includes('shape') || id.includes('graphic') || id.includes('symbol')) {
+                  return 'chart-shapes';
+                }
+                // Split remaining core chart logic further
+                if (id.includes('Chart') || id.includes('compose') || id.includes('container')) {
+                  return 'chart-containers';
+                }
+                if (id.includes('render') || id.includes('presentation') || id.includes('view')) {
+                  return 'chart-renderers';
+                }
+                return 'chart-types-core';
               }
               // Chart utilities and containers
               if (id.includes('ResponsiveContainer')) {
@@ -93,16 +120,24 @@ export default defineConfig({
               if (id.includes('polar') || id.includes('radial')) {
                 return 'chart-polar';
               }
-              if (id.includes('shape') || id.includes('graphic')) {
-                return 'chart-shapes';
+              // Cell and other specific components
+              if (id.includes('Cell')) {
+                return 'chart-cell';
               }
-              // Split chart vendor further
-              if (id.includes('chart') || id.includes('Cartesian') || id.includes('Polar') || id.includes('Funnel')) {
-                return 'chart-types';
+              if (id.includes('Brush')) {
+                return 'chart-brush';
               }
-              if (id.includes('scale') || id.includes('scale') || id.includes('time')) {
-                return 'chart-scale';
+              if (id.includes('ReferenceLine')) {
+                return 'chart-reference';
               }
+              // Recharts core utilities and hooks
+              if (id.includes('hooks') || id.includes('context')) {
+                return 'chart-internals';
+              }
+              if (id.includes('util') || id.includes('component')) {
+                return 'chart-utils';
+              }
+              // General recharts vendor
               return 'chart-vendor';
             }
             // Security utilities - bundled together
