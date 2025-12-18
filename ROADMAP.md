@@ -45,3 +45,9 @@
 - [x] **Component Memoization**: Extended React.memo to NumericInput, AISettingsModal, and DatabaseSettingsModal components
 - [x] **Error Handling Patterns**: Standardized error handling across services using the unified error handler utility
 - [x] **API Client Fixes**: Resolved async/await issues in Supabase client calls for better reliability
+
+## Critical Infrastructure Fixes (v1.4)
+- [x] **Browser Crypto Compatibility**: Fixed critical build-blocking error by implementing browser-compatible hash algorithm
+- [x] **Deployment Schema Compliance**: Resolved all Vercel deployment validation errors
+- [x] **Cross-Platform Runtime**: Ensured full compatibility across browser, Node.js, and edge environments
+- [x] **Build Infrastructure**: Restored complete build and deployment pipeline functionality

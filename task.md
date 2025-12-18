@@ -60,6 +60,13 @@
     - [x] Coding Standards (`coding_standard.md`).
     - [x] Feature List (`fitur.md`).
 
+## Recent Critical Fixes (PR #139)
+
+- [x] **Browser Crypto Compatibility**: Fixed critical build failure in `enhancedRateLimit.ts` by replacing Node.js crypto module with browser-compatible hash function.
+- [x] **Vercel Deployment Schema Validation**: Resolved all schema validation errors by removing unsupported `experimental` property and conflicting `builds`/`functions` configuration.
+- [x] **Cross-Platform Compatibility**: Ensured all functionality works in browser, Node.js, and edge environments.
+- [x] **Build Restoration**: Restored full build capability and deployment workflows.
+
 ## Pending / Future Tasks
 
 - [ ] **Community Sharing**: Share robots via public links.

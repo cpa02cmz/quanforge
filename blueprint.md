@@ -73,3 +73,20 @@ graph TD
 *   **API Keys**: Accessed via `process.env`.
 *   **Input Sanitization**: Filenames are sanitized before download.
 *   **Prompt Engineering**: System prompts prevents the AI from generating harmful or non-MQL5 content.
+*   **Cross-Platform Compatibility**: All code works in browser, Node.js, and edge runtime environments.
+
+## 6. Rate Limiting & Performance
+
+*   **Enhanced Rate Limiter** (`utils/enhancedRateLimit.ts`):
+    *   Browser-compatible implementation using simple hash algorithm
+    *   Supports user-specific and global rate limiting
+    *   Automatic cleanup and memory management
+    *   Works seamlessly in both browser and edge environments
+
+## 7. Deployment Architecture
+
+*   **Vercel Configuration** (`vercel.json`):
+    *   Edge function runtime for API routes
+    *   Comprehensive security headers and CSP
+    *   Optimized caching strategies for API and static assets
+    *   Full schema compliance and cross-platform deployment support
