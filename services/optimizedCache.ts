@@ -368,10 +368,21 @@ class CacheFactory {
   }
 }
 
-// Export singleton instances for common use cases
-export const robotCache = CacheFactory.getInstance('robots', { maxSize: 50 * 1024 * 1024, defaultTTL: 600000 });
-export const marketDataCache = CacheFactory.getInstance('marketData', { maxSize: 20 * 1024 * 1024, defaultTTL: 30000 });
-export const analysisCache = CacheFactory.getInstance('analysis', { maxSize: 30 * 1024 * 1024, defaultTTL: 900000 });
+// Export singleton instances for common use cases - using centralized configuration
+import { cacheConfigs } from '../config/appConfig';
+
+export const robotCache = CacheFactory.getInstance('robots', { 
+  maxSize: cacheConfigs.robots.maxSize, 
+  defaultTTL: cacheConfigs.robots.ttl 
+});
+export const marketDataCache = CacheFactory.getInstance('marketData', { 
+  maxSize: cacheConfigs.marketData.maxSize, 
+  defaultTTL: cacheConfigs.marketData.ttl 
+});
+export const analysisCache = CacheFactory.getInstance('analysis', { 
+  maxSize: cacheConfigs.analysis.maxSize, 
+  defaultTTL: cacheConfigs.analysis.ttl 
+});
 
 export { CacheFactory };
 export default OptimizedCache;

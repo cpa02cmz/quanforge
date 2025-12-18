@@ -1,6 +1,8 @@
 import { Robot, StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
+import { securityConfig } from '../config/appConfig';
 
+// Import SecurityConfig interface
 interface SecurityConfig {
   maxPayloadSize: number;
   allowedOrigins: string[];
@@ -38,40 +40,7 @@ interface ValidationResult {
 
 class SecurityManager {
   private static instance: SecurityManager;
-  private config: SecurityConfig = {
-    maxPayloadSize: 5 * 1024 * 1024, // Reduced to 5MB for better security
-    allowedOrigins: [
-      'https://quanforge.ai',
-      'https://www.quanforge.ai',
-      'http://localhost:3000',
-      'http://localhost:5173' // Vite dev server
-    ],
-    rateLimiting: {
-      windowMs: 60000, // 1 minute
-      maxRequests: 100,
-    },
-    encryption: {
-      algorithm: 'AES-256-GCM',
-      keyRotationInterval: 43200000, // 12 hours - more frequent rotation
-    },
-    // Add missing edge security configurations
-    edgeRateLimiting: {
-      enabled: true,
-      requestsPerSecond: 10,
-      burstLimit: 20
-    },
-    regionBlocking: {
-      enabled: true,
-      blockedRegions: ['CN', 'RU', 'IR', 'KP'] // Example blocked regions
-    },
-    botDetection: {
-      enabled: true,
-      suspiciousPatterns: [
-        'sqlmap', 'nikto', 'nmap', 'masscan', 'dirb', 'gobuster', 
-        'wfuzz', 'burp', 'owasp', 'scanner', 'bot', 'crawler', 'spider'
-      ]
-    }
-  };
+  private config: SecurityConfig = securityConfig;
   private rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
   private constructor() {}

@@ -4,6 +4,7 @@
  */
 
 import { createScopedLogger } from '../utils/logger';
+import { cacheConfigs } from '../config/appConfig';
 
 interface AIResponseCacheEntry {
   prompt: string;
@@ -29,8 +30,8 @@ class AIResponseCache {
   
   constructor(config?: Partial<AIResponseCacheConfig>) {
     this.config = {
-      defaultTTL: 3600000,        // 1 hour default for AI responses
-      maxSize: 200,               // 200 entries max (more conservative for AI responses)
+      defaultTTL: cacheConfigs.aiResponses.ttl,        // From configuration
+      maxSize: cacheConfigs.aiResponses.maxSize,       // From configuration
       compression: true,
       enableCompression: true,
       cacheStrategies: true,

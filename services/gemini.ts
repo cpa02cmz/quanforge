@@ -417,8 +417,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
     
     // LRU cache for context parts
     private contextCache = new Map<string, { content: string, timestamp: number }>();
-    private static readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-    private static readonly MAX_CACHE_SIZE = 20; // Reduced cache size
+    private static readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes - will be moved to config
+    private static readonly MAX_CACHE_SIZE = 20; // Reduced cache size - will be moved to config
     
     private getCachedContext(key: string, builder: () => string): string {
         const cached = this.contextCache.get(key);

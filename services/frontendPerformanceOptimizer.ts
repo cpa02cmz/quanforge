@@ -5,6 +5,7 @@
 
 import { performanceMonitor } from '../utils/performance';
 import { logger } from '../utils/logger';
+import { performanceConfig } from '../config/appConfig';
 
 interface PerformanceOptimizerConfig {
   enableResourcePrefetching: boolean;
@@ -70,7 +71,7 @@ class FrontendPerformanceOptimizer {
   };
 
   private resourceCache = new Map<string, { data: any; timestamp: number; size: number }>();
-  private readonly CACHE_TTL = 300000; // 5 minutes
+  private readonly CACHE_TTL = performanceConfig.cacheTTL; // From config
   private readonly MAX_CACHE_SIZE = 100; // Maximum cache entries
 
   constructor(config?: Partial<PerformanceOptimizerConfig>) {

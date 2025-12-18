@@ -3,6 +3,8 @@
  * Provides additional performance optimizations for the frontend
  */
 
+import { performanceConfig } from '../config/appConfig';
+
 interface FrontendOptimizationConfig {
   enableResourcePrefetching: boolean;
   enableLazyLoading: boolean;
@@ -57,7 +59,7 @@ class FrontendOptimizer {
   };
 
   private resourceCache = new Map<string, { data: any; timestamp: number; size: number }>();
-  private readonly CACHE_TTL = 300000; // 5 minutes
+  private readonly CACHE_TTL = performanceConfig.cacheTTL; // 5 minutes from config
 
   constructor(config?: Partial<FrontendOptimizationConfig>) {
     if (config) {

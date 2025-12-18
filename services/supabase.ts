@@ -7,21 +7,7 @@ import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
-
-// Enhanced connection retry configuration with exponential backoff
-const RETRY_CONFIG = {
-  maxRetries: 5,
-  retryDelay: 500,
-  backoffMultiplier: 1.5,
-  maxDelay: 10000, // Cap at 10 seconds
-  jitter: true, // Add jitter to prevent thundering herd
-};
-
-// Cache configuration
-const CACHE_CONFIG = {
-  ttl: 15 * 60 * 1000, // 15 minutes for better edge performance
-  maxSize: 200, // Max cached items
-};
+import { retryConfig, cacheConfig, performanceConfig } from '../config/appConfig';
 
 // Mock session storage
 const STORAGE_KEY = 'mock_session';
@@ -204,7 +190,7 @@ class LRUCache<T> {
   }
 }
 
-const cache = new LRUCache<any>(CACHE_CONFIG.ttl, CACHE_CONFIG.maxSize);
+const cache = new LRUCache<any>(cacheConfig.ttl, cacheConfig.maxSize);
 
 
 
@@ -215,28 +201,21 @@ const withRetry = async <T>(
 ): Promise<T> => {
   let lastError: any;
   
-  for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+for (let attempt = 0; attempt <= retryConfig.maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error: any) {
-      lastError = error;
-      
-      // Don't retry on certain errors
-      if (error?.code === 'PGRST116' || error?.status === 404) {
-        throw error; // Not found errors shouldn't be retried
-      }
-      
-      if (attempt === RETRY_CONFIG.maxRetries) {
-        console.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, error);
+      if (attempt === retryConfig.maxRetries) {
+        console.error(`Operation ${operationName} failed after ${retryConfig.maxRetries} retries:`, error);
         throw error;
       }
-      
-      // Enhanced exponential backoff with jitter
-      let delay = RETRY_CONFIG.retryDelay * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt);
-      delay = Math.min(delay, RETRY_CONFIG.maxDelay);
-      
+
+      // Exponential backoff with jitter
+      let delay = retryConfig.retryDelay * Math.pow(retryConfig.backoffMultiplier, attempt);
+      delay = Math.min(delay, retryConfig.maxDelay);
+
       // Add jitter to prevent thundering herd
-      if (RETRY_CONFIG.jitter) {
+      if (retryConfig.jitter) {
         delay = delay * (0.5 + Math.random() * 0.5);
       }
       
@@ -1167,9 +1146,9 @@ export const dbUtils = {
 
             if (payload.length === 0) return { success: false, count: 0, error: "Local data invalid." };
 
-            const BATCH_SIZE = 10;
-            for (let i = 0; i < payload.length; i += BATCH_SIZE) {
-                const chunk = payload.slice(i, i + BATCH_SIZE);
+            const batchSize = performanceConfig.batchSize;
+            for (let i = 0; i < payload.length; i += batchSize) {
+                const chunk = payload.slice(i, batchSize);
                 const { error } = await client.from('robots').insert(chunk);
                 if (error) {
                     console.error("Batch migration failed", error);
@@ -1374,10 +1353,10 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                 }
             } else {
                 // For Supabase, process in batches to avoid query limits
-                const BATCH_SIZE = 10;
+                const batchSize = performanceConfig.batchSize;
                 
-                for (let i = 0; i < updates.length; i += BATCH_SIZE) {
-                    const batch = updates.slice(i, i + BATCH_SIZE);
+                for (let i = 0; i < updates.length; i += batchSize) {
+                    const batch = updates.slice(i, batchSize);
                     
                     try {
                         // Process each item in the batch individually due to Supabase limitations

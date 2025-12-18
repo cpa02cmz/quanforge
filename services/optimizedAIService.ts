@@ -5,6 +5,7 @@ import { StrategyParams, StrategyAnalysis, Message, MessageRole } from "../types
 import { settingsManager } from "./settingsManager";
 import { handleError } from "../utils/errorHandler";
 import { robotCache } from "./optimizedCache";
+import { cacheConfigs } from '../config/appConfig';
 
 const logger = console; // Simplified logger for performance
 
@@ -64,7 +65,7 @@ class OptimizedAIService {
       const result = await requestPromise;
       
       // Cache the result
-      await robotCache.set(cacheKey, result, { ttl: 600000 }); // 10 minutes
+      await robotCache.set(cacheKey, result, { ttl: cacheConfigs.robots.ttl });
       return result;
     } finally {
       this.requestDeduplicator.delete(cacheKey);
@@ -335,7 +336,7 @@ class OptimizedAIService {
     const analysis = await this.performAnalysis(code, strategyParams);
     
     // Cache result
-    await robotCache.set(cacheKey, analysis, { ttl: 900000 }); // 15 minutes
+    await robotCache.set(cacheKey, analysis, { ttl: cacheConfigs.analysis.ttl });
     
     return analysis;
   }
