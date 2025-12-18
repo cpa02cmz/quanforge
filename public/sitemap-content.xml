@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" 
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://quanforge.ai/blog/future-ai-trading</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/blog/ai-trading-future.jpg</image:loc>
+      <image:title>The Future of AI-Powered Trading</image:title>
+      <image:caption>How Machine Learning is Revolutionizing Forex Markets</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/blog/top-mql5-strategies</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/blog/mql5-strategies.jpg</image:loc>
+      <image:title>Top 10 MQL5 Trading Strategies for 2025</image:title>
+      <image:caption>Most effective MQL5 trading strategies for consistent results</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/blog/risk-management-essentials</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/blog/risk-management.jpg</image:loc>
+      <image:title>Risk Management Essentials</image:title>
+      <image:caption>Proper risk management for automated trading systems</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/blog/backtesting-best-practices</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/blog/backtesting.jpg</image:loc>
+      <image:title>Backtesting Best Practices</image:title>
+      <image:caption>How to validate your trading strategies effectively</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/blog/monte-carlo-simulation</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/blog/monte-carlo.jpg</image:loc>
+      <image:title>Monte Carlo Simulation in Trading</image:title>
+      <image:caption>Understanding Monte Carlo analysis for trading systems</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/blog/market-correlation-analysis</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/blog/correlation-analysis.jpg</image:loc>
+      <image:title>Market Correlation Analysis</image:title>
+      <image:caption>Advanced correlation analysis for algorithmic traders</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/blog/algorithmic-trading-basics</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/blog/algorithmic-basics.jpg</image:loc>
+      <image:title>Algorithmic Trading Basics</image:title>
+      <image:caption>Getting started with algorithmic trading and automated systems</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/blog/forex-market-overview</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/blog/forex-overview.jpg</image:loc>
+      <image:title>Forex Market Overview</image:title>
+      <image:caption>Comprehensive analysis of current forex market conditions</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/blog/mql5-vs-mql4</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/blog/mql5-vs-mql4.jpg</image:loc>
+      <image:title>MQL5 vs MQL4 Comparison</image:title>
+      <image:caption>Key differences and advantages of MQL5 over MQL4</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/blog/trading-psychology</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/blog/trading-psychology.jpg</image:loc>
+      <image:title>Trading Psychology for Algorithmic Traders</image:title>
+      <image:caption>Mastering the mental aspects of automated trading</image:caption>
+    </image:image>
+  </url>
+</urlset>

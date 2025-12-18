@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" 
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://quanforge.ai/og-image.png</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/og-image.png</image:loc>
+      <image:title>QuantForge AI - MQL5 Trading Robot Generator</image:title>
+      <image:caption>Generate professional MQL5 trading robots with AI-powered code generation</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/logo.png</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/logo.png</image:loc>
+      <image:title>QuantForge AI Logo</image:title>
+      <image:caption>Official logo of QuantForge AI trading robot generator</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/generator-preview.png</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/generator-preview.png</image:loc>
+      <image:title>Trading Robot Generator Interface</image:title>
+      <image:caption>Screenshot of the QuantForge AI MQL5 trading robot generator interface</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/wiki-preview.png</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/wiki-preview.png</image:loc>
+      <image:title>Documentation and Wiki Interface</image:title>
+      <image:caption>QuantForge AI comprehensive documentation and wiki interface</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/academy-preview.png</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/academy-preview.png</image:loc>
+      <image:title>QuantForge AI Academy</image:title>
+      <image:caption>Learn MQL5 programming and algorithmic trading with comprehensive courses</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/blog/ai-trading-future.jpg</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/blog/ai-trading-future.jpg</image:loc>
+      <image:title>The Future of AI-Powered Trading</image:title>
+      <image:caption>How Machine Learning is Revolutionizing Forex Markets</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/blog/mql5-strategies.jpg</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/blog/mql5-strategies.jpg</image:loc>
+      <image:title>Top 10 MQL5 Trading Strategies for 2025</image:title>
+      <image:caption>Most effective MQL5 trading strategies for consistent results</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/blog/risk-management.jpg</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/blog/risk-management.jpg</image:loc>
+      <image:title>Risk Management Essentials</image:title>
+      <image:caption>Proper risk management for automated trading systems</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/blog/backtesting.jpg</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/blog/backtesting.jpg</image:loc>
+      <image:title>Backtesting Best Practices</image:title>
+      <image:caption>How to validate your trading strategies effectively</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://quanforge.ai/blog/monte-carlo.jpg</loc>
+    <lastmod>2024-12-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://quanforge.ai/blog/monte-carlo.jpg</image:loc>
+      <image:title>Monte Carlo Simulation in Trading</image:title>
+      <image:caption>Understanding Monte Carlo analysis for trading systems</image:caption>
+    </image:image>
+  </url>
+</urlset>

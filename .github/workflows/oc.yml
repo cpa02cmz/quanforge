@@ -1,0 +1,133 @@
+name: oc
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: oc-${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  opencode:
+    name: oc
+    runs-on: ubuntu-24.04-arm
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: write
+      
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      IFLOW_API_KEY: ${{ secrets.IFLOW_API_KEY }}
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Install OpenCode CLI
+        run: |        
+          curl -fsSL https://opencode.ai/install | bash
+          echo "$HOME/.opencode/bin" >> $GITHUB_PATH
+          
+      - name: Run OpenCode
+        id: run_oc
+        timeout-minutes: 60
+        run: |
+          opencode run "$(cat <<'PROMPT'
+          Task:
+          - list all open pr, select 1 with red flag
+          - make sure mergable (check passed, comment on conversation resolved, no merge conflicts), use all method u can
+          - update pr
+          
+          Before starting:
+          - switch to branch develop, make sure up to date with develop branch
+          - Review codebase, `blueprint.md`, `roadmap.md`, and `AGENTS.md` to fully understand the context, goals, and dependencies.
+            
+          During execution:
+          - Work incrementally and avoid large disruptive changes
+          - Document any assumptions, dependencies, and design decisions
+          - Ensure each change is testable and verifiable
+          - Respect codebase coding standard
+          
+          After completing the task:
+          - Update `blueprint.md` and `roadmap.md` and 'task.md'
+          - Update `AGENTS.md` with future-relevant insights or decisions
+          - update `bug.md` if any bugs were discovered or fixed (bug.md contain list of bugs with marked for status fixed/not)
+          - Provide a short summary of what was done, what improved, and what still needs follow-up (next steps)
+          - Commit with detailed description
+          - Push to branch 'develop'
+          
+          Success criteria (must be met):
+          - No broken features or regressions introduced
+          - Code remains or becomes more maintainable and modular
+          - Changes are clearly traceable, documented, and aligned with roadmap/blueprint
+          - Commit and push to branch 'develop'
+          PROMPT
+          )" \
+            --model iflowcn/glm-4.6 \
+            --share false \
+
+      - name: Run OpenCode1
+        id: run_oc1
+        timeout-minutes: 60
+        run: |
+          opencode run "$(cat <<'PROMPT'
+          You are Perfectionist Github developer live on github action environtment. Your Principle:
+          - stability 
+          - performance
+          - security
+          - scalability
+          - modularity
+          - flexibility, no hardcoded
+          - consistency
+          - efficiency
+          
+          Task:
+          1. make repository efficient
+          2. make repository maintainable
+          3. make documentation up to date with codebase
+          4. make sure documentation efficient for ai agent conteks
+          
+          Before starting:
+          - switch to branch develop, make sure up to date with develop branch
+          - Review codebase, `blueprint.md`, `roadmap.md`, and `AGENTS.md` to fully understand the context, goals, and dependencies.
+          - Check for related open tasks or blockers that might influence your chosen task.          
+          
+          During execution:
+          - Work incrementally and avoid large disruptive changes
+          - Document any assumptions, dependencies, and design decisions
+          - Ensure each change is testable and verifiable
+          - Respect codebase coding standard
+          
+          After completing the task:
+          - Update `blueprint.md` and `roadmap.md` if structural or directional changes occurred
+          - Mark the completed item in `task.md` **AND** add new related tasks if discovered
+          - Update `AGENTS.md` with future-relevant insights or decisions
+          - update `bug.md` if any bugs were discovered or fixed (bug.md contain list of bugs with marked for status fixed/not)
+          - Provide a short summary of what was done, what improved, and what still needs follow-up (next steps)
+          - Commit with detailed description
+          - Push to branch 'develop'
+          
+          Success criteria (must be met):
+          - No broken features or regressions introduced
+          - Code remains or becomes more maintainable and modular
+          - Changes are clearly traceable, documented, and aligned with roadmap/blueprint
+          - Commit and push to branch 'develop'
+          PROMPT
+          )" \
+            --model iflowcn/glm-4.6 \
+            --share false \

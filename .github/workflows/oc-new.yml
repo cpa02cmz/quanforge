@@ -1,0 +1,236 @@
+name: oc bug finder
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: oc-${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  opencode:
+    name: oc
+    runs-on: ubuntu-24.04-arm
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: write
+      
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      IFLOW_API_KEY: ${{ secrets.IFLOW_API_KEY }}
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Install OpenCode CLI
+        run: |        
+          curl -fsSL https://opencode.ai/install | bash
+          echo "$HOME/.opencode/bin" >> $GITHUB_PATH
+          
+      - name: Run OpenCode
+        id: run_oc
+        timeout-minutes: 60
+        run: |
+          opencode run "$(cat <<'PROMPT'
+          Task:
+          Perform a deep and comprehensive analysis of the entire codebase.          
+          Evaluation Requirements:
+          Assess the codebase and assign a numerical score from 0 to 100 for each of the following categories:
+          - Stability  
+            Evaluate reliability, error handling, fault tolerance, and runtime robustness.
+          - Performance  
+            Evaluate execution efficiency, resource usage, algorithmic complexity, and bottlenecks.
+          - Security  
+            Evaluate vulnerability exposure, authentication/authorization practices, data protection, and dependency risks.
+          - Scalability  
+            Evaluate the ability to handle increased load, growth in data, and horizontal/vertical scaling readiness.
+          - Modularity  
+            Evaluate separation of concerns, reusability, coupling, and clarity of module boundaries.
+          - Flexibility (No Hardcoded Values)  
+            Evaluate configurability, use of environment variables, feature flags, and avoidance of hardcoded logic or constants.
+          - Consistency  
+            Evaluate coding standards, naming conventions, architectural patterns, and uniformity across the codebase.
+
+          Constraints:
+          - Be objective and evidence-based.
+          - Do not assume intent; base conclusions strictly on observable code.
+          - Avoid generic feedback—focus on actionable insights.
+          
+          Before starting:
+          - switch to branch develop, make sure up to date with develop branch
+          - Review codebase, `blueprint.md`, `roadmap.md`, and `AGENTS.md` to fully understand the context, goals, and dependencies.
+     
+          Clearly provide:
+          - Present the results in a clear table with two columns: **Category** and **Score (0–100)**.
+          - After the table, provide a concise but concrete justification (2–4 bullet points) for each category.
+          - Highlight critical risks and areas that require immediate improvement.
+          - When relevant, reference specific files, patterns, or code sections to support the evaluation.
+          
+          During execution:
+          - Work incrementally and avoid large disruptive changes
+          - Document any assumptions, dependencies, and design decisions
+          - Ensure each change is testable and verifiable
+          - Respect codebase coding standard
+          
+          After completing the task:
+          - Update `blueprint.md` and `roadmap.md` and 'task.md'
+          - Update `AGENTS.md` with future-relevant insights or decisions
+          - update `bug.md` if any bugs were discovered or fixed (bug.md contain list of bugs with marked for status fixed/not)
+          - Provide a short summary of what was done, what improved, and what still needs follow-up (next steps)
+          - Commit with detailed description
+          - Push to branch 'develop'
+          
+          Success criteria (must be met):
+          - No broken features or regressions introduced
+          - Code remains or becomes more maintainable and modular
+          - Changes are clearly traceable, documented, and aligned with roadmap/blueprint
+          - Commit and push to branch 'develop'
+          PROMPT
+          )" \
+            --model iflowcn/glm-4.6 \
+            --share false \
+
+      - name: Run OpenCode1
+        id: run_oc1
+        timeout-minutes: 60
+        run: |
+          opencode run "$(cat <<'PROMPT'
+          You are Perfectionist Github developer with Principle:
+          - stability 
+          - performance
+          - security
+          - scalability
+          - modularity
+          - flexibility, no hardcoded
+          - consistency
+          
+          Choose ONE OR MORE clearly scoped task from the list below:
+          1. Optimize flow, user flow, system flow
+          2. Standardize and consolidate
+          3. Improve stability
+          4. Enhance security
+          5. Improve integrations
+          6. Identify optimization opportunities
+          7. Find and fix TypeError/bugs/errors
+          8. Update documentation
+          9. Optimize features
+          10. Identify opportunities to add new features/functions
+          11. Improve modularization
+          12. Improve scalability
+          13. Improve performance
+          14. Improve content/seo
+          15. Find hardcoded and change with dynamic 
+          16. Improve UI/UX or DX
+          
+          Before starting:
+          - switch to branch develop, make sure up to date with develop branch
+          - Review codebase, `blueprint.md`, `roadmap.md`, and `AGENTS.md` to fully understand the context, goals, and dependencies.
+          - Check for related open tasks or blockers that might influence your chosen task.
+          
+          In your response, clearly provide:
+          - Which task you selected
+          - Why you chose that specific task at this moment (priority, dependency, urgency, etc.)
+          - Expected positive impact on the system/project
+          - Any potential backward compatibility risks and how to mitigate them
+          - The specific scope of changes you will make in this iteration
+          
+          During execution:
+          - Work incrementally and avoid large disruptive changes
+          - Document any assumptions, dependencies, and design decisions
+          - Ensure each change is testable and verifiable
+          - Respect codebase coding standard
+          
+          After completing the task:
+          - Update `blueprint.md` and `roadmap.md` if structural or directional changes occurred
+          - Mark the completed item in `task.md` **AND** add new related tasks if discovered
+          - Update `AGENTS.md` with future-relevant insights or decisions
+          - update `bug.md` if any bugs were discovered or fixed (bug.md contain list of bugs with marked for status fixed/not)
+          - Provide a short summary of what was done, what improved, and what still needs follow-up (next steps)
+          - Commit with detailed description
+          - Push to branch 'develop'
+          
+          Success criteria (must be met):
+          - No broken features or regressions introduced
+          - Code remains or becomes more maintainable and modular
+          - Changes are clearly traceable, documented, and aligned with roadmap/blueprint
+          - Commit and push to branch 'develop'
+          PROMPT
+          )" \
+            --model iflowcn/glm-4.6 \
+            --share false \
+      - name: Run OpenCode2
+        id: run_oc2
+        timeout-minutes: 60
+        run: |
+          opencode run "$(cat <<'PROMPT'
+          You are Perfectionist Github developer with Principle:
+          - stability 
+          - performance
+          - security
+          - scalability
+          - modularity
+          - flexibility, no hardcoded
+          - consistency
+          
+          Choose ONE OR MORE clearly scoped task from the list below:
+          1. Optimize flow, user flow, system flow
+          2. Identify optimization opportunities
+          3. Find and fix TypeError/bugs/errors
+          4. Update documentation
+          5. Optimize features
+          6. Improve content/seo
+          7. Find hardcoded and change with dynamic 
+          8. Improve UI/UX or DX
+          
+          Before starting:
+          - switch to branch develop, make sure up to date with develop branch
+          - Review codebase, `blueprint.md`, `roadmap.md`, and `AGENTS.md` to fully understand the context, goals, and dependencies.
+          - Check for related open tasks or blockers that might influence your chosen task.
+          
+          In your response, clearly provide:
+          - Which task you selected
+          - Why you chose that specific task at this moment (priority, dependency, urgency, etc.)
+          - Expected positive impact on the system/project
+          - Any potential backward compatibility risks and how to mitigate them
+          - The specific scope of changes you will make in this iteration
+          
+          During execution:
+          - Work incrementally and avoid large disruptive changes
+          - Document any assumptions, dependencies, and design decisions
+          - Ensure each change is testable and verifiable
+          - Respect codebase coding standard
+          
+          After completing the task:
+          - Update `blueprint.md` and `roadmap.md` if structural or directional changes occurred
+          - Mark the completed item in `task.md` **AND** add new related tasks if discovered
+          - Update `AGENTS.md` with future-relevant insights or decisions
+          - update `bug.md` if any bugs were discovered or fixed (bug.md contain list of bugs with marked for status fixed/not)
+          - Provide a short summary of what was done, what improved, and what still needs follow-up (next steps)
+          - Commit with detailed description
+          - Push to branch 'develop'
+          
+          Success criteria (must be met):
+          - No broken features or regressions introduced
+          - Code remains or becomes more maintainable and modular
+          - Changes are clearly traceable, documented, and aligned with roadmap/blueprint
+          - Commit and push to branch 'develop'
+          PROMPT
+          )" \
+            --model iflowcn/glm-4.6 \
+            --share false \

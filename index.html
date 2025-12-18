@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QuantForge AI - Advanced MQL5 Trading Robot Generator | MetaTrader 5</title>
+    <meta name="description" content="Generate professional MQL5 trading robots and Expert Advisors using AI. Powered by Google Gemini 3.0/2.5. Create, test, and deploy automated trading strategies for MetaTrader 5 with visual strategy configuration and real-time market simulation." />
+    <meta name="keywords" content="MQL5 generator, MetaTrader 5, trading robot, Expert Advisor, AI trading, automated trading, forex robot, algorithmic trading, Gemini AI, trading strategy generator, MT5 EA, quantitative trading, forex EA, MQL5 EA builder, automated forex trading, AI trading bot, MetaTrader expert advisor, trading algorithm generator" />
+    <meta name="author" content="QuantForge AI" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:title" content="QuantForge AI - Advanced MQL5 Trading Robot Generator" />
+    <meta property="og:description" content="Create professional MQL5 trading robots with AI. Visual strategy configuration, real-time simulation, and instant deployment to MetaTrader 5." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:url" content="https://quanforge.ai" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="QuantForge AI - MQL5 Trading Robot Generator" />
+    <meta name="twitter:description" content="Generate professional trading robots with AI. Visual configuration, real-time simulation, and MT5 deployment." />
+    <meta name="twitter:image" content="/twitter-image.png" />
+    <link rel="canonical" href="https://quanforge.ai" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icon-192x192.png" />
+    <meta name="theme-color" content="#22c55e" />
+    <meta name="msapplication-TileColor" content="#0f172a" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    <meta name="language" content="en" />
+    <meta name="distribution" content="global" />
+    <meta name="rating" content="general" />
+    <meta name="revisit-after" content="7 days" />
+    <meta name="geo.region" content="US" />
+    <meta name="geo.placename" content="Global" />
+    <meta name="category" content="finance, technology, trading, artificial intelligence" />
+    <meta name="coverage" content="Worldwide" />
+    <meta name="target" content="all" />
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="MobileOptimized" content="320" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="QuantForge AI" />
+    <meta name="application-name" content="QuantForge AI" />
+    <meta name="msapplication-TileImage" content="/icon-144x144.png" />
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+    <meta name="pinterest-rich-pin" content="false" />
+    <meta name="pinterest-site-verification" content="disabled" />
+    
+    <!-- Enhanced performance and SEO -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="//cdn.tailwindcss.com" />
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com" />
+    <link rel="dns-prefetch" href="//www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="//connect.facebook.net" />
+    <link rel="dns-prefetch" href="//www.google-analytics.com" />
+    
+    <!-- Additional SEO meta tags -->
+    <meta name="google-site-verification" content="your-google-verification-code" />
+    <meta name="msvalidate.01" content="your-bing-verification-code" />
+    <meta name="yandex-verification" content="your-yandex-verification-code" />
+    <meta name="p:domain_verify" content="your-pinterest-verification-code" />
+    
+    <!-- Enhanced SEO meta tags -->
+    <meta name="abstract" content="AI-powered MQL5 trading robot generator for MetaTrader 5" />
+    <meta name="topic" content="Trading, Finance, Artificial Intelligence, Software Development" />
+    <meta name="summary" content="Generate professional MQL5 trading robots using AI technology" />
+    <meta name="classification" content="Trading Software, Financial Technology, AI Tools" />
+    <meta name="url" content="https://quanforge.ai" />
+    <meta name="identifier-URL" content="https://quanforge.ai" />
+    <meta name="directory" content="submission" />
+    <meta name="pagename" content="QuantForge AI" />
+    <meta name="subtitle" content="Advanced MQL5 Trading Robot Generator" />
+    <meta name="target_country" content="US" />
+    <meta name="page-topic" content="Trading Software Development" />
+    <meta name="syndication-source" content="https://quanforge.ai" />
+    <meta name="original-source" content="https://quanforge.ai" />
+    
+    <!-- Open Graph additional tags -->
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="QuantForge AI" />
+    <meta property="fb:app_id" content="your-facebook-app-id" />
+    
+    <!-- Twitter additional tags -->
+    <meta name="twitter:site" content="@quanforge" />
+    <meta name="twitter:creator" content="@quanforge" />
+    <meta name="twitter:domain" content="quanforge.ai" />
+    
+    <!-- Additional structured data for enhanced SEO -->
+    <link rel="alternate" hreflang="en" href="https://quanforge.ai" />
+    <link rel="alternate" hreflang="x-default" href="https://quanforge.ai" />
+    <link rel="alternate" hreflang="en-US" href="https://quanforge.ai" />
+    <link rel="alternate" hreflang="id" href="https://quanforge.ai/?lang=id" />
+    <link rel="alternate" hreflang="zh-CN" href="https://quanforge.ai/?lang=zh" />
+    <link rel="alternate" hreflang="ja" href="https://quanforge.ai/?lang=ja" />
+    <link rel="alternate" hreflang="es" href="https://quanforge.ai/?lang=es" />
+    <link rel="alternate" hreflang="fr" href="https://quanforge.ai/?lang=fr" />
+    <link rel="alternate" hreflang="de" href="https://quanforge.ai/?lang=de" />
+    <link rel="alternate" hreflang="ko" href="https://quanforge.ai/?lang=ko" />
+    <link rel="alternate" hreflang="pt" href="https://quanforge.ai/?lang=pt" />
+    <link rel="alternate" hreflang="ru" href="https://quanforge.ai/?lang=ru" />
+    
+    <!-- Additional performance and SEO optimizations -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+    <link rel="dns-prefetch" href="//cdn.tailwindcss.com" />
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com" />
+    <link rel="dns-prefetch" href="//www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="//connect.facebook.net" />
+    <link rel="dns-prefetch" href="//www.google-analytics.com" />
+    <link rel="dns-prefetch" href="//api.supabase.io" />
+    <link rel="dns-prefetch" href="//supabase.co" />
+    
+    <!-- Preconnect for critical resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://api.supabase.io" crossorigin />
+    <link rel="preconnect" href="https://*.supabase.co" crossorigin />
+    <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://googleapis.com" crossorigin />
+    
+    <!-- Preload critical fonts -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    
+    <!-- Critical CSS inline -->
+    <style>
+      /* Critical above-the-fold styles */
+      body{background-color:#0f172a;color:#f8fafc;margin:0;padding:0;font-family:Inter,sans-serif}
+      .loading{display:flex;align-items:center;justify-content:center;height:100vh}
+      .spinner{border:2px solid #334155;border-top:2px solid #22c55e;border-radius:50%;width:48px;height:48px;animation:spin 1s linear infinite}
+      @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- PrismJS for Syntax Highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            },
+            colors: {
+              brand: {
+                50: '#f0fdf4',
+                100: '#dcfce7',
+                200: '#bbf7d0',
+                300: '#86efac',
+                400: '#4ade80',
+                500: '#22c55e',
+                600: '#16a34a',
+                700: '#15803d',
+                800: '#166534',
+                900: '#14532d',
+              },
+              dark: {
+                bg: '#0f172a',
+                surface: '#1e293b',
+                border: '#334155'
+              }
+            }
+          },
+        },
+      }
+    </script>
+    
+    <!-- Enhanced Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "QuantForge AI",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web",
+      "description": "Advanced MQL5 Trading Robot Generator powered by AI",
+      "url": "https://quanforge.ai",
+      "downloadUrl": "https://quanforge.ai/download",
+      "softwareVersion": "1.0.0",
+      "applicationSubCategory": ["Trading Software", "AI Tools", "Financial Technology", "Algorithmic Trading"],
+      "softwareHelp": {
+        "@type": "CreativeWork",
+        "url": "https://quanforge.ai/wiki"
+      },
+      "softwareRequirements": ["MetaTrader 5 Platform", "Internet Connection"],
+      "featureList": [
+        "AI-Powered MQL5 Code Generation",
+        "Visual Strategy Configuration",
+        "Real-time Market Simulation",
+        "Risk Analysis",
+        "Strategy Backtesting",
+        "Expert Advisor Creation",
+        "Multi-Language Support",
+        "Cloud Storage",
+        "Advanced Analytics",
+        "Monte Carlo Simulation"
+      ],
+      "author": {
+        "@type": "Organization",
+        "name": "QuantForge AI",
+        "url": "https://quanforge.ai",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://quanforge.ai/logo.png",
+          "width": 512,
+          "height": 512
+        },
+        "sameAs": [
+          "https://twitter.com/quanforge",
+          "https://github.com/quanforge",
+          "https://linkedin.com/company/quanforge"
+        ]
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "QuantForge AI",
+        "url": "https://quanforge.ai"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock",
+        "seller": {
+          "@type": "Organization",
+          "name": "QuantForge AI"
+        }
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "reviewCount": "150",
+        "bestRating": "5",
+        "worstRating": "1"
+      },
+      "screenshot": [
+        {
+          "@type": "ImageObject",
+          "url": "https://quanforge.ai/screenshots/generator.png",
+          "caption": "MQL5 Trading Robot Generator Interface"
+        },
+        {
+          "@type": "ImageObject",
+          "url": "https://quanforge.ai/screenshots/chat-interface.png",
+          "caption": "AI Strategy Discussion Interface"
+        },
+        {
+          "@type": "ImageObject",
+          "url": "https://quanforge.ai/screenshots/backtesting.png",
+          "caption": "Strategy Backtesting and Analysis"
+        }
+      ]
+    }
+    </script>
+    
+    <!-- Organization Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "description": "Advanced MQL5 Trading Robot Generator powered by AI",
+      "url": "https://quanforge.ai",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://quanforge.ai/logo.png",
+        "width": 512,
+        "height": 512
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "availableLanguage": ["English", "Indonesian", "Chinese", "Japanese", "Spanish", "French", "German", "Korean", "Portuguese", "Russian"]
+      },
+      "sameAs": [
+        "https://twitter.com/quanforge",
+        "https://github.com/quanforge",
+        "https://linkedin.com/company/quanforge"
+      ],
+      "foundingDate": "2024",
+      "areaServed": "Worldwide",
+      "knowsAbout": [
+        "MQL5 Programming",
+        "MetaTrader 5",
+        "Algorithmic Trading",
+        "AI Code Generation",
+        "Forex Trading",
+        "Expert Advisors",
+        "Trading Robots",
+        "Financial Technology"
+      ]
+    }
+    </script>
+    
+    <!-- Website Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "QuantForge AI",
+      "url": "https://quanforge.ai",
+      "description": "Advanced MQL5 Trading Robot Generator powered by AI",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://quanforge.ai/search?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    <style>
+      body {
+        background-color: #0f172a; /* dark-bg */
+        color: #f8fafc;
+      }
+      /* Custom scrollbar for code editor */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1e293b; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #475569; 
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #64748b; 
+      }
+      /* Override Prism background to match app theme better if needed */
+      pre[class*="language-"] {
+        background: transparent !important;
+        text-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+    </style>
+  
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+    <!-- PrismJS Scripts (Loaded after DOM for simplicity) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
+  </body>
+</html>
