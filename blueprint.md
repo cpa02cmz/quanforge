@@ -73,3 +73,25 @@ graph TD
 *   **API Keys**: Accessed via `process.env`.
 *   **Input Sanitization**: Filenames are sanitized before download.
 *   **Prompt Engineering**: System prompts prevents the AI from generating harmful or non-MQL5 content.
+
+## 6. Performance & Deployment
+
+### Recent Optimizations (v1.3+)
+*   **Bundle Optimization**: Aggressive code splitting and vendor chunking
+*   **Component Memoization**: React.memo on expensive components  
+*   **Database Layer**: Pagination, query optimization, connection pooling
+*   **Edge Performance**: Advanced caching and warming strategies
+*   **Request Management**: Deduplication and error handling patterns
+
+### Architecture Evolution
+*   **Modular Documentation**: Reorganized into `docs/optimizations/` structure
+*   **Developer Tools**: Consolidated analysis scripts in `tools/`
+*   **AI Agent Support**: `AGENTS.md` provides context for automated assistance
+*   **Bug Tracking**: Centralized in `bug.md` with clear status tracking
+
+## 7. Maintenance & Scaling
+
+*   **Code Standards**: Enforced TypeScript and React patterns (`coding_standard.md`)
+*   **Testing**: Vitest with component and integration coverage
+*   **Documentation**: Living `blueprint.md`, `roadmap.md`, and `AGENTS.md`
+*   **Repository Health**: Regular cleanup and optimization documentation
