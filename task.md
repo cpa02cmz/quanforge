@@ -83,3 +83,8 @@
 
 - [ ] **Community Sharing**: Share robots via public links.
 - [ ] **Direct MT5 Bridge**: WebSocket connection to local MetaTrader instance.
+- [x] **PR #138 Management**: Addressed Vercel schema validation errors and resolved deployment blockers
+- [x] **PR #137 Management**: Successfully fixed critical deployment configuration issues  
+- [x] **CI/CD Restoration**: Restored deployment workflows by resolving schema compliance issues
+- [x] **Documentation Update**: Updated AGENTS.md with schema validation guidance
+- [x] **Build Verification**: Confirmed local builds pass after configuration fixes

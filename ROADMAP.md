@@ -45,3 +45,10 @@
 - [x] **Component Memoization**: Extended React.memo to NumericInput, AISettingsModal, and DatabaseSettingsModal components
 - [x] **Error Handling Patterns**: Standardized error handling across services using the unified error handler utility
 - [x] **API Client Fixes**: Resolved async/await issues in Supabase client calls for better reliability
+
+## Critical Fixes (v1.7) - December 2025
+- [x] **Multi-PR Schema Fixes**: Resolved Vercel validation issues across multiple PRs (137, 138, 139)
+- [x] **Schema Compliance**: Removed unsupported regions, experimental, cache, and environment properties
+- [x] **Deployment Restoration**: Restored CI/CD pipeline functionality via schema compliance
+- [x] **Documentation Enhancement**: Updated agent guidelines with schema validation best practices
+- [x] **Build Verification**: Confirmed local builds pass after configuration fixes

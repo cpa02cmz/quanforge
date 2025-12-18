@@ -93,6 +93,32 @@ This document provides guidance for future agents working on the QuantForge AI c
 - `bug.md`: Bug fixes and issues
 - `AGENTS.md`: This file - agent workflow updates
 
+#### Common Schema Violations (To Avoid):
+```json
+// ❌ INVALID - Not supported in Vercel schema
+{
+  "regions": ["hkg1", "iad1"],
+  "experimental": { ... },
+  "functions": {
+    "api/**/*.ts": {
+      "cache": "max-age=600",
+      "environment": { ... }
+    }
+  }
+}
+
+// ✅ VALID - Schema compliant
+{
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "edge",
+      "maxDuration": 15,
+      "memory": 512
+    }
+  }
+}
+```
+
 ## Security Guidelines
 
 ### Never Commit
