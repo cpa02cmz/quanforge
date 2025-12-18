@@ -26,9 +26,10 @@
 
 ### Documentation Resources
 - **[Repository Index](REPOSITORY_INDEX.md)** - Complete navigation and reference guide
-- **[Optimization Guide](OPTIMIZATION_GUIDE.md)** - Current performance and security status
+- **[Optimization Guide](OPTIMIZATION_GUIDE.md)** - Comprehensive performance, security, and SEO status (includes consolidated SEO documentation)
 - **[Blueprint](blueprint.md)** - Technical architecture details
 - **[AGENTS.md](AGENTS.md)** - AI agent development guidelines
+- **[Codebase Analysis](COMPREHENSIVE_CODEBASE_ANALYSIS.md)** - Quality analysis and scoring report
 
 ## Recent Optimizations (v1.1)
 - [x] **Security Enhancement**: Removed environment variable exposure from client-side bundle
