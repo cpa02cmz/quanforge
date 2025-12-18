@@ -126,12 +126,10 @@
   "functions": {
     "api/**/*.ts": {
       "runtime": "edge",
-      "regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1"],
       "maxDuration": 15,
       "memory": 512,
       "includeFiles": ["public/**/*"],
       "excludeFiles": ["**/*.test.*", "**/*.spec.*"],
-      "cache": "max-age=600, s-maxage=1800, stale-while-revalidate=600",
       "environment": {
         "EDGE_CACHE_ENABLED": "true",
         "SUPABASE_POOL_SIZE": "4",
@@ -177,12 +175,10 @@
         "EDGE_MIN_COMPRESSION_SIZE": "512"
       }
     },
-    "api/edge/**/*.ts": {
+"api/edge/**/*.ts": {
       "runtime": "edge",
-      "regions": ["hkg1", "iad1", "sin1", "fra1", "sfo1", "arn1", "gru1", "cle1"],
       "maxDuration": 15,
       "memory": 512,
-      "cache": "max-age=300, s-maxage=900, stale-while-revalidate=300",
       "environment": {
         "EDGE_OPTIMIZATION_LEVEL": "maximum",
         "EDGE_CACHE_STRATEGY": "aggressive",
@@ -240,19 +236,6 @@
     }
   },
   "crons": [],
-  "experimental": {
-    "edgeFunctions": {
-      "warm": true,
-      "maxConcurrency": 1000,
-      "incrementalCache": true,
-      "streaming": true
-    },
-    "allowedHosts": [
-      "quanforge.ai",
-      "*.quanforge.ai",
-      "*.supabase.co"
-    ]
-  },
   "rewrites": [
     {
       "source": "/api/supabase/(.*)",

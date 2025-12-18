@@ -63,6 +63,7 @@
     - [x] **Critical Build Fix**: Resolved browser crypto compatibility issue in `enhancedRateLimit.ts`
     - [x] **Cross-Platform Compatibility**: Replaced Node.js crypto with browser-compatible hash function
     - [x] **Build System**: Restored full build functionality and deployment capability
+    - [x] **PR #139 Update**: Fixed Vercel schema validation by removing unsupported experimental/regions/cache properties
 
 ## Pending / Future Tasks
 
