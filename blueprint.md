@@ -73,3 +73,17 @@ graph TD
 *   **API Keys**: Accessed via `process.env`.
 *   **Input Sanitization**: Filenames are sanitized before download.
 *   **Prompt Engineering**: System prompts prevents the AI from generating harmful or non-MQL5 content.
+
+## Agent Workflow
+
+### Development Process
+1. **Branch Strategy**: Main for production, develop for integration work
+2. **PR Management**: All changes via pull requests with automated checks
+3. **Documentation First**: Update AGENTS.md before major architectural changes
+4. **Quality Gates**: Build, lint, and type-check must pass before merge
+
+### Deployment Considerations
+- **Vercel Config**: Avoid experimental features that break schema validation
+- **Edge Functions**: Regional deployment for performance
+- **Bundle Analysis**: Monitor chunks >100KB for optimization opportunities
+- **Environment Variables**: Never expose sensitive data in client bundles
