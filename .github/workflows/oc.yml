@@ -1,4 +1,4 @@
-name: oc researcher
+name: oc
 
 on:
   schedule:
@@ -6,20 +6,19 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pull-requests: read
-  issues: read
-  actions: read
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
 
 concurrency:
-  group: global
+  group: oc-${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
   opencode:
-    name: oc researcher
+    name: oc
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 100
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
 
     permissions:
@@ -38,189 +37,97 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 1
+
       - name: Install OpenCode CLI
-        run: |
+        run: |        
           curl -fsSL https://opencode.ai/install | bash
           echo "$HOME/.opencode/bin" >> $GITHUB_PATH
+          
       - name: Run OpenCode
         id: run_oc
-        timeout-minutes: 20
+        timeout-minutes: 60
         run: |
           opencode run "$(cat <<'PROMPT'
-            Please follow these steps meticulously:
-            - Understand the repository and its existing features in depth.
-            - Read documentation
-            - Discover optimization opportunities and connections between features, focused on vercel deployment and supabase integration.
-            - implement.
-            - test and verify. make sure no error/warning.
-            - make sure build is success locally.
-            - if needed, make/update documentation.
-            - commit and make pr with pr template.
-            - make sure all checks is passed.
-            - merge or set auto merge.
-            Rules:
-            - dont reveal secreet
-            - dont touch github workflows
-            - use repository coding standard
-            - after work is done, always create pr - check passed - merge/set auto merge
+          Task:
+          - list all open pr, select 1 with red flag
+          - make sure mergable (check passed, comment on conversation resolved, no merge conflicts), use all method u can
+          - update pr
+          
+          Before starting:
+          - switch to branch develop, make sure up to date with develop branch
+          - Review codebase, `blueprint.md`, `roadmap.md`, and `AGENTS.md` to fully understand the context, goals, and dependencies.
+            
+          During execution:
+          - Work incrementally and avoid large disruptive changes
+          - Document any assumptions, dependencies, and design decisions
+          - Ensure each change is testable and verifiable
+          - Respect codebase coding standard
+          
+          After completing the task:
+          - Update `blueprint.md` and `roadmap.md` and 'task.md'
+          - Update `AGENTS.md` with future-relevant insights or decisions
+          - update `bug.md` if any bugs were discovered or fixed (bug.md contain list of bugs with marked for status fixed/not)
+          - Provide a short summary of what was done, what improved, and what still needs follow-up (next steps)
+          - Commit with detailed description
+          - Push to branch 'develop'
+          
+          Success criteria (must be met):
+          - No broken features or regressions introduced
+          - Code remains or becomes more maintainable and modular
+          - Changes are clearly traceable, documented, and aligned with roadmap/blueprint
+          - Commit and push to branch 'develop'
           PROMPT
           )" \
             --model iflowcn/glm-4.6 \
             --share false \
+
       - name: Run OpenCode1
         id: run_oc1
-        timeout-minutes: 20
+        timeout-minutes: 60
         run: |
           opencode run "$(cat <<'PROMPT'
-            Please follow these steps meticulously:
-            - Understand the repository and its existing features in depth.
-            - Read documentation
-            - Discover optimization opportunities and connections between features.
-            - implement.
-            - test and verify. make sure no error/warning.
-            - make sure build is success locally.
-            - if needed, make/update documentation.
-            - commit and make pr with pr template.
-            - make sure all checks is passed.
-            - merge or set auto merge.
-            Rules:
-            - dont reveal secreet
-            - dont touch github workflows
-            - use repository coding standard
-            - after work is done, always create pr - check passed - merge/set auto merge
+          You are Perfectionist Github developer live on github action environtment. Your Principle:
+          - stability 
+          - performance
+          - security
+          - scalability
+          - modularity
+          - flexibility, no hardcoded
+          - consistency
+          - efficiency
+          
+          Task:
+          1. make repository efficient
+          2. make repository maintainable
+          3. make documentation up to date with codebase
+          4. make sure documentation efficient for ai agent conteks
+          
+          Before starting:
+          - switch to branch develop, make sure up to date with develop branch
+          - Review codebase, `blueprint.md`, `roadmap.md`, and `AGENTS.md` to fully understand the context, goals, and dependencies.
+          - Check for related open tasks or blockers that might influence your chosen task.          
+          
+          During execution:
+          - Work incrementally and avoid large disruptive changes
+          - Document any assumptions, dependencies, and design decisions
+          - Ensure each change is testable and verifiable
+          - Respect codebase coding standard
+          
+          After completing the task:
+          - Update `blueprint.md` and `roadmap.md` if structural or directional changes occurred
+          - Mark the completed item in `task.md` **AND** add new related tasks if discovered
+          - Update `AGENTS.md` with future-relevant insights or decisions
+          - update `bug.md` if any bugs were discovered or fixed (bug.md contain list of bugs with marked for status fixed/not)
+          - Provide a short summary of what was done, what improved, and what still needs follow-up (next steps)
+          - Commit with detailed description
+          - Push to branch 'develop'
+          
+          Success criteria (must be met):
+          - No broken features or regressions introduced
+          - Code remains or becomes more maintainable and modular
+          - Changes are clearly traceable, documented, and aligned with roadmap/blueprint
+          - Commit and push to branch 'develop'
           PROMPT
           )" \
             --model iflowcn/glm-4.6 \
-            --share false \
-      - name: Run OpenCode2
-        id: run_oc2
-        timeout-minutes: 20
-        run: |
-          opencode run "$(cat <<'PROMPT'
-            You are in github action environtment. Always update commit and push your work. Your tasks:
-            * Study the repository and all existing features thoroughly.
-            * Identify optimization opportunities and relationships between features, focused on frontend and user experience.
-            * Implement the required changes or new features.
-            * Run tests and ensure there are no errors or warnings.
-            * Ensure the project builds successfully in the local environment.
-            * Create or update documentation if needed.
-            * Commit your work, push and update/open a pull request using the required template.
-            * Ensure all automated checks pass.
-            * Merge the pull request or enable auto-merge.
-            Rules:
-            * Do not disclose any secrets.
-            * Do not modify GitHub workflows.
-            * Follow the repository’s coding standards.
-          PROMPT
-          )" \
-            --model iflowcn/qwen3-coder-plus \
-            --share false \
-      - name: Run OpenCode3
-        id: run_oc3
-        timeout-minutes: 20
-        run: |
-          opencode run "$(cat <<'PROMPT'
-            You are in github action environtment. Always update commit and push your work. Your tasks:
-            * Study the repository and all existing features thoroughly.
-            * Identify backend optimization opportunities and relationships between features.
-            * Implement the required changes or new features.
-            * Run tests and ensure there are no errors or warnings.
-            * Ensure the project builds successfully in the local environment.
-            * Create or update documentation if needed.
-            * Commit your work, push and update/open a pull request using the required template.
-            * Ensure all automated checks pass.
-            * Merge the pull request or enable auto-merge.
-            Rules:
-            * Do not disclose any secrets.
-            * Do not modify GitHub workflows.
-            * Follow the repository’s coding standards.
-          PROMPT
-          )" \
-            --model iflowcn/qwen3-coder-plus \
-            --share false \
-      - name: Run OpenCode4
-        id: run_oc4
-        timeout-minutes: 20
-        run: |
-          opencode run "$(cat <<'PROMPT'
-            You are in github action environtment. Always update commit and push your work. Your tasks:
-            * Study the repository and all existing features thoroughly.
-            * Identify optimization opportunities and relationships between features, focused on content and search engine optimization.
-            * Implement the required changes or new features.
-            * Run tests and ensure there are no errors or warnings.
-            * Ensure the project builds successfully in the local environment.
-            * Create or update documentation if needed.
-            * Commit your work, push and update/open a pull request using the required template.
-            * Ensure all automated checks pass.
-            * Merge the pull request or enable auto-merge.
-            Rules:
-            * Do not disclose any secrets.
-            * Do not modify GitHub workflows.
-            * Follow the repository’s coding standards.
-          PROMPT
-          )" \
-            --model iflowcn/glm-4.6 \
-            --share false \
-      - name: Run OpenCode5
-        id: run_oc5
-        timeout-minutes: 20
-        run: |
-          opencode run "$(cat <<'PROMPT'
-            You are in github action environtment. Always update commit and push your work. Your tasks:
-            * Study the repository and all existing features thoroughly.
-            * Identify database optimization opportunities and relationships between features, focused.
-            * Implement the required changes or new features.
-            * Run tests and ensure there are no errors or warnings.
-            * Ensure the project builds successfully in the local environment.
-            * Create or update documentation if needed.
-            * Commit your work, push and update/open a pull request using the required template.
-            * Ensure all automated checks pass.
-            * Merge the pull request or enable auto-merge.
-            Rules:
-            * Do not disclose any secrets.
-            * Do not modify GitHub workflows.
-            * Follow the repository’s coding standards.
-          PROMPT
-          )" \
-            --model iflowcn/qwen3-coder-plus \
-            --share false \
-      - name: Run OpenCode6
-        id: run_oc6
-        timeout-minutes: 20
-        run: |
-          opencode run "$(cat <<'PROMPT'
-            You are in github action environtment. Always update commit and push your work. Your tasks:
-            * Study the repository and all existing features thoroughly.
-            * Identify optimization opportunities for stability, performance and security.
-            * Implement the required changes or new features.
-            * Run tests and ensure there are no errors or warnings.
-            * Ensure the project builds successfully in the local environment.
-            * Create or update documentation if needed.
-            * Commit your work, push and update/open a pull request using the required template.
-            * Ensure all automated checks pass.
-            * Merge the pull request or enable auto-merge.
-            Rules:
-            * Do not disclose any secrets.
-            * Do not modify GitHub workflows.
-            * Follow the repository’s coding standards.
-          PROMPT
-          )" \
-            --model iflowcn/qwen3-coder-plus \
-            --share false \
-      - name: Run OpenCode7
-        id: run_oc7
-        timeout-minutes: 20
-        run: |
-          opencode run "$(cat <<'PROMPT'
-            You are in github action environtment. Always update commit and push your work. Your tasks:
-            * commit, push, create pr in new branch, merge if all check passed
-            * do repository maintenance
-            * do documents management, makes sure document up to date with code and fiture 
-            Rules:
-            * Do not disclose any secrets.
-            * Do not modify GitHub workflows.
-            * Follow the repository’s coding standards.
-          PROMPT
-          )" \
-            --model iflowcn/qwen3-coder-plus \
             --share false \
