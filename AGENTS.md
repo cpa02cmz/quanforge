@@ -57,7 +57,6 @@
 3. **Build Testing**: Ensure local build passes before pushing changes
 4. **Incremental Pushes**: Push small changes and allow deployment systems to complete
 5. **Monitor Status**: Use `gh pr checks` to track deployment status and identify specific failures
-
 ### When Optimizing Features
 1. **Measure First**: Use bundle analysis before and after changes
 2. **User Impact**: Prioritize visible improvements over internal optimizations

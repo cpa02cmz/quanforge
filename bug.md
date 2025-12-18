@@ -10,7 +10,7 @@
 - **Error**: `"createHash" is not exported by "__vite-browser-external"`
 - **Solution**: Replaced Node.js crypto with browser-compatible simple hash function
 
-### [FIXED] PR #137 - Vercel Schema Validation Failures
+### [FIXED] PR #137 - Vercel Schema Validation Failures  
 - **Date**: 2025-12-19
 - **Severity**: Critical (Deployment Blocking)
 - **Description**: PR #137 had multiple Vercel deployment failures due to vercel.json schema validation
@@ -20,9 +20,6 @@
   - `functions.api/**/*.ts.excludeFiles` should be string
 - **Solution**: Simplified vercel.json to minimal schema-compliant configuration
 - **Impact**: Restored mergeability and deployment pipeline functionality
-- **Solution**: Replaced Node.js crypto with browser-compatible hash function
-- **Impact**: Restored build functionality, enables development and deployment
-- **Testing**: ✓ Build successful, ✓ Type check passed
 
 ### [FIXED] Vercel Deployment Schema Validation Errors
 - **Date**: 2025-12-18
