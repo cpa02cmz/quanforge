@@ -36,12 +36,35 @@ interface CacheEntry<T> {
   ttl: number;
 }
 
+import { memoryMonitor } from '../utils/memoryManagement';
+
 class EnhancedCache<T> {
   private cache = new Map<string, CacheEntry<T>>();
   private readonly maxSize: number;
+  private hits = 0;
+  private misses = 0;
+  private cacheName: string;
   
-  constructor(maxSize: number = 100) {
+  constructor(maxSize: number = 100, cacheName: string = 'enhanced-cache') {
     this.maxSize = maxSize;
+    this.cacheName = cacheName;
+    
+    // Register with memory monitor
+    memoryMonitor.registerCache(cacheName, {
+      size: () => this.cache.size,
+      maxSize: this.maxSize,
+      hits: this.hits,
+      misses: this.misses,
+      clear: () => this.clear(),
+      cleanup: () => this.cleanup()
+    });
+    
+    // Listen for memory cleanup events
+    window.addEventListener('memory-cleanup', (event: any) => {
+      if (!event.detail.cacheName || event.detail.cacheName === this.cacheName) {
+        this.cleanup(event.detail.level);
+      }
+    });
   }
   
   get(key: string): T | null {
@@ -81,6 +104,63 @@ class EnhancedCache<T> {
   
   keys(): string[] {
     return Array.from(this.cache.keys());
+  }
+  
+  cleanup(level: 'light' | 'aggressive' | 'emergency' = 'light'): number {
+    let cleanedCount = 0;
+    const now = Date.now();
+    
+    switch (level) {
+      case 'emergency':
+        // Clear everything
+        cleanedCount = this.cache.size;
+        this.cache.clear();
+        this.hits = 0;
+        this.misses = 0;
+        break;
+        
+      case 'aggressive':
+        // Clear expired and least recently used entries
+        const keysToDelete = Array.from(this.cache.keys());
+        for (const key of keysToDelete) {
+          const entry = this.cache.get(key);
+          if (entry && now - entry.timestamp > entry.ttl) {
+            this.cache.delete(key);
+            cleanedCount++;
+          }
+        }
+        // If still too large, remove oldest entries
+        while (this.cache.size > this.maxSize * 0.5) {
+          const firstKey = this.cache.keys().next().value;
+          if (firstKey) {
+            this.cache.delete(firstKey);
+            cleanedCount++;
+          } else {
+            break;
+          }
+        }
+        break;
+        
+      case 'light':
+      default:
+        // Only clear expired entries
+        for (const [key, entry] of this.cache.entries()) {
+          if (now - entry.timestamp > entry.ttl) {
+            this.cache.delete(key);
+            cleanedCount++;
+          }
+        }
+        break;
+    }
+    
+    // Update memory monitor metrics
+    memoryMonitor.updateCacheMetrics(this.cacheName, {
+      size: this.cache.size,
+      hitRate: this.hits + this.misses > 0 ? this.hits / (this.hits + this.misses) : 0,
+      lastCleanup: now
+    });
+    
+    return cleanedCount;
   }
 }
 
@@ -233,24 +313,50 @@ class LRUCache<T> {
   private cache = new Map<string, { result: T, timestamp: number }>();
   private readonly ttl: number;
   private readonly maxSize: number;
+  private cacheName: string;
+  private hits = 0;
+  private misses = 0;
 
-  constructor(ttl: number = 5 * 60 * 1000, maxSize: number = 100) { // 5 min TTL, max 100 items
+  constructor(ttl: number = 5 * 60 * 1000, maxSize: number = 100, cacheName: string = 'lru-cache') { // 5 min TTL, max 100 items
     this.ttl = ttl;
     this.maxSize = maxSize;
+    this.cacheName = cacheName;
+    
+    // Register with memory monitor
+    memoryMonitor.registerCache(cacheName, {
+      size: () => this.cache.size,
+      maxSize: this.maxSize,
+      hits: this.hits,
+      misses: this.misses,
+      clear: () => this.clear(),
+      cleanup: () => this.cleanup()
+    });
+    
+    // Listen for memory cleanup events
+    window.addEventListener('memory-cleanup', (event: any) => {
+      if (!event.detail.cacheName || event.detail.cacheName === this.cacheName) {
+        this.cleanup(event.detail.level);
+      }
+    });
   }
 
   get(key: string): T | undefined {
     const item = this.cache.get(key);
-    if (!item) return undefined;
+    if (!item) {
+      this.misses++;
+      return undefined;
+    }
 
     if (Date.now() - item.timestamp > this.ttl) {
       this.cache.delete(key);
+      this.misses++;
       return undefined;
     }
 
     // Move to end (most recently used)
     this.cache.delete(key);
     this.cache.set(key, item);
+    this.hits++;
     return item.result;
   }
 
@@ -269,13 +375,67 @@ class LRUCache<T> {
   clear(): void {
     this.cache.clear();
   }
+  
+  private cleanup(level: 'light' | 'aggressive' | 'emergency' = 'light'): number {
+    let cleanedCount = 0;
+    const now = Date.now();
+    
+    switch (level) {
+      case 'emergency':
+        cleanedCount = this.cache.size;
+        this.cache.clear();
+        this.hits = 0;
+        this.misses = 0;
+        break;
+        
+      case 'aggressive':
+        // Clear expired entries
+        for (const [key, item] of this.cache.entries()) {
+          if (now - item.timestamp > this.ttl) {
+            this.cache.delete(key);
+            cleanedCount++;
+          }
+        }
+        // If still too large, remove oldest entries
+        while (this.cache.size > this.maxSize * 0.5) {
+          const firstKey = this.cache.keys().next().value;
+          if (firstKey) {
+            this.cache.delete(firstKey);
+            cleanedCount++;
+          } else {
+            break;
+          }
+        }
+        break;
+        
+      case 'light':
+      default:
+        // Only clear expired entries
+        for (const [key, item] of this.cache.entries()) {
+          if (now - item.timestamp > this.ttl) {
+            this.cache.delete(key);
+            cleanedCount++;
+          }
+        }
+        break;
+    }
+    
+    // Update memory monitor metrics
+    memoryMonitor.updateCacheMetrics(this.cacheName, {
+      size: this.cache.size,
+      hitRate: this.hits + this.misses > 0 ? this.hits / (this.hits + this.misses) : 0,
+      lastCleanup: now
+    });
+    
+    return cleanedCount;
+  }
 }
 
-const analysisCache = new LRUCache<StrategyAnalysis>();
-const enhancedAnalysisCache = new EnhancedCache<StrategyAnalysis>(200); // Larger cache size for better performance
+const analysisCache = new LRUCache<StrategyAnalysis>(5 * 60 * 1000, 100, 'strategy-analysis'); // 5 min TTL, max 100 items
+const enhancedAnalysisCache = new EnhancedCache<StrategyAnalysis>(200, 'strategy-analysis-enhanced'); // Larger cache size for better performance
 
 // Semantic cache for generateMQL5Code responses
-const mql5ResponseCache = new EnhancedCache<{ thinking?: string, content: string }>(300); // Cache for MQL5 generation responses
+const mql5ResponseCache = new EnhancedCache<{ thinking?: string, content: string }>(300, 'mql5-generation'); // Cache for MQL5 generation responses
 
 // Create semantic cache key for similar prompts
 const createSemanticCacheKey = (prompt: string, currentCode?: string, strategyParams?: StrategyParams, settings?: AISettings): string => {

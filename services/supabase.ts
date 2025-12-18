@@ -8,6 +8,7 @@ import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
 import { secureStorage } from '../utils/secureStorage';
+import { memoryMonitor } from '../utils/memoryManagement';
 
 // Enhanced connection retry configuration with exponential backoff
 const RETRY_CONFIG = {
@@ -167,24 +168,50 @@ class LRUCache<T> {
   private cache = new Map<string, { data: T; timestamp: number }>();
   private readonly ttl: number;
   private readonly maxSize: number;
+  private cacheName: string;
+  private hits = 0;
+  private misses = 0;
 
-  constructor(ttl: number, maxSize: number) {
+  constructor(ttl: number, maxSize: number, cacheName: string = 'supabase-cache') {
     this.ttl = ttl;
     this.maxSize = maxSize;
+    this.cacheName = cacheName;
+    
+    // Register with memory monitor
+    memoryMonitor.registerCache(cacheName, {
+      size: () => this.cache.size,
+      maxSize: this.maxSize,
+      hits: this.hits,
+      misses: this.misses,
+      clear: () => this.clear(),
+      cleanup: () => this.cleanup()
+    });
+    
+    // Listen for memory cleanup events
+    window.addEventListener('memory-cleanup', (event: any) => {
+      if (!event.detail.cacheName || event.detail.cacheName === this.cacheName) {
+        this.cleanup(event.detail.level);
+      }
+    });
   }
 
   get(key: string): T | null {
     const item = this.cache.get(key);
-    if (!item) return null;
+    if (!item) {
+      this.misses++;
+      return null;
+    }
 
     if (Date.now() - item.timestamp > this.ttl) {
       this.cache.delete(key);
+      this.misses++;
       return null;
     }
 
     // Move to end (most recently used)
     this.cache.delete(key);
     this.cache.set(key, item);
+    this.hits++;
     return item.data;
   }
 
@@ -208,19 +235,79 @@ class LRUCache<T> {
     this.cache.clear();
   }
 
-  has(key: string): boolean {
+has(key: string): boolean {
     const item = this.cache.get(key);
-    if (!item) return false;
-    
-    if (Date.now() - item.timestamp > this.ttl) {
-      this.cache.delete(key);
+    if (!item) {
+      this.misses++;
       return false;
     }
+
+    if (Date.now() - item.timestamp > this.ttl) {
+      this.cache.delete(key);
+      this.misses++;
+      return false;
+    }
+
+    this.hits++;
     return true;
+  }
+  
+  private cleanup(level: 'light' | 'aggressive' | 'emergency' = 'light'): number {
+    let cleanedCount = 0;
+    const now = Date.now();
+    
+    switch (level) {
+      case 'emergency':
+        cleanedCount = this.cache.size;
+        this.cache.clear();
+        this.hits = 0;
+        this.misses = 0;
+        break;
+        
+      case 'aggressive':
+        // Clear expired entries
+        for (const [key, item] of this.cache.entries()) {
+          if (now - item.timestamp > this.ttl) {
+            this.cache.delete(key);
+            cleanedCount++;
+          }
+        }
+        // If still too large, remove oldest entries
+        while (this.cache.size > this.maxSize * 0.5) {
+          const firstKey = this.cache.keys().next().value;
+          if (firstKey) {
+            this.cache.delete(firstKey);
+            cleanedCount++;
+          } else {
+            break;
+          }
+        }
+        break;
+        
+      case 'light':
+      default:
+        // Only clear expired entries
+        for (const [key, item] of this.cache.entries()) {
+          if (now - item.timestamp > this.ttl) {
+            this.cache.delete(key);
+            cleanedCount++;
+          }
+        }
+        break;
+    }
+    
+    // Update memory monitor metrics
+    memoryMonitor.updateCacheMetrics(this.cacheName, {
+      size: this.cache.size,
+      hitRate: this.hits + this.misses > 0 ? this.hits / (this.hits + this.misses) : 0,
+      lastCleanup: now
+    });
+    
+    return cleanedCount;
   }
 }
 
-const cache = new LRUCache<any>(CACHE_CONFIG.ttl, CACHE_CONFIG.maxSize);
+const cache = new LRUCache<any>(CACHE_CONFIG.ttl, CACHE_CONFIG.maxSize, 'supabase-main');
 
 
 
