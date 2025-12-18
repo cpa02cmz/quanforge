@@ -29,6 +29,22 @@ This document tracks bugs discovered and fixed during development and agent acti
 - **Impact**: Resolved deployment failures for PR #139, enabling successful Vercel deployment
 - **PR Reference**: #139 (fixed by openCode agent)
 
+- **ID**: Bug-016
+- **Title**: Vercel deployment schema validation failures in PR #137
+- **Description**: Invalid properties in vercel.json: regions, builds, routes, cache, environment causing schema validation errors
+- **Status**: FIXED
+- **Solution**: Removed all unsupported properties and functions configurations to create schema-compliant minimal setup
+- **Impact**: Resolved deployment failures for PR #137, restored CI/CD pipeline functionality
+- **PR Reference**: #137 (fixed by openCode agent)
+- **Agent Reference**: December 2025 PR management and deployment fixes session
+- **Fix Details**: 
+  - Removed invalid `builds` and `routes` properties (conflict with functions)
+  - Removed global `regions` property (not supported in schema)  
+  - Removed invalid function `regions`, `cache`, and `environment` properties
+  - Simplified to minimal schema-compliant configuration
+  - Verified build passes successfully after fixes
+- **Build Verification**: ✅ Build successful, ✅ TypeScript compilation passes, ✅ Schema validation compliant
+
 - **ID**: Bug-002  
 - **Title**: Branch setup conflicts during merge operations
 - **Description**: develop branch had unrelated histories causing merge conflicts

@@ -20,9 +20,10 @@ This document provides insights and decisions for future AI agents working on th
 ## Common Issues & Solutions
 
 ### Build & Deployment
-- **Vercel Configuration**: Avoid `experimental` property in vercel.json - causes schema validation errors
+- **Vercel Configuration**: STRICT schema validation - avoid `experimental`, `regions`, `builds`, `routes`, `cache`, `environment` properties
 - **TypeScript**: Strict mode enabled - watch for implicit any types
 - **Bundle Size**: Monitor chunks >100KB, use dynamic imports for code splitting
+- **Vercel Schema Compliance**: Use only supported properties in configuration - validate schema before deploying
 
 ### Performance Optimizations
 - **React.memo**: Applied to Layout, Generator, Dashboard components
@@ -247,6 +248,35 @@ This document provides insights and decisions for future AI agents working on th
 ### Agent Success Metrics
 - **Build Success**: Application builds and compiles successfully
 - **Type Safety**: Critical type issues resolved, runtime errors reduced
+
+## PR Management & Deployment Session (v2.1 - December 18, 2025)
+
+### Critical Achievements
+- [x] **Red Flag PR Resolution**: Successfully identified and fixed PR #137 with deployment failures
+- [x] **Vercel Schema Compliance**: Resolved critical schema validation issues blocking CI/CD pipeline
+- [x] **Multi-PR Fix**: Addressed deployment issues across multiple PRs (137, 138, and others)
+- [x] **Build Verification**: Confirmed local build passes after configuration fixes
+- [x] **Documentation Updates**: Updated bug.md, task.md, and AGENTS.md with comprehensive fix details
+
+### Technical Fixes Applied
+- **Schema Validation**: Removed invalid `regions`, `builds`, `routes`, `cache`, `environment` properties from vercel.json
+- **Function Configuration**: Simplified edge function configurations to schema-compliant minimal setup
+- **Build Compatibility**: Ensured changes work with Vite build system and TypeScript compilation
+- **CI/CD Restoration**: Restored deployment capability for multiple blocked development branches
+
+### Agent PR Management Guidelines
+- **Red Flag Detection**: Look for Failed Vercel deployments and schema validation errors
+- **Systematic Approach**: Fix schema issues first, then test build, then update documentation
+- **Incremental Changes**: Make targeted fixes rather than wholesale configuration changes
+- **Build Testing**: Always run `npm run build` after configuration changes to verify compatibility
+- **Documentation Priority**: Update bug tracking and agent guidelines for future reference
+
+### Success Criteria Met
+- [x] **Deployment Fixed**: PR #137 now passes Vercel schema validation
+- [x] **Build Success**: Local build completes without errors
+- [x] **No Regressions**: Core functionality preserved during fixes
+- [x] **Documentation Updated**: Comprehensive fix tracking in place
+- [x] **Future Prevention**: Agent guidelines updated to prevent similar issues
 - **Bundle Optimization**: Largest chunks maintain acceptable size (256KB)
 - **Code Maintainability**: ESLint warnings significantly reduced (410+ console statements removed from production code)
 
