@@ -40,8 +40,10 @@ graph TD
 ### A. The Generation Loop (`services/gemini.ts`)
 1.  **Input**: User Prompt + Current Code State + Strategy Configuration (JSON).
 2.  **Context Construction**: The service builds a prompt that enforces the configuration (Timeframe, Risk, Inputs) as "Hard Constraints" and the User Prompt as "Soft Logic".
-3.  **Model Interaction**: Calls `gemini-3-pro-preview` for high-reasoning code generation.
+3.  **Model Interaction**: Calls `gemini-3-pro-preview` for high-reasoning code generation with retry logic and error handling.
 4.  **Parsing**: A robust extraction layer identifies Markdown code blocks to separate executable code from conversational text.
+5.  **Caching**: Semantic caching and request deduplication prevent duplicate API calls.
+6.  **Rate Limiting**: User-specific rate limiting enforced with browser-compatible hashing.
 
 ### B. Persistence Layer (`services/supabase.ts`)
 *   **Design Pattern**: Adapter Pattern.

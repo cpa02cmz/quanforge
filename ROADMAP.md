@@ -24,6 +24,12 @@
 - [ ] **Direct MT5 Integration**: (Conceptual) Use a localized Python script to bridge the web app with a running MetaTrader terminal.
 - [ ] **Version Control**: Save history of code versions for a single robot (Undo/Redo).
 
+## Code Quality Roadmap
+- [ ] **Technical Debt Reduction**: Address 200+ ESLint warnings and split large service files
+- [ ] **Environment Configuration**: Remove hardcoded values and implement feature flags
+- [ ] **Testing Strategy**: Add comprehensive unit test coverage for critical utilities
+- [ ] **Bundle Optimization**: Implement advanced code splitting for >100KB chunks
+
 ## Recent Optimizations (v1.1)
 - [x] **Security Enhancement**: Removed environment variable exposure from client-side bundle
 - [x] **Type Safety**: Improved TypeScript typing across components and services
