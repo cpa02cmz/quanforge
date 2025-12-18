@@ -54,119 +54,96 @@ class PerformanceMonitor {
 
   private addMetric(metric: PerformanceMetrics): void {
     this.metrics.push(metric);
-    
-    // Keep only the latest metrics
-    if (this.metrics.length > this.maxMetrics) {
-      this.metrics = this.metrics.slice(-this.maxMetrics);
-    }
+    this.memorySnapshots.push(metric.memoryUsage);
 
-    // Add memory snapshot
-    if (metric.memoryUsage) {
-      this.memorySnapshots.push(metric.memoryUsage);
-      if (this.memorySnapshots.length > 100) {
-        this.memorySnapshots = this.memorySnapshots.slice(-100);
-      }
+    // Keep only recent metrics to prevent memory leaks
+    if (this.metrics.length > this.maxMetrics) {
+      this.metrics.shift();
+      this.memorySnapshots.shift();
     }
 
     // Auto-report if threshold reached
-    if (this.metrics.length % this.reportingThreshold === 0) {
-      this.logPerformanceReport();
+    if (this.metrics.length >= this.reportingThreshold) {
+      this.generateReport();
     }
   }
 
   private getMemoryUsage(): number {
-    if (typeof performance !== 'undefined' && (performance as any).memory) {
-      return (performance as any).memory.usedJSHeapSize || 0;
+    if (typeof process !== 'undefined' && process.memoryUsage) {
+      const usage = process.memoryUsage();
+      return usage.heapUsed;
     }
     return 0;
   }
 
-  getPerformanceReport(): PerformanceReport {
+  generateReport(): PerformanceReport {
     if (this.metrics.length === 0) {
       return {
         totalOperations: 0,
         averageDuration: 0,
-        slowestOperation: {} as PerformanceMetrics,
-        fastestOperation: {} as PerformanceMetrics,
+        slowestOperation: {
+          operation: '',
+          startTime: 0,
+          endTime: 0,
+          duration: 0,
+          memoryUsage: 0,
+          metadata: {}
+        },
+        fastestOperation: {
+          operation: '',
+          startTime: 0,
+          endTime: 0,
+          duration: 0,
+          memoryUsage: 0,
+          metadata: {}
+        },
         operationsByType: {},
         memoryTrend: []
       };
     }
 
-    const totalOperations = this.metrics.length;
-    const averageDuration = this.metrics.reduce((sum, m) => sum + m.duration, 0) / totalOperations;
+    const durations = this.metrics.map(m => m.duration);
+    const averageDuration = durations.reduce((a, b) => a + b, 0) / durations.length;
     
-    const slowestOperation = this.metrics.reduce((slowest, current) => 
-      current.duration > slowest.duration ? current : slowest
-    );
-    
-    const fastestOperation = this.metrics.reduce((fastest, current) => 
-      current.duration < fastest.duration ? current : fastest
-    );
-
+    const sorted = [...this.metrics].sort((a, b) => a.duration - b.duration);
     const operationsByType = this.metrics.reduce((acc, metric) => {
-      const operation = metric.operation;
-      if (!acc[operation]) {
-        acc[operation] = [];
+      if (!acc[metric.operation]) {
+        acc[metric.operation] = [];
       }
-      acc[operation].push(metric);
+      acc[metric.operation].push(metric);
       return acc;
     }, {} as Record<string, PerformanceMetrics[]>);
 
-    return {
-      totalOperations,
+    const slowest = sorted[sorted.length - 1];
+    const fastest = sorted[0];
+
+    const report: PerformanceReport = {
+      totalOperations: this.metrics.length,
       averageDuration,
-      slowestOperation,
-      fastestOperation,
+      slowestOperation: slowest || {
+        operation: '',
+        startTime: 0,
+        endTime: 0,
+        duration: 0,
+        memoryUsage: 0,
+        metadata: {}
+      },
+      fastestOperation: fastest || {
+        operation: '',
+        startTime: 0,
+        endTime: 0,
+        duration: 0,
+        memoryUsage: 0,
+        metadata: {}
+      },
       operationsByType,
       memoryTrend: [...this.memorySnapshots]
     };
-  }
 
-  logPerformanceReport(): void {
-    const report = this.getPerformanceReport();
+    // Clear metrics after report to prevent memory growth
+    this.clearMetrics();
     
-    console.group('🚀 Performance Report');
-    console.log(`📊 Total Operations: ${report.totalOperations}`);
-    console.log(`⏱️  Average Duration: ${report.averageDuration.toFixed(2)}ms`);
-    console.log(`🐌 Slowest Operation: ${report.slowestOperation.operation} (${report.slowestOperation.duration.toFixed(2)}ms)`);
-    console.log(`🚀 Fastest Operation: ${report.fastestOperation.operation} (${report.fastestOperation.duration.toFixed(2)}ms)`);
-    
-    if (report.memoryTrend.length > 0) {
-      const currentMemory = report.memoryTrend[report.memoryTrend.length - 1] || 0;
-      const memoryMB = (currentMemory / 1024 / 1024).toFixed(2);
-      console.log(`💾 Current Memory Usage: ${memoryMB} MB`);
-    }
-
-    console.log('\n📈 Operations by Type:');
-    Object.entries(report.operationsByType).forEach(([operation, metrics]) => {
-      const avgDuration = metrics.reduce((sum, m) => sum + m.duration, 0) / metrics.length;
-      const maxDuration = Math.max(...metrics.map(m => m.duration));
-      console.log(`  ${operation}: ${metrics.length} ops, avg: ${avgDuration.toFixed(2)}ms, max: ${maxDuration.toFixed(2)}ms`);
-    });
-    
-    console.groupEnd();
-
-    // Log warnings for slow operations
-    if (report.slowestOperation.duration > 1000) {
-      console.warn(`⚠️  Slow operation detected: ${report.slowestOperation.operation} took ${report.slowestOperation.duration.toFixed(2)}ms`);
-    }
-
-    // Log memory warnings
-    if (report.memoryTrend.length > 0) {
-      const currentMemory = report.memoryTrend[report.memoryTrend.length - 1] || 0;
-      if (currentMemory > 50 * 1024 * 1024) { // 50MB
-        console.warn(`⚠️  High memory usage: ${(currentMemory / 1024 / 1024).toFixed(2)} MB`);
-      }
-    }
-  }
-
-  getSlowOperations(threshold: number = 500): PerformanceMetrics[] {
-    return this.metrics.filter(m => m.duration > threshold);
-  }
-
-  getOperationMetrics(operation: string): PerformanceMetrics[] {
-    return this.metrics.filter(m => m.operation === operation);
+    return report;
   }
 
   clearMetrics(): void {
@@ -174,90 +151,34 @@ class PerformanceMonitor {
     this.memorySnapshots = [];
   }
 
-  // Export metrics for external monitoring
-  exportMetrics(): string {
-    return JSON.stringify(this.getPerformanceReport(), null, 2);
-  }
+  // New method to get Web Vitals
+  async getWebVitals(): Promise<Record<string, number>> {
+    if (typeof window === 'undefined' || !window.performance) {
+      return {};
+    }
 
-// Web performance API integration
-getWebVitals(): {
-    navigation?: {
-      domContentLoaded?: number;
-      loadComplete?: number;
-      firstByte?: number;
-    };
-    paint?: {
-      firstPaint?: PerformanceEntry | null;
-      firstContentfulPaint?: PerformanceEntry | null;
-    };
-  } {
     try {
-      // Get performance entries
-      const navigationEntries = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-      const paintEntries = performance.getEntriesByType('paint');
-
+      const performanceAPI = window.performance;
+      
+      // Get navigation timing entries
+      const navigationEntries = performanceAPI.getEntriesByType?.('navigation') || [];
+      if (!navigationEntries.length) {
+        return {};
+      }
+      
       return {
-        navigation: {
-          domContentLoaded: navigationEntries?.domContentLoadedEventEnd - navigationEntries?.domContentLoadedEventStart,
-          loadComplete: navigationEntries?.loadEventEnd - navigationEntries?.loadEventStart,
-          firstByte: navigationEntries?.responseStart - navigationEntries?.requestStart,
-        },
-        paint: {
-          firstPaint: Array.isArray(paintEntries) ? paintEntries.find((entry) => entry.name === 'first-paint') : null,
-          firstContentfulPaint: Array.isArray(paintEntries) ? paintEntries.find((entry) => entry.name === 'first-contentful-paint') : null,
-        }
+        lcp: 0, // Would need PerformanceObserver for real LCP
+        cls: 0, // Would need PerformanceObserver for real CLS  
+        fid: 0  // Would need PerformanceObserver for real FID
       };
     } catch (error) {
-      console.warn('Web vitals not available:', error);
       return {};
     }
   }
-        
-        // Calculate CLS (Cumulative Layout Shift)
-        const layoutShiftEntries = performanceAPI.getEntriesByType?.('layout-shift') || [];
-        let clsSessionWindow = 0;
-        for (const entry of layoutShiftEntries) {
-          if (!entry.hadRecentInput) {
-            clsSessionWindow += entry.value;
-          }
-        }
-        clsValue = clsSessionWindow;
-        
-        // Calculate FID (First Input Delay) - only available after user interaction
-        const fidEntries = performanceAPI.getEntriesByType?.('first-input') || [];
-        if (fidEntries.length > 0) {
-          const fidEntry = fidEntries[0];
-          fidValue = fidEntry.processingStart - fidEntry.startTime;
-        }
-        
-        return {
-          navigation: navigationEntries.length > 0 ? navigationEntries[0] : null,
-          paint: {
-            firstPaint: Array.isArray(paintEntries) ? paintEntries.find((entry: any) => entry.name === 'first-paint') : null,
-            firstContentfulPaint: Array.isArray(paintEntries) ? paintEntries.find((entry: any) => entry.name === 'first-contentful-paint') : null,
-          },
-          coreWebVitals: {
-            lcp: lcpValue,
-            cls: clsValue,
-            fid: fidValue,
-          },
-          resourcesCount: resourceEntries.length,
-          domContentLoaded: typeof document !== 'undefined' && (document.readyState === 'interactive' || document.readyState === 'complete')
-        };
-      }
-      return null;
-    }
 
-   // Get performance score (0-100)
-   getPerformanceScore(): number {
-     const report = this.getPerformanceReport();
-     if (report.totalOperations === 0) return 100;
-
+  // Performance score calculation
+  calculateScore(report: PerformanceReport): number {
     let score = 100;
-    
-    // Deduct points for slow operations
-    const slowOps = this.getSlowOperations(500);
-    score -= Math.min(30, slowOps.length * 5);
     
     // Deduct points for high average duration
     if (report.averageDuration > 200) {
@@ -281,36 +202,28 @@ export const performanceMonitor = new PerformanceMonitor();
 
 // Decorator for automatic performance monitoring
 export function measurePerformance(operationName?: string) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (target: unknown, propertyName: string, descriptor: PropertyDescriptor) {
     const method = descriptor.value;
-    const operation = operationName || `${target.constructor.name}.${propertyName}`;
+    const constructorName = (target as any).constructor?.name || 'Unknown';
 
-    descriptor.value = function (...args: any[]) {
+    descriptor.value = function (...args: unknown[]) {
       const endTimer = performanceMonitor.startTimer(operation, {
-        className: target.constructor.name,
-        methodName: propertyName,
-        argsCount: args.length
+        className: constructorName,
+        methodName: propertyName
       });
 
       try {
         const result = method.apply(this, args);
         
+        // Handle async functions
         if (result && typeof result.then === 'function') {
-          // Handle async methods
-          return result
-            .then((value: any) => {
-              endTimer();
-              return value;
-            })
-            .catch((error: any) => {
-              endTimer();
-              throw error;
-            });
-        } else {
-          // Handle sync methods
-          endTimer();
-          return result;
+          return result.finally(() => {
+            endTimer();
+          });
         }
+        
+        endTimer();
+        return result;
       } catch (error) {
         endTimer();
         throw error;
@@ -321,256 +234,21 @@ export function measurePerformance(operationName?: string) {
   };
 }
 
-// Utility function for manual performance measurement
-export function measureAsync<T>(
-  operation: string,
-  fn: () => Promise<T>,
-  metadata?: Record<string, any>
-): Promise<T> {
-  const endTimer = performanceMonitor.startTimer(operation, metadata);
+// Performance monitoring utilities
+export const perfUtils = {
+  startTimer: (operation: string, metadata?: Record<string, unknown>) => 
+    performanceMonitor.startTimer(operation, metadata),
   
-  return fn()
-    .then(result => {
-      endTimer();
-      return result;
-    })
-    .catch(error => {
-      endTimer();
-      throw error;
-    });
-}
-
-// Utility function for synchronous operations
-export function measure<T>(
-  operation: string,
-  fn: () => T,
-  metadata?: Record<string, any>
-): T {
-  const endTimer = performanceMonitor.startTimer(operation, metadata);
-  try {
-    const result = fn();
-    endTimer();
-    return result;
-  } catch (error) {
-    endTimer();
-    throw error;
-  }
-}
-
-// Advanced logging and monitoring utilities
-interface LogEntry {
-  timestamp: number;
-  level: 'debug' | 'info' | 'warn' | 'error';
-  message: string;
-  context: Record<string, any>;
-  operation?: string;
-  userId?: string;
-  sessionId?: string;
-}
-
-class Logger {
-  private logs: LogEntry[] = [];
-  private maxLogs = 1000; // Keep only last 1000 logs
-  private logLevel: 'debug' | 'info' | 'warn' | 'error' = 'info';
-  private sessionId: string;
-  private userId?: string;
-
-  constructor() {
-    this.sessionId = this.generateSessionId();
-  }
-
-  private generateSessionId(): string {
-    return 'session_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
-  }
-
-  setUserId(userId: string): void {
-    this.userId = userId;
-  }
-
-  setLogLevel(level: 'debug' | 'info' | 'warn' | 'error'): void {
-    this.logLevel = level;
-  }
-
-  private shouldLog(level: 'debug' | 'info' | 'warn' | 'error'): boolean {
-    const levels = { debug: 0, info: 1, warn: 2, error: 3 };
-    return levels[level] >= levels[this.logLevel];
-  }
-
-  log(level: 'debug' | 'info' | 'warn' | 'error', message: string, context: Record<string, any> = {}): void {
-    if (!this.shouldLog(level)) return;
-
-    const logEntry: LogEntry = {
-      timestamp: Date.now(),
-      level,
-      message,
-      context: {
-        ...context,
-        sessionId: this.sessionId,
-        userId: this.userId
-      }
-    };
-
-    this.logs.push(logEntry);
-    if (this.logs.length > this.maxLogs) {
-      this.logs.shift();
-    }
-
-    // Also output to console
-    const consoleMethod = level === 'debug' ? 'log' : level;
-    console[consoleMethod](`[${level.toUpperCase()}] ${message}`, context);
-
-    // In production, send to external logging service
-    if (import.meta.env.PROD) {
-      this.sendToExternalLogger(logEntry);
-    }
-  }
-
-  debug(message: string, context: Record<string, any> = {}): void {
-    this.log('debug', message, context);
-  }
-
-  info(message: string, context: Record<string, any> = {}): void {
-    this.log('info', message, context);
-  }
-
-  warn(message: string, context: Record<string, any> = {}): void {
-    this.log('warn', message, context);
-  }
-
-  error(message: string, context: Record<string, any> = {}): void {
-    this.log('error', message, context);
-  }
-
-  private async sendToExternalLogger(logEntry: LogEntry): Promise<void> {
-    try {
-      // In a real implementation, you would send to a logging service like LogRocket, Sentry, etc.
-      // For now, we'll just log to console to avoid external dependencies
-      console.log('External logging service call:', logEntry);
-    } catch (e) {
-      console.warn('Failed to send log to external service:', e);
-    }
-  }
-
-  getLogs(): LogEntry[] {
-    return [...this.logs];
-  }
-
-  clearLogs(): void {
-    this.logs = [];
-  }
-
-  exportLogs(): string {
-    return JSON.stringify(this.logs, null, 2);
-  }
-}
-
-// Performance monitoring for React components
-export function usePerformanceMonitor(componentName: string) {
-  const startRender = () => performanceMonitor.startTimer(`${componentName}.render`);
-  const startMount = () => performanceMonitor.startTimer(`${componentName}.mount`);
-  const startUpdate = () => performanceMonitor.startTimer(`${componentName}.update`);
+  getReport: () => performanceMonitor.generateReport(),
   
-  return {
-    startRender,
-    startMount,
-    startUpdate,
-    getReport: () => performanceMonitor.getPerformanceReport(),
-    getScore: () => performanceMonitor.getPerformanceScore()
-  };
-}
-
-// Enhanced monitoring service that combines performance and logging
-class MonitoringService {
-  private logger: Logger;
-  private perfMonitor: PerformanceMonitor;
-  private initialized = false;
-
-  constructor() {
-    this.logger = new Logger();
-    this.perfMonitor = performanceMonitor; // Use existing instance
-  }
-
-  getPerformanceMonitor(): PerformanceMonitor {
-    return this.perfMonitor;
-  }
-
-  init(userId?: string): void {
-    if (this.initialized) return;
-
-    this.logger.setUserId(userId || '');
-    this.initialized = true;
-
-    // Set up performance monitoring
-    this.setupPerformanceMonitoring();
-    
-    // Log initialization
-    this.logger.info('Monitoring service initialized', { userId });
-  }
-
-  private setupPerformanceMonitoring(): void {
-    // Monitor resource loading
-    if ('PerformanceObserver' in window) {
-      const observer = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
-          if (entry.entryType === 'navigation') {
-            this.logger.info('Navigation timing', {
-              url: entry.name,
-              startTime: entry.startTime,
-              duration: entry.duration
-            });
-          } else if (entry.entryType === 'resource') {
-            this.logger.debug('Resource loaded', {
-              name: entry.name,
-              duration: entry.duration,
-              initiatorType: (entry as PerformanceResourceTiming).initiatorType
-            });
-          }
-        }
-      });
-      
-      observer.observe({ entryTypes: ['navigation', 'resource', 'paint'] });
-    }
-  }
-
-  // Public API
-  getLogger(): Logger {
-    return this.logger;
-  }
-
-  log(level: 'debug' | 'info' | 'warn' | 'error', message: string, context: Record<string, any> = {}): void {
-    this.logger.log(level, message, context);
-  }
-
-  info(message: string, context: Record<string, any> = {}): void {
-    this.logger.info(message, context);
-  }
-
-  warn(message: string, context: Record<string, any> = {}): void {
-    this.logger.warn(message, context);
-  }
-
-  error(message: string, context: Record<string, any> = {}): void {
-    this.logger.error(message, context);
-  }
-
-  getLogs(): LogEntry[] {
-    return this.logger.getLogs();
-  }
-
-  exportLogs(): string {
-    return this.logger.exportLogs();
-  }
-
-  setLogLevel(level: 'debug' | 'info' | 'warn' | 'error'): void {
-    this.logger.setLogLevel(level);
-  }
-
-  clearLogs(): void {
-    this.logger.clearLogs();
-  }
-}
-
-// Singleton instance
-export const monitoringService = new MonitoringService();
+  getScore: () => {
+    const report = performanceMonitor.generateReport();
+    return performanceMonitor.calculateScore(report);
+  },
+  
+  getWebVitals: () => performanceMonitor.getWebVitals(),
+  
+  clear: () => performanceMonitor.clearMetrics()
+};
 
 export default performanceMonitor;
