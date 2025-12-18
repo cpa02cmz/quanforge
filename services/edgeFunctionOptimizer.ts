@@ -133,9 +133,9 @@ class EdgeFunctionOptimizer {
       const metrics = this.metrics.get(functionName)!;
       metrics.lastWarmup = Date.now();
 
-      console.log(`Edge function ${functionName} warmed up successfully`);
+// Removed for production: console.log(`Edge function ${functionName} warmed up successfully`);
     } catch (error) {
-      console.error(`Failed to warm up edge function ${functionName}:`, error);
+// Removed for production: console.error(`Failed to warm up edge function ${functionName}:`, error);
     } finally {
       this.isWarmingUp.delete(functionName);
     }
@@ -246,7 +246,7 @@ class EdgeFunctionOptimizer {
         }
       } catch (error) {
         // Log but don't throw - warmup failures shouldn't crash the app
-        console.warn(`Warmup request failed for region ${region}:`, error);
+// Removed for production: console.warn(`Warmup request failed for region ${region}:`, error);
       }
     }
   }
@@ -416,9 +416,9 @@ class EdgeFunctionOptimizer {
         }
       }
       
-      console.log('Performance monitoring and auto-optimization completed');
+// Removed for production: console.log('Performance monitoring and auto-optimization completed');
     } catch (error) {
-      console.error('Performance monitoring failed:', error);
+// Removed for production: console.error('Performance monitoring failed:', error);
     }
   }
 
@@ -529,7 +529,7 @@ class EdgeFunctionOptimizer {
         // Reduce warmup interval by 25%
         config.warmupInterval = Math.max(config.warmupInterval * 0.75, 60000); // Minimum 1 minute
         this.scheduleWarmup(name);
-        console.log(`Reduced warmup interval for ${name} to ${config.warmupInterval}ms`);
+// Removed for production: console.log(`Reduced warmup interval for ${name} to ${config.warmupInterval}ms`);
       }
     });
   }
@@ -538,7 +538,7 @@ class EdgeFunctionOptimizer {
    * Enable circuit breaker pattern for fault tolerance
    */
   private async enableCircuitBreaker(): Promise<void> {
-    console.log('Circuit breaker enabled due to high error rate');
+// Removed for production: console.log('Circuit breaker enabled due to high error rate');
     // Implementation would go here
   }
 
@@ -553,7 +553,7 @@ class EdgeFunctionOptimizer {
       if (metrics.averageResponseTime > 500) {
         // Increase memory allocation by 25%
         config.memory = Math.min(config.memory * 1.25, 1024); // Maximum 1GB
-        console.log(`Increased memory allocation for ${name} to ${config.memory}MB`);
+// Removed for production: console.log(`Increased memory allocation for ${name} to ${config.memory}MB`);
       }
     });
   }

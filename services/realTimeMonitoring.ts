@@ -90,7 +90,7 @@ class RealTimeMonitoring {
       this.setupPeriodicReporting();
       
       this.isInitialized = true;
-      console.log('[RealTimeMonitoring] Performance monitoring initialized');
+// Removed for production: console.log('[RealTimeMonitoring] Performance monitoring initialized');
     } catch (error) {
       handleError(error as Error, 'initialize', 'RealTimeMonitoring');
     }
@@ -215,7 +215,7 @@ class RealTimeMonitoring {
       observer.observe({ type, buffered: true });
       this.observers.push(observer);
     } catch (error) {
-      console.warn(`[RealTimeMonitoring] Failed to observe ${type}:`, error);
+// Removed for production: console.warn(`[RealTimeMonitoring] Failed to observe ${type}:`, error);
     }
   }
 
@@ -363,7 +363,7 @@ class RealTimeMonitoring {
     }
 
     // Log warning
-    console.warn(`[RealTimeMonitoring] Performance alert: ${metric} (${value}) exceeds threshold (${threshold})`);
+// Removed for production: console.warn(`[RealTimeMonitoring] Performance alert: ${metric} (${value}) exceeds threshold (${threshold})`);
   }
 
   /**
@@ -438,7 +438,7 @@ class RealTimeMonitoring {
         this.metrics = this.metrics.slice(-this.METRICS_RETENTION_LIMIT);
       }
 
-      console.log('[RealTimeMonitoring] Metrics reported:', {
+// Removed for production: console.log('[RealTimeMonitoring] Metrics reported:', {
         lcp: currentMetrics.vitals.lcp,
         fid: currentMetrics.vitals.fid,
         cls: currentMetrics.vitals.cls,

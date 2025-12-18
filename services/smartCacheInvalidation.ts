@@ -150,7 +150,7 @@ class SmartCacheInvalidation {
    */
   addRule(rule: InvalidationRule): void {
     this.rules.set(rule.id, rule);
-    console.log(`Added invalidation rule: ${rule.name}`);
+// Removed for production: console.log(`Added invalidation rule: ${rule.name}`);
   }
 
   /**
@@ -168,7 +168,7 @@ class SmartCacheInvalidation {
       .filter(rule => rule.triggers.includes(trigger));
 
     if (applicableRules.length === 0) {
-      console.debug(`No invalidation rules found for trigger: ${trigger}`);
+// Removed for production: console.debug(`No invalidation rules found for trigger: ${trigger}`);
       return;
     }
 
@@ -261,7 +261,7 @@ class SmartCacheInvalidation {
           const deleted = await consolidatedCache.delete(key);
           if (deleted) invalidatedCount++;
         } catch (error) {
-          console.warn(`Failed to delete key ${key} from consolidated cache:`, error);
+// Removed for production: console.warn(`Failed to delete key ${key} from consolidated cache:`, error);
         }
       }
 
@@ -269,7 +269,7 @@ class SmartCacheInvalidation {
       try {
         await edgeKVService.clearAll();
       } catch (error) {
-        console.warn('Failed to clear edge KV storage:', error);
+// Removed for production: console.warn('Failed to clear edge KV storage:', error);
       }
 
       // Invalidate by tags
@@ -278,7 +278,7 @@ class SmartCacheInvalidation {
           const tagInvalidations = await consolidatedCache.invalidateByTags(rule.tags);
           invalidatedCount += tagInvalidations;
         } catch (error) {
-          console.warn(`Failed to invalidate by tags ${rule.tags.join(', ')}:`, error);
+// Removed for production: console.warn(`Failed to invalidate by tags ${rule.tags.join(', ')}:`, error);
         }
       }
 
@@ -291,7 +291,7 @@ class SmartCacheInvalidation {
 
       event.status = 'completed';
       
-      console.log(`Invalidation completed: ${rule.name}, ${invalidatedCount} keys, ${processingTime}ms`);
+// Removed for production: console.log(`Invalidation completed: ${rule.name}, ${invalidatedCount} keys, ${processingTime}ms`);
 
     } catch (error) {
       event.status = 'failed';
@@ -300,7 +300,7 @@ class SmartCacheInvalidation {
       this.metrics.totalInvalidations++;
       this.metrics.failedInvalidations++;
       
-      console.error(`Invalidation failed for event ${event.id}:`, error);
+// Removed for production: console.error(`Invalidation failed for event ${event.id}:`, error);
     }
   }
 
@@ -402,7 +402,7 @@ class SmartCacheInvalidation {
         : 0;
 
     } catch (error) {
-      console.warn('Failed to collect metrics:', error);
+// Removed for production: console.warn('Failed to collect metrics:', error);
     }
   }
 
@@ -516,7 +516,7 @@ class SmartCacheInvalidation {
       }
 
     } catch (error) {
-      console.warn('Predictive invalidation failed:', error);
+// Removed for production: console.warn('Predictive invalidation failed:', error);
     }
   }
 

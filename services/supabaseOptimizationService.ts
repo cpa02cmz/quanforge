@@ -96,7 +96,7 @@ class SupabaseOptimizationService {
   }
 
   private initializeOptimizations(): void {
-    console.log('Initializing Supabase Optimization Service...');
+// Removed for production: console.log('Initializing Supabase Optimization Service...');
     
     // Configure connection pools
     this.configureConnectionPools();
@@ -550,7 +550,7 @@ class SupabaseOptimizationService {
    */
   updateConfig(newConfig: Partial<SupabaseOptimizationConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    console.log('Supabase optimization configuration updated:', this.config);
+// Removed for production: console.log('Supabase optimization configuration updated:', this.config);
   }
 
   /**
@@ -559,7 +559,7 @@ class SupabaseOptimizationService {
   clearCaches(): void {
     this.queryCache.clear();
     this.optimizationCache.clear();
-    console.log('Supabase optimization caches cleared');
+// Removed for production: console.log('Supabase optimization caches cleared');
   }
 
   /**

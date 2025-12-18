@@ -617,7 +617,7 @@ const entries = list.getEntries();
     // Mark unused functions for tree shaking
     if (process.env['NODE_ENV'] === 'production') {
       // Enable tree shaking optimizations
-      console.debug('Tree shaking enabled for production build');
+// Removed for production: console.debug('Tree shaking enabled for production build');
     }
   }
 
@@ -625,7 +625,7 @@ const entries = list.getEntries();
     // Enable minification for production
     if (process.env['NODE_ENV'] === 'production') {
       // Additional minification settings would be handled by build tools
-      console.debug('Minification enabled for production build');
+// Removed for production: console.debug('Minification enabled for production build');
     }
   }
 }

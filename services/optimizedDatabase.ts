@@ -298,7 +298,7 @@ async search<T>(
   ): Promise<T[]> {
     // This would integrate with Supabase or other database
     // For now, return empty array as placeholder
-    console.log(`Executing paginated query on ${table}`, options);
+// Removed for production: console.log(`Executing paginated query on ${table}`, options);
     return [];
   }
 
@@ -307,7 +307,7 @@ async search<T>(
    */
   private async getCountQuery(table: string, filters: Record<string, any>): Promise<number> {
     // This would integrate with Supabase or other database
-    console.log(`Executing count query on ${table}`, filters);
+// Removed for production: console.log(`Executing count query on ${table}`, filters);
     return 0;
   }
 
@@ -316,7 +316,7 @@ async search<T>(
    */
   private async executeByIdsQuery<T>(table: string, ids: string[]): Promise<T[]> {
     // This would integrate with Supabase or other database
-    console.log(`Executing IDs query on ${table}`, ids);
+// Removed for production: console.log(`Executing IDs query on ${table}`, ids);
     return [];
   }
 
@@ -325,7 +325,7 @@ async search<T>(
    */
   private async executeOperation<T>(operation: BatchOperation<T>): Promise<void> {
     // This would integrate with Supabase or other database
-    console.log(`Executing operation`, operation);
+// Removed for production: console.log(`Executing operation`, operation);
   }
 
   /**
@@ -350,7 +350,7 @@ async search<T>(
         await this.executeBatchForTable(table, tableOps);
       }
     } catch (error) {
-      console.error('Batch operation failed:', error);
+// Removed for production: console.error('Batch operation failed:', error);
       // Re-queue operations if needed
     }
   }
@@ -376,7 +376,7 @@ async search<T>(
    */
   private async executeBatchForTable(table: string, operations: BatchOperation<any>[]): Promise<void> {
     // This would integrate with Supabase batch operations or similar
-    console.log(`Executing batch for ${table}`, operations);
+// Removed for production: console.log(`Executing batch for ${table}`, operations);
   }
 
   /**

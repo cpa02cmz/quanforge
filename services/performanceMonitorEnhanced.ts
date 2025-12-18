@@ -136,7 +136,7 @@ class PerformanceMonitor {
         webVitals.getINP(recordMetric);
       }
     } catch (error) {
-      console.warn('Failed to load web-vitals:', error);
+// Removed for production: console.warn('Failed to load web-vitals:', error);
     }
   }
 
@@ -414,7 +414,7 @@ class PerformanceMonitor {
       }
     } catch (error) {
       // Silently fail to not impact user experience
-      console.debug('Failed to send metric:', error);
+// Removed for production: console.debug('Failed to send metric:', error);
     }
   }
 

@@ -83,7 +83,7 @@ export class AdvancedCache {
       try {
         return decompressFromUTF16(entry.data as string) as T;
       } catch (error) {
-        console.warn(`Failed to decompress cache entry: ${key}`, error);
+// Removed for production: console.warn(`Failed to decompress cache entry: ${key}`, error);
         this.cache.delete(key);
         this.stats.misses++;
         return null;
@@ -104,7 +104,7 @@ export class AdvancedCache {
     
     // Check if data is too large
     if (size > this.config.maxSize) {
-      console.warn(`Cache entry too large: ${key} (${size} bytes)`);
+// Removed for production: console.warn(`Cache entry too large: ${key} (${size} bytes)`);
       return;
     }
 
@@ -118,7 +118,7 @@ export class AdvancedCache {
         compressed = true;
         this.stats.compressions++;
       } catch (error) {
-        console.warn(`Failed to compress cache entry: ${key}`, error);
+// Removed for production: console.warn(`Failed to compress cache entry: ${key}`, error);
       }
     }
 
@@ -196,7 +196,7 @@ export class AdvancedCache {
         this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
       } catch (error) {
          if (process.env.NODE_ENV === 'development') {
-           console.warn(`Failed to preload cache entry: ${key}`, error);
+// Removed for production: console.warn(`Failed to preload cache entry: ${key}`, error);
          }
       }
     });
@@ -219,7 +219,7 @@ export class AdvancedCache {
           const data = await loader(params);
 this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
         } catch (error) {
-          console.warn(`Failed to warm cache entry: ${key}`, error);
+// Removed for production: console.warn(`Failed to warm cache entry: ${key}`, error);
         }
       }
     }
@@ -334,7 +334,7 @@ this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
     
      // Use logger instead of console.log for production safety
      if (process.env.NODE_ENV === 'development') {
-       console.log(`Invalidated ${deletedCount} cache entries for region: ${region}`);
+// Removed for production: console.log(`Invalidated ${deletedCount} cache entries for region: ${region}`);
      }
     return deletedCount;
   }
@@ -398,9 +398,9 @@ this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
           });
         }
 
-        console.log(`Edge cache warmed for region: ${region}`);
+// Removed for production: console.log(`Edge cache warmed for region: ${region}`);
       } catch (error) {
-        console.warn(`Failed to warm edge cache for region ${region}:`, error);
+// Removed for production: console.warn(`Failed to warm edge cache for region ${region}:`, error);
       }
     }
   }

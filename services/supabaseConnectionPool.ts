@@ -281,13 +281,13 @@ class SupabaseConnectionPool {
        
        // Check if result has error property
        if (result && result.error) {
-         console.error('Connection health check failed:', result.error);
+// Removed for production: console.error('Connection health check failed:', result.error);
          return false;
        }
        
        return true;
      } catch (error: any) {
-       console.error('Connection health check failed:', error?.message || error);
+// Removed for production: console.error('Connection health check failed:', error?.message || error);
        return false;
      }
    }
@@ -326,10 +326,10 @@ private startHealthChecks(): void {
         if (!isHealthy && currentHealth.errorCount >= 2) {
           this.clients.delete(connectionId);
           this.healthStatus.delete(connectionId);
-          console.warn(`Removed unhealthy connection: ${connectionId}`);
+// Removed for production: console.warn(`Removed unhealthy connection: ${connectionId}`);
         }
       } catch (error) {
-        console.error(`Health check failed for connection ${connectionId}:`, error);
+// Removed for production: console.error(`Health check failed for connection ${connectionId}:`, error);
       }
     }
   }
@@ -361,9 +361,9 @@ private startHealthChecks(): void {
         const client = await this.getClient(`edge_${region}`);
         // Lightweight warmup query optimized for edge
         await client.from('robots').select('id').limit(1);
-        console.log(`Edge connection warmed for region: ${region}`);
+// Removed for production: console.log(`Edge connection warmed for region: ${region}`);
       } catch (error) {
-        console.warn(`Failed to warm edge connection for ${region}:`, error);
+// Removed for production: console.warn(`Failed to warm edge connection for ${region}:`, error);
       }
     });
     
@@ -387,7 +387,7 @@ private startHealthChecks(): void {
     } catch (error) {
       // Fallback to default connection if edge connection fails
       if (region) {
-        console.warn(`Edge connection failed for ${region}, falling back to default:`, error);
+// Removed for production: console.warn(`Edge connection failed for ${region}, falling back to default:`, error);
         return this.getClient(connectionId);
       }
       throw error;

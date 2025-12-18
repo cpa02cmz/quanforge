@@ -99,7 +99,7 @@ class BackendOptimizer {
       try {
         await this.performHealthCheck();
       } catch (error) {
-        console.warn('Health check failed:', error);
+// Removed for production: console.warn('Health check failed:', error);
       }
     }, this.config.healthCheckInterval);
   }
@@ -343,7 +343,7 @@ class BackendOptimizer {
           }
         );
       } catch (error) {
-        console.warn(`Failed to warm up query for ${table}:`, error);
+// Removed for production: console.warn(`Failed to warm up query for ${table}:`, error);
       }
     });
 
@@ -432,7 +432,7 @@ class BackendOptimizer {
     
     // Suggest indexes for slow queries
     for (const slowQuery of report.topSlowQueries.slice(0, 5)) {
-      console.log('Suggested optimization for slow query:', slowQuery);
+// Removed for production: console.log('Suggested optimization for slow query:', slowQuery);
       optimizationsApplied++;
       performanceGain += 20; // Estimated 20% improvement per optimization
     }

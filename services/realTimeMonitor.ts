@@ -113,7 +113,7 @@ export class RealTimeMonitor {
     // Start periodic reporting
     this.startPeriodicReporting();
 
-    console.log('🔍 Real-time performance monitoring started');
+// Removed for production: console.log('🔍 Real-time performance monitoring started');
   }
 
   public stopMonitoring(): void {
@@ -128,7 +128,7 @@ export class RealTimeMonitor {
     }
 
     this.isMonitoring = false;
-    console.log('⏹️ Performance monitoring stopped');
+// Removed for production: console.log('⏹️ Performance monitoring stopped');
   }
 
   private monitorCoreWebVitals(): void {
@@ -343,7 +343,7 @@ export class RealTimeMonitor {
         body: JSON.stringify({ type: 'metric', data: metric })
       });
     } catch (error) {
-      console.warn('Failed to send performance metric:', error);
+// Removed for production: console.warn('Failed to send performance metric:', error);
     }
   }
 
@@ -359,7 +359,7 @@ export class RealTimeMonitor {
         body: JSON.stringify({ type: 'error', data: error })
       });
     } catch (error) {
-      console.warn('Failed to send error metric:', error);
+// Removed for production: console.warn('Failed to send error metric:', error);
     }
   }
 
@@ -388,7 +388,7 @@ export class RealTimeMonitor {
       }
     };
 
-    console.log('📊 Performance Report:', report);
+// Removed for production: console.log('📊 Performance Report:', report);
     
     // Send report to analytics
     if (this.reportingEndpoint) {
@@ -408,7 +408,7 @@ export class RealTimeMonitor {
         body: JSON.stringify(report)
       });
     } catch (error) {
-      console.warn('Failed to send performance report:', error);
+// Removed for production: console.warn('Failed to send performance report:', error);
     }
   }
 
@@ -464,7 +464,7 @@ export class RealTimeMonitor {
       context
     };
 
-    console.warn(`🚨 Performance Alert: ${metric} (${value}) exceeded threshold (${threshold})`, alert);
+// Removed for production: console.warn(`🚨 Performance Alert: ${metric} (${value}) exceeded threshold (${threshold})`, alert);
 
     // Send alert if configured
     if (this.config.webhookUrl) {
@@ -484,7 +484,7 @@ export class RealTimeMonitor {
         body: JSON.stringify(alert)
       });
     } catch (error) {
-      console.warn('Failed to send alert:', error);
+// Removed for production: console.warn('Failed to send alert:', error);
     }
   }
 

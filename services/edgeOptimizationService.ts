@@ -77,7 +77,7 @@ class EdgeOptimizationService {
   }
 
   private async initializeOptimizations(): Promise<void> {
-    console.log(`Initializing Edge Optimization Service for region: ${this.currentRegion}`);
+// Removed for production: console.log(`Initializing Edge Optimization Service for region: ${this.currentRegion}`);
     
     // Optimize connection pools for edge
     this.optimizeConnectionPools();
@@ -131,10 +131,10 @@ class EdgeOptimizationService {
       this.cleanupExpiredData();
       
       const duration = performance.now() - startTime;
-      console.debug(`Edge optimization cycle completed in ${duration.toFixed(2)}ms`);
+// Removed for production: console.debug(`Edge optimization cycle completed in ${duration.toFixed(2)}ms`);
       
     } catch (error) {
-      console.error('Edge optimization cycle failed:', error);
+// Removed for production: console.error('Edge optimization cycle failed:', error);
     }
   }
 
@@ -189,25 +189,25 @@ class EdgeOptimizationService {
   private async optimizeBasedOnMetrics(metrics: EdgeMetrics): Promise<void> {
     // Connection pool optimization
     if (metrics.connectionPool.avgAcquireTime > 500) {
-      console.warn('Slow connection acquisition detected, optimizing pool...');
+// Removed for production: console.warn('Slow connection acquisition detected, optimizing pool...');
       await this.optimizeConnectionPool();
     }
     
     // Cache optimization
     if (metrics.cache.hitRate < 0.7) {
-      console.warn('Low cache hit rate, optimizing cache strategy...');
+// Removed for production: console.warn('Low cache hit rate, optimizing cache strategy...');
       this.optimizeCacheStrategy();
     }
     
     // Performance optimization
     if (metrics.performance.avgResponseTime > 1000) {
-      console.warn('High response times, applying performance optimizations...');
+// Removed for production: console.warn('High response times, applying performance optimizations...');
       await this.optimizePerformance();
     }
     
     // Error rate optimization
     if (metrics.performance.errorRate > 0.05) {
-      console.warn('High error rate, applying error mitigation...');
+// Removed for production: console.warn('High error rate, applying error mitigation...');
       await this.mitigateErrors();
     }
   }
@@ -247,7 +247,7 @@ class EdgeOptimizationService {
     // Enable compression if not already enabled
     if (this.config.enableCompression) {
       // This would integrate with Vercel's edge compression
-      console.debug('Edge compression optimization applied');
+// Removed for production: console.debug('Edge compression optimization applied');
     }
     
     // Optimize connection timeout for faster failover
@@ -291,7 +291,7 @@ class EdgeOptimizationService {
   }
 
   private async warmupConnections(): Promise<void> {
-    console.log('Starting edge connection warm-up...');
+// Removed for production: console.log('Starting edge connection warm-up...');
     
     try {
       // Warm up enhanced connection pool
@@ -300,9 +300,9 @@ class EdgeOptimizationService {
       // Warm up edge connection pool
       await edgeConnectionPool.warmEdgeConnections();
       
-      console.log('Edge connection warm-up completed');
+// Removed for production: console.log('Edge connection warm-up completed');
     } catch (error) {
-      console.warn('Edge connection warm-up failed:', error);
+// Removed for production: console.warn('Edge connection warm-up failed:', error);
     }
   }
 
@@ -347,7 +347,7 @@ class EdgeOptimizationService {
    */
   updateConfig(newConfig: Partial<EdgeOptimizationConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    console.log('Edge optimization configuration updated:', this.config);
+// Removed for production: console.log('Edge optimization configuration updated:', this.config);
     
     // Re-apply optimizations with new config
     this.optimizeConnectionPools();
@@ -357,7 +357,7 @@ class EdgeOptimizationService {
    * Force immediate optimization cycle
    */
   async forceOptimization(): Promise<void> {
-    console.log('Forcing immediate edge optimization...');
+// Removed for production: console.log('Forcing immediate edge optimization...');
     await this.performOptimizations();
   }
 
@@ -465,7 +465,7 @@ class EdgeOptimizationService {
     // Clear metrics
     this.metrics.clear();
     
-    console.log('Edge Optimization Service shutdown completed');
+// Removed for production: console.log('Edge Optimization Service shutdown completed');
   }
 }
 

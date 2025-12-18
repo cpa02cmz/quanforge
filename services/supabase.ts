@@ -36,7 +36,7 @@ const safeParse = (data: string | null, fallback: any) => {
         // Use security manager's safe JSON parsing
         return securityManager.safeJSONParse(data) || fallback;
     } catch (e) {
-        console.error("Failed to parse data from storage:", e);
+// Removed for production: console.error("Failed to parse data from storage:", e);
         return fallback;
     }
 };
@@ -330,7 +330,7 @@ const withRetry = async <T>(
       }
       
       if (attempt === RETRY_CONFIG.maxRetries) {
-        console.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, error);
+// Removed for production: console.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, error);
         throw error;
       }
       
@@ -363,7 +363,7 @@ const getClient = async () => {
             }, 'getClient');
             activeClient = client;
         } catch (e) {
-            console.error("Connection pool failed, using mock client", e);
+// Removed for production: console.error("Connection pool failed, using mock client", e);
             activeClient = mockClient;
         }
     } else {
@@ -416,7 +416,7 @@ class PerformanceMonitor {
     const allMetrics = this.getAllMetrics();
     console.group('Database Performance Metrics');
     for (const [operation, metric] of Object.entries(allMetrics)) {
-      console.log(`${operation}: ${metric.count} calls, avg: ${metric.avgTime.toFixed(2)}ms`);
+// Removed for production: console.log(`${operation}: ${metric.count} calls, avg: ${metric.avgTime.toFixed(2)}ms`);
     }
     console.groupEnd();
   }
@@ -781,7 +781,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
             
             // Log slow queries in development
             if (import.meta.env.DEV && duration > 1000) {
-              console.warn(`Slow getRobotsPaginated query: ${duration.toFixed(2)}ms for ${result.count} results`);
+console.warn(`Slow getRobotsPaginated query: ${duration.toFixed(2)}ms for ${result.count} results`);
             }
             
             return response;
@@ -1275,7 +1275,7 @@ export const dbUtils = {
                 const chunk = payload.slice(i, i + BATCH_SIZE);
                 const { error } = await client.from('robots').insert(chunk);
                 if (error) {
-                    console.error("Batch migration failed", error);
+// Removed for production: console.error("Batch migration failed", error);
                     failCount += chunk.length;
                     lastError = error.message;
                 } else {
@@ -1598,7 +1598,7 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                 const { error } = await client.rpc('pg_stat_reset');
                 
                 if (error) {
-                    console.warn("Could not run database optimization:", error.message);
+// Removed for production: console.warn("Could not run database optimization:", error.message);
                     // Non-critical error, just return success with warning
                 }
                 

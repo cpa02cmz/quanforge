@@ -105,7 +105,7 @@ class RealTimePerformanceMonitor {
       });
     }
 
-    console.log('Performance monitoring started');
+// Removed for production: console.log('Performance monitoring started');
   }
 
   /**
@@ -121,7 +121,7 @@ class RealTimePerformanceMonitor {
     this.observers = [];
 
     this.isMonitoring = false;
-    console.log('Performance monitoring stopped');
+// Removed for production: console.log('Performance monitoring stopped');
   }
 
   /**
@@ -141,7 +141,7 @@ class RealTimePerformanceMonitor {
       observer.observe({ entryTypes: ['navigation'] });
       this.observers.push(observer);
     } catch (error) {
-      console.warn('Navigation observer not supported:', error);
+// Removed for production: console.warn('Navigation observer not supported:', error);
     }
   }
 
@@ -167,7 +167,7 @@ class RealTimePerformanceMonitor {
       observer.observe({ entryTypes: ['paint'] });
       this.observers.push(observer);
     } catch (error) {
-      console.warn('Paint observer not supported:', error);
+// Removed for production: console.warn('Paint observer not supported:', error);
     }
   }
 
@@ -196,7 +196,7 @@ class RealTimePerformanceMonitor {
       observer.observe({ entryTypes: ['layout-shift'] });
       this.observers.push(observer);
     } catch (error) {
-      console.warn('Layout shift observer not supported:', error);
+// Removed for production: console.warn('Layout shift observer not supported:', error);
     }
   }
 
@@ -236,7 +236,7 @@ class RealTimePerformanceMonitor {
       observer.observe({ entryTypes: ['first-input', 'event'] });
       this.observers.push(observer);
     } catch (error) {
-      console.warn('Interaction observer not supported:', error);
+// Removed for production: console.warn('Interaction observer not supported:', error);
     }
   }
 
@@ -256,7 +256,7 @@ class RealTimePerformanceMonitor {
       observer.observe({ entryTypes: ['resource'] });
       this.observers.push(observer);
     } catch (error) {
-      console.warn('Resource observer not supported:', error);
+// Removed for production: console.warn('Resource observer not supported:', error);
     }
   }
 

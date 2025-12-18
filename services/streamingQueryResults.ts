@@ -82,7 +82,7 @@ class StreamingQueryResults {
       while (hasMore) {
         // Check memory usage
         if (this.isMemoryThresholdExceeded()) {
-          console.warn('Memory threshold exceeded, pausing streaming');
+// Removed for production: console.warn('Memory threshold exceeded, pausing streaming');
           await this.waitForMemoryRelease();
         }
 

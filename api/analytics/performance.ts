@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       }
     });
     
-  } catch (error) {
+  } catch (_error) {
     // Log error properly in production
     
     return NextResponse.json({

@@ -155,7 +155,7 @@ export class SmartCache<T = any> {
       const compressed = compressToUTF16(jsonString);
       return compressed as unknown as T;
     } catch (error) {
-      console.warn('Failed to compress data:', error);
+// Removed for production: console.warn('Failed to compress data:', error);
       return data;
     }
   }
@@ -166,7 +166,7 @@ export class SmartCache<T = any> {
       const decompressed = decompressFromUTF16(data as string);
       return JSON.parse(decompressed);
     } catch (error) {
-      console.warn('Failed to decompress data:', error);
+// Removed for production: console.warn('Failed to decompress data:', error);
       return data;
     }
   }

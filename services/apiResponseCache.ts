@@ -179,7 +179,7 @@ class APIResponseCache {
         return { compressed: true, data: compressed, originalSize, compressedSize };
       }
     } catch (e) {
-      console.warn('Compression failed:', e);
+// Removed for production: console.warn('Compression failed:', e);
     }
 
     return { compressed: false, data, originalSize, compressedSize: originalSize };
@@ -198,7 +198,7 @@ class APIResponseCache {
     try {
       return atob(data);
     } catch (e) {
-      console.warn('Decompression failed:', e);
+// Removed for production: console.warn('Decompression failed:', e);
       return data;
     }
   }
@@ -267,7 +267,7 @@ class APIResponseCache {
       this.metrics.misses++;
       return null;
     } catch (error) {
-      console.error('Cache get error:', error);
+// Removed for production: console.error('Cache get error:', error);
       this.metrics.misses++;
       return null;
     }
@@ -285,7 +285,7 @@ class APIResponseCache {
       
       // Check size limit
       if (serialized.length > CACHE_CONFIG.MAX_RESPONSE_SIZE) {
-        console.warn(`Response too large for cache: ${serialized.length} bytes`);
+// Removed for production: console.warn(`Response too large for cache: ${serialized.length} bytes`);
         return false;
       }
 
@@ -319,7 +319,7 @@ class APIResponseCache {
       this.metrics.sets++;
       return true;
     } catch (error) {
-      console.error('Cache set error:', error);
+// Removed for production: console.error('Cache set error:', error);
       return false;
     }
   }
@@ -353,9 +353,9 @@ class APIResponseCache {
         
         this.metrics.invalidations += keysToDelete.length;
         
-        console.log(`Invalidated ${keysToDelete.length} cache entries for pattern:`, pattern);
+// Removed for production: console.log(`Invalidated ${keysToDelete.length} cache entries for pattern:`, pattern);
       } catch (error) {
-        console.error('Cache invalidation error:', error);
+// Removed for production: console.error('Cache invalidation error:', error);
       }
     };
 
@@ -408,15 +408,15 @@ class APIResponseCache {
             if (response.ok) {
               const data = await response.json();
               await this.set(endpoint, 'GET', data, undefined, Object.fromEntries(response.headers.entries()));
-              console.log(`Warmed cache for endpoint: ${endpoint}`);
+// Removed for production: console.log(`Warmed cache for endpoint: ${endpoint}`);
             }
           } catch (e) {
-            console.warn(`Failed to warm cache for ${endpoint}:`, e);
+// Removed for production: console.warn(`Failed to warm cache for ${endpoint}:`, e);
           }
         }
       }
     } catch (error) {
-      console.error('Cache warming error:', error);
+// Removed for production: console.error('Cache warming error:', error);
     }
   }
 
@@ -450,7 +450,7 @@ class APIResponseCache {
     }
     
     if (cleanedCount > 0) {
-      console.log(`Cleaned up ${cleanedCount} expired cache entries`);
+// Removed for production: console.log(`Cleaned up ${cleanedCount} expired cache entries`);
     }
   }
 
@@ -478,7 +478,7 @@ class APIResponseCache {
   async clearAll(): Promise<void> {
     this.memoryCache.clear();
     await edgeKVService.clearAll();
-    console.log('All caches cleared');
+// Removed for production: console.log('All caches cleared');
   }
 
   // Export cache state (for debugging)

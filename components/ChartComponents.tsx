@@ -17,7 +17,7 @@ interface RechartsComponents {
 interface ChartComponentsProps {
   riskData: Array<{ name: string; value: number; color: string }> | undefined;
   analysis: { riskScore: number; profitability: number; description: string } | undefined;
-  t: ((key: string) => string) | undefined;
+  t: ((_key: string) => string) | undefined;
   data: Array<{ date: string; balance: number }> | undefined;
   totalReturn: number | undefined;
 }
@@ -83,9 +83,9 @@ const RechartsInner = memo(({
                 paddingAngle={5}
                 dataKey="value"
 >
-                 {riskData.map((entry, index) => (
-                   <Cell key={`cell-${index}`} fill={entry.color} />
-                 ))}
+{riskData.map((entry, _index) => (
+                    <Cell key={`cell-${_index}`} fill={entry.color} />
+                  ))}
                </Pie>
               <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }} itemStyle={{ color: '#fff' }} />
               <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="24" fontWeight="bold">

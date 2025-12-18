@@ -165,7 +165,7 @@ class RealtimeManager {
         await this.syncChange(change);
         successCount++;
       } catch (error) {
-        console.error('Failed to sync change:', error);
+// Removed for production: console.error('Failed to sync change:', error);
         failCount++;
         
 // Re-queue failed changes for retry
@@ -280,7 +280,7 @@ class RealtimeManager {
         });
 
     } catch (error) {
-      console.error('Failed to activate subscription:', error);
+// Removed for production: console.error('Failed to activate subscription:', error);
       this.handleSubscriptionError(subscription);
     }
   }
@@ -293,7 +293,7 @@ class RealtimeManager {
       this.client.removeChannel(this.client.channel(`public:${subscription.table}`));
       subscription.isActive = false;
     } catch (error) {
-      console.error('Failed to deactivate subscription:', error);
+// Removed for production: console.error('Failed to deactivate subscription:', error);
     }
   }
 
@@ -308,7 +308,7 @@ class RealtimeManager {
         this.activateSubscription(subscription);
       }, delay);
     } else {
-      console.error(`Subscription ${subscription.id} failed after ${subscription.retryCount} retries`);
+// Removed for production: console.error(`Subscription ${subscription.id} failed after ${subscription.retryCount} retries`);
     }
   }
 

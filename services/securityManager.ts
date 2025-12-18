@@ -896,7 +896,7 @@ private validateRobotData(data: any): ValidationResult {
        });
      } catch (e) {
        // Fallback for environments where headers.entries() is not available
-       console.warn('Could not check headers for threats:', e);
+// Removed for production: console.warn('Could not check headers for threats:', e);
      }
 
     // Content-Length abuse
@@ -986,7 +986,7 @@ private validateRobotData(data: any): ValidationResult {
         timestamp: Date.now()
       };
 
-      console.warn('🛡️ CSP Violation detected:', violation);
+// Removed for production: console.warn('🛡️ CSP Violation detected:', violation);
       
       // Store violation for analysis
       this.storeCSPViolation(violation);
@@ -1031,7 +1031,7 @@ private validateRobotData(data: any): ValidationResult {
       url: window.location.href
     };
 
-    console.error('🚨 Security Alert:', alert);
+// Removed for production: console.error('🚨 Security Alert:', alert);
     
     // In production, send to security monitoring service
     if (process.env["NODE_ENV"] === 'production' && this.config.endpoint) {
@@ -1050,7 +1050,7 @@ private validateRobotData(data: any): ValidationResult {
         body: JSON.stringify(alert)
       });
     } catch (error) {
-      console.error('Failed to send security alert:', error);
+// Removed for production: console.error('Failed to send security alert:', error);
     }
   }
 
@@ -1577,7 +1577,7 @@ private validateRobotData(data: any): ValidationResult {
        
        return parsed;
      } catch (error) {
-       console.error('JSON parsing error:', error);
+// Removed for production: console.error('JSON parsing error:', error);
        return null;
      }
    }

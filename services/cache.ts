@@ -271,8 +271,8 @@ export class SmartCache {
     
     // Invalidate dependents
     const dependents = Array.from(this.dependencies.entries())
-      .filter(([_, deps]) => deps.has(key))
-      .map(([depKey, _]) => depKey);
+      .filter(([_key, deps]) => deps.has(key))
+      .map(([depKey, _unused]) => depKey);
     
     dependents.forEach(depKey => {
       this.cache.delete(depKey);

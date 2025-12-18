@@ -23,8 +23,8 @@ interface WorkerResponse {
 }
 
 interface PendingRequest {
-  resolve: (value: unknown) => void;
-  reject: (error: Error) => void;
+  resolve: (_value: unknown) => void;
+  reject: (_error: Error) => void;
   timeout: NodeJS.Timeout;
 }
 

@@ -5,8 +5,8 @@ const logger = createScopedLogger('ApiDeduplicator');
 interface PendingRequest<T = any> {
   promise: Promise<T>;
   timestamp: number;
-  resolve: (value: T) => void;
-  reject: (reason: any) => void;
+  resolve: (_value: T) => void;
+  reject: (_reason: any) => void;
 }
 
 export class ApiDeduplicator {

@@ -222,7 +222,7 @@ class AdvancedComponentCache {
           const data = await loader();
           this.set(key, data);
         } catch (error) {
-          console.warn(`Failed to preheat cache for key ${key}:`, error);
+// Removed for production: console.warn(`Failed to preheat cache for key ${key}:`, error);
         }
       }
     });

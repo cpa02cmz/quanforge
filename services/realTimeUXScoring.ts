@@ -174,7 +174,7 @@ class UXPerformanceMonitor {
       observer.observe({ entryTypes: ['largest-contentful-paint'] });
       this.observers.push(observer);
     } catch (error) {
-      console.warn('LCP observation not supported:', error);
+// Removed for production: console.warn('LCP observation not supported:', error);
     }
   }
 
@@ -196,7 +196,7 @@ class UXPerformanceMonitor {
       observer.observe({ entryTypes: ['first-input'] });
       this.observers.push(observer);
     } catch (error) {
-      console.warn('FID observation not supported:', error);
+// Removed for production: console.warn('FID observation not supported:', error);
     }
   }
 
@@ -220,7 +220,7 @@ class UXPerformanceMonitor {
       observer.observe({ entryTypes: ['layout-shift'] });
       this.observers.push(observer);
     } catch (error) {
-      console.warn('CLS observation not supported:', error);
+// Removed for production: console.warn('CLS observation not supported:', error);
     }
   }
 
@@ -244,7 +244,7 @@ class UXPerformanceMonitor {
       observer.observe({ entryTypes: ['navigation'] });
       this.observers.push(observer);
     } catch (error) {
-      console.warn('Navigation timing observation not supported:', error);
+// Removed for production: console.warn('Navigation timing observation not supported:', error);
     }
   }
 
@@ -278,7 +278,7 @@ class UXPerformanceMonitor {
       observer.observe({ entryTypes: ['resource'] });
       this.observers.push(observer);
     } catch (error) {
-      console.warn('Resource timing observation not supported:', error);
+// Removed for production: console.warn('Resource timing observation not supported:', error);
     }
   }
 
@@ -302,7 +302,7 @@ class UXPerformanceMonitor {
       observer.observe({ entryTypes: ['longtask'] });
       this.observers.push(observer);
     } catch (error) {
-      console.warn('Long task observation not supported:', error);
+// Removed for production: console.warn('Long task observation not supported:', error);
     }
   }
 

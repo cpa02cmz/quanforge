@@ -109,7 +109,7 @@ export const warmCache = async (keys: string[], dataLoader: (key: string) => Pro
         const data = await dataLoader(key);
         robotCache.set(key, data);
       } catch (error) {
-        console.warn(`Failed to warm cache for key ${key}:`, error);
+// Removed for production: console.warn(`Failed to warm cache for key ${key}:`, error);
       }
     }
   });
@@ -125,7 +125,7 @@ export const startCacheCleanup = (intervalMs: number = 60000): NodeJS.Timeout =>
     const cleanedSessions = sessionCache.cleanup();
     
     if (cleanedRobots > 0 || cleanedQueries > 0 || cleanedSessions > 0) {
-      console.log(`Cache cleanup: ${cleanedRobots} robots, ${cleanedQueries} queries, ${cleanedSessions} sessions`);
+// Removed for production: console.log(`Cache cleanup: ${cleanedRobots} robots, ${cleanedQueries} queries, ${cleanedSessions} sessions`);
     }
   }, intervalMs);
 };

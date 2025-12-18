@@ -85,7 +85,7 @@ export class AnalyticsManager {
     this.startFlushTimer();
     this.setupEventListeners();
     
-    console.log('📊 Analytics Manager initialized');
+// Removed for production: console.log('📊 Analytics Manager initialized');
   }
 
   private generateSessionId(): string {
@@ -99,10 +99,10 @@ export class AnalyticsManager {
         const persisted = localStorage.getItem(this.persistenceKey);
         if (persisted) {
           this.events = JSON.parse(persisted);
-          console.log(`📊 Loaded ${this.events.length} persisted events`);
+// Removed for production: console.log(`📊 Loaded ${this.events.length} persisted events`);
         }
       } catch (error) {
-        console.warn('Failed to load persisted analytics events:', error);
+// Removed for production: console.warn('Failed to load persisted analytics events:', error);
       }
     }
   }
@@ -112,7 +112,7 @@ export class AnalyticsManager {
       try {
         localStorage.setItem(this.persistenceKey, JSON.stringify(this.events));
       } catch (error) {
-        console.warn('Failed to persist analytics events:', error);
+// Removed for production: console.warn('Failed to persist analytics events:', error);
         // Clear old events if storage is full
         this.clearOldEvents();
       }
@@ -256,7 +256,7 @@ export class AnalyticsManager {
 
     // Debug logging
     if (this.config.debugMode) {
-      console.log('📊 Analytics Event:', event);
+// Removed for production: console.log('📊 Analytics Event:', event);
     }
 
     // Persist events
@@ -286,10 +286,10 @@ export class AnalyticsManager {
       }
       
       if (this.config.debugMode) {
-        console.log(`📊 Successfully sent ${eventsToSend.length} events`);
+// Removed for production: console.log(`📊 Successfully sent ${eventsToSend.length} events`);
       }
     } catch (error) {
-      console.error('Failed to send analytics events:', error);
+// Removed for production: console.error('Failed to send analytics events:', error);
       
       // Re-add events to queue on failure
       this.events.unshift(...eventsToSend);
@@ -302,7 +302,7 @@ export class AnalyticsManager {
     if (!this.config.endpoint) {
       // Default to console logging in development
       if (this.config.debugMode) {
-        console.log('📊 Analytics Events (no endpoint configured):', events);
+// Removed for production: console.log('📊 Analytics Events (no endpoint configured):', events);
       }
       return;
     }
@@ -566,7 +566,7 @@ export class AnalyticsManager {
     // Try to flush remaining events
     this.flushEvents();
     
-    console.log('📊 Analytics Manager destroyed');
+// Removed for production: console.log('📊 Analytics Manager destroyed');
   }
 }
 

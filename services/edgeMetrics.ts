@@ -66,7 +66,7 @@ class EdgeMetricsCollector {
         timestamp: Date.now()
       });
     } catch (error) {
-      console.warn('Edge region detection failed:', error);
+// Removed for production: console.warn('Edge region detection failed:', error);
     }
   }
 
@@ -120,7 +120,7 @@ class EdgeMetricsCollector {
     }
 
     if (alerts.length > 0) {
-      console.warn('Edge Performance Alerts:', alerts);
+// Removed for production: console.warn('Edge Performance Alerts:', alerts);
       this.sendAlerts(alerts);
     }
   }
@@ -135,7 +135,7 @@ class EdgeMetricsCollector {
           body: JSON.stringify({ alerts, timestamp: Date.now() })
         });
       } catch (error) {
-        console.warn('Failed to send edge alerts:', error);
+// Removed for production: console.warn('Failed to send edge alerts:', error);
       }
     }
   }

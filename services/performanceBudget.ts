@@ -136,7 +136,7 @@ class PerformanceBudgetService {
     // Setup route change monitoring
     this.setupRouteChangeMonitoring();
 
-    console.log('Performance budget monitoring started');
+// Removed for production: console.log('Performance budget monitoring started');
   }
 
   // Stop performance monitoring
@@ -147,7 +147,7 @@ class PerformanceBudgetService {
     this.observers = [];
     this.isMonitoring = false;
 
-    console.log('Performance budget monitoring stopped');
+// Removed for production: console.log('Performance budget monitoring stopped');
   }
 
   // Observe Core Web Vitals
@@ -446,7 +446,7 @@ class PerformanceBudgetService {
     }
 
     // Log violation
-    console.warn(`Performance budget violation (${violation.severity}): ${violation.metric} = ${violation.value} (threshold: ${violation.threshold})`);
+// Removed for production: console.warn(`Performance budget violation (${violation.severity}): ${violation.metric} = ${violation.value} (threshold: ${violation.threshold})`);
   }
 
   // Create metrics entry

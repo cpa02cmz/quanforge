@@ -21,7 +21,7 @@ export const loadGeminiService = async (): Promise<typeof import('./gemini')> =>
       geminiService = service;
       return service;
     } catch (error) {
-      console.error('Failed to load gemini service:', error);
+// Removed for production: console.error('Failed to load gemini service:', error);
       // Reset the promise on error to allow retry
       serviceLoadPromise = null;
       throw error;
@@ -36,8 +36,8 @@ export const preloadGeminiService = () => {
   // Only preload if not already loaded or loading
   if (!geminiService && !serviceLoadPromise) {
     // Preload with error handling to prevent unhandled rejections
-    loadGeminiService().catch(error => {
-      console.warn('AI service preload failed:', error);
+    loadGeminiService().catch(_error => {
+// Removed for production: console.warn('AI service preload failed:', _error);
     });
   }
 };

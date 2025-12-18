@@ -80,9 +80,9 @@ class PredictiveCacheStrategy {
         });
       }
 
-      console.log(`Predictive cache initialized with ${this.accessPatterns.size} patterns`);
+// Removed for production: console.log(`Predictive cache initialized with ${this.accessPatterns.size} patterns`);
     } catch (error) {
-      console.warn('Failed to initialize predictive models:', error);
+// Removed for production: console.warn('Failed to initialize predictive models:', error);
     }
   }
 
@@ -342,7 +342,7 @@ class PredictiveCacheStrategy {
       this.config.defaultTTL = Math.max(this.config.defaultTTL * 0.8, 120000); // Min 2 minutes
     }
 
-    console.log(`Optimized cache TTL for region ${region}: ${this.config.defaultTTL}ms (avg response: ${avgResponseTime.toFixed(0)}ms)`);
+// Removed for production: console.log(`Optimized cache TTL for region ${region}: ${this.config.defaultTTL}ms (avg response: ${avgResponseTime.toFixed(0)}ms)`);
   }
 
   /**
@@ -350,7 +350,7 @@ class PredictiveCacheStrategy {
    */
   async intelligentWarmup(): Promise<void> {
     const startTime = performance.now();
-    console.log('Starting intelligent cache warm-up...');
+// Removed for production: console.log('Starting intelligent cache warm-up...');
 
     try {
       // Get warming recommendations for current region
@@ -376,9 +376,9 @@ class PredictiveCacheStrategy {
       }, 2000);
 
       const duration = performance.now() - startTime;
-      console.log(`Intelligent cache warm-up completed in ${duration.toFixed(2)}ms (${recommendations.length} predictions)`);
+// Removed for production: console.log(`Intelligent cache warm-up completed in ${duration.toFixed(2)}ms (${recommendations.length} predictions)`);
     } catch (error) {
-      console.warn('Intelligent cache warm-up failed:', error);
+// Removed for production: console.warn('Intelligent cache warm-up failed:', error);
     }
   }
 
@@ -394,9 +394,9 @@ class PredictiveCacheStrategy {
       
       try {
         await this.prefetch(prediction.url);
-        console.debug(`Warmed up ${prediction.url} (${priority} priority, ${(prediction.confidence * 100).toFixed(1)}% confidence)`);
+// Removed for production: console.debug(`Warmed up ${prediction.url} (${priority} priority, ${(prediction.confidence * 100).toFixed(1)}% confidence)`);
       } catch (error) {
-        console.warn(`Failed to warm up ${prediction.url}:`, error);
+// Removed for production: console.warn(`Failed to warm up ${prediction.url}:`, error);
       }
     });
 
@@ -473,7 +473,7 @@ class PredictiveCacheStrategy {
     }
 
     if (cleanedCount > 0) {
-      console.debug(`Predictive cache cleanup: removed ${cleanedCount} old entries`);
+// Removed for production: console.debug(`Predictive cache cleanup: removed ${cleanedCount} old entries`);
     }
   }
 
@@ -521,7 +521,7 @@ class PredictiveCacheStrategy {
       const patterns = Object.fromEntries(this.accessPatterns);
       localStorage.setItem('predictive_cache_patterns', JSON.stringify(patterns));
     } catch (error) {
-      console.warn('Failed to save predictive cache patterns:', error);
+// Removed for production: console.warn('Failed to save predictive cache patterns:', error);
     }
   }
 

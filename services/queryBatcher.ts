@@ -172,7 +172,7 @@ class QueryBatcher {
       this.resolveBatch(results);
 
     } catch (error) {
-      console.error('Batch execution failed:', error);
+// Removed for production: console.error('Batch execution failed:', error);
       await this.handleBatchError(batch, error);
     }
   }
@@ -623,7 +623,7 @@ class QueryBatcher {
    */
   configure(config: Partial<BatchConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('Query batcher configuration updated:', this.config);
+// Removed for production: console.log('Query batcher configuration updated:', this.config);
   }
 
   /**

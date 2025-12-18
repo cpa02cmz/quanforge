@@ -84,7 +84,7 @@ class EdgeCacheStrategy {
 
     // Check cache size limit
     if (size > this.config.maxSize) {
-      console.warn(`Cache entry too large: ${size} bytes`);
+// Removed for production: console.warn(`Cache entry too large: ${size} bytes`);
       return;
     }
 
@@ -161,11 +161,11 @@ class EdgeCacheStrategy {
         const existing = this.cache.get(key);
         if (!existing || Date.now() - existing.timestamp > 60000) {
           // This would trigger a fetch in a real implementation
-          console.log(`Warming cache for ${region}: ${key}`);
+// Removed for production: console.log(`Warming cache for ${region}: ${key}`);
         }
       }
     } catch (error) {
-      console.warn(`Failed to warm cache for region ${region}:`, error);
+// Removed for production: console.warn(`Failed to warm cache for region ${region}:`, error);
     }
   }
 

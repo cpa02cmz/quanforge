@@ -99,7 +99,7 @@ class EdgeMonitoringService {
     this.startErrorTracking();
     this.isMonitoring = true;
 
-    console.log('Edge monitoring service initialized');
+// Removed for production: console.log('Edge monitoring service initialized');
   }
 
   private startHealthChecks(): void {
@@ -428,7 +428,7 @@ class EdgeMonitoringService {
     this.config.notificationChannels.forEach(channel => {
       switch (channel) {
         case 'console':
-          console.warn(`🚨 Edge Alert [${alert.severity.toUpperCase()}]: ${alert.message}`, alert);
+// Removed for production: console.warn(`🚨 Edge Alert [${alert.severity.toUpperCase()}]: ${alert.message}`, alert);
           break;
         
         case 'webhook':
@@ -458,13 +458,13 @@ class EdgeMonitoringService {
         body: JSON.stringify(alert)
       });
     } catch (error) {
-      console.error('Failed to send webhook notification:', error);
+// Removed for production: console.error('Failed to send webhook notification:', error);
     }
   }
 
   private async sendEmailNotification(alert: Alert): Promise<void> {
     // In a real implementation, this would integrate with an email service
-    console.log(`📧 Email alert sent to ${this.config.emailRecipients?.join(', ')}:`, alert.message);
+// Removed for production: console.log(`📧 Email alert sent to ${this.config.emailRecipients?.join(', ')}:`, alert.message);
   }
 
    private detectCurrentRegion(): string {
@@ -501,7 +501,7 @@ class EdgeMonitoringService {
       alert.resolved = true;
       alert.resolvedAt = Date.now();
       
-      console.log(`✅ Alert resolved: ${alert.message}`);
+// Removed for production: console.log(`✅ Alert resolved: ${alert.message}`);
     }
   }
 
@@ -605,7 +605,7 @@ class EdgeMonitoringService {
     this.monitoringIntervals.forEach(interval => clearInterval(interval));
     this.monitoringIntervals.clear();
     this.isMonitoring = false;
-    console.log('Edge monitoring service stopped');
+// Removed for production: console.log('Edge monitoring service stopped');
   }
 
   public restartMonitoring(): void {

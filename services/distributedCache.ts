@@ -82,7 +82,7 @@ export class DistributedCache extends AdvancedCache {
     // Start distributed sync
     this.startDistributedSync();
     
-    console.log(`🌐 Distributed cache initialized for region: ${this.currentRegion}`);
+// Removed for production: console.log(`🌐 Distributed cache initialized for region: ${this.currentRegion}`);
   }
 
   private detectCurrentRegion(): string {
@@ -168,7 +168,7 @@ export class DistributedCache extends AdvancedCache {
           version
         });
       } catch (error) {
-        console.warn(`Failed to replicate ${key} to region ${region}:`, error);
+// Removed for production: console.warn(`Failed to replicate ${key} to region ${region}:`, error);
       }
     }
   }
@@ -242,7 +242,7 @@ export class DistributedCache extends AdvancedCache {
       });
       this.versionMap.set(key, version);
       
-      console.log(`🔄 Accepted remote update for ${key} from ${region} (v${version})`);
+// Removed for production: console.log(`🔄 Accepted remote update for ${key} from ${region} (v${version})`);
     } else if (version === currentVersion) {
       // Same version - check conflict resolution strategy
       if (this.distributedConfig.conflictResolution === 'merge') {
@@ -259,7 +259,7 @@ export class DistributedCache extends AdvancedCache {
     if (version >= currentVersion) {
       this.delete(key);
       this.versionMap.delete(key);
-      console.log(`🗑️ Invalidated ${key} from ${region} (v${version})`);
+// Removed for production: console.log(`🗑️ Invalidated ${key} from ${region} (v${version})`);
     }
   }
 
@@ -295,7 +295,7 @@ export class DistributedCache extends AdvancedCache {
       });
       this.versionMap.set(key, newVersion);
       
-      console.log(`🔀 Merged data for ${key} with ${remoteRegion}`);
+// Removed for production: console.log(`🔀 Merged data for ${key} with ${remoteRegion}`);
     }
   }
 
@@ -395,7 +395,7 @@ export class DistributedCache extends AdvancedCache {
               replicate: true
             });
           } catch (error) {
-            console.warn(`Failed to warm cache entry: ${key}`, error);
+// Removed for production: console.warn(`Failed to warm cache entry: ${key}`, error);
           }
         }
       }
@@ -458,7 +458,7 @@ export class DistributedCache extends AdvancedCache {
         try {
           callback(data);
         } catch (error) {
-          console.error(`Error in cache event listener for ${event}:`, error);
+// Removed for production: console.error(`Error in cache event listener for ${event}:`, error);
         }
       });
     }
@@ -477,7 +477,7 @@ export class DistributedCache extends AdvancedCache {
     this.eventListeners.clear();
     
     super.destroy();
-    console.log(`🌐 Distributed cache destroyed for region: ${this.currentRegion}`);
+// Removed for production: console.log(`🌐 Distributed cache destroyed for region: ${this.currentRegion}`);
   }
 }
 

@@ -263,7 +263,7 @@ export class QueryOptimizerEnhanced {
 
       return result;
     } catch (error) {
-      console.error(`Prepared statement ${queryName} failed:`, error);
+// Removed for production: console.error(`Prepared statement ${queryName} failed:`, error);
       throw error;
     }
   }
@@ -296,7 +296,7 @@ export class QueryOptimizerEnhanced {
       return { data: result, executionTime, cached: false };
     } catch (error) {
       const executionTime = performance.now() - startTime;
-      console.error(`Query ${queryName} failed after ${executionTime}ms:`, error);
+// Removed for production: console.error(`Query ${queryName} failed after ${executionTime}ms:`, error);
       throw error;
     }
   }

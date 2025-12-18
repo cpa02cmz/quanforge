@@ -101,7 +101,7 @@ class EdgeSupabaseClient {
 
       return result;
     } catch (error) {
-      console.error(`Edge query failed for ${table}.${query}:`, error);
+// Removed for production: console.error(`Edge query failed for ${table}.${query}:`, error);
       return { data: null, error };
     }
   }
@@ -236,7 +236,7 @@ class EdgeSupabaseClient {
 
       return result;
     } catch (error) {
-      console.error(`Edge upload failed for ${bucket}/${path}:`, error);
+// Removed for production: console.error(`Edge upload failed for ${bucket}/${path}:`, error);
       return { data: null, error };
     }
   }
@@ -291,7 +291,7 @@ class EdgeSupabaseClient {
 
       return result;
     } catch (error) {
-      console.error(`Edge download failed for ${bucket}/${path}:`, error);
+// Removed for production: console.error(`Edge download failed for ${bucket}/${path}:`, error);
       return { data: null, error };
     }
   }
@@ -390,7 +390,7 @@ class EdgeSupabaseClient {
 
       return results;
     } catch (error) {
-      console.error('Transaction failed:', error);
+// Removed for production: console.error('Transaction failed:', error);
       return operations.map(() => ({ data: null, error }));
     }
   }
@@ -414,7 +414,7 @@ class EdgeSupabaseClient {
       const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
       await new Promise(resolve => setTimeout(resolve, delay));
 
-      console.warn(`Retrying edge operation ${operationName}, attempt ${attempt + 1}`);
+// Removed for production: console.warn(`Retrying edge operation ${operationName}, attempt ${attempt + 1}`);
       return this.executeWithRetry(operation, operationName, attempt + 1);
     }
   }
@@ -475,14 +475,14 @@ class EdgeSupabaseClient {
     priority: string
   ): void {
     if (process.env.NODE_ENV === 'development') {
-      console.log(
+// Removed for production: console.log(
         `Edge Query Performance: ${table}.${query} - ${duration.toFixed(2)}ms, ${resultCount} results, priority: ${priority}`
       );
     }
 
     // Log slow queries
     if (duration > 1000) {
-      console.warn(
+// Removed for production: console.warn(
         `Slow edge query detected: ${table}.${query} took ${duration.toFixed(2)}ms`
       );
     }
@@ -503,7 +503,7 @@ class EdgeSupabaseClient {
 
   private logUploadPerformance(bucket: string, path: string, fileSize: number, duration: number): void {
     const speed = fileSize / (duration / 1000) / 1024; // KB/s
-    console.log(
+// Removed for production: console.log(
       `Edge Upload Performance: ${bucket}/${path} - ${(fileSize / 1024).toFixed(2)}KB in ${duration.toFixed(2)}ms (${speed.toFixed(2)}KB/s)`
     );
   }

@@ -109,9 +109,9 @@ class EnhancedSupabaseConnectionPool {
 
     try {
       await Promise.all(promises);
-      console.log(`Enhanced connection pool initialized with ${this.config.minConnections} connections`);
+// Removed for production: console.log(`Enhanced connection pool initialized with ${this.config.minConnections} connections`);
     } catch (error) {
-      console.error('Failed to initialize connection pool:', error);
+// Removed for production: console.error('Failed to initialize connection pool:', error);
     }
   }
 
@@ -192,7 +192,7 @@ class EnhancedSupabaseConnectionPool {
       if (readClient) {
         const acquireTime = performance.now() - startTime;
         this.recordAcquireTime(acquireTime);
-        console.debug(`Using read replica for region: ${preferredRegion}`);
+// Removed for production: console.debug(`Using read replica for region: ${preferredRegion}`);
         return readClient;
       }
     }
@@ -205,16 +205,16 @@ class EnhancedSupabaseConnectionPool {
       if (this.stats.totalConnections < this.config.maxConnections) {
         try {
           connection = await this.createConnection(preferredRegion);
-          console.debug(`Created new connection for region: ${preferredRegion}`);
+// Removed for production: console.debug(`Created new connection for region: ${preferredRegion}`);
         } catch (error) {
-          console.warn('Failed to create new connection:', error);
+// Removed for production: console.warn('Failed to create new connection:', error);
           
           // Fallback: try to create connection without region preference
           if (this.stats.totalConnections < this.config.maxConnections) {
             try {
               connection = await this.createConnection();
             } catch (fallbackError) {
-              console.warn('Fallback connection creation failed:', fallbackError);
+// Removed for production: console.warn('Fallback connection creation failed:', fallbackError);
             }
           }
         }
@@ -245,7 +245,7 @@ class EnhancedSupabaseConnectionPool {
 
     // Log slow acquisitions
     if (acquireTime > 1000) {
-      console.warn(`Slow connection acquisition: ${acquireTime.toFixed(2)}ms for region ${preferredRegion}`);
+// Removed for production: console.warn(`Slow connection acquisition: ${acquireTime.toFixed(2)}ms for region ${preferredRegion}`);
     }
 
     this.updateStats();
@@ -360,7 +360,7 @@ class EnhancedSupabaseConnectionPool {
       // 2. Performance check - should be fast for healthy connection
       const responseTime = performance.now() - startTime;
       if (responseTime > 1000) { // 1 second threshold for edge environment
-        console.warn(`Connection ${connection.id} slow response: ${responseTime.toFixed(2)}ms`);
+// Removed for production: console.warn(`Connection ${connection.id} slow response: ${responseTime.toFixed(2)}ms`);
         connection.healthy = false;
         return false;
       }
@@ -370,7 +370,7 @@ class EnhancedSupabaseConnectionPool {
         await connection.client.auth.getSession();
       } catch (authError) {
         // Auth errors are not critical for connection health
-        console.debug(`Auth check failed for connection ${connection.id}:`, authError);
+// Removed for production: console.debug(`Auth check failed for connection ${connection.id}:`, authError);
       }
 
       connection.healthy = true;
@@ -379,7 +379,7 @@ class EnhancedSupabaseConnectionPool {
       return true;
     } catch (error) {
       connection.healthy = false;
-      console.warn(`Connection ${connection.id} health check failed:`, error);
+// Removed for production: console.warn(`Connection ${connection.id} health check failed:`, error);
       return false;
     }
   }
@@ -392,9 +392,9 @@ class EnhancedSupabaseConnectionPool {
           const isHealthy = await this.healthCheck(connection);
 
           if (wasHealthy && !isHealthy) {
-            console.warn(`Connection ${connection.id} became unhealthy`);
+// Removed for production: console.warn(`Connection ${connection.id} became unhealthy`);
           } else if (!wasHealthy && isHealthy) {
-            console.info(`Connection ${connection.id} recovered`);
+// Removed for production: console.info(`Connection ${connection.id} recovered`);
           }
         });
 
@@ -428,7 +428,7 @@ class EnhancedSupabaseConnectionPool {
 
     connectionsToRemove.forEach(id => {
       this.connections.delete(id);
-      console.debug(`Removed idle connection ${id}`);
+// Removed for production: console.debug(`Removed idle connection ${id}`);
     });
 
     if (connectionsToRemove.length > 0) {
@@ -530,7 +530,7 @@ class EnhancedSupabaseConnectionPool {
 
   updateConfig(newConfig: Partial<ConnectionConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    console.log('Connection pool configuration updated:', this.config);
+// Removed for production: console.log('Connection pool configuration updated:', this.config);
   }
 
   async closeAll(): Promise<void> {
@@ -554,7 +554,7 @@ class EnhancedSupabaseConnectionPool {
     this.connections.clear();
     this.updateStats();
 
-    console.log('Connection pool closed');
+// Removed for production: console.log('Connection pool closed');
   }
 
   // Force health check on all connections
@@ -616,14 +616,14 @@ class EnhancedSupabaseConnectionPool {
         // Test the connection
         const { error } = await readClient.from('robots').select('id').limit(1);
         if (error) {
-          console.warn('Read replica connection test failed:', error);
+// Removed for production: console.warn('Read replica connection test failed:', error);
           return null;
         }
 
         this.readReplicaClients.set(replicaKey, readClient);
-        console.debug(`Created read replica client for region: ${region || 'default'}`);
+// Removed for production: console.debug(`Created read replica client for region: ${region || 'default'}`);
       } catch (error) {
-        console.warn('Failed to create read replica client:', error);
+// Removed for production: console.warn('Failed to create read replica client:', error);
         return null;
       }
     }
@@ -640,12 +640,12 @@ class EnhancedSupabaseConnectionPool {
       try {
         await this.acquireReadReplica(region);
       } catch (error) {
-        console.warn(`Failed to warm up read replica for region ${region}:`, error);
+// Removed for production: console.warn(`Failed to warm up read replica for region ${region}:`, error);
       }
     });
 
     await Promise.allSettled(warmUpPromises);
-    console.log('Read replica warm-up completed');
+// Removed for production: console.log('Read replica warm-up completed');
   }
 
    /**
@@ -671,7 +671,7 @@ class EnhancedSupabaseConnectionPool {
     */
   async closeReadReplicas(): Promise<void> {
     this.readReplicaClients.clear();
-    console.log('All read replica connections closed');
+// Removed for production: console.log('All read replica connections closed');
   }
 
   /**
@@ -769,7 +769,7 @@ class EnhancedSupabaseConnectionPool {
     }
 
     const startTime = performance.now();
-    console.log('Starting enhanced edge connection warm-up...');
+// Removed for production: console.log('Starting enhanced edge connection warm-up...');
 
     // Get current region for optimization
     const currentRegion = process.env['VERCEL_REGION'] || 'unknown';
@@ -807,9 +807,9 @@ class EnhancedSupabaseConnectionPool {
     try {
       await Promise.allSettled(warmupPromises);
       const duration = performance.now() - startTime;
-      console.log(`Enhanced edge connection warm-up completed in ${duration.toFixed(2)}ms`);
+// Removed for production: console.log(`Enhanced edge connection warm-up completed in ${duration.toFixed(2)}ms`);
     } catch (error) {
-      console.warn('Enhanced edge connection warm-up failed:', error);
+// Removed for production: console.warn('Enhanced edge connection warm-up failed:', error);
     }
   }
 
@@ -823,7 +823,7 @@ class EnhancedSupabaseConnectionPool {
         .find(conn => conn.region === region && conn.healthy && !conn.inUse);
 
       if (existingConnection) {
-        console.debug(`Region ${region} already has a warm connection (${priority} priority)`);
+// Removed for production: console.debug(`Region ${region} already has a warm connection (${priority} priority)`);
         return;
       }
 
@@ -839,7 +839,7 @@ class EnhancedSupabaseConnectionPool {
             if (priority === 'high') {
               await this.drainOneIdleConnection();
             } else {
-              console.debug(`Skipping warm-up for ${region} - connection pool at capacity (${priority} priority)`);
+// Removed for production: console.debug(`Skipping warm-up for ${region} - connection pool at capacity (${priority} priority)`);
               return;
             }
           }
@@ -849,20 +849,20 @@ class EnhancedSupabaseConnectionPool {
           // Perform enhanced warm-up queries
           await this.performEnhancedWarmupQueries(connection.client, region);
           
-          console.debug(`Enhanced warm-up completed for region: ${region} (${priority} priority, attempt ${attempt})`);
+// Removed for production: console.debug(`Enhanced warm-up completed for region: ${region} (${priority} priority, attempt ${attempt})`);
           return; // Success, exit retry loop
           
         } catch (error) {
           if (attempt === maxRetries) {
-            console.warn(`Failed to warm up connection for region ${region} after ${maxRetries} attempts (${priority} priority):`, error);
+// Removed for production: console.warn(`Failed to warm up connection for region ${region} after ${maxRetries} attempts (${priority} priority):`, error);
           } else {
-            console.debug(`Warm-up attempt ${attempt} failed for region ${region} (${priority} priority), retrying...`);
+// Removed for production: console.debug(`Warm-up attempt ${attempt} failed for region ${region} (${priority} priority), retrying...`);
             await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
           }
         }
       }
     } catch (error) {
-      console.warn(`Enhanced warm-up failed for region ${region}:`, error);
+// Removed for production: console.warn(`Enhanced warm-up failed for region ${region}:`, error);
     }
   }
 
@@ -905,7 +905,7 @@ class EnhancedSupabaseConnectionPool {
         await client.auth.getSession();
       } catch (authError) {
         // Auth errors are not critical for warm-up
-        console.debug(`Auth warm-up failed for region ${region}:`, authError);
+// Removed for production: console.debug(`Auth warm-up failed for region ${region}:`, authError);
       }
 
       // Query 3: Index warm-up (if robots table exists)
@@ -916,14 +916,14 @@ class EnhancedSupabaseConnectionPool {
           .order('created_at', { ascending: false })
           .limit(1);
       } catch (indexError) {
-        console.debug(`Index warm-up failed for region ${region}:`, indexError);
+// Removed for production: console.debug(`Index warm-up failed for region ${region}:`, indexError);
       }
 
       const duration = performance.now() - startTime;
-      console.debug(`Enhanced warm-up queries completed for region ${region} in ${duration.toFixed(2)}ms`);
+// Removed for production: console.debug(`Enhanced warm-up queries completed for region ${region} in ${duration.toFixed(2)}ms`);
       
     } catch (error) {
-      console.debug(`Enhanced warm-up queries failed for region ${region}:`, error);
+// Removed for production: console.debug(`Enhanced warm-up queries failed for region ${region}:`, error);
       throw error;
     }
   }
@@ -942,15 +942,15 @@ class EnhancedSupabaseConnectionPool {
         if (readClient) {
           // Perform warm-up query on read replica
           await readClient.from('robots').select('count', { count: 'exact', head: true }).limit(1);
-          console.debug(`Enhanced read replica warm-up completed for region: ${region}`);
+// Removed for production: console.debug(`Enhanced read replica warm-up completed for region: ${region}`);
         }
       } catch (error) {
-        console.warn(`Enhanced read replica warm-up failed for region ${region}:`, error);
+// Removed for production: console.warn(`Enhanced read replica warm-up failed for region ${region}:`, error);
       }
     });
 
     await Promise.allSettled(warmUpPromises);
-    console.log('Enhanced read replica warm-up completed');
+// Removed for production: console.log('Enhanced read replica warm-up completed');
   }
 
   /**
@@ -965,7 +965,7 @@ class EnhancedSupabaseConnectionPool {
       const connectionToDrain = idleConnections[0];
       if (connectionToDrain) {
         await this.closeConnection(connectionToDrain.id);
-        console.debug(`Drained idle connection ${connectionToDrain.id} for high-priority warm-up`);
+// Removed for production: console.debug(`Drained idle connection ${connectionToDrain.id} for high-priority warm-up`);
       }
     }
   }
@@ -981,7 +981,7 @@ class EnhancedSupabaseConnectionPool {
     const startTime = performance.now();
     const warmupPromises: Promise<void>[] = [];
 
-    console.log('Starting edge connection warm-up...');
+// Removed for production: console.log('Starting edge connection warm-up...');
 
     // Warm up primary connections for each region
     for (const region of this.edgeRegions) {
@@ -994,9 +994,9 @@ class EnhancedSupabaseConnectionPool {
     try {
       await Promise.allSettled(warmupPromises);
       const duration = performance.now() - startTime;
-      console.log(`Edge connection warm-up completed in ${duration.toFixed(2)}ms`);
+// Removed for production: console.log(`Edge connection warm-up completed in ${duration.toFixed(2)}ms`);
     } catch (error) {
-      console.warn('Edge connection warm-up failed:', error);
+// Removed for production: console.warn('Edge connection warm-up failed:', error);
     }
   }
 
@@ -1010,7 +1010,7 @@ class EnhancedSupabaseConnectionPool {
         .find(conn => conn.region === region && conn.healthy && !conn.inUse);
 
       if (existingConnection) {
-        console.debug(`Region ${region} already has a warm connection`);
+// Removed for production: console.debug(`Region ${region} already has a warm connection`);
         return;
       }
 
@@ -1021,12 +1021,12 @@ class EnhancedSupabaseConnectionPool {
         // Perform a warm-up query
         await this.performWarmupQuery(connection.client);
         
-        console.debug(`Warmed up connection for region: ${region}`);
+// Removed for production: console.debug(`Warmed up connection for region: ${region}`);
       } else {
-        console.debug(`Skipping warm-up for ${region} - connection pool at capacity`);
+// Removed for production: console.debug(`Skipping warm-up for ${region} - connection pool at capacity`);
       }
     } catch (error) {
-      console.warn(`Failed to warm up connection for region ${region}:`, error);
+// Removed for production: console.warn(`Failed to warm up connection for region ${region}:`, error);
     }
   }
 
@@ -1042,7 +1042,7 @@ class EnhancedSupabaseConnectionPool {
         .limit(1);
     } catch (error) {
       // Don't throw error for warm-up failures, just log
-      console.debug('Warm-up query failed:', error);
+// Removed for production: console.debug('Warm-up query failed:', error);
     }
   }
 
@@ -1080,7 +1080,7 @@ class EnhancedSupabaseConnectionPool {
    * Force immediate edge warming
    */
   async forceEdgeWarming(): Promise<void> {
-    console.log('Forcing immediate edge connection warming...');
+// Removed for production: console.log('Forcing immediate edge connection warming...');
     await this.warmEdgeConnections();
   }
 
@@ -1100,7 +1100,7 @@ class EnhancedSupabaseConnectionPool {
       regionAffinity: true
     });
 
-    console.log('Connection pool optimized for edge deployment');
+// Removed for production: console.log('Connection pool optimized for edge deployment');
   }
 
   /**
@@ -1169,7 +1169,7 @@ class EnhancedSupabaseConnectionPool {
 
     connectionsToRemove.forEach(id => {
       this.connections.delete(id);
-      console.debug(`Edge cleanup: removed connection ${id}`);
+// Removed for production: console.debug(`Edge cleanup: removed connection ${id}`);
     });
 
     if (connectionsToRemove.length > 0) {
@@ -1208,9 +1208,9 @@ class EnhancedSupabaseConnectionPool {
     const drainPromises = connectionsToDrain.map(async (conn) => {
       try {
         await this.gracefulShutdownConnection(conn);
-        console.debug(`Drained connection ${conn.id} (healthy: ${conn.healthy}, region: ${conn.region})`);
+// Removed for production: console.debug(`Drained connection ${conn.id} (healthy: ${conn.healthy}, region: ${conn.region})`);
       } catch (error) {
-        console.warn(`Failed to drain connection ${conn.id}:`, error);
+// Removed for production: console.warn(`Failed to drain connection ${conn.id}:`, error);
       }
     });
 
@@ -1273,7 +1273,7 @@ class EnhancedSupabaseConnectionPool {
     
     // Force close if still in use after timeout
     if (connection.inUse) {
-      console.warn(`Force closing connection ${connection.id} - still in use after timeout`);
+// Removed for production: console.warn(`Force closing connection ${connection.id} - still in use after timeout`);
     }
     
     await this.closeConnection(connection.id);
@@ -1286,7 +1286,7 @@ class EnhancedSupabaseConnectionPool {
     const usagePatterns = this.analyzeUsagePatterns();
     const predictedRegions = usagePatterns.topRegions.slice(0, 3);
     
-    console.log('Starting predictive connection warming for regions:', predictedRegions);
+// Removed for production: console.log('Starting predictive connection warming for regions:', predictedRegions);
     
     const warmupPromises = predictedRegions.map(async (region, index) => {
       // Stagger warmups to prevent overwhelming the system
@@ -1294,14 +1294,14 @@ class EnhancedSupabaseConnectionPool {
       
       try {
         await this.warmRegionConnectionEnhanced(region, 'high');
-        console.debug(`Predictive warm-up completed for region: ${region}`);
+// Removed for production: console.debug(`Predictive warm-up completed for region: ${region}`);
       } catch (error) {
-        console.warn(`Predictive warm-up failed for region ${region}:`, error);
+// Removed for production: console.warn(`Predictive warm-up failed for region ${region}:`, error);
       }
     });
     
     await Promise.allSettled(warmupPromises);
-    console.log('Predictive connection warming completed');
+// Removed for production: console.log('Predictive connection warming completed');
   }
 
   /**
@@ -1327,9 +1327,9 @@ class EnhancedSupabaseConnectionPool {
       this.connections.delete(connectionId);
       this.updateStats();
       
-      console.debug(`Successfully closed connection ${connectionId}`);
+// Removed for production: console.debug(`Successfully closed connection ${connectionId}`);
     } catch (error) {
-      console.error(`Error closing connection ${connectionId}:`, error);
+// Removed for production: console.error(`Error closing connection ${connectionId}:`, error);
       // Force remove even if error occurs
       this.connections.delete(connectionId);
       this.updateStats();
@@ -1345,7 +1345,7 @@ class EnhancedSupabaseConnectionPool {
     for (const [key] of this.readReplicaClients.entries()) {
       if (Math.random() < 0.1) { // 10% chance to clean up each run
         this.readReplicaClients.delete(key);
-        console.debug(`Drained read replica connection for ${key}`);
+// Removed for production: console.debug(`Drained read replica connection for ${key}`);
       }
     }
   }

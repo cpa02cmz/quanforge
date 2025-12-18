@@ -256,7 +256,7 @@ class OptimizedSupabasePool {
 
     connectionsToRemove.forEach(id => {
       this.connections.delete(id);
-      console.debug(`Removed idle connection ${id}`);
+// Removed for production: console.debug(`Removed idle connection ${id}`);
     });
   }
 

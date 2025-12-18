@@ -109,13 +109,13 @@ class AdvancedSupabasePool {
     // Create minimum connections
     await this.ensureMinimumConnections(poolId);
     
-    console.log(`Initialized Supabase connection pool '${poolId}' with ${fullConfig.minConnections} connections`);
+// Removed for production: console.log(`Initialized Supabase connection pool '${poolId}' with ${fullConfig.minConnections} connections`);
   }
 
   /**
    * Acquire a connection from the pool
    */
-  async acquireConnection(poolId: string = 'default', preferReadReplica: boolean = false): Promise<SupabaseClient> {
+  async acquireConnection(poolId: string = 'default', _preferReadReplica: boolean = false): Promise<SupabaseClient> {
     const config = this.configs.get(poolId);
     if (!config) {
       throw new Error(`Pool '${poolId}' not initialized`);
@@ -193,7 +193,7 @@ class AdvancedSupabasePool {
 
       // Test connection with health check
       const isHealthy = await this.performHealthCheck(client);
-      const creationTime = Date.now() - startTime;
+      const _creationTime = Date.now() - startTime;
 
       if (!isHealthy) {
         throw new Error('Connection health check failed');
@@ -210,11 +210,11 @@ class AdvancedSupabasePool {
         errorCount: 0,
       };
 
-      console.log(`Created new Supabase connection for pool '${poolId}' in ${creationTime}ms`);
+// Removed for production: console.log(`Created new Supabase connection for pool '${poolId}' in ${creationTime}ms`);
       return connection;
 
     } catch (error) {
-      console.error(`Failed to create connection for pool '${poolId}':`, error);
+// Removed for production: console.error(`Failed to create connection for pool '${poolId}':`, error);
       throw error;
     }
   }
@@ -236,7 +236,7 @@ class AdvancedSupabasePool {
 
       const result = await Promise.race([healthPromise, timeoutPromise]);
       return !result.error;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }
@@ -316,7 +316,7 @@ class AdvancedSupabasePool {
         if (!isHealthy) {
           connection.isHealthy = false;
           connection.errorCount++;
-          console.warn(`Connection in pool '${poolId}' marked as unhealthy`);
+// Removed for production: console.warn(`Connection in pool '${poolId}' marked as unhealthy`);
         } else {
           connection.isHealthy = true;
         }
@@ -391,7 +391,7 @@ class AdvancedSupabasePool {
     let totalRequests = 0;
     const regionDistribution: Record<string, number> = {};
 
-    for (const [poolId, pool] of this.pools) {
+    for (const [_poolId, pool] of this.pools) {
       for (const connection of pool) {
         totalConnections++;
         
@@ -477,13 +477,13 @@ class AdvancedSupabasePool {
     const config = this.configs.get(poolId);
     if (!config) return;
 
-    console.log(`Warming up pool '${poolId}'...`);
+// Removed for production: console.log(`Warming up pool '${poolId}'...`);
     
     // Ensure minimum connections are created and healthy
     await this.ensureMinimumConnections(poolId);
     await this.performPoolHealthChecks();
     
-    console.log(`Pool '${poolId}' warmed up successfully`);
+// Removed for production: console.log(`Pool '${poolId}' warmed up successfully`);
   }
 
   /**
@@ -513,7 +513,7 @@ class AdvancedSupabasePool {
       regionDistribution: {}
     };
     
-    console.log('All Supabase connection pools closed');
+// Removed for production: console.log('All Supabase connection pools closed');
   }
 
   /**

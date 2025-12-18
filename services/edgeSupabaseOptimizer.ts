@@ -117,7 +117,7 @@ export class EdgeSupabaseOptimizer {
       return result;
 
     } catch (error) {
-      console.error('Edge Supabase query failed:', error);
+// Removed for production: console.error('Edge Supabase query failed:', error);
       throw error;
     }
   }
@@ -196,7 +196,7 @@ export class EdgeSupabaseOptimizer {
       return results;
 
     } catch (error) {
-      console.error('Edge Supabase batch execution failed:', error);
+// Removed for production: console.error('Edge Supabase batch execution failed:', error);
       throw error;
     }
   }
@@ -213,7 +213,7 @@ export class EdgeSupabaseOptimizer {
     let success = 0;
     let failed = 0;
 
-    console.log(`🔥 Warming up ${queries.length} Supabase queries...`);
+// Removed for production: console.log(`🔥 Warming up ${queries.length} Supabase queries...`);
 
     // Process in batches to avoid overwhelming the system
     const batchSize = 5;
@@ -243,7 +243,7 @@ export class EdgeSupabaseOptimizer {
             failed++;
           }
         } catch (error) {
-          console.warn(`Failed to warmup query ${cacheKey}:`, error);
+// Removed for production: console.warn(`Failed to warmup query ${cacheKey}:`, error);
           failed++;
         }
       });
@@ -256,7 +256,7 @@ export class EdgeSupabaseOptimizer {
       }
     }
 
-    console.log(`✅ Cache warmup completed: ${success} success, ${failed} failed`);
+// Removed for production: console.log(`✅ Cache warmup completed: ${success} success, ${failed} failed`);
     return { success, failed };
   }
 
@@ -281,7 +281,7 @@ export class EdgeSupabaseOptimizer {
       this.metrics.connectionPoolHits++;
       return client;
     } catch (error) {
-      console.warn('Connection pool failed, using fallback client:', error);
+// Removed for production: console.warn('Connection pool failed, using fallback client:', error);
       
       // Fallback to direct client
       const settings = settingsManager.getDBSettings();
@@ -450,11 +450,11 @@ export class EdgeSupabaseOptimizer {
       }
       
       // Default case - return empty result
-      console.warn(`Unsupported query pattern: ${query}`);
+// Removed for production: console.warn(`Unsupported query pattern: ${query}`);
       return null;
       
     } catch (error) {
-      console.error('Supabase query execution failed:', error);
+// Removed for production: console.error('Supabase query execution failed:', error);
       throw error;
     }
   }
@@ -581,7 +581,7 @@ export class EdgeSupabaseOptimizer {
         staleWhileRevalidate: true,
       });
     } catch (error) {
-      console.debug('Cache get failed:', error);
+// Removed for production: console.debug('Cache get failed:', error);
       return null;
     }
   }
@@ -597,7 +597,7 @@ export class EdgeSupabaseOptimizer {
         replicate: true,
       });
     } catch (error) {
-      console.debug('Cache set failed:', error);
+// Removed for production: console.debug('Cache set failed:', error);
     }
   }
 
@@ -619,7 +619,7 @@ export class EdgeSupabaseOptimizer {
   private initializeMetrics(): void {
     // Reset metrics periodically
     setInterval(() => {
-      console.log('📊 Edge Supabase Metrics:', this.metrics);
+// Removed for production: console.log('📊 Edge Supabase Metrics:', this.metrics);
     }, 60000); // Log every minute
   }
 
@@ -673,10 +673,10 @@ export class EdgeSupabaseOptimizer {
     // Adjust cache TTL based on hit rate
     if (metrics.cacheHitRate < 0.5) {
       // Increase cache TTL for better hit rates
-      console.log('Increasing cache TTL to improve hit rates');
+// Removed for production: console.log('Increasing cache TTL to improve hit rates');
     }
     
-    console.log('Edge Supabase configuration optimized:', {
+// Removed for production: console.log('Edge Supabase configuration optimized:', {
       maxBatchSize: this.config.maxBatchSize,
       averageQueryTime: metrics.averageQueryTime,
       cacheHitRate: metrics.cacheHitRate,
