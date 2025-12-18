@@ -21,8 +21,18 @@
   - Removed unsupported `experimental` property
   - Removed invalid `regions` properties from global and function configs
   - Removed unsupported `cache` properties from function configurations
+  - Removed invalid `environment` properties not compliant with schema
+  - Streamlined build environment variables to supported values
 - **Impact**: Restores Vercel and Cloudflare Workers deployment capability
-- **Testing**: ✓ Build successful, ✓ Schema validation compliant
+- **Testing**: ✓ Build successful, ✓ Schema validation compliant, ✓ CI/CD functional
+
+### [FIXED] PR #139 Deployment Blockers
+- **Date**: 2025-12-18
+- **Severity**: Critical (Merge Blocking)
+- **Description**: PR with critical crypto fix was blocked by deployment configuration errors
+- **Resolution**: Complete JSON schema cleanup and validation compliance
+- **Impact**: Restored mergeability of critical bug fix PR, enabled deployment pipeline
+- **Testing**: ✓ All status checks pass, ✓ No merge conflicts, ✓ Deployment successful
 
 ## Minor Issues (Non-Critical)
 
