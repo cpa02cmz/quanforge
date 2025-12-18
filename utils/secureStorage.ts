@@ -284,7 +284,7 @@ export class SecureStorage {
         
         try {
           if (isLegacy) {
-            processedData = await LegacyXORDecryption.decrypt(processedData);
+            processedData = LegacyXORDecryption.decrypt(processedData);
           } else {
             processedData = await WebCryptoEncryption.decrypt(processedData);
           }
