@@ -3,6 +3,10 @@
  * Provides edge-specific optimizations for better performance
  */
 
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('VercelEdgeOptimizer');
+
 interface EdgeConfig {
   enableEdgeRuntime: boolean;
   enableEdgeCaching: boolean;
@@ -67,7 +71,7 @@ class VercelEdgeOptimizer {
     // Set up enhanced service worker for edge caching
     if ('serviceWorker' in navigator && this.config.enableEdgeRuntime) {
       navigator.serviceWorker.register('/sw-enhanced.js').then((registration) => {
-        console.log('Enhanced Edge Service Worker registered:', registration);
+        logger.info('Enhanced Edge Service Worker registered:', registration);
         
         // Send message to service worker to skip waiting
         if (registration.active) {
@@ -79,18 +83,18 @@ class VercelEdgeOptimizer {
           (registration as any).periodicSync.register('cache-update', {
             minInterval: 24 * 60 * 60 * 1000 // 24 hours
           }).then(() => {
-            console.log('Periodic cache sync registered');
+            logger.info('Periodic cache sync registered');
           }).catch((error: any) => {
-            console.warn('Periodic sync registration failed:', error);
+            logger.warn('Periodic sync registration failed:', error);
           });
         }
       }).catch((error) => {
-        console.warn('Enhanced Edge Service Worker registration failed:', error);
+        logger.warn('Enhanced Edge Service Worker registration failed:', error);
         // Fallback to basic service worker
         navigator.serviceWorker.register('/sw.js').then((registration) => {
-          console.log('Fallback Service Worker registered:', registration);
+          logger.info('Fallback Service Worker registered:', registration);
         }).catch((fallbackError) => {
-          console.warn('Fallback Service Worker registration failed:', fallbackError);
+          logger.warn('Fallback Service Worker registration failed:', fallbackError);
         });
       });
     }
@@ -213,7 +217,7 @@ const entries = list.getEntries();
         });
         clsObserver.observe({ entryTypes: ['layout-shift'] });
       } catch (error) {
-        console.warn('Performance monitoring setup failed:', error);
+        logger.warn('Performance monitoring setup failed:', error);
       }
     }
   }
@@ -222,7 +226,7 @@ const entries = list.getEntries();
     // Send metrics to analytics for edge performance monitoring
     if (process.env['VITE_ENABLE_WEB_VITALS'] === 'true') {
       // In production, send to analytics service
-      console.log(`Performance metric ${type}:`, value);
+      logger.debug(`Performance metric ${type}:`, value);
     }
   }
 
@@ -258,7 +262,7 @@ const entries = list.getEntries();
 
       return data;
     } catch (error) {
-      console.error('Optimized API call failed:', error);
+      logger.error('Optimized API call failed:', error);
       throw error;
     }
   }
@@ -320,7 +324,7 @@ const entries = list.getEntries();
       
       criticalComponents.forEach((component) => {
         // In a real implementation, this would trigger edge-side rendering
-        console.log(`Pre-rendering ${component} at edge`);
+        logger.debug(`Pre-rendering ${component} at edge`);
       });
     }
   }
@@ -329,7 +333,7 @@ const entries = list.getEntries();
   setupEdgeErrorHandling(): void {
     // Global error handler for edge environment
     window.addEventListener('error', (event) => {
-      console.error('Edge error:', {
+      logger.error('Edge error:', {
         message: event.message,
         filename: event.filename,
         lineno: event.lineno,
@@ -339,7 +343,7 @@ const entries = list.getEntries();
     });
 
     window.addEventListener('unhandledrejection', (event) => {
-      console.error('Edge unhandled promise rejection:', {
+      logger.error('Edge unhandled promise rejection:', {
         reason: event.reason,
         region: this.detectEdgeRegion(),
       });
@@ -428,7 +432,7 @@ const entries = list.getEntries();
     caches.open(cacheName).then((cache) => {
       return cache.addAll(assetsToCache);
     }).catch(() => {
-      console.warn('Application cache not available');
+      logger.warn('Application cache not available');
     });
   }
 
@@ -500,7 +504,7 @@ const entries = list.getEntries();
       
       return data;
     } catch (error) {
-      console.error(`Optimized fetch failed for ${url}:`, error);
+      logger.error(`Optimized fetch failed for ${url}:`, error);
       throw error;
     }
   }
@@ -536,7 +540,7 @@ const entries = list.getEntries();
       };
       localStorage.setItem(`edge-cache-${key}`, JSON.stringify(cacheData));
     } catch (error) {
-      console.warn('Failed to cache data:', error);
+      logger.warn('Failed to cache data:', error);
     }
   }
 

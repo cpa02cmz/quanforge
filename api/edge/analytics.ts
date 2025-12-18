@@ -6,6 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { edgeSupabase } from '../../services/edgeSupabaseClient';
 import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('EdgeAnalytics');
 
 interface AnalyticsData {
   timestamp: number;
@@ -46,7 +49,7 @@ export default async function analyticsHandler(request: Request): Promise<Respon
         return NextResponse.json('Method not allowed', { status: 405 });
     }
   } catch (error) {
-    console.error('Analytics handler error:', error);
+    logger.error('Analytics handler error:', error);
     return NextResponse.json({ error: 'Analytics service error' }, {
       status: 500,
       headers: { 'content-type': 'application/json' },
@@ -106,7 +109,7 @@ return new Response(JSON.stringify({
     });
 
   } catch (error) {
-    console.error('Get analytics error:', error);
+    logger.error('Get analytics error:', error);
     return new Response(JSON.stringify({ error: 'Failed to get analytics' }), {
       status: 500,
       headers: { 'content-type': 'application/json' },
@@ -177,7 +180,7 @@ async function postAnalytics(request: Request, region: string): Promise<NextResp
     });
 
   } catch (error) {
-    console.error('Post analytics error:', error);
+    logger.error('Post analytics error:', error);
     return new Response(JSON.stringify({ error: 'Failed to store analytics' }), {
       status: 500,
       headers: { 'content-type': 'application/json' },
@@ -247,7 +250,7 @@ async function generateAnalytics(
     };
 
   } catch (error) {
-    console.error('Generate analytics error:', error);
+    logger.error('Generate analytics error:', error);
     throw error;
   }
 }
@@ -286,7 +289,7 @@ async function getDatabaseMetrics(startTime: number, endTime: number, region: st
     };
 
   } catch (error) {
-    console.error('Get database metrics error:', error);
+    logger.error('Get database metrics error:', error);
     return {
       queryTime: 0,
       connectionPool: { active: 0, idle: 0, total: 0 },
@@ -330,7 +333,7 @@ async function getPerformanceMetrics(startTime: number, endTime: number, region:
     };
 
   } catch (error) {
-    console.error('Get performance metrics error:', error);
+    logger.error('Get performance metrics error:', error);
     return {
       coreWebVitals: { lcp: 0, fid: 0, cls: 0, ttfb: 0 },
       resourceTiming: { totalResources: 0, cachedResources: 0, totalSize: '0', compressedSize: '0' },
@@ -366,7 +369,7 @@ async function getMetricAverage(
     return values.length > 0 ? values.reduce((sum: number, val: number) => sum + val, 0) / values.length : null;
 
   } catch (error) {
-    console.error(`Get ${metric} average error:`, error);
+    logger.error(`Get ${metric} average error:`, error);
     return null;
   }
 }

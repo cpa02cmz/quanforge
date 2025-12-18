@@ -18,8 +18,11 @@ export default defineConfig({
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
             // React ecosystem - optimized for edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
-              return 'react-vendor';
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-is')) {
+              return 'react-core';
+            }
+            if (id.includes('react-router')) {
+              return 'react-router';
             }
             // Supabase - isolated for better connection pooling
             if (id.includes('@supabase')) {
@@ -38,11 +41,20 @@ export default defineConfig({
             }
             // Chart libraries - split more granularly
             if (id.includes('recharts')) {
-              if (id.includes('AreaChart') || id.includes('LineChart')) {
+              // Chart components by feature
+              if (id.includes('AreaChart') || id.includes('LineChart') || id.includes('ComposedChart')) {
                 return 'chart-core';
               }
-              if (id.includes('PieChart') || id.includes('BarChart')) {
+              if (id.includes('PieChart') || id.includes('BarChart') || id.includes('RadarChart')) {
                 return 'chart-misc';
+              }
+              // Chart utilities and containers
+              if (id.includes('ResponsiveContainer') || id.includes('Tooltip') || id.includes('Legend')) {
+                return 'chart-utils';
+              }
+              // Chart primitives (axes, grids, etc.)
+              if (id.includes('XAxis') || id.includes('YAxis') || id.includes('CartesianGrid')) {
+                return 'chart-primitives';
               }
               return 'chart-vendor';
             }
@@ -50,7 +62,16 @@ export default defineConfig({
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'security-vendor';
             }
-            // All other vendor libraries
+            // Other large vendor libraries split by type
+            if (id.includes('date-fns') || id.includes('dayjs') || id.includes('moment')) {
+              return 'vendor-date';
+            }
+            if (id.includes('lodash') || id.includes('underscore')) {
+              return 'vendor-utils';
+            }
+            if (id.includes('axios') || id.includes('fetch') || id.includes('xhr')) {
+              return 'vendor-http';
+            }
             return 'vendor-misc';
           }
           
@@ -222,7 +243,7 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 100, // More aggressive optimization for edge performance
+    chunkSizeWarningLimit: 250, // Realistic limit for complex libraries like charts
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification

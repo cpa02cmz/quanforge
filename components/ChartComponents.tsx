@@ -2,16 +2,16 @@ import React, { memo, useState, useEffect } from 'react';
 
 // Dynamic import for Recharts to optimize bundle size
 interface RechartsComponents {
-  PieChart: any;
-  Pie: any;
-  Cell: any;
-  ResponsiveContainer: any;
-  Tooltip: any;
-  AreaChart: any;
-  Area: any;
-  XAxis: any;
-  YAxis: any;
-  CartesianGrid: any;
+  PieChart: React.ComponentType<any>;
+  Pie: React.ComponentType<any>;
+  Cell: React.ComponentType<any>;
+  ResponsiveContainer: React.ComponentType<any>;
+  Tooltip: React.ComponentType<any>;
+  AreaChart: React.ComponentType<any>;
+  Area: React.ComponentType<any>;
+  XAxis: React.ComponentType<any>;
+  YAxis: React.ComponentType<any>;
+  CartesianGrid: React.ComponentType<any>;
 }
 
 interface ChartComponentsProps {
@@ -82,11 +82,11 @@ const RechartsInner = memo(({
                 outerRadius={80}
                 paddingAngle={5}
                 dataKey="value"
-              >
-                {riskData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
+>
+                 {riskData.map((entry, _index) => (
+                   <Cell key={`cell-${_index}`} fill={entry.color} />
+                 ))}
+               </Pie>
               <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }} itemStyle={{ color: '#fff' }} />
               <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="24" fontWeight="bold">
                 {analysis.riskScore}

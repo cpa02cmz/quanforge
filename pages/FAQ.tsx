@@ -201,10 +201,10 @@ const FAQComponent: React.FC = () => {
   const filteredCategories = useMemo(() => {
     if (!searchTerm.trim()) return currentContent.categories;
     
-    const filtered: any = {};
+    const filtered: Record<string, { title: string; icon: string; questions: Array<{ q: string; a: string }> }> = {};
     Object.entries(currentContent.categories).forEach(([key, category]) => {
       const matchingQuestions = category.questions.filter(
-        (q: any) => 
+        (q: { q: string; a: string }) => 
           q.q.toLowerCase().includes(searchTerm.toLowerCase()) ||
           q.a.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -218,8 +218,8 @@ const FAQComponent: React.FC = () => {
   }, [currentContent.categories, searchTerm]);
 
   // Generate FAQ structured data
-  const allQuestions = Object.values(filteredCategories).flatMap((category: any) =>
-    category.questions.map((q: any) => ({
+  const allQuestions = Object.values(filteredCategories).flatMap((category: { questions: Array<{ q: string; a: string }> }) =>
+    category.questions.map((q: { q: string; a: string }) => ({
       question: q.q,
       answer: q.a
     }))
@@ -304,7 +304,7 @@ const FAQComponent: React.FC = () => {
               </p>
             </div>
           ) : (
-            Object.entries(filteredCategories).map(([categoryKey, category]: [string, any]) => (
+            Object.entries(filteredCategories).map(([categoryKey, category]: [string, { title: string; icon: string; questions: Array<{ q: string; a: string }> }]) => (
               <section key={categoryKey} className="mb-8">
                 <button
                   onClick={() => setExpandedCategory(expandedCategory === categoryKey ? '' : categoryKey)}
@@ -329,7 +329,7 @@ const FAQComponent: React.FC = () => {
 
                 {expandedCategory === categoryKey && (
                   <div className="mt-4 space-y-4">
-                    {category.questions.map((question: any, index: number) => (
+                    {category.questions.map((question: { q: string; a: string }, index: number) => (
                       <div 
                         key={index}
                         className="bg-dark-surface border border-dark-border rounded-lg overflow-hidden"

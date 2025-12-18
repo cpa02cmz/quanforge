@@ -4,7 +4,7 @@ import DOMPurify from 'dompurify';
 import { StrategyParams, CustomInput } from '../types';
 import { TIMEFRAMES } from '../constants';
 import { MarketTicker } from './MarketTicker';
-import { useToast } from './Toast';
+import { useToast } from '../hooks/useToast';
 import { NumericInput } from './NumericInput';
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
@@ -39,7 +39,7 @@ const sanitizeInput = (input: string): string => {
     });
   };
 
-  const handleChange = useCallback((field: keyof StrategyParams, value: any) => {
+  const handleChange = useCallback((field: keyof StrategyParams, value: string | number | boolean) => {
      if (typeof value === 'string') {
        value = sanitizeInput(value);
      }
@@ -47,7 +47,7 @@ const sanitizeInput = (input: string): string => {
    }, [params, onChange]);
 
   const handleInputChange = useCallback((id: string, field: keyof CustomInput, value: string) => {
-    const newInputs = params.customInputs.map(input => 
+    const newInputs = params.customInputs.map((input: CustomInput) => 
       input.id === id ? { ...input, [field]: value } : input
     );
     onChange({ ...params, customInputs: newInputs });
@@ -58,7 +58,7 @@ const sanitizeInput = (input: string): string => {
       if (newType === 'bool') defaultValue = 'false';
       if (newType === 'string') defaultValue = '';
       
-      const newInputs = params.customInputs.map(input => 
+      const newInputs = params.customInputs.map((input: CustomInput) => 
         input.id === id ? { ...input, type: newType, value: defaultValue } : input
       );
       onChange({ ...params, customInputs: newInputs });
@@ -75,7 +75,7 @@ const sanitizeInput = (input: string): string => {
   }, [params.customInputs, onChange]);
 
   const removeInput = useCallback((id: string) => {
-    onChange({ ...params, customInputs: params.customInputs.filter(i => i.id !== id) });
+    onChange({ ...params, customInputs: params.customInputs.filter((i: CustomInput) => i.id !== id) });
   }, [params.customInputs, onChange]);
 
   const copyConfig = useCallback(() => {
@@ -115,9 +115,10 @@ const sanitizeInput = (input: string): string => {
         showToast('Configuration imported successfully', 'success');
         setShowManualImport(false);
         setManualImportText('');
-    } catch (e: any) {
-        logger.error(e);
-        showToast(`Import Failed: ${e.message}`, 'error');
+    } catch (e: unknown) {
+        const error = e as Error;
+        logger.error(error);
+        showToast(`Import Failed: ${error.message}`, 'error');
     }
   };
 
@@ -125,8 +126,9 @@ const sanitizeInput = (input: string): string => {
       try {
           const text = await navigator.clipboard.readText();
           parseAndImport(text);
-      } catch (e: any) {
-          logger.warn("Clipboard read failed, switching to manual mode", e);
+      } catch (e: unknown) {
+          const error = e as Error;
+          logger.warn("Clipboard read failed, switching to manual mode", error);
           setShowManualImport(true);
           showToast('Clipboard blocked. Please paste manually below.', 'info');
       }
@@ -302,7 +304,7 @@ const sanitizeInput = (input: string): string => {
                  <div className="col-span-3">
                    <select
                      value={input.type}
-                     onChange={(e) => handleInputTypeChange(input.id, e.target.value as any)}
+                     onChange={(e) => handleInputTypeChange(input.id, e.target.value as CustomInput['type'])}
                      className="w-full bg-dark-surface border border-dark-border rounded px-2 py-1 text-xs text-white focus:ring-1 focus:ring-brand-500 outline-none"
                    >
                      <option value="int">int</option>

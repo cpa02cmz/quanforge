@@ -5,6 +5,9 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('OptimizedSupabasePool');
 
 interface OptimizedConnectionConfig {
   maxConnections: number;
@@ -66,9 +69,9 @@ class OptimizedSupabasePool {
       for (let i = 0; i < this.config.minConnections; i++) {
         await this.createConnection();
       }
-      console.log(`Optimized connection pool initialized with ${this.config.minConnections} connections`);
+      logger.info(`Optimized connection pool initialized with ${this.config.minConnections} connections`);
     } catch (error) {
-      console.error('Failed to initialize optimized connection pool:', error);
+      logger.error('Failed to initialize optimized connection pool:', error);
     }
   }
 
@@ -126,7 +129,7 @@ class OptimizedSupabasePool {
         try {
           connection = await this.createConnection(preferredRegion);
         } catch (error) {
-          console.warn('Failed to create new connection:', error);
+          logger.warn('Failed to create new connection:', error);
         }
       }
     }
@@ -143,7 +146,7 @@ class OptimizedSupabasePool {
     
     // Log slow acquisitions
     if (acquireTime > 500) {
-      console.warn(`Slow connection acquisition: ${acquireTime.toFixed(2)}ms for region ${preferredRegion}`);
+      logger.warn(`Slow connection acquisition: ${acquireTime.toFixed(2)}ms for region ${preferredRegion}`);
     }
 
     return connection.client;
@@ -199,7 +202,7 @@ class OptimizedSupabasePool {
 
       const responseTime = performance.now() - startTime;
       if (responseTime > 1000) {
-        console.warn(`Connection ${connection.id} slow response: ${responseTime.toFixed(2)}ms`);
+        logger.warn(`Connection ${connection.id} slow response: ${responseTime.toFixed(2)}ms`);
         connection.healthy = false;
         return false;
       }
@@ -221,7 +224,7 @@ class OptimizedSupabasePool {
           const isHealthy = await this.healthCheck(connection);
 
           if (wasHealthy && !isHealthy) {
-            console.warn(`Connection ${connection.id} became unhealthy`);
+            logger.warn(`Connection ${connection.id} became unhealthy`);
           }
         });
 
@@ -285,7 +288,7 @@ class OptimizedSupabasePool {
     }
 
     this.connections.clear();
-    console.log('Optimized connection pool closed');
+    logger.info('Optimized connection pool closed');
   }
 
   // Optimize for edge deployment
@@ -301,7 +304,7 @@ class OptimizedSupabasePool {
 
   updateConfig(newConfig: Partial<OptimizedConnectionConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    console.log('Optimized connection pool configuration updated:', this.config);
+    logger.info('Optimized connection pool configuration updated:', this.config);
   }
 }
 

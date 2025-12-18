@@ -45,12 +45,7 @@ const Layout = lazy(() =>
   import('./components/Layout').then(module => ({ default: module.Layout }))
 );
 
-// Dynamic import utilities for services and heavy components
-export const loadGeminiService = () => import('./services/gemini');
-export const loadSEOUtils = () => import('./utils/seoEnhanced');
-export const loadChartComponents = () => import('./components/ChartComponents');
-export const loadCodeEditor = () => import('./components/CodeEditor');
-export const loadBacktestPanel = () => import('./components/BacktestPanel');
+
 
 // Enhanced preloading strategy with route-based optimization
    const preloadCriticalRoutes = () => {
