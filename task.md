@@ -60,6 +60,25 @@
     - [x] Coding Standards (`coding_standard.md`).
     - [x] Feature List (`fitur.md`).
 
+## Recent Agent Activity (December 2025)
+
+- [x] **PR #136 Red Flag Resolution**: Fixed Vercel deployment schema validation
+    - Identified invalid `regions` property in function configurations
+    - Removed regions from `api/**/*.ts` and `api/edge/**/*.ts` function definitions
+    - Successfully tested local build to ensure no regressions
+    - Updated bug.md with comprehensive fix documentation
+- [x] **PR #132 Analysis**: Identified and fixed Vercel deployment issue
+    - Removed invalid `experimental` property from vercel.json
+    - Resolved schema validation errors
+    - Build now passes successfully
+- [x] **Branch Management**: Set up develop branch from main
+- [x] **Documentation Updates**: Created AGENTS.md for future agent guidance
+- [x] **Code Review**: Analyzed multiple open PRs for deployment issues
+- [x] **PR #135 Red Flag Resolution**: Fixed Vercel deployment schema validation
+    - Identified experimental property causing validation failures
+    - Successfully tested local build to ensure no regressions
+    - Updated bug.md with fix documentation
+
 ## Pending / Future Tasks
 
 - [ ] **Community Sharing**: Share robots via public links.
