@@ -294,7 +294,9 @@ private generateKey(url: string, options?: RequestInit): string {
     
     if (cached) {
       // Return stale data while revalidating
-      this.revalidate(url, options, cacheKey, ttl).catch(console.error);
+      this.revalidate(url, options, cacheKey, ttl).catch(() => {
+        // Silently handle revalidation errors in production
+      });
       return { data: cached, isStale };
     }
     

@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Robot } from '../types';
 import { queryOptimizer } from './queryOptimizer';
-import { robotCache } from './advancedCache';
+// import { robotCache } from './advancedCache'; // File not found - removed
 import { securityManager } from './securityManager';
 
 interface OptimizationConfig {
@@ -218,22 +218,26 @@ class DatabaseOptimizer {
       for (const op of operations) {
         let result: { data: T | null; error: any };
         switch (op.operation) {
-          case 'select':
+          case 'select': {
             const selectResult = await client.from(op.table).select('*').match(op.params);
             result = { data: selectResult.data as T | null, error: selectResult.error };
             break;
-          case 'insert':
+          }
+          case 'insert': {
             const insertResult = await client.from(op.table).insert(op.params);
             result = { data: insertResult.data as T | null, error: insertResult.error };
             break;
-          case 'update':
+          }
+          case 'update': {
             const updateResult = await client.from(op.table).update(op.params.data).match(op.params.filter);
             result = { data: updateResult.data as T | null, error: updateResult.error };
             break;
-          case 'delete':
+          }
+          case 'delete': {
             const deleteResult = await client.from(op.table).delete().match(op.params);
             result = { data: deleteResult.data as T | null, error: deleteResult.error };
             break;
+          }
           default:
             result = { data: null, error: { message: 'Invalid operation' } };
         }
@@ -252,22 +256,26 @@ class DatabaseOptimizer {
         const op = group[0];
         let result: { data: T | null; error: any };
         switch (op.operation) {
-          case 'select':
+          case 'select': {
             const selectResult = await client.from(op.table).select('*').match(op.params);
             result = { data: selectResult.data as T | null, error: selectResult.error };
             break;
-          case 'insert':
+          }
+          case 'insert': {
             const insertResult = await client.from(op.table).insert(op.params);
             result = { data: insertResult.data as T | null, error: insertResult.error };
             break;
-          case 'update':
+          }
+          case 'update': {
             const updateResult = await client.from(op.table).update(op.params.data).match(op.params.filter);
             result = { data: updateResult.data as T | null, error: updateResult.error };
             break;
-          case 'delete':
+          }
+          case 'delete': {
             const deleteResult = await client.from(op.table).delete().match(op.params);
             result = { data: deleteResult.data as T | null, error: deleteResult.error };
             break;
+          }
           default:
             result = { data: null, error: { message: 'Invalid operation' } };
         }

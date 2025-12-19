@@ -7,17 +7,17 @@ export const NumericInput: React.FC<{
     onChange: (value: number) => void;
     className?: string;
     step?: string;
-}> = memo(({ value, onChange, className }) => {
-    const [localValue, setLocalValue] = useState(value.toString());
+}> = memo(({ value: propValue, onChange, className, step }) => {
+    const [localValue, setLocalValue] = useState(propValue.toString());
 
     // Sync local state if external value changes significantly (e.g. reset or load)
     useEffect(() => {
         // Only update if the parsed local value differs from the prop value
         // This prevents cursor jumping when typing valid numbers
-        if (parseFloat(localValue) !== value) {
-            setLocalValue(value.toString());
+        if (parseFloat(localValue) !== propValue) {
+            setLocalValue(propValue.toString());
         }
-    }, [value]);
+    }, [propValue]);
 
     const handleLocalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
@@ -37,13 +37,13 @@ export const NumericInput: React.FC<{
     const handleBlur = () => {
         // On blur, ensure format is correct
         if (localValue === '' || localValue === '-') {
-            setLocalValue(value.toString());
+            setLocalValue(propValue.toString());
         } else {
             const num = parseFloat(localValue);
             if (!isNaN(num)) {
                  setLocalValue(num.toString());
             } else {
-                 setLocalValue(value.toString());
+                 setLocalValue(propValue.toString());
             }
         }
     };
@@ -55,6 +55,7 @@ export const NumericInput: React.FC<{
             onChange={handleLocalChange}
             onBlur={handleBlur}
             className={className}
+            step={step}
             inputMode="decimal"
         />
     );

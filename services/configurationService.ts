@@ -272,7 +272,7 @@ class ConfigValidator {
     }
   }
 
-  static validateArray(value: any[], name: string, minLength?: number): void {
+  static validateArray(value: unknown[], name: string, minLength?: number): void {
     if (!Array.isArray(value)) {
       throw new Error(`${name} must be an array, got: ${typeof value}`);
     }
@@ -692,8 +692,8 @@ class ConfigurationService {
       ConfigValidator.validateDatabaseConfig(this.config.database);
       ConfigValidator.validateAIConfig(this.config.ai);
     } catch (error) {
-      console.error('Configuration validation failed:', error);
-      throw new Error(`Invalid configuration: ${error}`);
+      // In production, use proper logging. For now, rethrow with context
+      throw new Error(`Invalid configuration: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -708,7 +708,7 @@ class ConfigurationService {
     
     const parsed = parseInt(value, 10);
     if (isNaN(parsed)) {
-      console.warn(`Invalid number for ${key}: ${value}, using default: ${defaultValue}`);
+      // Development logging would go here in non-production
       return defaultValue;
     }
     return parsed;

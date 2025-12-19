@@ -2,7 +2,8 @@
 import { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './services/supabase';
-import { ToastProvider } from './components/Toast';
+import { ToastProvider } from './contexts/ToastContext';
+import { ToastComponent } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
@@ -213,6 +214,7 @@ useEffect(() => {
               </Route>
             </Routes>
           </Suspense>
+          <ToastComponent />
         </BrowserRouter>
       </ToastProvider>
     </ErrorBoundary>

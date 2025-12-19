@@ -7,5 +7,7 @@ export interface Toast {
 }
 
 export interface ToastContextType {
+  toasts: Toast[];
   showToast: (message: string, type?: ToastType) => void;
+  hideToast: (id: string) => void;
 }

@@ -11,9 +11,9 @@ import { createScopedLogger } from '../utils/logger';
 import { VirtualScrollList } from '../components/VirtualScrollList';
 
 // Debounce utility for search optimization
-const debounce = <T extends (...args: any[]) => any>(func: T, delay: number): T => {
+const debounce = <T extends (...args: never[]) => unknown>(func: T, delay: number): T => {
   let timeoutId: NodeJS.Timeout;
-  return ((...args: any[]) => {
+  return ((...args: Parameters<T>) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => func(...args), delay);
   }) as T;
