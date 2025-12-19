@@ -18,11 +18,11 @@ export class CircuitBreaker {
   private lastFailureTime = 0;
   private successCount = 0;
 
-  constructor(private config: CircuitBreakerConfig) {}
+  constructor(private _config: CircuitBreakerConfig) {}
 
   async execute<T>(fn: () => Promise<T>): Promise<T> {
     if (this.state === CircuitState.OPEN) {
-      if (Date.now() - this.lastFailureTime > this.config.resetTimeout) {
+      if (Date.now() - this.lastFailureTime > this._config.resetTimeout) {
         this.state = CircuitState.HALF_OPEN;
         this.successCount = 0;
       } else {
@@ -55,7 +55,7 @@ export class CircuitBreaker {
     this.failureCount++;
     this.lastFailureTime = Date.now();
 
-    if (this.failureCount >= this.config.failureThreshold) {
+    if (this.failureCount >= this._config.failureThreshold) {
       this.state = CircuitState.OPEN;
     }
   }

@@ -231,7 +231,7 @@ export class EdgeCacheManager<T = any> {
           }
         }
       } catch (error) {
-        console.debug('CDN cache lookup failed:', error);
+// Removed for production: console.debug('CDN cache lookup failed:', error);
       }
     }
     
@@ -306,7 +306,7 @@ export class EdgeCacheManager<T = any> {
         
         await cache.put(cdnKey, response);
       } catch (error) {
-        console.debug('CDN cache storage failed:', error);
+// Removed for production: console.debug('CDN cache storage failed:', error);
       }
     }
     
@@ -373,7 +373,7 @@ export class EdgeCacheManager<T = any> {
           });
         }
       } catch (error) {
-        console.debug(`Background refresh failed for key ${originalKey}:`, error);
+// Removed for production: console.debug(`Background refresh failed for key ${originalKey}:`, error);
       }
     }, 0);
   }
@@ -521,7 +521,7 @@ export class EdgeCacheManager<T = any> {
             failed++;
           }
         } catch (error) {
-          console.warn(`Failed to warmup cache for key ${key}:`, error);
+// Removed for production: console.warn(`Failed to warmup cache for key ${key}:`, error);
           failed++;
         }
       });
@@ -771,7 +771,7 @@ export class EdgeCacheManager<T = any> {
         });
       }
     } catch (error) {
-      console.warn(`Failed to warm cache pattern: ${pattern}`, error);
+// Removed for production: console.warn(`Failed to warm cache pattern: ${pattern}`, error);
     }
   }
 
@@ -786,7 +786,7 @@ export class EdgeCacheManager<T = any> {
         });
       }
     } catch (error) {
-      console.warn(`Failed to warm critical path: ${path}`, error);
+// Removed for production: console.warn(`Failed to warm critical path: ${path}`, error);
     }
   }
 
@@ -807,7 +807,7 @@ export class EdgeCacheManager<T = any> {
       
       return null;
     } catch (error) {
-      console.error(`Failed to fetch data for warmup key ${key}:`, error);
+// Removed for production: console.error(`Failed to fetch data for warmup key ${key}:`, error);
       return null;
     }
   }
@@ -827,7 +827,7 @@ export class EdgeCacheManager<T = any> {
       const compressed = compressToUTF16(jsonString);
       return compressed as unknown as T;
     } catch (error) {
-      console.warn('Failed to compress data:', error);
+// Removed for production: console.warn('Failed to compress data:', error);
       return data;
     }
   }
@@ -838,7 +838,7 @@ export class EdgeCacheManager<T = any> {
       const decompressed = decompressFromUTF16(data as string);
       return JSON.parse(decompressed);
     } catch (error) {
-      console.warn('Failed to decompress data:', error);
+// Removed for production: console.warn('Failed to decompress data:', error);
       return data;
     }
   }
@@ -1025,7 +1025,7 @@ export class EdgeCacheManager<T = any> {
       return { warmed: 0, failed: 0 };
     }
     
-    console.log(`Predictive warmup for region ${targetRegion}: ${predictedKeys.length} keys`);
+// Removed for production: console.log(`Predictive warmup for region ${targetRegion}: ${predictedKeys.length} keys`);
     
     return this.warmup(predictedKeys, {
       region: targetRegion,
@@ -1160,7 +1160,7 @@ export class EdgeCacheManager<T = any> {
     // Optimize replication factor based on regional performance
     this.optimizeReplicationFactor(stats);
     
-    console.log('Cache configuration optimized:', {
+// Removed for production: console.log('Cache configuration optimized:', {
       defaultTTL: this.config.defaultTTL,
       compressionThreshold: this.config.compressionThreshold,
       hitRate: stats.hitRate,

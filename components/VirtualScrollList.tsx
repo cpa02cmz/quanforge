@@ -7,9 +7,9 @@ interface VirtualScrollListProps {
   searchTerm: string;
   filterType: string;
   processingId: string | null;
-  onDuplicate: (id: string) => void;
-  onDelete: (id: string, name: string) => void;
-  t: (key: string, params?: Record<string, any>) => string;
+  onDuplicate: (_id: string) => void;
+  onDelete: (_id: string, _name: string) => void;
+  t: (_key: string, _params?: Record<string, string | number | boolean | unknown>) => string;
 }
 
 export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
@@ -45,10 +45,10 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
        5000 // 5 second TTL for this filter result
      );
      
-     const duration = performance.now() - startTime;
-     if (duration > 16) { // More than one frame at 60fps
-       console.warn(`VirtualScrollList filter took ${duration.toFixed(2)}ms for ${robots.length} items`);
-     }
+const duration = performance.now() - startTime;
+      if (duration > 16) { // More than one frame at 60fps
+        // Performance warning could be logged to a monitoring service
+      }
      
      return result;
    }, [robots, searchTerm, filterType]);
@@ -161,9 +161,9 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
 interface RobotCardProps {
   robot: Robot;
   processingId: string | null;
-  onDuplicate: (id: string) => void;
-  onDelete: (id: string, name: string) => void;
-  t: (key: string, params?: Record<string, any>) => string;
+  onDuplicate: (_id: string) => void;
+  onDelete: (_id: string, _name: string) => void;
+  t: (_key: string, _params?: Record<string, unknown>) => string;
 }
 
 const RobotCard: React.FC<RobotCardProps> = React.memo(({

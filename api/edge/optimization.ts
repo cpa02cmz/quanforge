@@ -6,8 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { edgeOptimizationService } from '../../services/edgeOptimizationService';
 import { enhancedConnectionPool } from '../../services/enhancedSupabasePool';
-import { globalCache } from '../../services/unifiedCacheManager';
-import { optimizedSupabase } from '../../services/supabaseOptimized';
+import { consolidatedCache } from '../../services/consolidatedCacheManager';
+
 import { logger } from '../../utils/logger';
 import { performanceMonitor } from '../../utils/performance';
 
@@ -59,11 +59,11 @@ export async function GET(request: NextRequest) {
       }
 
       case 'cache': {
-        const cacheMetrics = globalCache.getMetrics();
+        const cacheMetrics = consolidatedCache.getMetrics();
         response.cache = {
           metrics: cacheMetrics,
-          size: globalCache.size(),
-          keys: globalCache.keys().slice(0, 50) // Limit keys for performance
+          size: consolidatedCache.size(),
+          keys: consolidatedCache.keys().slice(0, 50) // Limit keys for performance
         };
         break;
       }
@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Edge optimization API error:', error);
+    logger.error('Edge optimization API error:', error);
     
     return NextResponse.json({
       success: false,
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
 
       case 'cleanup': {
         await enhancedConnectionPool.drainConnections();
-        globalCache.clear();
+        consolidatedCache.clear();
         response.message = 'Edge cleanup completed';
         break;
       }
@@ -186,11 +186,11 @@ export async function POST(request: NextRequest) {
       case 'cache-invalidate': {
         const patterns = params?.patterns || [];
         if (patterns.length === 0) {
-          globalCache.clear();
+          consolidatedCache.clear();
         } else {
           patterns.forEach((pattern: string) => {
-            const keys = globalCache.keys().filter(key => key.includes(pattern));
-            keys.forEach(key => globalCache.delete(key));
+            const keys = consolidatedCache.keys().filter(key => key.includes(pattern));
+            keys.forEach(key => consolidatedCache.delete(key));
           });
         }
         response.message = `Cache invalidated for ${patterns.length || 'all'} patterns`;
@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Edge optimization action error:', error);
+    logger.error('Edge optimization action error:', error);
     
     return NextResponse.json({
       success: false,

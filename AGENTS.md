@@ -1,157 +1,156 @@
-# AGENTS.md
+# Development Agent Guidelines
 
-## Autonomous AI Agents Documentation
+## Agent Insights & Decisions
 
-### Overview
-This document outlines the autonomous AI agents used within QuantForge AI for various optimization and operational tasks.
+### Build System Compatibility (2025-12-18)
+**Issue**: Node.js crypto module incompatibility with browser builds  
+**Root Cause**: `utils/enhancedRateLimit.ts` imported server-side `crypto` using `createHash`  
+**Solution Applied**: Browser-compatible simple hash algorithm  
+**Key Insight**: Always verify cross-platform compatibility when importing Node.js modules in frontend code
 
-### Active Agents
+### Vercel Deployment Schema Issues (2025-12-18)
+**Issue**: Multiple `vercel.json` schema validation errors blocking deployments  
+**Root Causes**: 
+- Conflicting `builds` and `functions` properties
+- Invalid `experimental` and `environment` properties  
+- Legacy configuration patterns
+**Solution Applied**: Cleaned up vercel.json with schema-compliant settings
+**Key Insight**: Deployment platform schemas evolve - remove deprecated properties proactively
 
-#### 1. Code Analysis Agent
-- **Type**: `explore`
-- **Purpose**: Deep codebase exploration and architectural analysis
-- **Capabilities**: 
-  - Pattern recognition
-  - Security vulnerability detection
-  - Performance bottleneck identification
-  - Code quality assessment
-- **Usage**: Comprehensive codebase evaluations and refactoring recommendations
+### PR Management & Red Flag Resolution (2025-12-18)
+**Issue**: PR #139 had red flags with failing deployments on both Vercel and Cloudflare Workers
+**Root Causes**: Build compatibility and deployment configuration conflicts
+**Solution Applied**: Systematic troubleshooting of build, schema, and deployment pipeline
+**Key Insight**: Address root causes systematically rather than symptom patches
 
-#### 2. SEO Optimization Agent  
-- **Type**: `general`
-- **Purpose**: Search engine optimization and content enhancement
-- **Capabilities**:
-  - Meta tag optimization
-  - Content structure analysis
-  - Sitemap generation
-  - Performance optimization for search crawlers
-- **Usage**: SEO improvements and content strategy
+### Recommended Development Patterns
 
-#### 3. Performance Monitoring Agent
-- **Type**: `general` 
-- **Purpose**: Real-time performance monitoring and optimization
-- **Capabilities**:
-  - Web Vitals tracking
-  - Bundle size analysis
-  - Memory usage monitoring
-  - Optimization recommendations
-- **Usage**: Performance optimization and monitoring
+#### Browser Compatibility Checklist
+- [ ] Verify all imports work in browser environment
+- [ ] Avoid Node.js-specific modules (`crypto`, `fs`, `path`, etc.)
+- [ ] Use Web APIs or browser-compatible alternatives
+- [ ] Test build process after adding new dependencies
 
-### Agent Configuration
+#### Error Handling Strategy
+- **Current**: Build-blocking errors must be resolved immediately
+- **Priority**: Critical > High > Medium > Low
+- **Critical Impact**: Build failures, security vulnerabilities, data loss
+- **Approach**: Fix first, optimize later
 
-#### Security Considerations
-- All agents operate with sandboxed permissions
-- No external network access unless explicitly required
-- Code changes require human approval
-- Sensitive data is automatically redacted
+#### Module Design Principles
+1. **Cross-Platform First**: Always target browser environment
+2. **Graceful Degradation**: Provide fallbacks when possible
+3. **Type Safety**: Strong TypeScript typing preferred
+4. **Single Responsibility**: Each utility should have one clear purpose
 
-#### Integration Points
-- **CI/CD Pipeline**: Automated testing and quality gates
-- **Development Workflow**: Real-time code analysis and suggestions
-- **Monitoring Dashboard**: Performance and security alerts
+## Agent Guidelines for Future Work
 
-### Future Agent Roadmap
+### When Addressing Bugs
+1. **Verify Build Impact**: Always run `npm run build` to check for breaking changes
+2. **Type Check**: Use `npm run typecheck` to catch TypeScript issues
+3. **Lint Quality**: Address critical lint issues but prioritize function over form
+4. **Document**: Record root cause, solution, and prevention strategies
 
-#### Planned Agents
-1. **Security Scanning Agent**: Automated vulnerability detection and patching
-2. **Database Optimization Agent**: Query optimization and indexing strategies  
-3. **User Behavior Analysis Agent**: UX optimization and personalization
-4. **Market Data Analysis Agent**: Trading strategy optimization and backtesting
+### When Managing PRs with Red Flags
+1. **Conflict Resolution**: Merge main branch into PR branch to resolve merge conflicts
+2. **Schema Validation**: Verify vercel.json complies with current Vercel schema requirements
+3. **Build Testing**: Ensure local build passes before pushing changes
+4. **Incremental Pushes**: Push small changes and allow deployment systems to complete
+5. **Monitor Status**: Use `gh pr checks` to track deployment status and identify specific failures
 
-#### Agent Enhancement Priorities
-- Improved pattern recognition capabilities
-- Enhanced context awareness
-- Better integration with development tools
-- Advanced anomaly detection
+### When Optimizing Features
+1. **Measure First**: Use bundle analysis before and after changes
+2. **User Impact**: Prioritize visible improvements over internal optimizations
+3. **Backwards Compatibility**: Maintain existing APIs where possible
+4. **Testing**: Verify optimization doesn't break existing functionality
 
-### Agent Performance Metrics
+### When Improving Code Quality
+1. **Incremental**: Fix issues in logical groups rather than random scatter
+2. **Context-Aware**: Understand file purpose before changing patterns
+3. **Consistent**: Follow existing conventions unless clearly problematic
+4. **Document Changes**: Update relevant documentation files
 
-#### Success Criteria
-- **Accuracy**: >95% in pattern recognition
-- **Performance**: <2s response time for analysis
-- **Coverage**: 100% codebase analysis capability
-- **Reliability**: >99% uptime and availability
+## Future Agent Tasks
 
-#### Monitoring
-- Real-time performance tracking
-- Error rate monitoring
-- User feedback integration
-- Continuous improvement loops
+### Immediate (Next Sprint)
+- Address high-impact ESLint warnings
+- Implement bundle splitting for performance
+- Add unit tests for critical utilities
 
-### Technical Implementation
+### Short Term (Next Month)
+- Upgrade to Web Crypto API for security
+- Comprehensive lint cleanup
+- Performance optimization pass
 
-#### Agent Architecture
-```typescript
-interface AgentConfig {
-  type: 'explore' | 'general' | 'specialized';
-  capabilities: string[];
-  permissions: Permission[];
-  timeout: number;
-  retryPolicy: RetryPolicy;
-}
-```
+### Long Term
+- Enhanced error boundary coverage
+- Component refactoring for maintainability
+- Advanced testing strategy implementation
 
-#### Security Framework
-- Role-based access control
-- Audit logging for all agent actions
-- Automated security scanning
-- Encrypted communication channels
+## Development Workflow Recommendations
 
-### Usage Guidelines
+1. **Start with Build Check**: Always verify build works before major changes
+2. **Test Incrementally**: Run type checking and linting during development  
+3. **Document Decisions**: Record why changes were made, not just what was changed
+4. **Think Cross-Platform**: Consider browser, server, and edge environments
+5. **Security Mindset**: Validate inputs, avoid exposing secrets, use secure defaults
 
-#### Best Practices
-- Always review agent recommendations before implementation
-- Use agents for augmentation, not replacement of human judgment
-- Regularly update agent models and capabilities
-- Monitor agent performance and accuracy
+## Known Issues & Solutions
 
-#### Limitations
-- Agents cannot access external resources without permission
-- No autonomous code deployment capabilities
-- Limited to predefined scopes and contexts
-- Requires human oversight for critical decisions
+### Build Compatibility
+- **Issue**: Node.js modules in frontend code
+- **Solution**: Use browser-compatible alternatives or Web APIs
+- **Detection**: Build failures with module resolution errors
 
-## Agent Decision Log
+### Deployment Configuration
+- **Issue**: Platform schema validation failures
+- **Solution**: Review platform documentation and remove deprecated properties
+- **Detection**: Deployment logs show validation errors
 
-### 2024-12-18 - Comprehensive Codebase Analysis
-- **Agent**: exploratory_codebase_analyst_v1
-- **Task**: Deep analysis of QuantForge AI codebase
-- **Findings**: Overall score 8.5/10, excellent security and performance
-- **Recommendations**: Enhance error recovery, improve modularity, expand testing
-- **Status**: Completed
-- **Impact**: High - Identified critical improvement areas
+### Code Quality
+- **Issue**: 200+ ESLint warnings (console.log, unused vars, any types)
+- **Solution**: Incremental cleanup with focus on critical issues
+- **Detection**: `npm run lint` shows extensive warnings
 
-### 2024-12-18 - PR Management and Deployment Fix
-- **Agent**: deployment_optimization_agent_v1
-- **Task**: Fix critical deployment failures in PR #138 (Vercel and Workers build failures)
-- **Findings**: 
-  - Vercel schema validation errors due to unsupported `regions` properties in function configurations
-  - Build-time duplicate method warnings from `checkRateLimit` method conflicts
-  - Local build environment setup issues resolved with dependency installation
-- **Actions Taken**:
-  - Removed `regions` properties from `api/**/*.ts` and `api/edge/**/*.ts` function configs in vercel.json
-  - Renamed duplicate `checkRateLimit` method to `checkRateLimitSync` in unifiedSecurityManager.ts
-  - Verified successful local build generation with `npm run build`
-  - Updated documentation (bug.md, roadmap.md, task.md) with fix details
-- **Recommendations**: 
-  - Implement pre-commit hooks for Vercel schema validation
-  - Consider automated deployment verification scripts
-  - Establish deployment testing patterns for future PR workflows
-- **Status**: Completed
-- **Impact**: High - Resolved blocking deployment issues, restored CI/CD pipeline functionality
+## Success Metrics
 
-### 2024-12-18 - System Flow Optimization Implementation
-- **Agent**: system_optimization_engine_v1
-- **Task**: Implement advanced error recovery and service flow optimizations
-- **Findings**: Successfully integrated circuit breaker pattern, enhanced error recovery, consolidated security services
-- **Recommendations**: Continue with dependency injection pattern, add monitoring dashboard
-- **Status**: Completed
-- **Impact**: High - Improved system resilience, fixed critical BUG-001 and BUG-002
+- ✅ Build passes without errors
+- ✅ Type checking passes
+- ✅ Deployment pipelines functional
+- ✅ Cross-platform compatibility maintained
+- ✅ No regressions introduced
+- ✅ Documentation updated
 
-### Future Insights
-- Agent performance should be tracked for continuous improvement
-- Consider implementing specialized agents for different domains
-- Regular agent model updates recommended
-- Integration with CI/CD pipeline planned
-- System flow optimization agents should focus on dependency injection for next iteration
-- PR management agents should automate deployment verification and schema validation
+## Comprehensive Codebase Analysis Insights (2025-12-19)
+
+### Quality Assessment Metrics
+- **Overall Codebase Health**: 73/100 (Good)
+- **Strongest Domains**: Security (81), Flexibility (79)  
+- **Improvement Areas**: Performance (68), Scalability (65)
+
+### Key architectural patterns discovered:
+1. **Sophisticated Security**: Multi-layer validation with WAF patterns and XSS prevention
+2. **Advanced Caching**: LRU caches with request deduplication for AI services
+3. **Flexible Abstractions**: Multiple AI provider support with adapter pattern
+4. **Complex Build System**: Over-optimized Vite config with excessive chunking
+
+### Decision patterns for future work:
+1. **Security First**: Always validate inputs both client and server-side
+2. **Performance Awareness**: Monitor bundle sizes and memory usage in real-time
+3. **Modular Design**: Break large files before they exceed 1000 lines
+4. **Type Safety**: Prioritize specific types over `any` for maintainability
+
+### Risk management insights:
+1. **Environment Variables**: Move sensitive keys (encryption, API keys) outside source code
+2. **Error Boundaries**: Add for AI service failures and network issues  
+3. **Service Dependencies**: Watch for circular imports between services
+4. **Build Verification**: Always test cross-platform compatibility
+
+## Agent Contact & Handoff
+
+When handing off between agents:
+1. Always run final build test
+2. Update relevant documentation
+3. Note any temporary workarounds
+4. Flag any critical issues for follow-up
+5. Summarize decisions made and rationale

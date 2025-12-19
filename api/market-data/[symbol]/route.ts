@@ -7,6 +7,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { advancedCache } from '../../../services/advancedCache';
 import { performanceMonitorEnhanced } from '../../../services/performanceMonitorEnhanced';
 import { securityManager } from '../../../services/securityManager';
+import { createScopedLogger } from '../../../utils/logger';
+
+const logger = createScopedLogger('MarketDataSymbol');
 
 export const config = {
   runtime: 'edge',
@@ -200,7 +203,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('symbol_api_error', duration);
     
-    console.error('Symbol API GET error:', error);
+    logger.error('Symbol API GET error:', error);
     
     return NextResponse.json(
       {
@@ -300,7 +303,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('symbol_api_subscribe_error', duration);
     
-    console.error('Symbol API POST error:', error);
+    logger.error('Symbol API POST error:', error);
     
     return NextResponse.json(
       {

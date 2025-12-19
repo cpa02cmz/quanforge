@@ -2,8 +2,8 @@
 import React, { Suspense, useState, useRef, useEffect, memo, useCallback, useMemo } from 'react';
 import DOMPurify from 'dompurify';
 import { Message, MessageRole } from '../types';
-import { loadSuggestedStrategies } from '../constants';
 import { useTranslation } from '../services/i18n';
+import { loadSuggestedStrategies } from '../constants';
 import { createScopedLogger } from '../utils/logger';
 
 const logger = createScopedLogger('ChatInterface');
@@ -27,7 +27,7 @@ interface ChatInterfaceProps {
 }
 
 // Extract and memoize Message component to prevent re-renders of the whole list on input change
-const MemoizedMessage = memo(({ msg, formatMessageContent }: { msg: Message, formatMessageContent: (c: string) => any }) => {
+const MemoizedMessage = memo(({ msg, formatMessageContent }: { msg: Message, formatMessageContent: (_content: string) => React.ReactNode }) => {
     return (
         <div className={`flex ${msg.role === MessageRole.USER ? 'justify-end' : 'justify-start'}`}>
             <div
@@ -89,7 +89,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
         
         try {
           if (typeof window !== 'undefined' && 'memory' in performance) {
-            const memoryUsage = (performance as any).memory;
+            const memoryUsage = (performance as Performance & { memory?: { usedJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
             if (memoryUsage) {
               const usedMB = Math.round(memoryUsage.usedJSHeapSize / 1024 / 1024);
               const limitMB = Math.round(memoryUsage.jsHeapSizeLimit / 1024 / 1024);
@@ -253,12 +253,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   }, [listRegex, parseInlineStyles]);
 
   // Get strategies based on current language
-  const [suggestedStrategies, setSuggestedStrategies] = useState<any[]>([]);
+  const [suggestedStrategies, setSuggestedStrategies] = useState<Array<{ label: string; prompt: string }>>([]);
 
   useEffect(() => {
-    loadSuggestedStrategies(language).then(strategies => {
+    loadSuggestedStrategies(language).then((strategies: any) => {
       setSuggestedStrategies(strategies[language] || strategies.en || []);
-    }).catch(err => {
+    }).catch((err: any) => {
       logger.error('Failed to load suggested strategies:', err);
       setSuggestedStrategies([]);
     });

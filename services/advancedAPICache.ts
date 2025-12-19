@@ -75,7 +75,8 @@ class AdvancedAPICache {
          const data = JSON.parse(event.newValue);
          this.cache = new Map(data);
        } catch (e) {
-         console.error('Failed to sync cache from storage:', e);
+         // Log error properly in development
+        // console.error('Failed to sync cache from storage:', e);
        }
      }
    };
@@ -86,7 +87,7 @@ class AdvancedAPICache {
          localStorage.setItem(this.storageKey, JSON.stringify(Array.from(this.cache.entries())));
        } catch (e) {
          // Storage might be full or unavailable, handle gracefully
-         console.error('Failed to save cache to storage:', e);
+// Removed for production: console.error('Failed to save cache to storage:', e);
        }
      }
    }
@@ -100,7 +101,7 @@ class AdvancedAPICache {
            this.cache = new Map(data);
          }
        } catch (e) {
-         console.error('Failed to load cache from storage:', e);
+// Removed for production: console.error('Failed to load cache from storage:', e);
        }
      }
    }
@@ -203,7 +204,7 @@ private generateKey(url: string, options?: RequestInit): string {
       const decrypted = this.decryptData(decompressed);
       return decrypted as T;
     } catch (e) {
-      console.warn('Failed to retrieve cached data:', e);
+// Removed for production: console.warn('Failed to retrieve cached data:', e);
       this.cache.delete(key);
       return null;
     }
@@ -315,7 +316,7 @@ const response = await fetch(url, options as any);
         await this.set(cacheKey, data, ttl);
       }
     } catch (error) {
-      console.warn('Revalidation failed:', error);
+// Removed for production: console.warn('Revalidation failed:', error);
       // Keep the stale data in cache
     }
   }

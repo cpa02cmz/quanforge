@@ -70,24 +70,6 @@ graph TD
 
 ## 5. Security & Safety
 
-*   **API Keys**: Accessed via `process.env` with client-side encryption.
+*   **API Keys**: Accessed via `process.env`.
 *   **Input Sanitization**: Filenames are sanitized before download.
 *   **Prompt Engineering**: System prompts prevents the AI from generating harmful or non-MQL5 content.
-*   **Advanced Security**: Comprehensive WAF patterns, XSS prevention, and threat detection in `services/enhancedSecurityManager.ts`.
-*   **Rate Limiting**: Adaptive rate limiting with IP reputation scoring.
-*   **Encryption**: Client-side API key encryption in `utils/encryption.ts`.
-
-## 6. Performance & Scalability
-
-*   **Multi-layered Caching**: Comprehensive caching system with compression and LRU eviction.
-*   **Edge Architecture**: Multi-region edge deployment with intelligent routing.
-*   **Performance Monitoring**: Real-time Web Vitals tracking and optimization suggestions.
-*   **Connection Pooling**: Advanced database connection management with retry mechanisms.
-*   **Lazy Loading**: Component and service lazy loading for optimal initial load times.
-
-## 7. Code Quality & Architecture
-
-*   **Error Handling**: Centralized error management with circuit breaker patterns.
-*   **Type Safety**: Comprehensive TypeScript implementation with strict mode.
-*   **Modular Design**: Clear separation of concerns between services, components, and utilities.
-*   **Testing Framework**: Vitest with coverage reporting and performance testing.

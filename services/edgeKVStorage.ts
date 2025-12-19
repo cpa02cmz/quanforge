@@ -56,7 +56,7 @@ class EdgeKVClient {
       try {
         return JSON.stringify({ compressed: true, data: this.gzipCompress(data) });
       } catch (e) {
-        console.warn('Compression failed, storing uncompressed:', e);
+// Removed for production: console.warn('Compression failed, storing uncompressed:', e);
         return data;
       }
     }
@@ -127,7 +127,7 @@ class EdgeKVClient {
       return null;
     } catch (error) {
       this.metrics.errors++;
-      console.error(`EdgeKV get error for key ${fullKey}:`, error);
+// Removed for production: console.error(`EdgeKV get error for key ${fullKey}:`, error);
       return null;
     }
   }
@@ -153,7 +153,7 @@ class EdgeKVClient {
       return true;
     } catch (error) {
       this.metrics.errors++;
-      console.error(`EdgeKV set error for key ${fullKey}:`, error);
+// Removed for production: console.error(`EdgeKV set error for key ${fullKey}:`, error);
       return false;
     }
   }
@@ -169,7 +169,7 @@ class EdgeKVClient {
       return true;
     } catch (error) {
       this.metrics.errors++;
-      console.error(`EdgeKV delete error for key ${fullKey}:`, error);
+// Removed for production: console.error(`EdgeKV delete error for key ${fullKey}:`, error);
       return false;
     }
   }
@@ -195,7 +195,7 @@ class EdgeKVClient {
       return true;
     } catch (error) {
       this.metrics.errors++;
-      console.error(`EdgeKV clear namespace error for ${namespace}:`, error);
+// Removed for production: console.error(`EdgeKV clear namespace error for ${namespace}:`, error);
       return false;
     }
   }
@@ -215,7 +215,7 @@ class EdgeKVClient {
             const decompressed = this.decompress(value);
             results[key] = JSON.parse(decompressed);
           } catch (e) {
-            console.warn(`Failed to parse cached value for key ${key}:`, e);
+// Removed for production: console.warn(`Failed to parse cached value for key ${key}:`, e);
           }
         }
       });
@@ -223,7 +223,7 @@ class EdgeKVClient {
       return results;
     } catch (error) {
       this.metrics.errors++;
-      console.error(`EdgeKV mget error:`, error);
+// Removed for production: console.error(`EdgeKV mget error:`, error);
       return {};
     }
   }
@@ -254,7 +254,7 @@ class EdgeKVClient {
       return true;
     } catch (error) {
       this.metrics.errors++;
-      console.error(`EdgeKV mset error:`, error);
+// Removed for production: console.error(`EdgeKV mset error:`, error);
       return false;
     }
   }
@@ -268,7 +268,7 @@ class EdgeKVClient {
       return result;
     } catch (error) {
       this.metrics.errors++;
-      console.error(`EdgeKV increment error for key ${fullKey}:`, error);
+// Removed for production: console.error(`EdgeKV increment error for key ${fullKey}:`, error);
       return null;
     }
   }

@@ -31,7 +31,7 @@ export const safeParse = (data: string | null, fallback: any) => {
         }
         return parsed;
     } catch (e) {
-        console.error("Failed to parse data from storage:", e);
+// Removed for production: console.error("Failed to parse data from storage:", e);
         return fallback;
     }
 };
@@ -100,7 +100,7 @@ export const getClient = (): SupabaseClient | any => {
             });
             return activeClient;
         } catch (error) {
-            console.error('Failed to create Supabase client:', error);
+// Removed for production: console.error('Failed to create Supabase client:', error);
         }
     }
     

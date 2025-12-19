@@ -132,7 +132,6 @@
       "maxDuration": 15
     }
   },
-  ,
   "crons": [],
   
   "rewrites": [
@@ -144,5 +143,5 @@
       "source": "/cdn/(.*)",
       "destination": "https://assets.quanforge.ai/$1"
     }
-]
+  ]
 }

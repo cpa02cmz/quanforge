@@ -2,7 +2,7 @@ export interface ErrorContext {
   operation: string;
   component?: string;
   userId?: string;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }
 
 export interface ErrorInfo {
@@ -147,7 +147,7 @@ export class ErrorHandler {
 }
 
 // Convenience function for global error handling
-export const handleError = (error: Error | string, operation: string, component?: string, additionalData?: Record<string, any>) => {
+export const handleError = (error: Error | string, operation: string, component?: string, additionalData?: Record<string, unknown>) => {
   const errorHandler = ErrorHandler.getInstance();
   errorHandler.handleError(error, { 
     operation, 
@@ -157,7 +157,7 @@ export const handleError = (error: Error | string, operation: string, component?
 };
 
 // Higher-order function for wrapping async functions with retry logic
-export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
+export const withErrorHandling = <T extends (...args: unknown[]) => Promise<unknown>>(
   fn: T,
   operation: string,
   component?: string,
@@ -166,7 +166,7 @@ export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
     fallback?: () => Promise<ReturnType<T>> | ReturnType<T>;
     backoff?: 'linear' | 'exponential';
     backoffBase?: number;
-    shouldRetry?: (error: any) => boolean;
+    shouldRetry?: (error: unknown) => boolean;
   } = {}
 ): T => {
   const { 

@@ -107,7 +107,7 @@ class RealUserMonitoring {
 
     // Check if this session should be sampled
     if (Math.random() > this.config.sampleRate) {
-      console.debug('RUM: Session not sampled');
+// Removed for production: console.debug('RUM: Session not sampled');
       return;
     }
 
@@ -128,9 +128,9 @@ class RealUserMonitoring {
       this.startFlushTimer();
 
       this.isInitialized = true;
-      console.debug('RUM: Initialized successfully');
+// Removed for production: console.debug('RUM: Initialized successfully');
     } catch (error) {
-      console.error('RUM: Initialization failed:', error);
+// Removed for production: console.error('RUM: Initialization failed:', error);
     }
   }
 
@@ -270,7 +270,7 @@ class RealUserMonitoring {
       observer.observe({ type, buffered: true });
       this.observers.push(observer);
     } catch (error) {
-      console.warn(`RUM: Failed to observe ${type}:`, error);
+// Removed for production: console.warn(`RUM: Failed to observe ${type}:`, error);
     }
   }
 
@@ -410,9 +410,9 @@ class RealUserMonitoring {
           });
         }
         
-        console.debug(`RUM: Flushed ${metricsToSend.length} metrics`);
+// Removed for production: console.debug(`RUM: Flushed ${metricsToSend.length} metrics`);
       } catch (error) {
-        console.error('RUM: Failed to flush metrics:', error);
+// Removed for production: console.error('RUM: Failed to flush metrics:', error);
         // Re-add metrics to queue on failure
         this.metrics.unshift(...metricsToSend);
       }
@@ -517,7 +517,7 @@ class RealUserMonitoring {
    */
   configure(config: Partial<RUMConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('RUM configuration updated:', this.config);
+// Removed for production: console.log('RUM configuration updated:', this.config);
   }
 
   /**

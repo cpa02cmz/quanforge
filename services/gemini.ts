@@ -26,12 +26,41 @@ import { handleError } from "../utils/errorHandler";
 import { apiDeduplicator } from "./apiDeduplicator";
 import { createScopedLogger } from "../utils/logger";
 import { aiWorkerManager } from "./aiWorkerManager";
-import { CircuitBreaker, DEFAULT_CIRCUIT_BREAKERS, CircuitState } from "./circuitBreaker";
+=======
+import { getAIRateLimiter } from "../utils/enhancedRateLimit";
 
 const logger = createScopedLogger('gemini');
 
-// Initialize AI circuit breaker for enhanced resilience
-const aiCircuitBreaker = DEFAULT_CIRCUIT_BREAKERS.ai;
+// Helper function to get current user ID for rate limiting
+const getCurrentUserId = (): string | null => {
+  try {
+    // Try to get user from Supabase session first
+    const sessionData = localStorage.getItem('supabase.auth.token');
+    if (sessionData) {
+      const session = JSON.parse(sessionData);
+      return session?.user?.id || null;
+    }
+    
+    // Fallback to mock session
+    const mockSession = localStorage.getItem('mock_session');
+    if (mockSession) {
+      const session = JSON.parse(mockSession);
+      return session?.user?.id || null;
+    }
+    
+    // Generate anonymous session ID if none exists
+    let anonymousId = sessionStorage.getItem('anonymous_session_id');
+    if (!anonymousId) {
+      anonymousId = `anon_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      sessionStorage.setItem('anonymous_session_id', anonymousId);
+    }
+    return anonymousId;
+  } catch (error) {
+    logger.warn('Failed to get user ID for rate limiting:', error);
+    return null;
+  }
+};
+>>>>>>> develop
 
 // Enhanced cache with TTL and size management
 interface CacheEntry<T> {
@@ -40,12 +69,35 @@ interface CacheEntry<T> {
   ttl: number;
 }
 
+import { memoryMonitor } from '../utils/memoryManagement';
+
 class EnhancedCache<T> {
   private cache = new Map<string, CacheEntry<T>>();
   private readonly maxSize: number;
+  private hits = 0;
+  private misses = 0;
+  private cacheName: string;
   
-  constructor(maxSize: number = 100) {
+  constructor(maxSize: number = 100, cacheName: string = 'enhanced-cache') {
     this.maxSize = maxSize;
+    this.cacheName = cacheName;
+    
+    // Register with memory monitor
+    memoryMonitor.registerCache(cacheName, {
+      size: () => this.cache.size,
+      maxSize: this.maxSize,
+      hits: this.hits,
+      misses: this.misses,
+      clear: () => this.clear(),
+      cleanup: () => this.cleanup()
+    });
+    
+    // Listen for memory cleanup events
+    window.addEventListener('memory-cleanup', (event: any) => {
+      if (!event.detail.cacheName || event.detail.cacheName === this.cacheName) {
+        this.cleanup(event.detail.level);
+      }
+    });
   }
   
   get(key: string): T | null {
@@ -85,6 +137,63 @@ class EnhancedCache<T> {
   
   keys(): string[] {
     return Array.from(this.cache.keys());
+  }
+  
+  cleanup(level: 'light' | 'aggressive' | 'emergency' = 'light'): number {
+    let cleanedCount = 0;
+    const now = Date.now();
+    
+    switch (level) {
+      case 'emergency':
+        // Clear everything
+        cleanedCount = this.cache.size;
+        this.cache.clear();
+        this.hits = 0;
+        this.misses = 0;
+        break;
+        
+      case 'aggressive':
+        // Clear expired and least recently used entries
+        const keysToDelete = Array.from(this.cache.keys());
+        for (const key of keysToDelete) {
+          const entry = this.cache.get(key);
+          if (entry && now - entry.timestamp > entry.ttl) {
+            this.cache.delete(key);
+            cleanedCount++;
+          }
+        }
+        // If still too large, remove oldest entries
+        while (this.cache.size > this.maxSize * 0.5) {
+          const firstKey = this.cache.keys().next().value;
+          if (firstKey) {
+            this.cache.delete(firstKey);
+            cleanedCount++;
+          } else {
+            break;
+          }
+        }
+        break;
+        
+      case 'light':
+      default:
+        // Only clear expired entries
+        for (const [key, entry] of this.cache.entries()) {
+          if (now - entry.timestamp > entry.ttl) {
+            this.cache.delete(key);
+            cleanedCount++;
+          }
+        }
+        break;
+    }
+    
+    // Update memory monitor metrics
+    memoryMonitor.updateCacheMetrics(this.cacheName, {
+      size: this.cache.size,
+      hitRate: this.hits + this.misses > 0 ? this.hits / (this.hits + this.misses) : 0,
+      lastCleanup: now
+    });
+    
+    return cleanedCount;
   }
 }
 
@@ -156,14 +265,18 @@ const sanitizePrompt = (prompt: string): string => {
     throw new Error('Prompt too short: minimum 10 characters required');
   }
   
-  // Rate limiting check (simple implementation)
-  const now = Date.now();
-  const promptKey = `prompt_${Math.floor(now / 60000)}`; // Per minute bucket
-  const currentCount = parseInt(localStorage.getItem(promptKey) || '0');
-  if (currentCount >= 30) { // Max 30 prompts per minute
-    throw new Error('Rate limit exceeded: please wait before sending another prompt');
+  // Enhanced rate limiting check
+  const userId = getCurrentUserId() || 'anonymous';
+  const rateLimiter = getAIRateLimiter();
+  const rateLimitResult = rateLimiter.checkLimit(userId);
+  
+  if (!rateLimitResult.allowed) {
+    const waitTime = Math.ceil(rateLimitResult.retryAfter! / 60);
+    throw new Error(
+      `Rate limit exceeded: Please wait ${waitTime} minute${waitTime > 1 ? 's' : ''} before sending another request. ` +
+      `Limit: ${10} requests per minute. Reset in ${rateLimitResult.retryAfter} seconds.`
+    );
   }
-  localStorage.setItem(promptKey, (currentCount + 1).toString());
   
   return sanitized;
 };
@@ -237,24 +350,50 @@ class LRUCache<T> {
   private cache = new Map<string, { result: T, timestamp: number }>();
   private readonly ttl: number;
   private readonly maxSize: number;
+  private cacheName: string;
+  private hits = 0;
+  private misses = 0;
 
-  constructor(ttl: number = 5 * 60 * 1000, maxSize: number = 100) { // 5 min TTL, max 100 items
+  constructor(ttl: number = 5 * 60 * 1000, maxSize: number = 100, cacheName: string = 'lru-cache') { // 5 min TTL, max 100 items
     this.ttl = ttl;
     this.maxSize = maxSize;
+    this.cacheName = cacheName;
+    
+    // Register with memory monitor
+    memoryMonitor.registerCache(cacheName, {
+      size: () => this.cache.size,
+      maxSize: this.maxSize,
+      hits: this.hits,
+      misses: this.misses,
+      clear: () => this.clear(),
+      cleanup: () => this.cleanup()
+    });
+    
+    // Listen for memory cleanup events
+    window.addEventListener('memory-cleanup', (event: any) => {
+      if (!event.detail.cacheName || event.detail.cacheName === this.cacheName) {
+        this.cleanup(event.detail.level);
+      }
+    });
   }
 
   get(key: string): T | undefined {
     const item = this.cache.get(key);
-    if (!item) return undefined;
+    if (!item) {
+      this.misses++;
+      return undefined;
+    }
 
     if (Date.now() - item.timestamp > this.ttl) {
       this.cache.delete(key);
+      this.misses++;
       return undefined;
     }
 
     // Move to end (most recently used)
     this.cache.delete(key);
     this.cache.set(key, item);
+    this.hits++;
     return item.result;
   }
 
@@ -273,13 +412,67 @@ class LRUCache<T> {
   clear(): void {
     this.cache.clear();
   }
+  
+  private cleanup(level: 'light' | 'aggressive' | 'emergency' = 'light'): number {
+    let cleanedCount = 0;
+    const now = Date.now();
+    
+    switch (level) {
+      case 'emergency':
+        cleanedCount = this.cache.size;
+        this.cache.clear();
+        this.hits = 0;
+        this.misses = 0;
+        break;
+        
+      case 'aggressive':
+        // Clear expired entries
+        for (const [key, item] of this.cache.entries()) {
+          if (now - item.timestamp > this.ttl) {
+            this.cache.delete(key);
+            cleanedCount++;
+          }
+        }
+        // If still too large, remove oldest entries
+        while (this.cache.size > this.maxSize * 0.5) {
+          const firstKey = this.cache.keys().next().value;
+          if (firstKey) {
+            this.cache.delete(firstKey);
+            cleanedCount++;
+          } else {
+            break;
+          }
+        }
+        break;
+        
+      case 'light':
+      default:
+        // Only clear expired entries
+        for (const [key, item] of this.cache.entries()) {
+          if (now - item.timestamp > this.ttl) {
+            this.cache.delete(key);
+            cleanedCount++;
+          }
+        }
+        break;
+    }
+    
+    // Update memory monitor metrics
+    memoryMonitor.updateCacheMetrics(this.cacheName, {
+      size: this.cache.size,
+      hitRate: this.hits + this.misses > 0 ? this.hits / (this.hits + this.misses) : 0,
+      lastCleanup: now
+    });
+    
+    return cleanedCount;
+  }
 }
 
-const analysisCache = new LRUCache<StrategyAnalysis>();
-const enhancedAnalysisCache = new EnhancedCache<StrategyAnalysis>(200); // Larger cache size for better performance
+const analysisCache = new LRUCache<StrategyAnalysis>(5 * 60 * 1000, 100, 'strategy-analysis'); // 5 min TTL, max 100 items
+const enhancedAnalysisCache = new EnhancedCache<StrategyAnalysis>(200, 'strategy-analysis-enhanced'); // Larger cache size for better performance
 
 // Semantic cache for generateMQL5Code responses
-const mql5ResponseCache = new EnhancedCache<{ thinking?: string, content: string }>(300); // Cache for MQL5 generation responses
+const mql5ResponseCache = new EnhancedCache<{ thinking?: string, content: string }>(300, 'mql5-generation'); // Cache for MQL5 generation responses
 
 // Create semantic cache key for similar prompts
 const createSemanticCacheKey = (prompt: string, currentCode?: string, strategyParams?: StrategyParams, settings?: AISettings): string => {
@@ -405,23 +598,12 @@ async function performRetryWithBackoff<T>(
 
         // Only retry on Rate Limits, Server Errors, or Network Issues
         if (isRateLimit || isServerErr || isNetworkErr) {
-            // Calculate exponential backoff delay
-            const exponentialMultiplier = Math.pow(2, (currentRetryAttempt - retries));
-            const baseRetryDelay = baseDelay * exponentialMultiplier;
-            
-            logger.warn(`API Error (${error.status || 'Network'}). Retrying with exponential backoff (attempt ${currentRetryAttempt - retries + 1}/${currentRetryAttempt}) in ${baseRetryDelay}ms... (${retries} retries left)`);
-            
-            // Enhanced jitter calculation to prevent thundering herd
-            const jitterMultiplier = 0.8 + Math.random() * 0.4; // 0.8x to 1.2x
-            const jitteredDelay = baseRetryDelay * jitterMultiplier;
-            
-            // Add extra delay for rate limits
-            const finalDelay = isRateLimit ? 
-                Math.min(jitteredDelay * 2, maxDelay) : 
-                Math.min(jitteredDelay, maxDelay);
-            
-            await new Promise(resolve => setTimeout(resolve, finalDelay));
-            return performRetryWithBackoff(fn, retries - 1, baseDelay, maxDelay, currentRetryAttempt);
+// Removed for production: console.warn(`API Error (${error.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
+            // Add jitter to prevent thundering herd
+            const jitter = Math.random() * 0.1 * delay;
+            const nextDelay = Math.min(delay * 1.5 + jitter, maxDelay); // Use 1.5 multiplier instead of 2 for gentler backoff
+            await new Promise(resolve => setTimeout(resolve, nextDelay));
+            return withRetry(fn, retries - 1, nextDelay, maxDelay);
         }
         
         throw error;
@@ -649,7 +831,7 @@ FINAL REMINDERS:
             // Early truncation with better buffer management
             if (baseLength > TokenBudgetManager.MAX_CONTEXT_CHARS) {
                 if (import.meta.env.DEV) {
-                    console.warn("Base context exceeds token budget, truncating code block");
+                  console.warn("Base context exceeds token budget, truncating code block");
                 }
                 const availableForCode = TokenBudgetManager.MAX_CONTEXT_CHARS - paramsContext.length - prompt.length - footerReminder.length - 1000;
                 codeContext = this.buildCodeContext(currentCode, Math.max(availableForCode, 1000));
@@ -788,7 +970,7 @@ const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, si
         const activeKey = getActiveKey(settings.apiKey);
 
         if (!activeKey && !settings.baseUrl?.includes('localhost')) {
-             console.warn("API Key is empty for OpenAI Provider");
+// Removed for production: console.warn("API Key is empty for OpenAI Provider");
         }
 
         const baseUrl = settings.baseUrl ? settings.baseUrl.replace(/\/$/, '') : 'https://api.openai.com/v1';

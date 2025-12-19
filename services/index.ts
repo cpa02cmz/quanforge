@@ -12,7 +12,7 @@ export * from './realUserMonitoring';
 export * from './apiDeduplicator';
 export * from './advancedAPICache';
 export * from './databaseOptimizer';
-export * from './realtimeManager';
+
 export * from './edgeCacheManager';
 export * from './edgeSupabaseClient';
 export * from './marketData';
