@@ -86,16 +86,7 @@ class PerformanceMonitor {
 
   private observePageLoad() {
     if (this.isSupported) {
-      window.addEventListener('load', () => {
-        // Time to First Byte
-        const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-        if (navigation) {
-          this.recordMetric('ttfb', navigation.responseStart - navigation.requestStart);
-          
-          // Page load time
-          this.recordMetric('pageLoad', navigation.loadEventEnd - navigation.fetchStart);
-        }
-      });
+      window.addEventListener('load', this.handlePageLoad, { once: true });
     }
   }
 
@@ -297,7 +288,7 @@ private recordInteraction(name: string, duration: number) {
     }
     
 // Track memory usage over time with proper cleanup
-     async monitorMemoryUsage(intervalMs: number = 30000): Promise<() => void> { // Default 30 seconds
+      async monitorMemoryUsage(intervalMs: number = 30000): Promise<() => void> { // Default 30 seconds
  if (!('memory' in performance)) {
           if (import.meta.env.DEV) {
             logger.warn('Memory monitoring not supported in this browser');
@@ -327,10 +318,13 @@ private recordInteraction(name: string, duration: number) {
         }
       }, intervalMs);
       
-      // Return cleanup function
-      return () => {
+      // Store cleanup function for later use in cleanup()
+      const cleanup = () => {
         clearInterval(memoryInterval);
       };
+      this.addMemoryCleanupCallback(cleanup);
+      
+      return cleanup;
     }
     
     // Emergency cleanup for critical memory situations
@@ -468,26 +462,64 @@ private recordInteraction(name: string, duration: number) {
      }
    
 // Stop memory monitoring
-    stopMemoryMonitoring(): void {
-      if ((globalThis as any).__memoryMonitoringInterval) {
-        clearInterval((globalThis as any).__memoryMonitoringInterval);
-        delete (globalThis as any).__memoryMonitoringInterval;
-      }
-    }
-    
-    // Cleanup all resources and prevent memory leaks
-    cleanup(): void {
-      this.stopMemoryMonitoring();
-      this.metrics = [];
-      this.observers.forEach(observer => {
-        try {
-          observer.disconnect();
-        } catch (e) {
-          // Ignore errors during cleanup
-        }
-      });
-      this.observers = [];
-    }
+     stopMemoryMonitoring(): void {
+       if ((globalThis as any).__memoryMonitoringInterval) {
+         clearInterval((globalThis as any).__memoryMonitoringInterval);
+         delete (globalThis as any).__memoryMonitoringInterval;
+       }
+     }
+
+     // Track memory cleanup callbacks
+     private memoryCleanupCallbacks: (() => void)[] = [];
+
+     // Add cleanup callback to track all memory monitoring intervals
+     private addMemoryCleanupCallback(cleanup: () => void): void {
+       this.memoryCleanupCallbacks.push(cleanup);
+     }
+
+     // Store bound method for proper event listener removal
+     private handlePageLoad = () => {
+       // Time to First Byte
+       const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+       if (navigation) {
+         this.recordMetric('ttfb', navigation.responseStart - navigation.requestStart);
+         
+         // Page load time
+         this.recordMetric('pageLoad', navigation.loadEventEnd - navigation.fetchStart);
+       }
+     };
+
+     // Enhanced cleanup with proper memory management
+     cleanup(): void {
+       this.stopMemoryMonitoring();
+       
+       // Execute all memory cleanup callbacks
+       this.memoryCleanupCallbacks.forEach(cleanup => {
+         try {
+           cleanup();
+         } catch (e) {
+           // Ignore errors during cleanup
+         }
+       });
+       this.memoryCleanupCallbacks = [];
+       
+       this.metrics = [];
+       
+       // Disconnect all performance observers
+       this.observers.forEach(observer => {
+         try {
+           observer.disconnect();
+         } catch (e) {
+           // Ignore errors during cleanup
+         }
+       });
+       this.observers = [];
+       
+       // Remove page load event listener if it hasn't fired yet
+       if (this.isSupported) {
+         window.removeEventListener('load', this.handlePageLoad);
+       }
+     }
 }
 
 // Singleton instance

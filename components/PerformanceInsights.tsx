@@ -13,17 +13,15 @@ const PerformanceInsights: React.FC<PerformanceInsightsProps> = ({ showInsights 
   const [optimizationScore, setOptimizationScore] = useState(frontendPerformanceOptimizer.getOptimizationScore());
   
   useEffect(() => {
-    if (isVisible) {
-      const interval = setInterval(() => {
+    const interval = setInterval(() => {
+      if (isVisible) {
         setMetrics(frontendPerformanceOptimizer.getMetrics());
         setPerfMetrics(performanceMonitor.getWebVitals());
         setOptimizationScore(frontendPerformanceOptimizer.getOptimizationScore());
-      }, 5000); // Update every 5 seconds when visible
-      
-      return () => clearInterval(interval);
-    }
-    // Return undefined when condition is not met
-    return () => {};
+      }
+    }, 5000); // Update every 5 seconds
+    
+    return () => clearInterval(interval);
   }, [isVisible]);
 
   const toggleVisibility = () => {
