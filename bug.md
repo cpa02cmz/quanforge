@@ -18,6 +18,18 @@
 - **Errors**: 
   - `should NOT have additional property 'experimental'`
   - `functions.api/**/*.ts.excludeFiles` should be string
+
+### [FIXED] PR #135 - ESLint Warnings Blocking Deployment
+- **Date**: 2025-12-19
+- **Severity**: Medium (Deployment Compatibility)
+- **Description**: PR #135 had ESLint warnings causing deployment pipeline failures
+- **Files**: `components/BacktestPanel.tsx`, `components/NumericInput.tsx`, `components/VirtualScrollList.tsx`
+- **Issues**: 
+  - Unused parameter warnings in component interfaces
+  - Console statements without environment guards
+- **Solution**: 
+  - Added underscore prefix for intentionally unused parameters
+  - Added DEV environment guards to console statements
 - **Solution**: Simplified vercel.json to minimal schema-compliant configuration
 - **Impact**: Restored mergeability and deployment pipeline functionality
 
