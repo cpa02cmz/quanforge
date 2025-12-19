@@ -23,6 +23,20 @@
 **Solution Applied**: Systematic troubleshooting of build, schema, and deployment pipeline
 **Key Insight**: Address root causes systematically rather than symptom patches
 
+### Incremental Schema Resolution Strategy (2025-12-19)
+**Issue**: PR #138 had persistent Vercel deployment failures even after prior schema fixes
+**Root Cause**: Complex vercel.json with conflicting legacy and modern properties
+**Solution Applied**:
+- Minimal configuration testing: Started with 4 essential properties
+- Incremental restoration: Added routing step-by-step to isolate issues
+- Schema-first approach: Prioritized compliance over feature preservation
+- Progressive validation: Each change validated before proceeding
+**Key Insights**:
+- Schema validation errors can cascade - isolate complexity systematically
+- Legacy builds/routes properties conflict with modern rewrites/functions
+- Essential functionality can be preserved while achieving compliance
+- Deployment pipeline reliability requires systematic validation, not patches
+
 ### Critical Security Fix (2025-12-19)
 **Issue**: Critical security vulnerability in encryption utilities  
 **Root Cause**: Hardcoded encryption key and weak XOR cipher in `utils/encryption.ts`  
