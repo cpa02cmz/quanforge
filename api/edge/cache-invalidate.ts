@@ -48,8 +48,7 @@ export async function POST(request: NextRequest) {
       patterns = [], 
       tags = [], 
       cascade = false, 
-      regions = [],
-      priority = 'medium' 
+      regions = []
     } = body;
     
     const currentRegion = request.headers.get('x-vercel-region') || 'unknown';
@@ -301,7 +300,14 @@ async function getDetailedCacheStatus() {
  */
 async function getRegionalCacheStatus() {
   const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'];
-  const regionalStatus: Record<string, any> = {};
+  const regionalStatus: Record<string, {
+  hits?: number;
+  misses?: number;
+  hitRate?: number;
+  lastUpdated?: number;
+  error?: string;
+  status?: string;
+}> = {};
   
   for (const region of regions) {
     try {
@@ -321,7 +327,7 @@ async function getRegionalCacheStatus() {
 /**
  * Generate cache optimization recommendations
  */
-function generateCacheRecommendations(metrics: any): string[] {
+function generateCacheRecommendations(metrics: Record<string, unknown>): string[] {
   const recommendations: string[] = [];
   
   if (metrics.hitRate < 0.5) {

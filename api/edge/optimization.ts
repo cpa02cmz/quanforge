@@ -9,7 +9,6 @@ import { enhancedConnectionPool } from '../../services/enhancedSupabasePool';
 import { consolidatedCache } from '../../services/consolidatedCacheManager';
 
 import { logger } from '../../utils/logger';
-import { performanceMonitor } from '../../utils/performance';
 
 export async function GET(request: NextRequest) {
   const startTime = performance.now();
@@ -20,7 +19,14 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action') || 'metrics';
     const detailed = searchParams.get('detailed') === 'true';
 
-    const response: any = {
+    const response: {
+      success: boolean;
+      region?: string;
+      timestamp: number;
+      action: string;
+      data?: Record<string, unknown>;
+      message?: string;
+    } = {
       success: true,
       region,
       timestamp: Date.now(),

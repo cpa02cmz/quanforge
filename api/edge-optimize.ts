@@ -115,9 +115,10 @@ export default async function handler(req: Request) {
         });
         
         // Cache the response in Vercel Edge
-        const cache = caches.default;
+        const cache = caches.open('default');
         const cacheKey = new Request(req.url, req);
-        await cache.put(cacheKey, response.clone());
+        const cacheInstance = await cache;
+        await cacheInstance.put(cacheKey, response.clone());
         
         return response;
       })();
@@ -197,7 +198,6 @@ function createCacheKey(req: Request, url: URL): string {
  */
 function checkRateLimit(clientIP: string): boolean {
   const now = Date.now();
-  const windowStart = now - CACHE_CONFIG.RATE_LIMIT_WINDOW;
   
   // Clean up expired entries
   for (const [ip, data] of rateLimitCache.entries()) {
@@ -262,8 +262,8 @@ async function refreshInBackground(cacheKey: string, req: Request): Promise<void
       if (response.ok) {
         storeInResponseCache(cacheKey, response, CACHE_CONFIG.DEFAULT_TTL);
       }
-    } catch (error) {
-// Removed for production: console.debug('Background refresh failed:', error);
+    } catch {
+// Removed for production: console.debug('Background refresh failed');
     }
   }, 0);
 }
@@ -375,11 +375,12 @@ async function processRequest(req: Request): Promise<Response> {
       
       // Cache the response in Vercel Edge
       try {
-        const cache = caches.default;
+        const cache = caches.open('default');
         const cacheKey = new Request(req.url, req);
-        await cache.put(cacheKey, response.clone());
-      } catch (cacheError) {
-// Removed for production: console.debug('Edge cache storage failed:', cacheError);
+        const cacheInstance = await cache;
+        await cacheInstance.put(cacheKey, response.clone());
+      } catch {
+// Removed for production: console.debug('Edge cache storage failed');
       }
       
       return response;
@@ -448,7 +449,7 @@ async function processRequest(req: Request): Promise<Response> {
       headers 
     });
 
-  } catch (error) {
+  } catch {
     return new Response(JSON.stringify({
       error: 'Internal Server Error',
       message: 'An error occurred while processing your request',

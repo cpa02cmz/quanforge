@@ -15,241 +15,102 @@ export default defineConfig({
       },
       output: {
         manualChunks: (id) => {
-          // Enhanced chunking for better Vercel edge performance
+          // Simplified chunking strategy for better bundle management
           if (id.includes('node_modules')) {
-            // React ecosystem - split to reduce chunk size
+            // React ecosystem - split React DOM from React for better caching
+            if (id.includes('react-dom')) {
+              return 'react-dom';
+            }
             if (id.includes('react')) {
-              if (id.includes('react-dom')) {
-                return 'react-dom';
-              }
-              if (id.includes('react-is')) {
-                return 'react-is';
-              }
               return 'react-core';
             }
-            if (id.includes('react-router')) {
-              return 'react-router';
-            }
-            // Supabase - isolated for better connection pooling
-            if (id.includes('@supabase')) {
-              // Separate realtime and storage for better caching
-              if (id.includes('@supabase/realtime-js')) {
-                return 'supabase-realtime';
-              }
-              if (id.includes('@supabase/storage-js')) {
-                return 'supabase-storage';
-              }
-              return 'supabase-vendor';
-            }
-            // AI services - lazy loaded for edge optimization
+            
+            // AI services - isolate heavy AI vendor
             if (id.includes('@google/genai')) {
               return 'ai-vendor';
             }
-            // Chart libraries - aggressive split to reduce largest chunk
+            
+            // Chart libraries - simplified grouping to reduce fragmentation
             if (id.includes('recharts')) {
-              // Split recharts more aggressively - isolate core primitives
-              if (id.includes('chart') || id.includes('Chart')) {
-                // Specific chart types - create separate chunks for each
-                if (id.includes('AreaChart') || id.includes('Area')) {
-                  return 'chart-area';
-                }
-                if (id.includes('LineChart') || id.includes('Line')) {
-                  return 'chart-line';
-                }
-                if (id.includes('PieChart') || id.includes('Pie')) {
-                  return 'chart-pie';
-                }
-                if (id.includes('BarChart') || id.includes('Bar')) {
-                  return 'chart-bar';
-                }
-                if (id.includes('ComposedChart')) {
-                  return 'chart-composed';
-                }
-                if (id.includes('RadarChart') || id.includes('Radar')) {
-                  return 'chart-radar';
-                }
-                if (id.includes('ScatterChart') || id.includes('Scatter')) {
-                  return 'chart-scatter';
-                }
-                if (id.includes('TreemapChart')) {
-                  return 'chart-treemap';
-                }
-                if (id.includes('FunnelChart')) {
-                  return 'chart-funnel';
-                }
-                // Split core chart primitives into their own chunks
-                if (id.includes('Cartesian') || id.includes('Polar') || id.includes('Funnel') || id.includes('Sankey')) {
-                  return 'chart-types-primitives';
-                }
-                if (id.includes('scale') || id.includes('time') || id.includes('data')) {
-                  return 'chart-data-utils';
-                }
-                if (id.includes('shape') || id.includes('graphic') || id.includes('symbol')) {
-                  return 'chart-shapes';
-                }
-                // Split remaining core chart logic further
-                if (id.includes('Chart') || id.includes('compose') || id.includes('container')) {
-                  return 'chart-containers';
-                }
-                if (id.includes('render') || id.includes('presentation') || id.includes('view')) {
-                  return 'chart-renderers';
-                }
+              // Core chart primitives (largest chunk)
+              if (id.includes('Cartesian') || id.includes('Polar') || id.includes('shape') || id.includes('scale')) {
                 return 'chart-types-core';
               }
-              // Chart utilities and containers
-              if (id.includes('ResponsiveContainer')) {
-                return 'chart-responsive';
+              // Individual chart components
+              if (id.includes('Chart') && !id.includes('Responsive')) {
+                if (id.includes('Area')) return 'chart-area';
+                if (id.includes('Line')) return 'chart-line';
+                if (id.includes('Pie')) return 'chart-pie';
+                if (id.includes('Bar')) return 'chart-bar';
+                if (id.includes('Radar')) return 'chart-radar';
+                if (id.includes('Scatter')) return 'chart-scatter';
+                if (id.includes('Composed')) return 'chart-composed';
+                if (id.includes('Funnel')) return 'chart-funnel';
               }
-              if (id.includes('Tooltip')) {
-                return 'chart-tooltip';
-              }
-              if (id.includes('Legend')) {
-                return 'chart-legend';
-              }
-              // Chart primitives (axes, grids, etc.)
-              if (id.includes('XAxis')) {
-                return 'chart-xaxis';
-              }
-              if (id.includes('YAxis')) {
-                return 'chart-yaxis';
-              }
-              if (id.includes('CartesianGrid')) {
-                return 'chart-grid';
-              }
-              // Recharts core modules split further
-              if (id.includes('polar') || id.includes('radial')) {
-                return 'chart-polar';
-              }
-              // Cell and other specific components
-              if (id.includes('Cell')) {
-                return 'chart-cell';
-              }
-              if (id.includes('Brush')) {
-                return 'chart-brush';
-              }
-              if (id.includes('ReferenceLine')) {
-                return 'chart-reference';
-              }
-              // Recharts core utilities and hooks
-              if (id.includes('hooks') || id.includes('context')) {
-                return 'chart-internals';
-              }
-              if (id.includes('util') || id.includes('component')) {
-                return 'chart-utils';
-              }
-              // General recharts vendor
               return 'chart-vendor';
             }
-            // Security utilities - bundled together
+            
+            // Supabase split only if beneficial for chunk balance
+            if (id.includes('@supabase/realtime-js')) {
+              return 'supabase-realtime';
+            }
+            if (id.includes('@supabase/storage-js')) {
+              return 'supabase-storage';
+            }
+            if (id.includes('@supabase')) {
+              return 'supabase-vendor';
+            }
+            
+            // Security libraries grouped
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'security-vendor';
             }
-            // Other large vendor libraries split by type
+            
+            // Date libraries grouped
             if (id.includes('date-fns') || id.includes('dayjs') || id.includes('moment')) {
               return 'vendor-date';
             }
+            
+            // Utilities and other vendor libs
             if (id.includes('lodash') || id.includes('underscore')) {
-              return 'vendor-utils';
+              return 'vendor-misc';
             }
-            if (id.includes('axios') || id.includes('fetch') || id.includes('xhr')) {
-              return 'vendor-http';
-            }
-            // Split vendor-misc to reduce size
-              if (id.includes('node_modules')) {
-                // Large libraries split out
-                if (id.includes('lodash') || id.includes('underscore')) {
-                  return 'vendor-utility';
-                }
-                if (id.includes('date') || id.includes('time') || id.includes('dayjs') || id.includes('moment')) {
-                  return 'vendor-date';
-                }
-                if (id.includes('crypto') || id.includes('hash') || id.includes('buffer')) {
-                  return 'vendor-crypto';
-                }
-                if (id.includes('stream') || id.includes('events') || id.includes('util')) {
-                  return 'vendor-stream';
-                }
-                return 'vendor-misc';
-              }
           }
           
-          // Enhanced service chunking for edge functions
+          // Service and component splitting kept simple
           if (id.includes('services/')) {
-            // AI-specific services - isolated for edge optimization
-            if (id.includes('gemini') || id.includes('ai') || id.includes('gpt')) {
+            if (id.includes('gemini') || id.includes('ai')) {
               return 'services-ai';
             }
-            // Database and edge services - optimized for Supabase
-            if (id.includes('supabase') || id.includes('database') || id.includes('db') || id.includes('edge') || id.includes('cdn') || id.includes('vercel')) {
+            if (id.includes('supabase') || id.includes('database')) {
               return 'services-data';
             }
-            // Performance and security services
-            if (id.includes('cache') || id.includes('performance') || id.includes('optimization') || id.includes('security') || id.includes('auth') || id.includes('validation')) {
-              return 'services-core';
-            }
-            // All other services
-            return 'services-misc';
+            return 'services-core';
           }
           
-          // Component chunking with edge optimization
           if (id.includes('components/')) {
-            // Heavy components isolated
-            if (id.includes('ChatInterface')) {
-              return 'component-chat';
-            }
-            if (id.includes('CodeEditor')) {
-              return 'component-editor';
-            }
-            if (id.includes('Backtest') || id.includes('Simulation')) {
-              return 'component-backtest';
-            }
-            if (id.includes('Chart') || id.includes('Analysis')) {
-              return 'component-charts';
-            }
-            if (id.includes('StrategyConfig')) {
-              return 'component-config';
-            }
-            if (id.includes('Market') || id.includes('Ticker')) {
-              return 'component-trading';
-            }
-            // UI components consolidated
-            if (id.includes('Modal') || id.includes('Dialog') || id.includes('Toast') || id.includes('ErrorBoundary') || id.includes('LoadingState')) {
-              return 'component-ui';
-            }
-            // Core components
+            if (id.includes('ChatInterface')) return 'component-chat';
+            if (id.includes('CodeEditor')) return 'component-editor';
+            if (id.includes('Backtest')) return 'component-backtest';
+            if (id.includes('Chart')) return 'component-charts';
+            if (id.includes('StrategyConfig')) return 'component-config';
+            if (id.includes('Market')) return 'component-trading';
             return 'components-core';
           }
           
-          // Route-based code splitting for edge caching
           if (id.includes('pages/')) {
-            if (id.includes('Generator')) {
-              return 'route-generator';
-            }
-            if (id.includes('Dashboard')) {
-              return 'route-dashboard';
-            }
-            if (id.includes('About') || id.includes('FAQ') || id.includes('Wiki') || id.includes('Blog') || id.includes('Features')) {
-              return 'route-static';
-            }
-            return 'pages';
+            if (id.includes('Generator')) return 'route-generator';
+            if (id.includes('Dashboard')) return 'route-dashboard';
+            return 'route-static';
           }
           
-          // Utility chunking for performance
           if (id.includes('utils/')) {
-            // Performance and monitoring utilities
-            if (id.includes('performance') || id.includes('monitor') || id.includes('analytics') || id.includes('seo') || id.includes('meta') || id.includes('structured')) {
-              return 'utils-performance';
-            }
-            // Security and validation utilities
-            if (id.includes('validation') || id.includes('security') || id.includes('encryption') || id.includes('errorHandler')) {
-              return 'utils-security';
-            }
-            // Core utilities
+            if (id.includes('performance')) return 'utils-performance';
+            if (id.includes('validation') || id.includes('security')) return 'utils-security';
             return 'utils-core';
           }
           
-          // Constants and translations
-          if (id.includes('constants/') || id.includes('translations/')) {
+          if (id.includes('constants/')) {
             return 'assets-constants';
           }
           

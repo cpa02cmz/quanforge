@@ -209,10 +209,10 @@ export async function POST(request: NextRequest) {
 }
 
 function calculateHealthStatus(data: {
-  poolStats: any;
-  cacheStats: any;
-  perfMetrics: any;
-  edgeMetrics: any;
+  poolStats: Record<string, unknown>;
+  cacheStats: Record<string, unknown>;
+  perfMetrics: Record<string, unknown>;
+  edgeMetrics: Record<string, unknown>;
 }): EdgeMetrics['health'] {
   const issues: string[] = [];
   let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';

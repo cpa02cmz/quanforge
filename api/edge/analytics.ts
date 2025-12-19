@@ -3,7 +3,7 @@
  * Real-time performance monitoring and analytics for edge deployment
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+
 import { edgeSupabase } from '../../services/edgeSupabaseClient';
 import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
 import { createScopedLogger } from '../../utils/logger';
@@ -46,11 +46,11 @@ export default async function analyticsHandler(request: Request): Promise<Respon
       case 'POST':
         return await postAnalytics(request, region);
       default:
-        return NextResponse.json('Method not allowed', { status: 405 });
+        return Response.json('Method not allowed', { status: 405 });
     }
   } catch (error) {
     logger.error('Analytics handler error:', error);
-    return NextResponse.json({ error: 'Analytics service error' }, {
+    return Response.json({ error: 'Analytics service error' }, {
       status: 500,
       headers: { 'content-type': 'application/json' },
     });
@@ -60,7 +60,7 @@ export default async function analyticsHandler(request: Request): Promise<Respon
 /**
  * Get analytics data
  */
-async function getAnalytics(url: URL, region: string): Promise<NextResponse> {
+async function getAnalytics(url: URL, region: string): Promise<Response> {
   const timeframe = url.searchParams.get('timeframe') || '1h';
   const metric = url.searchParams.get('metric') || 'all';
   
@@ -120,7 +120,7 @@ return new Response(JSON.stringify({
 /**
  * Post analytics data
  */
-async function postAnalytics(request: Request, region: string): Promise<NextResponse> {
+async function postAnalytics(request: Request, region: string): Promise<Response> {
   try {
     const body = await request.json() as Partial<AnalyticsData>;
     
@@ -195,7 +195,11 @@ async function generateAnalytics(
   timeframe: string,
   metric: string,
   region: string
-): Promise<any> {
+): Promise<{
+  timestamp: number;
+  value: number;
+  metadata?: Record<string, unknown>;
+}> {
   const now = Date.now();
   let timeRange: number;
 
@@ -258,7 +262,7 @@ async function generateAnalytics(
 /**
  * Get database metrics
  */
-async function getDatabaseMetrics(startTime: number, endTime: number, region: string): Promise<any> {
+async function getDatabaseMetrics(startTime: number, endTime: number, region: string): Promise<Record<string, unknown>> {
   try {
     const cacheKey = `db_metrics_${startTime}_${endTime}_${region}`;
     
@@ -303,7 +307,7 @@ async function getDatabaseMetrics(startTime: number, endTime: number, region: st
 /**
  * Get performance metrics
  */
-async function getPerformanceMetrics(startTime: number, endTime: number, region: string): Promise<any> {
+async function getPerformanceMetrics(startTime: number, endTime: number, region: string): Promise<Record<string, unknown>> {
   try {
     // Core Web Vitals
     const lcp = await getMetricAverage('lcp', startTime, endTime, region);
