@@ -23,6 +23,14 @@
 **Solution Applied**: Systematic troubleshooting of build, schema, and deployment pipeline
 **Key Insight**: Address root causes systematically rather than symptom patches
 
+### Critical Security Fix (2025-12-19)
+**Issue**: Critical security vulnerability in encryption utilities  
+**Root Cause**: Hardcoded encryption key and weak XOR cipher in `utils/encryption.ts`  
+**Solution Applied**: Migrated to production-grade Web Crypto API from existing `secureStorage.ts`  
+**Files Modified**: `services/settingsManager.ts` now uses AES-GCM 256-bit encryption with PBKDF2 key derivation  
+**Backward Compatibility**: Maintained support for legacy encrypted API keys during migration  
+**Key Insight**: Always prioritize production-grade security over convenience for sensitive data storage
+
 ### Recommended Development Patterns
 
 #### Browser Compatibility Checklist
