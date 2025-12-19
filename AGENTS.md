@@ -29,6 +29,15 @@
 - Critical fixes must be propagated to all affected PRs
 - Schema validation is fundamental to deployment success
 
+### PR #138 Resolution Strategy (2025-12-19)
+**Issue**: PR #138 had extensive merge conflicts across 80+ files with unrelated histories
+**Root Cause**: PR branch diverged significantly from main, creating incompatible merge states
+**Solution Applied**:
+- Analyzed PR content and identified that critical fixes already exist in main branch
+- Confirmed build and deployment functionality on main branch
+- Documented PR #138 as obsolete - no merge required
+**Key Insight**: Not all red-flag PRs need merging; sometimes main branch already contains necessary fixes
+
 ### Recommended Development Patterns
 
 #### Browser Compatibility Checklist
