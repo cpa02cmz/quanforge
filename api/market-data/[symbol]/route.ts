@@ -150,7 +150,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
           'X-Cache': 'HIT',
           'X-Response-Time': `${duration.toFixed(2)}ms`,
           'Cache-Control': 'public, max-age=3, stale-while-revalidate=1',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+      ? 'https://quanforge.ai' 
+      : 'http://localhost:3000,http://localhost:5173', // Restrict to common dev ports
         },
       });
     }
@@ -191,7 +193,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
         'X-Cache': 'MISS',
         'X-Response-Time': `${duration.toFixed(2)}ms`,
         'Cache-Control': 'public, max-age=3, stale-while-revalidate=1',
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+      ? 'https://quanforge.ai' 
+      : 'http://localhost:3000,http://localhost:5173', // Restrict to common dev ports
         'X-Edge-Region': process.env.VERCEL_REGION || 'unknown',
       },
     });
@@ -213,7 +217,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
         headers: {
           'X-Response-Time': `${duration.toFixed(2)}ms`,
           'Cache-Control': 'no-cache',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+      ? 'https://quanforge.ai' 
+      : 'http://localhost:3000,http://localhost:5173', // Restrict to common dev ports
         },
       }
     );
@@ -326,7 +332,9 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+      ? 'https://quanforge.ai' 
+      : 'http://localhost:3000,http://localhost:5173', // Restrict to common dev ports
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Max-Age': '86400',

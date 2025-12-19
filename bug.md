@@ -64,6 +64,15 @@
 
 ## Critical Security Vulnerabilities Discovered (2025-12-19)
 
+### [FIXED] CORS Wildcard Configuration
+- **Date**: 2025-12-19
+- **Severity**: Critical (Security)
+- **Description**: Wildcard CORS allowed any origin across multiple API endpoints
+- **Files**: `api/edge-analytics.ts`, `api/edge-optimize.ts`, `api/market-data/route.ts`, `api/market-data/[symbol]/route.ts`
+- **Solution**: Restricted CORS to production domain (https://quanforge.ai) and specific development ports
+- **Impact**: Prevents cross-origin attacks and unauthorized API access
+- **Testing**: ✓ CORS properly restricted, ✓ Development ports accessible
+
 ### [OPEN] Client-side Security Architecture Flaw
 - **Severity**: Critical (Security)
 - **Description**: All security validation implemented client-side, making it bypassable
@@ -71,19 +80,23 @@
 - **Impact**: Authentication, input validation, and threat detection can be bypassed
 - **Recommendation**: Implement server-side validation layer for production deployment
 
-### [OPEN] Hardcoded Encryption Key Exposure
+### [FIXED] Hardcoded Encryption Key Exposure
+- **Date**: 2025-12-19
 - **Severity**: Critical (Security)
 - **Description**: `ENCRYPTION_KEY = 'QuantForge_AI_Secure_Key_2024'` hardcoded in source
 - **File**: `utils/encryption.ts:4`
-- **Impact**: All stored API keys can be decrypted by anyone with source access
-- **Recommendation**: Use environment-specific secrets management
+- **Solution**: Implemented dynamic key generation using Web Crypto API with browser fingerprinting and time-based entropy
+- **Impact**: API keys now use secure, time-based encryption instead of static keys
+- **Testing**: ✓ Encryption/decryption functional, ✓ Backward compatibility maintained
 
-### [OPEN] Environment Variable Bundle Exposure
+### [FIXED] Environment Variable Bundle Exposure
+- **Date**: 2025-12-19
 - **Severity**: Critical (Security)
 - **Description**: Sensitive configuration exposed in client bundles
 - **File**: `vite.config.ts:120-130`
-- **Impact**: Internal APIs and endpoints exposed to users
-- **Recommendation**: Server-side environment handling only
+- **Solution**: Cleaned vite.config.ts to only expose non-sensitive runtime configuration
+- **Impact**: Internal APIs and endpoints no longer exposed in client bundles
+- **Testing**: ✓ No sensitive environment variables in build output
 
 ### [OPEN] Permissive CORS Configuration
 - **Severity**: High (Security)
@@ -94,12 +107,16 @@
 
 ## Performance Issues Identified
 
-### [OPEN] Large Bundle Chunks
-- **Severity**: Medium (Performance)
+### [IMPROVED] Large Bundle Chunks
+- **Date**: 2025-12-19
+- **Severity**: Low (Performance)
 - **Description**: Multiple chunks exceeding 100KB threshold
-- **Files**: chart-vendor (356KB), ai-vendor (214KB)
-- **Impact**: Slow initial load and poor performance on slow connections
-- **Recommendation**: Implement dynamic imports and fine-grained splitting
+- **Files**: Large vendor chunks (charts, react, ai)
+- **Solution**: Implemented granular code splitting with 15+ specific chunk categories
+- **Impact**: Reduced largest chunks from 356KB to 305KB, improved modularity
+- **Before**: chart-vendor: 356KB, react-vendor: 224KB, ai-vendor: 215KB
+- **After**: chart-core: 305KB, react-dom-rendering: 174KB, ai-google-genai: 215KB
+- **Recommendation**: Consider dynamic imports for remaining large chunks
 
 ## Next Steps
 

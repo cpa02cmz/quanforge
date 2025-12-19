@@ -17,9 +17,18 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
-            // React ecosystem - optimized for edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
-              return 'react-vendor';
+            // React ecosystem - split more granularly
+            if (id.includes('react')) {
+              if (id.includes('react-dom')) {
+                if (id.includes('client') || id.includes('server')) {
+                  return 'react-dom-rendering';
+                }
+                return 'react-dom-core';
+              }
+              if (id.includes('react-router')) {
+                return 'react-router';
+              }
+              return 'react-core';
             }
             // Supabase - isolated for better connection pooling
             if (id.includes('@supabase')) {
@@ -30,25 +39,66 @@ export default defineConfig({
               if (id.includes('@supabase/storage-js')) {
                 return 'supabase-storage';
               }
-              return 'supabase-vendor';
+              if (id.includes('@supabase/auth-js')) {
+                return 'supabase-auth';
+              }
+              if (id.includes('@supabase/postgrest-js')) {
+                return 'supabase-postgrest';
+              }
+              return 'supabase-core';
             }
-            // AI services - lazy loaded for edge optimization
-            if (id.includes('@google/genai')) {
-              return 'ai-vendor';
+            // AI services - split by provider and functionality
+            if (id.includes('@google')) {
+              if (id.includes('genai') || id.includes('vertex')) {
+                return 'ai-google-genai';
+              }
+              return 'ai-google';
             }
-            // Chart libraries - split more granularly
+            if (id.includes('openai')) {
+              return 'ai-openai';
+            }
+            if (id.includes('anthropic')) {
+              return 'ai-anthropic';
+            }
+            // Chart libraries - split even more granularly
             if (id.includes('recharts')) {
               if (id.includes('AreaChart') || id.includes('LineChart')) {
-                return 'chart-core';
+                return 'chart-line';
               }
-              if (id.includes('PieChart') || id.includes('BarChart')) {
-                return 'chart-misc';
+              if (id.includes('PieChart')) {
+                return 'chart-pie';
               }
-              return 'chart-vendor';
+              if (id.includes('BarChart')) {
+                return 'chart-bar';
+              }
+              if (id.includes('Cartesian') || id.includes('XAxis') || id.includes('YAxis')) {
+                return 'chart-axes';
+              }
+              if (id.includes('Tooltip') || id.includes('Legend')) {
+                return 'chart-components';
+              }
+              if (id.includes('shapes') || id.includes('Rectangle') || id.includes('Circle')) {
+                return 'chart-shapes';
+              }
+              if (id.includes('scale') || id.includes('Scale')) {
+                return 'chart-scales';
+              }
+              return 'chart-core';
             }
-            // Security utilities - bundled together
-            if (id.includes('dompurify') || id.includes('lz-string')) {
-              return 'security-vendor';
+            // Security utilities - separated
+            if (id.includes('dompurify')) {
+              return 'security-dompurify';
+            }
+            if (id.includes('lz-string')) {
+              return 'security-compression';
+            }
+            // Math and utilities
+            if (id.includes('d3') || id.includes('lodash') || id.includes('moment')) {
+              return 'utility-math';
+            }
+            // HTTP and networking
+            if (id.includes('axios') || id.includes('fetch') || id.includes('xhr')) {
+              return 'utility-network';
             }
             // All other vendor libraries
             return 'vendor-misc';
@@ -246,11 +296,15 @@ export default defineConfig({
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env['NODE_ENV'] || 'development'),
+    // Only expose non-sensitive runtime configuration
     'process.env.EDGE_RUNTIME': JSON.stringify('true'),
     'process.env.VERCEL_EDGE': JSON.stringify('true'),
     'process.env.ENABLE_EDGE_CACHING': JSON.stringify('true'),
-    'process.env.EDGE_REGION': JSON.stringify(process.env['VERCEL_REGION'] || 'unknown'),
+    // Remove sensitive region info - use generic value instead
+    'process.env.EDGE_REGION': JSON.stringify('edge'),
     'process.env.ENABLE_EDGE_OPTIMIZATION': JSON.stringify('true'),
+    // Remove any potential sensitive URLs or endpoints
+    'process.env.APP_VERSION': JSON.stringify(process.env['npm_package_version'] || '1.0.0'),
   },
   optimizeDeps: {
     include: [

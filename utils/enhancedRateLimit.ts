@@ -1,11 +1,27 @@
-// Synchronous hash using a simple algorithm for browser compatibility
-function simpleHash(str: string): string {
+// Secure hash using Web Crypto API with fallback
+async function secureHash(str: string): Promise<string> {
+  try {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(str);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
+  } catch (error) {
+    // Fallback to simple hash if Web Crypto is not available
+    return fallbackHash(str);
+  }
+}
+
+// Fallback synchronous hash for browsers without Web Crypto support
+function fallbackHash(str: string): string {
   let hash = 5381;
   for (let i = 0; i < str.length; i++) {
     hash = (hash * 33) ^ str.charCodeAt(i);
   }
   return Math.abs(hash).toString(16).padStart(32, '0').substring(0, 32);
 }
+
+
 
 interface RateLimitEntry {
   count: number;
@@ -37,13 +53,23 @@ export class EnhancedRateLimiter {
     }, 5 * 60 * 1000);
   }
 
+  private async generateKeyAsync(identifier: string): Promise<string> {
+    if (this.config.keyGenerator) {
+      return this.config.keyGenerator(identifier);
+    }
+    
+    // Create a secure hash to prevent key collisions and ensure consistency
+    const hash = await secureHash(identifier);
+    return `rate_limit_${hash.substring(0, 16)}`;
+  }
+
   private generateKey(identifier: string): string {
     if (this.config.keyGenerator) {
       return this.config.keyGenerator(identifier);
     }
     
     // Create a hash to prevent key collisions and ensure consistency
-    const hash = simpleHash(identifier);
+    const hash = fallbackHash(identifier);
     return `rate_limit_${hash.substring(0, 16)}`;
   }
 
@@ -62,7 +88,53 @@ export class EnhancedRateLimiter {
   }
 
   /**
-   * Check if a request is allowed and update the rate limit counter
+   * Check if a request is allowed and update the rate limit counter (async, secure)
+   * @param identifier - Unique identifier (userId, IP, etc.)
+   * @param options - Optional override settings
+   * @returns Object with allowed status and rate limit info
+   */
+  public async checkLimitAsync(
+    identifier: string, 
+    options: Partial<RateLimitConfig> = {}
+  ): Promise<{ allowed: boolean; remaining: number; resetTime: number; retryAfter?: number }> {
+    const key = await this.generateKeyAsync(identifier);
+    const now = Date.now();
+    
+    // Get or create entry
+    let entry = this.store.get(key);
+    
+    if (!entry || now > entry.resetTime) {
+      // New window
+      entry = {
+        count: 0,
+        resetTime: now + (options.windowMs || this.config.windowMs),
+        lastAccess: now
+      };
+      this.store.set(key, entry);
+    }
+    
+    // Update last access
+    entry.lastAccess = now;
+    
+    // Check if limit exceeded
+    const maxRequests = options.maxRequests || this.config.maxRequests;
+    const allowed = entry.count < maxRequests;
+    
+    // Increment counter if allowed
+    if (allowed) {
+      entry.count++;
+    }
+    
+    return {
+      allowed,
+      remaining: Math.max(0, maxRequests - entry.count),
+      resetTime: entry.resetTime,
+      retryAfter: allowed ? undefined : Math.ceil((entry.resetTime - now) / 1000)
+    };
+  }
+
+  /**
+   * Check if a request is allowed and update the rate limit counter (sync, fallback)
    * @param identifier - Unique identifier (userId, IP, etc.)
    * @param options - Optional override settings
    * @returns Object with allowed status and rate limit info
@@ -214,7 +286,7 @@ export function getAIRateLimiter(): EnhancedRateLimiter {
     windowMs: 60000, // 1 minute
     maxRequests: 10, // 10 AI requests per minute
     keyGenerator: (identifier: string) => {
-      const hash = simpleHash(`ai_${identifier}`);
+      const hash = fallbackHash(`ai_${identifier}`);
       return `ai_request_${hash.substring(0, 16)}`;
     }
   });

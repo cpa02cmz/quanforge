@@ -1,8 +1,51 @@
 // Advanced encryption utilities for API keys
+// Enhanced with Web Crypto API and secure key generation
 // Note: This is client-side obfuscation, not server-grade encryption
 // For production, consider additional server-side encryption for sensitive data
 
-const ENCRYPTION_KEY = 'QuantForge_AI_Secure_Key_2024';
+// Generate secure encryption key from environment-derived entropy
+const getSecureKey = async (): Promise<string> => {
+  try {
+    // Use Web Crypto API to generate secure key material
+    const encoder = new TextEncoder();
+    
+    // Combine multiple entropy sources
+    const sources = [
+      'QuantForge_AI_Core_2024', // Base seed
+      navigator.userAgent || '', // Browser fingerprint
+      new Date().toISOString().slice(0, 10), // Current date
+      String(Math.floor(Date.now() / (1000 * 60 * 60 * 24))) // Day-based salt
+    ];
+    
+    // Create combined entropy
+    const combined = sources.join('|');
+    const data = encoder.encode(combined);
+    
+    // Generate SHA-256 hash
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    
+    // Convert to base64 for key
+    const base64Key = btoa(String.fromCharCode(...hashArray));
+    
+    return base64Key.slice(0, 32); // Use first 32 chars as key
+  } catch (error) {
+    console.warn('Secure key generation failed, using fallback:', error);
+    // Fallback to time-based deterministic key
+    const dateKey = `QuantForge_${new Date().toISOString().slice(0, 7)}`; // Month-based
+    return dateKey.slice(0, 32);
+  }
+};
+
+// Cached secure key for performance
+let cachedSecureKey: string | null = null;
+
+const getEncryptionKey = async (): Promise<string> => {
+  if (!cachedSecureKey) {
+    cachedSecureKey = await getSecureKey();
+  }
+  return cachedSecureKey;
+};
 
 // Improved XOR cipher with additional obfuscation
 const xorCipher = (text: string, key: string): string => {
@@ -54,10 +97,11 @@ const base64Decode = (str: string): string => {
   }
 };
 
-export const encryptApiKey = (apiKey: string): string => {
+export const encryptApiKey = async (apiKey: string): Promise<string> => {
   if (!apiKey) return '';
   try {
-    const xorred = xorCipher(apiKey, ENCRYPTION_KEY);
+    const key = await getEncryptionKey();
+    const xorred = xorCipher(apiKey, key);
     return base64Encode(xorred);
   } catch (e) {
     console.error('Encryption failed:', e);
@@ -65,13 +109,41 @@ export const encryptApiKey = (apiKey: string): string => {
   }
 };
 
-export const decryptApiKey = (encryptedKey: string): string => {
+export const decryptApiKey = async (encryptedKey: string): Promise<string> => {
   if (!encryptedKey) return '';
   try {
+    const key = await getEncryptionKey();
     const decoded = base64Decode(encryptedKey);
-    return xorCipher(decoded, ENCRYPTION_KEY);
+    return xorCipher(decoded, key);
   } catch (e) {
     console.error('Decryption failed:', e);
+    return '';
+  }
+};
+
+// Backward compatibility - synchronous versions using fallback key
+const FALLBACK_KEY = 'QuantForge_Compatible_2024';
+
+export const encryptApiKeySync = (apiKey: string): string => {
+  if (!apiKey) return '';
+  try {
+    // Use fallback key for synchronous operation
+    const xorred = xorCipher(apiKey, FALLBACK_KEY);
+    return base64Encode(xorred);
+  } catch (e) {
+    console.error('Sync encryption failed:', e);
+    return '';
+  }
+};
+
+export const decryptApiKeySync = (encryptedKey: string): string => {
+  if (!encryptedKey) return '';
+  try {
+    // Use fallback key for synchronous operation
+    const decoded = base64Decode(encryptedKey);
+    return xorCipher(decoded, FALLBACK_KEY);
+  } catch (e) {
+    console.error('Sync decryption failed:', e);
     return '';
   }
 };

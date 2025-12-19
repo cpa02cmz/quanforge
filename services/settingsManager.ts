@@ -1,6 +1,6 @@
 
 import { AISettings, DBSettings } from "../types";
-import { encryptApiKey, decryptApiKey, validateApiKey } from "../utils/encryption";
+import { encryptApiKey, decryptApiKeySync, validateApiKey } from "../utils/encryption";
 
 const AI_SETTINGS_KEY = 'quantforge_ai_settings';
 const DB_SETTINGS_KEY = 'quantforge_db_settings';
@@ -63,7 +63,7 @@ export const settingsManager = {
             if (parsed.apiKey) {
                 // Try to decrypt - if it fails, assume it's unencrypted (legacy)
                 try {
-                    const decrypted = decryptApiKey(parsed.apiKey);
+                    const decrypted = decryptApiKeySync(parsed.apiKey);
                     if (decrypted && validateApiKey(decrypted, parsed.provider)) {
                         parsed.apiKey = decrypted;
                     }

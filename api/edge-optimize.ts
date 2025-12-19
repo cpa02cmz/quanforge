@@ -302,7 +302,9 @@ function createSecurityHeaders(region: string, startTime: number): Record<string
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-    'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? 'https://quanforge.ai' : '*',
+    'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+      ? 'https://quanforge.ai' 
+      : 'http://localhost:3000,http://localhost:5173', // Restrict to common dev ports
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
     'Access-Control-Max-Age': '86400',
