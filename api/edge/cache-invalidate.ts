@@ -52,7 +52,6 @@ export async function POST(request: NextRequest) {
     const currentRegion = request.headers.get('x-vercel-region') || 'unknown';
     const targetRegions = regions.length > 0 ? regions : [currentRegion];
     
-    console.log(`Starting cache invalidation: ${keys.length} keys, ${patterns.length} patterns, ${tags.length} tags`);
 
     const invalidated = {
       keys: [] as string[],
@@ -78,7 +77,6 @@ export async function POST(request: NextRequest) {
             }
           }
         } catch (error) {
-          console.warn(`Failed to invalidate key ${key}:`, error);
         }
       }
     }
@@ -97,7 +95,6 @@ export async function POST(request: NextRequest) {
             cascadeInvalidations.push(...invalidatedPatternKeys);
           }
         } catch (error) {
-          console.warn(`Failed to invalidate pattern ${pattern}:`, error);
         }
       }
     }
@@ -109,7 +106,6 @@ export async function POST(request: NextRequest) {
           await edgeCacheManager.invalidateByTag(tag, { regions: targetRegions });
           invalidated.tags.push(tag);
         } catch (error) {
-          console.warn(`Failed to invalidate tag ${tag}:`, error);
         }
       }
     }
@@ -119,9 +115,7 @@ export async function POST(request: NextRequest) {
       try {
         // Clear connection pool cache
         await enhancedConnectionPool.clearCache();
-        console.log('Cleared database connection cache');
       } catch (error) {
-        console.warn('Failed to clear database cache:', error);
       }
     }
 
@@ -144,7 +138,6 @@ export async function POST(request: NextRequest) {
     };
 
     // Log invalidation results
-    console.log(`Cache invalidation completed: ${totalInvalidated} items invalidated in ${duration.toFixed(2)}ms`);
 
     return NextResponse.json(result, {
       headers: {
@@ -157,7 +150,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Cache invalidation failed:', error);
     
     return NextResponse.json({
       success: false,
@@ -210,7 +202,6 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Failed to get cache status:', error);
     
     return NextResponse.json({
       success: false,
@@ -252,7 +243,6 @@ async function findRelatedKeys(key: string): Promise<string[]> {
     return [...new Set(relatedKeys)];
     
   } catch (error) {
-    console.warn('Failed to find related keys:', error);
     return [];
   }
 }

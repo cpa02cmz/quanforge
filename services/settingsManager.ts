@@ -75,7 +75,6 @@ export const settingsManager = {
             // Merge with defaults to ensure new fields like 'language' exist on old saved data
             return { ...DEFAULT_AI_SETTINGS, ...parsed };
         } catch (e) {
-            console.error("Failed to load AI settings", e);
             return DEFAULT_AI_SETTINGS;
         }
     },
@@ -91,7 +90,6 @@ export const settingsManager = {
             localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settingsToSave));
             window.dispatchEvent(new Event('ai-settings-changed'));
         } catch (e) {
-            console.error("Failed to save AI settings", e);
         }
     },
 
@@ -109,7 +107,6 @@ export const settingsManager = {
             const parsed = JSON.parse(stored);
             return { ...DEFAULT_DB_SETTINGS, ...parsed };
         } catch (e) {
-            console.error("Failed to load DB settings", e);
             return DEFAULT_DB_SETTINGS;
         }
     },
@@ -120,7 +117,6 @@ export const settingsManager = {
             // Dispatch event to notify Supabase service to re-init
             window.dispatchEvent(new Event('db-settings-changed'));
         } catch (e) {
-            console.error("Failed to save DB settings", e);
         }
     }
 };

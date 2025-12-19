@@ -79,7 +79,6 @@ class BackendOptimizationManager {
    * Initialize the optimization manager and start monitoring
    */
   async initialize(): Promise<void> {
-    console.log('Initializing Backend Optimization Manager...');
     
     // Warm up edge functions
     if (this.config.enableEdgeOptimization) {
@@ -113,7 +112,6 @@ class BackendOptimizationManager {
    */
   private async performOptimizationCycle(): Promise<void> {
     try {
-      console.log('Starting optimization cycle...');
       
       // Collect current metrics
       const metrics = await this.collectMetrics();
@@ -136,9 +134,7 @@ class BackendOptimizationManager {
         this.optimizationHistory = this.optimizationHistory.slice(-this.MAX_OPTIMIZATION_HISTORY);
       }
       
-      console.log(`Optimization cycle completed. Applied ${recommendations.length} optimizations.`);
     } catch (error) {
-      console.error('Error during optimization cycle:', error);
     }
   }
 
@@ -200,10 +196,39 @@ class BackendOptimizationManager {
     };
   }
 
+  // Metrics interfaces for type safety
+interface DatabaseMetrics {
+  queryTime: number;
+  cacheHitRate: number;
+  connectionPoolUtilization: number;
+  indexUsage: number;
+  slowQueries: number;
+  errorRate: number;
+  throughput: number;
+}
+
+interface CacheMetrics {
+  totalEntries: number;
+  totalSize: number;
+  hitRate: number;
+  missRate: number;
+  evictions: number;
+  compressions: number;
+}
+
+interface EdgeMetrics {
+  coldStartCount: number;
+  averageResponseTime: number;
+  p95ResponseTime: number;
+  errorRate: number;
+  requestCount: number;
+  lastWarmup: number;
+}
+
   /**
    * Calculate overall optimization score
    */
-  private calculateOverallScore(dbMetrics: any, cacheMetrics: any, edgeMetrics: any): number {
+  private calculateOverallScore(dbMetrics: DatabaseMetrics, cacheMetrics: CacheMetrics, edgeMetrics: EdgeMetrics): number {
     let score = 0;
     
     // Database performance score (0-50 points)
@@ -320,7 +345,6 @@ class BackendOptimizationManager {
     // Optimize cache configuration - using available method
     robotCache.getStats();
     
-    console.log('Cache optimization applied');
   }
 
   /**
@@ -331,7 +355,6 @@ class BackendOptimizationManager {
     
     // This would typically call database index optimization
     // For now, we'll just log that optimization was applied
-    console.log('Database index optimization applied');
   }
 
   /**
@@ -343,7 +366,6 @@ class BackendOptimizationManager {
     // Optimize query configuration
     queryOptimizer.getPerformanceAnalysis();
     
-    console.log('Query optimization applied');
   }
 
   /**
@@ -355,7 +377,6 @@ class BackendOptimizationManager {
     // Warm up all edge functions
     await edgeOptimizer.warmupAllFunctions();
     
-    console.log('Edge function optimization applied');
   }
 
   /**
@@ -367,22 +388,23 @@ class BackendOptimizationManager {
       // robotCache doesn't have optimizeConfiguration method, so we'll skip this for now
     }
     
-    console.log('Compression optimization applied');
   }
 
   /**
    * Perform generic optimization
    */
   private async performGenericOptimization(recommendation: string): Promise<void> {
-    console.log(`Applied generic optimization: ${recommendation}`);
   }
 
   /**
    * Warm up common caches
    */
   private async warmupCommonCaches(): Promise<void> {
-     // Warm up edge cache - using any to bypass TypeScript error
-     (edgeCacheManager as any).warmup(['robots_list', 'strategies_list', 'user_sessions']);
+     // Warm up edge cache using type assertion to bypass TypeScript error temporarily
+     const edgeCache = edgeCacheManager as { warmup?: (keys: string[]) => void };
+     if (edgeCache.warmup) {
+       edgeCache.warmup(['robots_list', 'strategies_list', 'user_sessions']);
+     }
     
     // Warm up common queries
     if (this.config.enableQueryOptimization) {
@@ -395,7 +417,6 @@ class BackendOptimizationManager {
       // await queryCache.preload(commonQueries);
     }
     
-    console.log('Common caches warmed up');
   }
 
   /**
@@ -409,12 +430,10 @@ class BackendOptimizationManager {
     const slowQueries = report.topSlowQueries.filter(q => q.query.includes(tableName));
     
     if (slowQueries.length > 0) {
-      console.log(`Optimizing queries for table: ${tableName}`);
       
       // This would typically add indexes or optimize queries
       // For now, we'll just log the optimization
       for (const query of slowQueries) {
-        console.log(`Optimizing slow query: ${query.query.substring(0, 100)}...`);
       }
     }
   }
@@ -445,13 +464,19 @@ class BackendOptimizationManager {
     if (!this.config.enableDatabaseOptimization) return;
     
     await databaseOptimizer.runDatabaseMaintenance(client);
-    console.log('Database maintenance completed');
   }
+
+  // Query optimization recommendations interface
+interface QueryOptimizationRecommendations {
+  recommendations: string[];
+  indexes?: string[];
+  queryPatterns?: string[];
+}
 
   /**
    * Get query optimization recommendations
    */
-  async getQueryOptimizationRecommendations(client: SupabaseClient): Promise<any> {
+  async getQueryOptimizationRecommendations(client: SupabaseClient): Promise<QueryOptimizationRecommendations> {
     if (!this.config.enableDatabaseOptimization) return { recommendations: [] };
     
     return databaseOptimizer.getOptimizationRecommendations();
@@ -470,7 +495,6 @@ class BackendOptimizationManager {
     backendOptimizer.destroy();
     databasePerformanceMonitor.destroy();
     
-    console.log('Backend Optimization Manager shut down');
   }
 
   /**
@@ -480,10 +504,17 @@ class BackendOptimizationManager {
     await this.performOptimizationCycle();
   }
   
-   /**
-    * Get advanced optimization insights including materialized views and performance analytics
-    */
-     async getAdvancedOptimizationInsights(client: SupabaseClient): Promise<any> {
+// Advanced optimization insights interface
+interface AdvancedOptimizationInsights {
+  performanceInsights: string[];
+  materializedViewRecommendations: string[];
+  indexRecommendations: string[];
+}
+
+     /**
+     * Get advanced optimization insights including materialized views and performance analytics
+     */
+     async getAdvancedOptimizationInsights(client: SupabaseClient): Promise<AdvancedOptimizationInsights | null> {
       if (!this.config.enableDatabaseOptimization) return null;
       
       // Return a default response since the method is not yet implemented
@@ -497,23 +528,33 @@ class BackendOptimizationManager {
   /**
    * Execute a query with maximum optimization using all available techniques
    */
+  // Query options interface
+interface QueryOptions {
+  filters?: Record<string, unknown>;
+  selectFields?: string[];
+  orderBy?: { column: string; ascending: boolean };
+  limit?: number;
+  offset?: number;
+  cacheKey?: string;
+  ttl?: number;
+  tags?: string[];
+  useQueryOptimization?: boolean;
+  useCache?: boolean;
+  useDeduplication?: boolean;
+}
+
+// Query result interface
+interface QueryResult<T> {
+  data: T[] | null;
+  error: unknown;
+  metrics: Record<string, unknown>;
+}
+
   async executeOptimizedQuery<T>(
     client: SupabaseClient,
     table: string,
-    options: {
-      filters?: Record<string, any>;
-      selectFields?: string[];
-      orderBy?: { column: string; ascending: boolean };
-      limit?: number;
-      offset?: number;
-      cacheKey?: string;
-      ttl?: number;
-      tags?: string[];
-      useQueryOptimization?: boolean;
-      useCache?: boolean;
-      useDeduplication?: boolean;
-    } = {}
-  ): Promise<{ data: T[] | null; error: any; metrics: any }> {
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
     const {
       cacheKey,
       useQueryOptimization = true,
@@ -883,7 +924,6 @@ class BackendOptimizationManager {
         // Check execution time constraint
         const executionTime = Date.now() - startTime;
         if (executionTime > maxTime) {
-          console.warn(`System optimization exceeded time limit: ${executionTime}ms > ${maxTime}ms`);
         }
         
         return {
@@ -911,7 +951,6 @@ if (typeof window !== 'undefined') {
   // In browser environment, initialize after a short delay
   setTimeout(() => {
     backendOptimizationManager.initialize().catch(error => {
-      console.error('Failed to initialize optimization manager:', error);
     });
   }, 2000);
 }

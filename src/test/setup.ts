@@ -20,7 +20,7 @@ const mockIntersectionObserver = vi.fn().mockImplementation(() => ({
   thresholds: [],
   takeRecords: vi.fn(() => []),
 }))
-global.IntersectionObserver = mockIntersectionObserver as any
+global.IntersectionObserver = mockIntersectionObserver as unknown as typeof IntersectionObserver
 
 // Mock ResizeObserver
 const mockResizeObserver = vi.fn().mockImplementation(() => ({
@@ -28,7 +28,7 @@ const mockResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
 }))
-global.ResizeObserver = mockResizeObserver as any
+global.ResizeObserver = mockResizeObserver as unknown as typeof ResizeObserver
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {

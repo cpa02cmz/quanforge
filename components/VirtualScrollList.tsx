@@ -7,9 +7,9 @@ interface VirtualScrollListProps {
   searchTerm: string;
   filterType: string;
   processingId: string | null;
-  onDuplicate: (id: string) => void;
-  onDelete: (id: string, name: string) => void;
-  t: (key: string, params?: Record<string, any>) => string;
+  onDuplicate: (_id: string) => void;
+  onDelete: (_id: string, _name: string) => void;
+  t: (_key: string, _params?: Record<string, string>) => string;
 }
 
 export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
@@ -161,16 +161,17 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
 interface RobotCardProps {
   robot: Robot;
   processingId: string | null;
-  onDuplicate: (id: string) => void;
-  onDelete: (id: string, name: string) => void;
-  t: (key: string, params?: Record<string, any>) => string;
+  onDuplicate: (_id: string) => void;
+  onDelete: (_id: string, _name: string) => void;
+  t: (_key: string, _params?: Record<string, string>) => string;
 }
 
 const RobotCard: React.FC<RobotCardProps> = React.memo(({
   robot,
   processingId,
   onDuplicate,
-  onDelete
+  onDelete,
+  t: _t
 }) => {
   const handleDelete = useCallback(() => {
     onDelete(robot.id, robot.name);

@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('market_data_api_error', duration);
     
-    console.error('Market Data API GET error:', error);
+    
     
     return NextResponse.json(
       {
@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('market_data_api_subscribe_error', duration);
     
-    console.error('Market Data API POST error:', error);
+    
     
     return NextResponse.json(
       {

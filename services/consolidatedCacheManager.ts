@@ -6,7 +6,7 @@
 import { compress, decompress } from 'lz-string';
 
 // Core interfaces
-interface CacheEntry<T = any> {
+interface CacheEntry<T = unknown> {
   data: T;
   timestamp: number;
   ttl: number;
@@ -46,10 +46,10 @@ interface CacheMetrics {
 
 interface CacheStrategy {
   name: string;
-  shouldCache: (key: string, data: any) => boolean;
-  getTTL: (key: string, data: any) => number;
-  getTags?: (key: string, data: any) => string[];
-  onEvict?: (key: string, data: any) => void;
+  shouldCache: (key: string, data: unknown) => boolean;
+  getTTL: (key: string, data: unknown) => number;
+  getTags?: (key: string, data: unknown) => string[];
+  onEvict?: (key: string, data: unknown) => void;
   priority: 'high' | 'medium' | 'low';
   compression?: boolean;
   regionSpecific?: boolean;
@@ -111,11 +111,11 @@ export class ConsolidatedCacheManager {
     // API Response Strategy
     this.strategies.set('api', {
       name: 'api_response',
-      shouldCache: (_key: string, data: any) => {
-        return !data || !data.error;
+      shouldCache: (_key: string, data: unknown) => {
+        return !data || !(data as { error?: unknown }).error;
       },
-      getTTL: (_key: string, data: any) => {
-        return data && data.success ? 10 * 60 * 1000 : 2 * 60 * 1000;
+      getTTL: (_key: string, data: unknown) => {
+        return data && (data as { success?: boolean }).success ? 10 * 60 * 1000 : 2 * 60 * 1000;
       },
       getTags: () => ['api'],
       priority: 'high',
@@ -126,11 +126,11 @@ export class ConsolidatedCacheManager {
     // AI Response Strategy
     this.strategies.set('ai', {
       name: 'ai_response',
-      shouldCache: (_key: string, data: any) => {
-        return data && data.content && data.content.length > 0;
+      shouldCache: (_key: string, data: unknown): boolean => {
+        return !!(data && (data as { content?: string }).content && (data as { content: string }).content.length > 0);
       },
-      getTTL: (_key: string, data: any) => {
-        const length = data?.content?.length || 0;
+      getTTL: (_key: string, data: unknown) => {
+        const length = (data as { content?: string })?.content?.length || 0;
         return length > 1000 ? 30 * 60 * 1000 : 15 * 60 * 1000;
       },
       getTags: () => ['ai', 'generation'],
@@ -176,7 +176,7 @@ export class ConsolidatedCacheManager {
   /**
    * Get data from cache
    */
-  async get<T = any>(key: string, region?: string): Promise<T | null> {
+  async get<T = unknown>(key: string, region?: string): Promise<T | null> {
     const startTime = performance.now();
     const entry = this.cache.get(key);
 
@@ -203,13 +203,12 @@ export class ConsolidatedCacheManager {
     entry.lastAccessed = Date.now();
 
     // Decompress if needed
-    let data: any = entry.data;
+    let data: unknown = entry.data;
     if (entry.compressed) {
       try {
-        const decompressed = await decompress(entry.data);
+        const decompressed = await decompress(entry.data as string);
         data = JSON.parse(decompressed);
       } catch (error) {
-        console.warn('Failed to decompress cached data:', error);
         this.cache.delete(key);
         this.recordMiss(region);
         return null;
@@ -225,7 +224,7 @@ export class ConsolidatedCacheManager {
   /**
    * Set data in cache
    */
-  async set<T = any>(
+  async set<T = unknown>(
     key: string,
     data: T,
     strategyOrTTL?: string | number,
@@ -252,7 +251,7 @@ export class ConsolidatedCacheManager {
       : tags;
 
     // Process data (compression if needed)
-    let processedData: any = data;
+    let processedData: unknown = data;
     let compressed = false;
     let size = this.calculateSize(data);
 
@@ -272,7 +271,6 @@ export class ConsolidatedCacheManager {
           this.metrics.compressions++;
         }
       } catch (error) {
-        console.warn('Compression failed:', error);
       }
     }
 
@@ -281,7 +279,7 @@ export class ConsolidatedCacheManager {
 
     // Create cache entry
     const entry: CacheEntry<T> = {
-      data: processedData,
+      data: processedData as T,
       timestamp: Date.now(),
       ttl,
       accessCount: 0,
@@ -667,7 +665,6 @@ export class ConsolidatedCacheManager {
         ]);
         localStorage.setItem(this.storageKey, JSON.stringify(serializable));
       } catch (error) {
-        console.error('Failed to save cache to storage:', error);
       }
     }
   }
@@ -681,17 +678,16 @@ export class ConsolidatedCacheManager {
         const stored = localStorage.getItem(this.storageKey);
         if (stored) {
           const data = JSON.parse(stored);
-          this.cache = new Map(data.map(([key, entry]: [string, any]) => [
+          this.cache = new Map(data.map(([key, entry]: [string, CacheEntry]) => [
             key,
             {
               ...entry,
-              data: entry.compressed ? entry.data : JSON.parse(entry.data)
+              data: entry.compressed ? entry.data : JSON.parse(entry.data as string)
             }
           ]));
           this.updateMemoryUsage();
         }
       } catch (error) {
-        console.error('Failed to load cache from storage:', error);
       }
     }
   }
@@ -704,7 +700,6 @@ export class ConsolidatedCacheManager {
       try {
         localStorage.removeItem(this.storageKey);
       } catch (error) {
-        console.error('Failed to remove cache from storage:', error);
       }
     }
   }
@@ -725,7 +720,6 @@ export class ConsolidatedCacheManager {
         ]));
         this.updateMemoryUsage();
       } catch (error) {
-        console.error('Failed to sync cache from storage:', error);
       }
     }
   };

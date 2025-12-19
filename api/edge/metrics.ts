@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Edge metrics collection failed:', error);
+    
     
     return NextResponse.json({
       success: false,
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Edge metrics action failed:', error);
+    
     
     return NextResponse.json({
       success: false,

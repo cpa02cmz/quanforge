@@ -4,19 +4,19 @@ import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOpt
 import { Link } from 'react-router-dom';
 import { mockDb } from '../services/supabase';
 import { Robot, UserSession } from '../types';
-import { useToast } from '../components/Toast';
+import { useToast } from '../hooks/useToast';
 import { useTranslation } from '../services/i18n';
 import { AdvancedSEO } from '../utils/advancedSEO';
 import { createScopedLogger } from '../utils/logger';
 import { VirtualScrollList } from '../components/VirtualScrollList';
 
 // Debounce utility for search optimization
-const debounce = <T extends (...args: any[]) => any>(func: T, delay: number): T => {
+const debounce = (func: (value: string) => void, delay: number) => {
   let timeoutId: NodeJS.Timeout;
-  return ((...args: any[]) => {
+  return ((value: string) => {
     clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func(...args), delay);
-  }) as T;
+    timeoutId = setTimeout(() => func(value), delay);
+  });
 };
 
 const logger = createScopedLogger('Dashboard');
@@ -27,7 +27,7 @@ interface RobotCardProps {
   processingId: string | null;
   onDuplicate: (id: string) => void;
   onDelete: (id: string, name: string) => void;
-  t: (key: string, params?: Record<string, any>) => string;
+  t: (key: string, params?: Record<string, string>) => string;
 }
 
 const RobotCard: React.FC<RobotCardProps> = memo(({
@@ -118,7 +118,7 @@ const RobotCard: React.FC<RobotCardProps> = memo(({
 });
 
 interface DashboardProps {
-    session?: UserSession | null;
+  session?: UserSession | null;
 }
 
 export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {

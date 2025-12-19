@@ -77,7 +77,6 @@ const broadcastMarketData = () => {
         }));
       }
     } catch (error) {
-      console.error(`Error broadcasting to connection ${connectionId}:`, error);
       connections.delete(connectionId);
     }
   });
@@ -224,7 +223,6 @@ export async function GET(request: NextRequest) {
 
     // Handle WebSocket error
     server.addEventListener('error', (error) => {
-      console.error(`WebSocket error for connection ${connectionId}:`, error);
       connections.delete(connectionId);
       performanceMonitorEnhanced.recordMetric('websocket_error', performance.now() - startTime);
     });
@@ -255,7 +253,6 @@ export async function GET(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('websocket_error', duration);
     
-    console.error('WebSocket upgrade error:', error);
     
     return new Response('WebSocket upgrade failed', {
       status: 500,
@@ -336,7 +333,6 @@ export async function POST(request: NextRequest) {
             }
           }
         } catch (error) {
-          console.error(`Error broadcasting to connection ${connectionId}:`, error);
           connections.delete(connectionId);
         }
       });
@@ -372,7 +368,6 @@ export async function POST(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('websocket_api_error', duration);
     
-    console.error('WebSocket API error:', error);
     
     return new Response(JSON.stringify({
       success: false,

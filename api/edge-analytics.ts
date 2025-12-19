@@ -20,12 +20,7 @@ const streamingConnections = new Map<string, {
   filters: AnalyticsFilters;
 }>();
 
-// Analytics data buffer for streaming
-const analyticsBuffer = new Map<string, {
-  data: any[];
-  maxSize: number;
-  ttl: number;
-}>();
+
 
 interface AnalyticsFilters {
   regions?: string[];
@@ -145,8 +140,7 @@ export default async function handler(req: Request): Promise<Response> {
             'Content-Type': 'application/json',
           }
         });
-      } catch (error) {
-        console.error('Analytics processing error:', error);
+      } catch {
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to process analytics data'
@@ -200,8 +194,7 @@ export default async function handler(req: Request): Promise<Response> {
             'Content-Type': 'application/json',
           }
         });
-      } catch (error) {
-        console.error('Analytics summary error:', error);
+      } catch {
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to retrieve analytics summary'
@@ -237,8 +230,7 @@ export default async function handler(req: Request): Promise<Response> {
             'Content-Type': 'application/json',
           }
         });
-      } catch (error) {
-        console.error('Performance score error:', error);
+      } catch {
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to calculate performance score'
@@ -302,8 +294,7 @@ export default async function handler(req: Request): Promise<Response> {
                   timestamp: Date.now()
                 };
                 controller.enqueue(`data: ${JSON.stringify(message)}\n\n`);
-              } catch (error) {
-                console.error('Streaming error:', error);
+} catch {
                 const errorMessage = {
                   type: 'error',
                   error: 'Failed to collect metrics',
@@ -330,8 +321,7 @@ export default async function handler(req: Request): Promise<Response> {
             'Access-Control-Allow-Headers': 'Cache-Control',
           }
         });
-      } catch (error) {
-        console.error('Streaming setup error:', error);
+      } catch {
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to establish streaming connection'
@@ -369,8 +359,7 @@ export default async function handler(req: Request): Promise<Response> {
             'Content-Type': 'application/json',
           }
         });
-      } catch (error) {
-        console.error('Aggregation error:', error);
+      } catch {
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to aggregate analytics data'
@@ -409,8 +398,7 @@ export default async function handler(req: Request): Promise<Response> {
             'Content-Type': 'application/json',
           }
         });
-      } catch (error) {
-        console.error('Simulation error:', error);
+      } catch {
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to simulate edge performance'
@@ -435,8 +423,7 @@ export default async function handler(req: Request): Promise<Response> {
       }
     });
 
-  } catch (error) {
-    console.error('Edge analytics function error:', error);
+  } catch {
     return new Response(JSON.stringify({
       success: false,
       error: 'Internal Server Error',
@@ -490,7 +477,7 @@ function broadcastToStreams(message: any): void {
       if (now - connection.lastPing > 30000) { // 30 seconds timeout
         try {
           connection.controller.close();
-        } catch (e) {
+        } catch {
           // Ignore close errors
         }
         streamingConnections.delete(clientId);
@@ -499,8 +486,7 @@ function broadcastToStreams(message: any): void {
 
       // Send message
       connection.controller.enqueue(`data: ${JSON.stringify(message)}\n\n`);
-    } catch (error) {
-      console.error(`Failed to send to stream ${clientId}:`, error);
+    } catch {
       streamingConnections.delete(clientId);
     }
   }
@@ -687,14 +673,12 @@ setInterval(() => {
     if (connection) {
       try {
         connection.controller.close();
-      } catch (e) {
+      } catch {
         // Ignore close errors
       }
       streamingConnections.delete(clientId);
     }
   });
   
-  if (staleConnections.length > 0) {
-    console.log(`Cleaned up ${staleConnections.length} stale streaming connections`);
-  }
+  // Stale connections cleaned up
 }, 10000); // Check every 10 seconds

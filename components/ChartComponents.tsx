@@ -1,6 +1,9 @@
 import React, { memo, useState, useEffect } from 'react';
 
+
+
 // Dynamic import for Recharts to optimize bundle size
+// Note: Using 'any' for recharts components due to complex library types
 interface RechartsComponents {
   PieChart: any;
   Pie: any;
@@ -17,7 +20,7 @@ interface RechartsComponents {
 interface ChartComponentsProps {
   riskData: Array<{ name: string; value: number; color: string }> | undefined;
   analysis: { riskScore: number; profitability: number; description: string } | undefined;
-  t: ((key: string) => string) | undefined;
+  t: ((_key: string) => string) | undefined;
   data: Array<{ date: string; balance: number }> | undefined;
   totalReturn: number | undefined;
 }

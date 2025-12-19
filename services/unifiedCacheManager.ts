@@ -135,7 +135,6 @@ export class UnifiedCacheManager {
         const decompressed = await decompress(entry.data);
         data = JSON.parse(decompressed);
       } catch (error) {
-        console.warn('Failed to decompress cached data:', error);
         this.cache.delete(key);
         this.recordMiss(region);
         return null;
@@ -177,7 +176,6 @@ export class UnifiedCacheManager {
           this.metrics.compressions++;
         }
       } catch (error) {
-        console.warn('Compression failed:', error);
       }
     }
 
@@ -506,7 +504,6 @@ export class UnifiedCacheManager {
         ]);
         localStorage.setItem(this.storageKey, JSON.stringify(serializable));
       } catch (error) {
-        console.error('Failed to save cache to storage:', error);
       }
     }
   }
@@ -528,7 +525,6 @@ export class UnifiedCacheManager {
           this.updateMemoryUsage();
         }
       } catch (error) {
-        console.error('Failed to load cache from storage:', error);
       }
     }
   }
@@ -539,7 +535,6 @@ export class UnifiedCacheManager {
       try {
         localStorage.removeItem(this.storageKey);
       } catch (error) {
-        console.error('Failed to remove cache from storage:', error);
       }
     }
   }
@@ -558,7 +553,6 @@ export class UnifiedCacheManager {
         ]));
         this.updateMemoryUsage();
       } catch (error) {
-        console.error('Failed to sync cache from storage:', error);
       }
     }
   };

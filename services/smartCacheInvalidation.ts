@@ -150,7 +150,7 @@ class SmartCacheInvalidation {
    */
   addRule(rule: InvalidationRule): void {
     this.rules.set(rule.id, rule);
-    console.log(`Added invalidation rule: ${rule.name}`);
+    // Rule added successfully
   }
 
   /**
@@ -168,7 +168,7 @@ class SmartCacheInvalidation {
       .filter(rule => rule.triggers.includes(trigger));
 
     if (applicableRules.length === 0) {
-      console.debug(`No invalidation rules found for trigger: ${trigger}`);
+      // No invalidation rules found
       return;
     }
 
@@ -261,7 +261,7 @@ class SmartCacheInvalidation {
           const deleted = await consolidatedCache.delete(key);
           if (deleted) invalidatedCount++;
         } catch (error) {
-          console.warn(`Failed to delete key ${key} from consolidated cache:`, error);
+          // Failed to delete from consolidated cache
         }
       }
 

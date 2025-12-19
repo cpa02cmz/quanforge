@@ -1,7 +1,7 @@
 // AI Worker Manager - Handles communication with AI processing Web Worker
 // Offloads intensive AI context building and processing from main thread
 
-import { Message, StrategyParams } from '../types';
+import { Message, StrategyParams, StrategyAnalysis } from '../types';
 import { createScopedLogger } from '../utils/logger';
 
 const logger = createScopedLogger('aiWorkerManager');
@@ -9,21 +9,58 @@ const logger = createScopedLogger('aiWorkerManager');
 type WorkerMessageType = 'BUILD_CONTEXT' | 'PROCESS_RESPONSE' | 'EXTRACT_CODE' | 'FORMAT_MESSAGE' | 'GENERATE_CONTENT' | 'PARSE_RESPONSE';
 type WorkerResponseType = 'CONTEXT_BUILT' | 'RESPONSE_PROCESSED' | 'CODE_EXTRACTED' | 'MESSAGE_FORMATTED' | 'SUCCESS' | 'ERROR';
 
+// Worker data interfaces
+interface BuildContextData {
+  prompt: string;
+  currentCode?: string;
+  strategyParams?: StrategyParams;
+  history: Message[];
+}
+
+interface ProcessResponseData {
+  rawResponse: string;
+}
+
+interface CodeExtractionData {
+  text: string;
+}
+
+interface MessageFormattingData {
+  rawText: string;
+  hasCode: boolean;
+}
+
+interface ContentGenerationData {
+  fullPrompt: string;
+}
+
+interface ResponseParsingData {
+  response: string;
+}
+
+type WorkerMessageData = 
+  | BuildContextData
+  | ProcessResponseData
+  | CodeExtractionData
+  | MessageFormattingData
+  | ContentGenerationData
+  | ResponseParsingData;
+
 interface WorkerMessage {
   type: WorkerMessageType;
   id: string;
-  data: any;
+  data: WorkerMessageData;
 }
 
 interface WorkerResponse {
   type: WorkerResponseType;
   id: string;
-  data?: any;
+  data?: unknown;
   error?: string;
 }
 
 interface PendingRequest {
-  resolve: (value: any) => void;
+  resolve: (value: unknown) => void;
   reject: (error: Error) => void;
   timeout: NodeJS.Timeout;
 }
@@ -99,7 +136,7 @@ class AIWorkerManager {
     }
   }
 
-  private async sendMessage<T>(type: WorkerMessageType, data: any, timeout = 30000): Promise<T> {
+  private async sendMessage<T>(type: WorkerMessageType, data: WorkerMessageData, timeout = 30000): Promise<T> {
     await this.initializeWorker();
 
     if (!this.worker) {
@@ -197,9 +234,9 @@ class AIWorkerManager {
     }
   }
 
-  async parseGeminiResponse(response: string): Promise<{ code?: string; analysis?: any; thinking?: string }> {
+  async parseGeminiResponse(response: string): Promise<{ code?: string; analysis?: StrategyAnalysis; thinking?: string }> {
     try {
-      const result = await this.sendMessage<{ code?: string; analysis?: any; thinking?: string }>(
+      const result = await this.sendMessage<{ code?: string; analysis?: StrategyAnalysis; thinking?: string }>(
         'PARSE_RESPONSE',
         { response },
         5000 // 5 second timeout for response parsing

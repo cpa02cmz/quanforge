@@ -220,7 +220,7 @@ export async function GET(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('strategies_api_error', duration);
     
-    console.error('Strategies API GET error:', error);
+    
     
     return NextResponse.json(
       {
@@ -313,7 +313,7 @@ export async function POST(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('strategies_api_create_error', duration);
     
-    console.error('Strategies API POST error:', error);
+    
     
     return NextResponse.json(
       {

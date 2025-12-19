@@ -17,8 +17,14 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
-            // React ecosystem - optimized for edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
+            // React ecosystem - optimized for edge caching, split further
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-core';
+            }
+            if (id.includes('react-router') || id.includes('react-is')) {
+              return 'react-router-vendor';
+            }
+            if (id.includes('react')) {
               return 'react-vendor';
             }
             // Supabase - isolated for better connection pooling
@@ -32,18 +38,44 @@ export default defineConfig({
               }
               return 'supabase-vendor';
             }
-            // AI services - lazy loaded for edge optimization
+            // AI services - lazy loaded for edge optimization, split further
             if (id.includes('@google/genai')) {
+              if (id.includes('generators/') || id.includes('models/')) {
+                return 'ai-generators';
+              }
+              if (id.includes('chat/') || id.includes('embeddings/')) {
+                return 'ai-chat';
+              }
               return 'ai-vendor';
             }
-            // Chart libraries - split more granularly
+            // Chart libraries - split more granularly for better performance
             if (id.includes('recharts')) {
-              if (id.includes('AreaChart') || id.includes('LineChart')) {
-                return 'chart-core';
+              // Core chart types - split individually
+              if (id.includes('AreaChart')) {
+                return 'chart-area';
               }
-              if (id.includes('PieChart') || id.includes('BarChart')) {
+              if (id.includes('LineChart')) {
+                return 'chart-line';
+              }
+              if (id.includes('PieChart')) {
+                return 'chart-pie';
+              }
+              if (id.includes('BarChart')) {
+                return 'chart-bar';
+              }
+              // Chart utilities and components
+              if (id.includes('ResponsiveContainer') || id.includes('Tooltip') || id.includes('Legend')) {
                 return 'chart-misc';
               }
+              // Chart core utilities
+              if (id.includes('CartesianGrid') || id.includes('XAxis') || id.includes('YAxis') || id.includes('Brush')) {
+                return 'chart-core';
+              }
+              // Scatter and specialized charts
+              if (id.includes('ScatterChart') || id.includes('RadarChart') || id.includes('ComposedChart')) {
+                return 'chart-specialized';
+              }
+              // Recharts core
               return 'chart-vendor';
             }
             // Security utilities - bundled together
