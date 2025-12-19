@@ -17,11 +17,17 @@
 **Solution Applied**: Cleaned up vercel.json with schema-compliant settings
 **Key Insight**: Deployment platform schemas evolve - remove deprecated properties proactively
 
-### PR Management & Red Flag Resolution (2025-12-18)
-**Issue**: PR #139 had red flags with failing deployments on both Vercel and Cloudflare Workers
-**Root Causes**: Build compatibility and deployment configuration conflicts
-**Solution Applied**: Systematic troubleshooting of build, schema, and deployment pipeline
-**Key Insight**: Address root causes systematically rather than symptom patches
+### PR Management & Red Flag Resolution (2025-12-18 to 2025-12-19)
+**Issue**: Multiple PRs (#137, #139, #138) had red flags with failing deployments on both Vercel and Cloudflare Workers
+**Root Causes**: Build compatibility, deployment configuration conflicts, and merge conflicts between PRs
+**Solution Applied**: 
+- Systematic troubleshooting of build, schema, and deployment pipeline
+- Cherry-picked critical fixes between PR branches to resolve conflicts
+- Implemented incremental testing and validation approach
+**Key Insights**: 
+- Address root causes systematically rather than symptom patches
+- Critical fixes must be propagated to all affected PRs
+- Schema validation is fundamental to deployment success
 
 ### Recommended Development Patterns
 
@@ -57,6 +63,8 @@
 3. **Build Testing**: Ensure local build passes before pushing changes
 4. **Incremental Pushes**: Push small changes and allow deployment systems to complete
 5. **Monitor Status**: Use `gh pr checks` to track deployment status and identify specific failures
+6. **Cross-PR Propagation**: Critical fixes must be cherry-picked to all affected PR branches
+7. **Documentation**: Update AGENTS.md, bug.md, and task.md with resolution details for future reference
 ### When Optimizing Features
 1. **Measure First**: Use bundle analysis before and after changes
 2. **User Impact**: Prioritize visible improvements over internal optimizations
@@ -110,6 +118,21 @@
 - **Issue**: 200+ ESLint warnings (console.log, unused vars, any types)
 - **Solution**: Incremental cleanup with focus on critical issues
 - **Detection**: `npm run lint` shows extensive warnings
+
+## Multi-PR Conflict Resolution Strategy
+
+### Scenario Overview
+When multiple PRs have interdependent fixes with deployment failures:
+1. **Identify Root Causes**: Distinguish between build, schema, and merge conflict issues
+2. **Prioritize Critical Fixes**: Build-blocking issues take precedence over optimization PRs
+3. **Branch Management**: Use cherry-pick to transfer fixes between PR branches
+4. **Validation Process**: Test build+typecheck after each fix integration
+
+### Success Indicators
+- All deployments show "pending" or "pass" status instead of immediate failure
+- Local build and typecheck pass consistently
+- No merge conflicts remain
+- Schema validation compliant across all platforms
 
 ## Success Metrics
 
