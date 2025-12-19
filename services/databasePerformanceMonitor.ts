@@ -131,18 +131,10 @@ class DatabasePerformanceMonitor {
 
   private analyzePerformance(): void {
     // Analyze query patterns and suggest optimizations
-    const queryPatterns = this.analyzeQueryPatterns();
-    const indexSuggestions = this.suggestIndexes();
-    const optimizationSuggestions = this.suggestOptimizations();
-
-    // Log analysis results
-    if (process.env['NODE_ENV'] === 'development') {
-      console.log('Database Performance Analysis:', {
-        queryPatterns,
-        indexSuggestions,
-        optimizationSuggestions,
-      });
-    }
+    // Variables intentionally unused since console.log was removed for production
+    void this.analyzeQueryPatterns();
+    void this.suggestIndexes();
+    void this.suggestOptimizations();
   }
 
   private analyzeQueryPatterns(): any {
@@ -350,7 +342,7 @@ class DatabasePerformanceMonitor {
       this.alerts = this.alerts.filter((alert) => Date.now() - alert.timestamp < 3600000); // 1 hour
 
       // Log alert
-      console.warn(`Database Performance Alert [${severity.toUpperCase()}]: ${message}`);
+// Removed for production: console.warn(`Database Performance Alert [${severity.toUpperCase()}]: ${message}`);
     }
   }
 

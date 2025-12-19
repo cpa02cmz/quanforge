@@ -12,19 +12,19 @@ type WorkerResponseType = 'CONTEXT_BUILT' | 'RESPONSE_PROCESSED' | 'CODE_EXTRACT
 interface WorkerMessage {
   type: WorkerMessageType;
   id: string;
-  data: any;
+  data: unknown;
 }
 
 interface WorkerResponse {
   type: WorkerResponseType;
   id: string;
-  data?: any;
+  data?: unknown;
   error?: string;
 }
 
 interface PendingRequest {
-  resolve: (value: any) => void;
-  reject: (error: Error) => void;
+  resolve: (_value: unknown) => void;
+  reject: (_error: Error) => void;
   timeout: NodeJS.Timeout;
 }
 
@@ -99,7 +99,7 @@ class AIWorkerManager {
     }
   }
 
-  private async sendMessage<T>(type: WorkerMessageType, data: any, timeout = 30000): Promise<T> {
+  private async sendMessage<T>(type: WorkerMessageType, data: unknown, timeout = 30000): Promise<T> {
     await this.initializeWorker();
 
     if (!this.worker) {
@@ -197,9 +197,9 @@ class AIWorkerManager {
     }
   }
 
-  async parseGeminiResponse(response: string): Promise<{ code?: string; analysis?: any; thinking?: string }> {
+  async parseGeminiResponse(response: string): Promise<{ code?: string; analysis?: unknown; thinking?: string }> {
     try {
-      const result = await this.sendMessage<{ code?: string; analysis?: any; thinking?: string }>(
+      const result = await this.sendMessage<{ code?: string; analysis?: unknown; thinking?: string }>(
         'PARSE_RESPONSE',
         { response },
         5000 // 5 second timeout for response parsing

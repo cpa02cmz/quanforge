@@ -3,7 +3,7 @@ import { useReducer, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Message, MessageRole, Robot, StrategyParams, StrategyAnalysis, BacktestSettings, SimulationResult } from '../types';
 import { mockDb } from '../services/supabase';
-import { useToast } from '../components/Toast';
+import { useToast } from './useToast';
 import { DEFAULT_STRATEGY_PARAMS } from '../constants';
 import { runMonteCarloSimulation } from '../services/simulation';
 import { ValidationService } from '../utils/validation';
@@ -131,8 +131,8 @@ export const useGeneratorLogic = (id?: string) => {
 
    // Enhanced validation using ValidationService
    const validateStrategyParams = useCallback((params: StrategyParams): string[] => {
-     const errors = ValidationService.validateStrategyParams(params);
-     return errors.map(error => error.message);
+     const result = ValidationService.validateStrategyParams(params);
+     return result.isValid ? [] : result.errors.map(error => error.message);
    }, []);
 
    // Reset State Helper
@@ -273,9 +273,9 @@ const stopGeneration = () => {
   // Handlers
   const handleSendMessage = async (content: string) => {
     // Validate input
-    const validationErrors = ValidationService.validateChatMessage(content);
-    if (!ValidationService.isValid(validationErrors)) {
-      showToast(ValidationService.formatErrors(validationErrors), 'error');
+    const validation = ValidationService.validateChatMessage(content);
+    if (!validation.isValid && validation.errors.length > 0) {
+      showToast(validation.errors.map(e => e.message).join(', '), 'error');
       return;
     }
 
@@ -433,23 +433,22 @@ const stopGeneration = () => {
 
   const handleSave = async () => {
       // Validate robot name
-      const nameErrors = ValidationService.validateRobotName(state.robotName);
-      if (!ValidationService.isValid(nameErrors)) {
-        showToast(ValidationService.formatErrors(nameErrors), 'error');
+      if (!state.robotName || state.robotName.trim().length < 3) {
+        showToast('Robot name must be at least 3 characters long', 'error');
         return;
       }
 
       // Validate strategy parameters
-      const strategyErrors = ValidationService.validateStrategyParams(state.strategyParams);
-      if (!ValidationService.isValid(strategyErrors)) {
-        showToast(ValidationService.formatErrors(strategyErrors), 'error');
+      const strategyResult = ValidationService.validateStrategyParams(state.strategyParams);
+      if (!strategyResult.isValid && strategyResult.errors.length > 0) {
+        showToast(strategyResult.errors.map(e => e.message).join(', '), 'error');
         return;
       }
 
       // Validate backtest settings
-      const backtestErrors = ValidationService.validateBacktestSettings(state.backtestSettings);
-      if (!ValidationService.isValid(backtestErrors)) {
-        showToast(ValidationService.formatErrors(backtestErrors), 'error');
+      const backtestResult = ValidationService.validateBacktestSettings(state.backtestSettings);
+      if (!backtestResult.isValid && backtestResult.errors.length > 0) {
+        showToast(backtestResult.errors.map(e => e.message).join(', '), 'error');
         return;
       }
 

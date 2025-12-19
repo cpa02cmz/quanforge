@@ -29,7 +29,7 @@ class DataCompressionService {
         compressed = compressToUTF16(originalData);
         compressedSize = new Blob([compressed]).size;
       } catch (error) {
-        console.warn('Compression failed, using original data:', error);
+// Removed for production: console.warn('Compression failed, using original data:', error);
         // If compression fails, return original with zero savings
         compressed = originalData;
         compressedSize = originalSize;
@@ -66,7 +66,7 @@ class DataCompressionService {
       // If not compressed or decompression failed, try parsing directly
       return JSON.parse(compressedData) as Robot;
     } catch (error) {
-      console.error('Failed to decompress robot data:', error);
+// Removed for production: console.error('Failed to decompress robot data:', error);
       return null;
     }
   }

@@ -6,6 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { edgeCacheStrategy } from '../../services/edgeCacheStrategy';
 import { databasePerformanceMonitor } from '../../services/databasePerformanceMonitor';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('EdgeHealth');
 
 // Edge-optimized health check
 export async function GET(request: NextRequest) {
@@ -91,7 +94,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Health check failed:', error);
+    logger.error('Health check failed:', error);
     
     return NextResponse.json({
       status: 'unhealthy',

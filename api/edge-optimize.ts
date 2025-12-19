@@ -72,7 +72,7 @@ export default async function handler(req: Request) {
           'X-Response-Time': `${Date.now() - startTime}ms`,
         });
       }
-    } catch (error) {
+    } catch {
       // If in-progress request fails, continue with normal processing
       requestCache.delete(cacheKey);
     }
@@ -155,7 +155,7 @@ export default async function handler(req: Request) {
       headers 
     });
 
-  } catch (error) {
+  } catch {
     // Keep console.error for edge function debugging (acceptable in edge functions)
     return new Response(JSON.stringify({
       error: 'Internal Server Error',
@@ -263,7 +263,7 @@ async function refreshInBackground(cacheKey: string, req: Request): Promise<void
         storeInResponseCache(cacheKey, response, CACHE_CONFIG.DEFAULT_TTL);
       }
     } catch (error) {
-      console.debug('Background refresh failed:', error);
+// Removed for production: console.debug('Background refresh failed:', error);
     }
   }, 0);
 }
@@ -379,7 +379,7 @@ async function processRequest(req: Request): Promise<Response> {
         const cacheKey = new Request(req.url, req);
         await cache.put(cacheKey, response.clone());
       } catch (cacheError) {
-        console.debug('Edge cache storage failed:', cacheError);
+// Removed for production: console.debug('Edge cache storage failed:', cacheError);
       }
       
       return response;

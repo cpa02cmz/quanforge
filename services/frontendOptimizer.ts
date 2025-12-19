@@ -237,8 +237,8 @@ class FrontendOptimizer {
     // Load modules with low priority when idle
     nonCriticalModules.forEach((moduleLoader, index) => {
       setTimeout(() => {
-        moduleLoader().catch((error) => {
-          console.warn(`Failed to preload module ${index}:`, error);
+        moduleLoader().catch((_error) => {
+// Removed for production: console.warn(`Failed to preload module ${index}:`, error);
         });
       }, 5000 + index * 2000); // Stagger loading
     });

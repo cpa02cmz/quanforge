@@ -100,7 +100,7 @@ class EdgeSupabasePool {
       
       return !result?.error;
     } catch (error) {
-      console.error('Health check failed:', error);
+// Removed for production: console.error('Health check failed:', error);
       return false;
     }
   }
@@ -132,7 +132,7 @@ class EdgeSupabasePool {
             expiredKeys.push(key);
           }
         } catch (error) {
-          console.warn(`Health check failed for ${key}:`, error);
+// Removed for production: console.warn(`Health check failed for ${key}:`, error);
           expiredKeys.push(key);
         }
       }
@@ -160,11 +160,11 @@ class EdgeSupabasePool {
         try {
           await this.getEdgeClient('warmup', region);
           const latency = Date.now() - startTime;
-          console.log(`✅ Edge connection warmed for region: ${region} (${latency}ms)`);
+// Removed for production: console.log(`✅ Edge connection warmed for region: ${region} (${latency}ms)`);
           return { region, success: true, latency };
         } catch (error) {
           const latency = Date.now() - startTime;
-          console.warn(`❌ Failed to warm edge connection for ${region}:`, error);
+// Removed for production: console.warn(`❌ Failed to warm edge connection for ${region}:`, error);
           return { region, success: false, latency };
         }
       });
@@ -182,10 +182,10 @@ class EdgeSupabasePool {
       }
     }
     
-    // Log warming summary
-    const successCount = results.filter(r => r.success).length;
-    const avgLatency = results.reduce((sum, r) => sum + r.latency, 0) / results.length;
-    console.log(`🔥 Edge warming completed: ${successCount}/${regions.length} regions successful, avg latency: ${avgLatency.toFixed(2)}ms`);
+    // Log warming
+    results.filter(r => r.success).length;
+    results.reduce((sum, r) => sum + r.latency, 0) / results.length;
+// Removed for production: console.log(`🔥 Edge warming completed: ${successCount}/${regions.length} regions successful, avg latency: ${avgLatency.toFixed(2)}ms`);
     
     return;
   }

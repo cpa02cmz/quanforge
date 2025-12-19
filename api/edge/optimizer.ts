@@ -5,6 +5,9 @@
 
 import { edgeSupabase } from '../../services/edgeSupabaseClient';
 import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('EdgeOptimizer');
 
 interface EdgeResponse<T = any> {
   data?: T;
@@ -89,10 +92,7 @@ export default async function edgeHandler(request: Request): Promise<Response> {
     response.responseTime = Math.round(responseTime);
     response.region = region;
 
-    // Log performance metrics
-    if (process.env.NODE_ENV === 'production') {
-      console.log(`Edge function ${path} executed in ${responseTime}ms from ${region}`);
-    }
+    
 
     return new Response(JSON.stringify(response), {
       status: response.error ? 500 : 200,
@@ -104,7 +104,7 @@ export default async function edgeHandler(request: Request): Promise<Response> {
     });
 
   } catch (error) {
-    console.error('Edge function error:', error);
+    logger.error('Edge function error:', error);
     
     return new Response(JSON.stringify({
       error: 'Internal server error',
@@ -171,7 +171,7 @@ async function handleRobots(
     return { data: result.data, cached: false };
 
   } catch (error) {
-    console.error('Robots edge function error:', error);
+    logger.error('Robots edge function error:', error);
     return { error: 'Failed to fetch robots' };
   }
 }
@@ -201,7 +201,7 @@ async function handleStrategies(
     return { data: result.data };
 
   } catch (error) {
-    console.error('Strategies edge function error:', error);
+    logger.error('Strategies edge function error:', error);
     return { error: 'Failed to fetch strategies' };
   }
 }
@@ -240,7 +240,7 @@ async function handlePerformanceAnalytics(
     return { data: analytics };
 
   } catch (error) {
-    console.error('Analytics edge function error:', error);
+    logger.error('Analytics edge function error:', error);
     return { error: 'Failed to fetch analytics' };
   }
 }
@@ -268,7 +268,7 @@ async function handleHealthCheck(region: string): Promise<EdgeResponse> {
     return { data: health };
 
   } catch (error) {
-    console.error('Health check error:', error);
+    logger.error('Health check error:', error);
     return { error: 'Health check failed' };
   }
 }
@@ -329,7 +329,7 @@ async function handleCacheWarmup(
     };
 
   } catch (error) {
-    console.error('Cache warmup error:', error);
+    logger.error('Cache warmup error:', error);
     return { error: 'Cache warmup failed' };
   }
 }
@@ -349,7 +349,7 @@ async function handleOptimization(_request: Request, region: string): Promise<Ed
     return { data: optimizations };
 
   } catch (error) {
-    console.error('Optimization error:', error);
+    logger.error('Optimization error:', error);
     return { error: 'Optimization failed' };
   }
 }

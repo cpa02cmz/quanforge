@@ -2,7 +2,7 @@
 import React, { useState, useEffect, memo } from 'react';
 import { AISettings, AIProvider, Language } from '../types';
 import { settingsManager, DEFAULT_AI_SETTINGS } from '../services/settingsManager';
-import { useToast } from './Toast';
+import { useToast } from '../hooks/useToast';
 // testAIConnection imported dynamically to avoid bundle issues
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
@@ -111,9 +111,10 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, o
             const { testAIConnection } = await import('../services/gemini');
             await testAIConnection(settings);
             showToast(t('settings_test_success'), 'success');
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
             logger.error(error);
-            showToast(`Connection Failed: ${error.message}`, 'error');
+            showToast(`Connection Failed: ${errorMessage}`, 'error');
         } finally {
             setIsTesting(false);
         }

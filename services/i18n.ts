@@ -20,8 +20,8 @@ export const useTranslation = () => {
     useEffect(() => {
         loadTranslations(language).then(loadedTranslations => {
             setTranslations(loadedTranslations[language] || loadedTranslations.en || {});
-        }).catch(err => {
-            console.error('Failed to load translations:', err);
+        }).catch(_err => {
+// Removed for production: console.error('Failed to load translations:', err);
             // Fallback to empty object
             setTranslations({});
         });

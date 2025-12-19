@@ -34,7 +34,7 @@ class ReadReplicaManager {
     const supabaseAnonKey = getEnv('VITE_SUPABASE_ANON_KEY');
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.warn('Read replicas disabled: Missing Supabase configuration');
+// Removed for production: console.warn('Read replicas disabled: Missing Supabase configuration');
       return;
     }
 
@@ -127,7 +127,7 @@ class ReadReplicaManager {
     } catch (error) {
       // Fallback to primary on replica failure
       if (client !== this.primaryClient && this.primaryClient) {
-        console.warn(`Replica ${replicaName} failed, falling back to primary`);
+// Removed for production: console.warn(`Replica ${replicaName} failed, falling back to primary`);
         return this.executeAnalyticsQuery(query, params, {
           ...options,
           forceReplica: 'primary'

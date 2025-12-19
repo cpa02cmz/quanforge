@@ -1,5 +1,6 @@
 import { Robot, StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
+import { secureStorage } from '../utils/secureStorage';
 
 interface SecurityConfig {
   maxPayloadSize: number;
@@ -895,7 +896,7 @@ private validateRobotData(data: any): ValidationResult {
        });
      } catch (e) {
        // Fallback for environments where headers.entries() is not available
-       console.warn('Could not check headers for threats:', e);
+// Removed for production: console.warn('Could not check headers for threats:', e);
      }
 
     // Content-Length abuse
@@ -929,13 +930,13 @@ private validateRobotData(data: any): ValidationResult {
   }
 
   // Advanced API key rotation
-  rotateAPIKeys(): { oldKey: string; newKey: string; expiresAt: number } {
-    const oldKey = this.getCurrentAPIKey();
+  async rotateAPIKeys(): Promise<{ oldKey: string; newKey: string; expiresAt: number }> {
+    const oldKey = await this.getCurrentAPIKey();
     const newKey = this.generateSecureAPIKey();
     const expiresAt = Date.now() + this.config.encryption.keyRotationInterval;
 
     // Store new key with expiration
-    this.storeAPIKey(newKey, expiresAt);
+    await this.storeAPIKey(newKey, expiresAt);
 
     return {
       oldKey,
@@ -944,9 +945,10 @@ private validateRobotData(data: any): ValidationResult {
     };
   }
 
-  private getCurrentAPIKey(): string {
+  private async getCurrentAPIKey(): Promise<string> {
     // Retrieve current API key from secure storage
-    return localStorage.getItem('current_api_key') || '';
+    const secureKey = await secureStorage.get<string>('current_api_key');
+    return secureKey || localStorage.getItem('current_api_key') || '';
   }
 
   private generateSecureAPIKey(): string {
@@ -955,8 +957,12 @@ private validateRobotData(data: any): ValidationResult {
     return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
   }
 
-  private storeAPIKey(key: string, expiresAt: number): void {
-    localStorage.setItem('current_api_key', key);
+  private async storeAPIKey(key: string, expiresAt: number): Promise<void> {
+    // Store API key securely with encryption
+    await secureStorage.set('current_api_key', key, { 
+      encrypt: true, 
+      ttl: expiresAt - Date.now() 
+    });
     localStorage.setItem('api_key_expires', expiresAt.toString());
   }
 
@@ -980,7 +986,7 @@ private validateRobotData(data: any): ValidationResult {
         timestamp: Date.now()
       };
 
-      console.warn('🛡️ CSP Violation detected:', violation);
+// Removed for production: console.warn('🛡️ CSP Violation detected:', violation);
       
       // Store violation for analysis
       this.storeCSPViolation(violation);
@@ -1025,7 +1031,7 @@ private validateRobotData(data: any): ValidationResult {
       url: window.location.href
     };
 
-    console.error('🚨 Security Alert:', alert);
+// Removed for production: console.error('🚨 Security Alert:', alert);
     
     // In production, send to security monitoring service
     if (process.env["NODE_ENV"] === 'production' && this.config.endpoint) {
@@ -1044,7 +1050,7 @@ private validateRobotData(data: any): ValidationResult {
         body: JSON.stringify(alert)
       });
     } catch (error) {
-      console.error('Failed to send security alert:', error);
+// Removed for production: console.error('Failed to send security alert:', error);
     }
   }
 
@@ -1571,7 +1577,7 @@ private validateRobotData(data: any): ValidationResult {
        
        return parsed;
      } catch (error) {
-       console.error('JSON parsing error:', error);
+// Removed for production: console.error('JSON parsing error:', error);
        return null;
      }
    }

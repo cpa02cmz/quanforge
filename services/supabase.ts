@@ -7,6 +7,8 @@ import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
+import { secureStorage } from '../utils/secureStorage';
+import { memoryMonitor } from '../utils/memoryManagement';
 
 // Enhanced connection retry configuration with exponential backoff
 const RETRY_CONFIG = {
@@ -34,13 +36,25 @@ const safeParse = (data: string | null, fallback: any) => {
         // Use security manager's safe JSON parsing
         return securityManager.safeJSONParse(data) || fallback;
     } catch (e) {
-        console.error("Failed to parse data from storage:", e);
+// Removed for production: console.error("Failed to parse data from storage:", e);
         return fallback;
     }
 };
 
 // Helper: Try save to storage with Quota handling
-const trySaveToStorage = (key: string, value: string) => {
+const trySaveToStorage = async (key: string, value: string) => {
+    // Use secure storage for sensitive data
+    if (key.includes('session') || key.includes('auth')) {
+        const success = await secureStorage.set(key, value, { 
+            encrypt: true, 
+            ttl: 24 * 60 * 60 * 1000 // 24 hours 
+        });
+        if (!success) {
+            throw new Error("Failed to secure sensitive data.");
+        }
+        return;
+    }
+    
     try {
         localStorage.setItem(key, value);
     } catch (e: any) {
@@ -79,7 +93,10 @@ const isValidRobot = (r: any): boolean => {
 
 // --- Mock Implementation ---
 
-const getMockSession = () => {
+const getMockSession = async () => {
+  // Try secure storage first, fallback to localStorage
+  const secureData = await secureStorage.get<string>(STORAGE_KEY);
+  if (secureData) return safeParse(secureData, null);
   return safeParse(localStorage.getItem(STORAGE_KEY), null);
 };
 
@@ -151,24 +168,50 @@ class LRUCache<T> {
   private cache = new Map<string, { data: T; timestamp: number }>();
   private readonly ttl: number;
   private readonly maxSize: number;
+  private cacheName: string;
+  private hits = 0;
+  private misses = 0;
 
-  constructor(ttl: number, maxSize: number) {
+  constructor(ttl: number, maxSize: number, cacheName: string = 'supabase-cache') {
     this.ttl = ttl;
     this.maxSize = maxSize;
+    this.cacheName = cacheName;
+    
+    // Register with memory monitor
+    memoryMonitor.registerCache(cacheName, {
+      size: () => this.cache.size,
+      maxSize: this.maxSize,
+      hits: this.hits,
+      misses: this.misses,
+      clear: () => this.clear(),
+      cleanup: () => this.cleanup()
+    });
+    
+    // Listen for memory cleanup events
+    window.addEventListener('memory-cleanup', (event: any) => {
+      if (!event.detail.cacheName || event.detail.cacheName === this.cacheName) {
+        this.cleanup(event.detail.level);
+      }
+    });
   }
 
   get(key: string): T | null {
     const item = this.cache.get(key);
-    if (!item) return null;
+    if (!item) {
+      this.misses++;
+      return null;
+    }
 
     if (Date.now() - item.timestamp > this.ttl) {
       this.cache.delete(key);
+      this.misses++;
       return null;
     }
 
     // Move to end (most recently used)
     this.cache.delete(key);
     this.cache.set(key, item);
+    this.hits++;
     return item.data;
   }
 
@@ -192,26 +235,86 @@ class LRUCache<T> {
     this.cache.clear();
   }
 
-  has(key: string): boolean {
+has(key: string): boolean {
     const item = this.cache.get(key);
-    if (!item) return false;
-    
-    if (Date.now() - item.timestamp > this.ttl) {
-      this.cache.delete(key);
+    if (!item) {
+      this.misses++;
       return false;
     }
+
+    if (Date.now() - item.timestamp > this.ttl) {
+      this.cache.delete(key);
+      this.misses++;
+      return false;
+    }
+
+    this.hits++;
     return true;
+  }
+  
+  private cleanup(level: 'light' | 'aggressive' | 'emergency' = 'light'): number {
+    let cleanedCount = 0;
+    const now = Date.now();
+    
+    switch (level) {
+      case 'emergency':
+        cleanedCount = this.cache.size;
+        this.cache.clear();
+        this.hits = 0;
+        this.misses = 0;
+        break;
+        
+      case 'aggressive':
+        // Clear expired entries
+        for (const [key, item] of this.cache.entries()) {
+          if (now - item.timestamp > this.ttl) {
+            this.cache.delete(key);
+            cleanedCount++;
+          }
+        }
+        // If still too large, remove oldest entries
+        while (this.cache.size > this.maxSize * 0.5) {
+          const firstKey = this.cache.keys().next().value;
+          if (firstKey) {
+            this.cache.delete(firstKey);
+            cleanedCount++;
+          } else {
+            break;
+          }
+        }
+        break;
+        
+      case 'light':
+      default:
+        // Only clear expired entries
+        for (const [key, item] of this.cache.entries()) {
+          if (now - item.timestamp > this.ttl) {
+            this.cache.delete(key);
+            cleanedCount++;
+          }
+        }
+        break;
+    }
+    
+    // Update memory monitor metrics
+    memoryMonitor.updateCacheMetrics(this.cacheName, {
+      size: this.cache.size,
+      hitRate: this.hits + this.misses > 0 ? this.hits / (this.hits + this.misses) : 0,
+      lastCleanup: now
+    });
+    
+    return cleanedCount;
   }
 }
 
-const cache = new LRUCache<any>(CACHE_CONFIG.ttl, CACHE_CONFIG.maxSize);
+const cache = new LRUCache<any>(CACHE_CONFIG.ttl, CACHE_CONFIG.maxSize, 'supabase-main');
 
 
 
 // Enhanced retry wrapper with exponential backoff and jitter
 const withRetry = async <T>(
   operation: () => Promise<T>,
-  operationName: string
+  _operationName: string
 ): Promise<T> => {
   let lastError: any;
   
@@ -227,7 +330,7 @@ const withRetry = async <T>(
       }
       
       if (attempt === RETRY_CONFIG.maxRetries) {
-        console.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, error);
+// Removed for production: console.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, error);
         throw error;
       }
       
@@ -260,7 +363,7 @@ const getClient = async () => {
             }, 'getClient');
             activeClient = client;
         } catch (e) {
-            console.error("Connection pool failed, using mock client", e);
+// Removed for production: console.error("Connection pool failed, using mock client", e);
             activeClient = mockClient;
         }
     } else {
@@ -312,8 +415,8 @@ class PerformanceMonitor {
   logMetrics() {
     const allMetrics = this.getAllMetrics();
     console.group('Database Performance Metrics');
-    for (const [operation, metric] of Object.entries(allMetrics)) {
-      console.log(`${operation}: ${metric.count} calls, avg: ${metric.avgTime.toFixed(2)}ms`);
+    for (const [_operation, _metric] of Object.entries(allMetrics)) {
+// Removed for production: console.log(`${operation}: ${metric.count} calls, avg: ${metric.avgTime.toFixed(2)}ms`);
     }
     console.groupEnd();
   }
@@ -678,7 +781,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
             
             // Log slow queries in development
             if (import.meta.env.DEV && duration > 1000) {
-              console.warn(`Slow getRobotsPaginated query: ${duration.toFixed(2)}ms for ${result.count} results`);
+console.warn(`Slow getRobotsPaginated query: ${duration.toFixed(2)}ms for ${result.count} results`);
             }
             
             return response;
@@ -1172,7 +1275,7 @@ export const dbUtils = {
                 const chunk = payload.slice(i, i + BATCH_SIZE);
                 const { error } = await client.from('robots').insert(chunk);
                 if (error) {
-                    console.error("Batch migration failed", error);
+// Removed for production: console.error("Batch migration failed", error);
                     failCount += chunk.length;
                     lastError = error.message;
                 } else {
@@ -1495,7 +1598,7 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                 const { error } = await client.rpc('pg_stat_reset');
                 
                 if (error) {
-                    console.warn("Could not run database optimization:", error.message);
+// Removed for production: console.warn("Could not run database optimization:", error.message);
                     // Non-critical error, just return success with warning
                 }
                 

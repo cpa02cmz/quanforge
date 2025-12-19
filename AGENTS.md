@@ -51,6 +51,13 @@
 3. **Lint Quality**: Address critical lint issues but prioritize function over form
 4. **Document**: Record root cause, solution, and prevention strategies
 
+### When Managing PRs with Red Flags
+1. **Conflict Resolution**: Merge main branch into PR branch to resolve merge conflicts
+2. **Schema Validation**: Verify vercel.json complies with current Vercel schema requirements
+3. **Build Testing**: Ensure local build passes before pushing changes
+4. **Incremental Pushes**: Push small changes and allow deployment systems to complete
+5. **Monitor Status**: Use `gh pr checks` to track deployment status and identify specific failures
+
 ### When Optimizing Features
 1. **Measure First**: Use bundle analysis before and after changes
 2. **User Impact**: Prioritize visible improvements over internal optimizations
