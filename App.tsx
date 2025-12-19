@@ -8,13 +8,13 @@ import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
-  import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
-  import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
-  import { frontendOptimizer } from './services/frontendOptimizer';
-  import { edgeAnalytics } from './services/edgeAnalytics';
-  import { edgeMonitoring } from './services/edgeMonitoring';
-  import { advancedAPICache } from './services/advancedAPICache';
-  import { frontendPerformanceOptimizer } from './services/frontendPerformanceOptimizer';
+import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
+import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
+import { frontendOptimizer } from './services/frontendOptimizer';
+import { edgeAnalytics } from './services/edgeAnalytics';
+import { edgeMonitoring } from './services/edgeMonitoring';
+import { advancedAPICache } from './services/advancedAPICache';
+import { frontendPerformanceOptimizer } from './services/frontendPerformanceOptimizer';
 
 // Enhanced lazy loading with route-based code splitting and preloading
 const Auth = lazy(() => 
@@ -45,12 +45,8 @@ const Layout = lazy(() =>
   import('./components/Layout').then(module => ({ default: module.Layout }))
 );
 
-// Dynamic import utilities for services and heavy components
-export const loadGeminiService = () => import('./services/gemini');
-export const loadSEOUtils = () => import('./utils/seoEnhanced');
-export const loadChartComponents = () => import('./components/ChartComponents');
-export const loadCodeEditor = () => import('./components/CodeEditor');
-export const loadBacktestPanel = () => import('./components/BacktestPanel');
+// Dynamic import utilities are now exported from utils/dynamicImports.ts
+// to avoid react-refresh warnings
 
 // Enhanced preloading strategy with route-based optimization
    const preloadCriticalRoutes = () => {

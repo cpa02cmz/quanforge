@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Edge optimization API error:', error);
+    logger.error('Edge optimization API error:', error);
     
     return NextResponse.json({
       success: false,
@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Edge optimization action error:', error);
+    logger.error('Edge optimization action error:', error);
     
     return NextResponse.json({
       success: false,

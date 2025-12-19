@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { edgeCacheStrategy } from '../../services/edgeCacheStrategy';
 import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
+import { errorLogger } from '../../utils/logger';
 
 export async function GET(request: NextRequest) {
   const startTime = performance.now();
@@ -94,7 +95,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Edge optimization failed:', error);
+    errorLogger.error('Edge optimization failed:', error);
     
     return NextResponse.json({
       success: false,
@@ -288,7 +289,7 @@ export async function POST(request: NextRequest) {
     }, { status: 400 });
     
   } catch (error) {
-    console.error('Edge optimization POST failed:', error);
+    errorLogger.error('Edge optimization POST failed:', error);
     
     return NextResponse.json({
       success: false,

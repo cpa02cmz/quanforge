@@ -6,28 +6,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { edgeSupabase } from '../../services/edgeSupabaseClient';
 import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
-
-interface AnalyticsData {
-  timestamp: number;
-  region: string;
-  metrics: {
-    responseTime: number;
-    cacheHitRate: number;
-    errorRate: number;
-    requestCount: number;
-    bandwidthUsage: number;
-  };
-  performance: {
-    lcp?: number;
-    fid?: number;
-    cls?: number;
-    ttfb?: number;
-  };
-  resources: {
-    memoryUsage: NodeJS.MemoryUsage;
-    cpuUsage: NodeJS.CpuUsage;
-  };
-}
+import { 
+  AnalyticsData, 
+  AnalyticsMetrics, 
+  CoreWebVitals, 
+  ResourceMetrics,
+  EdgeMetric,
+  DatabaseMetrics
+} from '../../../types/analytics';
 
 /**
  * Collect and store analytics data
@@ -274,7 +260,7 @@ async function getDatabaseMetrics(startTime: number, endTime: number, region: st
     const data = result.data || [];
     
     return {
-      queryTime: data.reduce((sum: number, item: any) => sum + (item.queryTime || 0), 0) / data.length || 0,
+      queryTime: data.reduce((sum: number, item: { queryTime?: number }) => sum + (item.queryTime || 0), 0) / data.length || 0,
       connectionPool: {
         active: 5,
         idle: 10,
@@ -283,7 +269,7 @@ async function getDatabaseMetrics(startTime: number, endTime: number, region: st
       cacheHitRate: 0.85,
       errorRate: 0.02,
       requestCount: data.length,
-    };
+    } as DatabaseMetrics;
 
   } catch (error) {
     console.error('Get database metrics error:', error);
@@ -362,7 +348,7 @@ async function getMetricAverage(
       return null;
     }
 
-    const values = result.data.map((item: any) => item[metric]).filter((val: number) => val != null);
+    const values = result.data.map((item: Record<string, number>) => item[metric]).filter((val: number) => val != null);
     return values.length > 0 ? values.reduce((sum: number, val: number) => sum + val, 0) / values.length : null;
 
   } catch (error) {
@@ -374,7 +360,7 @@ async function getMetricAverage(
 /**
  * Calculate aggregated metrics
  */
-function calculateAggregatedMetrics(edgeMetrics: any[], dbMetrics: any, perfMetrics: any): any {
+function calculateAggregatedMetrics(edgeMetrics: EdgeMetric[], dbMetrics: DatabaseMetrics, perfMetrics: Record<string, any>): Record<string, any> {
   // Aggregate edge metrics
   const edgeAggregated = edgeMetrics.reduce((acc, metric) => {
     return {

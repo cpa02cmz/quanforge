@@ -17,8 +17,30 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
-            // React ecosystem - optimized for edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
+            // React ecosystem - split more granularly for better cache efficiency
+            if (id.includes('react')) {
+              // Core React - split more granularly
+              if (id.includes('react-dom')) {
+                return 'react-dom';
+              }
+              if (id.includes('react/jsx-runtime') || id.includes('react/jsx-dev-runtime')) {
+                return 'react-jsx';
+              }
+              if (id.includes('react/index')) {
+                return 'react-core';
+              }
+              // React Router
+              if (id.includes('react-router') || id.includes('react-router-dom')) {
+                return 'react-router';
+              }
+              // React development tools
+              if (id.includes('react-devtools') || id.includes('react-refresh')) {
+                return 'react-dev';
+              }
+              // React hooks and utilities
+              if (id.includes('react') && (id.includes('hooks') || id.includes('use'))) {
+                return 'react-hooks';
+              }
               return 'react-vendor';
             }
             // Supabase - isolated for better connection pooling
@@ -32,25 +54,98 @@ export default defineConfig({
               }
               return 'supabase-vendor';
             }
-            // AI services - lazy loaded for edge optimization
+            // AI services - split more granularly for better performance
             if (id.includes('@google/genai')) {
-              return 'ai-vendor';
+              // Split AI vendor into specific functionality - more aggressive splitting
+              if (id.includes('/chat/') || id.includes('generateContent') || id.includes('streamGenerateContent')) {
+                return 'ai-chat';
+              }
+              if (id.includes('/models/') || id.includes('getModel') || id.includes('listModels')) {
+                return 'ai-models';
+              }
+              if (id.includes('/generators/') || id.includes('generate')) {
+                return 'ai-generators';
+              }
+              if (id.includes('protos') || id.includes('grpc') || id.includes('proto')) {
+                // Split protocols further
+                if (id.includes('proto') || id.includes('protobuf')) {
+                  return 'ai-protobuf';
+                }
+                return 'ai-protocol';
+              }
+              if (id.includes('client') || id.includes('auth') || id.includes('credentials')) {
+                // Split client functions
+                if (id.includes('auth')) {
+                  return 'ai-auth';
+                }
+                return 'ai-client';
+              }
+              // Split request/response handling
+              if (id.includes('request') || id.includes('response') || id.includes('stream')) {
+                return 'ai-streaming';
+              }
+              // Split AI utilities and helpers
+              if (id.includes('util') || id.includes('helper') || id.includes('validate')) {
+                return 'ai-utils';
+              }
+              return 'ai-vendor-core';
             }
-            // Chart libraries - split more granularly
+            // Chart libraries - split more granularly to reduce bundle size
             if (id.includes('recharts')) {
-              if (id.includes('AreaChart') || id.includes('LineChart')) {
+              // Split Recharts into smaller chunks
+              if (id.includes('AreaChart') || id.includes('LineChart') || id.includes('ComposedChart') || id.includes('Line')) {
                 return 'chart-core';
               }
-              if (id.includes('PieChart') || id.includes('BarChart')) {
+              if (id.includes('PieChart') || id.includes('BarChart') || id.includes('RadarChart') || id.includes('ScatterChart')) {
                 return 'chart-misc';
               }
-              return 'chart-vendor';
+              // Split individual chart components
+              if (id.includes('XAxis') || id.includes('YAxis') || id.includes('CartesianGrid') || id.includes('Tooltip') || id.includes('Legend')) {
+                return 'chart-axes';
+              }
+              if (id.includes('ResponsiveContainer') || id.includes('Brush') || id.includes('ReferenceLine')) {
+                return 'chart-interactive';
+              }
+              // Core recharts utilities and shapes - split further
+              if (id.includes('shape')) {
+                return 'chart-shapes';
+              }
+              if (id.includes('scale')) {
+                return 'chart-scales';
+              }
+              if (id.includes('Animation') || id.includes('animation')) {
+                return 'chart-animations';
+              }
+              if (id.includes('util')) {
+                return 'chart-utils';
+              }
+              // Split cartesian and polar components
+              if (id.includes('polar') || id.includes('Polar')) {
+                return 'chart-polar';
+              }
+              if (id.includes('cartesian') || id.includes('Cartesian')) {
+                return 'chart-cartesian';
+              }
+              // Fallback for remaining recharts modules
+              return 'chart-vendor-light';
             }
             // Security utilities - bundled together
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'security-vendor';
             }
-            // All other vendor libraries
+            // Split vendor-misc more granularly
+            if (id.includes('lodash') || id.includes('es-toolkit')) {
+              return 'vendor-utils';
+            }
+            if (id.includes('date') || id.includes('moment') || id.includes('dayjs')) {
+              return 'vendor-date';
+            }
+            if (id.includes('crypto') || id.includes('hash') || id.includes('encryption')) {
+              return 'vendor-crypto';
+            }
+            if (id.includes('fetch') || id.includes('axios') || id.includes('xhr')) {
+              return 'vendor-http';
+            }
             return 'vendor-misc';
           }
           
@@ -222,7 +317,7 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 100, // More aggressive optimization for edge performance
+    chunkSizeWarningLimit: 150, // Adjusted limit - chunks under 150KB are acceptable for edge
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification

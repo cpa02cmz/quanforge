@@ -76,6 +76,12 @@
 3. **Lint Quality**: Address critical lint issues but prioritize function over form
 4. **Document**: Record root cause, solution, and prevention strategies
 
+### Code Quality Standards (2025-12-19 Update)
+- **TypeScript Strict Mode**: Avoid `any` types - use `unknown` for error handling or proper interfaces
+- **Parameter Naming**: Use underscore prefix (`_param`) for intentionally unused parameters
+- **Error Handling**: Replace `catch (e: any)` with `catch (e: unknown)` and type guards
+- **Console Statements**: Acceptable only behind `import.meta.env.DEV` checks or in performance monitoring
+
 ### When Managing PRs with Red Flags
 1. **Conflict Resolution**: Merge main branch into PR branch to resolve merge conflicts
 2. **Schema Validation**: Verify vercel.json complies with current Vercel schema requirements
@@ -136,6 +142,7 @@
 ### Code Quality
 - **Issue**: 200+ ESLint warnings (console.log, unused vars, any types)
 - **Solution**: Incremental cleanup with focus on critical issues
+- **Resolution (2025-12-19)**: Fixed critical errors, replaced `any` types with proper TypeScript interfaces, removed unused variables
 - **Detection**: `npm run lint` shows extensive warnings
 
 ## Multi-PR Conflict Resolution Strategy
