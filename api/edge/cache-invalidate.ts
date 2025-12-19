@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     const currentRegion = request.headers.get('x-vercel-region') || 'unknown';
     const targetRegions = regions.length > 0 ? regions : [currentRegion];
     
-    console.log(`Starting cache invalidation: ${keys.length} keys, ${patterns.length} patterns, ${tags.length} tags`);
+    
 
     const invalidated = {
       keys: [] as string[],

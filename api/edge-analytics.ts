@@ -3,7 +3,7 @@
  * Collects and analyzes edge performance metrics with live streaming capabilities
  */
 
-import { edgeMetricsCollector } from '../services/edgeMetrics';
+// Edge metrics temporarily removed during cleanup
 import { vercelEdgeOptimizer } from '../services/vercelEdgeOptimizer';
 
 export const config = {
@@ -146,7 +146,6 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
-        console.error('Analytics processing error:', error);
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to process analytics data'

@@ -77,8 +77,9 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
             } else {
                 showToast(`Migration failed: ${res.error}`, 'error');
             }
-        } catch (e: any) {
-             showToast(`Migration error: ${e.message}`, 'error');
+        } catch (e: unknown) {
+             const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+             showToast(`Migration error: ${errorMessage}`, 'error');
         } finally {
             setIsMigrating(false);
         }

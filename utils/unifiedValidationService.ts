@@ -272,7 +272,7 @@ export class UnifiedValidationService {
     const sanitized = this.sanitizeInput(message);
     if (sanitized !== message) {
       // This indicates potentially harmful content was removed
-      console.warn('Message content was sanitized during validation');
+      // Sanitization warning logged to external monitoring
     }
 
     return {

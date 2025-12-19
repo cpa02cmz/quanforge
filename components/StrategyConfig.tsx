@@ -39,7 +39,7 @@ const sanitizeInput = (input: string): string => {
     });
   };
 
-  const handleChange = useCallback((field: keyof StrategyParams, value: any) => {
+  const handleChange = useCallback((field: keyof StrategyParams, value: StrategyParams[keyof StrategyParams]) => {
      if (typeof value === 'string') {
        value = sanitizeInput(value);
      }
@@ -115,9 +115,10 @@ const sanitizeInput = (input: string): string => {
         showToast('Configuration imported successfully', 'success');
         setShowManualImport(false);
         setManualImportText('');
-    } catch (e: any) {
+    } catch (e: unknown) {
         logger.error(e);
-        showToast(`Import Failed: ${e.message}`, 'error');
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+        showToast(`Import Failed: ${errorMessage}`, 'error');
     }
   };
 
@@ -125,7 +126,7 @@ const sanitizeInput = (input: string): string => {
       try {
           const text = await navigator.clipboard.readText();
           parseAndImport(text);
-      } catch (e: any) {
+      } catch (e: unknown) {
           logger.warn("Clipboard read failed, switching to manual mode", e);
           setShowManualImport(true);
           showToast('Clipboard blocked. Please paste manually below.', 'info');

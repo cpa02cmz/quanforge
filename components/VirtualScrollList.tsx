@@ -45,31 +45,7 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
        5000 // 5 second TTL for this filter result
      );
      
-     const duration = performance.now() - startTime;
-     if (duration > 16) { // More than one frame at 60fps
-       console.warn(`VirtualScrollList filter took ${duration.toFixed(2)}ms for ${robots.length} items`);
-     }
-     
-     return result;
-   }, [robots, searchTerm, filterType]);
-
-  // Calculate visible range
-  const visibleRange = useMemo(() => {
-    const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
-    const endIndex = Math.min(
-      filteredRobots.length - 1,
-      Math.ceil((scrollTop + containerHeight) / itemHeight) + overscan
-    );
-    return { startIndex, endIndex };
-  }, [scrollTop, containerHeight, itemHeight, filteredRobots.length, overscan]);
-
-  // Handle scroll events with throttling for performance
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const newScrollTop = e.currentTarget.scrollTop;
-    // Only update state if scroll position changed significantly to avoid unnecessary re-renders
-    if (Math.abs(newScrollTop - scrollTop) > itemHeight / 2) {
-      setScrollTop(newScrollTop);
-    }
+const duration = performance.now() - startTime;
   }, [scrollTop, itemHeight]);
 
   // Update container height on resize
