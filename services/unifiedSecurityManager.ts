@@ -716,7 +716,7 @@ class UnifiedSecurityManager {
   /**
    * Generic code validation
    */
-  private validateGenericCode(input: string, errors: string[], warnings: string[], riskScore: number): void {
+  private validateGenericCode(input: string, errors: string[], _warnings: string[], riskScore: number): void {
     let currentRiskScore = riskScore;
     
     const dangerousPatterns = [
@@ -741,7 +741,7 @@ class UnifiedSecurityManager {
   /**
    * Chat input validation for prompt injection
    */
-  private validateChatInput(input: string, errors: string[], warnings: string[], riskScore: number): void {
+  private validateChatInput(input: string, _errors: string[], warnings: string[], riskScore: number): void {
     let currentRiskScore = riskScore;
     
     const promptInjectionPatterns = [
@@ -771,7 +771,7 @@ class UnifiedSecurityManager {
   /**
    * Search input validation
    */
-  private validateSearchInput(input: string, errors: string[], warnings: string[], riskScore: number): void {
+  private validateSearchInput(input: string, errors: string[], _warnings: string[], riskScore: number): void {
     if (input.trim().length === 0) return;
     
     if (input.length > 1000) {
@@ -799,7 +799,7 @@ class UnifiedSecurityManager {
   /**
    * Symbol input validation for trading symbols
    */
-  private validateSymbolInput(input: string, errors: string[], warnings: string[], riskScore: number): void {
+  private validateSymbolInput(input: string, errors: string[], _warnings: string[], riskScore: number): void {
     const sanitized = input.toUpperCase().replace(/[^A-Z0-9/]/g, '');
     
     // Common patterns
@@ -1563,7 +1563,7 @@ class UnifiedSecurityManager {
   /**
    * Backward compatibility method - sanitize and validate data
    */
-  sanitizeAndValidate(data: any, type: 'robot' | 'strategy' | 'backtest' | 'user'): {
+  sanitizeAndValidate(data: any, _type: 'robot' | 'strategy' | 'backtest' | 'user'): {
     isValid: boolean;
     errors: string[];
     sanitizedData?: any;

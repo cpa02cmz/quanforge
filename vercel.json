@@ -125,24 +125,14 @@
   "functions": {
     "api/**/*.ts": {
       "runtime": "edge",
-      "maxDuration": 15,
-      "memory": 512,
-      "includeFiles": ["public/**/*"],
-      "excludeFiles": ["**/*.test.*", "**/*.spec.*"]
+      "maxDuration": 15
     },
     "api/edge/**/*.ts": {
       "runtime": "edge",
-      "maxDuration": 15,
-      "memory": 512
+      "maxDuration": 15
     }
   },
-  "build": {
-    "env": {
-      "NODE_ENV": "production",
-      "NEXT_TELEMETRY_DISABLED": "1",
-      "VERCEL_ANALYTICS_ENABLED": "true"
-    }
-  },
+  ,
   "crons": [],
   
   "rewrites": [
