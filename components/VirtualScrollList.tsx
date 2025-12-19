@@ -27,11 +27,24 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
   const itemHeight = 280; // Height of each robot card
   const overscan = 5; // Number of items to render outside viewport
 
+  // Handle scroll events
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    setScrollTop(e.currentTarget.scrollTop);
+  }, []);
+
+  // Calculate visible range based on scroll position
+  const visibleRange = useMemo(() => {
+    const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
+    const endIndex = Math.min(
+      robots.length - 1,
+      Math.ceil((scrollTop + containerHeight) / itemHeight) + overscan
+    );
+    return { startIndex, endIndex };
+  }, [scrollTop, containerHeight, itemHeight, robots.length, overscan]);
+
    // Filter robots with memoization and performance optimization
    const filteredRobots = useMemo(() => {
-     const startTime = performance.now();
-     
-     const result = frontendPerformanceOptimizer.memoizeComponent(
+     return frontendPerformanceOptimizer.memoizeComponent(
        `filtered_robots_${searchTerm}_${filterType}_${robots.length}`,
        () => {
          return robots.filter(robot => {
@@ -44,9 +57,7 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
        },
        5000 // 5 second TTL for this filter result
      );
-     
-const duration = performance.now() - startTime;
-  }, [scrollTop, itemHeight]);
+  }, [robots, searchTerm, filterType]);
 
   // Update container height on resize
   useEffect(() => {
@@ -61,9 +72,14 @@ const duration = performance.now() - startTime;
     return () => window.removeEventListener('resize', updateHeight);
   }, []);
 
-  // Get visible robots
+  // Get visible robots with actual indices after filtering
   const visibleRobots = useMemo(() => {
-    return filteredRobots.slice(visibleRange.startIndex, visibleRange.endIndex + 1);
+    if (filteredRobots.length === 0) return [];
+    
+    const startIndex = Math.max(0, visibleRange.startIndex);
+    const endIndex = Math.min(filteredRobots.length - 1, visibleRange.endIndex);
+    
+    return filteredRobots.slice(startIndex, endIndex + 1);
   }, [filteredRobots, visibleRange]);
 
   if (filteredRobots.length === 0) {
@@ -146,7 +162,8 @@ const RobotCard: React.FC<RobotCardProps> = React.memo(({
   robot,
   processingId,
   onDuplicate,
-  onDelete
+  onDelete,
+  t
 }) => {
   const handleDelete = useCallback(() => {
     onDelete(robot.id, robot.name);
@@ -195,7 +212,7 @@ const RobotCard: React.FC<RobotCardProps> = React.memo(({
           <button 
             onClick={handleDuplicate}
             className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-colors"
-            title="Duplicate Robot"
+            title={t('dash_duplicate_robot') || 'Duplicate Robot'}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 01-2-2V4" />
@@ -205,7 +222,7 @@ const RobotCard: React.FC<RobotCardProps> = React.memo(({
           <button 
             onClick={handleDelete}
             className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
-            title="Delete Robot"
+            title={t('dash_delete_robot') || 'Delete Robot'}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -216,7 +233,7 @@ const RobotCard: React.FC<RobotCardProps> = React.memo(({
             href={`/generator/${robot.id}`}
             className="ml-2 px-3 py-1.5 bg-dark-bg border border-dark-border hover:border-brand-500 text-xs font-medium text-gray-300 hover:text-white rounded-md transition-all flex items-center"
           >
-            Edit
+            {t('dash_edit_robot') || 'Edit'}
           </a>
         </div>
       </div>
