@@ -1,17 +1,26 @@
 import React, { memo, useState, useEffect } from 'react';
+import { RiskDataPoint, RiskAnalysis, ChartDataPoint } from '../types/analytics';
 
 // Dynamic import for Recharts to optimize bundle size
 interface RechartsComponents {
-  PieChart: any;
-  Pie: any;
-  Cell: any;
-  ResponsiveContainer: any;
-  Tooltip: any;
-  AreaChart: any;
-  Area: any;
-  XAxis: any;
-  YAxis: any;
-  CartesianGrid: any;
+  PieChart: React.ComponentType<any>;
+  Pie: React.ComponentType<any>;
+  Cell: React.ComponentType<any>;
+  ResponsiveContainer: React.ComponentType<any>;
+  Tooltip: React.ComponentType<any>;
+  AreaChart: React.ComponentType<any>;
+  Area: React.ComponentType<any>;
+  XAxis: React.ComponentType<any>;
+  YAxis: React.ComponentType<any>;
+  CartesianGrid: React.ComponentType<any>;
+}
+
+interface ChartComponentsProps {
+  riskData: RiskDataPoint[] | undefined;
+  analysis: RiskAnalysis | undefined;
+  t: ((key: string) => string) | undefined;
+  data: ChartDataPoint[] | undefined;
+  totalReturn: number | undefined;
 }
 
 interface ChartComponentsProps {

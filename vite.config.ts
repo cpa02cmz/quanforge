@@ -17,8 +17,20 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
-            // React ecosystem - optimized for edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
+            // React ecosystem - split more granularly for better cache efficiency
+            if (id.includes('react')) {
+              // Core React
+              if (id.includes('react-dom') || id.includes('react/jsx-runtime') || id.includes('react/index')) {
+                return 'react-core';
+              }
+              // React Router
+              if (id.includes('react-router') || id.includes('react-router-dom')) {
+                return 'react-router';
+              }
+              // React development tools
+              if (id.includes('react-devtools') || id.includes('react-refresh')) {
+                return 'react-dev';
+              }
               return 'react-vendor';
             }
             // Supabase - isolated for better connection pooling
@@ -32,19 +44,49 @@ export default defineConfig({
               }
               return 'supabase-vendor';
             }
-            // AI services - lazy loaded for edge optimization
+            // AI services - split more granularly for better performance
             if (id.includes('@google/genai')) {
-              return 'ai-vendor';
+              // Split AI vendor into specific functionality
+              // Try to split Google GenAI more aggressively
+              if (id.includes('/chat/') || id.includes('generateContent') || id.includes('streamGenerateContent')) {
+                return 'ai-chat';
+              }
+              if (id.includes('/models/') || id.includes('getModel') || id.includes('listModels')) {
+                return 'ai-models';
+              }
+              if (id.includes('/generators/') || id.includes('generate')) {
+                return 'ai-generators';
+              }
+              if (id.includes('protos') || id.includes('grpc') || id.includes('proto')) {
+                return 'ai-protocol';
+              }
+              if (id.includes('client') || id.includes('auth') || id.includes('credentials')) {
+                return 'ai-client';
+              }
+              return 'ai-vendor-core';
             }
-            // Chart libraries - split more granularly
+            // Chart libraries - split more granularly to reduce bundle size
             if (id.includes('recharts')) {
-              if (id.includes('AreaChart') || id.includes('LineChart')) {
+              // Split Recharts into smaller chunks
+              if (id.includes('AreaChart') || id.includes('LineChart') || id.includes('ComposedChart') || id.includes('Line')) {
                 return 'chart-core';
               }
-              if (id.includes('PieChart') || id.includes('BarChart')) {
+              if (id.includes('PieChart') || id.includes('BarChart') || id.includes('RadarChart') || id.includes('ScatterChart')) {
                 return 'chart-misc';
               }
-              return 'chart-vendor';
+              // Split individual chart components
+              if (id.includes('XAxis') || id.includes('YAxis') || id.includes('CartesianGrid') || id.includes('Tooltip') || id.includes('Legend')) {
+                return 'chart-axes';
+              }
+              if (id.includes('ResponsiveContainer') || id.includes('Brush') || id.includes('ReferenceLine')) {
+                return 'chart-interactive';
+              }
+              // Core recharts utilities and shapes
+              if (id.includes('shape') || id.includes('scale') || id.includes('Animation') || id.includes('util')) {
+                return 'chart-utils';
+              }
+              // Fallback for remaining recharts modules
+              return 'chart-vendor-light';
             }
             // Security utilities - bundled together
             if (id.includes('dompurify') || id.includes('lz-string')) {

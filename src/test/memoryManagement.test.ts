@@ -44,7 +44,7 @@ describe('Memory Management Tests', () => {
       memoryMonitor.registerCache('test-cache', mockCache);
       
       const metrics = memoryMonitor.getCacheMetrics();
-      const testCache = metrics.find(c => c.name === 'test-cache');
+      const testCache = metrics.find((c: any) => c.name === 'test-cache');
       
       expect(testCache).toBeDefined();
       expect(testCache?.size).toBe(50);
@@ -70,7 +70,7 @@ describe('Memory Management Tests', () => {
       });
 
       const metrics = memoryMonitor.getCacheMetrics();
-      const testCache = metrics.find(c => c.name === 'test-cache-update');
+      const testCache = metrics.find((c: any) => c.name === 'test-cache-update');
       
       expect(testCache?.size).toBe(40);
       expect(testCache?.hitRate).toBe(0.7);

@@ -13,7 +13,7 @@ const logger = createScopedLogger('StrategyConfig');
 
 interface StrategyConfigProps {
   params: StrategyParams;
-  onChange: (params: StrategyParams) => void;
+  onChange: (_params: StrategyParams) => void;
   onApply?: () => void;
   isApplying?: boolean;
   onReset?: () => void;

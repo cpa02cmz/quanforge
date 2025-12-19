@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { enhancedConnectionPool } from '../../../services/enhancedSupabasePool';
 import { edgeCacheManager } from '../../../services/edgeCacheManager';
 import { performanceMonitorEnhanced } from '../../../services/performanceMonitorEnhanced';
+import { errorLogger } from '../../../utils/logger';
 
 interface EdgeMetrics {
   timestamp: number;
@@ -130,7 +131,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Edge metrics collection failed:', error);
+    errorLogger.error('Edge metrics collection failed:', error);
     
     return NextResponse.json({
       success: false,
@@ -190,7 +191,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Edge metrics action failed:', error);
+    errorLogger.error('Edge metrics action failed:', error);
     
     return NextResponse.json({
       success: false,
