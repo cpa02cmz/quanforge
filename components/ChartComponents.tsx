@@ -1,6 +1,8 @@
 import React, { memo, useState, useEffect } from 'react';
 
 // Dynamic import for Recharts to optimize bundle size
+// Using 'any' for Recharts components due to complex prop typing
+// This is acceptable as the components are from a trusted external library
 interface RechartsComponents {
   PieChart: React.ComponentType<any>;
   Pie: React.ComponentType<any>;

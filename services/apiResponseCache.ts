@@ -38,10 +38,10 @@ const CACHE_CONFIG = {
     ENABLED: true,
     INTERVAL: 300000, // 5 minutes
     PRIORITY_ENDPOINTS: [
-      '/api/robots/list',
-      '/api/strategies/types',
-      '/api/user/preferences',
-      '/api/analytics/summary',
+      // '/api/robots/list',      // Removed: Next.js API endpoints not compatible with Vite SPA
+      // '/api/strategies/types',  // Removed: Next.js API endpoints not compatible with Vite SPA
+      // '/api/user/preferences',  // Removed: Next.js API endpoints not compatible with Vite SPA
+      // '/api/analytics/summary', // Removed: Next.js API endpoints not compatible with Vite SPA
     ],
   },
 };
@@ -103,21 +103,21 @@ class APIResponseCache {
     // User data invalidation
     this.addInvalidationRule({
       pattern: /^\/api\/user\//,
-      endpoints: ['/api/user/*', '/api/robots/list'],
+      endpoints: [/* '/api/user/*', '/api/robots/list' */], // Removed: Next.js API endpoints not compatible
       strategy: 'immediate',
     });
 
     // Robot data invalidation
     this.addInvalidationRule({
       pattern: /^\/api\/robots\//,
-      endpoints: ['/api/robots/*', '/api/search/*'],
+      endpoints: [/* '/api/robots/*', '/api/search/*' */], // Removed: Next.js API endpoints not compatible
       strategy: 'immediate',
     });
 
     // Analytics invalidation
     this.addInvalidationRule({
       pattern: /^\/api\/analytics\//,
-      endpoints: ['/api/analytics/*'],
+      endpoints: [/* '/api/analytics/*' */], // Removed: Next.js API endpoints not compatible
       strategy: 'delayed',
       delay: 5000, // 5 seconds delay
     });
@@ -125,7 +125,7 @@ class APIResponseCache {
     // Search invalidation
     this.addInvalidationRule({
       pattern: /^\/api\/search\//,
-      endpoints: ['/api/search/*'],
+      endpoints: [/* '/api/search/*' */], // Removed: Next.js API endpoints not compatible
       strategy: 'delayed',
       delay: 2000, // 2 seconds delay
     });

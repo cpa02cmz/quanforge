@@ -54,7 +54,7 @@ class EdgeMetricsCollector {
     try {
       // Use a simple latency test to detect nearest edge region
       const startTime = performance.now();
-      await fetch('/api/health', { method: 'HEAD' });
+      // await fetch('/api/health', { method: 'HEAD' }); // Removed: Next.js API endpoint not compatible with Vite SPA
       const responseTime = performance.now() - startTime;
       
       this.recordMetric({
@@ -128,12 +128,15 @@ class EdgeMetricsCollector {
   private async sendAlerts(alerts: string[]): Promise<void> {
     // In production, send to monitoring service
     if (process.env['NODE_ENV'] === 'production') {
+      // Removed: Next.js API endpoint not compatible with Vite SPA
+      // TODO: Implement monitoring service integration for Vite SPA
       try {
-        await fetch('/api/edge-alerts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ alerts, timestamp: Date.now() })
-        });
+        // await fetch('/api/edge-alerts', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({ alerts, timestamp: Date.now() })
+        // });
+        console.warn('Edge alerts (API integration removed):', alerts);
       } catch (error) {
         console.warn('Failed to send edge alerts:', error);
       }

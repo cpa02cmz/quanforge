@@ -128,11 +128,11 @@ class FrontendPerformanceOptimizer {
    */
   private setupResourcePrefetching(): void {
     const criticalResources = [
-      '/api/robots',
-      '/api/strategies',
+      // '/api/robots',              // Removed: Next.js API endpoints not compatible with Vite SPA
+      // '/api/strategies',          // Removed: Next.js API endpoints not compatible with Vite SPA
       'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
-      '/api/edge/health',
-      '/api/edge/metrics',
+      // '/api/edge/health',         // Removed: Next.js API endpoints not compatible with Vite SPA
+      // '/api/edge/metrics',        // Removed: Next.js API endpoints not compatible with Vite SPA
     ];
 
     criticalResources.forEach((resource) => {
@@ -324,7 +324,7 @@ class FrontendPerformanceOptimizer {
       () => import('../components/ChartComponents'),
       () => import('../components/BacktestPanel'),
       () => import('../components/MarketTicker'),
-      () => import('../services/advancedAPICache'),
+      // () => import('../services/advancedAPICache'), // Using static import to avoid conflict
     ];
 
     // Load modules with low priority when idle
@@ -515,9 +515,9 @@ class FrontendPerformanceOptimizer {
       new Promise((resolve) => setTimeout(resolve, 2000)).then(() => {
         this.optimizeMemoryUsage();
       }),
-      // Warm up critical API endpoints
-      fetch('/api/edge/health').catch(() => {}),
-      fetch('/api/edge/metrics').catch(() => {}),
+      // Warm up critical API endpoints (removed - Next.js endpoints not compatible)
+      // fetch('/api/edge/health').catch(() => {}),
+      // fetch('/api/edge/metrics').catch(() => {}),
     ];
 
     await Promise.allSettled(warmUpTasks);

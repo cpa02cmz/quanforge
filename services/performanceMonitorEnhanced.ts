@@ -396,7 +396,7 @@ class PerformanceMonitor {
     try {
       // Send to edge metrics endpoint
       if (process.env.ENABLE_EDGE_METRICS === 'true') {
-        const endpoint = process.env.EDGE_METRICS_ENDPOINT || '/api/edge-metrics';
+        const endpoint = process.env.EDGE_METRICS_ENDPOINT || '/api/edge-metrics'; // Note: API endpoints removed, will need server implementation
         
         await fetch(endpoint, {
           method: 'POST',

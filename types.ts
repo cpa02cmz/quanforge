@@ -167,3 +167,73 @@ export const isUser = (obj: unknown): obj is User => {
     ('email' in obj ? typeof obj.email === 'string' : true)
   );
 };
+
+// Common utility interfaces to replace 'any' types
+export interface ApiResponseData {
+  [key: string]: unknown;
+}
+
+export interface ChartDataPoint {
+  x: number | string;
+  y: number;
+  [key: string]: unknown;
+}
+
+export interface AnalyticsData {
+  metric: string;
+  value: number;
+  timestamp?: number;
+  metadata?: ApiResponseData;
+}
+
+export interface PerformanceHealthCheck {
+  status: 'healthy' | 'warning' | 'critical';
+  score: number;
+  issues: string[];
+  recommendations: string[];
+}
+
+export interface CacheEntry {
+  data: unknown;
+  timestamp: number;
+  expiry: number;
+  metadata?: ApiResponseData;
+}
+
+export interface RequestParams {
+  [key: string]: string | number | boolean | undefined;
+}
+
+export interface ErrorContext {
+  message: string;
+  code?: string | number;
+  stack?: string;
+  timestamp: number;
+  context?: ApiResponseData;
+}
+
+// Common function type for event handlers
+export type EventHandler = (...args: unknown[]) => void;
+
+// Common record type for flexible data structures
+export type DataRecord = Record<string, unknown>;
+
+// Common array type for typed collections
+export type DataArray<T = unknown> = T[];
+
+// Common response wrapper for API responses
+export interface ApiResponse<T = unknown> {
+  data?: T;
+  error?: string | ErrorContext;
+  success: boolean;
+  timestamp: number;
+}
+
+// Common pagination interface
+export interface PaginatedResponse<T = unknown> {
+  data: T[];
+  count: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}

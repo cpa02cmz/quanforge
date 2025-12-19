@@ -21,6 +21,26 @@ export default defineConfig({
             if (id.includes('react')) {
               // Core React - split more granularly
               if (id.includes('react-dom')) {
+                // More aggressive react-dom splitting
+                if (id.includes('client') || id.includes('Client')) {
+                  return 'react-dom-client';
+                }
+                if (id.includes('server') || id.includes('Server')) {
+                  return 'react-dom-server';
+                }
+                if (id.includes('test-utils') || id.includes('test')) {
+                  return 'react-dom-test';
+                }
+                if (id.includes('unstable_') || id.includes('experimental')) {
+                  return 'react-dom-experimental';
+                }
+                // Split by react-dom submodules
+                if (id.includes('react-dom/cjs') || id.includes('react-dom/esm')) {
+                  const filename = id.split('/').pop();
+                  if (filename && filename !== 'index.js' && filename !== 'react-dom.js') {
+                    return `react-dom-${filename.replace(/\.(js|mjs|cjs)$/, '')}`;
+                  }
+                }
                 return 'react-dom';
               }
               if (id.includes('react/jsx-runtime') || id.includes('react/jsx-dev-runtime')) {
@@ -31,6 +51,13 @@ export default defineConfig({
               }
               // React Router
               if (id.includes('react-router') || id.includes('react-router-dom')) {
+                // Split router modules
+                if (id.includes('dom') || id.includes('memory')) {
+                  return 'react-router-bindings';
+                }
+                if (id.includes('server') || id.includes('ssr')) {
+                  return 'react-router-server';
+                }
                 return 'react-router';
               }
               // React development tools
@@ -40,6 +67,13 @@ export default defineConfig({
               // React hooks and utilities
               if (id.includes('react') && (id.includes('hooks') || id.includes('use'))) {
                 return 'react-hooks';
+              }
+              // Additional react splitting
+              if (id.includes('react/')) {
+                const reactModule = id.split('/').pop()?.replace(/\.(js|mjs|cjs)$/, '');
+                if (reactModule && reactModule !== 'react' && reactModule !== 'index') {
+                  return `react-${reactModule}`;
+                }
               }
               return 'react-vendor';
             }
@@ -87,6 +121,34 @@ export default defineConfig({
               // Split AI utilities and helpers
               if (id.includes('util') || id.includes('helper') || id.includes('validate')) {
                 return 'ai-utils';
+              }
+              // More aggressive splitting for ai-vendor-core
+              if (id.includes('function_call') || id.includes('function-call')) {
+                return 'ai-function-calls';
+              }
+              if (id.includes('embedding') || id.includes('embed')) {
+                return 'ai-embeddings';
+              }
+              if (id.includes('text') || id.includes('content') || id.includes('prompt')) {
+                return 'ai-text';
+              }
+              if (id.includes('error') || id.includes('exception') || id.includes('fault')) {
+                return 'ai-errors';
+              }
+              if (id.includes('config') || id.includes('setting') || id.includes('option')) {
+                return 'ai-config';
+              }
+              // Split by file types and modules
+              if (id.includes('index.js') || id.includes('index.mjs')) {
+                return 'ai-index';
+              }
+              if (id.includes('/dist/') || id.includes('/lib/')) {
+                // Further split dist/lib modules
+                const pathParts = id.split('/');
+                const modulePart = pathParts[pathParts.length - 2];
+                if (modulePart && modulePart !== 'genai') {
+                  return `ai-${modulePart}`;
+                }
               }
               return 'ai-vendor-core';
             }
