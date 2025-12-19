@@ -26,12 +26,13 @@ export const Auth: React.FC = memo(() => {
         if (error) throw error;
         else showToast(t('auth_toast_check_email'), 'success');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If we are in mock mode (no API URL), we simulate a successful login for demo purposes
-      if (!process.env['SUPABASE_URL'] && error.message.includes('Auth session missing')) {
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      if (!process.env['SUPABASE_URL'] && errorMessage.includes('Auth session missing')) {
          // This block intentionally left empty as the real app needs Env vars.
       }
-      showToast(error.message || 'Authentication failed', 'error');
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }

@@ -696,6 +696,13 @@ setInterval(() => {
   });
   
   if (staleConnections.length > 0) {
-    
+    // Clean up stale connections
+    staleConnections.forEach(conn => {
+      try {
+        conn.terminate();
+      } catch (error) {
+        // Connection already closed
+      }
+    });
   }
 }, 10000); // Check every 10 seconds

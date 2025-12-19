@@ -1,5 +1,4 @@
 import React, { memo, useState, useEffect } from 'react';
-import { RiskDataPoint, RiskAnalysis, ChartDataPoint } from '../types/analytics';
 
 // Dynamic import for Recharts to optimize bundle size
 interface RechartsComponents {
@@ -13,14 +12,6 @@ interface RechartsComponents {
   XAxis: React.ComponentType<any>;
   YAxis: React.ComponentType<any>;
   CartesianGrid: React.ComponentType<any>;
-}
-
-interface ChartComponentsProps {
-  riskData: RiskDataPoint[] | undefined;
-  analysis: RiskAnalysis | undefined;
-  t: ((key: string) => string) | undefined;
-  data: ChartDataPoint[] | undefined;
-  totalReturn: number | undefined;
 }
 
 interface ChartComponentsProps {

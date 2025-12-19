@@ -19,8 +19,7 @@ import {
   CacheMetrics,
   EdgeMetric,
   ConnectionPoolStats,
-  TrendData,
-  ApiResponse
+  TrendData
 } from '../../types/analytics';
 
 export async function GET(request: NextRequest) {
