@@ -81,21 +81,29 @@ export class CircuitBreaker {
   }
 }
 
-// Default circuit breaker configurations
-export const DEFAULT_CIRCUIT_BREAKERS = {
-  database: new CircuitBreaker({
-    failureThreshold: 5,
-    timeout: 10000,
-    resetTimeout: 60000
-  }),
-  ai: new CircuitBreaker({
-    failureThreshold: 3,
-    timeout: 15000,
-    resetTimeout: 30000
-  }),
-  marketData: new CircuitBreaker({
-    failureThreshold: 7,
-    timeout: 5000,
-    resetTimeout: 120000
-  })
+import { monitoringConfig } from './configurationService';
+
+// Circuit breaker factory function
+export const createCircuitBreakers = () => {
+  const config = monitoringConfig();
+  return {
+    database: new CircuitBreaker({
+      failureThreshold: config.circuitBreaker.database.failureThreshold,
+      timeout: config.circuitBreaker.database.timeout,
+      resetTimeout: config.circuitBreaker.database.resetTimeout
+    }),
+    ai: new CircuitBreaker({
+      failureThreshold: config.circuitBreaker.ai.failureThreshold,
+      timeout: config.circuitBreaker.ai.timeout,
+      resetTimeout: config.circuitBreaker.ai.resetTimeout
+    }),
+    marketData: new CircuitBreaker({
+      failureThreshold: config.circuitBreaker.marketData.failureThreshold,
+      timeout: config.circuitBreaker.marketData.timeout,
+      resetTimeout: config.circuitBreaker.marketData.resetTimeout
+    })
+  };
 };
+
+// Default circuit breaker configurations (for backward compatibility)
+export const DEFAULT_CIRCUIT_BREAKERS = createCircuitBreakers();

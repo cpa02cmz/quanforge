@@ -96,8 +96,9 @@
 - [x] **CI/CD Restoration**: Enabled deployment workflows on both Vercel and Cloudflare Workers
 - [x] **PR #137 Management**: Successfully resolved merge conflicts and addressed Vercel schema validation errors
 - [x] **Build System Compatibility**: Fixed browser compatibility issues in enhancedRateLimit.ts utility
-- [x] **Schema Compliance**: Simplified vercel.json to minimal configuration that passes validation
+- [x] **Schema Compliance**: Simplified vercel.json with minimal configuration that passes validation
 - [x] **CI/CD Pipeline Restoration**: Restored functional deployment workflows on Vercel and Cloudflare Workers
+- [x] **Configuration Consolidation**: Centralized hardcoded values in `services/configurationService.ts`
 - [ ] **Code Quality Improvements**: Address 200+ ESLint warnings (console statements, unused vars, any types)
 - [ ] **Performance Optimization**: Implement bundle splitting for large chunks (>100KB)
 - [x] **Security Enhancement**: Migrated to Web Crypto API with AES-GCM 256-bit encryption

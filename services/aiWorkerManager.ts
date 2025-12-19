@@ -3,6 +3,7 @@
 
 import { Message, StrategyParams } from '../types';
 import { createScopedLogger } from '../utils/logger';
+import { performanceConfig } from './configurationService';
 
 const logger = createScopedLogger('aiWorkerManager');
 
@@ -99,7 +100,9 @@ class AIWorkerManager {
     }
   }
 
-  private async sendMessage<T>(type: WorkerMessageType, data: unknown, timeout = 30000): Promise<T> {
+  private async sendMessage<T>(type: WorkerMessageType, data: unknown, timeout?: number): Promise<T> {
+    const config = performanceConfig();
+    const defaultTimeout = timeout || config.timeouts.aiWorker.default;
     await this.initializeWorker();
 
     if (!this.worker) {
@@ -112,7 +115,7 @@ class AIWorkerManager {
       const timeoutId = setTimeout(() => {
         this.pendingRequests.delete(requestId);
         reject(new Error(`Worker request timeout: ${type}`));
-      }, timeout);
+      }, defaultTimeout);
 
       this.pendingRequests.set(requestId, {
         resolve,
@@ -128,10 +131,11 @@ class AIWorkerManager {
   // Public API methods
   async buildContext(prompt: string, currentCode?: string, strategyParams?: StrategyParams, history: Message[] = []): Promise<string> {
     try {
+      const config = performanceConfig();
       const result = await this.sendMessage<{ context: string }>(
         'BUILD_CONTEXT',
         { prompt, currentCode, strategyParams, history },
-        10000 // 10 second timeout for context building
+        config.timeouts.aiWorker.contextBuilding
       );
       return result.context;
     } catch (error) {

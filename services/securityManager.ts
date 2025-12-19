@@ -1,34 +1,7 @@
 import { Robot, StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
 import { secureStorage } from '../utils/secureStorage';
-
-interface SecurityConfig {
-  maxPayloadSize: number;
-  allowedOrigins: string[];
-  endpoint?: string;
-  rateLimiting: {
-    windowMs: number;
-    maxRequests: number;
-  };
-  encryption: {
-    algorithm: string;
-    keyRotationInterval: number;
-  };
-  // Add missing edge-specific security configuration
-  edgeRateLimiting: {
-    enabled: boolean;
-    requestsPerSecond: number;
-    burstLimit: number;
-  };
-  regionBlocking: {
-    enabled: boolean;
-    blockedRegions: string[];
-  };
-  botDetection: {
-    enabled: boolean;
-    suspiciousPatterns: string[];
-  };
-}
+import { SecurityConfig, securityConfig } from './configurationService';
 
 interface ValidationResult {
   isValid: boolean;
@@ -39,43 +12,12 @@ interface ValidationResult {
 
 class SecurityManager {
   private static instance: SecurityManager;
-  private config: SecurityConfig = {
-    maxPayloadSize: 5 * 1024 * 1024, // Reduced to 5MB for better security
-    allowedOrigins: [
-      'https://quanforge.ai',
-      'https://www.quanforge.ai',
-      'http://localhost:3000',
-      'http://localhost:5173' // Vite dev server
-    ],
-    rateLimiting: {
-      windowMs: 60000, // 1 minute
-      maxRequests: 100,
-    },
-    encryption: {
-      algorithm: 'AES-256-GCM',
-      keyRotationInterval: 43200000, // 12 hours - more frequent rotation
-    },
-    // Add missing edge security configurations
-    edgeRateLimiting: {
-      enabled: true,
-      requestsPerSecond: 10,
-      burstLimit: 20
-    },
-    regionBlocking: {
-      enabled: true,
-      blockedRegions: ['CN', 'RU', 'IR', 'KP'] // Example blocked regions
-    },
-    botDetection: {
-      enabled: true,
-      suspiciousPatterns: [
-        'sqlmap', 'nikto', 'nmap', 'masscan', 'dirb', 'gobuster', 
-        'wfuzz', 'burp', 'owasp', 'scanner', 'bot', 'crawler', 'spider'
-      ]
-    }
-  };
+  private config: SecurityConfig;
   private rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
-  private constructor() {}
+  private constructor() {
+    this.config = securityConfig();
+  }
 
   static getInstance(): SecurityManager {
     if (!SecurityManager.instance) {
