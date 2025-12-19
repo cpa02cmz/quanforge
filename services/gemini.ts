@@ -22,6 +22,7 @@ import { MQL5_SYSTEM_PROMPT } from "../constants";
 import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
 import { settingsManager } from "./settingsManager";
 import { getActiveKey } from "../utils/apiKeyUtils";
+import { securityConfig, aiConfig } from "./configurationService";
 import { handleError } from "../utils/errorHandler";
 import { apiDeduplicator } from "./apiDeduplicator";
 import { createScopedLogger } from "../utils/logger";
@@ -928,17 +929,17 @@ const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, si
 // Removed for production: console.warn("API Key is empty for OpenAI Provider");
         }
 
-        const baseUrl = settings.baseUrl ? settings.baseUrl.replace(/\/$/, '') : 'https://api.openai.com/v1';
+        const baseUrl = settings.baseUrl ? settings.baseUrl.replace(/\/$/, '') : securityConfig().apiEndpoints.openAI;
         const url = `${baseUrl}/chat/completions`;
         const systemInstruction = getEffectiveSystemPrompt(settings);
 
 const payload = {
-            model: settings.modelName || 'gpt-4',
+            model: settings.modelName || aiConfig().models.openai,
             messages: [
                 { role: "system", content: systemInstruction },
                 { role: "user", content: fullPrompt }
             ],
-            temperature: temperature ?? 0.7,
+            temperature: temperature ?? aiConfig().performance.temperature,
             ...(jsonMode ? { response_format: { type: "json_object" } } : {})
         };
 
@@ -948,7 +949,7 @@ const payload = {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${activeKey}`,
                 ...(settings.baseUrl?.includes('openrouter') ? {
-                    'HTTP-Referer': window.location.origin,
+                    'HTTP-Referer': securityConfig().allowedOrigins[0] || window.location.origin,
                     'X-Title': 'QuantForge AI'
                 } : {})
             },

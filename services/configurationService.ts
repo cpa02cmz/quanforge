@@ -30,6 +30,20 @@ export interface SecurityConfig {
     enabled: boolean;
     suspiciousPatterns: string[];
   };
+  apiEndpoints: {
+    binanceWebSocket: string;
+    twelveDataWebSocket: string;
+    openAI: string;
+  };
+  rateLimits: {
+    aiRpm: number;
+    defaultRpm: number;
+    edgeRps: number;
+    requestsPerWindow: number;
+  };
+  csrf: {
+    tokenExpiryMs: number;
+  };
 }
 
 export interface PerformanceConfig {
@@ -132,6 +146,109 @@ export interface FeatureFlags {
   aiOptimization: boolean;
 }
 
+export interface WebSocketConfig {
+  binance: {
+    websocketEndpoint: string;
+    maxReconnectAttempts: number;
+    baseReconnectDelay: number;
+    maxReconnectDelay: number;
+  };
+  twelveData: {
+    websocketEndpoint: string;
+    maxReconnectAttempts: number;
+    baseReconnectDelay: number;
+    maxReconnectDelay: number;
+  };
+}
+
+export interface DatabaseConfig {
+  connection: {
+    maxRetries: number;
+    retryDelay: number;
+    backoffMultiplier: number;
+    maxDelay: number;
+  };
+  cache: {
+    ttl: number;
+    maxSize: number;
+  };
+  query: {
+    limit: number;
+    batchSize: number;
+  };
+}
+
+export interface AIConfig {
+  models: {
+    gemini: string;
+    openai: string;
+    analysis: string;
+  };
+  performance: {
+    temperature: number;
+    maxPromptLength: number;
+    minPromptLength: number;
+    maxContextChars: number;
+    minHistoryChars: number;
+    maxCodeLength: number;
+  };
+  cache: {
+    maxSize: number;
+    ttl: number;
+    strategyCacheSize: number;
+    strategyCacheTtl: number;
+    enhancedCacheSize: number;
+    mql5CacheSize: number;
+    mql5ResponseTtl: number;
+    contextCacheSize: number;
+    contextCacheTtl: number;
+  };
+}
+
+export interface DatabaseConfig {
+  connection: {
+    maxRetries: number;
+    retryDelay: number;
+    backoffMultiplier: number;
+    maxDelay: number;
+  };
+  cache: {
+    ttl: number;
+    maxSize: number;
+  };
+  query: {
+    limit: number;
+    batchSize: number;
+  };
+}
+
+export interface AIConfig {
+  models: {
+    gemini: string;
+    openai: string;
+    analysis: string;
+  };
+  performance: {
+    temperature: number;
+    maxPromptLength: number;
+    minPromptLength: number;
+    maxContextChars: number;
+    minHistoryChars: number;
+    maxCodeLength: number;
+  };
+  cache: {
+    maxSize: number;
+    ttl: number;
+    strategyCacheSize: number;
+    strategyCacheTtl: number;
+    enhancedCacheSize: number;
+    mql5CacheSize: number;
+    mql5ResponseTtl: number;
+    contextCacheSize: number;
+    contextCacheTtl: number;
+  };
+}
+
 // Configuration validation helpers
 class ConfigValidator {
   static validateNumber(value: number, name: string, min?: number, max?: number): void {
@@ -179,6 +296,16 @@ class ConfigValidator {
     ConfigValidator.validateNumber(config.edgeRateLimiting.burstLimit, 'edgeRateLimiting.burstLimit', 1);
     ConfigValidator.validateArray(config.regionBlocking.blockedRegions, 'regionBlocking.blockedRegions');
     ConfigValidator.validateArray(config.botDetection.suspiciousPatterns, 'botDetection.suspiciousPatterns');
+    
+    // Validate new security properties
+    ConfigValidator.validateString(config.apiEndpoints.binanceWebSocket, 'apiEndpoints.binanceWebSocket', 1);
+    ConfigValidator.validateString(config.apiEndpoints.twelveDataWebSocket, 'apiEndpoints.twelveDataWebSocket', 1);
+    ConfigValidator.validateString(config.apiEndpoints.openAI, 'apiEndpoints.openAI', 1);
+    ConfigValidator.validateNumber(config.rateLimits.aiRpm, 'rateLimits.aiRpm', 1);
+    ConfigValidator.validateNumber(config.rateLimits.defaultRpm, 'rateLimits.defaultRpm', 1);
+    ConfigValidator.validateNumber(config.rateLimits.edgeRps, 'rateLimits.edgeRps', 1);
+    ConfigValidator.validateNumber(config.rateLimits.requestsPerWindow, 'rateLimits.requestsPerWindow', 1);
+    ConfigValidator.validateNumber(config.csrf.tokenExpiryMs, 'csrf.tokenExpiryMs', 1000);
   }
 
   static validatePerformanceConfig(config: PerformanceConfig): void {
@@ -249,6 +376,51 @@ class ConfigValidator {
       throw new Error(`${name} must be a boolean, got: ${typeof value}`);
     }
   }
+
+  static validateWebSocketConfig(config: WebSocketConfig): void {
+    ConfigValidator.validateString(config.binance.websocketEndpoint, 'websockets.binance.websocketEndpoint', 1);
+    ConfigValidator.validateNumber(config.binance.maxReconnectAttempts, 'websockets.binance.maxReconnectAttempts', 1);
+    ConfigValidator.validateNumber(config.binance.baseReconnectDelay, 'websockets.binance.baseReconnectDelay', 100);
+    ConfigValidator.validateNumber(config.binance.maxReconnectDelay, 'websockets.binance.maxReconnectDelay', 1000);
+    ConfigValidator.validateString(config.twelveData.websocketEndpoint, 'websockets.twelveData.websocketEndpoint', 1);
+    ConfigValidator.validateNumber(config.twelveData.maxReconnectAttempts, 'websockets.twelveData.maxReconnectAttempts', 1);
+    ConfigValidator.validateNumber(config.twelveData.baseReconnectDelay, 'websockets.twelveData.baseReconnectDelay', 100);
+    ConfigValidator.validateNumber(config.twelveData.maxReconnectDelay, 'websockets.twelveData.maxReconnectDelay', 1000);
+  }
+
+  static validateDatabaseConfig(config: DatabaseConfig): void {
+    ConfigValidator.validateNumber(config.connection.maxRetries, 'database.connection.maxRetries', 1);
+    ConfigValidator.validateNumber(config.connection.retryDelay, 'database.connection.retryDelay', 100);
+    ConfigValidator.validateNumber(config.connection.backoffMultiplier, 'database.connection.backoffMultiplier', 1);
+    ConfigValidator.validateNumber(config.connection.maxDelay, 'database.connection.maxDelay', 1000);
+    ConfigValidator.validateNumber(config.cache.ttl, 'database.cache.ttl', 60000);
+    ConfigValidator.validateNumber(config.cache.maxSize, 'database.cache.maxSize', 10);
+    ConfigValidator.validateNumber(config.query.limit, 'database.query.limit', 10);
+    ConfigValidator.validateNumber(config.query.batchSize, 'database.query.batchSize', 1);
+  }
+
+  static validateAIConfig(config: AIConfig): void {
+    ConfigValidator.validateString(config.models.gemini, 'ai.models.gemini', 1);
+    ConfigValidator.validateString(config.models.openai, 'ai.models.openai', 1);
+    ConfigValidator.validateString(config.models.analysis, 'ai.models.analysis', 1);
+    
+    ConfigValidator.validateNumber(config.performance.temperature, 'ai.performance.temperature', 0, 2);
+    ConfigValidator.validateNumber(config.performance.maxPromptLength, 'ai.performance.maxPromptLength', 10);
+    ConfigValidator.validateNumber(config.performance.minPromptLength, 'ai.performance.minPromptLength', 1);
+    ConfigValidator.validateNumber(config.performance.maxContextChars, 'ai.performance.maxContextChars', 100);
+    ConfigValidator.validateNumber(config.performance.minHistoryChars, 'ai.performance.minHistoryChars', 10);
+    ConfigValidator.validateNumber(config.performance.maxCodeLength, 'ai.performance.maxCodeLength', 100);
+
+    ConfigValidator.validateNumber(config.cache.maxSize, 'ai.cache.maxSize', 1);
+    ConfigValidator.validateNumber(config.cache.ttl, 'ai.cache.ttl', 60000);
+    ConfigValidator.validateNumber(config.cache.strategyCacheSize, 'ai.cache.strategyCacheSize', 1);
+    ConfigValidator.validateNumber(config.cache.strategyCacheTtl, 'ai.cache.strategyCacheTtl', 60000);
+    ConfigValidator.validateNumber(config.cache.enhancedCacheSize, 'ai.cache.enhancedCacheSize', 1);
+    ConfigValidator.validateNumber(config.cache.mql5CacheSize, 'ai.cache.mql5CacheSize', 1);
+    ConfigValidator.validateNumber(config.cache.mql5ResponseTtl, 'ai.cache.mql5ResponseTtl', 60000);
+    ConfigValidator.validateNumber(config.cache.contextCacheSize, 'ai.cache.contextCacheSize', 1);
+    ConfigValidator.validateNumber(config.cache.contextCacheTtl, 'ai.cache.contextCacheTtl', 60000);
+  }
 }
 
 // Environment-aware configuration service
@@ -260,6 +432,9 @@ class ConfigurationService {
     infrastructure: InfrastructureConfig;
     monitoring: MonitoringConfig;
     features: FeatureFlags;
+    websockets: WebSocketConfig;
+    database: DatabaseConfig;
+    ai: AIConfig;
   };
 
   private constructor() {
@@ -312,6 +487,20 @@ class ConfigurationService {
           'sqlmap', 'nikto', 'nmap', 'masscan', 'dirb', 'gobuster',
           'wfuzz', 'burp', 'owasp', 'scanner', 'bot', 'crawler', 'spider'
         ]),
+      },
+      apiEndpoints: {
+        binanceWebSocket: this.getEnvString('BINANCE_WS_URL', 'wss://stream.binance.com:9443/ws'),
+        twelveDataWebSocket: this.getEnvString('TWELVE_DATA_WS_URL', 'wss://ws.twelvedata.com/v1/quotes'),
+        openAI: this.getEnvString('OPENAI_API_BASE_URL', 'https://api.openai.com/v1'),
+      },
+      rateLimits: {
+        aiRpm: this.getEnvNumber('AI_RATE_LIMIT_RPM', 10),
+        defaultRpm: this.getEnvNumber('DEFAULT_RATE_LIMIT_RPM', 30),
+        edgeRps: this.getEnvNumber('EDGE_RATE_LIMIT_RPS', 10),
+        requestsPerWindow: this.getEnvNumber('RATE_LIMIT_REQUESTS', 100),
+      },
+      csrf: {
+        tokenExpiryMs: this.getEnvNumber('CSRF_TOKEN_EXPIRY', 3600000),
       },
     };
 
@@ -419,12 +608,77 @@ class ConfigurationService {
       aiOptimization: this.getEnvBoolean('FEATURE_AI_OPTIMIZATION', true),
     };
 
+    // WebSocket configuration
+    const websocketsConfig: WebSocketConfig = {
+      binance: {
+        websocketEndpoint: this.getEnvString('BINANCE_WS_URL', 'wss://stream.binance.com:9443/ws'),
+        maxReconnectAttempts: this.getEnvNumber('WS_BINANCE_MAX_RECONNECT_ATTEMPTS', 10),
+        baseReconnectDelay: this.getEnvNumber('WS_BINANCE_BASE_RECONNECT_DELAY', 1000),
+        maxReconnectDelay: this.getEnvNumber('WS_BINANCE_MAX_RECONNECT_DELAY', 30000),
+      },
+      twelveData: {
+        websocketEndpoint: this.getEnvString('TWELVE_DATA_WS_URL', 'wss://ws.twelvedata.com/v1/quotes'),
+        maxReconnectAttempts: this.getEnvNumber('WS_TWELVE_MAX_RECONNECT_ATTEMPTS', 10),
+        baseReconnectDelay: this.getEnvNumber('WS_TWELVE_BASE_RECONNECT_DELAY', 1000),
+        maxReconnectDelay: this.getEnvNumber('WS_TWELVE_MAX_RECONNECT_DELAY', 30000),
+      },
+    };
+
+    // Database configuration
+    const databaseConfig: DatabaseConfig = {
+      connection: {
+        maxRetries: this.getEnvNumber('DB_MAX_RETRIES', 5),
+        retryDelay: this.getEnvNumber('DB_RETRY_DELAY', 500),
+        backoffMultiplier: this.getEnvNumber('DB_BACKOFF_MULTIPLIER', 1.5),
+        maxDelay: this.getEnvNumber('DB_MAX_DELAY', 10000),
+      },
+      cache: {
+        ttl: this.getEnvNumber('DB_CACHE_TTL', 900000),
+        maxSize: this.getEnvNumber('DB_CACHE_MAX_SIZE', 200),
+      },
+      query: {
+        limit: this.getEnvNumber('DB_QUERY_LIMIT', 100),
+        batchSize: this.getEnvNumber('DB_BATCH_SIZE', 10),
+      },
+    };
+
+    // AI configuration
+    const aiConfig: AIConfig = {
+      models: {
+        gemini: this.getEnvString('DEFAULT_GEMINI_MODEL', 'gemini-3-pro-preview'),
+        openai: this.getEnvString('DEFAULT_OPENAI_MODEL', 'gpt-4'),
+        analysis: this.getEnvString('DEFAULT_ANALYSIS_MODEL', 'gemini-2.5-flash'),
+      },
+      performance: {
+        temperature: this.getEnvNumber('DEFAULT_AI_TEMPERATURE', 0.7),
+        maxPromptLength: this.getEnvNumber('MAX_PROMPT_LENGTH', 10000),
+        minPromptLength: this.getEnvNumber('MIN_PROMPT_LENGTH', 10),
+        maxContextChars: this.getEnvNumber('AI_MAX_CONTEXT_CHARS', 100000),
+        minHistoryChars: this.getEnvNumber('AI_MIN_HISTORY_CHARS', 1000),
+        maxCodeLength: this.getEnvNumber('AI_MAX_CODE_LENGTH', 30000),
+      },
+      cache: {
+        maxSize: this.getEnvNumber('AI_CACHE_MAX_SIZE', 100),
+        ttl: this.getEnvNumber('AI_CACHE_TTL', 300000),
+        strategyCacheSize: this.getEnvNumber('STRATEGY_CACHE_SIZE', 100),
+        strategyCacheTtl: this.getEnvNumber('STRATEGY_CACHE_TTL', 300000),
+        enhancedCacheSize: this.getEnvNumber('ENHANCED_CACHE_SIZE', 200),
+        mql5CacheSize: this.getEnvNumber('MQL5_CACHE_SIZE', 300),
+        mql5ResponseTtl: this.getEnvNumber('MQL5_RESPONSE_TTL', 900000),
+        contextCacheSize: this.getEnvNumber('AI_CONTEXT_CACHE_SIZE', 20),
+        contextCacheTtl: this.getEnvNumber('AI_CONTEXT_CACHE_TTL', 300000),
+      },
+    };
+
     return {
       security: securityConfig,
       performance: performanceConfig,
       infrastructure: infrastructureConfig,
       monitoring: monitoringConfig,
       features: featureFlags,
+      websockets: websocketsConfig,
+      database: databaseConfig,
+      ai: aiConfig,
     };
   }
 
@@ -434,6 +688,9 @@ class ConfigurationService {
       ConfigValidator.validatePerformanceConfig(this.config.performance);
       ConfigValidator.validateInfrastructureConfig(this.config.infrastructure);
       ConfigValidator.validateMonitoringConfig(this.config.monitoring);
+      ConfigValidator.validateWebSocketConfig(this.config.websockets);
+      ConfigValidator.validateDatabaseConfig(this.config.database);
+      ConfigValidator.validateAIConfig(this.config.ai);
     } catch (error) {
       console.error('Configuration validation failed:', error);
       throw new Error(`Invalid configuration: ${error}`);
@@ -490,6 +747,18 @@ class ConfigurationService {
 
   public get features(): FeatureFlags {
     return this.config.features;
+  }
+
+  public get websockets(): WebSocketConfig {
+    return this.config.websockets;
+  }
+
+  public get database(): DatabaseConfig {
+    return this.config.database;
+  }
+
+  public get ai(): AIConfig {
+    return this.config.ai;
   }
 
   // Dynamic configuration updates (for runtime changes)
@@ -569,3 +838,6 @@ export const performanceConfig = () => config.performance;
 export const infrastructureConfig = () => config.infrastructure;
 export const monitoringConfig = () => config.monitoring;
 export const featureFlags = () => config.features;
+export const websocketsConfig = () => config.websockets;
+export const databaseConfig = () => config.database;
+export const aiConfig = () => config.ai;

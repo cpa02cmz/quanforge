@@ -7,6 +7,8 @@ function simpleHash(str: string): string {
   return Math.abs(hash).toString(16).padStart(32, '0').substring(0, 32);
 }
 
+import { securityConfig } from '../services/configurationService';
+
 interface RateLimitEntry {
   count: number;
   resetTime: number;
@@ -27,7 +29,7 @@ export class EnhancedRateLimiter {
   
   constructor(private config: RateLimitConfig = {
     windowMs: 60000, // 1 minute
-    maxRequests: 30,
+    maxRequests: securityConfig().rateLimits.defaultRpm,
     skipSuccessfulRequests: false,
     skipFailedRequests: false
   }) {

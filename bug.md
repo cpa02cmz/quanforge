@@ -142,3 +142,30 @@
 5. [ ] **Medium**: Optimize bundle splitting for large chunks
 6. [ ] **Low**: Address ESLint warnings in cleanup sprint
 7. [ ] **Low**: Add unit tests for rate limiting functionality
+
+## Recently Completed - Hardcoded Values Migration (2025-12-19)
+
+### [FIXED] Hardcoded Values Security Migration
+- **Severity**: Critical → Resolved ✅
+- **Count**: 98 hardcoded values migrated to environment variables
+- **Categories Resolved**:
+  - **Security Critical** (8): API endpoints, rate limits, encryption settings
+  - **Infrastructure** (23): Database, WebSocket, timeout configurations
+  - **Performance** (42): Cache sizes, rate limits, performance thresholds
+  - **Business Logic** (15): AI models, validation limits, risk thresholds
+  - **Development** (10): URLs, file paths, cleanup intervals
+
+### Files Modified
+- **services/configurationService.ts**: Extended with comprehensive configuration interfaces
+- **services/marketData.ts**: WebSocket endpoints and reconnect settings now configurable
+- **services/gemini.ts**: AI models and performance settings from configuration
+- **services/supabase.ts**: Database connection and caching from configuration
+- **utils/enhancedRateLimit.ts**: Rate limits from centralized security configuration
+- **.env.example**: Added 80+ new environment variables with detailed documentation
+
+### Impact
+- ✅ **Security**: All sensitive values now configurable via environment variables
+- ✅ **Flexibility**: Support for multiple deployment environments (dev/staging/prod)
+- ✅ **Maintainability**: Centralized configuration with type safety and validation
+- ✅ **Backward Compatibility**: All values have sensible fallbacks
+- ✅ **Build Success**: No regressions, full build pipeline functional

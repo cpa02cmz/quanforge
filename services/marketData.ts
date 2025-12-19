@@ -1,5 +1,6 @@
 
 import { settingsManager } from './settingsManager';
+import { websocketsConfig } from './configurationService';
 
 type PriceUpdateCallback = (data: MarketData) => void;
 
@@ -22,8 +23,12 @@ class MarketDataService {
   private binanceSubscriptions: Set<string> = new Set();
   private binanceReconnectAttempts: number = 0;
   private binanceReconnectTimer: NodeJS.Timeout | null = null;
-  private readonly maxReconnectAttempts = 10;
-  private readonly baseReconnectDelay = 1000; // 1 second
+  private get binanceMaxReconnectAttempts() { return websocketsConfig().binance.maxReconnectAttempts; }
+  private get binanceBaseReconnectDelay() { return websocketsConfig().binance.baseReconnectDelay; }
+  private get binanceMaxReconnectDelay() { return websocketsConfig().binance.maxReconnectDelay; }
+  private get twelveMaxReconnectAttempts() { return websocketsConfig().twelveData.maxReconnectAttempts; }
+  private get twelveBaseReconnectDelay() { return websocketsConfig().twelveData.baseReconnectDelay; }
+  private get twelveMaxReconnectDelay() { return websocketsConfig().twelveData.maxReconnectDelay; }
   
   // Twelve Data WebSocket
   private twelveDataWs: WebSocket | null = null;
@@ -51,7 +56,7 @@ class MarketDataService {
           this.binanceReconnectTimer = null;
       }
 
-      this.binanceWs = new WebSocket('wss://stream.binance.com:9443/ws');
+      this.binanceWs = new WebSocket(websocketsConfig().binance.websocketEndpoint);
       
       this.binanceWs.onopen = () => {
 // Removed for production: console.log("Binance WS Connected");
@@ -78,15 +83,15 @@ class MarketDataService {
   }
 
   private scheduleBinanceReconnect() {
-      if (this.binanceReconnectAttempts >= this.maxReconnectAttempts) {
+      if (this.binanceReconnectAttempts >= this.binanceMaxReconnectAttempts) {
 // Removed for production: console.error("Binance WS: Max reconnect attempts reached. Giving up.");
           return;
       }
 
       // Exponential backoff with jitter
       const delay = Math.min(
-          this.baseReconnectDelay * Math.pow(2, this.binanceReconnectAttempts) + Math.random() * 1000,
-          30000 // Max 30 seconds
+          this.binanceBaseReconnectDelay * Math.pow(2, this.binanceReconnectAttempts) + Math.random() * 1000,
+          this.binanceMaxReconnectDelay
       );
 
 // Removed for production: console.log(`Binance WS: Reconnecting in ${Math.round(delay / 1000)}s... (Attempt ${this.binanceReconnectAttempts + 1}/${this.maxReconnectAttempts})`);
@@ -155,7 +160,7 @@ class MarketDataService {
           this.twelveDataReconnectTimer = null;
       }
 
-      this.twelveDataWs = new WebSocket(`wss://ws.twelvedata.com/v1/quotes?apikey=${apiKey}`);
+      this.twelveDataWs = new WebSocket(`${websocketsConfig().twelveData.websocketEndpoint}?apikey=${apiKey}`);
 
       this.twelveDataWs.onopen = () => {
 // Removed for production: console.log("Twelve Data WS Connected");
@@ -174,7 +179,7 @@ class MarketDataService {
                   // Handle authentication errors
                   if (data.message?.includes('apikey')) {
 // Removed for production: console.error("Twelve Data API key invalid. Stopping reconnection attempts.");
-                      this.twelveDataReconnectAttempts = this.maxReconnectAttempts;
+                      this.twelveDataReconnectAttempts = this.twelveMaxReconnectAttempts;
                   }
               }
           } catch (error) {
@@ -184,8 +189,8 @@ class MarketDataService {
 
       this.twelveDataWs.onclose = (_event) => {
 // Removed for production: console.log(`Twelve Data WS Closed. Code: ${event.code}, Reason: ${event.reason}`);
-          // Only reconnect if we still have subscribers needing it and haven't exceeded max attempts
-           if (this.twelveDataSubscriptions.size > 0 && this.twelveDataReconnectAttempts < this.maxReconnectAttempts) {
+// Only reconnect if we still have subscribers needing it and haven't exceeded max attempts
+            if (this.twelveDataSubscriptions.size > 0 && this.twelveDataReconnectAttempts < this.twelveMaxReconnectAttempts) {
                this.scheduleTwelveDataReconnect();
            }
       };
@@ -196,18 +201,18 @@ class MarketDataService {
   }
 
   private scheduleTwelveDataReconnect() {
-      if (this.twelveDataReconnectAttempts >= this.maxReconnectAttempts) {
+      if (this.twelveDataReconnectAttempts >= this.twelveMaxReconnectAttempts) {
 // Removed for production: console.error("Twelve Data WS: Max reconnect attempts reached. Giving up.");
           return;
       }
 
       // Exponential backoff with jitter
       const delay = Math.min(
-          this.baseReconnectDelay * Math.pow(2, this.twelveDataReconnectAttempts) + Math.random() * 1000,
-          30000 // Max 30 seconds
+          this.twelveBaseReconnectDelay * Math.pow(2, this.twelveDataReconnectAttempts) + Math.random() * 1000,
+          this.twelveMaxReconnectDelay
       );
 
-// Removed for production: console.log(`Twelve Data WS: Reconnecting in ${Math.round(delay / 1000)}s... (Attempt ${this.twelveDataReconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+// Removed for production: console.log(`Twelve Data WS: Reconnecting in ${Math.round(delay / 1000)}s... (Attempt ${this.twelveDataReconnectAttempts + 1}/${this.twelveMaxReconnectAttempts})`);
       
       this.twelveDataReconnectTimer = setTimeout(() => {
           this.twelveDataReconnectAttempts++;

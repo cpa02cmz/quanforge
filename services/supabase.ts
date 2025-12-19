@@ -1,6 +1,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
+import { databaseConfig } from './configurationService';
 import { Robot, UserSession } from '../types';
 import { edgeConnectionPool } from './edgeSupabasePool';
 import { securityManager } from './securityManager';
@@ -12,17 +13,17 @@ import { memoryMonitor } from '../utils/memoryManagement';
 
 // Enhanced connection retry configuration with exponential backoff
 const RETRY_CONFIG = {
-  maxRetries: 5,
-  retryDelay: 500,
-  backoffMultiplier: 1.5,
-  maxDelay: 10000, // Cap at 10 seconds
+  maxRetries: databaseConfig().connection.maxRetries,
+  retryDelay: databaseConfig().connection.retryDelay,
+  backoffMultiplier: databaseConfig().connection.backoffMultiplier,
+  maxDelay: databaseConfig().connection.maxDelay,
   jitter: true, // Add jitter to prevent thundering herd
 };
 
 // Cache configuration
 const CACHE_CONFIG = {
-  ttl: 15 * 60 * 1000, // 15 minutes for better edge performance
-  maxSize: 200, // Max cached items
+  ttl: databaseConfig().cache.ttl,
+  maxSize: databaseConfig().cache.maxSize,
 };
 
 // Mock session storage
@@ -577,7 +578,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
               .from('robots')
               .select('*')
               .order('created_at', { ascending: false })
-              .limit(100); // Add reasonable limit to prevent performance issues
+              .limit(databaseConfig().query.limit); // Use configured query limit
             
             if (result.data && !result.error) {
               // Create index for performance
@@ -1270,7 +1271,7 @@ export const dbUtils = {
 
             if (payload.length === 0) return { success: false, count: 0, error: "Local data invalid." };
 
-            const BATCH_SIZE = 10;
+            const BATCH_SIZE = databaseConfig().query.batchSize;
             for (let i = 0; i < payload.length; i += BATCH_SIZE) {
                 const chunk = payload.slice(i, i + BATCH_SIZE);
                 const { error } = await client.from('robots').insert(chunk);
@@ -1477,7 +1478,7 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                 }
             } else {
                 // For Supabase, process in batches to avoid query limits
-                const BATCH_SIZE = 10;
+                const BATCH_SIZE = databaseConfig().query.batchSize;
                 
                 for (let i = 0; i < updates.length; i += BATCH_SIZE) {
                     const batch = updates.slice(i, i + BATCH_SIZE);
