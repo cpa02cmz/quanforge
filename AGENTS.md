@@ -1,177 +1,124 @@
-# Agent Workflow and Guidelines
+# Development Agent Guidelines
 
-This document provides guidance for future agents working on the QuantForge AI codebase.
+## Agent Insights & Decisions
 
-## Development Process
+### Build System Compatibility (2025-12-18)
+**Issue**: Node.js crypto module incompatibility with browser builds  
+**Root Cause**: `utils/enhancedRateLimit.ts` imported server-side `crypto` using `createHash`  
+**Solution Applied**: Browser-compatible simple hash algorithm  
+**Key Insight**: Always verify cross-platform compatibility when importing Node.js modules in frontend code
 
-### Branch Strategy
-- **main**: Production-ready code, always stable and deployable
-- **develop**: Integration branch for feature work (when exists)
-- **feature/***: Feature-specific branches
-- **fix/***: Bug fix branches
+### Vercel Deployment Schema Issues (2025-12-18)
+**Issue**: Multiple `vercel.json` schema validation errors blocking deployments  
+**Root Causes**: 
+- Conflicting `builds` and `functions` properties
+- Invalid `experimental` and `environment` properties  
+- Legacy configuration patterns
+**Solution Applied**: Cleaned up vercel.json with schema-compliant settings
+**Key Insight**: Deployment platform schemas evolve - remove deprecated properties proactively
 
-### PR Management
-- All changes must go through pull requests
-- Automated checks (build, lint, type-check) must pass
-- Review required for all non-trivial changes
-- Update relevant documentation (blueprint.md, roadmap.md, task.md) before merging
+### PR Management & Red Flag Resolution (2025-12-18)
+**Issue**: PR #139 had red flags with failing deployments on both Vercel and Cloudflare Workers
+**Root Causes**: Build compatibility and deployment configuration conflicts
+**Solution Applied**: Systematic troubleshooting of build, schema, and deployment pipeline
+**Key Insight**: Address root causes systematically rather than symptom patches
 
-### Quality Gates
-- [x] Build must pass (`npm run build`)
-- [x] Linting must pass (if configured)
-- [x] Type checking must pass (if configured)
-- [x] No regression in functionality
-- [x] Documentation updated
+### Recommended Development Patterns
 
-## Known Issues and Solutions
+#### Browser Compatibility Checklist
+- [ ] Verify all imports work in browser environment
+- [ ] Avoid Node.js-specific modules (`crypto`, `fs`, `path`, etc.)
+- [ ] Use Web APIs or browser-compatible alternatives
+- [ ] Test build process after adding new dependencies
 
-### Vercel Deployment Schema Validation
-**Issue**: Vercel's schema validation is strict and will reject invalid properties
-**Fixed Issues**:
-- Removed `regions` property from function configurations (not supported)
-- Removed `experimental` section causing validation failures
+#### Error Handling Strategy
+- **Current**: Build-blocking errors must be resolved immediately
+- **Priority**: Critical > High > Medium > Low
+- **Critical Impact**: Build failures, security vulnerabilities, data loss
+- **Approach**: Fix first, optimize later
 
-**Best Practices**:
-- Always test build locally (`npm run build`) after vercel.json changes
-- Validate vercel.json schema using Vercel documentation
-- Use project-level regional settings instead of function-specific
+#### Module Design Principles
+1. **Cross-Platform First**: Always target browser environment
+2. **Graceful Degradation**: Provide fallbacks when possible
+3. **Type Safety**: Strong TypeScript typing preferred
+4. **Single Responsibility**: Each utility should have one clear purpose
 
-### Critical Configuration Files
-- `vercel.json`: Deployment configuration - validate schema carefully
-- `package.json`: Dependencies and build scripts
-- `vite.config.ts`: Build configuration
-- `tsconfig.json`: TypeScript configuration
+## Agent Guidelines for Future Work
 
-## Code Standards
+### When Addressing Bugs
+1. **Verify Build Impact**: Always run `npm run build` to check for breaking changes
+2. **Type Check**: Use `npm run typecheck` to catch TypeScript issues
+3. **Lint Quality**: Address critical lint issues but prioritize function over form
+4. **Document**: Record root cause, solution, and prevention strategies
 
-### File Naming
-- Components: PascalCase (e.g., `ChatInterface.tsx`)
-- Services: camelCase (e.g., `geminiService.ts`)
-- Utils: camelCase with descriptive names (e.g., `errorHandler.ts`)
-- Constants: UPPER_SNAKE_CASE in dedicated files
+### When Optimizing Features
+1. **Measure First**: Use bundle analysis before and after changes
+2. **User Impact**: Prioritize visible improvements over internal optimizations
+3. **Backwards Compatibility**: Maintain existing APIs where possible
+4. **Testing**: Verify optimization doesn't break existing functionality
 
-### Import Organization
-1. React imports first
-2. Third-party libraries
-3. Internal services
-4. Components
-5. Utils and types
+### When Improving Code Quality
+1. **Incremental**: Fix issues in logical groups rather than random scatter
+2. **Context-Aware**: Understand file purpose before changing patterns
+3. **Consistent**: Follow existing conventions unless clearly problematic
+4. **Document Changes**: Update relevant documentation files
 
-### Error Handling
-- Use standardized error handler utility
-- Wrap async calls in try-catch blocks
-- Provide meaningful error messages
-- Log errors appropriately without exposing sensitive data
+## Future Agent Tasks
 
-## Testing and Validation
+### Immediate (Next Sprint)
+- Address high-impact ESLint warnings
+- Implement bundle splitting for performance
+- Add unit tests for critical utilities
 
-### Before PR Submission
-1. Run build command: `npm run build`
-2. Test core functionality manually
-3. Check for console errors
-4. Verify responsive design
-5. Test with different user scenarios
+### Short Term (Next Month)
+- Upgrade to Web Crypto API for security
+- Comprehensive lint cleanup
+- Performance optimization pass
 
-### Performance Considerations
-- Monitor bundle sizes (>100KB chunks need review)
-- Use React.memo for expensive components
-- Implement proper caching strategies
-- Optimize images and assets
+### Long Term
+- Enhanced error boundary coverage
+- Component refactoring for maintainability
+- Advanced testing strategy implementation
 
-## Documentation Updates
+## Development Workflow Recommendations
 
-### When to Update
-- After any architectural changes
-- When adding new features
-- After fixing significant bugs
-- When deployment process changes
+1. **Start with Build Check**: Always verify build works before major changes
+2. **Test Incrementally**: Run type checking and linting during development  
+3. **Document Decisions**: Record why changes were made, not just what was changed
+4. **Think Cross-Platform**: Consider browser, server, and edge environments
+5. **Security Mindset**: Validate inputs, avoid exposing secrets, use secure defaults
 
-### Files to Update
-- `blueprint.md`: System architecture and design decisions
-- `roadmap.md`: Feature progress and planning
-- `task.md`: Development activity tracking
-- `bug.md`: Bug fixes and issues
-- `AGENTS.md`: This file - agent workflow updates
+## Known Issues & Solutions
 
-#### Common Schema Violations (To Avoid):
-```json
-// ❌ INVALID - Not supported in Vercel schema
-{
-  "regions": ["hkg1", "iad1"],
-  "experimental": { ... },
-  "functions": {
-    "api/**/*.ts": {
-      "cache": "max-age=600",
-      "environment": { ... }
-    }
-  }
-}
+### Build Compatibility
+- **Issue**: Node.js modules in frontend code
+- **Solution**: Use browser-compatible alternatives or Web APIs
+- **Detection**: Build failures with module resolution errors
 
-// ✅ VALID - Schema compliant
-{
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "edge",
-      "maxDuration": 15,
-      "memory": 512
-    }
-  }
-}
-```
+### Deployment Configuration
+- **Issue**: Platform schema validation failures
+- **Solution**: Review platform documentation and remove deprecated properties
+- **Detection**: Deployment logs show validation errors
 
-## Security Guidelines
+### Code Quality
+- **Issue**: 200+ ESLint warnings (console.log, unused vars, any types)
+- **Solution**: Incremental cleanup with focus on critical issues
+- **Detection**: `npm run lint` shows extensive warnings
 
-### Never Commit
-- API keys or secrets
-- Environment variables with sensitive data
-- Personal credentials
+## Success Metrics
 
-### Always Validate
-- User inputs and sanitization
-- API responses
-- File uploads and sizes
-- Cross-site scripting (XSS) prevention
+- ✅ Build passes without errors
+- ✅ Type checking passes
+- ✅ Deployment pipelines functional
+- ✅ Cross-platform compatibility maintained
+- ✅ No regressions introduced
+- ✅ Documentation updated
 
-## Common Workflows
+## Agent Contact & Handoff
 
-### Adding New Feature
-1. Create feature branch from main
-2. Implement feature following code standards
-3. Add/update tests
-4. Update documentation
-5. Submit PR with detailed description
-6. Address review feedback
-7. Merge after approval
-
-### Fixing Bug
-1. Identify root cause
-2. Create fix branch
-3. Implement minimal fix
-4. Test thoroughly
-5. Update bug.md
-6. Submit PR with bug reference
-7. Merge after validation
-
-### Performance Optimization
-1. Identify bottlenecks
-2. Implement targeted optimizations
-3. Measure impact
-4. Document changes
-5. Test for regressions
-6. Deploy incrementally
-
-## Emergency Procedures
-
-### Build Failures
-1. Check error logs immediately
-2. Identify if configuration vs code issue
-3. Revert breaking changes if necessary
-4. Test fix before redeploying
-5. Document root cause and solution
-
-### Deployment Issues
-1. Check Vercel/Cloudflare dashboard for errors
-2. Validate configuration files
-3. Review recent changes for breaking modifications
-4. Roll back if needed
-5. Fix underlying issue before redeploying
+When handing off between agents:
+1. Always run final build test
+2. Update relevant documentation
+3. Note any temporary workarounds
+4. Flag any critical issues for follow-up
+5. Summarize decisions made and rationale

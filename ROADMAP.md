@@ -46,9 +46,8 @@
 - [x] **Error Handling Patterns**: Standardized error handling across services using the unified error handler utility
 - [x] **API Client Fixes**: Resolved async/await issues in Supabase client calls for better reliability
 
-## Critical Fixes (v1.7) - December 2025
-- [x] **Multi-PR Schema Fixes**: Resolved Vercel validation issues across multiple PRs (137, 138, 139)
-- [x] **Schema Compliance**: Removed unsupported regions, experimental, cache, and environment properties
-- [x] **Deployment Restoration**: Restored CI/CD pipeline functionality via schema compliance
-- [x] **Documentation Enhancement**: Updated agent guidelines with schema validation best practices
-- [x] **Build Verification**: Confirmed local builds pass after configuration fixes
+## Critical Fixes (v1.6) - December 2025
+- [x] **Build Compatibility**: Fixed browser crypto module incompatibility causing complete build failure
+- [x] **Vercel Schema Validation**: Resolved `vercel.json` schema validation errors preventing deployments
+- [x] **Cross-Platform Support**: Replaced Node.js-specific crypto with browser-compatible hashing
+- [x] **Deployment Pipeline**: Restored all development and deployment workflows after critical blockers

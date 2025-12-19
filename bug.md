@@ -1,40 +1,61 @@
-# Bug Tracker
+# Bug Tracking Log
 
-This document tracks bugs discovered and fixed within the QuantForge AI system.
+## Critical Bugs Fixed
 
-## Format
-- **[FIXED]** or **[OPEN]** - Brief bug description
-- Location: Component/File where bug was found
-- Impact: Severity level (Critical/High/Medium/Low)
+### [FIXED] Build Failure - Browser Crypto Incompatibility
+- **Date**: 2025-12-18
+- **Severity**: Critical (Build Blocking)
+- **Description**: `enhancedRateLimit.ts` imported Node.js `crypto` module incompatible with browser
+- **File**: `utils/enhancedRateLimit.ts:1`
+- **Error**: `"createHash" is not exported by "__vite-browser-external"`
+- **Solution**: Replaced Node.js crypto with browser-compatible hash function
+- **Impact**: Restored build functionality, enables development and deployment
+- **Testing**: ✓ Build successful, ✓ Type check passed
 
----
+### [FIXED] Vercel Deployment Schema Validation Errors
+- **Date**: 2025-12-18
+- **Severity**: Critical (Deployment Blocking)
+- **Description**: `vercel.json` contained unsupported properties causing validation failures
+- **File**: `vercel.json`
+- **Issues Fixed**:
+  - Removed unsupported `experimental` property
+  - Removed invalid `regions` properties from global and function configs
+  - Removed unsupported `cache` properties from function configurations
+  - Removed invalid `environment` properties not compliant with schema
+  - Streamlined build environment variables to supported values
+- **Impact**: Restores Vercel and Cloudflare Workers deployment capability
+- **Testing**: ✓ Build successful, ✓ Schema validation compliant, ✓ CI/CD functional
 
-## Active Bugs (Currently Open)
+### [FIXED] PR #139 Deployment Blockers
+- **Date**: 2025-12-18
+- **Severity**: Critical (Merge Blocking)
+- **Description**: PR with critical crypto fix was blocked by deployment configuration errors
+- **Resolution**: Complete JSON schema cleanup and validation compliance
+- **Impact**: Restored mergeability of critical bug fix PR, enabled deployment pipeline
+- **Testing**: ✓ All status checks pass, ✓ No merge conflicts, ✓ Deployment successful
 
-*No active bugs tracked yet.*
+## Minor Issues (Non-Critical)
 
----
+### [OPEN] ESLint Warnings
+- **Severity**: Low
+- **Count**: 200+ warnings
+- **Categories**:
+  - Console statements in API files
+  - Unused variables in TypeScript
+  - `any` type usage
+  - React refresh for exported constants
+- **Status**: Non-blocking, can be addressed in future optimization sprints
 
-## Fixed Bugs (Resolved)
+### [OPEN] Bundle Size Optimization
+- **Severity**: Low
+- **Description**: Multiple chunks >100KB after minification
+- **Files**: Large vendor chunks (charts, react, ai)
+- **Recommendation**: Consider code splitting for better performance
+- **Status**: Performance optimization opportunity
 
-- **[FIXED]** - Vercel deployment schema validation error in vercel.json
-  - **Location**: vercel.json (functions configuration)
-  - **Impact**: High - Caused deployment failures for PR #136 and potentially other PRs
-  - **Date Fixed**: 2025-12-18
-  - **Solution**: Removed invalid `regions` property from function configurations
-  - **Root Cause**: Vercel schema doesn't allow `regions` property in function definitions
-  - **Testing**: Local build passes successfully after fix
-  - **Notes**: Build completes without schema validation errors
+## Next Steps
 
-- **[FIXED]** - Multiple PR Vercel schema validation errors (PRs #137, #138)
-  - **Location**: vercel.json (across multiple PR branches)
-  - **Impact**: Critical - Blocked deployment pipeline for multiple critical PRs
-  - **Date Fixed**: 2025-12-18
-  - **Solution**: 
-    - Removed unsupported `regions` property from global configuration
-    - Removed invalid `experimental` section causing validation failures
-    - Removed invalid `cache` and `environment` properties from function configs
-    - Streamlined build environment variables to essential supported values only
-  - **Root Cause**: Vercel schema strictly validates properties; many advanced features are not supported
-  - **Testing**: ✓ Local build successful, ✓ Schema validation compliant, ✓ PRs updated and pushed
-  - **Notes**: Restored CI/CD pipeline functionality across multiple critical development branches
+1. [ ] Consider implementing Web Crypto API for more secure hashing
+2. [ ] Address ESLint warnings in next cleanup sprint
+3. [ ] Implement bundle splitting for large chunks
+4. [ ] Add unit tests for rate limiting functionality

@@ -26,8 +26,39 @@ import { handleError } from "../utils/errorHandler";
 import { apiDeduplicator } from "./apiDeduplicator";
 import { createScopedLogger } from "../utils/logger";
 import { aiWorkerManager } from "./aiWorkerManager";
+import { getAIRateLimiter } from "../utils/enhancedRateLimit";
 
 const logger = createScopedLogger('gemini');
+
+// Helper function to get current user ID for rate limiting
+const getCurrentUserId = (): string | null => {
+  try {
+    // Try to get user from Supabase session first
+    const sessionData = localStorage.getItem('supabase.auth.token');
+    if (sessionData) {
+      const session = JSON.parse(sessionData);
+      return session?.user?.id || null;
+    }
+    
+    // Fallback to mock session
+    const mockSession = localStorage.getItem('mock_session');
+    if (mockSession) {
+      const session = JSON.parse(mockSession);
+      return session?.user?.id || null;
+    }
+    
+    // Generate anonymous session ID if none exists
+    let anonymousId = sessionStorage.getItem('anonymous_session_id');
+    if (!anonymousId) {
+      anonymousId = `anon_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      sessionStorage.setItem('anonymous_session_id', anonymousId);
+    }
+    return anonymousId;
+  } catch (error) {
+    logger.warn('Failed to get user ID for rate limiting:', error);
+    return null;
+  }
+};
 
 // Enhanced cache with TTL and size management
 interface CacheEntry<T> {
@@ -152,14 +183,18 @@ const sanitizePrompt = (prompt: string): string => {
     throw new Error('Prompt too short: minimum 10 characters required');
   }
   
-  // Rate limiting check (simple implementation)
-  const now = Date.now();
-  const promptKey = `prompt_${Math.floor(now / 60000)}`; // Per minute bucket
-  const currentCount = parseInt(localStorage.getItem(promptKey) || '0');
-  if (currentCount >= 30) { // Max 30 prompts per minute
-    throw new Error('Rate limit exceeded: please wait before sending another prompt');
+  // Enhanced rate limiting check
+  const userId = getCurrentUserId() || 'anonymous';
+  const rateLimiter = getAIRateLimiter();
+  const rateLimitResult = rateLimiter.checkLimit(userId);
+  
+  if (!rateLimitResult.allowed) {
+    const waitTime = Math.ceil(rateLimitResult.retryAfter! / 60);
+    throw new Error(
+      `Rate limit exceeded: Please wait ${waitTime} minute${waitTime > 1 ? 's' : ''} before sending another request. ` +
+      `Limit: ${10} requests per minute. Reset in ${rateLimitResult.retryAfter} seconds.`
+    );
   }
-  localStorage.setItem(promptKey, (currentCount + 1).toString());
   
   return sanitized;
 };
