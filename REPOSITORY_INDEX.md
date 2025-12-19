@@ -6,24 +6,61 @@ This document provides comprehensive indexing for efficient navigation of the Qu
 
 ### Core Documentation (Priority Reading Order)
 1. **[README.md](README.md)** - Project overview and getting started
-2. **[blueprint.md](blueprint.md)** - System architecture and technical details
-3. **[ROADMAP.md](ROADMAP.md)** - Development phases and future plans
+2. **[blueprint.md](blueprint.md)** - System architecture and technical details (Updated Dec 2025)
+3. **[ROADMAP.md](ROADMAP.md)** - Development phases and future plans 
 4. **[OPTIMIZATION_GUIDE.md](OPTIMIZATION_GUIDE.md)** - Performance and security optimizations
-5. **[AGENTS.md](AGENTS.md)** - AI agent guidelines and workflow
+5. **[AGENTS.md](AGENTS.md)** - **AI AGENT HANDBOOK** - Workflow patterns, decisions, and guidelines
 6. **[task.md](task.md)** - Task tracking and completion status
 7. **[bug.md](bug.md)** - Bug tracking and resolution status
+
+### AI Agent Critical Information
+- **Build Status**: ✅ Always verify `npm run build` before changes
+- **Priority Order**: Build blocking > Security > Performance > Functionality
+- **Configuration Service**: All hardcoded values centralized in `services/configurationService.ts`
+- **Modular Architecture**: Security services refactored to 4 focused modules (Dec 2025)
+- **Performance Metrics**: Bundle optimization reduced chunks by 5-8% (Dec 2025)
+
+## AI Agent Optimization Guide
+
+### Before Starting Work
+1. **Check Build Status**: Always run `npm run build` - ensure no breaking changes
+2. **Read AGENTS.md**: Contains critical patterns and decision frameworks
+3. **Check Configuration**: Use `services/configurationService.ts` for all settings
+4. **Review Recent Changes**: Check `blueprint.md` Critical Findings section
+
+### Working Patterns
+- **Incremental Changes**: Small, testable increments
+- **Cross-Platform First**: Always browser-compatible (avoid Node.js modules in frontend)
+- **Configuration First**: Never hardcode values (98 hardcoded values migrated Dec 2025)
+- **Modular Architecture**: Services > 800 lines should be candidates for modularization
+- **Security Mindset**: Validate inputs, use secureStorage.ts, follow WAF patterns
+
+### Recent Critical Improvements (Dec 2025)
+- ✅ **SecurityManager Modularization**: 1559 lines → 4 focused modules
+- ✅ **Bundle Optimization**: Chart-vendor 298KB → 274KB, Services-core 107KB → 102KB  
+- ✅ **Memory Management**: Performance monitoring leaks eliminated
+- ✅ **Configuration Migration**: 98 hardcoded values → environment variables
+- ✅ **Code Quality**: ESLint critical errors resolved, console statements cleaned
+
+### Critical Files to Watch
+- **Large monolithic files**: `services/supabase.ts` (1,686 lines)
+- **Performance critical**: `vite.config.ts`, `App.tsx`, utils with intervals
+- **Security critical**: All services in `services/security/`
+- **Configuration**: `services/configurationService.ts` (central config)
 
 ## Architecture Overview
 
 ### Application Structure
 ```
 src/
-├── components/          # React components
+├── components/          # React components (modular, memoized)
 ├── services/           # Backend services and APIs  
-├── utils/              # Utility functions
+│   └── security/       # Modular security architecture (NEW Dec 2025)
+├── utils/              # Utility functions (performance optimized)
 ├── hooks/              # Custom React hooks
-├── pages/              # Route components
+├── pages/              # Route components (lazy loaded)
 ├── types/              # TypeScript type definitions
+├── contexts/           # React contexts (separated from UI)
 └── test/               # Test files and setup
 ```
 
@@ -37,11 +74,19 @@ src/
 ## Services Index
 
 ### Core Services
-- **[services/supabase.ts](services/supabase.ts)** - Database service (1,686 lines - monolithic)
-- **[services/gemini.ts](services/gemini.ts)** - AI integration service
-- **[services/marketData.ts](services/marketData.ts)** - Market simulation
+- **[services/supabase.ts](services/supabase.ts)** - Database service (1,686 lines - monolithic - refactoring candidate)
+- **[services/gemini.ts](services/gemini.ts)** - AI integration service with multi-provider support
+- **[services/marketData.ts](services/marketData.ts)** - Market simulation and real-time data
 - **[services/databaseOptimizer.ts](services/databaseOptimizer.ts)** - Database optimizations
-- **[services/securityManager.ts](services/securityManager.ts)** - Security operations
+
+### Security Services (Modular Architecture) 
+- **[services/security/](services/security/)** - Modular Security Architecture (Dec 2025)
+  - **InputValidator.ts** - Data validation, sanitization, MQL5 validation (300+ lines)
+  - **ThreatDetector.ts** - WAF patterns, XSS/SQL injection detection (180+ lines)
+  - **RateLimiter.ts** - Adaptive_rate limiting, edge rate limiting (200+ lines)
+  - **APISecurityManager.ts** - CSRF tokens, API key rotation, bot detection (280+ lines)
+  - **SecurityManager.ts** - Orchestration layer maintaining backward compatibility
+- **[services/securityManager.ts](services/securityManager.ts)** - Legacy redirect to modular system
 
 ### Performance Services  
 - **[services/performanceMonitorEnhanced.ts](services/performanceMonitorEnhanced.ts)** - Unified performance monitoring

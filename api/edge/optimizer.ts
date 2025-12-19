@@ -326,86 +326,9 @@ async function handleCacheWarmup(
         warmed: warmupResults,
         timestamp: Date.now(),
       }
-    };
+};
 
-  } catch (error) {
-    logger.error('Cache warmup error:', error);
-    return { error: 'Cache warmup failed' };
-  }
-}
-
-/**
- * Handle optimization endpoint
- */
-async function handleOptimization(_request: Request, region: string): Promise<EdgeResponse> {
-  try {
-    const optimizations = {
-      bundle: await optimizeBundle(),
-      cache: await optimizeCache(),
-      database: await optimizeDatabase(),
-      edge: await optimizeEdge(region),
-    };
-
-    return { data: optimizations };
-
-  } catch (error) {
-    logger.error('Optimization error:', error);
-    return { error: 'Optimization failed' };
-  }
-}
-
-/**
- * Check database health
- */
-async function checkDatabaseHealth(): Promise<{ status: string; latency?: number }> {
-  try {
-    const startTime = performance.now();
-    const result = await edgeSupabase.edgeQuery('robots', 'count', {
-      cacheKey: 'health_check',
-      cacheTTL: 30000, // 30 seconds
-      enableCache: false,
-      priority: 'high',
-    });
-
-    const latency = Math.round(performance.now() - startTime);
-    
-    return {
-      status: result.error ? 'unhealthy' : 'healthy',
-      latency,
-    };
-  } catch (error) {
-    return { status: 'unhealthy' };
-  }
-}
-
-/**
- * Optimize bundle
- */
-async function optimizeBundle(): Promise<{ optimized: boolean; size?: number }> {
-  try {
-    // Trigger bundle optimization
-    vercelEdgeOptimizer.optimizeBundle();
-    
-    return {
-      optimized: true,
-    };
-  } catch (error) {
-    return { optimized: false };
-  }
-}
-
-/**
- * Optimize cache
- */
-async function optimizeCache(): Promise<{ optimized: boolean; entries?: number }> {
-  try {
-    // Setup advanced caching
-    vercelEdgeOptimizer.setupAdvancedCaching();
-    
-    return {
-      optimized: true,
-    };
-  } catch (error) {
+  } catch (_error) {
     return { optimized: false };
   }
 }

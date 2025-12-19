@@ -64,7 +64,7 @@ const generateKey = (request: NextRequest, type: string = 'default'): string => 
              request.headers.get('x-real-ip') || 
              'unknown';
   
-  const userAgent = request.headers.get('user-agent') || 'unknown';
+  const _userAgent = request.headers.get('user-agent') || 'unknown';
   const userId = request.headers.get('x-user-id') || 'anonymous';
   
   // Create a hash of IP and user agent for better identification

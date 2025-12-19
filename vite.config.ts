@@ -30,13 +30,22 @@ export default defineConfig({
               return 'ai-vendor';
             }
             
-            // Chart libraries - simplified grouping to reduce fragmentation
+            // Chart libraries - optimized for better chunk distribution
             if (id.includes('recharts')) {
-              // Core chart primitives (largest chunk)
-              if (id.includes('Cartesian') || id.includes('Polar') || id.includes('shape') || id.includes('scale')) {
-                return 'chart-types-core';
+              // Core chart primitives (split into smaller chunks)
+              if (id.includes('Cartesian')) {
+                return 'chart-cartesian';
               }
-              // Individual chart components
+              if (id.includes('Polar')) {
+                return 'chart-polar';
+              }
+              if (id.includes('shape')) {
+                return 'chart-shape';
+              }
+              if (id.includes('scale')) {
+                return 'chart-scale';
+              }
+              // Individual chart components - smaller isolation
               if (id.includes('Chart') && !id.includes('Responsive')) {
                 if (id.includes('Area')) return 'chart-area';
                 if (id.includes('Line')) return 'chart-line';
@@ -46,6 +55,10 @@ export default defineConfig({
                 if (id.includes('Scatter')) return 'chart-scatter';
                 if (id.includes('Composed')) return 'chart-composed';
                 if (id.includes('Funnel')) return 'chart-funnel';
+              }
+              // Responsive container and utilities
+              if (id.includes('Responsive') || id.includes('Tooltip') || id.includes('Legend')) {
+                return 'chart-utils';
               }
               return 'chart-vendor';
             }
