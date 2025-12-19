@@ -4,19 +4,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm ci",
-  "devCommand": "npm run dev",
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "edge",
-      "maxDuration": 15,
-      "memory": 512,
-      "includeFiles": "public/**/*",
-      "excludeFiles": "**/*.test.*"
-    },
-    "api/edge/**/*.ts": {
-      "runtime": "edge",
-      "maxDuration": 15,
-      "memory": 512
-    }
-  }
+  "devCommand": "npm run dev"
 }
