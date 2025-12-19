@@ -26,7 +26,6 @@ import { handleError } from "../utils/errorHandler";
 import { apiDeduplicator } from "./apiDeduplicator";
 import { createScopedLogger } from "../utils/logger";
 import { aiWorkerManager } from "./aiWorkerManager";
-=======
 import { getAIRateLimiter } from "../utils/enhancedRateLimit";
 
 const logger = createScopedLogger('gemini');
@@ -60,7 +59,6 @@ const getCurrentUserId = (): string | null => {
     return null;
   }
 };
->>>>>>> develop
 
 // Enhanced cache with TTL and size management
 interface CacheEntry<T> {
@@ -539,47 +537,13 @@ class RequestDeduplicator {
 const requestDeduplicator = new RequestDeduplicator();
 
 /**
- * Enhanced utility: Retry with exponential backoff and circuit breaker pattern.
- * Combines retry logic with circuit breaker for maximum resilience.
+ * Retry with exponential backoff and jitter.
  */
-async function withRetryAndCircuitBreaker<T>(
+async function withRetry<T>(
     fn: () => Promise<T>, 
-    retries = 5, 
-    baseDelay = 1000, 
-    maxDelay = 16000,
-    circuitBreaker: CircuitBreaker = aiCircuitBreaker
-): Promise<T> {
-    // First, check circuit breaker state
-    if (circuitBreaker.getState() === CircuitState.OPEN) {
-        throw new Error('Circuit breaker is OPEN - AI services temporarily unavailable');
-    }
-
-    try {
-        // Execute through circuit breaker
-        const result = await circuitBreaker.execute(async () => {
-            return await performRetryWithBackoff(fn, retries, baseDelay, maxDelay, retries);
-        });
-        return result;
-    } catch (error: any) {
-        // If circuit breaker rejected the call, propagate the error
-        if (error.message?.includes('circuit breaker is OPEN')) {
-            throw error;
-        }
-        
-        // For other errors, circuit breaker state is already updated via execute()
-        throw error;
-    }
-}
-
-/**
- * Retry operation with exponential backoff and jitter.
- */
-async function performRetryWithBackoff<T>(
-    fn: () => Promise<T>, 
-    retries: number, 
-    baseDelay: number, 
-    maxDelay: number,
-    currentRetryAttempt: number = 5
+    retries = 3, 
+    delay = 1000, 
+    maxDelay = 10000
 ): Promise<T> {
     try {
         return await fn();
@@ -590,29 +554,17 @@ async function performRetryWithBackoff<T>(
         
         const isRateLimit = error.status === 429 || (error.message && error.message.includes('429'));
         const isServerErr = error.status >= 500;
-        const isNetworkErr = error.message?.includes('fetch failed') || 
-                             error.message?.includes('network') || 
-                             error.message?.includes('timeout') ||
-                             error.message?.includes('ETIMEDOUT') ||
-                             error.message?.includes('ECONNRESET');
-
-        // Only retry on Rate Limits, Server Errors, or Network Issues
-        if (isRateLimit || isServerErr || isNetworkErr) {
-// Removed for production: console.warn(`API Error (${error.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
-            // Add jitter to prevent thundering herd
-            const jitter = Math.random() * 0.1 * delay;
-            const nextDelay = Math.min(delay * 1.5 + jitter, maxDelay); // Use 1.5 multiplier instead of 2 for gentler backoff
-            await new Promise(resolve => setTimeout(resolve, nextDelay));
-            return withRetry(fn, retries - 1, nextDelay, maxDelay);
+        
+        if (!isRateLimit && !isServerErr && !error.name?.includes('FetchError')) {
+            throw error; // Don't retry client or validation errors
         }
         
-        throw error;
+        // Add jitter to prevent thundering herd
+        const jitter = Math.random() * 0.1 * delay;
+        const nextDelay = Math.min(delay * 1.5 + jitter, maxDelay); // Use 1.5 multiplier instead of 2 for gentler backoff
+        await new Promise(resolve => setTimeout(resolve, nextDelay));
+        return withRetry(fn, retries - 1, nextDelay, maxDelay);
     }
-}
-
-// Legacy withRetry function for backward compatibility
-async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, maxDelay = 10000): Promise<T> {
-    return withRetryAndCircuitBreaker(fn, retries, delay, maxDelay, aiCircuitBreaker);
 }
 
 // Optimized token budgeting with efficient caching
@@ -931,7 +883,7 @@ const getGoogleGenAI = async () => {
 };
 
 const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?: AbortSignal, temperature?: number) => {
-    return withRetryAndCircuitBreaker(async () => {
+    return withRetry(async () => {
         const activeKey = getActiveKey(settings.apiKey);
         if (!activeKey) throw new Error("Google API Key missing in settings.");
         
@@ -966,7 +918,7 @@ const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?
  * Executes a call to an OpenAI Compatible API (ChatGPT, DeepSeek, Local LLM).
  */
 const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, signal?: AbortSignal, temperature?: number, jsonMode: boolean = false) => {
-    return withRetryAndCircuitBreaker(async () => {
+    return withRetry(async () => {
         const activeKey = getActiveKey(settings.apiKey);
 
         if (!activeKey && !settings.baseUrl?.includes('localhost')) {
