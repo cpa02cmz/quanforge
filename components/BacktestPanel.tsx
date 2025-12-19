@@ -9,7 +9,7 @@ import { useTranslation } from '../services/i18n';
 
 interface BacktestPanelProps {
     settings: BacktestSettings;
-    onChange: (settings: BacktestSettings) => void;
+    onChange: (_settings: BacktestSettings) => void;
     onRun: () => void;
     result: SimulationResult | null;
     isRunning: boolean;
