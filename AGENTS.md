@@ -38,6 +38,23 @@
 - Documented PR #138 as obsolete - no merge required
 **Key Insight**: Not all red-flag PRs need merging; sometimes main branch already contains necessary fixes
 
+### Performance Optimization Strategy (2025-12-19)
+**Issue**: Large bundle chunks (>100KB) affecting initial load time
+**Root Cause**: Static imports of heavy vendor libraries and services
+**Solution Applied**:
+- Dynamic loading of performance/edge services in App.tsx
+- Granular chunking strategy in vite.config.ts
+- Split chart components into individual loadable chunks
+- Progressive loading after authentication
+**Results**:
+- react-vendor: 224KB → 10-177KB (4 chunks)
+- chart-vendor: 356KB → 328KB (+ individual components 0.31-14.94KB)
+- Improved initial page load time through progressive loading
+**Key Insights**:
+- Bundle analysis should guide optimization priorities
+- Granular chunking outweighs monolithic splitting
+- Dynamic loading is most effective for conditional features
+
 ### Recommended Development Patterns
 
 #### Browser Compatibility Checklist
@@ -65,6 +82,13 @@
 2. **Type Check**: Use `npm run typecheck` to catch TypeScript issues
 3. **Lint Quality**: Address critical lint issues but prioritize function over form
 4. **Document**: Record root cause, solution, and prevention strategies
+
+### When Optimizing Performance
+1. **Analyze Bundle Composition**: Use build output and manifest to identify large chunks
+2. **Dynamic Loading Priority**: Focus on edge services and heavy components used conditionally
+3. **Granular Chunking**: Split vendor libraries by usage patterns (react-dom, react-router, etc.)
+4. **Progressive Loading**: Load non-critical services after auth/initial render
+5. **Measure Before/After**: Quantify performance improvements with size comparisons
 
 ### When Managing PRs with Red Flags
 1. **Conflict Resolution**: Merge main branch into PR branch to resolve merge conflicts

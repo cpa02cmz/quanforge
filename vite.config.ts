@@ -17,9 +17,12 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
-            // React ecosystem - optimized for edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
-              return 'react-vendor';
+            // React ecosystem - split more granularly
+            if (id.includes('react')) {
+              if (id.includes('react-dom')) return 'react-dom';
+              if (id.includes('react-router')) return 'react-router';
+              if (id.includes('react-is')) return 'react-utils';
+              return 'react-core';
             }
             // Supabase - isolated for better connection pooling
             if (id.includes('@supabase')) {
@@ -32,25 +35,33 @@ export default defineConfig({
               }
               return 'supabase-vendor';
             }
-            // AI services - lazy loaded for edge optimization
+            // AI services - split to reduce impact on load time
             if (id.includes('@google/genai')) {
-              return 'ai-vendor';
+              if (id.includes('generators') || id.includes('models')) return 'ai-models';
+              if (id.includes('embeddings') || id.includes('vector')) return 'ai-embeddings';
+              return 'ai-core';
             }
-            // Chart libraries - split more granularly
+            // Chart libraries - split more granularly for better performance
             if (id.includes('recharts')) {
-              if (id.includes('AreaChart') || id.includes('LineChart')) {
-                return 'chart-core';
-              }
-              if (id.includes('PieChart') || id.includes('BarChart')) {
-                return 'chart-misc';
-              }
+              // Split chart components individually to reduce bundle size
+              if (id.includes('AreaChart')) return 'chart-area';
+              if (id.includes('LineChart')) return 'chart-line';
+              if (id.includes('PieChart')) return 'chart-pie';
+              if (id.includes('BarChart')) return 'chart-bar';
+              if (id.includes('ResponsiveContainer')) return 'chart-container';
+              if (id.includes('Tooltip')) return 'chart-tooltip';
+              if (id.includes('XAxis') || id.includes('YAxis')) return 'chart-axes';
+              if (id.includes('CartesianGrid')) return 'chart-grid';
               return 'chart-vendor';
             }
             // Security utilities - bundled together
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'security-vendor';
             }
-            // All other vendor libraries
+            // Split other vendor libraries by size and usage
+            if (id.includes('lodash') || id.includes('underscore')) return 'vendor-utils';
+            if (id.includes('date-fns') || id.includes('moment') || id.includes('dayjs')) return 'vendor-date';
+            if (id.includes('axios') || id.includes('fetch') || id.includes('request')) return 'vendor-http';
             return 'vendor-misc';
           }
           

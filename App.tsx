@@ -8,13 +8,47 @@ import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
-  import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
-  import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
-  import { frontendOptimizer } from './services/frontendOptimizer';
-  import { edgeAnalytics } from './services/edgeAnalytics';
-  import { edgeMonitoring } from './services/edgeMonitoring';
-  import { advancedAPICache } from './services/advancedAPICache';
-  import { frontendPerformanceOptimizer } from './services/frontendPerformanceOptimizer';
+  // Dynamic service imports to optimize initial bundle size
+let vercelEdgeOptimizer: any = null;
+let databasePerformanceMonitor: any = null;
+let frontendOptimizer: any = null;
+let edgeAnalytics: any = null;
+let edgeMonitoring: any = null;
+let advancedAPICache: any = null;
+let frontendPerformanceOptimizer: any = null;
+
+// Service loading utilities
+const loadEdgeServices = async () => {
+  try {
+    const [
+      vercelModule,
+      dbModule,
+      frontendModule,
+      analyticsModule,
+      monitoringModule,
+      cacheModule,
+      perfModule
+    ] = await Promise.all([
+      import('./services/vercelEdgeOptimizer'),
+      import('./services/databasePerformanceMonitor'),
+      import('./services/frontendOptimizer'),
+      import('./services/edgeAnalytics'),
+      import('./services/edgeMonitoring'),
+      import('./services/advancedAPICache'),
+      import('./services/frontendPerformanceOptimizer')
+    ]);
+    
+    vercelEdgeOptimizer = vercelModule.vercelEdgeOptimizer;
+    databasePerformanceMonitor = dbModule.databasePerformanceMonitor;
+    frontendOptimizer = frontendModule.frontendOptimizer;
+    edgeAnalytics = analyticsModule.edgeAnalytics;
+    edgeMonitoring = monitoringModule.edgeMonitoring;
+    advancedAPICache = cacheModule.advancedAPICache;
+    frontendPerformanceOptimizer = perfModule.frontendPerformanceOptimizer;
+  } catch (error) {
+    logger.warn('Failed to load edge services:', error);
+  }
+};
 
 // Enhanced lazy loading with route-based code splitting and preloading
 const Auth = lazy(() => 
@@ -53,15 +87,18 @@ export const loadCodeEditor = () => import('./components/CodeEditor');
 export const loadBacktestPanel = () => import('./components/BacktestPanel');
 
 // Enhanced preloading strategy with route-based optimization
-   const preloadCriticalRoutes = () => {
+    const preloadCriticalRoutes = () => {
+     // Load edge services first (critical for performance monitoring)
+     loadEdgeServices();
+     
      // Preload Dashboard components (most likely route after login)
-     import('./pages/Dashboard').catch(err => logger.warn('Dashboard preload failed:', err));
+     import('./pages/Dashboard').catch((err: Error) => logger.warn('Dashboard preload failed:', err));
      // Preload Generator components (second most likely)
-     setTimeout(() => import('./pages/Generator').catch(err => logger.warn('Generator preload failed:', err)), 1000);
+     setTimeout(() => import('./pages/Generator').catch((err: Error) => logger.warn('Generator preload failed:', err)), 1000);
      // Preload Layout (essential for navigation)
-     setTimeout(() => import('./components/Layout').catch(err => logger.warn('Layout preload failed:', err)), 500);
+     setTimeout(() => import('./components/Layout').catch((err: Error) => logger.warn('Layout preload failed:', err)), 500);
      // Preload static pages in background
-     setTimeout(() => import('./pages/Wiki').catch(err => logger.warn('Wiki preload failed:', err)), 2000);
+     setTimeout(() => import('./pages/Wiki').catch((err: Error) => logger.warn('Wiki preload failed:', err)), 2000);
    };
 
 
@@ -73,23 +110,29 @@ export default function App() {
 useEffect(() => {
     const startTime = performance.now();
     
-    // Critical path: Auth initialization first
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      performanceMonitor.recordMetric('auth_init', performance.now() - startTime);
-      databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, true);
-      
-      // Preload critical routes after successful auth
-      if (session) {
-        preloadCriticalRoutes();
-      }
-      
-      // Initialize non-critical services after auth is complete
-      initializeNonCriticalServices();
-    }).catch((err) => {
+// Critical path: Auth initialization first
+     supabase.auth.getSession().then(({ data: { session } }) => {
+       setSession(session);
+       performanceMonitor.recordMetric('auth_init', performance.now() - startTime);
+       
+       // Record query if database monitor is available
+       if (databasePerformanceMonitor) {
+         databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, true);
+       }
+       
+       // Preload critical routes after successful auth
+       if (session) {
+         preloadCriticalRoutes();
+       }
+       
+       // Initialize non-critical services after auth is complete
+       initializeNonCriticalServices();
+     }).catch((err: Error) => {
       logger.warn("Auth initialization failed:", err);
       performanceMonitor.recordMetric('auth_error', 1);
-      databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, false);
+      if (databasePerformanceMonitor) {
+        databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, false);
+      }
       
       // Still initialize non-critical services even on auth error
       initializeNonCriticalServices();
@@ -121,41 +164,61 @@ useEffect(() => {
      // Use setTimeout to defer non-critical initialization
      const initializeServices = async () => {
        try {
-         // Initialize Vercel Edge Optimizer (non-blocking)
-         setTimeout(() => {
-           vercelEdgeOptimizer.optimizeBundleForEdge();
-           vercelEdgeOptimizer.enableEdgeSSR();
-           vercelEdgeOptimizer.setupEdgeErrorHandling();
-         }, 100);
-         
-         // Initialize Frontend Optimizer (non-blocking)
-         setTimeout(() => {
-           frontendOptimizer.warmUp().catch(err => logger.warn('Frontend optimizer warmup failed:', err));
-         }, 200);
-         
-         // Initialize Advanced Frontend Performance Optimizer (non-blocking)
-         setTimeout(() => {
-           frontendPerformanceOptimizer.warmUp().catch(err => logger.warn('Frontend performance optimizer warmup failed:', err));
-         }, 250);
-         
-         // Initialize Edge Analytics (non-blocking)
-         setTimeout(() => {
-           edgeAnalytics.trackCustomEvent('app_initialization', {
-             timestamp: Date.now(),
-             userAgent: navigator.userAgent,
-             region: 'unknown' // Will be detected by edge analytics
-           });
-           
-           const monitoringStatus = edgeMonitoring.getMonitoringStatus();
-           logger.info('Edge monitoring status:', monitoringStatus);
-         }, 300);
-         
-         // Initialize Advanced API Cache (non-blocking)
-         setTimeout(() => {
-           advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
-             logger.warn('API cache prefetch failed:', err)
-           );
-         }, 400);
+// Initialize services conditionally after they're loaded
+          const initializeAfterLoad = () => {
+           // Initialize Vercel Edge Optimizer (non-blocking)
+           if (vercelEdgeOptimizer) setTimeout(() => {
+              try {
+                vercelEdgeOptimizer.optimizeBundleForEdge();
+                 vercelEdgeOptimizer.enableEdgeSSR();
+                 vercelEdgeOptimizer.setupEdgeErrorHandling();
+               } catch (err: any) {
+                 logger.warn('Edge optimizer initialization failed:', err);
+               }
+             }, 100);
+             
+             // Initialize Frontend Optimizer (non-blocking)
+             if (frontendOptimizer) setTimeout(() => {
+               frontendOptimizer.warmUp().catch((err: Error) => 
+                 logger.warn('Frontend optimizer warmup failed:', err)
+               );
+             }, 200);
+             
+             // Initialize Advanced Frontend Performance Optimizer (non-blocking)
+             if (frontendPerformanceOptimizer) setTimeout(() => {
+               frontendPerformanceOptimizer.warmUp().catch((err: Error) => 
+                 logger.warn('Frontend performance optimizer warmup failed:', err)
+               );
+             }, 250);
+             
+             // Initialize Edge Analytics (non-blocking)
+             if (edgeAnalytics && edgeMonitoring) setTimeout(() => {
+               try {
+                 edgeAnalytics.trackCustomEvent('app_initialization', {
+                   timestamp: Date.now(),
+                   userAgent: navigator.userAgent,
+                   region: 'unknown' // Will be detected by edge analytics
+                 });
+                 
+                 const monitoringStatus = edgeMonitoring.getMonitoringStatus();
+                 logger.info('Edge monitoring status:', monitoringStatus);
+               } catch (err: any) {
+                 logger.warn('Edge analytics initialization failed:', err);
+               }
+             }, 300);
+             
+             // Initialize Advanced API Cache (non-blocking)
+             if (advancedAPICache) setTimeout(() => {
+               advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
+                 logger.warn('API cache prefetch failed:', err)
+               );
+             }, 400);
+          };
+          
+          // Load services first, then initialize
+          loadEdgeServices().then(initializeAfterLoad).catch((err: Error) => {
+            logger.warn('Service loading failed:', err);
+          });
        } catch (error) {
          logger.warn('Non-critical service initialization failed:', error);
        }
