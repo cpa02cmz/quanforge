@@ -347,11 +347,11 @@ class AutomatedBackupService {
   /**
    * Get mock database backup data
    */
-  private async getMockBackupData(type: 'full' | 'incremental' | 'differential', parentBackupId?: string): Promise<any> {
+  private async getMockBackupData(_type: 'full' | 'incremental' | 'differential', _parentBackupId?: string): Promise<any> {
     const robotsData = localStorage.getItem('mock_robots');
     const robots = JSON.parse(robotsData || '[]');
     
-    if (type === 'full') {
+    if (_type === 'full') {
       return {
         type: 'full',
         timestamp: new Date().toISOString(),
@@ -361,13 +361,13 @@ class AutomatedBackupService {
           backupVersion: '1.0'
         }
       };
-    } else if (type === 'incremental' || type === 'differential') {
+    } else if (_type === 'incremental' || _type === 'differential') {
       // For mock mode, we can't easily track changes, so fallback to full
       console.warn('Incremental/differential backups not fully supported in mock mode, using full backup');
       return this.getMockBackupData('full');
     }
     
-    throw new Error(`Unsupported backup type: ${type}`);
+    throw new Error(`Unsupported backup type: ${_type}`);
   }
 
   /**
@@ -725,8 +725,8 @@ class AutomatedBackupService {
       
       // Find last full backup
       const fullBackups = this.backupHistory.filter(b => b.type === 'full' && b.status === 'completed');
-      if (fullBackups.length > 0) {
-        this.lastFullBackup = fullBackups[0].id;
+if (fullBackups.length > 0) {
+        this.lastFullBackup = fullBackups[0]?.id || '';
       }
       
       // Find last backup timestamp

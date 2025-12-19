@@ -200,6 +200,11 @@ export interface CacheEntry {
   metadata?: ApiResponseData;
 }
 
+export interface SuggestedStrategy {
+  label: string;
+  prompt: string;
+}
+
 export interface RequestParams {
   [key: string]: string | number | boolean | undefined;
 }

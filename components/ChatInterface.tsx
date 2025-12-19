@@ -1,7 +1,7 @@
 
 import React, { Suspense, useState, useRef, useEffect, memo, useCallback, useMemo } from 'react';
 import DOMPurify from 'dompurify';
-import { Message, MessageRole } from '../types';
+import { Message, MessageRole, SuggestedStrategy } from '../types';
 import { loadSuggestedStrategies } from '../constants';
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
@@ -27,7 +27,7 @@ interface ChatInterfaceProps {
 }
 
 // Extract and memoize Message component to prevent re-renders of the whole list on input change
-const MemoizedMessage = memo(({ msg, formatMessageContent }: { msg: Message, formatMessageContent: (_c: string) => any }) => {
+const MemoizedMessage = memo(({ msg, formatMessageContent }: { msg: Message, formatMessageContent: (_c: string) => React.ReactElement[] }) => {
     return (
         <div className={`flex ${msg.role === MessageRole.USER ? 'justify-end' : 'justify-start'}`}>
             <div
@@ -253,7 +253,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   }, [listRegex, parseInlineStyles]);
 
   // Get strategies based on current language
-  const [suggestedStrategies, setSuggestedStrategies] = useState<any[]>([]);
+  const [suggestedStrategies, setSuggestedStrategies] = useState<SuggestedStrategy[]>([]);
 
   useEffect(() => {
     loadSuggestedStrategies(language).then(strategies => {

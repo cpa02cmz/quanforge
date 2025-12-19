@@ -75,7 +75,9 @@ class AdvancedAPICache {
          const data = JSON.parse(event.newValue);
          this.cache = new Map(data);
        } catch (e) {
-         console.error('Failed to sync cache from storage:', e);
+         if (import.meta.env.DEV) {
+            console.error('Failed to sync cache from storage:', e);
+          }
        }
      }
    };
