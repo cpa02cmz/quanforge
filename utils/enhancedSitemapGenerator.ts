@@ -1,5 +1,6 @@
 import { writeFileSync } from 'fs';
 import { join } from 'path';
+import { logger } from './logger';
 
 interface SitemapEntry {
   url: string;
@@ -873,7 +874,7 @@ class EnhancedSitemapGenerator {
     this.generateImageSitemap();
     this.generateVideoSitemap();
     this.generateNewsSitemap();
-    console.log('Enhanced sitemaps generated successfully!');
+    logger.log('Enhanced sitemaps generated successfully!');
   }
 }
 

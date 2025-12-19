@@ -4,6 +4,8 @@
  * Reduces bundle size by 10-15% through better code splitting
  */
 
+import { logger } from './logger';
+
 interface PriorityConfig {
   priority: 'high' | 'medium' | 'low';
   preload?: boolean;
@@ -151,7 +153,7 @@ class EnhancedDynamicImports {
       await this.loadComponent(componentPath, { priority, preload: true });
       this.preloadedModules.add(componentPath);
     } catch (error) {
-      console.warn(`Failed to preload ${componentPath}:`, error);
+      logger.warn(`Failed to preload ${componentPath}:`, error);
     }
   }
 
@@ -195,7 +197,7 @@ class EnhancedDynamicImports {
     for (const chunk of chunks) {
       const promises = chunk.map(({ path, priority }) => 
         this.preloadComponent(path, priority).catch(error => {
-          console.warn(`Batch preload failed for ${path}:`, error);
+          logger.warn(`Batch preload failed for ${path}:`, error);
         })
       );
 

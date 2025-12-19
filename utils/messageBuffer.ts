@@ -1,5 +1,6 @@
 import { Message } from '../types';
 import { useRef, useEffect, useCallback } from 'react';
+import { logger } from './logger';
 
 // Circular buffer for efficient message history management
 export class MessageBuffer {
@@ -127,18 +128,18 @@ export class MessageMemoryMonitor {
             const memoryUsageMB = stats.memoryUsageKB / 1024;
 
             if (memoryUsageMB > this.CRITICAL_THRESHOLD_MB) {
-                console.warn(`Critical message buffer memory usage: ${memoryUsageMB.toFixed(2)}MB`);
+                logger.warn(`Critical message buffer memory usage: ${memoryUsageMB.toFixed(2)}MB`);
                 // Force aggressive cleanup
                 const recentMessages = buffer.getRecent(10); // Keep only 10 most recent
                 buffer.clear();
                 recentMessages.forEach(msg => buffer.add(msg));
             } else if (memoryUsageMB > this.WARNING_THRESHOLD_MB) {
-                console.warn(`High message buffer memory usage: ${memoryUsageMB.toFixed(2)}MB`);
+                logger.warn(`High message buffer memory usage: ${memoryUsageMB.toFixed(2)}MB`);
                 // Trim older messages more aggressively
                 const cutoffTime = Date.now() - (4 * 60 * 60 * 1000); // 4 hours ago instead of 24
                 const removed = buffer.trimOlderThan(cutoffTime);
                 if (removed > 0) {
-                    console.log(`Trimmed ${removed} old messages to reduce memory usage`);
+                    logger.log(`Trimmed ${removed} old messages to reduce memory usage`);
                 }
             }
         }, intervalMs);
@@ -204,7 +205,7 @@ export const useMessageBuffer = (maxSize: number = 50) => {
             const recentMessages = bufferRef.current.getRecent(15);
             bufferRef.current.clear();
             recentMessages.forEach(msg => bufferRef.current.add(msg));
-            console.log('Manual memory cleanup performed');
+            logger.log('Manual memory cleanup performed');
         }
     }, []);
 

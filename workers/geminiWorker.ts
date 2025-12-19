@@ -2,6 +2,12 @@
 import { MQL5_SYSTEM_PROMPT } from "../constants";
 import { StrategyParams, StrategyAnalysis, Message } from "../types";
 
+// Worker-specific logging (console is appropriate for workers)
+const workerLogger = {
+  warn: (...args: any[]) => console.warn('[Worker]', ...args),
+  error: (...args: any[]) => console.error('[Worker]', ...args),
+};
+
 // Worker message types
 interface WorkerMessage {
   type: 'GENERATE_CONTENT' | 'BUILD_CONTEXT' | 'PARSE_RESPONSE';
@@ -183,7 +189,7 @@ const parseGeminiResponse = (response: string): { code?: string; analysis?: Stra
         description: analysisText
       };
     } catch (error) {
-      console.warn('Failed to parse analysis:', error);
+      workerLogger.warn('Failed to parse analysis:', error);
     }
   }
   
@@ -265,7 +271,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
 
 // Handle worker errors
 self.onerror = (error) => {
-  console.error('Worker error:', error);
+  workerLogger.error('Worker error:', error);
 };
 
 export {};

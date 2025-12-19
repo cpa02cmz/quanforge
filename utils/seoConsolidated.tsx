@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { logger } from './logger';
 
 interface SEOAnalyticsProps {
   pageUrl: string;
@@ -54,7 +55,7 @@ export const useSEOAnalytics = ({ pageUrl, pageTitle, pageType = 'other', enable
       try {
         // Send to analytics service (implementation depends on your analytics provider)
         if (process.env['NODE_ENV'] === 'development') {
-          console.debug('Analytics Event:', eventType, data);
+          logger.debug('Analytics Event:', eventType, data);
         }
       } catch (error) {
         // Silent fail to not break user experience

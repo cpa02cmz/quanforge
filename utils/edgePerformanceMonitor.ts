@@ -3,6 +3,8 @@
  * Real-time performance monitoring for Vercel Edge Functions
  */
 
+import { errorLogger, createScopedLogger } from './logger';
+
 interface EdgeMetrics {
   region: string;
   functionName: string;
@@ -27,6 +29,7 @@ interface AlertConfig {
 
 export class EdgePerformanceMonitor {
   private static instance: EdgePerformanceMonitor;
+  private logger = createScopedLogger('EdgePerfMonitor');
   private metrics: EdgeMetrics[] = [];
   private alertConfig: AlertConfig = {
     enabled: true,
@@ -95,7 +98,7 @@ export class EdgePerformanceMonitor {
       
       // Log slow operations in development
       if (import.meta.env.DEV && duration > 1000) {
-        console.warn(`Slow edge function ${name}: ${duration.toFixed(2)}ms in region ${region}`);
+        this.logger.warn(`Slow edge function ${name}: ${duration.toFixed(2)}ms in region ${region}`);
       }
       
       return result;
@@ -113,7 +116,7 @@ export class EdgePerformanceMonitor {
         timestamp: Date.now(),
       });
       
-      console.error(`Edge function ${name} failed in region ${region} after ${duration.toFixed(2)}ms:`, error);
+      errorLogger.error(`Edge function ${name} failed in region ${region} after ${duration.toFixed(2)}ms:`, error);
       throw error;
     }
   }
@@ -199,7 +202,7 @@ export class EdgePerformanceMonitor {
   private async sendAlert(metric: EdgeMetrics, alerts: string[]): Promise<void> {
     const alertMessage = `Performance Alert for ${metric.functionName} in ${metric.region}: ${alerts.join(', ')}`;
     
-    console.warn(alertMessage);
+    errorLogger.warn(alertMessage);
     
     // Send webhook if configured
     if (this.alertConfig.webhookUrl) {
@@ -217,7 +220,7 @@ export class EdgePerformanceMonitor {
           }),
         });
       } catch (error) {
-        console.error('Failed to send performance alert webhook:', error);
+        errorLogger.error('Failed to send performance alert webhook:', error);
       }
     }
   }
@@ -412,7 +415,7 @@ export class EdgePerformanceMonitor {
     if (import.meta.env.DEV) {
       setInterval(() => {
         const stats = this.getStatistics({ timeRange: 300000 }); // Last 5 minutes
-        console.log('📊 Edge Performance Stats (5min):', {
+        this.logger.log('📊 Edge Performance Stats (5min):', {
           calls: stats.totalCalls,
           avgDuration: `${stats.averageDuration.toFixed(2)}ms`,
           p95Duration: `${stats.p95Duration.toFixed(2)}ms`,

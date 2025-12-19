@@ -1,4 +1,5 @@
 import { writeFileSync } from 'fs';
+import { logger, errorLogger } from './logger';
 
 interface SitemapEntry {
   url: string;
@@ -363,10 +364,10 @@ ${xmlEntries.join('\n')}
     
     try {
       writeFileSync(this.options.outputPath, sitemap, 'utf8');
-      console.log(`✅ Sitemap generated successfully: ${this.options.outputPath}`);
-      console.log(`📊 Total URLs: ${this.entries.length}`);
+      logger.log(`✅ Sitemap generated successfully: ${this.options.outputPath}`);
+      logger.log(`📊 Total URLs: ${this.entries.length}`);
     } catch (error) {
-      console.error('❌ Error saving sitemap:', error);
+      errorLogger.error('❌ Error saving sitemap:', error);
       throw error;
     }
   }

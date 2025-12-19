@@ -2,6 +2,8 @@
 // Note: This is client-side obfuscation, not server-grade encryption
 // For production, consider additional server-side encryption for sensitive data
 
+import { errorLogger } from './logger';
+
 const ENCRYPTION_KEY = 'QuantForge_AI_Secure_Key_2024';
 
 // Improved XOR cipher with additional obfuscation
@@ -30,7 +32,7 @@ const base64Encode = (str: string): string => {
     }
     return btoa(unescape(encodeURIComponent(str)));
   } catch (e) {
-    console.error('Base64 encode failed:', e);
+    errorLogger.error('Base64 encode failed:', e);
     return str;
   }
 };
@@ -49,7 +51,7 @@ const base64Decode = (str: string): string => {
     }
     return decodeURIComponent(escape(atob(str)));
   } catch (e) {
-    console.error('Base64 decode failed:', e);
+    errorLogger.error('Base64 decode failed:', e);
     return str;
   }
 };
@@ -60,7 +62,7 @@ export const encryptApiKey = (apiKey: string): string => {
     const xorred = xorCipher(apiKey, ENCRYPTION_KEY);
     return base64Encode(xorred);
   } catch (e) {
-    console.error('Encryption failed:', e);
+    errorLogger.error('Encryption failed:', e);
     return '';
   }
 };
@@ -71,7 +73,7 @@ export const decryptApiKey = (encryptedKey: string): string => {
     const decoded = base64Decode(encryptedKey);
     return xorCipher(decoded, ENCRYPTION_KEY);
   } catch (e) {
-    console.error('Decryption failed:', e);
+    errorLogger.error('Decryption failed:', e);
     return '';
   }
 };

@@ -1,4 +1,5 @@
 import { performance } from 'perf_hooks';
+import { perfLogger, errorLogger, createScopedLogger } from './logger';
 
 interface PerformanceMetrics {
   operation: string;
@@ -19,6 +20,7 @@ interface PerformanceReport {
 }
 
 class PerformanceMonitor {
+  private logger = createScopedLogger('PerfMonitor');
   private metrics: PerformanceMetrics[] = [];
   private memorySnapshots: number[] = [];
   private maxMetrics = 500; // Reduced from 1000 for better memory
@@ -126,37 +128,35 @@ class PerformanceMonitor {
   logPerformanceReport(): void {
     const report = this.getPerformanceReport();
     
-    console.group('🚀 Performance Report');
-    console.log(`📊 Total Operations: ${report.totalOperations}`);
-    console.log(`⏱️  Average Duration: ${report.averageDuration.toFixed(2)}ms`);
-    console.log(`🐌 Slowest Operation: ${report.slowestOperation.operation} (${report.slowestOperation.duration.toFixed(2)}ms)`);
-    console.log(`🚀 Fastest Operation: ${report.fastestOperation.operation} (${report.fastestOperation.duration.toFixed(2)}ms)`);
+    perfLogger.log('🚀 Performance Report');
+    perfLogger.log(`📊 Total Operations: ${report.totalOperations}`);
+    perfLogger.log(`⏱️  Average Duration: ${report.averageDuration.toFixed(2)}ms`);
+    perfLogger.log(`🐌 Slowest Operation: ${report.slowestOperation.operation} (${report.slowestOperation.duration.toFixed(2)}ms)`);
+    perfLogger.log(`🚀 Fastest Operation: ${report.fastestOperation.operation} (${report.fastestOperation.duration.toFixed(2)}ms)`);
     
     if (report.memoryTrend.length > 0) {
       const currentMemory = report.memoryTrend[report.memoryTrend.length - 1] || 0;
       const memoryMB = (currentMemory / 1024 / 1024).toFixed(2);
-      console.log(`💾 Current Memory Usage: ${memoryMB} MB`);
+      perfLogger.log(`💾 Current Memory Usage: ${memoryMB} MB`);
     }
 
-    console.log('\n📈 Operations by Type:');
+    perfLogger.log('\n📈 Operations by Type:');
     Object.entries(report.operationsByType).forEach(([operation, metrics]) => {
       const avgDuration = metrics.reduce((sum, m) => sum + m.duration, 0) / metrics.length;
       const maxDuration = Math.max(...metrics.map(m => m.duration));
-      console.log(`  ${operation}: ${metrics.length} ops, avg: ${avgDuration.toFixed(2)}ms, max: ${maxDuration.toFixed(2)}ms`);
+      perfLogger.log(`  ${operation}: ${metrics.length} ops, avg: ${avgDuration.toFixed(2)}ms, max: ${maxDuration.toFixed(2)}ms`);
     });
-    
-    console.groupEnd();
 
     // Log warnings for slow operations
     if (report.slowestOperation.duration > 1000) {
-      console.warn(`⚠️  Slow operation detected: ${report.slowestOperation.operation} took ${report.slowestOperation.duration.toFixed(2)}ms`);
+      this.logger.warn(`⚠️  Slow operation detected: ${report.slowestOperation.operation} took ${report.slowestOperation.duration.toFixed(2)}ms`);
     }
 
     // Log memory warnings
     if (report.memoryTrend.length > 0) {
       const currentMemory = report.memoryTrend[report.memoryTrend.length - 1] || 0;
       if (currentMemory > 50 * 1024 * 1024) { // 50MB
-        console.warn(`⚠️  High memory usage: ${(currentMemory / 1024 / 1024).toFixed(2)} MB`);
+        this.logger.warn(`⚠️  High memory usage: ${(currentMemory / 1024 / 1024).toFixed(2)} MB`);
       }
     }
   }
@@ -432,9 +432,9 @@ class Logger {
     try {
       // In a real implementation, you would send to a logging service like LogRocket, Sentry, etc.
       // For now, we'll just log to console to avoid external dependencies
-      console.log('External logging service call:', logEntry);
+      this.logger.debug('External logging service call:', logEntry);
     } catch (e) {
-      console.warn('Failed to send log to external service:', e);
+      errorLogger.warn('Failed to send log to external service:', e);
     }
   }
 

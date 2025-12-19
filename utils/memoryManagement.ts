@@ -3,6 +3,8 @@
  * Provides optimized memory management functions for the application
  */
 
+import { logger } from './logger';
+
 // Circular buffer implementation for managing large datasets
 export class CircularBuffer<T> {
   private buffer: T[];
@@ -150,7 +152,7 @@ export class PerformanceMeasure {
   end(): number {
     const duration = performance.now() - this.startTime;
     if (import.meta.env.DEV) {
-      console.debug(`Performance [${this.label}]: ${duration.toFixed(2)}ms`);
+      logger.debug(`Performance [${this.label}]: ${duration.toFixed(2)}ms`);
     }
     return duration;
   }

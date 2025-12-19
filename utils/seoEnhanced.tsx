@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { logger } from './logger';
 
 interface MetaTagsProps {
   title?: string;
@@ -296,7 +297,7 @@ export const useSEOAnalytics = ({ pageUrl, pageTitle, pageType = 'other', enable
 
         // Log for debugging
         if (process.env['NODE_ENV'] === 'development') {
-          console.debug('Analytics Event:', eventType, data);
+          logger.debug('Analytics Event:', eventType, data);
         }
       } catch (error) {
         // Silent fail to not break user experience
@@ -1316,7 +1317,7 @@ export const trackCoreWebVitals = () => {
     
     // Log for debugging
     if (process.env['NODE_ENV'] === 'development') {
-      console.debug(`[Web Vitals] ${name}:`, Math.round(value), { id });
+      logger.debug(`[Web Vitals] ${name}:`, Math.round(value), { id });
     }
   };
   

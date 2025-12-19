@@ -1,4 +1,5 @@
 import { enhancedStructuredDataTemplates } from './enhancedSEO';
+import { errorLogger } from './logger';
 
 interface TradingStrategy {
   name: string;
@@ -421,7 +422,7 @@ export const validateStructuredData = (schema: Record<string, any>): boolean => 
            schema.hasOwnProperty('@type') && 
            schema['@context'] === 'https://schema.org';
   } catch (error) {
-    console.error('Invalid structured data:', error);
+    errorLogger.error('Invalid structured data:', error);
     return false;
   }
 };
