@@ -458,13 +458,13 @@ export class EdgeCacheManager<T = any> {
    * Semantic cache invalidation based on entity and action
    */
   async invalidateSemantic(entity: string, action: 'create' | 'update' | 'delete', id?: string): Promise<void> {
-    const patterns = [
+    const patterns: string[] = [
       `${entity}_list`,
       `${entity}_search`,
       `${entity}_filter`,
       id ? `${entity}_${id}` : null,
       `${entity}_analytics`
-    ].filter(Boolean);
+    ].filter((pattern): pattern is string => pattern !== null);
     
     await this.invalidateIntelligent(patterns, { cascade: true, dependencies: true });
   }
@@ -1160,12 +1160,12 @@ export class EdgeCacheManager<T = any> {
     // Optimize replication factor based on regional performance
     this.optimizeReplicationFactor(stats);
     
-// Removed for production: console.log('Cache configuration optimized:', {
-      defaultTTL: this.config.defaultTTL,
-      compressionThreshold: this.config.compressionThreshold,
-      hitRate: stats.hitRate,
-      replicationFactor: this.config.replicationFactor,
-    });
+    // Removed for production: console.log('Cache configuration optimized:', {
+    //   defaultTTL: this.config.defaultTTL,
+    //   compressionThreshold: this.config.compressionThreshold,
+    //   hitRate: stats.hitRate,
+    //   replicationFactor: this.config.replicationFactor,
+    // });
   }
 
   /**
