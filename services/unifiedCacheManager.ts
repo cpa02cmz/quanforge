@@ -51,6 +51,7 @@ interface CacheStrategy {
 // Enhanced Unified Cache Manager for edge optimization
 export class UnifiedCacheManager {
   private cache = new Map<string, CacheEntry>();
+  private strategies = new Map<string, CacheStrategy>();
   private metrics: CacheMetrics;
   private options: Required<CacheOptions>;
   private cleanupTimer: number | null = null;

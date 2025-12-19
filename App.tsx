@@ -13,7 +13,7 @@ import { databasePerformanceMonitor } from './services/databasePerformanceMonito
 import { frontendOptimizer } from './services/frontendOptimizer';
 import { edgeAnalytics } from './services/edgeAnalytics';
 import { edgeMonitoring } from './services/edgeMonitoring';
-import { advancedAPICache } from './services/advancedAPICache';
+import { globalCache } from './services/unifiedCacheManager';
 import { frontendPerformanceOptimizer } from './services/frontendPerformanceOptimizer';
 
 // Enhanced lazy loading with route-based code splitting and preloading
@@ -146,12 +146,13 @@ useEffect(() => {
            logger.info('Edge monitoring status:', monitoringStatus);
          }, 300);
          
-         // Initialize Advanced API Cache (non-blocking)
-         setTimeout(() => {
-           advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
-             logger.warn('API cache prefetch failed:', err)
-           );
-         }, 400);
+// Initialize Unified Cache Manager (non-blocking)
+          setTimeout(() => {
+            // Pre-warm cache with commonly accessed data
+            globalCache.set('robots', [], 60000).catch((err: Error) => 
+              logger.warn('Cache warmup failed:', err)
+            );
+          }, 400);
        } catch (error) {
          logger.warn('Non-critical service initialization failed:', error);
        }
