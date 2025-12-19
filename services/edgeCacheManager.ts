@@ -69,7 +69,7 @@ export class EdgeCacheManager<T = any> {
   private cleanupTimer: number | null = null;
   private dbName = 'edgeCacheManager';
   private storeName = 'edgeCache';
-  private currentRegion = process.env.VERCEL_REGION || 'unknown';
+  private currentRegion = process.env['VERCEL_REGION'] || 'unknown';
 
   constructor(config?: Partial<EdgeCacheConfig>) {
     if (config) {
@@ -361,14 +361,14 @@ export class EdgeCacheManager<T = any> {
   /**
    * Refresh entry in background
    */
-  private async refreshEntryInBackground(originalKey: string, varyKey: string, region: string): Promise<void> {
+  private async refreshEntryInBackground(originalKey: string, _varyKey: string, _region: string): Promise<void> {
     // Don't wait for this to complete
     setTimeout(async () => {
       try {
         const freshData = await this.fetchDataForWarmup(originalKey);
         if (freshData) {
           await this.set(originalKey, freshData, {
-            region,
+            region: _region,
             replicate: true,
           });
         }
@@ -388,6 +388,7 @@ export class EdgeCacheManager<T = any> {
     replicate?: boolean;
     vary?: string[];
     etag?: string;
+    tags?: string[];
   }): Promise<void> {
     const region = options?.region || this.currentRegion;
     const varyKey = this.getVaryKey(key, options?.vary);
@@ -426,7 +427,7 @@ export class EdgeCacheManager<T = any> {
     region?: string;
     cascade?: boolean;
   }): Promise<void> {
-    const region = options?.region || this.currentRegion;
+    const _region = options?.region || this.currentRegion;
     const patterns = Array.isArray(pattern) ? pattern : [pattern];
 
     for (const pattern of patterns) {
@@ -466,7 +467,7 @@ export class EdgeCacheManager<T = any> {
       `${entity}_analytics`
     ].filter(Boolean);
     
-    await this.invalidateIntelligent(patterns, { cascade: true, dependencies: true });
+    await this.invalidateIntelligent(patterns.filter((p): p is string => p !== null), { cascade: true, dependencies: true });
   }
 
   /**
@@ -945,6 +946,24 @@ export class EdgeCacheManager<T = any> {
   }
 
   /**
+   * Compatibility method: getLegacyStats
+   * Returns stats in the format expected by existing API endpoints
+   */
+  getLegacyStats() {
+    const totalHits = this.stats.memoryHits + this.stats.persistentHits + this.stats.edgeHits;
+    const totalRequests = totalHits + this.stats.misses;
+    const currentSize = this.getCurrentMemorySize();
+    
+    return {
+      hits: totalHits,
+      misses: this.stats.misses,
+      entries: this.memoryCache.size,
+      size: currentSize,
+      hitRate: totalRequests > 0 ? totalHits / totalRequests : 0,
+    };
+  }
+
+  /**
    * Prioritize keys for warmup based on usage patterns and region
    */
   private prioritizeKeysForWarmup(keys: string[], region: string): string[] {
@@ -1190,6 +1209,116 @@ export class EdgeCacheManager<T = any> {
     }
   }
 
+  // ===== COMPATIBILITY METHODS FOR edgeCacheStrategy =====
+  
+  /**
+   * Compatibility method: getTagIndex
+   * Returns tag-based index for cache invalidation
+   */
+  getTagIndex(): Map<string, Set<string>> {
+    // Since edgeCacheManager doesn't use tag indexing, return empty map
+    // In a real implementation, this would track tags from cache entries
+    return new Map();
+  }
+
+  /**
+   * Compatibility method: invalidateByPattern
+   * Invalidate cache entries by pattern
+   */
+  async invalidateByPattern(pattern: string): Promise<void> {
+    await this.invalidate(pattern);
+  }
+
+  /**
+   * Compatibility method: invalidateByTags
+   * Invalidate cache entries by tags (simulated)
+   */
+  async invalidateByTags(tags: string[]): Promise<void> {
+    // Since edgeCacheManager uses pattern-based invalidation, convert tags to patterns
+    for (const tag of tags) {
+      await this.invalidate(`*_${tag}_*`);
+    }
+  }
+
+  /**
+   * Compatibility method: invalidateRegion
+   * Invalidate cache for a specific region
+   */
+  async invalidateRegion(region: string, pattern: string = '*'): Promise<void> {
+    const regionPattern = `${region}_${pattern}`;
+    await this.invalidate(regionPattern);
+  }
+
+  /**
+   * Compatibility method: warmEdgeRegions
+   * Warm up edge regions with common cache entries
+   */
+  async warmEdgeRegions(): Promise<void> {
+    const regions = this.config.edgeRegions;
+    const warmPromises = regions.map(region => this.warmRegion(region));
+    
+    await Promise.allSettled(warmPromises);
+  }
+
+  /**
+   * Private helper: warm up a specific region
+   */
+  private async warmRegion(region: string): Promise<void> {
+    try {
+      // Warm common cache entries for this region
+      const warmKeys = [
+        `${region}_strategies_popular`,
+        `${region}_robots_recent`,
+        `${region}_user_preferences`,
+        `${region}_market_data_latest`
+      ];
+
+      for (const key of warmKeys) {
+        const existing = await this.get(key);
+        if (!existing) {
+          // This would trigger a fetch in a real implementation
+          console.log(`Warming cache for ${region}: ${key}`);
+        }
+      }
+    } catch (error) {
+      console.warn(`Failed to warm cache for region ${region}:`, error);
+    }
+  }
+
+  /**
+   * Compatibility method: smartInvalidate
+   * Smart cache invalidation based on events
+   */
+  async smartInvalidate(event: {
+    type: 'data-update' | 'user-action' | 'region-deploy';
+    tags?: string[];
+    userId?: string;
+    region?: string;
+    pattern?: string;
+  }): Promise<void> {
+    switch (event.type) {
+      case 'data-update':
+        if (event.tags) {
+          await this.invalidateByTags(event.tags);
+        }
+        break;
+        
+      case 'user-action':
+        if (event.userId) {
+          await this.invalidate(`user_${event.userId}_*`);
+        }
+        break;
+        
+      case 'region-deploy':
+        if (event.region) {
+          await this.invalidateRegion(event.region, event.pattern);
+        }
+        break;
+    }
+  }
+
+  // ===== END COMPATIBILITY METHODS =====
+
   destroy(): void {
     if (this.cleanupTimer) {
       window.clearInterval(this.cleanupTimer);
@@ -1208,3 +1337,10 @@ export class EdgeCacheManager<T = any> {
 
 // Global edge cache manager instance
 export const edgeCacheManager = new EdgeCacheManager();
+
+// Compatibility export - create edgeCacheStrategy wrapper
+export const edgeCacheStrategy = {
+  ...edgeCacheManager,
+  // Override getStats to return legacy format
+  getStats: () => edgeCacheManager.getLegacyStats(),
+};
