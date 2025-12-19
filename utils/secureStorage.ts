@@ -17,7 +17,7 @@ interface StorageItem<T = any> {
 }
 
 // Production-grade Web Crypto API implementation
-class WebCryptoEncryption {
+export class WebCryptoEncryption {
   private static readonly ALGORITHM = 'AES-GCM';
   private static readonly KEY_LENGTH = 256;
   private static readonly IV_LENGTH = 12;
@@ -127,8 +127,31 @@ class WebCryptoEncryption {
 }
 
 // Legacy XOR decryption for migration (marked as deprecated)
-class LegacyXORDecryption {
+export class LegacyXORDecryption {
   private static readonly key = 'QuantForge2025SecureKey';
+  
+  static encrypt(text: string): string {
+    if (!text) return text;
+    
+    try {
+      const keyBytes = new TextEncoder().encode(this.key);
+      const textBytes = new TextEncoder().encode(text);
+      const encrypted = new Uint8Array(textBytes.length);
+      
+      for (let i = 0; i < textBytes.length; i++) {
+        const textByte = textBytes[i];
+        const keyByte = keyBytes[i % keyBytes.length];
+        if (textByte !== undefined && keyByte !== undefined) {
+          encrypted[i] = textByte ^ keyByte;
+        }
+      }
+      
+      return btoa(String.fromCharCode(...encrypted));
+    } catch (error) {
+      console.warn('Failed to encrypt legacy data:', error);
+      return '';
+    }
+  }
   
   static decrypt(encryptedText: string): string {
     if (!encryptedText) return encryptedText;

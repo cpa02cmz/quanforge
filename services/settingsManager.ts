@@ -1,6 +1,50 @@
 
 import { AISettings, DBSettings } from "../types";
-import { encryptApiKey, decryptApiKey, validateApiKey } from "../utils/encryption";
+import { WebCryptoEncryption, LegacyXORDecryption } from "../utils/secureStorage";
+
+// Import validation functions from old encryption module for API key format validation
+const validateApiKey = (apiKey: string, provider: 'google' | 'openai' | 'custom'): boolean => {
+  if (!apiKey || apiKey.length < 10) return false;
+  
+  switch (provider) {
+    case 'google':
+      return /^AIza[A-Za-z0-9_-]{35}$/.test(apiKey);
+    case 'openai':
+      return /^sk-[A-Za-z0-9]{48}$/.test(apiKey);
+    case 'custom':
+      return apiKey.length >= 20;
+    default:
+      return true;
+  }
+};
+
+// Secure encryption using Web Crypto API
+const secureEncryptApiKey = async (apiKey: string): Promise<string> => {
+  if (!apiKey) return '';
+  try {
+    return await WebCryptoEncryption.encrypt(apiKey);
+  } catch (error) {
+    console.error('Secure encryption failed:', error);
+    return ''; // Return empty string on failure to prevent exposing unencrypted keys
+  }
+};
+
+// Secure decryption with fallback to legacy for migration
+const secureDecryptApiKey = async (encryptedKey: string): Promise<string> => {
+  if (!encryptedKey) return '';
+  try {
+    // Try modern Web Crypto decryption first
+    return await WebCryptoEncryption.decrypt(encryptedKey);
+  } catch (error) {
+    try {
+      // Fallback to legacy XOR decryption for backward compatibility
+      return LegacyXORDecryption.decrypt(encryptedKey);
+    } catch (legacyError) {
+      console.warn('Failed to decrypt API key with both methods:', { error, legacyError });
+      return ''; // Return empty string on failure
+    }
+  }
+};
 
 const AI_SETTINGS_KEY = 'quantforge_ai_settings';
 const DB_SETTINGS_KEY = 'quantforge_db_settings';
@@ -59,39 +103,84 @@ export const settingsManager = {
             
             const parsed = JSON.parse(stored);
             
-            // Decrypt API key if it's encrypted
+            // Decrypt API key if it's encrypted - for legacy compatibility, try sync first
             if (parsed.apiKey) {
-                // Try to decrypt - if it fails, assume it's unencrypted (legacy)
+                // Try legacy XOR decryption first (synchronous)
                 try {
-                    const decrypted = decryptApiKey(parsed.apiKey);
+                    const decrypted = LegacyXORDecryption.decrypt(parsed.apiKey);
                     if (decrypted && validateApiKey(decrypted, parsed.provider)) {
                         parsed.apiKey = decrypted;
                     }
-                } catch (e) {
-                    // Legacy unencrypted key, keep as is
+                } catch (legacyError) {
+                    // If legacy fails, the key might be using Web Crypto (async)
+                    // For sync compatibility, we'll handle this in the async version
+                    // For now, keep the encrypted value as-is
                 }
             }
             
             // Merge with defaults to ensure new fields like 'language' exist on old saved data
             return { ...DEFAULT_AI_SETTINGS, ...parsed };
         } catch (e) {
-// Removed for production: console.error("Failed to load AI settings", e);
             return DEFAULT_AI_SETTINGS;
         }
     },
 
-    saveSettings(settings: AISettings) {
+    async getSettingsAsync(): Promise<AISettings> {
         try {
-            // Encrypt API key before saving
+            const stored = localStorage.getItem(AI_SETTINGS_KEY);
+            if (!stored) return DEFAULT_AI_SETTINGS;
+            
+            const parsed = JSON.parse(stored);
+            
+            // Decrypt API key using the appropriate method
+            if (parsed.apiKey) {
+                try {
+                    const decrypted = await secureDecryptApiKey(parsed.apiKey);
+                    if (decrypted && validateApiKey(decrypted, parsed.provider)) {
+                        parsed.apiKey = decrypted;
+                    }
+                } catch (e) {
+                    // If all decryption fails, assume it's unencrypted (legacy) and keep as is
+                }
+            }
+            
+            // Merge with defaults to ensure new fields like 'language' exist on old saved data
+            return { ...DEFAULT_AI_SETTINGS, ...parsed };
+        } catch (e) {
+            return DEFAULT_AI_SETTINGS;
+        }
+    },
+
+    saveSettings(settings: AISettings): void {
+        // For backward compatibility, save with legacy encryption synchronously
+        try {
+            // Use legacy XOR encryption for sync compatibility  
+            const encryptedApiKey = LegacyXORDecryption.encrypt(settings.apiKey || '');
             const settingsToSave = {
                 ...settings,
-                apiKey: encryptApiKey(settings.apiKey)
+                apiKey: encryptedApiKey
             };
             
             localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settingsToSave));
             window.dispatchEvent(new Event('ai-settings-changed'));
         } catch (e) {
-// Removed for production: console.error("Failed to save AI settings", e);
+            console.error("Failed to save AI settings", e);
+        }
+    },
+
+    async saveSettingsAsync(settings: AISettings): Promise<void> {
+        try {
+            // Encrypt API key before saving using secure Web Crypto method
+            const encryptedApiKey = await secureEncryptApiKey(settings.apiKey);
+            const settingsToSave = {
+                ...settings,
+                apiKey: encryptedApiKey
+            };
+            
+            localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settingsToSave));
+            window.dispatchEvent(new Event('ai-settings-changed'));
+        } catch (e) {
+            console.error("Failed to save AI settings", e);
         }
     },
 
