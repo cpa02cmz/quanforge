@@ -19,6 +19,19 @@
   - `should NOT have additional property 'experimental'`
   - `functions.api/**/*.ts.excludeFiles` should be string
 - **Solution**: Simplified vercel.json to minimal schema-compliant configuration
+
+### [FIXED] PR #138 - Merge Conflicts & Deployment Issues
+- **Date**: 2025-12-19
+- **Severity**: Critical (PR Blocking)
+- **Description**: PR #138 had persistent red flags with both Vercel and Cloudflare Workers failures
+- **Root Cause**: Branch divergence, merge conflicts, and schema validation errors
+- **Files**: Multiple including `vercel.json`, `services/gemini.ts`, documentation files
+- **Solution**: 
+  - Resolved multiple merge conflict cycles with develop branch
+  - Fixed vercel.json schema compliance issues
+  - Removed circuit breaker code causing TypeScript errors
+  - Integrated latest develop branch security fixes
+- **Result**: Restored PR mergeability and CI/CD functionality
 - **Impact**: Restored mergeability and deployment pipeline functionality
 - **Solution**: Replaced Node.js crypto with browser-compatible hash function
 - **Impact**: Restored build functionality, enables development and deployment
