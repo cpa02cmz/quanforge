@@ -53,9 +53,56 @@
 - **Recommendation**: Consider code splitting for better performance
 - **Status**: Performance optimization opportunity
 
-## Next Steps
+## Newly Identified Issues (from Comprehensive Analysis - 2025-12-19)
 
-1. [ ] Consider implementing Web Crypto API for more secure hashing
-2. [ ] Address ESLint warnings in next cleanup sprint
-3. [ ] Implement bundle splitting for large chunks
-4. [ ] Add unit tests for rate limiting functionality
+### [OPEN] Critical Security Risks
+- **Severity**: High
+- **Issues**:
+  - Client-side encryption key hardcoded in source (`utils/encryption.ts:5`)
+  - XOR cipher provides obfuscation, not true cryptographic security
+  - Insufficient server-side validation to supplement client checks
+- **Impact**: Production security vulnerability
+- **Priority**: Immediate (next sprint)
+
+### [OPEN] Performance Memory Leaks
+- **Severity**: Medium
+- **Location**: `utils/performance.ts:22-30, 479-491`
+- **Issue**: Uncached performance observers causing memory accumulation
+- **Impact**: Browser memory degradation over time
+- **Priority**: High
+
+### [OPEN] Bundle Size Issues
+- **Severity**: Medium  
+- **Issue**: Multiple chunks >100KB after minification
+- **Problem**: Over-optimized Vite configuration creating complexity
+- **Files**: chart-vendor (356KB), react-vendor (224KB), ai-vendor (215KB)
+- **Priority**: Medium
+
+### [OPEN] Service Architecture Issues
+- **Severity**: Medium
+- **Issues**:
+  - securityManager.ts: 1612 lines (monolithic service)
+  - Circular dependencies between services
+  - Mixed async/await patterns across codebase
+- **Impact**: Maintainability and debugging complexity
+- **Priority**: Medium
+
+### [OPEN] Code Quality Debt
+- **Severity**: Low (but extensive)
+- **Count**: 200+ ESLint warnings
+- **Breakdown**:
+  - Console statements in API files (production code)
+  - Unused variables and imports throughout codebase
+  - Extensive `any` type usage reducing type safety
+  - React refresh warnings for exported constants
+- **Priority**: Low (cleanup sprint)
+
+## Next Steps (Updated Priority)
+
+1. [ ] **Critical**: Move encryption keys to environment variables with rotation
+2. [ ] **High**: Fix memory leaks in performance monitoring utilities
+3. [ ] **High**: Implement server-side validation for security
+4. [ ] **Medium**: Break down monolithic service files
+5. [ ] **Medium**: Optimize bundle splitting for large chunks
+6. [ ] **Low**: Address ESLint warnings in cleanup sprint
+7. [ ] **Low**: Add unit tests for rate limiting functionality
