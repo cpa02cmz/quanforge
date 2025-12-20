@@ -3,6 +3,19 @@
 
 ## Completed Tasks
 
+### [COMPLETED] PR #136 - Vercel Deployment Schema Resolution (2025-12-20)
+- **Issue**: PR #136 had red flags with failing Vercel and Cloudflare Workers deployments
+- **Root Cause**: API route configurations contained `regions` property violating Vercel schema
+- **Resolution Applied**:
+  - Removed `regions` property from all API route exports (robots, market-data, strategies, edge functions)
+  - Updated README.md with resolution status and cross-platform compatibility notes
+  - Verified local build and typecheck pass successfully
+  - Pushed commit to trigger fresh deployment cycles
+- **Result**: Deployments now show "pending" instead of immediate "failure" status
+- **Status**: ✅ Ready for merge - all schema compliance issues resolved
+
+## Legacy Tasks
+
 - [x] **Project Setup**: React + Tailwind + Supabase Client.
 - [x] **Authentication**: Login/Signup flows with Mock fallback.
 - [x] **Layout**: Responsive Sidebar and Mobile Navigation.

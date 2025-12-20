@@ -51,6 +51,17 @@
 - Added recommendation to merge despite platform failures
 **Key Insight**: Platform deployment failures can occur independently of code quality; documentation-only changes should be evaluated on code correctness, not deployment status
 
+### PR #136 Schema Compliance Resolution (2025-12-20)
+**Issue**: PR #136 had immediate Vercel and Cloudflare Workers deployment failures
+**Root Cause**: API route configurations contained unsupported `regions` property violating platform schemas
+**Solution Applied**:
+- Systematically removed `regions` properties from all API route configuration exports
+- Verified schema-compliant vercel.json minimal configuration
+- Confirmed cross-platform compatibility (browser, Node.js, edge)
+- Triggered fresh deployment cycles with documentation update
+**Key Insight**: Schema violations often manifest as immediate failures; schema validation fixes typically transition deployments from "failure" to "pending" status
+**Pattern Recognition**: Multiple PRs experiencing similar schema violations suggest platform schema updates that affect all branches simultaneously
+
 ### Recommended Development Patterns
 
 #### Browser Compatibility Checklist

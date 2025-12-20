@@ -80,8 +80,10 @@ graph TD
 - **Cross-Platform Environment**: All code must work in browser, Node.js, and edge environments
 - **Module Restrictions**: Avoid Node.js-specific modules (`crypto`, `fs`, `path`) in frontend code
 - **Schema Compliance**: Platform configuration files must follow current schema requirements
+- **API Route Configuration**: Remove unsupported properties like `regions` from route exports
 
 ### Known Issues & Solutions
 - **Browser Crypto**: Replace Node.js `crypto` with browser-compatible alternatives
 - **Vercel Schema**: Use minimal, schema-compliant `vercel.json` configuration
 - **Build Validation**: Always run build and typecheck before deployment
+- **Schema Violations**: Platform schema updates can affect all branches simultaneously - monitor for deployment failures
