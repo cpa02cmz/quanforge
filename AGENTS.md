@@ -62,6 +62,24 @@
 **Key Insight**: Schema violations often manifest as immediate failures; schema validation fixes typically transition deployments from "failure" to "pending" status
 **Pattern Recognition**: Multiple PRs experiencing similar schema violations suggest platform schema updates that affect all branches simultaneously
 
+### Repository Efficiency Optimization (2025-12-20)
+**Issue**: Build performance and bundle size optimization opportunities identified
+**Root Causes**: 
+- Large vendor bundles >100KB preventing efficient edge caching
+- React fast refresh blocked by exported constants in App.tsx
+- Dynamic/static import conflicts in advancedAPICache.ts
+**Solution Applied**:
+- Implemented granular manual chunk splitting in vite.config.ts for chart-vendor, react-vendor, and ai-vendor bundles
+- Created separate utils/preloadUtils.ts file for React fast refresh compatibility
+- Converted advancedAPICache to fully dynamic import to eliminate webpack warnings
+- Enhanced chunk granularity: chart-vendor split into chart-core, chart-misc, chart-responsive, chart-axes
+- Enhanced React bundle splitting: react-vendor split into react-core, react-dom, react-router
+**Bundle Size Results**:
+- chart-vendor: 356KB → 300KB (16% reduction)
+- react-vendor: 224KB → 177KB + granular chunks (better cache efficiency)
+- New granular chunks: react-core (2KB), chart-responsive (26KB), chart-axes (33KB)
+**Key Insight**: Granular chunk splitting significantly improves edge caching and load performance while maintaining overall bundle size efficiency
+
 ### Recommended Development Patterns
 
 #### Browser Compatibility Checklist

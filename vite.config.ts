@@ -17,8 +17,17 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
-            // React ecosystem - optimized for edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
+            // React ecosystem - split more granularly for better caching
+            if (id.includes('react')) {
+              if (id.includes('react-dom')) {
+                return 'react-dom';
+              }
+              if (id.includes('react-router') || id.includes('react-router-dom')) {
+                return 'react-router';
+              }
+              if (id.includes('react-is') || id.includes('react/jsx-runtime')) {
+                return 'react-core';
+              }
               return 'react-vendor';
             }
             // Supabase - isolated for better connection pooling
@@ -32,17 +41,29 @@ export default defineConfig({
               }
               return 'supabase-vendor';
             }
-            // AI services - lazy loaded for edge optimization
-            if (id.includes('@google/genai')) {
+            // AI services - split more granularly for edge optimization
+            if (id.includes('@google/genai') || id.includes('@google-ai')) {
+              if (id.includes('generators') || id.includes('models')) {
+                return 'ai-generators';
+              }
+              if (id.includes('chat') || id.includes('conversation') || id.includes('messages')) {
+                return 'ai-chat';
+              }
               return 'ai-vendor';
             }
-            // Chart libraries - split more granularly
+            // Chart libraries - split more granularly for better caching
             if (id.includes('recharts')) {
               if (id.includes('AreaChart') || id.includes('LineChart')) {
                 return 'chart-core';
               }
-              if (id.includes('PieChart') || id.includes('BarChart')) {
+              if (id.includes('PieChart') || id.includes('BarChart') || id.includes('Cell')) {
                 return 'chart-misc';
+              }
+              if (id.includes('ResponsiveContainer') || id.includes('Tooltip') || id.includes('Legend')) {
+                return 'chart-responsive';
+              }
+              if (id.includes('CartesianGrid') || id.includes('XAxis') || id.includes('YAxis') || id.includes('Axis')) {
+                return 'chart-axes';
               }
               return 'chart-vendor';
             }

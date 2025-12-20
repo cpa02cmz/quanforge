@@ -282,3 +282,6 @@ export const recordCDNMetric = (metric: Omit<CDNMetrics, 'timestamp'>) =>
   edgeMetrics.recordCDNMetric({ ...metric, timestamp: Date.now() });
 
 export const getEdgePerformanceScore = () => edgeMetrics.getPerformanceScore();
+
+// Alias for backward compatibility
+export const edgeMetricsCollector = edgeMetrics;

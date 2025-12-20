@@ -5,6 +5,7 @@
 
 import { edgeMetricsCollector } from '../services/edgeMetrics';
 import { vercelEdgeOptimizer } from '../services/vercelEdgeOptimizer';
+import edgeLogger from '../utils/edgeLogger';
 
 export const config = {
   runtime: 'edge',
@@ -145,7 +146,7 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
-        console.error('Analytics processing error:', error);
+        edgeLogger.error('Analytics processing error:', error);
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to process analytics data'

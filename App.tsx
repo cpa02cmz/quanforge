@@ -8,12 +8,12 @@ import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
+import { preloadCriticalRoutes } from './utils/preloadUtils';
   import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
   import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
   import { frontendOptimizer } from './services/frontendOptimizer';
   import { edgeAnalytics } from './services/edgeAnalytics';
   import { edgeMonitoring } from './services/edgeMonitoring';
-  import { advancedAPICache } from './services/advancedAPICache';
   import { frontendPerformanceOptimizer } from './services/frontendPerformanceOptimizer';
 
 // Enhanced lazy loading with route-based code splitting and preloading
@@ -45,24 +45,7 @@ const Layout = lazy(() =>
   import('./components/Layout').then(module => ({ default: module.Layout }))
 );
 
-// Dynamic import utilities for services and heavy components
-export const loadGeminiService = () => import('./services/gemini');
-export const loadSEOUtils = () => import('./utils/seoEnhanced');
-export const loadChartComponents = () => import('./components/ChartComponents');
-export const loadCodeEditor = () => import('./components/CodeEditor');
-export const loadBacktestPanel = () => import('./components/BacktestPanel');
 
-// Enhanced preloading strategy with route-based optimization
-   const preloadCriticalRoutes = () => {
-     // Preload Dashboard components (most likely route after login)
-     import('./pages/Dashboard').catch(err => logger.warn('Dashboard preload failed:', err));
-     // Preload Generator components (second most likely)
-     setTimeout(() => import('./pages/Generator').catch(err => logger.warn('Generator preload failed:', err)), 1000);
-     // Preload Layout (essential for navigation)
-     setTimeout(() => import('./components/Layout').catch(err => logger.warn('Layout preload failed:', err)), 500);
-     // Preload static pages in background
-     setTimeout(() => import('./pages/Wiki').catch(err => logger.warn('Wiki preload failed:', err)), 2000);
-   };
 
 
 
@@ -81,7 +64,7 @@ useEffect(() => {
       
       // Preload critical routes after successful auth
       if (session) {
-        preloadCriticalRoutes();
+        preloadCriticalRoutes(logger);
       }
       
       // Initialize non-critical services after auth is complete
@@ -105,7 +88,7 @@ useEffect(() => {
       
       // Preload critical routes on auth state change
       if (session) {
-        preloadCriticalRoutes();
+        preloadCriticalRoutes(logger);
       }
     });
 
@@ -150,12 +133,17 @@ useEffect(() => {
            logger.info('Edge monitoring status:', monitoringStatus);
          }, 300);
          
-         // Initialize Advanced API Cache (non-blocking)
-         setTimeout(() => {
-           advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
-             logger.warn('API cache prefetch failed:', err)
-           );
-         }, 400);
+// Initialize Advanced API Cache (non-blocking)
+          setTimeout(async () => {
+            try {
+              const { advancedAPICache } = await import('./services/advancedAPICache');
+              advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
+                logger.warn('API cache prefetch failed:', err)
+              );
+            } catch (err) {
+              logger.warn('Failed to load advancedAPICache:', err);
+            }
+          }, 400);
        } catch (error) {
          logger.warn('Non-critical service initialization failed:', error);
        }

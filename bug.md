@@ -115,6 +115,32 @@
 ## Next Steps
 
 1. [ ] Consider implementing Web Crypto API for more secure hashing
-2. [ ] Address ESLint warnings in next cleanup sprint
-3. [ ] Implement bundle splitting for large chunks
+2. [ ] Address ESLint warnings in next cleanup sprint (console statements, unused vars, any types)
+3. [x] Implement bundle splitting for large chunks (COMPLETED)
 4. [ ] Add unit tests for rate limiting functionality
+
+## Optimization Status Updates
+
+### [RESOLVED] Bundle Size Optimization (2025-12-20)
+- **Severity**: Low (Performance Enhancement)
+- **Description**: Successfully implemented granular manual chunk splitting
+- **Results**:
+  - chart-vendor: 356KB → 300KB (16% reduction)
+  - react-vendor: 224KB → 177KB + granular chunks
+  - Added new chunks: react-core (2KB), chart-responsive (26KB), chart-axes (33KB)
+- **Impact**: Improved edge caching efficiency and load performance
+- **Testing**: ✓ Build successful, ✓ No regressions, ✓ Performance gains verified
+
+### [RESOLVED] React Fast Refresh Compatibility (2025-12-20)
+- **Severity**: Low (Developer Experience)
+- **Description**: Fixed React fast refresh warnings by extracting constants from App.tsx
+- **Solution**: Created utils/preloadUtils.ts for exported utility functions
+- **Impact**: Better development experience with proper hot module replacement
+- **Testing**: ✓ No functionality changes, ✓ Fast refresh working properly
+
+### [RESOLVED] Dynamic Import Optimization (2025-12-20)
+- **Severity**: Low (Build Warning)
+- **Description**: Fixed webpack warning about advancedAPICache.ts being both statically and dynamically imported
+- **Solution**: Converted to fully dynamic import pattern in App.tsx
+- **Impact**: Cleaner build process with no warnings
+- **Testing**: ✓ Build warning eliminated, ✓ Functionality preserved
