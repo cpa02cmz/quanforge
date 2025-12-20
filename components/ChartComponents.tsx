@@ -7,7 +7,7 @@ type RechartsComponents = RechartsComponentTypes;
 interface ChartComponentsProps {
   riskData: RiskDataPoint[] | undefined;
   analysis: ChartAnalysis | undefined;
-  t: ((key: string) => string) | undefined;
+  t: ((_key: string) => string) | undefined;
   data: ChartDataPoint[] | undefined;
   totalReturn: number | undefined;
 }

@@ -5,7 +5,7 @@ import { Robot, UserSession, DataRecord } from '../types';
 import { edgeConnectionPool } from './edgeSupabasePool';
 import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
-import { consolidatedCache } from './consolidatedCacheManager';
+import { globalCache } from './unifiedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
 
 // Enhanced connection retry configuration with exponential backoff
@@ -467,7 +467,7 @@ async getRobots() {
        }
         
         const cacheKey = 'robots_list';
-const cached = await consolidatedCache.get<Robot[]>(cacheKey);
+const cached = await globalCache.get<Robot[]>(cacheKey);
         if (cached) {
           // Create index for performance
           robotIndexManager.getIndex(cached);
@@ -489,7 +489,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
             if (result.data && !result.error) {
               // Create index for performance
               robotIndexManager.getIndex(result.data);
-              await consolidatedCache.set(cacheKey, result.data, 'api', ['robots', 'list']);
+              await globalCache.set(cacheKey, result.data, 15 * 60 * 1000, ['robots', 'list']); // 15 minutes
             }
            
            const duration = performance.now() - startTime;
@@ -562,7 +562,7 @@ const stored = localStorage.getItem(ROBOTS_KEY);
          const results = await Promise.all(batch);
          
 // Clear relevant caches
-          await consolidatedCache.invalidateByTags(['robots']);
+          await globalCache.invalidateByTags(['robots']);
          
          const duration = performance.now() - startTime;
          performanceMonitor.record('batchUpdateRobots', duration);
@@ -594,7 +594,7 @@ const stored = localStorage.getItem(ROBOTS_KEY);
         const cacheKey = `robots_paginated_${page}_${limit}_${(searchTerm || '').toLowerCase()}_${(filterType || 'All')}`;
         
         // Try consolidated cache first for both mock and supabase modes
-        const cached = await consolidatedCache.get(cacheKey);
+        const cached = await globalCache.get(cacheKey);
         if (cached) {
           const duration = performance.now() - startTime;
           performanceMonitor.record('getRobotsPaginated_cached', duration);
@@ -647,7 +647,7 @@ const stored = localStorage.getItem(ROBOTS_KEY);
           
           // Cache the result with smart TTL based on data size
           const ttl = Math.min(300000, Math.max(60000, totalCount * 100)); // 1-5 minutes based on result size
-          await consolidatedCache.set(cacheKey, response, ttl, ['robots', 'paginated']);
+          await globalCache.set(cacheKey, response, ttl, ['robots', 'paginated']);
           
           const duration = performance.now() - startTime;
           performanceMonitor.record('getRobotsPaginated_mock', duration);
@@ -696,7 +696,7 @@ const stored = localStorage.getItem(ROBOTS_KEY);
             
             // Smart caching with adaptive TTL
             const ttl = Math.min(300000, Math.max(60000, (result.count || 0) * 50));
-            await consolidatedCache.set(cacheKey, response, ttl, ['robots', 'paginated']);
+            await globalCache.set(cacheKey, response, ttl, ['robots', 'paginated']);
             
             const duration = performance.now() - startTime;
             performanceMonitor.record('getRobotsPaginated_supabase', duration);
@@ -740,7 +740,7 @@ const stored = localStorage.getItem(ROBOTS_KEY);
        }
        
 const cacheKey = `robots_batch_${ids.sort().join('_')}`;
-        const cached = await consolidatedCache.get<Robot[]>(cacheKey);
+        const cached = await globalCache.get<Robot[]>(cacheKey);
         if (cached) {
           const duration = performance.now() - startTime;
           performanceMonitor.record('getRobotsByIds', duration);
@@ -756,7 +756,7 @@ const cacheKey = `robots_batch_${ids.sort().join('_')}`;
            .order('created_at', { ascending: false });
          
 if (result.data && !result.error) {
-            await consolidatedCache.set(cacheKey, result.data, 'api', ['robots', 'batch']);
+            await globalCache.set(cacheKey, result.data, 15 * 60 * 1000, ['robots', 'batch']); // 15 minutes
           }
          
          const duration = performance.now() - startTime;
@@ -786,8 +786,8 @@ if (result.data && !result.error) {
 
       // Rate limiting check (if user ID available)
       if (robot.user_id) {
-        const rateLimit = securityManager.checkRateLimit(robot.user_id);
-        if (!rateLimit.allowed) {
+        const isRateLimited = securityManager.checkRateLimit(robot.user_id);
+        if (!isRateLimited) {
           const duration = performance.now() - startTime;
           performanceMonitor.record('saveRobot', duration);
           return { data: null, error: 'Rate limit exceeded' };
@@ -811,7 +811,7 @@ if (result.data && !result.error) {
             robotIndexManager.clear(); // Clear index since data changed
             
             // Clear cache after save
-            await consolidatedCache.invalidateByTags(['robots', 'list']);
+            await globalCache.invalidateByTags(['robots', 'list']);
             
             return { data: [newRobot], error: null };
         } catch (e: any) {
@@ -826,7 +826,7 @@ if (result.data && !result.error) {
         const result = client.from('robots').insert([sanitizedRobot]).select();
         
         // Invalidate cache after save
-        await consolidatedCache.invalidateByTags(['robots', 'list']);
+        await globalCache.invalidateByTags(['robots', 'list']);
         
         const duration = performance.now() - startTime;
         performanceMonitor.record('saveRobot', duration);

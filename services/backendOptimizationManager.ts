@@ -6,7 +6,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { backendOptimizer } from './backendOptimizer';
 import { databaseOptimizer } from './databaseOptimizer';
-import { queryOptimizer } from './queryOptimizer';
+import { queryOptimizer } from './advancedQueryOptimizer';
 import { edgeOptimizer } from './edgeFunctionOptimizer';
 import { vercelEdgeOptimizer } from './vercelEdgeOptimizer';
 import { globalCache } from './unifiedCacheManager';

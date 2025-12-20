@@ -685,4 +685,8 @@ export const robotCache = globalCache;
 export const marketDataCache = globalCache;
 export const analysisCache = globalCache;
 
-export type { CacheOptions, CacheMetrics };
+export type { CacheOptions, CacheMetrics, CacheEntry, CacheStrategy };
+
+// For backward compatibility, export CacheFactory and CacheStats aliases
+export const CacheFactory = globalCache;
+export type CacheStats = CacheMetrics;
