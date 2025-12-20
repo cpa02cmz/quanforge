@@ -22,22 +22,30 @@
 - `components/StrategyConfig.tsx` - Strategy parameter configuration
 - `components/BacktestPanel.tsx` - Monte Carlo simulation interface
 
-## 🔧 Services Layer
+## 🔧 Services Layer (Updated: Modular Architecture)
 
-### Core Services
-- `services/supabase.ts` - Database adapter with mock fallback
+### Core Services (Streamlined)
+- `services/supabase/` - **NEW**: Modular database adapter
+  - `auth.ts` - Authentication layer
+  - `database.ts` - Database operations
+  - `storage.ts` - Storage utilities
+  - `index.ts` - Main interface
 - `services/gemini.ts` - Google Gemini AI integration
 - `services/marketData.ts` - Simulated market data
 - `services/i18n.ts` - Internationalization
 
-### Performance Services
-- `services/advancedCache.ts` - Multi-layer caching
-- `services/performanceMonitor.ts` - Performance tracking
+### Performance Services (Consolidated)
+- `services/unifiedCacheManager.ts` - **UNIFIED**: Single cache system
+- `services/performance/` - **NEW**: Modular performance layer
+  - `monitor.ts` - Performance tracking
+  - `optimizer.ts` - Performance optimization
 - `services/frontendPerformanceOptimizer.ts` - Bundle optimization
 
-### Cache Management
-- `services/apiResponseCache.ts` - API response caching
-- `services/consolidatedCacheManager.ts` - Unified cache system
+### Database Services (Consolidated)
+- `services/database/` - **NEW**: Modular database layer
+  - `connectionManager.ts` - Connection pooling
+  - `operations.ts` - Database operations
+  - `monitoring.ts` - Database monitoring
 
 ## 🛠️ Utilities
 
@@ -46,6 +54,14 @@
 - `utils/performance.ts` - Performance monitoring
 - `utils/enhancedRateLimit.ts` - Rate limiting (browser compatible)
 - `utils/seoEnhanced.ts` - SEO optimization
+
+### Security Services (Modular)
+- `services/security/` - **NEW**: Modular security system
+  - `SecurityManager.ts` - Main security interface
+  - `APISecurityManager.ts` - API protection
+  - `RateLimiter.ts` - Rate limiting
+  - `ThreatDetector.ts` - Threat detection
+  - `InputValidator.ts` - Input validation
 
 ### Security Utils
 - `utils/encryption.ts` - Encryption utilities
