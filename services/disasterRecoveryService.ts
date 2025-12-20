@@ -890,16 +890,9 @@ class DisasterRecoveryService {
    * Test Supabase connection
    */
   private async testSupabaseConnection(): Promise<{ success: boolean; error?: string }> {
-    try {
-      // This would test actual Supabase connection
-      // For now, simulate success
-      return { success: true };
-    } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Connection test failed' 
-      };
-    }
+    // This would test actual Supabase connection
+    // For now, simulate success
+    return { success: true };
   }
 
   /**
