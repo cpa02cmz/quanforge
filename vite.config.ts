@@ -473,5 +473,7 @@ export default defineConfig({
       'Cache-Control': 'public, max-age=31536000, immutable',
       'X-Edge-Region': process.env['VERCEL_REGION'] || 'local',
     }
-  }
+  },
+  
+  
 });
