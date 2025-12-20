@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Robot } from '../types';
 import { queryOptimizer } from './queryOptimizer';
-import { robotCache } from './advancedCache';
+import { globalCache } from './unifiedCacheManager';
 import { securityManager } from './securityManager';
 
 interface OptimizationConfig {

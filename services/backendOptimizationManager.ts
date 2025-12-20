@@ -9,9 +9,8 @@ import { databaseOptimizer } from './databaseOptimizer';
 import { queryOptimizer } from './queryOptimizer';
 import { edgeOptimizer } from './edgeFunctionOptimizer';
 import { vercelEdgeOptimizer } from './vercelEdgeOptimizer';
-import { edgeCacheManager } from './edgeCacheManager';
+import { globalCache } from './unifiedCacheManager';
 import { databasePerformanceMonitor } from './databasePerformanceMonitor';
-import { robotCache } from './advancedCache';
 
 interface OptimizationConfig {
   enableDatabaseOptimization: boolean;
@@ -158,8 +157,18 @@ class BackendOptimizationManager {
           throughput: 0,
         };
 
-    const cacheMetrics = this.config.enableCacheOptimization 
-      ? robotCache.getStats()
+const cacheMetrics = this.config.enableCacheOptimization
+      ? (() => {
+          const cacheMetricsRaw = globalCache.getMetrics();
+          return {
+            totalEntries: cacheMetricsRaw.hits + cacheMetricsRaw.misses,
+            totalSize: cacheMetricsRaw.memoryUsage,
+            hitRate: cacheMetricsRaw.hitRate,
+            missRate: 1 - cacheMetricsRaw.hitRate,
+            evictions: cacheMetricsRaw.evictions,
+            compressions: cacheMetricsRaw.compressions,
+          };
+        })()
       : {
           totalEntries: 0,
           totalSize: 0,
@@ -266,7 +275,7 @@ class BackendOptimizationManager {
     
     // Cache optimization recommendations
     if (this.config.enableCacheOptimization) {
-      const cacheStats = robotCache.getStats();
+      const cacheStats = globalCache.getMetrics();
       if (cacheStats.hitRate < 70) {
         recommendations.push('Cache hit rate is low. Consider optimizing cache strategies for frequently accessed data');
       }
@@ -318,7 +327,7 @@ class BackendOptimizationManager {
     await this.warmupCommonCaches();
     
     // Optimize cache configuration - using available method
-    robotCache.getStats();
+    globalCache.getMetrics();
     
     console.log('Cache optimization applied');
   }
@@ -364,7 +373,7 @@ class BackendOptimizationManager {
   private async optimizeCompression(): Promise<void> {
     // Update compression thresholds based on current usage
     if (this.config.enableCacheOptimization) {
-      // robotCache doesn't have optimizeConfiguration method, so we'll skip this for now
+      // globalCache doesn't have optimizeConfiguration method, so we'll skip this for now
     }
     
     console.log('Compression optimization applied');
@@ -382,7 +391,7 @@ class BackendOptimizationManager {
    */
   private async warmupCommonCaches(): Promise<void> {
      // Warm up edge cache - using any to bypass TypeScript error
-     (edgeCacheManager as any).warmup(['robots_list', 'strategies_list', 'user_sessions']);
+     (globalCache as any).warmup(['robots_list', 'strategies_list', 'user_sessions']);
     
     // Warm up common queries
     if (this.config.enableQueryOptimization) {
@@ -523,7 +532,7 @@ class BackendOptimizationManager {
     
     // Try cache first if enabled
     if (useCache && cacheKey) {
-      const cached = robotCache.get<T[]>(cacheKey);
+      const cached = await globalCache.get<T[]>(cacheKey);
       if (cached) {
         return { data: cached, error: null, metrics: { cacheHit: true, optimizationLevel: 'high' } };
       }
@@ -626,10 +635,7 @@ class BackendOptimizationManager {
 
     // Cache the result if cacheKey was provided and no error occurred
     if (useCache && cacheKey && result.data && !result.error) {
-      robotCache.set(cacheKey, result.data, {
-        ttl: options.ttl,
-        tags: options.tags,
-      });
+      globalCache.set(cacheKey, result.data, options.ttl || 300000, options.tags || []);
     }
 
     return result;
@@ -667,7 +673,7 @@ class BackendOptimizationManager {
          message: `Comprehensive optimization completed in ${duration}ms`,
          details: {
            database: dbResult,
-           cache: robotCache.getStats(),
+           cache: globalCache.getMetrics(),
            edge: edgeOptimizer.getMetrics(),
            overallScore: metrics.overallScore
          }
@@ -697,7 +703,7 @@ class BackendOptimizationManager {
       priority: 'high' | 'medium' | 'low';
     }> {
       const dbRecommendations = (await this.getQueryOptimizationRecommendations(client)).recommendations || [];
-      const cacheStats = robotCache.getStats();
+      const cacheStats = globalCache.getMetrics();
       const edgeRecommendations = edgeOptimizer.getOptimizationRecommendations();
       
       const overallRecommendations: string[] = [];

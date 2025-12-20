@@ -7,7 +7,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { backendOptimizationManager } from './backendOptimizationManager';
 import { databaseOptimizer } from './databaseOptimizer';
 import { queryOptimizer } from './queryOptimizer';
-import { robotCache } from './advancedCache';
+import { globalCache } from './unifiedCacheManager';
 
 interface PerformanceOptimizerConfig {
   enableRealTimeMonitoring: boolean;
@@ -192,12 +192,12 @@ class PerformanceOptimizer {
    * Collect cache performance metrics
    */
   private collectCacheMetrics(): PerformanceMetrics['cache'] {
-    const cacheStats = robotCache.getStats();
+    const cacheStats = globalCache.getMetrics();
     
     return {
       hitRate: cacheStats.hitRate,
-      totalEntries: cacheStats.totalEntries,
-      totalSize: cacheStats.totalSize,
+      totalEntries: cacheStats.hits + cacheStats.misses,
+      totalSize: cacheStats.memoryUsage,
       evictions: cacheStats.evictions,
       responseTime: 0, // Would need actual response time tracking
     };
@@ -322,7 +322,7 @@ class PerformanceOptimizer {
     try {
       console.log('Optimizing cache performance...');
       // Clear old entries and optimize cache - using available method
-      robotCache.destroy();
+      globalCache.destroy();
     } catch (error) {
       console.error('Cache optimization failed:', error);
     }
@@ -518,4 +518,5 @@ if (typeof window !== 'undefined') {
   }, 3000); // Initialize after other optimizers
 }
 
-export { PerformanceOptimizer, PerformanceOptimizerConfig, PerformanceMetrics };
+export { PerformanceOptimizer };
+export type { PerformanceOptimizerConfig, PerformanceMetrics };
