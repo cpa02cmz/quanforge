@@ -2,7 +2,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { Robot, UserSession, DataRecord } from '../types';
-import { edgeConnectionPool } from './edgeSupabasePool';
+import { connectionManager } from './database/connectionManager';
 import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { globalCache } from './unifiedCacheManager';
@@ -266,7 +266,7 @@ const getClient = async () => {
         try {
             // Use optimized connection pool with enhanced retry mechanism
             const client = await withRetry(async () => {
-                return await edgeConnectionPool.getClient('default');
+                return await connectionManager.getConnection(false);
             }, 'getClient');
             activeClient = client;
         } catch (e) {

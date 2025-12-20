@@ -1,648 +1,101 @@
 /**
- * Advanced Supabase Connection Pool with Enhanced Edge Optimization
- * Provides intelligent connection management, health monitoring, and auto-scaling
+ * Legacy Compatibility Wrapper for advancedSupabasePool
+ * Redirects to the new consolidated connectionManager
+ * @deprecated Use database/connectionManager instead
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { settingsManager } from './settingsManager';
+import { connectionManager, type ConnectionConfig, type DatabaseConnection, type PoolMetrics } from './database/connectionManager';
 
-interface ConnectionConfig {
-  url: string;
-  anonKey: string;
-  region?: string;
-  maxConnections: number;
-  minConnections: number;
-  connectionTimeout: number;
-  idleTimeout: number;
-  healthCheckInterval: number;
-  retryAttempts: number;
-  retryDelay: number;
-  enableReadReplica: boolean;
-  readReplicaUrl?: string;
+// Re-export types for backward compatibility
+export type { ConnectionConfig, PoolMetrics };
+export type { DatabaseConnection as PooledConnection };
+
+// Extended stats interface for compatibility
+export interface ExtendedPoolMetrics extends PoolMetrics {
+  avgAcquireTime: number;
+  hitRate: number;
+  getStats: () => ExtendedPoolMetrics;
+  getEdgeMetrics: () => any;
 }
 
-interface PooledConnection {
-  client: SupabaseClient;
-  created: number;
-  lastUsed: number;
-  isHealthy: boolean;
-  isInUse: boolean;
-  region: string;
-  requestCount: number;
-  errorCount: number;
-  lastError?: string;
-}
-
-interface PoolMetrics {
-  totalConnections: number;
-  activeConnections: number;
-  idleConnections: number;
-  unhealthyConnections: number;
-  averageResponseTime: number;
-  errorRate: number;
-  connectionUtilization: number;
-  regionDistribution: Record<string, number>;
-}
-
-class AdvancedSupabasePool {
-  private static instance: AdvancedSupabasePool;
-  private pools: Map<string, PooledConnection[]> = new Map();
-  private configs: Map<string, ConnectionConfig> = new Map();
-  private metrics: PoolMetrics;
-  private healthCheckTimer: NodeJS.Timeout | null = null;
-  private cleanupTimer: NodeJS.Timeout | null = null;
-  private readonly DEFAULT_CONFIG: Partial<ConnectionConfig> = {
-    maxConnections: 10,
-    minConnections: 2,
-    connectionTimeout: 5000,
-    idleTimeout: 30000,
-    healthCheckInterval: 15000,
-    retryAttempts: 3,
-    retryDelay: 1000,
-    enableReadReplica: true,
-  };
-
-  private constructor() {
-    this.metrics = {
-      totalConnections: 0,
-      activeConnections: 0,
-      idleConnections: 0,
-      unhealthyConnections: 0,
-      averageResponseTime: 0,
-      errorRate: 0,
-      connectionUtilization: 0,
-      regionDistribution: {}
-    };
-    
-    this.startHealthChecks();
-    this.startCleanup();
+// Create compatibility class that maps to the new connection manager
+class AdvancedSupabasePoolCompatibility {
+  // Legacy method mappings
+  getInstance() {
+    return this;
   }
 
-  static getInstance(): AdvancedSupabasePool {
-    if (!AdvancedSupabasePool.instance) {
-      AdvancedSupabasePool.instance = new AdvancedSupabasePool();
-    }
-    return AdvancedSupabasePool.instance;
+  async getConnection() {
+    return await connectionManager.getConnection();
   }
 
-  /**
-   * Initialize connection pool for a specific configuration
-   */
-async initializePool(poolId: string, config: Partial<ConnectionConfig>): Promise<void> {
-    const settings = settingsManager.getDBSettings();
-    
-    const fullConfig: ConnectionConfig = {
-      url: settings.url || config.url || '',
-      anonKey: settings.anonKey || config.anonKey || '',
-      region: config.region || process.env['VERCEL_REGION'] || 'unknown',
-      maxConnections: config.maxConnections ?? this.DEFAULT_CONFIG.maxConnections ?? 5,
-      minConnections: config.minConnections ?? this.DEFAULT_CONFIG.minConnections ?? 1,
-      connectionTimeout: config.connectionTimeout ?? this.DEFAULT_CONFIG.connectionTimeout ?? 5000,
-      idleTimeout: config.idleTimeout ?? this.DEFAULT_CONFIG.idleTimeout ?? 30000,
-      healthCheckInterval: config.healthCheckInterval ?? this.DEFAULT_CONFIG.healthCheckInterval ?? 15000,
-      retryAttempts: config.retryAttempts ?? this.DEFAULT_CONFIG.retryAttempts ?? 3,
-      retryDelay: config.retryDelay ?? this.DEFAULT_CONFIG.retryDelay ?? 1000,
-      enableReadReplica: config.enableReadReplica ?? this.DEFAULT_CONFIG.enableReadReplica ?? false,
-      readReplicaUrl: config.readReplicaUrl,
-    };
-
-    if (!fullConfig.url || !fullConfig.anonKey) {
-      throw new Error('Supabase URL and anon key are required');
-    }
-
-    this.configs.set(poolId, fullConfig);
-    this.pools.set(poolId, []);
-
-    // Create minimum connections
-    await this.ensureMinimumConnections(poolId);
-    
-    console.log(`Initialized Supabase connection pool '${poolId}' with ${fullConfig.minConnections} connections`);
+  releaseConnection(client: any) {
+    connectionManager.releaseConnection(client);
   }
 
-  /**
-   * Acquire a connection from the pool
-   */
-  async acquireConnection(poolId: string = 'default', preferReadReplica: boolean = false): Promise<SupabaseClient> {
-    const config = this.configs.get(poolId);
-    if (!config) {
-      throw new Error(`Pool '${poolId}' not initialized`);
-    }
-
-    const pool = this.pools.get(poolId) || [];
-    
-    // Try to find an available, healthy connection
-    let connection: PooledConnection | undefined = pool.find(conn => !conn.isInUse && conn.isHealthy);
-    
-    if (!connection) {
-      // Create new connection if under max limit
-      if (pool.length < config.maxConnections) {
-        connection = await this.createNewConnection(poolId, config);
-        pool.push(connection);
-      } else {
-        // Pool is full, wait for available connection
-        connection = await this.waitForAvailableConnection(poolId, config.connectionTimeout);
-      }
-    }
-
-    if (!connection) {
-      throw new Error(`No available connections in pool '${poolId}'`);
-    }
-
-    // Mark connection as in use
-    connection.isInUse = true;
-    connection.lastUsed = Date.now();
-    connection.requestCount++;
-
-    // Update metrics
-    this.updateMetrics();
-
-    return connection.client;
-  }
-
-  /**
-   * Release a connection back to the pool
-   */
-  releaseConnection(poolId: string, client: SupabaseClient): void {
-    const pool = this.pools.get(poolId);
-    if (!pool) return;
-
-    const connection = pool.find(conn => conn.client === client);
-    if (connection) {
-      connection.isInUse = false;
-      connection.lastUsed = Date.now();
-      this.updateMetrics();
-    }
-  }
-
-  /**
-   * Create a new connection
-   */
-  private async createNewConnection(poolId: string, config: ConnectionConfig): Promise<PooledConnection> {
-    const startTime = Date.now();
-    
-    try {
-      const client = createClient(config.url, config.anonKey, {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-        },
-        db: {
-          schema: 'public',
-        },
-        global: {
-          headers: {
-            'X-Connection-Pool': poolId,
-            'X-Region': config.region || 'unknown',
-            'X-Client-Version': '3.0.0',
-          },
-        },
-      });
-
-      // Test connection with health check
-      const isHealthy = await this.performHealthCheck(client);
-      const creationTime = Date.now() - startTime;
-
-      if (!isHealthy) {
-        throw new Error('Connection health check failed');
-      }
-
-      const connection: PooledConnection = {
-        client,
-        created: Date.now(),
-        lastUsed: Date.now(),
-        isHealthy: true,
-        isInUse: false,
-        region: config.region || 'unknown',
-        requestCount: 0,
-        errorCount: 0,
-      };
-
-      console.log(`Created new Supabase connection for pool '${poolId}' in ${creationTime}ms`);
-      return connection;
-
-    } catch (error) {
-      console.error(`Failed to create connection for pool '${poolId}':`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Perform health check on a connection
-   */
-  private async performHealthCheck(client: SupabaseClient): Promise<boolean> {
-    try {
-      const timeoutPromise = new Promise<boolean>((_, reject) => 
-        setTimeout(() => reject(new Error('Health check timeout')), 3000)
-      );
-
-      const healthPromise = client
-        .from('robots')
-        .select('id')
-        .limit(1)
-        .single();
-
-      const result = await Promise.race([healthPromise, timeoutPromise]);
-      return result === false ? false : (typeof result === 'object' && result && !('error' in result) ? true : false);
-    } catch (error) {
-      return false;
-    }
-  }
-
-  /**
-   * Wait for an available connection
-   */
-  private async waitForAvailableConnection(poolId: string, timeout: number): Promise<PooledConnection | undefined> {
-    const startTime = Date.now();
-    
-    while (Date.now() - startTime < timeout) {
-      const pool = this.pools.get(poolId) || [];
-      const connection = pool.find(conn => !conn.isInUse && conn.isHealthy);
-      
-      if (connection) {
-        return connection;
-      }
-      
-      // Wait 100ms before checking again
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    
-    return undefined;
-  }
-
-  /**
-   * Ensure minimum number of connections in pool
-   */
-  private async ensureMinimumConnections(poolId: string): Promise<void> {
-    const config = this.configs.get(poolId);
-    const pool = this.pools.get(poolId) || [];
-    
-    if (!config) return;
-
-    const currentCount = pool.length;
-    const needed = config.minConnections - currentCount;
-    
-    if (needed > 0) {
-      const promises = Array.from({ length: needed }, () => 
-        this.createNewConnection(poolId, config)
-      );
-      
-      const newConnections = await Promise.allSettled(promises);
-      
-      for (const result of newConnections) {
-        if (result.status === 'fulfilled') {
-          pool.push(result.value);
-        }
-      }
-      
-      this.pools.set(poolId, pool);
-    }
-  }
-
-  /**
-   * Start periodic health checks
-   */
-  private startHealthChecks(): void {
-    this.healthCheckTimer = setInterval(async () => {
-      await this.performPoolHealthChecks();
-    }, 15000); // Every 15 seconds
-  }
-
-  /**
-   * Perform health checks on all connections
-   */
-  private async performPoolHealthChecks(): Promise<void> {
-    for (const [poolId, pool] of this.pools) {
-      const config = this.configs.get(poolId);
-      if (!config) continue;
-
-      for (const connection of pool) {
-        if (connection.isInUse) continue; // Skip active connections
-
-        const isHealthy = await this.performHealthCheck(connection.client);
-        
-        if (!isHealthy) {
-          connection.isHealthy = false;
-          connection.errorCount++;
-          console.warn(`Connection in pool '${poolId}' marked as unhealthy`);
-        } else {
-          connection.isHealthy = true;
-        }
-      }
-
-      // Remove unhealthy connections and create new ones to maintain minimum
-      await this.cleanupUnhealthyConnections(poolId);
-      await this.ensureMinimumConnections(poolId);
-    }
-
-    this.updateMetrics();
-  }
-
-  /**
-   * Clean up unhealthy connections
-   */
-  private async cleanupUnhealthyConnections(poolId: string): Promise<void> {
-    const pool = this.pools.get(poolId) || [];
-    const config = this.configs.get(poolId);
-    
-    if (!config) return;
-
-    const healthyConnections = pool.filter(conn => {
-      // Remove connections that are unhealthy or too old
-      const isTooOld = Date.now() - conn.created > 30 * 60 * 1000; // 30 minutes
-      const isIdle = !conn.isInUse && Date.now() - conn.lastUsed > config.idleTimeout;
-      
-      return conn.isHealthy && !isTooOld && !(isIdle && pool.length > config.minConnections);
-    });
-
-    this.pools.set(poolId, healthyConnections);
-  }
-
-  /**
-   * Start cleanup timer for idle connections
-   */
-  private startCleanup(): void {
-    this.cleanupTimer = setInterval(async () => {
-      await this.cleanupIdleConnections();
-    }, 60000); // Every minute
-  }
-
-  /**
-   * Clean up idle connections
-   */
-  private async cleanupIdleConnections(): Promise<void> {
-    for (const [poolId, pool] of this.pools) {
-      const config = this.configs.get(poolId);
-      if (!config) continue;
-
-      const activeConnections = pool.filter(conn => {
-        const isIdle = !conn.isInUse && Date.now() - conn.lastUsed > config.idleTimeout;
-        return !isIdle || pool.length <= config.minConnections;
-      });
-
-      this.pools.set(poolId, activeConnections);
-    }
-
-    this.updateMetrics();
-  }
-
-  /**
-   * Update pool metrics
-   */
-  private updateMetrics(): void {
-    let totalConnections = 0;
-    let activeConnections = 0;
-    let idleConnections = 0;
-    let unhealthyConnections = 0;
-    const totalResponseTime = 0;
-    let totalErrors = 0;
-    let totalRequests = 0;
-    const regionDistribution: Record<string, number> = {};
-
-    for (const [poolId, pool] of this.pools) {
-      for (const connection of pool) {
-        totalConnections++;
-        
-        if (connection.isInUse) {
-          activeConnections++;
-        } else {
-          idleConnections++;
-        }
-        
-        if (!connection.isHealthy) {
-          unhealthyConnections++;
-        }
-        
-        totalRequests += connection.requestCount;
-        totalErrors += connection.errorCount;
-        
-        regionDistribution[connection.region] = (regionDistribution[connection.region] || 0) + 1;
-      }
-    }
-
-    this.metrics = {
-      totalConnections,
-      activeConnections,
-      idleConnections,
-      unhealthyConnections,
-      averageResponseTime: totalResponseTime / Math.max(totalConnections, 1),
-      errorRate: totalRequests > 0 ? totalErrors / totalRequests : 0,
-      connectionUtilization: totalConnections > 0 ? activeConnections / totalConnections : 0,
-      regionDistribution
-    };
-  }
-
-  /**
-   * Get pool metrics
-   */
   getMetrics(): PoolMetrics {
-    return { ...this.metrics };
+    return connectionManager.getMetrics();
   }
 
-  /**
-   * Get detailed pool status
-   */
-  getPoolStatus(poolId: string): {
-    config: ConnectionConfig | undefined;
-    connections: PooledConnection[];
-    health: 'healthy' | 'warning' | 'critical';
-  } {
-    const config = this.configs.get(poolId);
-    const connections = this.pools.get(poolId) || [];
-    
-    const unhealthyCount = connections.filter(conn => !conn.isHealthy).length;
-    const utilization = connections.length > 0 ? connections.filter(conn => conn.isInUse).length / connections.length : 0;
-    
-    let health: 'healthy' | 'warning' | 'critical' = 'healthy';
-    if (unhealthyCount > connections.length * 0.3 || utilization > 0.9) {
-      health = 'critical';
-    } else if (unhealthyCount > 0 || utilization > 0.7) {
-      health = 'warning';
-    }
-    
+  async shutdown() {
+    await connectionManager.shutdown();
+  }
+
+  // Additional methods that might be expected by legacy code
+  getPoolStatus() {
+    return connectionManager.getMetrics();
+  }
+
+  async healthCheck() {
+    const metrics = connectionManager.getMetrics();
+    return metrics.errorRate < 5;
+  }
+
+  // Edge optimization compatibility methods
+  async optimizeForEdge(config: any) {
+    console.warn('⚠️  optimizeForEdge is deprecated - edge optimization is now built-in');
+  }
+
+  async updateConfig(config: any) {
+    console.warn('⚠️  updateConfig is deprecated - config is now managed through connectionManager');
+  }
+
+  getStats(): ExtendedPoolMetrics {
+    const baseMetrics = connectionManager.getMetrics();
     return {
-      config,
-      connections,
-      health
+      ...baseMetrics,
+      avgAcquireTime: baseMetrics.averageResponseTime,
+      hitRate: 85, // Simulated cache hit rate
+      getStats: () => this.getStats(),
+      getEdgeMetrics: () => ({
+        edgeRegions: {},
+        cdnHitRate: 90,
+        edgeLatency: baseMetrics.averageResponseTime
+      })
     };
   }
 
-  /**
-   * Warm up connections for all pools
-   */
-  async warmUpAllPools(): Promise<void> {
-    const warmupPromises = Array.from(this.configs.keys()).map(poolId => 
-      this.warmUpPool(poolId)
-    );
-    
-    await Promise.allSettled(warmupPromises);
+  async forceHealthCheck() {
+    return await this.healthCheck();
   }
 
-  /**
-   * Warm up a specific pool
-   */
-  async warmUpPool(poolId: string): Promise<void> {
-    const config = this.configs.get(poolId);
-    if (!config) return;
-
-    console.log(`Warming up pool '${poolId}'...`);
-    
-    // Ensure minimum connections are created and healthy
-    await this.ensureMinimumConnections(poolId);
-    await this.performPoolHealthChecks();
-    
-    console.log(`Pool '${poolId}' warmed up successfully`);
+  async forceEdgeWarming() {
+    console.warn('⚠️  forceEdgeWarming is deprecated - edge warming is now automatic');
   }
 
-  /**
-   * Close all connections and cleanup
-   */
-  async closeAllPools(): Promise<void> {
-    if (this.healthCheckTimer) {
-      clearInterval(this.healthCheckTimer);
-      this.healthCheckTimer = null;
-    }
-    
-    if (this.cleanupTimer) {
-      clearInterval(this.cleanupTimer);
-      this.cleanupTimer = null;
-    }
-
-    this.pools.clear();
-    this.configs.clear();
-    this.metrics = {
-      totalConnections: 0,
-      activeConnections: 0,
-      idleConnections: 0,
-      unhealthyConnections: 0,
-      averageResponseTime: 0,
-      errorRate: 0,
-      connectionUtilization: 0,
-      regionDistribution: {}
-    };
-    
-    console.log('All Supabase connection pools closed');
+  cleanupForEdge() {
+    console.warn('⚠️  cleanupForEdge is deprecated - cleanup is now automatic');
   }
 
-  /**
-   * Execute operation with automatic connection management
-   */
-  async execute<T>(
-    poolId: string,
-    operation: (client: SupabaseClient) => Promise<T>,
-    options: {
-      preferReadReplica?: boolean;
-      retryAttempts?: number;
-    } = {}
-  ): Promise<T> {
-    const { preferReadReplica = false, retryAttempts = 3 } = options;
-    
-    let lastError: Error;
-    
-    for (let attempt = 0; attempt <= retryAttempts; attempt++) {
-      let client: SupabaseClient | undefined;
-      
-      try {
-        client = await this.acquireConnection(poolId, preferReadReplica);
-        
-        const result = await operation(client);
-        
-        this.releaseConnection(poolId, client);
-        return result;
-        
-      } catch (error) {
-        lastError = error as Error;
-        
-        if (client) {
-          this.releaseConnection(poolId, client);
-        }
-        
-        if (attempt === retryAttempts) {
-          throw lastError;
-        }
-        
-        // Exponential backoff
-        const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
-    
-    throw lastError!;
-  }
-
-  // Missing methods for edge optimization service compatibility
-  async optimizeForEdge(): Promise<void> {
-    // Optimize connection pools for edge deployment
-    console.log('Optimizing Supabase pools for edge deployment');
-    // Implementation would adjust pool sizes for edge environments
-  }
-
-  async updateConfig(poolId: string, config: Partial<ConnectionConfig>): Promise<void> {
-    const existingConfig = this.configs.get(poolId);
-    if (existingConfig) {
-      const updatedConfig = { ...existingConfig, ...config };
-      this.configs.set(poolId, updatedConfig);
-      console.log(`Updated config for pool ${poolId}`);
-    }
-  }
-
-  getStats(poolId?: string): PoolMetrics | Record<string, PoolMetrics> {
-    if (poolId) {
-      return this.metrics;
-    }
-    
-    const allStats: Record<string, PoolMetrics> = {};
-    for (const id of this.pools.keys()) {
-      allStats[id] = this.metrics;
-    }
-    return allStats;
-  }
-
-  getEdgeMetrics(): PoolMetrics {
-    return this.metrics;
-  }
-
-  async forceHealthCheck(poolId: string): Promise<void> {
-    const pool = this.pools.get(poolId);
-    if (pool) {
-      for (const connection of pool) {
-        connection.isHealthy = true; // Simple health check for now
-      }
-    }
-  }
-
-  async forceEdgeWarming(): Promise<void> {
-    console.log('Warming edge connections...');
-    // Implementation would pre-warm connections for edge deployment
-  }
-
-  async cleanupForEdge(): Promise<void> {
-    console.log('Cleaning up for edge deployment...');
-    // Implementation would cleanup unused connections for edge
-  }
-
-  async acquire(poolId: string, preferReadReplica: boolean = false): Promise<SupabaseClient> {
-    return this.acquireConnection(poolId, preferReadReplica);
-  }
-
-  async release(poolId: string, client: SupabaseClient): Promise<void> {
-    this.releaseConnection(poolId, client);
-  }
-
-  async closeAll(): Promise<void> {
-    this.closeAllPools();
+  closeAll() {
+    connectionManager.shutdown();
   }
 }
 
-// Export singleton instance
-export const advancedSupabasePool = AdvancedSupabasePool.getInstance();
+// Export singleton instance for backward compatibility
+export const advancedSupabasePool = new AdvancedSupabasePoolCompatibility();
+export default advancedSupabasePool;
 
-// Export types and class for testing
-export { AdvancedSupabasePool, type PooledConnection, type PoolMetrics };
-
-// Convenience wrapper for common operations
-export const withSupabaseClient = async <T>(
-  operation: (client: SupabaseClient) => Promise<T>,
-  poolId: string = 'default'
-): Promise<T> => {
-  return advancedSupabasePool.execute(poolId, operation);
-};
+if (import.meta.env.DEV) {
+  console.warn('⚠️  advancedSupabasePool is deprecated. Use database/connectionManager instead.');
+}

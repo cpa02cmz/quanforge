@@ -7,7 +7,7 @@
 import { automatedBackupService, BackupMetadata } from './automatedBackupService';
 import { settingsManager } from './settingsManager';
 import { handleError } from '../utils/errorHandler';
-import { consolidatedCache } from './consolidatedCacheManager';
+import { globalCache } from './unifiedCacheManager';
 
 // Recovery configuration
 const RECOVERY_CONFIG = {
@@ -336,7 +336,7 @@ class DisasterRecoveryService {
         return localStorage.getItem(key);
       } else if (location === 'edge') {
         const cacheKey = `backup_${backupId}`;
-        return await consolidatedCache.get(cacheKey) || null;
+        return await globalCache.get(cacheKey) || null;
       }
     } catch (error) {
       console.error('Failed to retrieve backup data:', error);
@@ -912,8 +912,8 @@ class DisasterRecoveryService {
 
     // Test cache operations
     try {
-      await consolidatedCache.set('test_functionality', 'test', 60000, ['test']);
-      await consolidatedCache.delete('test_functionality');
+      await globalCache.set('test_functionality', 'test', 60000, ['test']);
+      await globalCache.delete('test_functionality');
     } catch (error) {
       warnings.push('Cache functionality issue detected');
     }

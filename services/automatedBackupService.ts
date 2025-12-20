@@ -7,7 +7,7 @@
 import { supabase } from './supabase';
 import { settingsManager } from './settingsManager';
 import { handleError } from '../utils/errorHandler';
-import { consolidatedCache } from './consolidatedCacheManager';
+import { globalCache } from './unifiedCacheManager';
 
 // Backup configuration
 const BACKUP_CONFIG = {
@@ -557,8 +557,8 @@ class AutomatedBackupService {
    */
   private async storeToEdgeStorage(backupId: string, data: string, metadata: BackupMetadata): Promise<void> {
     const cacheKey = `backup_${backupId}`;
-    await consolidatedCache.set(cacheKey, data, BACKUP_CONFIG.retentionDays * 24 * 60 * 60 * 1000, ['backup']);
-    await consolidatedCache.set(`meta_${cacheKey}`, metadata, BACKUP_CONFIG.retentionDays * 24 * 60 * 60 * 1000, ['backup']);
+    await globalCache.set(cacheKey, data, BACKUP_CONFIG.retentionDays * 24 * 60 * 60 * 1000, ['backup']);
+    await globalCache.set(`meta_${cacheKey}`, metadata, BACKUP_CONFIG.retentionDays * 24 * 60 * 60 * 1000, ['backup']);
   }
 
 /**
@@ -612,7 +612,7 @@ class AutomatedBackupService {
         return localStorage.getItem(key);
       } else if (location === 'edge') {
         const cacheKey = `backup_${backupId}`;
-        return await consolidatedCache.get(cacheKey) || null;
+        return await globalCache.get(cacheKey) || null;
       }
     } catch (error) {
       console.error('Failed to retrieve backup data:', error);
@@ -708,8 +708,8 @@ class AutomatedBackupService {
       localStorage.removeItem(`backup_${backupId}`);
       localStorage.removeItem(`backup_meta_${backupId}`);
     } else if (location === 'edge') {
-      await consolidatedCache.delete(`backup_${backupId}`);
-      await consolidatedCache.delete(`meta_backup_${backupId}`);
+      await globalCache.delete(`backup_${backupId}`);
+      await globalCache.delete(`meta_backup_${backupId}`);
     }
   }
 

@@ -1,5 +1,5 @@
 import { handleError } from '../utils/errorHandler';
-import { consolidatedCache } from './consolidatedCacheManager';
+import { globalCache } from './unifiedCacheManager';
 
 interface CoreWebVitals {
   lcp: number; // Largest Contentful Paint
@@ -275,7 +275,7 @@ class RealTimeMonitoring {
     };
 
     // Cache error for reporting
-    await consolidatedCache.set(`error_${Date.now()}`, errorData, 'performance', ['error', 'performance']);
+    await globalCache.set(`error_${Date.now()}`, errorData, 'performance', ['error', 'performance']);
 
     // Check error rate
     this.checkErrorRate();
@@ -430,7 +430,7 @@ class RealTimeMonitoring {
 
     try {
       // Cache metrics for batch reporting
-      await consolidatedCache.set(`metrics_${Date.now()}`, currentMetrics, 'performance', ['metrics', 'performance']);
+      await globalCache.set(`metrics_${Date.now()}`, currentMetrics, 'performance', ['metrics', 'performance']);
 
       // Store in memory for real-time access
       this.metrics.push(currentMetrics);

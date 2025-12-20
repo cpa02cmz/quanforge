@@ -246,8 +246,8 @@ class QueryBatcher {
     const results: BatchResult[] = [];
 
     // Get Supabase client
-    const { advancedSupabasePool } = await import('./advancedSupabasePool');
-    const client = await advancedSupabasePool.acquire(undefined, operation === 'select');
+    const { connectionManager } = await import('./database/connectionManager');
+    const client = await connectionManager.getConnection(operation === 'select');
 
     try {
       switch (operation) {
@@ -267,7 +267,7 @@ class QueryBatcher {
           throw new Error(`Unsupported operation: ${operation}`);
       }
     } finally {
-      advancedSupabasePool.release('default', client);
+      connectionManager.releaseConnection(client);
     }
 
     return results;

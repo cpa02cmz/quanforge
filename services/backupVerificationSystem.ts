@@ -6,7 +6,7 @@
 
 import { automatedBackupService, BackupMetadata } from './automatedBackupService';
 import { handleError } from '../utils/errorHandler';
-import { consolidatedCache } from './consolidatedCacheManager';
+import { globalCache } from './unifiedCacheManager';
 
 // Verification configuration
 const VERIFICATION_CONFIG = {
@@ -479,7 +479,7 @@ class BackupVerificationSystem {
         return localStorage.getItem(key);
       } else if (location === 'edge') {
         const cacheKey = `backup_${backupId}`;
-        return await consolidatedCache.get(cacheKey) || null;
+        return await globalCache.get(cacheKey) || null;
       }
     } catch (error) {
       console.error('Failed to retrieve backup data:', error);

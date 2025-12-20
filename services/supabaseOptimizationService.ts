@@ -3,8 +3,7 @@
  * Provides advanced optimization for Supabase integration in edge environments
  */
 
-import { advancedSupabasePool } from './advancedSupabasePool';
-import { edgeConnectionPool } from './edgeSupabasePool';
+import { connectionManager } from './database/connectionManager';
 import { settingsManager } from './settingsManager';
 import { globalCache } from './unifiedCacheManager';
 
@@ -106,15 +105,11 @@ class SupabaseOptimizationService {
   }
 
   private configureConnectionPools(): void {
-    // Optimize enhanced connection pool for Supabase
-    advancedSupabasePool.updateConfig({
-      maxConnections: 6,
-      minConnections: 2,
-      acquireTimeout: 1000,
-      retryAttempts: this.config.maxRetries,
-      connectionWarming: true,
-      regionAffinity: true
-    });
+    // Connection pooling is now handled by connectionManager
+    // Configuration is managed through environment variables and settingsManager
+    if (import.meta.env.DEV) {
+      console.log('ℹ️  Connection pooling is now managed by connectionManager');
+    }
   }
 
   private startMetricsCollection(): void {
@@ -124,14 +119,14 @@ class SupabaseOptimizationService {
   }
 
   private updateMetrics(): void {
-    const poolStats = advancedSupabasePool.getStats();
+    const poolStats = connectionManager.getMetrics();
     const cacheMetrics = globalCache.getMetrics();
     
     this.metrics.connections = {
       active: poolStats.activeConnections,
       idle: poolStats.idleConnections,
       total: poolStats.totalConnections,
-      avgAcquireTime: poolStats.avgAcquireTime
+      avgAcquireTime: poolStats.averageResponseTime
     };
     
     this.metrics.cache = {
@@ -206,12 +201,12 @@ class SupabaseOptimizationService {
     
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        const client = await advancedSupabasePool.acquire(undefined, useReadReplica);
+        const client = await connectionManager.getConnection(useReadReplica);
         
         try {
           const result = await Promise.race([
             queryFn(client),
-            new Promise((_, reject) => 
+            new Promise<never>((_, reject) => 
               setTimeout(() => reject(new Error('Query timeout')), this.config.queryTimeout)
             )
           ]);
@@ -219,7 +214,7 @@ class SupabaseOptimizationService {
           return result;
           
         } finally {
-          advancedSupabasePool.release(client);
+          connectionManager.releaseConnection(client);
         }
         
       } catch (error) {
@@ -451,7 +446,7 @@ class SupabaseOptimizationService {
       }
       
       // Extract unique types
-      const types = [...new Set((data || []).map((item: any) => item.strategy_type || 'Custom'))];
+      const types = [...new Set((data || []).map((item: any) => item.strategy_type || 'Custom'))] as string[];
       return types;
     }, {
       cacheKey: useCache ? cacheKey : undefined,

@@ -1,11 +1,51 @@
 import { Robot } from '../../types';
-import { getClient, STORAGE_KEYS, safeParse, trySaveToStorage, generateUUID } from './client';
+import { connectionManager } from './connectionManager';
 import { handleError } from '../../utils/errorHandler';
+
+// Storage constants (moved from client)
+const STORAGE_KEYS = {
+  ROBOTS: 'robots',
+  ROBOT_CACHE: 'robot_cache',
+  ROBOT_BACKUP: 'robot_backup',
+  SESSION_BACKUP: 'session_backup',
+  CONFIG_BACKUP: 'config_backup'
+};
+
+// Utility functions (moved from client)
+const safeParse = (data: string | null, defaultValue: any = null): any => {
+  try {
+    return data ? JSON.parse(data) : defaultValue;
+  } catch {
+    return defaultValue;
+  }
+};
+
+const trySaveToStorage = (key: string, data: any): boolean => {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const generateUUID = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
+// Helper to get database client
+const getClient = async () => {
+  return await connectionManager.getConnection(false);
+};
 
 // Robot operations
 export const getRobots = async (userId: string): Promise<Robot[]> => {
     try {
-        const client = getClient();
+        const client = await getClient();
         const { data, error } = await client
             .from('robots')
             .select('*')
@@ -24,7 +64,7 @@ export const getRobots = async (userId: string): Promise<Robot[]> => {
 
 export const getRobot = async (id: string): Promise<Robot | null> => {
     try {
-        const client = getClient();
+        const client = await getClient();
         const { data, error } = await client
             .from('robots')
             .select('*')
@@ -43,7 +83,7 @@ export const getRobot = async (id: string): Promise<Robot | null> => {
 
 export const saveRobot = async (robot: Robot): Promise<Robot> => {
     try {
-        const client = getClient();
+        const client = await getClient();
         const { data, error } = await client
             .from('robots')
             .upsert(robot)
@@ -71,7 +111,7 @@ export const saveRobot = async (robot: Robot): Promise<Robot> => {
 
 export const deleteRobot = async (id: string): Promise<void> => {
     try {
-        const client = getClient();
+        const client = await getClient();
         const { error } = await client
             .from('robots')
             .delete()
@@ -105,7 +145,7 @@ export const duplicateRobot = async (id: string, newName: string): Promise<Robot
 // Batch operations for better performance
 export const batchUpdateRobots = async (robots: Robot[]): Promise<Robot[]> => {
     try {
-        const client = getClient();
+        const client = await getClient();
         const { data, error } = await client
             .from('robots')
             .upsert(robots)
@@ -135,7 +175,7 @@ export const batchUpdateRobots = async (robots: Robot[]): Promise<Robot[]> => {
 
 export const getRobotsByIds = async (ids: string[]): Promise<Robot[]> => {
     try {
-        const client = getClient();
+        const client = await getClient();
         const { data, error } = await client
             .from('robots')
             .select('*')
@@ -158,7 +198,7 @@ export const getRobotsPaginated = async (
     limit: number = 20
 ): Promise<{ robots: Robot[]; total: number; page: number; totalPages: number }> => {
     try {
-        const client = getClient();
+        const client = await getClient();
         const offset = (page - 1) * limit;
         
         // Get total count
