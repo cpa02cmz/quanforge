@@ -62,7 +62,7 @@ const StaticPages = createLazyComponent(
 const Layout = createLazyComponent(
   () => import('./components/Layout').then(module => ({ default: module.Layout })),
   { 
-    fallback: LoadingStates.Inline({ message: 'Loading navigation...' }),
+    fallback: LoadingComponents.Inline({ message: 'Loading navigation...' }),
     preloadingStrategy: 'immediate'
   }
 );
