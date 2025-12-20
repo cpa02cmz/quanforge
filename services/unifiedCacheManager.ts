@@ -680,4 +680,9 @@ export const cacheInvalidateByTags = (tags: string[]): Promise<number> =>
 export const cacheInvalidateByRegion = (region: string): Promise<number> => 
   globalCache.invalidateByRegion(region);
 
+// Export specialized cache instances for backward compatibility
+export const robotCache = globalCache;
+export const marketDataCache = globalCache;
+export const analysisCache = globalCache;
+
 export type { CacheOptions, CacheMetrics };
