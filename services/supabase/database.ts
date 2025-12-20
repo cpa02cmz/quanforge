@@ -197,7 +197,47 @@ export const mockDB = {
             return { data: null, error };
           }
         }
-      })
+      }),
+
+      gte: (column: string, value: string) => ({
+        select: async () => {
+          try {
+            const robots = getStoredRobots();
+            const filtered = robots.filter(robot => 
+              String(robot[column as keyof Robot]) >= value
+            );
+            
+            return { data: filtered, error: null };
+          } catch (error) {
+            handleError(error, 'database.operation');
+            return { data: null, error };
+          }
+        }
+      }),
+
+      upsert: async (data: Partial<Robot> | Partial<Robot>[]) => {
+        try {
+          const robots = getStoredRobots();
+          const dataArray = Array.isArray(data) ? data : [data];
+          
+          let updatedRobots = [...robots];
+          
+          for (const item of dataArray) {
+            const existingIndex = updatedRobots.findIndex(r => r.id === item.id);
+            if (existingIndex >= 0) {
+              updatedRobots[existingIndex] = { ...updatedRobots[existingIndex], ...item, updated_at: new Date().toISOString() };
+            } else {
+              updatedRobots.push({ ...item, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as Robot);
+            }
+          }
+          
+          saveStoredRobots(updatedRobots);
+          return { data: dataArray, error: null };
+        } catch (error) {
+          handleError(error, 'database.operation');
+          return { data: null, error };
+        }
+      }
     };
   }
 };

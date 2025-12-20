@@ -233,7 +233,7 @@ export interface ConnectionTestResult {
 
 export interface MigrationResult {
   success: boolean;
-  count: number;
+  count?: number;
   error?: string;
   details?: Record<string, unknown>;
 }

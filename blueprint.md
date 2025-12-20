@@ -103,16 +103,7 @@ graph TD
 
 ### Service Architecture Health (Updated December 2025)
 ```
-Services: 38 files (Target: <30) ✅ MAJOR PROGRESS: 24 files removed this session
-├── Cache Management: 1 file (✅ Fully unified - unifiedCacheManager.ts)
-├── Performance: 2 files (✅ Fully consolidated to performance/ directory)
-├── Security: 5 files (✅ Modular architecture in services/security/)
-├── Database: 3 files (✅ Modular database layer in services/database/)
-├── AI Services: 3 files (✅ Optimized - gemini.ts, aiServiceLoader, aiWorkerManager)
-├── Supabase: 4 files (✅ NEW: Modular supabase/ directory)
-├── Query Optimization: 1 file (✅ Consolidated 3→1 with advancedQueryOptimizer)
-└── Edge/CDN: 3 files (✅ Edge optimization consolidated)
-└── Core Infrastructure: 19 files (✅ Essential operational services maintained)
+Services: 41 files (Target: <30) ✅ MAJOR PROGRESS: 3 additional files removed in latest session
 ```
 
 ### Latest Consolidation Achievements (December 2025) - REPOSITORY MODERNIZATION COMPLETE

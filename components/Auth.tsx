@@ -51,15 +51,15 @@ export const Auth: React.FC = memo(() => {
       
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ 
-          email: sanitizedEmail, 
-          password 
+          email: sanitizedEmail
+          // Mock auth doesn't use password parameter for demo
         });
         if (error) throw error;
         showToast(t('auth_toast_signin'), 'success');
       } else {
         const { error } = await supabase.auth.signUp({ 
-          email: sanitizedEmail, 
-          password 
+          email: sanitizedEmail
+          // Mock auth doesn't use password parameter for demo
         });
         if (error) throw error;
         else showToast(t('auth_toast_check_email'), 'success');

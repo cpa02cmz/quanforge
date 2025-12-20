@@ -1,11 +1,10 @@
-// Export all services for easier imports
-export * from './supabase';
+// Export all services for easier imports (excluding conflicting database functions)
+export { supabase, default as supabaseClient } from './supabase';
 export * from './gemini';
 export * from './aiServiceLoader';
 export * from './settingsManager';
 export * from './simulation';
 export * from './vercelEdgeOptimizer';
-export * from './frontendOptimizer';
 // Performance monitoring now consolidated
 export { performanceMonitor } from './performance/monitor';
 // Real user monitoring now part of consolidated system

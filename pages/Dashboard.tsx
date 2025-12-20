@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
 import { Link } from 'react-router-dom';
-import { mockDB } from '../services/supabase';
+import { getRobots, deleteRobot, duplicateRobot } from '../services/supabase';
 import { Robot, UserSession } from '../types';
 import { useToast } from '../components/Toast';
 import { useTranslation } from '../services/i18n';
@@ -149,7 +149,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
 
   const loadRobots = async () => {
     try {
-      const { data, error } = await mockDB.getRobots();
+      const { data, error } = await getRobots();
       if (error) throw error;
       if (data) setRobots(data);
     } catch (err) {
@@ -167,7 +167,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
 
     setProcessingId(id);
     try {
-        const { error } = await mockDB.deleteRobot(id);
+        const { error } = await deleteRobot(id);
         if (error) throw error;
         // Optimistic update
         setRobots(prev => prev.filter(r => r.id !== id));
@@ -181,15 +181,15 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
   }, [t, showToast]);
 
   const handleDuplicate = useCallback(async (id: string) => {
-      setProcessingId(id);
+setProcessingId(id);
       try {
-          const { data, error } = await mockDB.duplicateRobot(id);
+          const { data, error } = await duplicateRobot(id);
           if (error) throw error;
           if (data && data[0]) {
               // Add new robot to the list (top)
               setRobots(prev => [data[0], ...prev]);
-              showToast(t('dash_toast_duplicate_success'), 'success');
           }
+          showToast(t('dash_toast_delete_success'), 'success');
       } catch (err) {
           logger.error("Failed to duplicate robot", err);
           showToast("Failed to duplicate robot", 'error');

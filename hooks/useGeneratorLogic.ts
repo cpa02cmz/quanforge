@@ -458,7 +458,7 @@ const stopGeneration = () => {
           name: ValidationService.sanitizeInput(state.robotName),
           code: state.code,
           description: state.analysis?.description || 'Generated Strategy',
-          strategy_type: (state.analysis?.riskScore || 0) > 7 ? 'Scalping' : 'Trend',
+          strategy_type: ((state.analysis?.riskScore || 0) > 7 ? 'Scalping' : 'Trend') as 'Trend' | 'Scalping' | 'Grid' | 'Martingale' | 'Custom',
           strategy_params: state.strategyParams, 
           backtest_settings: state.backtestSettings,
           analysis_result: state.analysis, 
