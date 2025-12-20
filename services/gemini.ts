@@ -768,7 +768,7 @@ const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, si
              console.warn("API Key is empty for OpenAI Provider");
         }
 
-        const baseUrl = settings.baseUrl ? settings.baseUrl.replace(/\/$/, '') : 'https://api.openai.com/v1';
+        const baseUrl = settings.baseUrl ? settings.baseUrl.replace(/\/$/, '') : process.env['VITE_OPENAI_API_BASE_URL'] || 'https://api.openai.com/v1';
         const url = `${baseUrl}/chat/completions`;
         const systemInstruction = getEffectiveSystemPrompt(settings);
 

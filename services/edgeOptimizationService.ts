@@ -53,10 +53,10 @@ class EdgeOptimizationService {
     enableRegionAffinity: true,
     enableCompression: true,
     cacheStrategy: 'balanced',
-    maxConnections: 6,
-    connectionTimeout: 1000,
-    retryAttempts: 3,
-    healthCheckInterval: 30000
+    maxConnections: parseInt(process.env['VITE_EDGE_MAX_CONNECTIONS'] || '6'),
+    connectionTimeout: parseInt(process.env['VITE_EDGE_CONNECTION_TIMEOUT'] || '1000'),
+    retryAttempts: parseInt(process.env['VITE_EDGE_RETRY_ATTEMPTS'] || '3'),
+    healthCheckInterval: parseInt(process.env['VITE_EDGE_HEALTH_CHECK_INTERVAL'] || '30000')
   };
   
   private metrics: Map<string, EdgeMetrics[]> = new Map();

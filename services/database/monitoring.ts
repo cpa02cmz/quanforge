@@ -103,10 +103,13 @@ export class DatabaseMonitor {
     }
 
     // Check average response times
-    if (metrics.connections.averageResponseTime > 5000) {
+    const criticalResponseTime = parseInt(process.env['VITE_DB_CRITICAL_RESPONSE_TIME'] || '5000');
+    const warningResponseTime = parseInt(process.env['VITE_DB_WARNING_RESPONSE_TIME'] || '2000');
+    
+    if (metrics.connections.averageResponseTime > criticalResponseTime) {
       status = 'critical';
       issues.push(`Very slow response time: ${metrics.connections.averageResponseTime}ms`);
-    } else if (metrics.connections.averageResponseTime > 2000) {
+    } else if (metrics.connections.averageResponseTime > warningResponseTime) {
       status = status === 'critical' ? 'critical' : 'warning';
       issues.push(`Slow response time: ${metrics.connections.averageResponseTime}ms`);
     }
@@ -123,7 +126,7 @@ export class DatabaseMonitor {
     };
   }
 
-  static startHealthCheck(intervalMs: number = 30000): void {
+  static startHealthCheck(intervalMs: number = parseInt(process.env['VITE_DB_HEALTH_CHECK_INTERVAL'] || '30000')): void {
     // Stop any existing health check
     this.stopHealthCheck();
 

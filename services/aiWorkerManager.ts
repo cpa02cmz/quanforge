@@ -99,7 +99,7 @@ class AIWorkerManager {
     }
   }
 
-  private async sendMessage<T>(type: WorkerMessageType, data: any, timeout = 30000): Promise<T> {
+  private async sendMessage<T>(type: WorkerMessageType, data: any, timeout = parseInt(process.env['VITE_AI_WORKER_TIMEOUT'] || '30000')): Promise<T> {
     await this.initializeWorker();
 
     if (!this.worker) {
@@ -145,7 +145,7 @@ class AIWorkerManager {
       const result = await this.sendMessage<{ thinking?: string; content: string }>(
         'PROCESS_RESPONSE',
         { rawResponse },
-        5000 // 5 second timeout for response processing
+        parseInt(process.env['VITE_AI_RESPONSE_TIMEOUT'] || '5000') // 5 second timeout for response processing
       );
       return result;
     } catch (error) {
@@ -159,7 +159,7 @@ class AIWorkerManager {
       const result = await this.sendMessage<{ code: string | null }>(
         'EXTRACT_CODE',
         { text },
-        3000 // 3 second timeout for code extraction
+        parseInt(process.env['VITE_AI_CODE_EXTRACTION_TIMEOUT'] || '3000') // 3 second timeout for code extraction
       );
       return result.code;
     } catch (error) {
@@ -173,7 +173,7 @@ class AIWorkerManager {
       const result = await this.sendMessage<{ formatted: string }>(
         'FORMAT_MESSAGE',
         { rawText, hasCode },
-        3000 // 3 second timeout for message formatting
+        parseInt(process.env['VITE_AI_MESSAGE_FORMAT_TIMEOUT'] || '3000') // 3 second timeout for message formatting
       );
       return result.formatted;
     } catch (error) {
@@ -188,7 +188,7 @@ class AIWorkerManager {
       const result = await this.sendMessage<{ response: string }>(
         'GENERATE_CONTENT',
         { fullPrompt },
-        60000 // 60 second timeout for content generation
+        parseInt(process.env['VITE_AI_CONTENT_GENERATION_TIMEOUT'] || '60000') // 60 second timeout for content generation
       );
       return result;
     } catch (error) {
@@ -202,7 +202,7 @@ class AIWorkerManager {
       const result = await this.sendMessage<{ code?: string; analysis?: any; thinking?: string }>(
         'PARSE_RESPONSE',
         { response },
-        5000 // 5 second timeout for response parsing
+        parseInt(process.env['VITE_AI_RESPONSE_PARSING_TIMEOUT'] || '5000') // 5 second timeout for response parsing
       );
       return result;
     } catch (error) {

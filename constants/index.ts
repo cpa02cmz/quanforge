@@ -49,12 +49,12 @@ CRITICAL OUTPUT RESTRICTIONS:
 `;
 
 export const DEFAULT_STRATEGY_PARAMS = {
-  timeframe: 'H1',
-  symbol: 'BTCUSDT',
-  riskPercent: 1.0,
-  stopLoss: 50, // Pips
-  takeProfit: 100, // Pips
-  magicNumber: 123456,
+  timeframe: process.env['VITE_DEFAULT_TIMEFRAME'] || 'H1',
+  symbol: process.env['VITE_DEFAULT_SYMBOL'] || 'BTCUSDT',
+  riskPercent: parseFloat(process.env['VITE_DEFAULT_RISK_PERCENT'] || '1.0'),
+  stopLoss: parseInt(process.env['VITE_DEFAULT_STOP_LOSS'] || '50'), // Pips
+  takeProfit: parseInt(process.env['VITE_DEFAULT_TAKE_PROFIT'] || '100'), // Pips
+  magicNumber: parseInt(process.env['VITE_DEFAULT_MAGIC_NUMBER'] || '123456'),
   customInputs: []
 };
 

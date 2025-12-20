@@ -212,6 +212,35 @@
 - [ ] **Bundle Optimization**: Split large vendor chunks (chart-vendor: 356KB, ai-vendor: 214KB)
 - [ ] **Service Architecture**: Refactor large service files (supabase.ts: 1584 lines, gemini.ts: 1142 lines)
 
+### [FIXED] Hardcoded Values Dynamicization - Configuration Flexibility Enhancement
+- **Date**: 2025-12-20
+- **Severity**: Moderate (Flexibility & Scalability)
+- **Description**: Identified and converted all major hardcoded configuration values to environment variables
+- **Files Modified**:
+  - `constants/app.ts` - SEO configuration, preload delays, service initialization delays
+  - `constants/index.ts` - Default strategy parameters
+  - `services/gemini.ts` - API endpoint base URL
+  - `services/aiWorkerManager.ts` - All timeout values (6 different configurations)
+  - `services/marketData.ts` - Network reconnect delay thresholds
+  - `services/database/monitoring.ts` - Database performance thresholds and health check intervals
+  - `services/database/connectionManager.ts` - Health check interval
+  - `services/edgeOptimizationService.ts` - Edge optimization parameters
+  - `.env.example` - Added 25+ new environment variables with documentation
+- **Solutions Applied**:
+  - Made SEO metadata configurable (title, description, URL) for different deployments
+  - Converted all timeout and delay values to environment-configurable parameters
+  - Made API endpoints fully dynamic with proper fallbacks for different environments
+  - Added configurable default strategy parameters for trading robots
+  - Implemented dynamic database performance thresholds for monitoring
+- **Configuration Variables Added** (25+ new variables):
+  - SEO: VITE_APP_TITLE, VITE_APP_DESCRIPTION, VITE_APP_URL
+  - API Endpoints: VITE_OPENAI_API_BASE_URL, VITE_BINANCE_WS_URL, VITE_TWELVE_DATA_WS_URL
+  - Performance: VITE_PRELOAD_DELAY_*, VITE_SERVICE_DELAY_*, VITE_AI_WORKER_TIMEOUT, etc.
+  - Strategy: VITE_DEFAULT_*, VITE_DEFAULT_TIMEFRAME, VITE_DEFAULT_SYMBOL, etc.
+  - Monitoring: VITE_DB_CRITICAL_RESPONSE_TIME, VITE_DB_HEALTH_CHECK_INTERVAL, etc.
+- **Impact**: Significantly improved configuration flexibility for different environments and deployment scenarios
+- **Testing**: ✓ Build successful (3.93s), ✓ All environment variables properly parsed, ✓ Maintains backward compatibility with defaults
+
 ### Code Quality Priorities
 - [ ] **ESLint Cleanup**: Reduce 200+ warnings to under 50, focusing on security and functionality
 - [ ] **Type Safety**: Eliminate `any` types in critical paths and error handling

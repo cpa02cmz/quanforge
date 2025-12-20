@@ -84,9 +84,10 @@ class MarketDataService {
       }
 
       // Exponential backoff with jitter
+      const maxDelay = parseInt(process.env['VITE_MAX_RECONNECT_DELAY'] || '30000');
       const delay = Math.min(
           this.baseReconnectDelay * Math.pow(2, this.binanceReconnectAttempts) + Math.random() * 1000,
-          30000 // Max 30 seconds
+          maxDelay // Max delay from environment
       );
 
       console.log(`Binance WS: Reconnecting in ${Math.round(delay / 1000)}s... (Attempt ${this.binanceReconnectAttempts + 1}/${this.maxReconnectAttempts})`);
@@ -202,9 +203,10 @@ class MarketDataService {
       }
 
       // Exponential backoff with jitter
+      const maxDelay = parseInt(process.env['VITE_MAX_RECONNECT_DELAY'] || '30000');
       const delay = Math.min(
           this.baseReconnectDelay * Math.pow(2, this.twelveDataReconnectAttempts) + Math.random() * 1000,
-          30000 // Max 30 seconds
+          maxDelay // Max delay from environment
       );
 
       console.log(`Twelve Data WS: Reconnecting in ${Math.round(delay / 1000)}s... (Attempt ${this.twelveDataReconnectAttempts + 1}/${this.maxReconnectAttempts})`);

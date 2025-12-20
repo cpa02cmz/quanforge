@@ -316,7 +316,7 @@ class ConnectionManager {
     this.healthCheckTimer = setInterval(async () => {
       await this.performHealthChecks();
       await this.updateMetrics();
-    }, 30000); // 30 seconds
+    }, parseInt(process.env['VITE_DB_HEALTH_CHECK_INTERVAL'] || '30000'));
   }
 
   private async performHealthChecks(): Promise<void> {
