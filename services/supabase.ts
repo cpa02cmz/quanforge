@@ -1,7 +1,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
-import { Robot, UserSession } from '../types';
+import { Robot, UserSession, DataRecord } from '../types';
 import { edgeConnectionPool } from './edgeSupabasePool';
 import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
@@ -28,11 +28,12 @@ const STORAGE_KEY = 'mock_session';
 const ROBOTS_KEY = 'mock_robots';
 
 // Helper for safe JSON parsing with enhanced security
-const safeParse = (data: string | null, fallback: any) => {
+const safeParse = <T>(data: string | null, fallback: T): T => {
     if (!data) return fallback;
     try {
         // Use security manager's safe JSON parsing
-        return securityManager.safeJSONParse(data) || fallback;
+        const parsed = securityManager.safeJSONParse(data);
+        return (parsed !== null) ? parsed as T : fallback;
     } catch (e) {
         console.error("Failed to parse data from storage:", e);
         return fallback;
@@ -43,16 +44,17 @@ const safeParse = (data: string | null, fallback: any) => {
 const trySaveToStorage = (key: string, value: string) => {
     try {
         localStorage.setItem(key, value);
-    } catch (e: any) {
+    } catch (e: unknown) {
+        const error = e as Error & { code?: number; name?: string };
         if (
-            e.name === 'QuotaExceededError' || 
-            e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-            e.code === 22 ||
-            e.code === 1014
+            error.name === 'QuotaExceededError' || 
+            error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+            error.code === 22 ||
+            error.code === 1014
         ) {
             throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
         }
-        throw e;
+        throw error;
     }
 };
 
@@ -68,12 +70,12 @@ const generateUUID = (): string => {
     });
 };
 
-const isValidRobot = (r: any): boolean => {
+const isValidRobot = (r: unknown): boolean => {
+    if (!r || typeof r !== 'object') return false;
+    const robot = r as DataRecord;
     return (
-        typeof r === 'object' &&
-        r !== null &&
-        typeof r.name === 'string' &&
-        typeof r.code === 'string'
+        typeof robot['name'] === 'string' &&
+        typeof robot['code'] === 'string'
     );
 };
 
@@ -99,419 +101,8 @@ const mockAuth = {
             if (idx > -1) authListeners.splice(idx, 1);
           } 
         } 
-},
-
-    // =====================================================
-    // BACKUP INTEGRATION OPERATIONS
-    // =====================================================
-
-    /**
-     * Safe backup operation with minimal system disruption
-     * Integrates with automated backup service for seamless operation
-     */
-    async performSafeBackup(options: {
-      type?: 'full' | 'incremental' | 'differential';
-      force?: boolean;
-    } = {}): Promise<{ success: boolean; backupId?: string; error?: string }> {
-        try {
-            const { automatedBackupService } = await import('./automatedBackupService');
-            
-            // Force immediate backup
-            const result = await automatedBackupService.forceBackup(options.type);
-            
-            if (result.success) {
-                // Log backup operation
-                console.log(`Safe backup completed: ${result.backupId}`);
-                return {
-                    success: true,
-                    backupId: result.backupId
-                };
-            } else {
-                return {
-                    success: false,
-                    error: result.error
-                };
-            }
-        } catch (error) {
-            return {
-                success: false,
-                error: error instanceof Error ? error.message : 'Backup operation failed'
-            };
-        }
-    },
-
-    /**
-     * Get backup metadata for verification and recovery
-     */
-    async getBackupMetadata(backupId: string): Promise<any | null> {
-        try {
-            // Try to get metadata from local storage first
-            const metaKey = `backup_meta_${backupId}`;
-            const localMeta = localStorage.getItem(metaKey);
-            
-            if (localMeta) {
-                return JSON.parse(localMeta);
-            }
-
-            // Try edge cache
-            const { consolidatedCache } = await import('./consolidatedCacheManager');
-            const cachedMeta = await consolidatedCache.get(`meta_backup_${backupId}`);
-            
-            if (cachedMeta) {
-                return cachedMeta;
-            }
-
-            return null;
-        } catch (error) {
-            console.error('Failed to get backup metadata:', error);
-            return null;
-        }
-    },
-
-    /**
-     * Retrieve backup data for recovery operations
-     */
-    async retrieveBackupData(backupId: string, location: 'local' | 'cloud' | 'edge' = 'local'): Promise<string | null> {
-        try {
-            if (location === 'local') {
-                const key = `backup_${backupId}`;
-                return localStorage.getItem(key);
-            } else if (location === 'edge') {
-                const { consolidatedCache } = await import('./consolidatedCacheManager');
-                const cacheKey = `backup_${backupId}`;
-                return await consolidatedCache.get(cacheKey) || null;
-            }
-            
-            return null;
-        } catch (error) {
-            console.error('Failed to retrieve backup data:', error);
-            return null;
-        }
-    },
-
-    /**
-     * Safe data restoration with validation and rollback
-     */
-    async performSafeRestore(backupId: string, options: {
-        skipValidation?: boolean;
-        createRollbackPoint?: boolean;
-    } = {}): Promise<{ success: boolean; recordsRestored?: number; error?: string }> {
-        try {
-            // Get backup metadata
-            const metadata = await this.getBackupMetadata(backupId);
-            if (!metadata) {
-                return { success: false, error: 'Backup metadata not found' };
-            }
-
-            // Get backup data
-            const backupData = await this.retrieveBackupData(backupId, metadata.location);
-            if (!backupData) {
-                return { success: false, error: 'Backup data not found' };
-            }
-
-            // Parse backup data
-            const parsedData = JSON.parse(backupData);
-            const robots = parsedData.robots || [];
-
-            // Validate backup data (unless skipped)
-            if (!options.skipValidation) {
-                const validation = await this.validateRestoreData(robots);
-                if (!validation.valid) {
-                    return { 
-                        success: false, 
-                        error: `Data validation failed: ${validation.reason}` 
-                    };
-                }
-            }
-
-            // Create rollback point if requested
-            let rollbackData: string | null = null;
-            if (options.createRollbackPoint) {
-                const currentData = await dbUtils.exportDatabase();
-                rollbackData = currentData;
-                
-                // Store rollback point
-                const rollbackKey = `rollback_${Date.now()}`;
-                localStorage.setItem(rollbackKey, rollbackData);
-                console.log(`Rollback point created: ${rollbackKey}`);
-            }
-
-            // Perform restoration
-            const restoreResult = await this.executeRestore(robots);
-            
-            if (restoreResult.success) {
-                console.log(`Safe restore completed: ${restoreResult.recordsRestored} records restored`);
-                return { 
-                    success: true, 
-                    recordsRestored: restoreResult.recordsRestored 
-                };
-            } else {
-                // Attempt rollback if restoration failed
-                if (rollbackData) {
-                    console.warn('Restore failed, attempting rollback...');
-                    await this.attemptRollback(rollbackData);
-                }
-                
-                return { 
-                    success: false, 
-                    error: restoreResult.error 
-                };
-            }
-        } catch (error) {
-            return { 
-                success: false, 
-                error: error instanceof Error ? error.message : 'Restore operation failed' 
-            };
-        }
-    },
-
-    /**
-     * Validate data for restoration
-     */
-    async validateRestoreData(robots: any[]): Promise<{ valid: boolean; reason?: string }> {
-        try {
-            // Basic structure validation
-            if (!Array.isArray(robots)) {
-                return { valid: false, reason: 'Data is not an array' };
-            }
-
-            if (robots.length === 0) {
-                return { valid: false, reason: 'No data to restore' };
-            }
-
-            // Required field validation
-            for (let i = 0; i < Math.min(robots.length, 100); i++) { // Sample first 100
-                const robot = robots[i];
-                
-                if (!robot.id || typeof robot.id !== 'string') {
-                    return { valid: false, reason: `Invalid robot ID at index ${i}` };
-                }
-                
-                if (!robot.name || typeof robot.name !== 'string') {
-                    return { valid: false, reason: `Invalid robot name at index ${i}` };
-                }
-                
-                if (!robot.code || typeof robot.code !== 'string') {
-                    return { valid: false, reason: `Invalid robot code at index ${i}` };
-                }
-            }
-
-            // Check for duplicates
-            const ids = new Set<string>();
-            let duplicateCount = 0;
-            
-            for (const robot of robots) {
-                if (ids.has(robot.id)) {
-                    duplicateCount++;
-                } else {
-                    ids.add(robot.id);
-                }
-            }
-
-            if (duplicateCount > 0) {
-                return { 
-                    valid: false, 
-                    reason: `Found ${duplicateCount} duplicate robot IDs` 
-                };
-            }
-
-            return { valid: true };
-        } catch (error) {
-            return { 
-                valid: false, 
-                reason: error instanceof Error ? error.message : 'Validation failed' 
-            };
-        }
-    },
-
-    /**
-     * Execute the actual restoration
-     */
-    async executeRestore(robots: any[]): Promise<{ success: boolean; recordsRestored: number; error?: string }> {
-        try {
-            const settings = settingsManager.getDBSettings();
-            
-            if (settings.mode === 'mock') {
-                // Store to localStorage
-                localStorage.setItem('mock_robots', JSON.stringify(robots, null, 2));
-                
-                // Clear indexes
-                robotIndexManager.clear();
-                
-                // Invalidate caches
-                const { consolidatedCache } = await import('./consolidatedCacheManager');
-                await consolidatedCache.invalidateByTags(['robots']);
-                
-                return { 
-                    success: true, 
-                    recordsRestored: robots.length 
-                };
-            } else {
-                // Restore to Supabase
-                const client = await getClient();
-                
-                // Batch insert for better performance
-                const BATCH_SIZE = 50;
-                let totalRestored = 0;
-                
-                for (let i = 0; i < robots.length; i += BATCH_SIZE) {
-                    const batch = robots.slice(i, i + BATCH_SIZE);
-                    
-                    const { error } = await client
-                        .from('robots')
-                        .upsert(batch, { onConflict: 'id' });
-                    
-                    if (error) {
-                        return { 
-                            success: false, 
-                            recordsRestored: totalRestored,
-                            error: error.message 
-                        };
-                    }
-                    
-                    totalRestored += batch.length;
-                }
-                
-                // Invalidate caches
-                const { consolidatedCache } = await import('./consolidatedCacheManager');
-                await consolidatedCache.invalidateByTags(['robots']);
-                
-                return { 
-                    success: true, 
-                    recordsRestored: totalRestored 
-                };
-            }
-        } catch (error) {
-            return { 
-                success: false, 
-                recordsRestored: 0,
-                error: error instanceof Error ? error.message : 'Restore execution failed' 
-            };
-        }
-    },
-
-    /**
-     * Attempt rollback to previous state
-     */
-    async attemptRollback(rollbackData: string): Promise<{ success: boolean; error?: string }> {
-        try {
-            const parsedData = JSON.parse(rollbackData);
-            const robots = parsedData.robots || parsedData; // Handle different formats
-            
-            const restoreResult = await this.executeRestore(robots);
-            
-            if (restoreResult.success) {
-                console.log(`Rollback successful: ${restoreResult.recordsRestored} records restored`);
-                return { success: true };
-            } else {
-                return { 
-                    success: false, 
-                    error: `Rollback failed: ${restoreResult.error}` 
-                };
-            }
-        } catch (error) {
-            return { 
-                success: false, 
-                error: error instanceof Error ? error.message : 'Rollback attempt failed' 
-            };
-        }
-    },
-
-    /**
-     * Check backup system health and status
-     */
-    async getBackupSystemHealth(): Promise<{
-        status: 'healthy' | 'warning' | 'critical';
-        lastBackup?: string;
-        backupCount: number;
-        storageAvailable: boolean;
-        alerts: string[];
-    }> {
-try {
-            const alerts: string[] = [];
-            let lastBackup: string | undefined;
-            let backupCount = 0;
-            
-            // Check backup service status
-            try {
-                const { automatedBackupService } = await import('./automatedBackupService');
-                const backupStatus = automatedBackupService.getBackupStatus();
-                
-                lastBackup = backupStatus.lastBackup || undefined;
-                backupCount = backupStatus.successfulBackups;
-                
-                // Check if recent backups exist
-                if (!lastBackup) {
-                    alerts.push('No backup history found');
-                } else {
-                    const lastBackupAge = Date.now() - new Date(lastBackup).getTime();
-                    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-                    
-                    if (lastBackupAge > maxAge) {
-                        alerts.push(`Last backup is ${Math.round(lastBackupAge / (60 * 60 * 1000))} hours old`);
-                    }
-                }
-                
-                // Check backup failure rate
-                if (backupStatus.failedBackups > 0) {
-                    const failureRate = backupStatus.failedBackups / (backupStatus.successfulBackups + backupStatus.failedBackups);
-                    if (failureRate > 0.2) { // 20% failure rate
-                        alerts.push(`High backup failure rate: ${Math.round(failureRate * 100)}%`);
-                    }
-                }
-            } catch (error) {
-                alerts.push('Backup service unavailable');
-            }
-            
-            // Check storage availability
-            const storageAvailable = this.testStorageAvailability();
-            if (!storageAvailable) {
-                alerts.push('Storage space low or unavailable');
-            }
-            
-            // Determine overall status
-            let status: 'healthy' | 'warning' | 'critical';
-            if (alerts.length === 0) {
-                status = 'healthy';
-            } else if (alerts.some(alert => alert.includes('unavailable') || alert.includes('critical'))) {
-                status = 'critical';
-            } else {
-                status = 'warning';
-            }
-            
-            return {
-                status,
-                lastBackup,
-                backupCount,
-                storageAvailable,
-                alerts
-            };
-        } catch (error) {
-            return {
-                status: 'critical',
-                backupCount: 0,
-                storageAvailable: false,
-                alerts: ['Backup system health check failed']
-            };
-        }
-    },
-
-    /**
-     * Test storage availability for backup operations
-     */
-    testStorageAvailability(): boolean {
-        try {
-            const testKey = 'backup_storage_test_' + Date.now();
-            const testData = 'test';
-            localStorage.setItem(testKey, testData);
-            const retrieved = localStorage.getItem(testKey);
-            localStorage.removeItem(testKey);
-            return retrieved === testData;
-        } catch {
-            return false;
-        }
-    }
-};
+      }
+    };
   },
   signInWithPassword: async ({ email }: { email: string }) => {
     const session = {
@@ -540,6 +131,14 @@ try {
   }
 };
 
+// =====================================================
+// BACKUP INTEGRATION OPERATIONS
+// =====================================================
+
+// Backup service capabilities are now handled by automatedBackupService.ts
+// This interface is reserved for future backup service integration
+
+// Mock client definition
 const mockClient = {
   auth: mockAuth,
   from: () => ({
@@ -766,7 +365,7 @@ class EdgePerformanceTracker {
   getAllMetrics() {
     const result: Record<string, { avg: number; p95: number; p99: number; count: number }> = {};
     
-    for (const [operation] of this.metrics) {
+    for (const operation of Array.from(this.metrics.keys())) {
       result[operation] = {
         avg: this.getAverage(operation),
         p95: this.getPercentile(operation, 95),
@@ -896,10 +495,10 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
            const duration = performance.now() - startTime;
            performanceMonitor.record('getRobots', duration);
            
-           // Log slow operations only in development
-           if (import.meta.env.DEV && duration > 500) {
-             console.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
-           }
+// Log slow operations only in development
+            if (process.env['NODE_ENV'] === 'development' && duration > 500) {
+              console.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
+            }
            
            return result;
           }, 'getRobots');
@@ -921,15 +520,30 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
        const settings = settingsManager.getDBSettings();
        
        if (settings.mode === 'mock') {
-         const stored = localStorage.getItem(ROBOTS_KEY);
-         const robots = safeParse(stored, []);
-         
-         updates.forEach(update => {
-           const index = robots.findIndex((r: Robot) => r.id === update.id);
-           if (index !== -1) {
-             robots[index] = { ...robots[index], ...update.data, updated_at: new Date().toISOString() };
-           }
-         });
+const stored = localStorage.getItem(ROBOTS_KEY);
+          const parsedRobots = safeParse(stored, []);
+          const robots: Robot[] = Array.isArray(parsedRobots) ? parsedRobots as Robot[] : [];
+          
+          updates.forEach(update => {
+            const index = robots.findIndex((r: Robot) => r.id === update.id);
+            if (index !== -1) {
+              const currentRobot = robots[index];
+              if (currentRobot) {
+                const updatedRobot: Robot = {
+                  id: currentRobot.id,
+                  user_id: currentRobot.user_id,
+                  name: currentRobot.name,
+                  description: currentRobot.description,
+                  code: currentRobot.code,
+                  strategy_type: currentRobot.strategy_type,
+                  created_at: currentRobot.created_at,
+                  ...update.data,
+                  updated_at: new Date().toISOString()
+                };
+                robots[index] = updatedRobot;
+              }
+            }
+          });
          
          trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
          robotIndexManager.clear();
@@ -955,7 +569,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
          
          return { 
            data: updates.map(u => u.id), 
-           error: results.some(r => r.error) ? results.find(r => r.error)?.error : null 
+           error: results.some((r: { error?: unknown }) => r.error) ? results.find((r: { error?: unknown }) => r.error)?.error : null 
          };
        }, 'batchUpdateRobots');
      } catch (error) {
@@ -1088,7 +702,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
             performanceMonitor.record('getRobotsPaginated_supabase', duration);
             
             // Log slow queries in development
-            if (import.meta.env.DEV && duration > 1000) {
+            if (process.env['NODE_ENV'] === 'development' && duration > 1000) {
               console.warn(`Slow getRobotsPaginated query: ${duration.toFixed(2)}ms for ${result.count} results`);
             }
             
@@ -1185,7 +799,8 @@ if (result.data && !result.error) {
       if (settings.mode === 'mock') {
         try {
             const stored = localStorage.getItem(ROBOTS_KEY);
-            const robots = safeParse(stored, []);
+            const parsedRobots = safeParse(stored, []);
+            const robots: Robot[] = Array.isArray(parsedRobots) ? parsedRobots as Robot[] : [];
             
             const newRobot = { ...sanitizedRobot, id: generateUUID(), created_at: new Date().toISOString() };
             robots.unshift(newRobot);
@@ -1233,10 +848,11 @@ if (result.data && !result.error) {
       if (settings.mode === 'mock') {
           try {
               const stored = localStorage.getItem(ROBOTS_KEY);
-              const robots = safeParse(stored, []);
+              const parsedRobots = safeParse(stored, []);
+              const robots: Robot[] = Array.isArray(parsedRobots) ? parsedRobots as Robot[] : [];
               
               // Find and update the robot in place for better performance
-              const robotIndex = robots.findIndex((r: any) => r.id === id);
+              const robotIndex = robots.findIndex((r: Robot) => r.id === id);
               if (robotIndex === -1) {
                   const duration = performance.now() - startTime;
                   performanceMonitor.record('updateRobot', duration);
@@ -1244,7 +860,18 @@ if (result.data && !result.error) {
               }
               
               // Create updated robot object
-              const updatedRobot = { ...robots[robotIndex], ...updates, updated_at: new Date().toISOString() };
+              const currentRobot = robots[robotIndex];
+              if (!currentRobot) {
+                  const duration = performance.now() - startTime;
+                  performanceMonitor.record('updateRobot', duration);
+                  return { data: null, error: "Robot not found" };
+              }
+              
+              const updatedRobot = { 
+                ...currentRobot, 
+                ...updates as Partial<Robot>, 
+                updated_at: new Date().toISOString() 
+              } as Robot;
               robots[robotIndex] = updatedRobot;
               
               trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
@@ -1339,8 +966,9 @@ if (result.data && !result.error) {
       if (settings.mode === 'mock') {
           try {
               const stored = localStorage.getItem(ROBOTS_KEY);
-              const robots = safeParse(stored, []);
-              const original = robots.find((r: any) => r.id === id);
+              const parsedRobots = safeParse(stored, []);
+              const robots: Robot[] = Array.isArray(parsedRobots) ? parsedRobots as Robot[] : [];
+              const original = robots.find((r: Robot) => r.id === id);
               
               if (!original) {
                   const duration = performance.now() - startTime;
@@ -1348,10 +976,10 @@ if (result.data && !result.error) {
                   return { error: "Robot not found", data: null };
               }
 
-              const newRobot = {
+              const newRobot: Robot = {
                   ...original,
                   id: generateUUID(),
-                  name: `Copy of ${original.name}`,
+                  name: `Copy of ${original['name']}`,
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString()
               };
@@ -1745,8 +1373,8 @@ export const dbUtils = {
             
             if (settings.mode === 'mock') {
                 try {
-                    const stored = localStorage.getItem(ROBOTS_KEY);
-                    const robots = safeParse(stored, []);
+const stored = localStorage.getItem(ROBOTS_KEY);
+          const robots = (safeParse(stored, []) as Robot[]);
                     
                     for (const item of updates) {
                         const robotIndex = robots.findIndex((r: any) => r.id === item.id);
@@ -1938,7 +1566,8 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
         
         if (settings.mode === 'mock') {
             const stored = localStorage.getItem(ROBOTS_KEY);
-            const robots = safeParse(stored, []);
+            const parsedRobots = safeParse(stored, []);
+            const robots: Robot[] = Array.isArray(parsedRobots) ? parsedRobots as Robot[] : [];
             
             // Calculate total size
             const totalSize = new Blob([JSON.stringify(robots)]).size;
@@ -1950,13 +1579,13 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
             let invalidCount = 0;
             
             for (const robot of robots) {
-                if (seenIds.has(robot.id)) {
+                if (seenIds.has(robot['id'])) {
                     duplicateCount++;
                 } else {
-                    seenIds.add(robot.id);
+                    seenIds.add(robot['id']);
                 }
                 
-                if (!robot || typeof robot !== 'object' || !robot.id || !robot.name || !robot.code) {
+                if (!robot || typeof robot !== 'object' || !robot['id'] || !robot['name'] || !robot['code']) {
                     invalidCount++;
                 }
             }
