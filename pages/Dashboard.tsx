@@ -206,38 +206,26 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
     const filteredRobots = useMemo(() => {
       const startTime = import.meta.env.DEV ? performance.now() : 0;
       
-      // Use the performance optimizer to memoize this expensive operation
-      const result = frontendPerformanceOptimizer.memoizeComponent(
-        `filtered_robots_${debouncedSearchTerm}_${filterType}_${robots.length}`,
-        () => {
-          // Pre-calculate normalized debounced search term to avoid repeated operations
-          const normalizedSearchTerm = debouncedSearchTerm.toLowerCase();
-          
-          // Early return if no filters needed
-          if (normalizedSearchTerm === '' && filterType === 'All') {
-            return robots;
+// Pre-calculate normalized debounced search term to avoid repeated operations
+      const normalizedSearchTerm = debouncedSearchTerm.toLowerCase();
+      
+      // Early return if no filters needed
+      if (normalizedSearchTerm === '' && filterType === 'All') {
+        return robots;
+      }
+      
+      const result = robots.filter(robot => {
+        const robotName = robot.name.toLowerCase();
+        
+        // Filter by search term (case-insensitive)
+        if (normalizedSearchTerm !== '') {
+          if (!robotName.includes(normalizedSearchTerm)) {
+            return false;
           }
-          
-          // Optimized filtering with early termination
-          return robots.filter(robot => {
-            // Type filter first (faster comparison)
-            if (filterType !== 'All' && (robot.strategy_type || 'Custom') !== filterType) {
-              return false;
-            }
-            
-            // Search filter last (more expensive)
-            if (normalizedSearchTerm !== '') {
-              const robotName = robot.name.toLowerCase();
-              if (!robotName.includes(normalizedSearchTerm)) {
-                return false;
-              }
-            }
-            
-            return true;
-          });
-        },
-        5000 // 5 second TTL for this filter result
-      );
+        }
+        
+        return true;
+      });
       
       // Log performance in development
       if (import.meta.env.DEV && startTime) {

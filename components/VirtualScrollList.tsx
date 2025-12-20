@@ -31,19 +31,13 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
    const filteredRobots = useMemo(() => {
      const startTime = performance.now();
      
-     const result = frontendPerformanceOptimizer.memoizeComponent(
-       `filtered_robots_${searchTerm}_${filterType}_${robots.length}`,
-       () => {
-         return robots.filter(robot => {
-           const robotName = robot.name.toLowerCase();
-           const searchTermLower = searchTerm.toLowerCase();
-           const matchesSearch = searchTerm === '' || robotName.includes(searchTermLower);
-           const matchesType = filterType === 'All' || (robot.strategy_type || 'Custom') === filterType;
-           return matchesSearch && matchesType;
-         });
-       },
-       5000 // 5 second TTL for this filter result
-     );
+     const result = robots.filter(robot => {
+       const robotName = robot.name.toLowerCase();
+       const searchTermLower = searchTerm.toLowerCase();
+       const matchesSearch = searchTerm === '' || robotName.includes(searchTermLower);
+       const matchesType = filterType === 'All' || (robot.strategy_type || 'Custom') === filterType;
+       return matchesSearch && matchesType;
+     });
      
      const duration = performance.now() - startTime;
      if (duration > 16 && import.meta.env.DEV) { // More than one frame at 60fps

@@ -10,14 +10,14 @@ const PerformanceInsights: React.FC<PerformanceInsightsProps> = ({ showInsights 
   const [isVisible, setIsVisible] = useState(showInsights);
   const [metrics, setMetrics] = useState(frontendPerformanceOptimizer.getMetrics());
   const [perfMetrics, setPerfMetrics] = useState(performanceMonitor.getWebVitals());
-  const [optimizationScore, setOptimizationScore] = useState(frontendPerformanceOptimizer.getOptimizationScore());
+  const [optimizationScore, setOptimizationScore] = useState(frontendPerformanceOptimizer.getOptimizationScore().overall);
   
   useEffect(() => {
     if (isVisible) {
       const interval = setInterval(() => {
         setMetrics(frontendPerformanceOptimizer.getMetrics());
         setPerfMetrics(performanceMonitor.getWebVitals());
-        setOptimizationScore(frontendPerformanceOptimizer.getOptimizationScore());
+        setOptimizationScore(frontendPerformanceOptimizer.getOptimizationScore().overall);
       }, 5000); // Update every 5 seconds when visible
       
       return () => clearInterval(interval);
