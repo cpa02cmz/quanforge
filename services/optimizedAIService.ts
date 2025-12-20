@@ -4,7 +4,7 @@ import { MQL5_SYSTEM_PROMPT } from "../constants";
 import { StrategyParams, StrategyAnalysis, Message, MessageRole } from "../types";
 import { settingsManager } from "./settingsManager";
 import { handleError } from "../utils/errorHandler";
-import { robotCache } from "./optimizedCache";
+import { globalCache } from "./unifiedCacheManager";
 
 const logger = console; // Simplified logger for performance
 
@@ -45,7 +45,7 @@ class OptimizedAIService {
     const cacheKey = this.generateCacheKey(prompt, currentCode, strategyParams, customInstructions);
     
     // Check cache first
-    const cached = await robotCache.get<{ code: string; analysis: StrategyAnalysis; messages: Message[] }>(cacheKey);
+    const cached = await globalCache.get<{ code: string; analysis: StrategyAnalysis; messages: Message[] }>(cacheKey);
     if (cached) {
       logger.debug('Cache hit for MQL5 generation');
       return cached;
@@ -64,7 +64,7 @@ class OptimizedAIService {
       const result = await requestPromise;
       
       // Cache the result
-      await robotCache.set(cacheKey, result, { ttl: 600000 }); // 10 minutes
+      await globalCache.set(cacheKey, result, 600000); // 10 minutes
       return result;
     } finally {
       this.requestDeduplicator.delete(cacheKey);
@@ -325,7 +325,7 @@ class OptimizedAIService {
     const cacheKey = `analysis_${this.simpleHash(code + JSON.stringify(strategyParams))}`;
     
     // Check cache
-    const cached = await robotCache.get<StrategyAnalysis>(cacheKey);
+    const cached = await globalCache.get<StrategyAnalysis>(cacheKey);
     if (cached) {
       logger.debug('Cache hit for strategy analysis');
       return cached;
@@ -335,7 +335,7 @@ class OptimizedAIService {
     const analysis = await this.performAnalysis(code, strategyParams);
     
     // Cache result
-    await robotCache.set(cacheKey, analysis, { ttl: 900000 }); // 15 minutes
+    await globalCache.set(cacheKey, analysis, 900000); // 15 minutes
     
     return analysis;
   }

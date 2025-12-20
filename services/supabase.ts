@@ -1,11 +1,11 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
-import { Robot, UserSession } from '../types';
-import { edgeConnectionPool } from './edgeSupabasePool';
+import { Robot, UserSession, DataRecord } from '../types';
+import { connectionManager } from './database/connectionManager';
 import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
-import { consolidatedCache } from './consolidatedCacheManager';
+import { globalCache } from './unifiedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
 
 // Enhanced connection retry configuration with exponential backoff
@@ -28,11 +28,12 @@ const STORAGE_KEY = 'mock_session';
 const ROBOTS_KEY = 'mock_robots';
 
 // Helper for safe JSON parsing with enhanced security
-const safeParse = (data: string | null, fallback: any) => {
+const safeParse = <T>(data: string | null, fallback: T): T => {
     if (!data) return fallback;
     try {
         // Use security manager's safe JSON parsing
-        return securityManager.safeJSONParse(data) || fallback;
+        const parsed = securityManager.safeJSONParse(data);
+        return (parsed !== null) ? parsed as T : fallback;
     } catch (e) {
         console.error("Failed to parse data from storage:", e);
         return fallback;
@@ -43,16 +44,17 @@ const safeParse = (data: string | null, fallback: any) => {
 const trySaveToStorage = (key: string, value: string) => {
     try {
         localStorage.setItem(key, value);
-    } catch (e: any) {
+    } catch (e: unknown) {
+        const error = e as Error & { code?: number; name?: string };
         if (
-            e.name === 'QuotaExceededError' || 
-            e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-            e.code === 22 ||
-            e.code === 1014
+            error.name === 'QuotaExceededError' || 
+            error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+            error.code === 22 ||
+            error.code === 1014
         ) {
             throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
         }
-        throw e;
+        throw error;
     }
 };
 
@@ -68,12 +70,12 @@ const generateUUID = (): string => {
     });
 };
 
-const isValidRobot = (r: any): boolean => {
+const isValidRobot = (r: unknown): boolean => {
+    if (!r || typeof r !== 'object') return false;
+    const robot = r as DataRecord;
     return (
-        typeof r === 'object' &&
-        r !== null &&
-        typeof r.name === 'string' &&
-        typeof r.code === 'string'
+        typeof robot['name'] === 'string' &&
+        typeof robot['code'] === 'string'
     );
 };
 
@@ -99,7 +101,7 @@ const mockAuth = {
             if (idx > -1) authListeners.splice(idx, 1);
           } 
         } 
-      } 
+      }
     };
   },
   signInWithPassword: async ({ email }: { email: string }) => {
@@ -129,6 +131,14 @@ const mockAuth = {
   }
 };
 
+// =====================================================
+// BACKUP INTEGRATION OPERATIONS
+// =====================================================
+
+// Backup service capabilities are now handled by automatedBackupService.ts
+// This interface is reserved for future backup service integration
+
+// Mock client definition
 const mockClient = {
   auth: mockAuth,
   from: () => ({
@@ -256,7 +266,7 @@ const getClient = async () => {
         try {
             // Use optimized connection pool with enhanced retry mechanism
             const client = await withRetry(async () => {
-                return await edgeConnectionPool.getClient('default');
+                return await connectionManager.getConnection(false);
             }, 'getClient');
             activeClient = client;
         } catch (e) {
@@ -355,7 +365,7 @@ class EdgePerformanceTracker {
   getAllMetrics() {
     const result: Record<string, { avg: number; p95: number; p99: number; count: number }> = {};
     
-    for (const [operation] of this.metrics) {
+    for (const operation of Array.from(this.metrics.keys())) {
       result[operation] = {
         avg: this.getAverage(operation),
         p95: this.getPercentile(operation, 95),
@@ -457,7 +467,7 @@ async getRobots() {
        }
         
         const cacheKey = 'robots_list';
-const cached = await consolidatedCache.get<Robot[]>(cacheKey);
+const cached = await globalCache.get<Robot[]>(cacheKey);
         if (cached) {
           // Create index for performance
           robotIndexManager.getIndex(cached);
@@ -479,16 +489,16 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
             if (result.data && !result.error) {
               // Create index for performance
               robotIndexManager.getIndex(result.data);
-              await consolidatedCache.set(cacheKey, result.data, 'api', ['robots', 'list']);
+              await globalCache.set(cacheKey, result.data, 15 * 60 * 1000, ['robots', 'list']); // 15 minutes
             }
            
            const duration = performance.now() - startTime;
            performanceMonitor.record('getRobots', duration);
            
-           // Log slow operations only in development
-           if (import.meta.env.DEV && duration > 500) {
-             console.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
-           }
+// Log slow operations only in development
+            if (process.env['NODE_ENV'] === 'development' && duration > 500) {
+              console.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
+            }
            
            return result;
           }, 'getRobots');
@@ -510,15 +520,30 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
        const settings = settingsManager.getDBSettings();
        
        if (settings.mode === 'mock') {
-         const stored = localStorage.getItem(ROBOTS_KEY);
-         const robots = safeParse(stored, []);
-         
-         updates.forEach(update => {
-           const index = robots.findIndex((r: Robot) => r.id === update.id);
-           if (index !== -1) {
-             robots[index] = { ...robots[index], ...update.data, updated_at: new Date().toISOString() };
-           }
-         });
+const stored = localStorage.getItem(ROBOTS_KEY);
+          const parsedRobots = safeParse(stored, []);
+          const robots: Robot[] = Array.isArray(parsedRobots) ? parsedRobots as Robot[] : [];
+          
+          updates.forEach(update => {
+            const index = robots.findIndex((r: Robot) => r.id === update.id);
+            if (index !== -1) {
+              const currentRobot = robots[index];
+              if (currentRobot) {
+                const updatedRobot: Robot = {
+                  id: currentRobot.id,
+                  user_id: currentRobot.user_id,
+                  name: currentRobot.name,
+                  description: currentRobot.description,
+                  code: currentRobot.code,
+                  strategy_type: currentRobot.strategy_type,
+                  created_at: currentRobot.created_at,
+                  ...update.data,
+                  updated_at: new Date().toISOString()
+                };
+                robots[index] = updatedRobot;
+              }
+            }
+          });
          
          trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
          robotIndexManager.clear();
@@ -537,14 +562,14 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
          const results = await Promise.all(batch);
          
 // Clear relevant caches
-          await consolidatedCache.invalidateByTags(['robots']);
+          await globalCache.invalidateByTags(['robots']);
          
          const duration = performance.now() - startTime;
          performanceMonitor.record('batchUpdateRobots', duration);
          
          return { 
            data: updates.map(u => u.id), 
-           error: results.some(r => r.error) ? results.find(r => r.error)?.error : null 
+           error: results.some((r: { error?: unknown }) => r.error) ? results.find((r: { error?: unknown }) => r.error)?.error : null 
          };
        }, 'batchUpdateRobots');
      } catch (error) {
@@ -569,7 +594,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
         const cacheKey = `robots_paginated_${page}_${limit}_${(searchTerm || '').toLowerCase()}_${(filterType || 'All')}`;
         
         // Try consolidated cache first for both mock and supabase modes
-        const cached = await consolidatedCache.get(cacheKey);
+        const cached = await globalCache.get(cacheKey);
         if (cached) {
           const duration = performance.now() - startTime;
           performanceMonitor.record('getRobotsPaginated_cached', duration);
@@ -622,7 +647,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
           
           // Cache the result with smart TTL based on data size
           const ttl = Math.min(300000, Math.max(60000, totalCount * 100)); // 1-5 minutes based on result size
-          await consolidatedCache.set(cacheKey, response, ttl, ['robots', 'paginated']);
+          await globalCache.set(cacheKey, response, ttl, ['robots', 'paginated']);
           
           const duration = performance.now() - startTime;
           performanceMonitor.record('getRobotsPaginated_mock', duration);
@@ -671,13 +696,13 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
             
             // Smart caching with adaptive TTL
             const ttl = Math.min(300000, Math.max(60000, (result.count || 0) * 50));
-            await consolidatedCache.set(cacheKey, response, ttl, ['robots', 'paginated']);
+            await globalCache.set(cacheKey, response, ttl, ['robots', 'paginated']);
             
             const duration = performance.now() - startTime;
             performanceMonitor.record('getRobotsPaginated_supabase', duration);
             
             // Log slow queries in development
-            if (import.meta.env.DEV && duration > 1000) {
+            if (process.env['NODE_ENV'] === 'development' && duration > 1000) {
               console.warn(`Slow getRobotsPaginated query: ${duration.toFixed(2)}ms for ${result.count} results`);
             }
             
@@ -715,7 +740,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
        }
        
 const cacheKey = `robots_batch_${ids.sort().join('_')}`;
-        const cached = await consolidatedCache.get<Robot[]>(cacheKey);
+        const cached = await globalCache.get<Robot[]>(cacheKey);
         if (cached) {
           const duration = performance.now() - startTime;
           performanceMonitor.record('getRobotsByIds', duration);
@@ -731,7 +756,7 @@ const cacheKey = `robots_batch_${ids.sort().join('_')}`;
            .order('created_at', { ascending: false });
          
 if (result.data && !result.error) {
-            await consolidatedCache.set(cacheKey, result.data, 'api', ['robots', 'batch']);
+            await globalCache.set(cacheKey, result.data, 15 * 60 * 1000, ['robots', 'batch']); // 15 minutes
           }
          
          const duration = performance.now() - startTime;
@@ -761,8 +786,8 @@ if (result.data && !result.error) {
 
       // Rate limiting check (if user ID available)
       if (robot.user_id) {
-        const rateLimit = securityManager.checkRateLimit(robot.user_id);
-        if (!rateLimit.allowed) {
+        const isRateLimited = securityManager.checkRateLimit(robot.user_id);
+        if (!isRateLimited) {
           const duration = performance.now() - startTime;
           performanceMonitor.record('saveRobot', duration);
           return { data: null, error: 'Rate limit exceeded' };
@@ -774,7 +799,8 @@ if (result.data && !result.error) {
       if (settings.mode === 'mock') {
         try {
             const stored = localStorage.getItem(ROBOTS_KEY);
-            const robots = safeParse(stored, []);
+            const parsedRobots = safeParse(stored, []);
+            const robots: Robot[] = Array.isArray(parsedRobots) ? parsedRobots as Robot[] : [];
             
             const newRobot = { ...sanitizedRobot, id: generateUUID(), created_at: new Date().toISOString() };
             robots.unshift(newRobot);
@@ -785,7 +811,7 @@ if (result.data && !result.error) {
             robotIndexManager.clear(); // Clear index since data changed
             
             // Clear cache after save
-            await consolidatedCache.invalidateByTags(['robots', 'list']);
+            await globalCache.invalidateByTags(['robots', 'list']);
             
             return { data: [newRobot], error: null };
         } catch (e: any) {
@@ -800,7 +826,7 @@ if (result.data && !result.error) {
         const result = client.from('robots').insert([sanitizedRobot]).select();
         
         // Invalidate cache after save
-        await consolidatedCache.invalidateByTags(['robots', 'list']);
+        await globalCache.invalidateByTags(['robots', 'list']);
         
         const duration = performance.now() - startTime;
         performanceMonitor.record('saveRobot', duration);
@@ -822,10 +848,11 @@ if (result.data && !result.error) {
       if (settings.mode === 'mock') {
           try {
               const stored = localStorage.getItem(ROBOTS_KEY);
-              const robots = safeParse(stored, []);
+              const parsedRobots = safeParse(stored, []);
+              const robots: Robot[] = Array.isArray(parsedRobots) ? parsedRobots as Robot[] : [];
               
               // Find and update the robot in place for better performance
-              const robotIndex = robots.findIndex((r: any) => r.id === id);
+              const robotIndex = robots.findIndex((r: Robot) => r.id === id);
               if (robotIndex === -1) {
                   const duration = performance.now() - startTime;
                   performanceMonitor.record('updateRobot', duration);
@@ -833,7 +860,18 @@ if (result.data && !result.error) {
               }
               
               // Create updated robot object
-              const updatedRobot = { ...robots[robotIndex], ...updates, updated_at: new Date().toISOString() };
+              const currentRobot = robots[robotIndex];
+              if (!currentRobot) {
+                  const duration = performance.now() - startTime;
+                  performanceMonitor.record('updateRobot', duration);
+                  return { data: null, error: "Robot not found" };
+              }
+              
+              const updatedRobot = { 
+                ...currentRobot, 
+                ...updates as Partial<Robot>, 
+                updated_at: new Date().toISOString() 
+              } as Robot;
               robots[robotIndex] = updatedRobot;
               
               trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
@@ -928,8 +966,9 @@ if (result.data && !result.error) {
       if (settings.mode === 'mock') {
           try {
               const stored = localStorage.getItem(ROBOTS_KEY);
-              const robots = safeParse(stored, []);
-              const original = robots.find((r: any) => r.id === id);
+              const parsedRobots = safeParse(stored, []);
+              const robots: Robot[] = Array.isArray(parsedRobots) ? parsedRobots as Robot[] : [];
+              const original = robots.find((r: Robot) => r.id === id);
               
               if (!original) {
                   const duration = performance.now() - startTime;
@@ -937,10 +976,10 @@ if (result.data && !result.error) {
                   return { error: "Robot not found", data: null };
               }
 
-              const newRobot = {
+              const newRobot: Robot = {
                   ...original,
                   id: generateUUID(),
-                  name: `Copy of ${original.name}`,
+                  name: `Copy of ${original['name']}`,
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString()
               };
@@ -1334,8 +1373,8 @@ export const dbUtils = {
             
             if (settings.mode === 'mock') {
                 try {
-                    const stored = localStorage.getItem(ROBOTS_KEY);
-                    const robots = safeParse(stored, []);
+const stored = localStorage.getItem(ROBOTS_KEY);
+          const robots = (safeParse(stored, []) as Robot[]);
                     
                     for (const item of updates) {
                         const robotIndex = robots.findIndex((r: any) => r.id === item.id);
@@ -1527,7 +1566,8 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
         
         if (settings.mode === 'mock') {
             const stored = localStorage.getItem(ROBOTS_KEY);
-            const robots = safeParse(stored, []);
+            const parsedRobots = safeParse(stored, []);
+            const robots: Robot[] = Array.isArray(parsedRobots) ? parsedRobots as Robot[] : [];
             
             // Calculate total size
             const totalSize = new Blob([JSON.stringify(robots)]).size;
@@ -1539,13 +1579,13 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
             let invalidCount = 0;
             
             for (const robot of robots) {
-                if (seenIds.has(robot.id)) {
+                if (seenIds.has(robot['id'])) {
                     duplicateCount++;
                 } else {
-                    seenIds.add(robot.id);
+                    seenIds.add(robot['id']);
                 }
                 
-                if (!robot || typeof robot !== 'object' || !robot.id || !robot.name || !robot.code) {
+                if (!robot || typeof robot !== 'object' || !robot['id'] || !robot['name'] || !robot['code']) {
                     invalidCount++;
                 }
             }

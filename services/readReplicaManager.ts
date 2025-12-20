@@ -2,7 +2,7 @@
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getEnv } from './settingsManager';
-import { queryCache } from './advancedCache';
+import { globalCache } from './unifiedCacheManager';
 import { withErrorHandling } from '../utils/errorHandler';
 
 interface ReadReplicaConfig {
@@ -71,7 +71,7 @@ class ReadReplicaManager {
     
     // Check cache first
     if (options.useCache !== false) {
-      const cached = queryCache.get(cacheKey) as any;
+      const cached = globalCache.get(cacheKey) as any;
       if (cached && cached.data) {
         return {
           data: cached.data,
@@ -109,7 +109,7 @@ class ReadReplicaManager {
 
       // Cache successful results
       if (result && result.data && !result.error) {
-        queryCache.set(cacheKey, {
+        globalCache.set(cacheKey, {
           data: result.data,
           timestamp: Date.now(),
           ttl: options.cacheTTL || 300000 // 5 minutes default

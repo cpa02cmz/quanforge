@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, memo, useCallback } from 'react';
 import DOMPurify from 'dompurify';
-import { StrategyParams, CustomInput } from '../types';
+import { StrategyParams, CustomInput, ConfigImport, ValidationError } from '../types';
 import { TIMEFRAMES } from '../constants';
 import { MarketTicker } from './MarketTicker';
 import { useToast } from './Toast';
@@ -30,7 +30,7 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
       if (params.symbol === '_Symbol' || params.symbol === '') {
           onChange({ ...params, symbol: 'BTCUSDT' });
       }
-  }, []);
+  }, [params.symbol, onChange]);
 
 const sanitizeInput = (input: string): string => {
     return DOMPurify.sanitize(input, {
@@ -39,7 +39,7 @@ const sanitizeInput = (input: string): string => {
     });
   };
 
-  const handleChange = useCallback((field: keyof StrategyParams, value: any) => {
+  const handleChange = useCallback((field: keyof StrategyParams, value: string | number | boolean | CustomInput[]) => {
      if (typeof value === 'string') {
        value = sanitizeInput(value);
      }
@@ -91,20 +91,42 @@ const sanitizeInput = (input: string): string => {
   const parseAndImport = (text: string) => {
     try {
         if (!text) throw new Error("Input is empty");
-        const parsed = JSON.parse(text);
+        const parsed: ConfigImport = JSON.parse(text);
         
         // Strict Validation
         if (!parsed || typeof parsed !== 'object') {
-            throw new Error("Invalid format: Not a JSON object");
+            const error: ValidationError = {
+                message: "Invalid format: Not a JSON object",
+                code: "INVALID_FORMAT"
+            };
+            throw error;
         }
         if (!parsed.timeframe || typeof parsed.timeframe !== 'string') {
-             throw new Error("Missing or invalid 'timeframe'");
+            const error: ValidationError = {
+                message: "Missing or invalid 'timeframe'",
+                code: "INVALID_TIMEFRAME",
+                field: "timeframe",
+                value: parsed.timeframe
+            };
+            throw error;
         }
         if (typeof parsed.riskPercent !== 'number') {
-             throw new Error("Missing or invalid 'riskPercent'");
+            const error: ValidationError = {
+                message: "Missing or invalid 'riskPercent'",
+                code: "INVALID_RISK_PERCENT",
+                field: "riskPercent",
+                value: parsed.riskPercent
+            };
+            throw error;
         }
         if (parsed.customInputs && !Array.isArray(parsed.customInputs)) {
-            throw new Error("'customInputs' must be an array");
+            const error: ValidationError = {
+                message: "'customInputs' must be an array",
+                code: "INVALID_CUSTOM_INPUTS",
+                field: "customInputs",
+                value: parsed.customInputs
+            };
+            throw error;
         }
 
         onChange({ 
@@ -115,9 +137,10 @@ const sanitizeInput = (input: string): string => {
         showToast('Configuration imported successfully', 'success');
         setShowManualImport(false);
         setManualImportText('');
-    } catch (e: any) {
+    } catch (e: unknown) {
         logger.error(e);
-        showToast(`Import Failed: ${e.message}`, 'error');
+        const error = e as ValidationError;
+        showToast(`Import Failed: ${error.message}`, 'error');
     }
   };
 
@@ -125,8 +148,8 @@ const sanitizeInput = (input: string): string => {
       try {
           const text = await navigator.clipboard.readText();
           parseAndImport(text);
-      } catch (e: any) {
-          logger.warn("Clipboard read failed, switching to manual mode", e);
+      } catch (_e: unknown) {
+          logger.warn("Clipboard read failed, switching to manual mode", _e);
           setShowManualImport(true);
           showToast('Clipboard blocked. Please paste manually below.', 'info');
       }
@@ -302,7 +325,7 @@ const sanitizeInput = (input: string): string => {
                  <div className="col-span-3">
                    <select
                      value={input.type}
-                     onChange={(e) => handleInputTypeChange(input.id, e.target.value as any)}
+                     onChange={(e) => handleInputTypeChange(input.id, e.target.value as CustomInput['type'])}
                      className="w-full bg-dark-surface border border-dark-border rounded px-2 py-1 text-xs text-white focus:ring-1 focus:ring-brand-500 outline-none"
                    >
                      <option value="int">int</option>

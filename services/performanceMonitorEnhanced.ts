@@ -109,7 +109,14 @@ class PerformanceMonitor {
   private async monitorCoreWebVitals(): Promise<void> {
     try {
       // Load web-vitals library dynamically
-      const webVitals = await import('web-vitals');
+      let webVitals: any;
+      try {
+        // @ts-ignore - web-vitals may not be available in all environments
+        webVitals = await import('web-vitals');
+      } catch (error) {
+        console.warn('web-vitals not available, skipping core web vitals monitoring');
+        return;
+      }
       
       const recordMetric = (metric: any) => {
         const vital: CoreWebVital = {
@@ -395,8 +402,8 @@ class PerformanceMonitor {
   private async sendMetric(name: string, data: any): Promise<void> {
     try {
       // Send to edge metrics endpoint
-      if (process.env.ENABLE_EDGE_METRICS === 'true') {
-        const endpoint = process.env.EDGE_METRICS_ENDPOINT || '/api/edge-metrics';
+      if (process.env['ENABLE_EDGE_METRICS'] === 'true') {
+        const endpoint = process.env['EDGE_METRICS_ENDPOINT'] || '/api/edge-metrics'; // Note: API endpoints removed, will need server implementation
         
         await fetch(endpoint, {
           method: 'POST',
@@ -457,7 +464,7 @@ class PerformanceMonitor {
     };
     edgeMetrics: EdgePerformanceMetrics;
   } {
-    const latestVitals = this.coreWebVitals[this.coreWebVitals.length - 1] || {};
+    const latestVitals = this.coreWebVitals[this.coreWebVitals.length - 1];
     
     const edgeMetrics = this.edgeMetrics;
     const totalRequests = edgeMetrics.length;
@@ -475,10 +482,14 @@ class PerformanceMonitor {
       : 0;
 
     return {
-      coreWebVitals: {
+      coreWebVitals: latestVitals ? {
         name: latestVitals.name,
         value: latestVitals.value,
         rating: latestVitals.rating
+      } : {
+        name: 'unknown',
+        value: 0,
+        rating: 'needs-improvement' as const
       },
       edgePerformance: {
         averageResponseTime,

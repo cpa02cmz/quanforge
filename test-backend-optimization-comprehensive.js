@@ -125,7 +125,7 @@ try {
 // Test 8: Test cross-service integration
 console.log('\n🔍 Test 8: Cross-Service Integration');
 try {
-  const crossRecommendations = await backendOptimizationManager.getCrossSystemOptimizationRecommendations({} as any);
+  const crossRecommendations = await backendOptimizationManager.getCrossSystemOptimizationRecommendations({});
   console.log('  ✅ Cross-system analysis works');
   console.log(`  📊 DB recommendations: ${crossRecommendations.database.length}`);
   console.log(`  📊 Cache recommendations: ${crossRecommendations.cache.length}`);
@@ -139,7 +139,7 @@ try {
 // Test 9: Test predictive optimization
 console.log('\n🔍 Test 9: Predictive Optimization');
 try {
-  const predictionResult = await backendOptimizationManager.performPredictiveOptimization({} as any);
+  const predictionResult = await backendOptimizationManager.performPredictiveOptimization({});
   console.log('  ✅ Predictive optimization works');
   console.log(`  📊 Optimizations applied: ${predictionResult.optimizationsApplied}`);
   console.log(`  📈 Predicted performance gain: ${predictionResult.predictedPerformanceGain}%`);
@@ -150,7 +150,7 @@ try {
 // Test 10: Test system optimization
 console.log('\n🔍 Test 10: System Optimization');
 try {
-  const systemOptResult = await backendOptimizationManager.optimizeSystem({} as any);
+  const systemOptResult = await backendOptimizationManager.optimizeSystem({});
   console.log('  ✅ System optimization works');
   console.log(`  📊 Applied optimizations: ${systemOptResult.appliedOptimizations.length}`);
   console.log(`  📈 Estimated gain: ${systemOptResult.estimatedPerformanceGain}%`);

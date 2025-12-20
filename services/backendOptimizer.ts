@@ -4,9 +4,9 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
-import { queryOptimizer } from './queryOptimizer';
+import { queryOptimizer } from './advancedQueryOptimizer';
 import { databasePerformanceMonitor } from './databasePerformanceMonitor';
-import { robotCache } from './advancedCache';
+import { globalCache } from './unifiedCacheManager';
 
 interface RequestDeduplicationEntry {
   promise: Promise<any>;
@@ -214,26 +214,38 @@ class BackendOptimizer {
     }
 
     // Use the existing query optimizer for advanced optimization
-    const optimization = {
-      selectFields: ['*'], // Select specific fields if provided
-      filters: conditions,
-      limit: 100, // Add reasonable limit
-    };
-
-    const result = await queryOptimizer.executeQuery<T>(client, table, optimization);
+    const cacheKey = `${table}_${JSON.stringify(conditions)}`;
     
-    // Record metrics for optimization analysis
-    this.metrics.queryOptimizationRate = Math.min(
-      100, 
-      this.metrics.queryOptimizationRate + (result.metrics.cacheHit ? 10 : 2)
-    );
+    try {
+      const queryResult = await queryOptimizer.executeQuery<{ data: T[]; error: any }>(
+        cacheKey,
+        async () => {
+          const { data, error } = await client.from(table).select('*').match(conditions);
+          return { data, error };
+        },
+        { cache: true, cacheTTL: 300000, batch: true }
+      );
+      
+      // Record metrics for optimization analysis
+      this.metrics.queryOptimizationRate = Math.min(
+        100, 
+        this.metrics.queryOptimizationRate + 5
+      );
 
-    return {
-      data: result.data,
-      error: result.error,
-      optimizationApplied: true,
-      metrics: result.metrics
-    };
+      return {
+        data: queryResult.data,
+        error: queryResult.error,
+        optimizationApplied: true,
+        metrics: queryOptimizer.getMetrics()
+      };
+    } catch (error) {
+      return {
+        data: null,
+        error,
+        optimizationApplied: true,
+        metrics: queryOptimizer.getMetrics()
+      };
+    }
   }
 
   /**
@@ -250,7 +262,7 @@ class BackendOptimizer {
       const dbMetrics = databasePerformanceMonitor.getMetrics();
       
       // Get cache metrics
-      const cacheStats = robotCache.getStats();
+      const cacheStats = globalCache.getMetrics();
       
       const responseTime = Date.now() - startTime;
       

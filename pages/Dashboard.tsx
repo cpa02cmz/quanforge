@@ -11,9 +11,9 @@ import { createScopedLogger } from '../utils/logger';
 import { VirtualScrollList } from '../components/VirtualScrollList';
 
 // Debounce utility for search optimization
-const debounce = <T extends (...args: any[]) => any>(func: T, delay: number): T => {
+const debounce = <T extends (...args: unknown[]) => unknown>(func: T, delay: number): T => {
   let timeoutId: NodeJS.Timeout;
-  return ((...args: any[]) => {
+  return ((...args: unknown[]) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => func(...args), delay);
   }) as T;
@@ -25,9 +25,9 @@ const logger = createScopedLogger('Dashboard');
 interface RobotCardProps {
   robot: Robot;
   processingId: string | null;
-  onDuplicate: (id: string) => void;
-  onDelete: (id: string, name: string) => void;
-  t: (key: string, params?: Record<string, any>) => string;
+  onDuplicate: (_id: string) => void;
+  onDelete: (_id: string, _name: string) => void;
+  t: (_key: string, _params?: Record<string, unknown>) => string;
 }
 
 const RobotCard: React.FC<RobotCardProps> = memo(({

@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Robot } from '../types';
-import { queryOptimizer } from './queryOptimizer';
-import { robotCache } from './advancedCache';
+import { queryOptimizer } from './advancedQueryOptimizer';
+import { globalCache } from './unifiedCacheManager';
 import { securityManager } from './securityManager';
 
 interface OptimizationConfig {
@@ -74,21 +74,19 @@ class DatabaseOptimizer {
       return { data: null, error: { message: 'Search term too short' } };
     }
     
-    // Use the existing queryOptimizer for optimized search
+// Use the existing queryOptimizer for optimized search
     const result = await queryOptimizer.searchRobotsOptimized(
-      client,
       sanitizedTerm,
       {
         strategyType: options.strategyType,
         userId: options.userId,
-      }
+      },
+      options.limit || 20
     );
     
-    this.updateMetrics(result.metrics);
-    
     return {
-      data: result.data,
-      error: result.error
+      data: result,
+      error: null
     };
   }
 
@@ -107,23 +105,19 @@ class DatabaseOptimizer {
       orderDirection?: 'asc' | 'desc';
     } = {}
   ): Promise<{ data: Robot[] | null; error: any; metrics: any }> {
-    // Use the existing queryOptimizer for the database query
-    const result = await queryOptimizer.getRobotsOptimized(client, {
+// Use the existing queryOptimizer for the database query
+    const result = await queryOptimizer.getRobotsOptimized({
       userId: options.userId,
       strategyType: options.strategyType,
       searchTerm: options.searchTerm,
       limit: options.limit,
-      offset: options.offset,
-      orderBy: options.orderBy,
-      orderDirection: options.orderDirection
-    });
-    
-    this.updateMetrics(result.metrics);
+      offset: options.offset
+    }, options.limit || 20, options.offset || 0);
     
     return {
-      data: result.data,
-      error: result.error,
-      metrics: result.metrics
+      data: result,
+      error: null,
+      metrics: queryOptimizer.getMetrics()
     };
   }
 
@@ -145,27 +139,28 @@ class DatabaseOptimizer {
     // Validate records if requested
     if (options.validateRecords) {
       for (const record of records) {
-        if (!securityManager.validateInput(record, 'record')) {
+        if (!securityManager.validateInput(JSON.stringify(record), 'record')) {
           return { data: null, error: { message: 'Invalid record data' }, metrics: { executionTime: 0 } };
         }
       }
     }
     
-    const result = await queryOptimizer.batchInsert(client, table, records, batchSize);
+const tableName = typeof table === 'string' ? table : 'default_table';
+    const result = await queryOptimizer.batchInsert<T>(tableName, records);
     
     const executionTime = performance.now() - startTime;
     
     this.updateMetrics({
       executionTime,
-      resultCount: Array.isArray(result.data) ? result.data.length : 0,
+      resultCount: Array.isArray(result) ? result.length : 0,
       cacheHit: false,
       queryHash: `batch_insert_${table}_${records.length}`
     });
     
     return {
-      data: result.data,
-      error: result.error,
-      metrics: { executionTime }
+      data: result,
+      error: null,
+      metrics: queryOptimizer.getMetrics()
     };
   }
 
@@ -218,22 +213,26 @@ class DatabaseOptimizer {
       for (const op of operations) {
         let result: { data: T | null; error: any };
         switch (op.operation) {
-          case 'select':
+          case 'select': {
             const selectResult = await client.from(op.table).select('*').match(op.params);
             result = { data: selectResult.data as T | null, error: selectResult.error };
             break;
-          case 'insert':
+          }
+          case 'insert': {
             const insertResult = await client.from(op.table).insert(op.params);
             result = { data: insertResult.data as T | null, error: insertResult.error };
             break;
-          case 'update':
+          }
+          case 'update': {
             const updateResult = await client.from(op.table).update(op.params.data).match(op.params.filter);
             result = { data: updateResult.data as T | null, error: updateResult.error };
             break;
-          case 'delete':
+          }
+          case 'delete': {
             const deleteResult = await client.from(op.table).delete().match(op.params);
             result = { data: deleteResult.data as T | null, error: deleteResult.error };
             break;
+          }
           default:
             result = { data: null, error: { message: 'Invalid operation' } };
         }
@@ -252,22 +251,26 @@ class DatabaseOptimizer {
         const op = group[0];
         let result: { data: T | null; error: any };
         switch (op.operation) {
-          case 'select':
+          case 'select': {
             const selectResult = await client.from(op.table).select('*').match(op.params);
             result = { data: selectResult.data as T | null, error: selectResult.error };
             break;
-          case 'insert':
+          }
+          case 'insert': {
             const insertResult = await client.from(op.table).insert(op.params);
             result = { data: insertResult.data as T | null, error: insertResult.error };
             break;
-          case 'update':
+          }
+          case 'update': {
             const updateResult = await client.from(op.table).update(op.params.data).match(op.params.filter);
             result = { data: updateResult.data as T | null, error: updateResult.error };
             break;
-          case 'delete':
+          }
+          case 'delete': {
             const deleteResult = await client.from(op.table).delete().match(op.params);
             result = { data: deleteResult.data as T | null, error: deleteResult.error };
             break;
+          }
           default:
             result = { data: null, error: { message: 'Invalid operation' } };
         }
@@ -503,7 +506,7 @@ class DatabaseOptimizer {
           operations: ['statistics_update', 'query_analysis'],
           duration: duration,
           analyzedTables: tables ? tables.length : 0,
-          slowQueryCount: queryAnalysis.slowQueries.length
+          slowQueryCount: queryAnalysis.averageQueryTime > 1000 ? 1 : 0
         }
       };
     } catch (error) {
