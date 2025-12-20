@@ -17,12 +17,33 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
-            // React ecosystem - split more granularly for better cache efficiency
+            // React ecosystem - ultra-aggressive splitting to reduce bundle sizes
             if (id.includes('react')) {
-              // Core React - split more granularly
+              // Core React DOM - ultra aggressive approach
               if (id.includes('react-dom')) {
-                // More aggressive react-dom splitting
+                // Aggressively split client-side modules to reduce chunk size
                 if (id.includes('client') || id.includes('Client')) {
+                  // Split client modules further
+                  if (id.includes('dom-client')) {
+                    // Split specific client functionalities
+                    if (id.includes('events') || id.includes('event')) {
+                      return 'react-dom-client-events';
+                    }
+                    if (id.includes('schedule') || id.includes('scheduler')) {
+                      return 'react-dom-client-scheduler';
+                    }
+                    if (id.includes('fiber') || id.includes('reconciler')) {
+                      return 'react-dom-client-fiber';
+                    }
+                    // Split by specific client files
+                    if (id.includes('react-dom-client')) {
+                      const filename = id.split('/').pop();
+                      if (filename && filename !== 'index') {
+                        return `react-dom-client-${filename.replace(/\.(js|mjs|cjs)$/, '')}`;
+                      }
+                    }
+                    return 'react-dom-client-core';
+                  }
                   return 'react-dom-client';
                 }
                 if (id.includes('server') || id.includes('Server')) {
@@ -34,13 +55,37 @@ export default defineConfig({
                 if (id.includes('unstable_') || id.includes('experimental')) {
                   return 'react-dom-experimental';
                 }
-                // Split by react-dom submodules
+                
+                // Ultra granular react-dom submodule splitting
                 if (id.includes('react-dom/cjs') || id.includes('react-dom/esm')) {
                   const filename = id.split('/').pop();
                   if (filename && filename !== 'index.js' && filename !== 'react-dom.js') {
+                    // Group similar files
+                    if (filename.includes('events') || filename.includes('event')) {
+                      return 'react-dom-events';
+                    }
+                    if (filename.includes('fiber') || filename.includes('scheduler')) {
+                      return 'react-dom-fiber';
+                    }
+                    if (filename.includes('component') || filename.includes('mount')) {
+                      return 'react-dom-components';
+                    }
                     return `react-dom-${filename.replace(/\.(js|mjs|cjs)$/, '')}`;
                   }
                 }
+                
+                // Additional client splitting strategies
+                if (id.includes('react-dom')) {
+                  const pathEnd = id.split('/').pop();
+                  if (pathEnd && pathEnd.includes('client')) {
+                    // Extract the part before client
+                    const baseName = pathEnd.replace('-client', '').replace('.client', '');
+                    if (baseName && baseName !== 'react-dom') {
+                      return `react-dom-${baseName}`;
+                    }
+                  }
+                }
+                
                 return 'react-dom';
               }
               if (id.includes('react/jsx-runtime') || id.includes('react/jsx-dev-runtime')) {
@@ -88,49 +133,100 @@ export default defineConfig({
               }
               return 'supabase-vendor';
             }
-            // AI services - split more granularly for better performance
+            // AI services - ultra-aggressive splitting for better bundle sizes
             if (id.includes('@google/genai')) {
-              // Split AI vendor into specific functionality - more aggressive splitting
-              if (id.includes('/chat/') || id.includes('generateContent') || id.includes('streamGenerateContent')) {
+              // Split by core modules first - ultra aggressive approach
+              if (id.includes('index.js') || id.includes('index.mjs')) {
+                // Split index further by size
+                if (id.includes('/dist/') || id.includes('/lib/')) {
+                  const pathParts = id.split('/');
+                  const parentDir = pathParts[pathParts.length - 2];
+                  if (parentDir === 'dist' || parentDir === 'lib') {
+                    // Even more granular splitting for index
+                    if (id.includes('genai/index')) {
+                      return 'ai-index-core';
+                    }
+                    return 'ai-index-sub';
+                  }
+                }
+                return 'ai-index';
+              }
+              
+              // Core generation modules - split aggressively
+              if (id.includes('generateContent') || id.includes('generate_content')) {
+                if (id.includes('stream') || id.includes('Stream')) {
+                  return 'ai-generate-stream';
+                }
+                return 'ai-generate-content';
+              }
+              if (id.includes('/generators/') || id.includes('generate')) {
+                // Split different generator types
+                if (id.includes('text') || id.includes('chat')) {
+                  return 'ai-generators-text';
+                }
+                if (id.includes('embed') || id.includes('embedding')) {
+                  return 'ai-generators-embed';
+                }
+                return 'ai-generators-core';
+              }
+              
+              // Chat and content modules
+              if (id.includes('/chat/') || id.includes('chat') || id.includes('Chat')) {
                 return 'ai-chat';
               }
               if (id.includes('/models/') || id.includes('getModel') || id.includes('listModels')) {
                 return 'ai-models';
               }
-              if (id.includes('/generators/') || id.includes('generate')) {
-                return 'ai-generators';
-              }
+              
+              // Protocols and gRPC - split very granularly
               if (id.includes('protos') || id.includes('grpc') || id.includes('proto')) {
-                // Split protocols further
-                if (id.includes('proto') || id.includes('protobuf')) {
+                if (id.includes('protobuf') || id.includes('proto.js')) {
                   return 'ai-protobuf';
+                }
+                if (id.includes('google') || id.includes('gax')) {
+                  return 'ai-gax';
                 }
                 return 'ai-protocol';
               }
-              if (id.includes('client') || id.includes('auth') || id.includes('credentials')) {
-                // Split client functions
-                if (id.includes('auth')) {
-                  return 'ai-auth';
+              
+              // Client and authentication - split carefully
+              if (id.includes('client')) {
+                if (id.includes('auth') || id.includes('credentials')) {
+                  return 'ai-client-auth';
                 }
-                return 'ai-client';
+                return 'ai-client-core';
               }
-              // Split request/response handling
-              if (id.includes('request') || id.includes('response') || id.includes('stream')) {
+              
+              // Streaming and network
+              if (id.includes('stream') || id.includes('Stream')) {
                 return 'ai-streaming';
               }
-              // Split AI utilities and helpers
-              if (id.includes('util') || id.includes('helper') || id.includes('validate')) {
-                return 'ai-utils';
+              if (id.includes('request') || id.includes('response')) {
+                return 'ai-requests';
               }
-              // More aggressive splitting for ai-vendor-core
-              if (id.includes('function_call') || id.includes('function-call')) {
+              
+              // AI utilities - split by functionality
+              if (id.includes('util') || id.includes('helper') || id.includes('validate')) {
+                if (id.includes('transform') || id.includes('convert')) {
+                  return 'ai-utils-transform';
+                }
+                if (id.includes('base64') || id.includes('encoding')) {
+                  return 'ai-utils-encoding';
+                }
+                return 'ai-utils-core';
+              }
+              
+              // Function calls and tools
+              if (id.includes('function_call') || id.includes('function-call') || id.includes('tool')) {
                 return 'ai-function-calls';
               }
+              
+              // Specialized AI functionality
               if (id.includes('embedding') || id.includes('embed')) {
                 return 'ai-embeddings';
               }
-              if (id.includes('text') || id.includes('content') || id.includes('prompt')) {
-                return 'ai-text';
+              if (id.includes('text') || id.includes('content')) {
+                return 'ai-content';
               }
               if (id.includes('error') || id.includes('exception') || id.includes('fault')) {
                 return 'ai-errors';
@@ -138,76 +234,249 @@ export default defineConfig({
               if (id.includes('config') || id.includes('setting') || id.includes('option')) {
                 return 'ai-config';
               }
-              // Split by file types and modules
-              if (id.includes('index.js') || id.includes('index.mjs')) {
-                return 'ai-index';
-              }
+              
+              // Split remaining modules by path
               if (id.includes('/dist/') || id.includes('/lib/')) {
-                // Further split dist/lib modules
                 const pathParts = id.split('/');
-                const modulePart = pathParts[pathParts.length - 2];
-                if (modulePart && modulePart !== 'genai') {
-                  return `ai-${modulePart}`;
+                const moduleName = pathParts[pathParts.length - 1]?.replace(/\.(js|mjs|cjs)$/, '');
+                if (moduleName && moduleName !== 'index') {
+                  return `ai-module-${moduleName}`;
                 }
               }
+              
               return 'ai-vendor-core';
             }
-            // Chart libraries - split more granularly to reduce bundle size
+            // Chart libraries - ultra-aggressive splitting to minimize bundle sizes
             if (id.includes('recharts')) {
-              // Split Recharts into smaller chunks
-              if (id.includes('AreaChart') || id.includes('LineChart') || id.includes('ComposedChart') || id.includes('Line')) {
+              // Major chart types - split very granularly
+              if (id.includes('AreaChart')) {
+                return 'chart-area';
+              }
+              if (id.includes('LineChart')) {
+                return 'chart-line';
+              }
+              if (id.includes('ComposedChart')) {
+                return 'chart-composed';
+              }
+              if (id.includes('PieChart')) {
+                return 'chart-pie';
+              }
+              if (id.includes('BarChart')) {
+                return 'chart-bar';
+              }
+              if (id.includes('RadarChart')) {
+                return 'chart-radar';
+              }
+              if (id.includes('ScatterChart')) {
+                return 'chart-scatter';
+              }
+              if (id.includes('Treemap') || id.includes('Sankey') || id.includes('Funnel')) {
+                return 'chart-specialized';
+              }
+              
+              // Core charts consolidation
+              if (id.includes('Chart')) {
+                if (id.includes('Cartesian') || id.includes('cartesian')) {
+                  return 'chart-cartesian';
+                }
+                if (id.includes('Polar') || id.includes('polar')) {
+                  return 'chart-polar';
+                }
+                // Generic chart components
+                if (id.includes('chart')) {
+                  const chartType = id.split('/').pop();
+                  if (chartType && chartType !== 'index') {
+                    return `chart-${chartType.replace(/\.(js|mjs|cjs)$/, '')}`;
+                  }
+                }
                 return 'chart-core';
               }
-              if (id.includes('PieChart') || id.includes('BarChart') || id.includes('RadarChart') || id.includes('ScatterChart')) {
-                return 'chart-misc';
+              
+              // Individual chart components - split more aggressively
+              if (id.includes('XAxis')) {
+                return 'chart-xaxis';
               }
-              // Split individual chart components
-              if (id.includes('XAxis') || id.includes('YAxis') || id.includes('CartesianGrid') || id.includes('Tooltip') || id.includes('Legend')) {
-                return 'chart-axes';
+              if (id.includes('YAxis')) {
+                return 'chart-yaxis';
               }
-              if (id.includes('ResponsiveContainer') || id.includes('Brush') || id.includes('ReferenceLine')) {
-                return 'chart-interactive';
+              if (id.includes('CartesianGrid')) {
+                return 'chart-grid';
               }
-              // Core recharts utilities and shapes - split further
+              if (id.includes('Tooltip')) {
+                return 'chart-tooltip';
+              }
+              if (id.includes('Legend')) {
+                return 'chart-legend';
+              }
+              if (id.includes('Brush')) {
+                return 'chart-brush';
+              }
+              if (id.includes('ReferenceLine')) {
+                return 'chart-reference';
+              }
+              if (id.includes('ReferenceArea')) {
+                return 'chart-areas';
+              }
+              if (id.includes('ResponsiveContainer')) {
+                return 'chart-responsive';
+              }
+              
+              // Core recharts utilities - split further
               if (id.includes('shape')) {
+                const shapeType = id.split('/').pop();
+                if (shapeType && shapeType !== 'index') {
+                  if (shapeType.includes('Symbol') || shapeType.includes('symbol')) {
+                    return 'chart-symbols';
+                  }
+                  if (shapeType.includes('Cross') || shapeType.includes('Rect')) {
+                    return 'chart-shapes-basic';
+                  }
+                }
                 return 'chart-shapes';
               }
               if (id.includes('scale')) {
+                const scaleType = id.split('/').pop();
+                if (scaleType && scaleType !== 'index') {
+                  return `chart-scale-${scaleType.replace(/\.(js|mjs|cjs)$/, '')}`;
+                }
                 return 'chart-scales';
               }
               if (id.includes('Animation') || id.includes('animation')) {
                 return 'chart-animations';
               }
               if (id.includes('util')) {
+                const utilType = id.split('/').pop();
+                if (utilType && utilType !== 'index') {
+                  if (utilType.includes('Chart') || utilType.includes('Data')) {
+                    return 'chart-utils-data';
+                  }
+                  return `chart-util-${utilType.replace(/\.(js|mjs|cjs)$/, '')}`;
+                }
                 return 'chart-utils';
               }
-              // Split cartesian and polar components
-              if (id.includes('polar') || id.includes('Polar')) {
-                return 'chart-polar';
+              
+              // Polar components split
+              if (id.includes('PolarAngleAxis')) {
+                return 'chart-polar-angle';
               }
-              if (id.includes('cartesian') || id.includes('Cartesian')) {
-                return 'chart-cartesian';
+              if (id.includes('PolarRadiusAxis')) {
+                return 'chart-polar-radius';
               }
-              // Fallback for remaining recharts modules
+              if (id.includes('PolarGrid')) {
+                return 'chart-polar-grid';
+              }
+              
+              // Cartesian components split
+              if (id.includes('XAxis')) {
+                return 'chart-xaxis';
+              }
+              if (id.includes('YAxis')) {
+                return 'chart-yaxis';
+              }
+              if (id.includes('ZAxis')) {
+                return 'chart-zaxis';
+              }
+              
+              // Generic recharts modules - ultra granular split
+              const modulePath = id.split('/');
+              const moduleName = modulePath[modulePath.length - 1]?.replace(/\.(js|mjs|cjs)$/, '');
+              if (moduleName && moduleName !== 'index' && !moduleName.includes('Chart')) {
+                return `chart-module-${moduleName}`;
+              }
+              
               return 'chart-vendor-light';
             }
             // Security utilities - bundled together
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'security-vendor';
             }
-            // Split vendor-misc more granularly
-            if (id.includes('lodash') || id.includes('es-toolkit')) {
+            // Ultra-aggressive vendor-misc splitting to reduce bundle sizes
+            if (id.includes('lodash')) {
+              // Split lodash modules very granularly
+              if (id.includes('lodash.fp')) {
+                return 'vendor-lodash-fp';
+              }
+              if (id.includes('lodash-es')) {
+                return 'vendor-lodash-es';
+              }
+              const lodashModule = id.split('/').pop()?.replace(/\.(js|mjs|cjs)$/, '');
+              if (lodashModule && lodashModule !== 'lodash' && lodashModule !== 'index') {
+                return `vendor-lodash-${lodashModule}`;
+              }
+              return 'vendor-lodash-core';
+            }
+            if (id.includes('es-toolkit')) {
               return 'vendor-utils';
             }
-            if (id.includes('date') || id.includes('moment') || id.includes('dayjs')) {
+            // Date libraries - split individually
+            if (id.includes('moment')) {
+              return 'vendor-moment';
+            }
+            if (id.includes('dayjs')) {
+              return 'vendor-dayjs';
+            }
+            if (id.includes('date') || id.includes('date-fns')) {
               return 'vendor-date';
             }
+            // Crypto and security libraries
             if (id.includes('crypto') || id.includes('hash') || id.includes('encryption')) {
+              if (id.includes('crypto-js')) {
+                return 'vendor-crypto-js';
+              }
               return 'vendor-crypto';
             }
-            if (id.includes('fetch') || id.includes('axios') || id.includes('xhr')) {
-              return 'vendor-http';
+            // HTTP and networking libraries
+            if (id.includes('axios')) {
+              return 'vendor-axios';
             }
+            if (id.includes('fetch') || id.includes('node-fetch')) {
+              return 'vendor-fetch';
+            }
+            if (id.includes('xhr') || id.includes('xmlhttprequest')) {
+              return 'vendor-xhr';
+            }
+            // String manipulation libraries
+            if (id.includes('string') || id.includes('sprintf') || id.includes('format')) {
+              return 'vendor-string';
+            }
+            // Validation and schema libraries
+            if (id.includes('joi') || id.includes('yup') || id.includes('zod') || id.includes('ajv')) {
+              return 'vendor-validation';
+            }
+            // Promise and async utilities
+            if (id.includes('promise') || id.includes('async') || id.includes('rxjs')) {
+              return 'vendor-async';
+            }
+            // Event handling
+            if (id.includes('event') || id.includes('emitter') || id.includes('mitt')) {
+              return 'vendor-events';
+            }
+            // Math utilities
+            if (id.includes('math') || id.includes('big') || id.includes('decimal')) {
+              return 'vendor-math';
+            }
+            // Object utilities
+            if (id.includes('deep') || id.includes('merge') || id.includes('clone')) {
+              return 'vendor-object';
+            }
+            // File/path utilities
+            if (id.includes('path') || id.includes('file') || id.includes('fs')) {
+              return 'vendor-file';
+            }
+            // Type checking and utilities
+            if (id.includes('typeof') || id.includes('is') || id.includes('type')) {
+              return 'vendor-types';
+            }
+            
+            // Split remaining vendor modules by package name
+            const vendorPath = id.split('node_modules/')[1];
+            if (vendorPath) {
+              const packageName = vendorPath.split('/')[0];
+              if (packageName && packageName !== 'lodash' && packageName !== 'moment' && packageName !== 'dayjs') {
+                return `vendor-${packageName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}`;
+              }
+            }
+            
             return 'vendor-misc';
           }
           
