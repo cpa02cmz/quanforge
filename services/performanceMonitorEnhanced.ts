@@ -464,7 +464,7 @@ class PerformanceMonitor {
     };
     edgeMetrics: EdgePerformanceMetrics;
   } {
-    const latestVitals = this.coreWebVitals[this.coreWebVitals.length - 1] || {};
+    const latestVitals = this.coreWebVitals[this.coreWebVitals.length - 1];
     
     const edgeMetrics = this.edgeMetrics;
     const totalRequests = edgeMetrics.length;
@@ -482,10 +482,14 @@ class PerformanceMonitor {
       : 0;
 
     return {
-      coreWebVitals: {
+      coreWebVitals: latestVitals ? {
         name: latestVitals.name,
         value: latestVitals.value,
         rating: latestVitals.rating
+      } : {
+        name: 'unknown',
+        value: 0,
+        rating: 'needs-improvement' as const
       },
       edgePerformance: {
         averageResponseTime,

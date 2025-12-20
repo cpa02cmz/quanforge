@@ -28,7 +28,7 @@ export const validateEmail = (email: string): AuthValidationResult => {
     }
 
     // Use security manager for initial sanitization
-    sanitizedValue = securityManager.sanitizeInput(email, 'email');
+    sanitizedValue = securityManager.sanitizeInput(email);
 
     // Length validation
     if (sanitizedValue.length === 0) {

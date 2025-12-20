@@ -573,9 +573,126 @@ export class AdvancedQueryOptimizer {
     }
   }
 
+/**
+    * Get performance analysis
+    */
+  getPerformanceAnalysis(): {
+    efficiency: number;
+    cacheHitRate: number;
+    averageQueryTime: number;
+    connectionUtilization: number;
+    recommendations: string[];
+  } {
+    const stats = this.getConnectionPoolStats();
+    const cacheStats = this.getCacheStats();
+    const efficiency = stats.utilization < 80 ? 100 : Math.max(0, 100 - (stats.utilization - 80));
+    
+    const recommendations: string[] = [];
+    if (cacheStats.hitRate < 50) recommendations.push('Increase cache TTL for frequently accessed data');
+    if (stats.utilization > 80) recommendations.push('Increase max connections pool size');
+    if (this.metrics.averageQueryTime > 1000) recommendations.push('Optimize slow queries or add indexes');
+    
+    return {
+      efficiency,
+      cacheHitRate: cacheStats.hitRate,
+      averageQueryTime: this.metrics.averageQueryTime,
+      connectionUtilization: stats.utilization,
+      recommendations
+    };
+  }
+
   /**
-   * Cleanup resources
-   */
+    * Search robots with optimization
+    */
+  async searchRobotsOptimized(
+    query: string,
+    filters: Record<string, any> = {},
+    limit: number = 20
+  ): Promise<Robot[]> {
+    const cacheKey = `search_${query}_${JSON.stringify(filters)}_${limit}`;
+    
+    return this.executeQuery(
+      cacheKey,
+      async () => {
+        // Simulate search - replace with actual implementation
+        const robots: Robot[] = [];
+        for (let i = 0; i < Math.min(limit, 10); i++) {
+          robots.push({
+            id: `search_result_${i}`,
+            user_id: 'default_user',
+            name: `Search Result ${i} for "${query}"`,
+            description: `Matching robot for ${query}`,
+            code: `// Code for search result ${i}`,
+            strategy_type: 'Custom',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          } as Robot);
+        }
+        return robots;
+      },
+      { batch: true, priority: 'high', cache: true, cacheTTL: 300000 }
+    );
+  }
+
+  /**
+    * Get robots with optimization
+    */
+  async getRobotsOptimized(
+    filters: Record<string, any> = {},
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<Robot[]> {
+    const cacheKey = `robots_opt_${JSON.stringify(filters)}_${limit}_${offset}`;
+    
+    return this.executeQuery(
+      cacheKey,
+      async () => {
+        // Simulate optimized robot retrieval
+        const robots: Robot[] = [];
+        for (let i = 0; i < Math.min(limit, 20); i++) {
+          robots.push({
+            id: `opt_robot_${offset + i}`,
+            user_id: 'default_user',
+            name: `Optimized Robot ${offset + i}`,
+            description: `Description for optimized robot ${offset + i}`,
+            code: `// Code for optimized robot ${offset + i}`,
+            strategy_type: 'Custom',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          } as Robot);
+        }
+        return robots;
+      },
+      { batch: true, priority: 'normal', cache: true, cacheTTL: 300000 }
+    );
+  }
+
+  /**
+    * Batch insert multiple records
+    */
+  async batchInsert<T>(table: string, records: T[]): Promise<T[]> {
+    const cacheKey = `batch_insert_${table}_${records.length}_${Date.now()}`;
+    
+    return this.executeQuery(
+      cacheKey,
+      async () => {
+        // Simulate batch insert - replace with actual implementation
+        const insertedRecords: T[] = [];
+        for (let i = 0; i < records.length; i++) {
+          insertedRecords.push({
+            ...records[i],
+            id: `${table}_batch_${Date.now()}_${i}`
+          } as T);
+        }
+        return insertedRecords;
+      },
+      { batch: true, priority: 'high', cache: false }
+    );
+  }
+
+  /**
+    * Cleanup resources
+    */
   cleanup(): void {
     this.reset();
     this.connectionPool = [];

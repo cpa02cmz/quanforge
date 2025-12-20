@@ -275,7 +275,7 @@ class RealTimeMonitoring {
     };
 
     // Cache error for reporting
-    await globalCache.set(`error_${Date.now()}`, errorData, 'performance', ['error', 'performance']);
+    await globalCache.set(`error_${Date.now()}`, errorData, 3600000); // 1 hour TTL
 
     // Check error rate
     this.checkErrorRate();
@@ -430,7 +430,7 @@ class RealTimeMonitoring {
 
     try {
       // Cache metrics for batch reporting
-      await globalCache.set(`metrics_${Date.now()}`, currentMetrics, 'performance', ['metrics', 'performance']);
+      await globalCache.set(`metrics_${Date.now()}`, currentMetrics, 3600000); // 1 hour TTL
 
       // Store in memory for real-time access
       this.metrics.push(currentMetrics);

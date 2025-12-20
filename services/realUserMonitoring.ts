@@ -248,9 +248,10 @@ class RealUserMonitoring {
       const navigationEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
       if (navigationEntries.length > 0) {
         const nav = navigationEntries[0];
-        this.currentMetrics.performance.navigationStart = nav.navigationStart;
-        this.currentMetrics.performance.domContentLoaded = nav.domContentLoadedEventEnd - nav.navigationStart;
-        this.currentMetrics.performance.loadEventEnd = nav.loadEventEnd - nav.navigationStart;
+        // Use fetchStart as replacement for deprecated navigationStart
+        this.currentMetrics.performance.navigationStart = nav.fetchStart;
+        this.currentMetrics.performance.domContentLoaded = nav.domContentLoadedEventEnd - nav.fetchStart;
+        this.currentMetrics.performance.loadEventEnd = nav.loadEventEnd - nav.fetchStart;
       }
     }
   }

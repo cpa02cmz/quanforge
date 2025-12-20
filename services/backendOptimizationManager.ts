@@ -259,8 +259,8 @@ const cacheMetrics = this.config.enableCacheOptimization
     // Query optimizer recommendations
     if (this.config.enableQueryOptimization) {
       const queryAnalysis = queryOptimizer.getPerformanceAnalysis();
-      if (queryAnalysis.slowQueries.length > 5) {
-        recommendations.push('Consider adding indexes for frequently slow queries');
+      if (queryAnalysis.averageQueryTime > 1000) {
+        recommendations.push('Consider optimizing slow queries or adding indexes');
       }
       if (queryAnalysis.cacheHitRate < 50) {
         recommendations.push('Improve query cache hit rate by optimizing common query patterns');
@@ -556,7 +556,11 @@ const cacheMetrics = this.config.enableCacheOptimization
               offset: options.offset,
             };
 
-            return queryOptimizer.executeQuery<T>(client, table, optimization);
+            const cacheKey = `${table}_${JSON.stringify(optimization)}`;
+            return queryOptimizer.executeQuery<T>(cacheKey, async () => {
+              const { data } = await client.from(table).select('*').match(optimization.filters || {});
+              return data as T;
+            }, { cache: true });
           } else {
             // Execute directly without optimization
             let query = client.from(table).select(options.selectFields?.join(', ') || '*');
@@ -600,7 +604,11 @@ const cacheMetrics = this.config.enableCacheOptimization
           offset: options.offset,
         };
         
-        result = queryOptimizer.executeQuery<T>(client, table, optimization);
+        const cacheKey = `${table}_${JSON.stringify(optimization)}`;
+        result = queryOptimizer.executeQuery<T>(cacheKey, async () => {
+          const { data } = await client.from(table).select('*').match(optimization.filters || {});
+          return data as T;
+        }, { cache: true });
       } else {
         let query = client.from(table).select(options.selectFields?.join(', ') || '*');
         

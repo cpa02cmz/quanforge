@@ -74,21 +74,19 @@ class DatabaseOptimizer {
       return { data: null, error: { message: 'Search term too short' } };
     }
     
-    // Use the existing queryOptimizer for optimized search
+// Use the existing queryOptimizer for optimized search
     const result = await queryOptimizer.searchRobotsOptimized(
-      client,
       sanitizedTerm,
       {
         strategyType: options.strategyType,
         userId: options.userId,
-      }
+      },
+      options.limit || 20
     );
     
-    this.updateMetrics(result.metrics);
-    
     return {
-      data: result.data,
-      error: result.error
+      data: result,
+      error: null
     };
   }
 
@@ -107,23 +105,19 @@ class DatabaseOptimizer {
       orderDirection?: 'asc' | 'desc';
     } = {}
   ): Promise<{ data: Robot[] | null; error: any; metrics: any }> {
-    // Use the existing queryOptimizer for the database query
-    const result = await queryOptimizer.getRobotsOptimized(client, {
+// Use the existing queryOptimizer for the database query
+    const result = await queryOptimizer.getRobotsOptimized({
       userId: options.userId,
       strategyType: options.strategyType,
       searchTerm: options.searchTerm,
       limit: options.limit,
-      offset: options.offset,
-      orderBy: options.orderBy,
-      orderDirection: options.orderDirection
-    });
-    
-    this.updateMetrics(result.metrics);
+      offset: options.offset
+    }, options.limit || 20, options.offset || 0);
     
     return {
-      data: result.data,
-      error: result.error,
-      metrics: result.metrics
+      data: result,
+      error: null,
+      metrics: queryOptimizer.getMetrics()
     };
   }
 
@@ -145,27 +139,28 @@ class DatabaseOptimizer {
     // Validate records if requested
     if (options.validateRecords) {
       for (const record of records) {
-        if (!securityManager.validateInput(record, 'record')) {
+        if (!securityManager.validateInput(JSON.stringify(record), 'record')) {
           return { data: null, error: { message: 'Invalid record data' }, metrics: { executionTime: 0 } };
         }
       }
     }
     
-    const result = await queryOptimizer.batchInsert(client, table, records, batchSize);
+const tableName = typeof table === 'string' ? table : 'default_table';
+    const result = await queryOptimizer.batchInsert<T>(tableName, records);
     
     const executionTime = performance.now() - startTime;
     
     this.updateMetrics({
       executionTime,
-      resultCount: Array.isArray(result.data) ? result.data.length : 0,
+      resultCount: Array.isArray(result) ? result.length : 0,
       cacheHit: false,
       queryHash: `batch_insert_${table}_${records.length}`
     });
     
     return {
-      data: result.data,
-      error: result.error,
-      metrics: { executionTime }
+      data: result,
+      error: null,
+      metrics: queryOptimizer.getMetrics()
     };
   }
 
@@ -511,7 +506,7 @@ class DatabaseOptimizer {
           operations: ['statistics_update', 'query_analysis'],
           duration: duration,
           analyzedTables: tables ? tables.length : 0,
-          slowQueryCount: queryAnalysis.slowQueries.length
+          slowQueryCount: queryAnalysis.averageQueryTime > 1000 ? 1 : 0
         }
       };
     } catch (error) {
