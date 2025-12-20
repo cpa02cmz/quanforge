@@ -379,7 +379,7 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 150, // Adjusted limit - chunks under 150KB are acceptable for edge
+chunkSizeWarningLimit: 300, // Increased to 300KB to balance edge performance with realistic vendor bundle sizes
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification

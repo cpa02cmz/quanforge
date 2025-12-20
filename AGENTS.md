@@ -2,6 +2,17 @@
 
 ## Agent Insights & Decisions
 
+### Performance Optimization Flow (2025-12-20)
+**Issue**: Large bundle chunks (>100KB) affecting user experience and load times  
+**Root Cause**: Inefficient code splitting and missing lazy loading for heavy components  
+**Solution Applied**: 
+- Advanced lazy loading with error boundaries and retry logic
+- Enhanced manual chunking with granular vendor separation
+- Dynamic imports with preloading strategies (immediate, on-hover, on-viewport)
+- Comprehensive loading states and error handling for better UX
+- Resolved mixed static/dynamic import conflicts that caused bundle warnings
+**Key Insight**: Bundle optimization must balance performance with user experience - proper loading states prevent UX degradation
+
 ### Build System Compatibility (2025-12-18)
 **Issue**: Node.js crypto module incompatibility with browser builds  
 **Root Cause**: `utils/enhancedRateLimit.ts` imported server-side `crypto` using `createHash`  

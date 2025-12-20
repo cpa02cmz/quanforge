@@ -1,5 +1,6 @@
 
-import { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { createLazyComponent, LoadingStates } from './components/LazyWrapper';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './services/supabase';
 import { ToastProvider } from './components/Toast';
@@ -17,32 +18,52 @@ import { globalCache } from './services/unifiedCacheManager';
 import { frontendPerformanceOptimizer } from './services/frontendPerformanceOptimizer';
 
 // Enhanced lazy loading with route-based code splitting and preloading
-const Auth = lazy(() => 
-  import('./components/Auth').then(module => ({ default: module.Auth }))
+const Auth = createLazyComponent(
+  () => import('./components/Auth').then(module => ({ default: module.Auth })),
+  { 
+    fallback: LoadingStates.FullScreen(),
+    preloadingStrategy: 'immediate'
+  }
 );
 
 // Group related components for better chunking
-const DashboardComponents = lazy(() => 
-  import('./pages/Dashboard').then(module => ({ default: module.Dashboard }))
+const DashboardComponents = createLazyComponent(
+  () => import('./pages/Dashboard').then(module => ({ default: module.Dashboard })),
+  { 
+    fallback: LoadingStates.FullScreen(),
+    preloadingStrategy: 'immediate'
+  }
 );
 
-const GeneratorComponents = lazy(() => 
-  import('./pages/Generator').then(module => ({ default: module.Generator }))
+const GeneratorComponents = createLazyComponent(
+  () => import('./pages/Generator').then(module => ({ default: module.Generator })),
+  { 
+    fallback: LoadingStates.FullScreen(),
+    preloadingStrategy: 'immediate'
+  }
 );
 
 // Static pages grouped together
-const StaticPages = lazy(() => 
-  Promise.all([
+const StaticPages = createLazyComponent(
+  () => Promise.all([
     import('./pages/Wiki'),
     import('./pages/About'),
     import('./pages/FAQ'),
     import('./pages/Blog'),
     import('./pages/Features')
-  ]).then(([Wiki]) => ({ default: Wiki.Wiki }))
+  ]).then(([Wiki]) => ({ default: Wiki.Wiki })),
+  { 
+    fallback: LoadingStates.FullScreen(),
+    preloadingStrategy: 'on-hover'
+  }
 );
 
-const Layout = lazy(() => 
-  import('./components/Layout').then(module => ({ default: module.Layout }))
+const Layout = createLazyComponent(
+  () => import('./components/Layout').then(module => ({ default: module.Layout })),
+  { 
+    fallback: LoadingStates.Inline({ message: 'Loading navigation...' }),
+    preloadingStrategy: 'immediate'
+  }
 );
 
 // Dynamic import utilities are now exported from utils/dynamicImports.ts
@@ -146,7 +167,7 @@ useEffect(() => {
            logger.info('Edge monitoring status:', monitoringStatus);
          }, 300);
          
-// Initialize Unified Cache Manager (non-blocking)
+// Initialize UnifiedCache Manager (non-blocking)
           setTimeout(() => {
             // Pre-warm cache with commonly accessed data
             globalCache.set('robots', [], 60000).catch((err: Error) => 
@@ -189,8 +210,7 @@ useEffect(() => {
               )
             ]}
           />
-          <Suspense fallback={LoadingComponent}>
-            <Routes>
+          <Routes>
               <Route 
                 path="/login" 
                 element={!session ? <Auth /> : <Navigate to="/" replace />} 
@@ -214,7 +234,6 @@ useEffect(() => {
                 />
               </Route>
             </Routes>
-          </Suspense>
         </BrowserRouter>
       </ToastProvider>
     </ErrorBoundary>
