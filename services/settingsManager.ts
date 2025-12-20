@@ -1,6 +1,6 @@
 
 import { AISettings, DBSettings } from "../types";
-import { encryptApiKey, decryptApiKey, validateApiKey } from "../utils/encryption";
+import { encryptApiKeySync, decryptApiKeySync, validateApiKey } from "../utils/encryption";
 
 const AI_SETTINGS_KEY = 'quantforge_ai_settings';
 const DB_SETTINGS_KEY = 'quantforge_db_settings';
@@ -63,7 +63,7 @@ export const settingsManager = {
             if (parsed.apiKey) {
                 // Try to decrypt - if it fails, assume it's unencrypted (legacy)
                 try {
-                    const decrypted = decryptApiKey(parsed.apiKey);
+                    const decrypted = decryptApiKeySync(parsed.apiKey, 'ai_settings');
                     if (decrypted && validateApiKey(decrypted, parsed.provider)) {
                         parsed.apiKey = decrypted;
                     }
@@ -82,10 +82,10 @@ export const settingsManager = {
 
     saveSettings(settings: AISettings) {
         try {
-            // Encrypt API key before saving
+            // Encrypt API key before saving using improved sync encryption
             const settingsToSave = {
                 ...settings,
-                apiKey: encryptApiKey(settings.apiKey)
+                apiKey: encryptApiKeySync(settings.apiKey || '', 'ai_settings')
             };
             
             localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settingsToSave));

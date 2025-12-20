@@ -929,13 +929,13 @@ private validateRobotData(data: any): ValidationResult {
   }
 
   // Advanced API key rotation
-  rotateAPIKeys(): { oldKey: string; newKey: string; expiresAt: number } {
-    const oldKey = this.getCurrentAPIKey();
+  async rotateAPIKeys(): Promise<{ oldKey: string; newKey: string; expiresAt: number }> {
+    const oldKey = await this.getCurrentAPIKey();
     const newKey = this.generateSecureAPIKey();
     const expiresAt = Date.now() + this.config.encryption.keyRotationInterval;
 
     // Store new key with expiration
-    this.storeAPIKey(newKey, expiresAt);
+    await this.storeAPIKey(newKey, expiresAt);
 
     return {
       oldKey,
@@ -944,9 +944,26 @@ private validateRobotData(data: any): ValidationResult {
     };
   }
 
-  private getCurrentAPIKey(): string {
-    // Retrieve current API key from secure storage
-    return localStorage.getItem('current_api_key') || '';
+  private async getCurrentAPIKey(): Promise<string> {
+    // Retrieve current API key from secure storage with decryption
+    const encryptedKey = localStorage.getItem('current_api_key') || '';
+    if (!encryptedKey) return '';
+    
+    try {
+      // Try to decrypt using the new secure method
+      const { decryptApiKey } = await import('../utils/encryption');
+      return await decryptApiKey(encryptedKey, 'security_manager');
+    } catch (error) {
+      console.warn('Failed to decrypt API key with new method, trying legacy:', error);
+      // Fallback to legacy sync decryption for backward compatibility
+      const { decryptApiKeySync } = await import('../utils/encryption');
+      try {
+        return decryptApiKeySync(encryptedKey, 'security_manager');
+      } catch (legacyError) {
+        console.error('Failed to decrypt API key with legacy method:', legacyError);
+        return '';
+      }
+    }
   }
 
   private generateSecureAPIKey(): string {
@@ -955,9 +972,29 @@ private validateRobotData(data: any): ValidationResult {
     return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
   }
 
-  private storeAPIKey(key: string, expiresAt: number): void {
-    localStorage.setItem('current_api_key', key);
-    localStorage.setItem('api_key_expires', expiresAt.toString());
+  private async storeAPIKey(key: string, expiresAt: number): Promise<void> {
+    try {
+      // Encrypt the API key before storage
+      const { encryptApiKey } = await import('../utils/encryption');
+      const encryptedKey = await encryptApiKey(key, 'security_manager');
+      localStorage.setItem('current_api_key', encryptedKey);
+      localStorage.setItem('api_key_expires', expiresAt.toString());
+    } catch (error) {
+      console.error('Failed to encrypt and store API key:', error);
+      // Fallback to sync encryption for backward compatibility
+      try {
+        const { encryptApiKeySync } = await import('../utils/encryption');
+        const encryptedKey = encryptApiKeySync(key, 'security_manager');
+        localStorage.setItem('current_api_key', encryptedKey);
+        localStorage.setItem('api_key_expires', expiresAt.toString());
+      } catch (fallbackError) {
+        console.error('Fallback encryption failed:', fallbackError);
+        // Store unencrypted as last resort (warning for upgrade)
+        console.warn('Storing API key without encryption - upgrade browser for security');
+        localStorage.setItem('current_api_key', key);
+        localStorage.setItem('api_key_expires', expiresAt.toString());
+      }
+    }
   }
 
   // Content Security Policy monitoring

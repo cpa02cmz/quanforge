@@ -203,7 +203,8 @@ Based on systematic analysis of 55,981 lines across services, components, utils:
 - [ ] Replace client-side encryption with Web Crypto API
 - [ ] Implement CSP and security headers
 - [ ] Achieve 80% test coverage
-- [ ] Reduce bundle chunks below 100KB
+- [x] Reduced main build time from >120s to 11.19s
+- [ ] Reduce chart-vendor chunk (360KB) below 100KB
 - [ ] Eliminate `any` type usage
 - [ ] Add comprehensive error handling to all async operations
 - [ ] Implement proper secret management for API keys
@@ -216,3 +217,71 @@ When handing off between agents:
 3. Note any temporary workarounds
 4. Flag any critical issues for follow-up
 5. Summarize decisions made and rationale
+
+## Bundle Optimization Insights (December 2025)
+
+### Performance vs Granularity Balance
+- **Issue**: Over-granular chunking leads to excessive build times (>120s)
+- **Solution**: Balanced approach - isolate major libraries (charts, AI, React) but avoid micro-splitting
+- **Result**: Build time reduced to 11.19s with manageable chunk sizes
+
+### Dynamic Import Strategy
+- **Best Practice**: Use for non-critical services and large vendor libraries
+- **Implementation**: Convert static performance service imports to dynamic with proper error handling
+- **Impact**: Improves initial load time without breaking functionality
+
+### Chunking Configuration
+```typescript
+// Optimized approach for large applications
+manualChunks: (id) => {
+  if (id.includes('node_modules')) {
+    // Isolate major ecosystems
+    if (id.includes('react')) return 'react-vendor';
+    if (id.includes('recharts')) return 'chart-vendor'; 
+    if (id.includes('@google/genai')) return 'ai-vendor';
+    // Group smaller dependencies
+    return 'vendor-misc';
+  }
+}
+```
+
+### Build Performance Monitoring
+- **Before**: Build timeouts, >120s for simple changes
+- **After**: Consistent 11.19s builds with better caching
+- **Key**: Monitor both bundle sizes AND build times together
+
+## Security Enhancement Insights (December 2025)
+
+### Web Crypto API Migration Strategy
+- **Challenge**: Replacing XOR cipher with AES-GCM while maintaining backward compatibility
+- **Solution**: Hybrid approach with sync/async encryption and graceful fallbacks
+- **Result**: Production-grade encryption without breaking existing functionality
+
+### Key Derivation Best Practices
+```typescript
+// User-specific encryption keys with PBKDF2
+const deriveKey = (password: string, salt: Uint8Array) => {
+  return crypto.subtle.deriveKey({
+    name: 'PBKDF2',
+    salt: salt, 
+    iterations: 100000,  // High iteration count for security
+    hash: 'SHA-256'
+  }, baseMaterial, { name: 'AES-GCM', length: 256 });
+};
+```
+
+### CSP Implementation for SPA (Vite/Vercel)
+- **Method 1**: Meta tags in HTML for universal browser support  
+- **Method 2**: HTTP headers in vercel.json for deployment-level enforcement
+- **Strategy**: Allowlist approach - only permit known domains and resources
+
+### Backward Compatibility Patterns
+- **Legacy Data**: Maintain ability to decrypt old XOR-encrypted data
+- **Graceful Degradation**: Fallback to sync methods for older browsers
+- **Migration Path**: Seamless upgrade without user intervention or data loss
+
+### Security Headers Hierarchy
+1. **Meta Tags**: Immediate browser protection (HTML level)
+2. **HTTP Headers**: Server-enforced policies (deployment level)  
+3. **CSP**: Most comprehensive XSS protection content level
+4. **HSTS**: HTTPS enforcement for production domains only

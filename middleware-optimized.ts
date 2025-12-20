@@ -1,5 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Content Security Policy configuration for production security
+function getCSPHeaders(): Record<string, string> {
+  return {
+    'Content-Security-Policy': [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://cdn.vercel-insights.com https://www.googletagmanager.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: https: blob:",
+      "font-src 'self' https://fonts.gstatic.com",
+      "connect-src 'self' https://*.supabase.co https://googleapis.com https://generativelanguage.googleapis.com https://api.openai.com https://api.deepseek.com",
+      "frame-src 'none'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      "upgrade-insecure-requests"
+    ].join('; '),
+    'Report-To': 'csp-endpoint',
+    'NEL': '{"report_to":"csp-endpoint","success_fraction":0.1,"failure_fraction":0.2}'
+  };
+}
+
 export function middleware(request: NextRequest) {
   const startTime = performance.now();
   const response = NextResponse.next();
@@ -16,8 +38,34 @@ export function middleware(request: NextRequest) {
   response.headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
   response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
   response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
-  response.headers.set('X-Edge-Version', '3.2.0');
+  response.headers.set('X-Edge-Version', '3.2.1');
   response.headers.set('X-Powered-By', 'QuantForge-AI-Edge-Optimized');
+  
+  // Apply Content Security Policy headers in production
+  if (process.env.NODE_ENV === 'production') {
+    const cspHeaders = getCSPHeaders();
+    Object.entries(cspHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    
+    // HTTP Strict Transport Security (HSTS) for production
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    response.headers.set('Expect-CT', 'max-age=86400, enforce');
+  }
+  
+  // Development CSP with relaxed restrictions for debugging
+  if (process.env.NODE_ENV === 'development') {
+    response.headers.set('Content-Security-Policy-Report-Only', [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https:",
+      "connect-src 'self' ws: wss: https:",
+      "font-src 'self' data:",
+      "object-src 'none'",
+      "base-uri 'self'"
+    ].join('; '));
+  }
   
   // Enhanced region-based caching and optimization
   const region = request.geo?.region || request.headers.get('x-vercel-ip-country') || 'unknown';
