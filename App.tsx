@@ -11,12 +11,8 @@ import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
 import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
-import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
-import { frontendOptimizer } from './services/frontendOptimizer';
-import { edgeAnalytics } from './services/edgeAnalytics';
-import { edgeMonitoring } from './services/edgeMonitoring';
 import { globalCache } from './services/unifiedCacheManager';
-import { frontendPerformanceOptimizer } from './services/frontendPerformanceOptimizer';
+import { edgeAnalyticsMonitoring } from './services/edgeAnalyticsMonitoring';
 
 // Enhanced lazy loading with route-based code splitting and preloading
 const Auth = createLazyComponent(
@@ -95,7 +91,7 @@ useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       performanceMonitor.recordMetric('auth_init', performance.now() - startTime);
-      databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, true);
+      // Query recording now handled by consolidated performance monitor
       
       // Preload critical routes after successful auth
       if (session) {
@@ -107,7 +103,7 @@ useEffect(() => {
     }).catch((err) => {
       logger.warn("Auth initialization failed:", err);
       performanceMonitor.recordMetric('auth_error', 1);
-      databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, false);
+      // Query recording now handled by consolidated performance monitor
       
       // Still initialize non-critical services even on auth error
       initializeNonCriticalServices();
@@ -146,27 +142,17 @@ useEffect(() => {
            vercelEdgeOptimizer.setupEdgeErrorHandling();
          }, 100);
          
-         // Initialize Frontend Optimizer (non-blocking)
-         setTimeout(() => {
-           frontendOptimizer.warmUp().catch(err => logger.warn('Frontend optimizer warmup failed:', err));
-         }, 200);
-         
-         // Initialize Advanced Frontend Performance Optimizer (non-blocking)
-         setTimeout(() => {
-           frontendPerformanceOptimizer.warmUp().catch(err => logger.warn('Frontend performance optimizer warmup failed:', err));
-         }, 250);
-         
-         // Initialize Edge Analytics (non-blocking)
-         setTimeout(() => {
-           edgeAnalytics.trackCustomEvent('app_initialization', {
-             timestamp: Date.now(),
-             userAgent: navigator.userAgent,
-             region: 'unknown' // Will be detected by edge analytics
-           });
-           
-           const monitoringStatus = edgeMonitoring.getMonitoringStatus();
-           logger.info('Edge monitoring status:', monitoringStatus);
-         }, 300);
+// Initialize Edge Analytics & Monitoring (non-blocking)
+          setTimeout(() => {
+            edgeAnalyticsMonitoring.trackUserEvent('app_initialization', 'main', {
+              timestamp: Date.now(),
+              userAgent: navigator.userAgent,
+              region: 'unknown' // Will be detected by edge analytics
+            });
+            
+            const performanceSummary = edgeAnalyticsMonitoring.getPerformanceSummary();
+            logger.info('Edge analytics performance summary:', performanceSummary);
+          }, 200);
          
 // Initialize UnifiedCache Manager (non-blocking)
           setTimeout(() => {

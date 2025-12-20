@@ -7,8 +7,9 @@ export * from './simulation';
 export * from './vercelEdgeOptimizer';
 export * from './frontendOptimizer';
 export * from './edgeAnalytics';
-export * from './performanceMonitorEnhanced';
-export * from './realUserMonitoring';
+// Performance monitoring now consolidated
+export { performanceMonitor } from './performance/monitor';
+// Real user monitoring now part of consolidated system
 export * from './apiDeduplicator';
 
 export * from './databaseOptimizer';
