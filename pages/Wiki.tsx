@@ -4,6 +4,13 @@ import { WIKI_CONTENT } from '../constants';
 import { useTranslation } from '../services/i18n';
 import { SEOHead, structuredDataTemplates } from '../utils/seo';
 
+interface WikiSection {
+  id: string;
+  title: string;
+  icon: string;
+  content: string;
+}
+
 export const Wiki: React.FC = () => {
   const { language } = useTranslation();
   
@@ -176,7 +183,7 @@ structuredData={[
             </div>
         </div>
         <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
-            {filteredSections.map((section: any) => (
+            {filteredSections.map((section: WikiSection) => (
                 <button
                     key={section.id}
                     onClick={() => {

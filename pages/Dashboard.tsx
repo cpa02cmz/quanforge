@@ -1,6 +1,5 @@
 
 import React, { useEffect, useState, useMemo, useCallback, memo } from 'react';
-import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
 import { Link } from 'react-router-dom';
 import { getRobots, deleteRobot, duplicateRobot } from '../services/supabase';
 import { Robot, UserSession } from '../types';
@@ -11,7 +10,7 @@ import { createScopedLogger } from '../utils/logger';
 import { VirtualScrollList } from '../components/VirtualScrollList';
 
 // Debounce utility for search optimization
-const debounce = <T extends (...args: unknown[]) => unknown>(func: T, delay: number): T => {
+const debounce = <T extends (..._args: unknown[]) => unknown>(func: T, delay: number): T => {
   let timeoutId: NodeJS.Timeout;
   return ((...args: unknown[]) => {
     clearTimeout(timeoutId);
@@ -25,9 +24,9 @@ const logger = createScopedLogger('Dashboard');
 interface RobotCardProps {
   robot: Robot;
   processingId: string | null;
-  onDuplicate: (_id: string) => void;
-  onDelete: (_id: string, _name: string) => void;
-  t: (_key: string, _params?: Record<string, unknown>) => string;
+  onDuplicate: (id: string) => void;
+  onDelete: (id: string, name: string) => void;
+  t: (key: string, params?: Record<string, unknown>) => string;
 }
 
 const RobotCard: React.FC<RobotCardProps> = memo(({

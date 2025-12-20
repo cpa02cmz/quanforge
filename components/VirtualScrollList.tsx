@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Robot } from '../types';
-import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
 
 interface VirtualScrollListProps {
   robots: Robot[];
   searchTerm: string;
   filterType: string;
   processingId: string | null;
-  onDuplicate: (_id: string) => void;
-  onDelete: (_id: string, _name: string) => void;
-  t: (_key: string, _params?: Record<string, string>) => string;
+  onDuplicate: (id: string) => void;
+  onDelete: (id: string, name: string) => void;
+  t: (key: string, params?: Record<string, string>) => string;
 }
 
 export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
@@ -39,10 +38,10 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
        return matchesSearch && matchesType;
      });
      
-     const duration = performance.now() - startTime;
-     if (duration > 16 && import.meta.env.DEV) { // More than one frame at 60fps
-       console.warn(`VirtualScrollList filter took ${duration.toFixed(2)}ms for ${robots.length} items`);
-     }
+const duration = performance.now() - startTime;
+      if (duration > 16 && import.meta.env.DEV) { // More than one frame at 60fps
+        // Warning: Virtual scrolling performance degradation
+      }
      
      return result;
    }, [robots, searchTerm, filterType]);

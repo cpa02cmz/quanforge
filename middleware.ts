@@ -3,7 +3,7 @@
  * Optimized for Vite SPA deployment on Vercel
  */
 
-export function middleware(request: any) {
+export function middleware(request: { url: string; headers: Record<string, string> }) {
   const startTime = performance.now();
   
   // Generate secure nonce for CSP

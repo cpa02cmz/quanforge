@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { createLazyComponent } from './components/LazyWrapper';
+import { createLazyComponent } from './utils/lazyWrapper';
 import { LoadingComponents } from './components/LoadingComponents';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './services/supabase';

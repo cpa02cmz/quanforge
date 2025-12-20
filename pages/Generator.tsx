@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, memo, useMemo, Suspense } from 'react';
-import { createLazyComponent } from '../components/LazyWrapper';
+import { createLazyComponent } from '../utils/lazyWrapper';
 import { LoadingComponents } from '../components/LoadingComponents';
 import { useParams } from 'react-router-dom';
 import { StrategyConfig } from '../components/StrategyConfig';

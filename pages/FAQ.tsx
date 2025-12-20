@@ -2,6 +2,23 @@ import React, { useState, useMemo } from 'react';
 import { useTranslation } from '../services/i18n';
 import { PageMeta, enhancedStructuredData } from '../utils/pageMeta';
 
+interface FAQQuestion {
+  q: string;
+  a: string;
+}
+
+interface FAQCategory {
+  title: string;
+  icon: string;
+  questions: FAQQuestion[];
+}
+
+interface FAQContent {
+  title: string;
+  description: string;
+  categories: Record<string, FAQCategory>;
+}
+
 const FAQComponent: React.FC = () => {
   const { language } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
@@ -201,10 +218,10 @@ const FAQComponent: React.FC = () => {
   const filteredCategories = useMemo(() => {
     if (!searchTerm.trim()) return currentContent.categories;
     
-    const filtered: any = {};
+    const filtered: Record<string, FAQCategory> = {};
     Object.entries(currentContent.categories).forEach(([key, category]) => {
       const matchingQuestions = category.questions.filter(
-        (q: any) => 
+        (q: FAQQuestion) => 
           q.q.toLowerCase().includes(searchTerm.toLowerCase()) ||
           q.a.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -218,8 +235,8 @@ const FAQComponent: React.FC = () => {
   }, [currentContent.categories, searchTerm]);
 
   // Generate FAQ structured data
-  const allQuestions = Object.values(filteredCategories).flatMap((category: any) =>
-    category.questions.map((q: any) => ({
+  const allQuestions = Object.values(filteredCategories).flatMap((category: FAQCategory) =>
+    category.questions.map((q: FAQQuestion) => ({
       question: q.q,
       answer: q.a
     }))
@@ -304,7 +321,7 @@ const FAQComponent: React.FC = () => {
               </p>
             </div>
           ) : (
-            Object.entries(filteredCategories).map(([categoryKey, category]: [string, any]) => (
+            Object.entries(filteredCategories).map(([categoryKey, category]: [string, FAQCategory]) => (
               <section key={categoryKey} className="mb-8">
                 <button
                   onClick={() => setExpandedCategory(expandedCategory === categoryKey ? '' : categoryKey)}
@@ -329,7 +346,7 @@ const FAQComponent: React.FC = () => {
 
                 {expandedCategory === categoryKey && (
                   <div className="mt-4 space-y-4">
-                    {category.questions.map((question: any, index: number) => (
+                    {category.questions.map((question: FAQQuestion, index: number) => (
                       <div 
                         key={index}
                         className="bg-dark-surface border border-dark-border rounded-lg overflow-hidden"

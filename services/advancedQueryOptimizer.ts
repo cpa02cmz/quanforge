@@ -330,7 +330,9 @@ export class AdvancedQueryOptimizer {
         if (result.status === 'fulfilled') {
           results.push(result.value);
         } else {
-          console.error(`Failed to update robot ${batch[index].id}:`, result.reason);
+          if (import.meta.env.DEV) {
+            console.error(`Failed to update robot ${batch[index].id}:`, result.reason);
+          }
         }
       });
     }

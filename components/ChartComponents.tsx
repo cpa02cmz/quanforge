@@ -73,8 +73,8 @@ const RechartsInner = memo(({
                 paddingAngle={5}
                 dataKey="value"
               >
-                {riskData.map((entry: RiskDataPoint, index: number) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                {riskData.map((entry: RiskDataPoint, _index: number) => (
+                  <Cell key={`cell-${_index}`} fill={entry.color} />
                 ))}
               </Pie>
               <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }} itemStyle={{ color: '#fff' }} />

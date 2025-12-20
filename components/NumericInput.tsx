@@ -4,7 +4,7 @@ import React, { useState, useEffect, memo } from 'react';
 // It keeps a local string state so users can type "1." without it being parsed to "1" immediately
 export const NumericInput: React.FC<{
     value: number;
-    onChange: (_val: number) => void;
+    onChange: (val: number) => void;
     className?: string;
     step?: string;
 }> = memo(({ value, onChange, className, step }) => {
