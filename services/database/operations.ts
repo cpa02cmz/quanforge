@@ -15,7 +15,7 @@ export const getRobots = async (userId: string): Promise<Robot[]> => {
         if (error) throw error;
         return data || [];
     } catch (error) {
-        handleError(error, 'getRobots');
+        handleError(error as Error | string, 'getRobots');
         // Fallback to localStorage
         const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
         return robots.filter((r: Robot) => r.user_id === userId);
@@ -34,7 +34,7 @@ export const getRobot = async (id: string): Promise<Robot | null> => {
         if (error) throw error;
         return data;
     } catch (error) {
-        handleError(error, 'getRobot');
+        handleError(error as Error | string, 'getRobot');
         // Fallback to localStorage
         const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
         return robots.find((r: Robot) => r.id === id) || null;
@@ -53,7 +53,7 @@ export const saveRobot = async (robot: Robot): Promise<Robot> => {
         if (error) throw error;
         return data;
     } catch (error) {
-        handleError(error, 'saveRobot');
+        handleError(error as Error | string, 'saveRobot');
         // Fallback to localStorage
         const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
         const existingIndex = robots.findIndex((r: Robot) => r.id === robot.id);
@@ -79,7 +79,7 @@ export const deleteRobot = async (id: string): Promise<void> => {
 
         if (error) throw error;
     } catch (error) {
-        handleError(error, 'deleteRobot');
+        handleError(error as Error | string, 'deleteRobot');
         // Fallback to localStorage
         const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
         const filteredRobots = robots.filter((r: Robot) => r.id !== id);
@@ -114,7 +114,7 @@ export const batchUpdateRobots = async (robots: Robot[]): Promise<Robot[]> => {
         if (error) throw error;
         return data || [];
     } catch (error) {
-        handleError(error, 'batchUpdateRobots');
+        handleError(error as Error | string, 'batchUpdateRobots');
         // Fallback to localStorage
         const existingRobots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
         const updatedRobots = [...existingRobots];
@@ -144,7 +144,7 @@ export const getRobotsByIds = async (ids: string[]): Promise<Robot[]> => {
         if (error) throw error;
         return data || [];
     } catch (error) {
-        handleError(error, 'getRobotsByIds');
+        handleError(error as Error | string, 'getRobotsByIds');
         // Fallback to localStorage
         const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
         return robots.filter((r: Robot) => ids.includes(r.id));
@@ -188,7 +188,7 @@ export const getRobotsPaginated = async (
             totalPages
         };
     } catch (error) {
-        handleError(error, 'getRobotsPaginated');
+        handleError(error as Error | string, 'getRobotsPaginated');
         // Fallback to localStorage
         const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
         const userRobots = robots.filter((r: Robot) => r.user_id === userId);

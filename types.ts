@@ -119,6 +119,13 @@ export interface WikiSection {
   articles: WikiArticle[];
 }
 
+export interface DataRecord {
+  [key: string]: any;
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 // Type guards for runtime type checking
 export const isMessage = (obj: unknown): obj is Message => {
   return (

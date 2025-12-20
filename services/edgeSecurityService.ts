@@ -260,7 +260,7 @@ class EdgeSecurityService {
 
   validateCSRFToken(token: string, sessionToken: string): boolean {
     // Simple validation - in production, this would be more sophisticated
-    return token && sessionToken && token.length === sessionToken.length;
+    return Boolean(token && sessionToken && token.length === sessionToken.length);
   }
 
   // Content Security Policy

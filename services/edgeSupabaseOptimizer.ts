@@ -326,26 +326,26 @@ export class EdgeSupabaseOptimizer {
   /**
    * Execute Supabase query with proper query builder pattern
    */
-  private async executeSupabaseQuery(client: any, query: string, params: any[]): Promise<any> {
+  private async executeSupabaseQuery(client: any, query: string, params: any): Promise<any> {
     try {
       // Parse and execute optimized queries based on table and operation
       if (query.includes('robots')) {
         let builder = client.from('robots').select('*');
         
         // Apply filters from params
-        if (params?.user_id) builder = builder.eq('user_id', params.user_id);
-        if (params?.strategy_type) builder = builder.eq('strategy_type', params.strategy_type);
-        if (params?.id) builder = builder.eq('id', params.id);
-        if (params?.limit) builder = builder.limit(params.limit);
-        if (params?.offset) builder = builder.range(params.offset, params.offset + (params.limit || 20) - 1);
+        if (params && typeof params === 'object' && 'user_id' in params) builder = builder.eq('user_id', params.user_id);
+        if (params && typeof params === 'object' && 'strategy_type' in params) builder = builder.eq('strategy_type', params.strategy_type);
+        if (params && typeof params === 'object' && 'id' in params) builder = builder.eq('id', params.id);
+        if (params && typeof params === 'object' && 'limit' in params) builder = builder.limit(params.limit);
+        if (params && typeof params === 'object' && 'offset' in params) builder = builder.range(params.offset, params.offset + (params.limit || 20) - 1);
         
         // Apply search filters
-        if (params?.search) {
+        if (params && typeof params === 'object' && 'search' in params) {
           builder = builder.or(`name.ilike.%${params.search}%,description.ilike.%${params.search}%`);
         }
         
         // Apply ordering
-        if (params?.order) {
+        if (params && typeof params === 'object' && 'order' in params) {
           const [column, direction] = params.order.split('.');
           builder = builder.order(column, { ascending: direction === 'asc' });
         } else {
@@ -360,13 +360,13 @@ export class EdgeSupabaseOptimizer {
         let builder = client.from('strategies').select('*');
         
         // Apply filters
-        if (params?.category) builder = builder.eq('category', params.category);
-        if (params?.difficulty) builder = builder.eq('difficulty', params.difficulty);
-        if (params?.id) builder = builder.eq('id', params.id);
-        if (params?.limit) builder = builder.limit(params.limit);
+        if (params && typeof params === 'object' && 'category' in params) builder = builder.eq('category', params.category);
+        if (params && typeof params === 'object' && 'difficulty' in params) builder = builder.eq('difficulty', params.difficulty);
+        if (params && typeof params === 'object' && 'id' in params) builder = builder.eq('id', params.id);
+        if (params && typeof params === 'object' && 'limit' in params) builder = builder.limit(params.limit);
         
         // Apply search
-        if (params?.search) {
+        if (params && typeof params === 'object' && 'search' in params) {
           builder = builder.or(`name.ilike.%${params.search}%,description.ilike.%${params.search}%`);
         }
         

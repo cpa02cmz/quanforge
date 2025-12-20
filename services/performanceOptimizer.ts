@@ -518,4 +518,5 @@ if (typeof window !== 'undefined') {
   }, 3000); // Initialize after other optimizers
 }
 
-export { PerformanceOptimizer, PerformanceOptimizerConfig, PerformanceMetrics };
+export { PerformanceOptimizer };
+export type { PerformanceOptimizerConfig, PerformanceMetrics };

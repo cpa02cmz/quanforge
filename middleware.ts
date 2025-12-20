@@ -17,9 +17,9 @@ export function middleware(request: any) {
   const url = new URL(request.url);
   
   // Enhanced Content Security Policy to prevent XSS attacks
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  const isPreview = process.env.VERCEL_ENV === 'preview';
-  const isProduction = process.env.VERCEL_ENV === 'production';
+  const isDevelopment = process.env['NODE_ENV'] === 'development';
+  const isPreview = process.env['VERCEL_ENV'] === 'preview';
+  const isProduction = process.env['VERCEL_ENV'] === 'production';
   
   // CSP Directives - tightened for production
   const scriptSrc = [
