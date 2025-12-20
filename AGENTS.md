@@ -165,6 +165,27 @@ When multiple PRs have interdependent fixes with deployment failures:
 - ✅ No regressions introduced
 - ✅ Documentation updated
 
+### PR #136 Merge Management and Complete Red Flag Resolution (2025-12-20)
+**Issue**: PR #136 showed DIRTY merge state with failing deployments on both Vercel and Cloudflare Workers
+**Root Causes**: 
+- Unrelated branch histories requiring `--allow-unrelated-histories` merge
+- Complex vercel.json with unsupported schema properties
+- Outdated dependency versions causing compatibility conflicts
+- Schema validation failures preventing deployment pipelines
+**Solution Applied**:
+- Used `git merge main --allow-unrelated-histories` to handle unrelated histories
+- Systematically resolved all conflicts by choosing main branch versions for compatibility
+- Applied schema-compliant vercel.json from main branch (minimal configuration)
+- Updated dependencies to latest versions from main branch
+- Preserved new value-add files (AGENTS.md, enhancedRateLimit.ts) from PR branch
+- Verified build and typecheck success before pushing changes
+**Key Insights**:
+- When resolving red-flag PRs, prioritize main branch compatibility over PR branch complexity
+- Schema compliance is critical for deployment platform success
+- Unrelated histories require explicit merge strategy and systematic conflict resolution
+- Always validate build and typecheck after resolving conflicts
+- Document resolution process clearly for future reference
+
 ## Agent Contact & Handoff
 
 When handing off between agents:
