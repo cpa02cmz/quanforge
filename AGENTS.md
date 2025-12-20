@@ -66,6 +66,13 @@
 3. **Lint Quality**: Address critical lint issues but prioritize function over form
 4. **Document**: Record root cause, solution, and prevention strategies
 
+### Code Quality Standards (Updated 2025-12-20)
+- **Bundle Size**: Monitor for chunks >100KB and implement splitting
+- **Type Safety**: Minimize `any` type usage, prefer proper interfaces
+- **Console Statements**: Remove from production code, use logger utilities
+- **Performance**: Maintain edge optimization compatibility
+- **Error Handling**: Use consistent patterns with proper TypeScript types
+
 ### When Managing PRs with Red Flags
 1. **Conflict Resolution**: Merge main branch into PR branch to resolve merge conflicts
 2. **Schema Validation**: Verify vercel.json complies with current Vercel schema requirements
