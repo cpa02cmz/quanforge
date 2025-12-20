@@ -15,42 +15,97 @@ export default defineConfig({
       },
       output: {
         manualChunks: (id) => {
-          // Enhanced chunking for better Vercel edge performance
+          // Aggressive chunking to minimize bundle sizes
           if (id.includes('node_modules')) {
-            // React ecosystem - optimized for edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
-              return 'react-vendor';
+            // React ecosystem - split into smaller chunks
+            if (id.includes('react')) {
+              if (id.includes('react-dom')) {
+                return 'react-dom-core';
+              }
+              if (id.includes('react-router')) {
+                return 'react-router-vendor';
+              }
+              return 'react-core';
             }
-            // Supabase - isolated for better connection pooling
+            
+            // Supabase - granular splitting
             if (id.includes('@supabase')) {
-              // Separate realtime and storage for better caching
               if (id.includes('@supabase/realtime-js')) {
                 return 'supabase-realtime';
               }
               if (id.includes('@supabase/storage-js')) {
                 return 'supabase-storage';
               }
-              return 'supabase-vendor';
+              if (id.includes('@supabase/postgrest-js')) {
+                return 'supabase-postgrest';
+              }
+              if (id.includes('@supabase/auth-helpers')) {
+                return 'supabase-auth';
+              }
+              return 'supabase-core';
             }
-            // AI services - lazy loaded for edge optimization
+            
+            // AI services - ultra granular splitting
             if (id.includes('@google/genai')) {
-              return 'ai-vendor';
+              if (id.includes('/generators')) return 'ai-generators';
+              if (id.includes('/models')) return 'ai-models';
+              if (id.includes('/types')) return 'ai-types';
+              if (id.includes('/util')) return 'ai-utils';
+              if (id.includes('/errors')) return 'ai-errors';
+              return 'ai-core';
             }
-            // Chart libraries - split more granularly
+            
+// Chart libraries - ultra granular splitting for better tree-shaking
             if (id.includes('recharts')) {
-              if (id.includes('AreaChart') || id.includes('LineChart')) {
-                return 'chart-core';
+              // Split by file paths for maximum granularity
+              if (id.includes('chart/')) {
+                if (id.includes('AreaChart')) return 'chart-area';
+                if (id.includes('PieChart')) return 'chart-pie';
+                if (id.includes('LineChart')) return 'chart-line';
+                if (id.includes('BarChart')) return 'chart-bar';
+                return 'chart-types';
               }
-              if (id.includes('PieChart') || id.includes('BarChart')) {
-                return 'chart-misc';
+              if (id.includes('components/')) {
+                if (id.includes('ResponsiveContainer')) return 'chart-responsive';
+                if (id.includes('Tooltip')) return 'chart-tooltip';
+                if (id.includes('Legend')) return 'chart-legend';
+                if (id.includes('Brush')) return 'chart-brush';
+                return 'chart-components';
               }
-              return 'chart-vendor';
+              if (id.includes('cartesian/')) {
+                if (id.includes('Grid')) return 'chart-cartesian-grid';
+                if (id.includes('XAxis')) return 'chart-xaxis';
+                if (id.includes('YAxis')) return 'chart-yaxis';
+                if (id.includes('Area')) return 'chart-cartesian-area';
+                return 'chart-cartesian-misc';
+              }
+              if (id.includes('polar/')) {
+                if (id.includes('Pie')) return 'chart-polar-pie';
+                if (id.includes('Radar')) return 'chart-polar-radar';
+                return 'chart-polar-misc';
+              }
+              if (id.includes('animation/')) return 'chart-animation';
+              if (id.includes('shape/')) return 'chart-shape';
+              if (id.includes('container/')) return 'chart-container';
+              if (id.includes('util/')) return 'chart-utils';
+              // Core recharts functionality
+              return 'chart-core';
             }
-            // Security utilities - bundled together
-            if (id.includes('dompurify') || id.includes('lz-string')) {
-              return 'security-vendor';
-            }
-            // All other vendor libraries
+            
+            // Security utilities - split by function
+            if (id.includes('dompurify')) return 'security-dompurify';
+            if (id.includes('lz-string')) return 'security-compression';
+            
+            // Development and testing libraries
+            if (id.includes('@testing-library')) return 'dev-testing';
+            if (id.includes('vitest') || id.includes('jsdom')) return 'dev-vitest';
+            
+            // All other vendor libraries - split by size
+            if (id.includes('typescript') || id.includes('estree')) return 'vendor-typescript';
+            if (id.includes('terser')) return 'vendor-terser';
+            if (id.includes('rollup') || id.includes('vite')) return 'vendor-build-tools';
+            if (id.includes('eslint') || id.includes('@typescript-eslint')) return 'vendor-lint-tools';
+            if (id.includes('vitest') || id.includes('jsdom') || id.includes('@testing-library')) return 'vendor-test-tools';
             return 'vendor-misc';
           }
           
@@ -222,7 +277,7 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 100, // More aggressive optimization for edge performance
+    chunkSizeWarningLimit: 50, // Ultra aggressive optimization target
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
@@ -304,7 +359,17 @@ export default defineConfig({
       'jsdom',
       'vitest',
       '@vitest/coverage-v8',
-      '@vitest/ui'
+      '@vitest/ui',
+      // Build and dev tools that shouldn't be in frontend
+      'rollup/dist',
+      'vite/dist',
+      'terser/dist',
+      'typescript/lib',
+      'vitest/dist',
+      'web-streams-polyfill/dist',
+      'es-toolkit/dist',
+      'tldts/dist',
+      'esquery/dist'
     ]
   },
   // Edge optimization for Vercel deployment

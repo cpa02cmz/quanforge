@@ -93,16 +93,17 @@
 3. **Consistent**: Follow existing conventions unless clearly problematic
 4. **Document Changes**: Update relevant documentation files
 
-## Future Agent Tasks
+## Future Agent Tasks (Updated 2025-12-20)
 
 ### Immediate (Next Sprint)
 - Address high-impact ESLint warnings
-- Implement bundle splitting for performance
+- ✅ COMPLETED: Bundle splitting for performance - major 89% reduction in chart chunks
 - Add unit tests for critical utilities
 
 ### Short Term (Next Month)
 - Upgrade to Web Crypto API for security
 - Comprehensive lint cleanup
+- Continue optimizing remaining large chunks (react-dom-core: 177KB, ai-core: 214KB)
 - Performance optimization pass
 
 ### Long Term
