@@ -324,7 +324,7 @@ class FrontendPerformanceOptimizer {
       () => import('../components/ChartComponents'),
       () => import('../components/BacktestPanel'),
       () => import('../components/MarketTicker'),
-      // () => import('../services/advancedAPICache'), // Using static import to avoid conflict
+      // Replaced with unified cache manager for better performance
     ];
 
     // Load modules with low priority when idle
