@@ -85,3 +85,15 @@ graph TD
 - **Browser Crypto**: Replace Node.js `crypto` with browser-compatible alternatives
 - **Vercel Schema**: Use minimal, schema-compliant `vercel.json` configuration
 - **Build Validation**: Always run build and typecheck before deployment
+
+### Critical Technical Debt (2025-12-20 Analysis)
+- **Build System**: Broken TypeScript compilation requiring immediate fix
+- **Type Safety**: 905 `any` type usages creating runtime risks
+- **Maintainability**: Monolithic services limiting development velocity
+- **Code Quality**: Inconsistent patterns and missing ESLint configuration
+
+### Code Quality Standards
+- **Type Safety**: Minimize `any` usage, implement strict TypeScript
+- **Modularity**: Service files should be <500 lines, well-decoupled
+- **Consistency**: Unified error handling, naming conventions, patterns
+- **Testing**: >80% test coverage for critical paths
