@@ -5,9 +5,36 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { createDynamicSupabaseClient } from '../dynamicSupabaseLoader';
 import { settingsManager } from '../settingsManager';
 import { handleError } from '../../utils/errorHandler';
+
+// Dynamic client creation function (replaced dynamicSupabaseLoader)
+const createDynamicSupabaseClient = async (
+  url: string, 
+  anonKey: string, 
+  additionalConfig?: any
+): Promise<SupabaseClient> => {
+  const baseConfig = {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+    db: {
+      schema: 'public',
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'quanforge-ai/1.0.0',
+      },
+    },
+  };
+
+  const config = additionalConfig 
+    ? { ...baseConfig, ...additionalConfig }
+    : baseConfig;
+
+  return createClient(url, anonKey, config);
+};
 
 // Consolidated connection configuration
 export interface ConnectionConfig {
