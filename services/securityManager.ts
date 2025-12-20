@@ -1531,50 +1531,237 @@ private validateRobotData(data: any): ValidationResult {
     return Math.abs(hash).toString(36);
   }
 
-  // Prevent prototype pollution attacks
+  // Enhanced prototype pollution protection
   private isPrototypePollution(obj: any): boolean {
     if (!obj || typeof obj !== 'object') {
       return false;
     }
 
-    // Check for dangerous prototype pollution patterns
-    const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
+    // Check for null prototype objects (common pollution vector)
+    if (Object.getPrototypeOf(obj) === null && Object.keys(obj).length > 0) {
+      return true;
+    }
+
+    // Extended list of dangerous prototype pollution patterns
+    const dangerousKeys = [
+      '__proto__',
+      'constructor',
+      'prototype',
+      '__defineGetter__',
+      '__defineSetter__',
+      '__lookupGetter__',
+      '__lookupSetter__',
+      '__proto__',
+      'constructor.prototype',
+      'constructor.__proto__',
+      'prototype.constructor',
+      'prototype.__proto__'
+    ];
     
+    // Direct key checks
     for (const key of dangerousKeys) {
-      if (key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        return true;
+      }
+      
+      // Check for property access via bracket notation
+      if (obj[key] !== undefined) {
         return true;
       }
     }
 
-    // Check nested objects
-    for (const key in obj) {
-      if (obj.hasOwnProperty(key) && typeof obj[key] === 'object') {
-        if (this.isPrototypePollution(obj[key])) {
-          return true;
+    // Check for inherited dangerous properties
+    try {
+      if (obj.constructor && obj.constructor.prototype) {
+        for (const key of dangerousKeys) {
+          if (obj.constructor.prototype[key] !== undefined) {
+            return true;
+          }
         }
       }
+    } catch (e) {
+      // Ignore errors during prototype checks
+    }
+
+    // Check for polluted Object.prototype
+    const objectProtoKeys = Object.getOwnPropertyNames(Object.prototype);
+    for (const key of objectProtoKeys) {
+      if (key !== 'constructor' && 
+          (obj as any)[key] !== undefined && 
+          (obj as any)[key] !== (Object.prototype as any)[key]) {
+        return true;
+      }
+    }
+
+    // Enhanced nested object checking with depth limit
+    return this.checkNestedPollution(obj, 0, 5); // Max depth 5
+  }
+
+  /**
+   * Recursively check nested objects for prototype pollution
+   */
+  private checkNestedPollution(obj: any, depth: number, maxDepth: number): boolean {
+    if (depth >= maxDepth || !obj || typeof obj !== 'object') {
+      return false;
+    }
+
+    // Avoid infinite recursion with circular references
+    const seen = new WeakSet();
+    if (seen.has(obj)) {
+      return false;
+    }
+    seen.add(obj);
+
+    try {
+      for (const key in obj) {
+        // Skip safe properties
+        if (!Object.prototype.hasOwnProperty.call(obj, key)) {
+          continue;
+        }
+
+        // Check if key itself is dangerous
+        if (this.isDangerousKey(key)) {
+          return true;
+        }
+
+        const value = obj[key];
+        if (value && typeof value === 'object') {
+          // Check nested objects
+          if (this.checkNestedPollution(value, depth + 1, maxDepth)) {
+            return true;
+          }
+        }
+      }
+    } catch (e) {
+      // If we can't iterate, assume it might be polluted
+      return true;
     }
 
     return false;
   }
 
-   // Safe JSON parsing with prototype pollution protection
-   safeJSONParse(jsonString: string): any {
-     try {
-       // First, parse the JSON
-       const parsed = JSON.parse(jsonString);
-       
-       // Then check for prototype pollution
-       if (this.isPrototypePollution(parsed)) {
-         throw new Error('Prototype pollution detected in JSON');
-       }
-       
-       return parsed;
-     } catch (error) {
-       console.error('JSON parsing error:', error);
-       return null;
-     }
-   }
+  /**
+   * Check if a key is dangerous for prototype pollution
+   */
+  private isDangerousKey(key: string): boolean {
+    const dangerousPatterns = [
+      '__proto__',
+      'constructor',
+      'prototype',
+      '__defineGetter__',
+      '__defineSetter__',
+      '__lookupGetter__',
+      '__lookupSetter__',
+      'constructor.prototype',
+      'constructor.__proto__',
+      'prototype.constructor',
+      'prototype.__proto__'
+    ];
+
+    // Direct match
+    if (dangerousPatterns.includes(key)) {
+      return true;
+    }
+
+    // Pattern-based detection for obfuscated attempts
+    const obfuscatedPatterns = [
+      /__proto__/i,
+      /constructor/i,
+      /prototype/i,
+      /_\\u0070\\u0072\\u006f\\u0074\\u006f_/i, // URL encoded __proto__
+      /%5F%5Fproto%5F%5F/i, // URL encoded __proto__
+      /\\x5f\\x5fproto\\x5f\\x5f/i, // Hex encoded __proto__
+    ];
+
+    return obfuscatedPatterns.some(pattern => pattern.test(key));
+  }
+
+  /**
+   * Enhanced safe JSON parsing with comprehensive prototype pollution protection
+   */
+  safeJSONParse(jsonString: string): any {
+    try {
+      // Input validation
+      if (typeof jsonString !== 'string') {
+        throw new Error('JSON input must be a string');
+      }
+
+      // Check for suspicious patterns before parsing
+      const suspiciousPatterns = [
+        /"__proto__"/,
+        /"constructor"/,
+        /"prototype"/,
+        /\\u005f\\u005fproto\\u005f\\u005f/i,
+        /%5F%5Fproto%5F%5F/i,
+        /\\x5f\\x5fproto\\x5f\\x5f/i
+      ];
+
+      for (const pattern of suspiciousPatterns) {
+        if (pattern.test(jsonString)) {
+          throw new Error('Suspicious JSON pattern detected');
+        }
+      }
+
+      // Parse JSON with reviver function to prevent prototype pollution
+      const parsed = JSON.parse(jsonString, (key: string, value: any) => {
+        // Block dangerous keys
+        if (this.isDangerousKey(key)) {
+          return undefined;
+        }
+
+        // Sanitize object values
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          return this.sanitizeObject(value);
+        }
+
+        return value;
+      });
+
+      // Final check for prototype pollution
+      if (this.isPrototypePollution(parsed)) {
+        throw new Error('Prototype pollution detected in parsed JSON');
+      }
+
+      return parsed;
+    } catch (error) {
+      console.error('JSON parsing error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Sanitize object to remove prototype pollution vectors
+   */
+  private sanitizeObject(obj: any): any {
+    if (!obj || typeof obj !== 'object') {
+      return obj;
+    }
+
+    if (Array.isArray(obj)) {
+      return obj.map(item => 
+        item && typeof item === 'object' ? this.sanitizeObject(item) : item
+      );
+    }
+
+    const sanitized: any = {};
+    
+    for (const key in obj) {
+      // Skip dangerous keys
+      if (this.isDangerousKey(key) || !Object.prototype.hasOwnProperty.call(obj, key)) {
+        continue;
+      }
+
+      const value = obj[key];
+      
+      if (value && typeof value === 'object') {
+        sanitized[key] = this.sanitizeObject(value);
+      } else {
+        sanitized[key] = value;
+      }
+    }
+
+    return sanitized;
+  }
    
    /**
     * Validate input based on type

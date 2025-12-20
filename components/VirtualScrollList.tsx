@@ -9,7 +9,7 @@ interface VirtualScrollListProps {
   processingId: string | null;
   onDuplicate: (id: string) => void;
   onDelete: (id: string, name: string) => void;
-  t: (key: string, params?: Record<string, any>) => string;
+  t: (key: string, params?: Record<string, string>) => string;
 }
 
 export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
@@ -46,7 +46,7 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
      );
      
      const duration = performance.now() - startTime;
-     if (duration > 16) { // More than one frame at 60fps
+     if (duration > 16 && import.meta.env.DEV) { // More than one frame at 60fps
        console.warn(`VirtualScrollList filter took ${duration.toFixed(2)}ms for ${robots.length} items`);
      }
      

@@ -10,7 +10,7 @@ export * from './edgeAnalytics';
 export * from './performanceMonitorEnhanced';
 export * from './realUserMonitoring';
 export * from './apiDeduplicator';
-export * from './advancedAPICache';
+
 export * from './databaseOptimizer';
 export * from './realtimeManager';
 export * from './edgeCacheManager';

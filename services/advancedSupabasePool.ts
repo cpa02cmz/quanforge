@@ -97,6 +97,7 @@ class AdvancedSupabasePool {
       url: settings.url || config.url || '',
       anonKey: settings.anonKey || config.anonKey || '',
       region: config.region || process.env['VERCEL_REGION'] || 'unknown',
+      maxConnections: config.maxConnections || this.DEFAULT_CONFIG.maxConnections,
     };
 
     if (!fullConfig.url || !fullConfig.anonKey) {
@@ -124,7 +125,7 @@ class AdvancedSupabasePool {
     const pool = this.pools.get(poolId) || [];
     
     // Try to find an available, healthy connection
-    let connection = pool.find(conn => !conn.isInUse && conn.isHealthy);
+    let connection: PooledConnection | undefined = pool.find(conn => !conn.isInUse && conn.isHealthy);
     
     if (!connection) {
       // Create new connection if under max limit

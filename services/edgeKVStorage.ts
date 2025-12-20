@@ -4,7 +4,16 @@
  * Optimized for session management, caching, and real-time data
  */
 
-import { KV } from '@vercel/kv';
+// Temporarily disabled for Workers compatibility
+// import { KV } from '@vercel/kv';
+
+// Mock KV implementation for Workers compatibility
+const KV = class MockKV {
+  async get() { return null; }
+  async set() { return 'OK'; }
+  async del() { return 1; }
+  async exists() { return 0; }
+};
 
 // Edge KV configuration
 const KV_CONFIG = {
