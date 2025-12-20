@@ -4,6 +4,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
+import { logger, errorLogger } from '../utils/logger';
 import { backendOptimizer } from './backendOptimizer';
 import { databaseOptimizer } from './databaseOptimizer';
 import { queryOptimizer } from './queryOptimizer';
@@ -79,7 +80,7 @@ class BackendOptimizationManager {
    * Initialize the optimization manager and start monitoring
    */
   async initialize(): Promise<void> {
-    console.log('Initializing Backend Optimization Manager...');
+    logger.log('Initializing Backend Optimization Manager...');
     
     // Warm up edge functions
     if (this.config.enableEdgeOptimization) {
@@ -113,7 +114,7 @@ class BackendOptimizationManager {
    */
   private async performOptimizationCycle(): Promise<void> {
     try {
-      console.log('Starting optimization cycle...');
+      logger.log('Starting optimization cycle...');
       
       // Collect current metrics
       const metrics = await this.collectMetrics();
@@ -136,9 +137,9 @@ class BackendOptimizationManager {
         this.optimizationHistory = this.optimizationHistory.slice(-this.MAX_OPTIMIZATION_HISTORY);
       }
       
-      console.log(`Optimization cycle completed. Applied ${recommendations.length} optimizations.`);
+      logger.log(`Optimization cycle completed. Applied ${recommendations.length} optimizations.`);
     } catch (error) {
-      console.error('Error during optimization cycle:', error);
+      errorLogger.error('Error during optimization cycle:', error);
     }
   }
 
@@ -320,7 +321,7 @@ class BackendOptimizationManager {
     // Optimize cache configuration - using available method
     robotCache.getStats();
     
-    console.log('Cache optimization applied');
+    logger.log('Cache optimization applied');
   }
 
   /**
@@ -331,7 +332,7 @@ class BackendOptimizationManager {
     
     // This would typically call database index optimization
     // For now, we'll just log that optimization was applied
-    console.log('Database index optimization applied');
+    logger.log('Database index optimization applied');
   }
 
   /**
@@ -343,7 +344,7 @@ class BackendOptimizationManager {
     // Optimize query configuration
     queryOptimizer.getPerformanceAnalysis();
     
-    console.log('Query optimization applied');
+    logger.log('Query optimization applied');
   }
 
   /**
@@ -355,7 +356,7 @@ class BackendOptimizationManager {
     // Warm up all edge functions
     await edgeOptimizer.warmupAllFunctions();
     
-    console.log('Edge function optimization applied');
+    logger.log('Edge function optimization applied');
   }
 
   /**
@@ -367,14 +368,14 @@ class BackendOptimizationManager {
       // robotCache doesn't have optimizeConfiguration method, so we'll skip this for now
     }
     
-    console.log('Compression optimization applied');
+    logger.log('Compression optimization applied');
   }
 
   /**
    * Perform generic optimization
    */
   private async performGenericOptimization(recommendation: string): Promise<void> {
-    console.log(`Applied generic optimization: ${recommendation}`);
+    logger.log(`Applied generic optimization: ${recommendation}`);
   }
 
   /**
@@ -395,7 +396,7 @@ class BackendOptimizationManager {
       // await queryCache.preload(commonQueries);
     }
     
-    console.log('Common caches warmed up');
+    logger.log('Common caches warmed up');
   }
 
   /**
@@ -409,12 +410,12 @@ class BackendOptimizationManager {
     const slowQueries = report.topSlowQueries.filter(q => q.query.includes(tableName));
     
     if (slowQueries.length > 0) {
-      console.log(`Optimizing queries for table: ${tableName}`);
+      logger.log(`Optimizing queries for table: ${tableName}`);
       
       // This would typically add indexes or optimize queries
       // For now, we'll just log the optimization
       for (const query of slowQueries) {
-        console.log(`Optimizing slow query: ${query.query.substring(0, 100)}...`);
+        logger.log(`Optimizing slow query: ${query.query.substring(0, 100)}...`);
       }
     }
   }
@@ -445,7 +446,7 @@ class BackendOptimizationManager {
     if (!this.config.enableDatabaseOptimization) return;
     
     await databaseOptimizer.runDatabaseMaintenance(client);
-    console.log('Database maintenance completed');
+    logger.log('Database maintenance completed');
   }
 
   /**
@@ -470,7 +471,7 @@ class BackendOptimizationManager {
     backendOptimizer.destroy();
     databasePerformanceMonitor.destroy();
     
-    console.log('Backend Optimization Manager shut down');
+    logger.log('Backend Optimization Manager shut down');
   }
 
   /**
@@ -883,7 +884,7 @@ class BackendOptimizationManager {
         // Check execution time constraint
         const executionTime = Date.now() - startTime;
         if (executionTime > maxTime) {
-          console.warn(`System optimization exceeded time limit: ${executionTime}ms > ${maxTime}ms`);
+          errorLogger.warn(`System optimization exceeded time limit: ${executionTime}ms > ${maxTime}ms`);
         }
         
         return {
@@ -911,7 +912,7 @@ if (typeof window !== 'undefined') {
   // In browser environment, initialize after a short delay
   setTimeout(() => {
     backendOptimizationManager.initialize().catch(error => {
-      console.error('Failed to initialize optimization manager:', error);
+      errorLogger.error('Failed to initialize optimization manager:', error);
     });
   }, 2000);
 }

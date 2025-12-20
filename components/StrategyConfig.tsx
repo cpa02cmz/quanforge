@@ -13,7 +13,7 @@ const logger = createScopedLogger('StrategyConfig');
 
 interface StrategyConfigProps {
   params: StrategyParams;
-  onChange: (params: StrategyParams) => void;
+  onChange: (params: StrategyParams) => void; // eslint-disable-line no-unused-vars
   onApply?: () => void;
   isApplying?: boolean;
   onReset?: () => void;

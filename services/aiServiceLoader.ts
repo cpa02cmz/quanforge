@@ -1,4 +1,6 @@
 // Dynamic AI service loader for optimal bundle splitting
+import { errorLogger } from '../utils/logger';
+
 let geminiService: typeof import('./gemini') | null = null;
 let serviceLoadPromise: Promise<typeof import('./gemini')> | null = null;
 
@@ -21,7 +23,7 @@ export const loadGeminiService = async (): Promise<typeof import('./gemini')> =>
       geminiService = service;
       return service;
     } catch (error) {
-      console.error('Failed to load gemini service:', error);
+      errorLogger.error('Failed to load gemini service:', error);
       // Reset the promise on error to allow retry
       serviceLoadPromise = null;
       throw error;
@@ -37,7 +39,7 @@ export const preloadGeminiService = () => {
   if (!geminiService && !serviceLoadPromise) {
     // Preload with error handling to prevent unhandled rejections
     loadGeminiService().catch(error => {
-      console.warn('AI service preload failed:', error);
+      errorLogger.warn('AI service preload failed:', error);
     });
   }
 };

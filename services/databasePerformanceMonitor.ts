@@ -3,6 +3,8 @@
  * Monitors and optimizes database performance for Supabase integration
  */
 
+import { logger, errorLogger } from '../utils/logger';
+
 interface DatabaseMetrics {
   queryTime: number;
   cacheHitRate: number;
@@ -136,13 +138,11 @@ class DatabasePerformanceMonitor {
     const optimizationSuggestions = this.suggestOptimizations();
 
     // Log analysis results
-    if (process.env['NODE_ENV'] === 'development') {
-      console.log('Database Performance Analysis:', {
+    logger.log('Database Performance Analysis:', {
         queryPatterns,
         indexSuggestions,
         optimizationSuggestions,
       });
-    }
   }
 
   private analyzeQueryPatterns(): any {
@@ -350,7 +350,7 @@ class DatabasePerformanceMonitor {
       this.alerts = this.alerts.filter((alert) => Date.now() - alert.timestamp < 3600000); // 1 hour
 
       // Log alert
-      console.warn(`Database Performance Alert [${severity.toUpperCase()}]: ${message}`);
+      errorLogger.warn(`Database Performance Alert [${severity.toUpperCase()}]: ${message}`);
     }
   }
 

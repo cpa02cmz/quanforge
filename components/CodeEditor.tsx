@@ -6,6 +6,7 @@ interface CodeEditorProps {
   code: string;
   readOnly?: boolean;
   filename?: string;
+  // eslint-disable-next-line no-unused-vars
   onChange?: (newCode: string) => void;
   onRefine?: () => void;
   onExplain?: () => void; // New Prop

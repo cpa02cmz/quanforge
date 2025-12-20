@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { errorLogger } from '../../utils/logger';
 import { databasePerformanceMonitor } from '../../services/databasePerformanceMonitor';
 import { edgeCacheStrategy } from '../../services/edgeCacheStrategy';
 import { enhancedConnectionPool } from '../../services/enhancedSupabasePool';

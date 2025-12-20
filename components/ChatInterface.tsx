@@ -20,6 +20,7 @@ const ChatInterfaceLoading = () => (
 
 interface ChatInterfaceProps {
   messages: Message[];
+  // eslint-disable-next-line no-unused-vars
   onSendMessage: (content: string) => void;
   isLoading: boolean;
   onClear?: () => void;
@@ -27,7 +28,8 @@ interface ChatInterfaceProps {
 }
 
 // Extract and memoize Message component to prevent re-renders of the whole list on input change
-const MemoizedMessage = memo(({ msg, formatMessageContent }: { msg: Message, formatMessageContent: (c: string) => any }) => {
+// eslint-disable-next-line no-unused-vars
+const MemoizedMessage = memo(({ msg, formatMessageContent }: { msg: Message, formatMessageContent: (content: string) => any }) => {
     return (
         <div className={`flex ${msg.role === MessageRole.USER ? 'justify-end' : 'justify-start'}`}>
             <div
