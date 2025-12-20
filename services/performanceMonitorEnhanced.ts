@@ -109,7 +109,13 @@ class PerformanceMonitor {
   private async monitorCoreWebVitals(): Promise<void> {
     try {
       // Load web-vitals library dynamically
-      const webVitals = await import('web-vitals');
+      let webVitals: any;
+      try {
+        webVitals = await import('web-vitals');
+      } catch (error) {
+        console.warn('web-vitals not available, skipping core web vitals monitoring');
+        return;
+      }
       
       const recordMetric = (metric: any) => {
         const vital: CoreWebVital = {
