@@ -97,7 +97,7 @@ class AdvancedSupabasePool {
       url: settings.url || config.url || '',
       anonKey: settings.anonKey || config.anonKey || '',
       region: config.region || process.env['VERCEL_REGION'] || 'unknown',
-      maxConnections: config.maxConnections || this.DEFAULT_CONFIG.maxConnections,
+      maxConnections: config.maxConnections ?? this.DEFAULT_CONFIG.maxConnections,
     };
 
     if (!fullConfig.url || !fullConfig.anonKey) {
@@ -236,7 +236,7 @@ class AdvancedSupabasePool {
         .single();
 
       const result = await Promise.race([healthPromise, timeoutPromise]);
-      return !result.error;
+      return result === false ? false : !result.error;
     } catch (error) {
       return false;
     }
@@ -245,7 +245,7 @@ class AdvancedSupabasePool {
   /**
    * Wait for an available connection
    */
-  private async waitForAvailableConnection(poolId: string, timeout: number): Promise<PooledConnection | null> {
+  private async waitForAvailableConnection(poolId: string, timeout: number): Promise<PooledConnection | undefined> {
     const startTime = Date.now();
     
     while (Date.now() - startTime < timeout) {
@@ -260,7 +260,7 @@ class AdvancedSupabasePool {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     
-    return null;
+    return undefined;
   }
 
   /**

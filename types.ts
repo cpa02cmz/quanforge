@@ -265,3 +265,11 @@ export interface ConfigImport {
   customInputs?: CustomInput[];
   [key: string]: unknown; // Allow additional properties
 }
+
+// Generic data record interface for database operations
+export interface DataRecord {
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: unknown;
+}

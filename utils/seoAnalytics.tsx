@@ -501,7 +501,7 @@ export const optimizeTwitterCard = (title: string, description: string, image?: 
 
 // Robots meta tag generator
 export const generateRobotsMeta = (index: boolean = true, follow: boolean = true, noArchive: boolean = false): string => {
-  const directives = [];
+  const directives: string[] = [];
   
   if (!index) directives.push('noindex');
   if (!follow) directives.push('nofollow');

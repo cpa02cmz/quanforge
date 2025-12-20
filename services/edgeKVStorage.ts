@@ -54,8 +54,8 @@ class EdgeKVClient {
 
   constructor() {
     this.client = new KV({
-      url: process.env.KV_REST_API_URL,
-      token: process.env.KV_REST_API_TOKEN,
+      url: process.env['KV_REST_API_URL'],
+      token: process.env['KV_REST_API_TOKEN'],
     });
   }
 

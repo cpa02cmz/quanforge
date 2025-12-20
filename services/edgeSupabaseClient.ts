@@ -33,7 +33,7 @@ class EdgeSupabaseClient {
   constructor(config: EdgeSupabaseConfig) {
     this.config = {
       ...config,
-      region: process.env.VERCEL_REGION || 'iad1',
+      region: process.env['VERCEL_REGION'] || 'iad1',
       enableEdgeCache: true,
       cacheTTL: 300000, // 5 minutes
       enableRetry: true,
@@ -474,7 +474,7 @@ class EdgeSupabaseClient {
     resultCount: number,
     priority: string
   ): void {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env['NODE_ENV'] === 'development') {
       console.log(
         `Edge Query Performance: ${table}.${query} - ${duration.toFixed(2)}ms, ${resultCount} results, priority: ${priority}`
       );
@@ -488,7 +488,7 @@ class EdgeSupabaseClient {
     }
 
       // Send metrics to monitoring service
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env['NODE_ENV'] === 'production') {
         // In production, send to your monitoring service
         // vercelEdgeOptimizer.recordMetric('edge_query', {
         //   table,
@@ -545,6 +545,6 @@ export const createEdgeSupabaseClient = (config: EdgeSupabaseConfig): EdgeSupaba
 
 // Default client instance
 export const edgeSupabase = createEdgeSupabaseClient({
-  url: process.env.VITE_SUPABASE_URL || '',
-  anonKey: process.env.VITE_SUPABASE_ANON_KEY || '',
+  url: process.env['VITE_SUPABASE_URL'] || '',
+  anonKey: process.env['VITE_SUPABASE_ANON_KEY'] || '',
 });

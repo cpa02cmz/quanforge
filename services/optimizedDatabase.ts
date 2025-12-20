@@ -3,7 +3,7 @@
  * Consolidates database operations with better performance and caching
  */
 
-import { cacheManager } from './unifiedCache';
+import { globalCache } from './unifiedCacheManager';
 import { performanceMonitor } from '../utils/performance';
 
 export interface DatabaseConfig {
@@ -267,7 +267,7 @@ async search<T>(
       }
     } else {
       // Tag-based invalidation through cache manager
-      cacheManager.invalidateEverywhere(pattern.join('_'));
+      globalCache.delete(pattern.join('_'));
     }
   }
 

@@ -394,7 +394,7 @@ class APIResponseCache {
   }
 
   // Cache warming for popular endpoints
-  private async warmCache(): Promise<void> {
+  async warmCache(): Promise<void> {
     if (!CACHE_CONFIG.WARMING.ENABLED) return;
 
     try {

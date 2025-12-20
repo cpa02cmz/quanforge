@@ -222,7 +222,7 @@ class SupabaseConnectionPool {
     // Geographic proximity scoring (increased priority for region match)
     const currentRegion = typeof window !== 'undefined' 
       ? 'client' 
-      : process.env.VERCEL_REGION || 'unknown';
+      : process.env['VERCEL_REGION'] || 'unknown';
     
     if (replica.region === currentRegion) {
       score += 2000; // Increased priority for region match

@@ -1,4 +1,4 @@
-import { AdvancedCache, CacheConfig } from './advancedCache';
+import { UnifiedCacheManager } from './unifiedCacheManager';
 
 // Extended config for distributed cache
 interface DistributedCacheConfig {
