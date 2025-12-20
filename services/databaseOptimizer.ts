@@ -201,170 +201,86 @@ class DatabaseOptimizer {
     return { ...this.metrics };
   }
 
-   /**
-    * Advanced query optimization with actual batch execution for better performance
-    */
-   async executeBatchedQueries<T>(
-     client: SupabaseClient,
-     operations: Array<{ 
-       table: string; 
-       operation: 'select' | 'insert' | 'update' | 'delete'; 
-       params: any 
-     }>
-   ): Promise<Array<{ data: T | null; error: any }>> {
-     if (!this.config.enableQueryBatching) {
-       // Execute operations individually if batching is disabled
-       const results: Array<{ data: T | null; error: any }> = [];
-       for (const op of operations) {
-         let result: { data: T | null; error: any };
-         switch (op.operation) {
-           case 'select':
-             const selectResult = await client.from(op.table).select('*').match(op.params);
-             result = { data: selectResult.data as T | null, error: selectResult.error };
-             break;
-           case 'insert':
-             const insertResult = await client.from(op.table).insert(op.params);
-             result = { data: insertResult.data as T | null, error: insertResult.error };
-             break;
-           case 'update':
-             const updateResult = await client.from(op.table).update(op.params.data).match(op.params.filter || op.params);
-             result = { data: updateResult.data as T | null, error: updateResult.error };
-             break;
-           case 'delete':
-             const deleteResult = await client.from(op.table).delete().match(op.params);
-             result = { data: deleteResult.data as T | null, error: deleteResult.error };
-             break;
-           default:
-             result = { data: null, error: { message: 'Invalid operation' } };
-         }
-         results.push(result);
-       }
-       return results;
-     }
+  /**
+   * Optimize query execution by batching similar operations
+   */
+  async executeBatchedQueries<T>(
+    client: SupabaseClient,
+    operations: Array<{ 
+      table: string; 
+      operation: 'select' | 'insert' | 'update' | 'delete'; 
+      params: any 
+    }>
+  ): Promise<Array<{ data: T | null; error: any }>> {
+    if (!this.config.enableQueryBatching) {
+      // Execute operations individually if batching is disabled
+      const results: Array<{ data: T | null; error: any }> = [];
+      for (const op of operations) {
+        let result: { data: T | null; error: any };
+        switch (op.operation) {
+          case 'select':
+            const selectResult = await client.from(op.table).select('*').match(op.params);
+            result = { data: selectResult.data as T | null, error: selectResult.error };
+            break;
+          case 'insert':
+            const insertResult = await client.from(op.table).insert(op.params);
+            result = { data: insertResult.data as T | null, error: insertResult.error };
+            break;
+          case 'update':
+            const updateResult = await client.from(op.table).update(op.params.data).match(op.params.filter);
+            result = { data: updateResult.data as T | null, error: updateResult.error };
+            break;
+          case 'delete':
+            const deleteResult = await client.from(op.table).delete().match(op.params);
+            result = { data: deleteResult.data as T | null, error: deleteResult.error };
+            break;
+          default:
+            result = { data: null, error: { message: 'Invalid operation' } };
+        }
+        results.push(result);
+      }
+      return results;
+    }
 
-     // Group similar queries for optimization
-     const groupedOperations = this.groupSimilarQueries(operations);
-     const results: Array<{ data: T | null; error: any }> = [];
+    // Group similar queries for optimization
+    const groupedOperations = this.groupSimilarQueries(operations);
+    const results: Array<{ data: T | null; error: any }> = [];
 
-     for (const group of groupedOperations) {
-       if (group.length === 1) {
-         // Execute single operation
-         const op = group[0];
-         let result: { data: T | null; error: any };
-         switch (op.operation) {
-           case 'select':
-             const selectResult = await client.from(op.table).select('*').match(op.params);
-             result = { data: selectResult.data as T | null, error: selectResult.error };
-             break;
-           case 'insert':
-             const insertResult = await client.from(op.table).insert(op.params);
-             result = { data: insertResult.data as T | null, error: insertResult.error };
-             break;
-           case 'update':
-             const updateResult = await client.from(op.table).update(op.params.data).match(op.params.filter || op.params);
-             result = { data: updateResult.data as T | null, error: updateResult.error };
-             break;
-           case 'delete':
-             const deleteResult = await client.from(op.table).delete().match(op.params);
-             result = { data: deleteResult.data as T | null, error: deleteResult.error };
-             break;
-           default:
-             result = { data: null, error: { message: 'Invalid operation' } };
-         }
-         results.push(result);
-       } else {
-         // Execute actual batched operations for better performance
-         const batchResult = await this.executeActualBatchedQuery<T>(client, group);
-         results.push(...batchResult);
-       }
-     }
+    for (const group of groupedOperations) {
+      if (group.length === 1) {
+        // Execute single operation
+        const op = group[0];
+        let result: { data: T | null; error: any };
+        switch (op.operation) {
+          case 'select':
+            const selectResult = await client.from(op.table).select('*').match(op.params);
+            result = { data: selectResult.data as T | null, error: selectResult.error };
+            break;
+          case 'insert':
+            const insertResult = await client.from(op.table).insert(op.params);
+            result = { data: insertResult.data as T | null, error: insertResult.error };
+            break;
+          case 'update':
+            const updateResult = await client.from(op.table).update(op.params.data).match(op.params.filter);
+            result = { data: updateResult.data as T | null, error: updateResult.error };
+            break;
+          case 'delete':
+            const deleteResult = await client.from(op.table).delete().match(op.params);
+            result = { data: deleteResult.data as T | null, error: deleteResult.error };
+            break;
+          default:
+            result = { data: null, error: { message: 'Invalid operation' } };
+        }
+        results.push(result);
+      } else {
+        // Execute batched operations (simplified implementation)
+        const batchResult = await this.executeBatchedQuery<T>(group);
+        results.push(...batchResult);
+      }
+    }
 
-     return results;
-   }
-
-   /**
-    * Execute actual batched query operations using Supabase's built-in batching
-    */
-   private async executeActualBatchedQuery<T>(
-     client: SupabaseClient,
-     operations: Array<{ 
-       table: string; 
-       operation: 'select' | 'insert' | 'update' | 'delete'; 
-       params: any 
-     }>
-   ): Promise<Array<{ data: T | null; error: any }>> {
-     // For similar operations on the same table, execute them in a single transaction
-     if (operations.length === 0) return [];
-     
-     // Group by table and operation type
-     const groupedByTable = operations.reduce((acc, op) => {
-       const key = `${op.table}_${op.operation}`;
-       if (!acc[key]) {
-         acc[key] = [];
-       }
-       acc[key].push(op);
-       return acc;
-     }, {} as Record<string, typeof operations>);
-
-     const results: Array<{ data: T | null; error: any }> = [];
-
-     // Process each group
-     for (const [key, group] of Object.entries(groupedByTable)) {
-       const [table, operation] = key.split('_');
-       
-       switch (operation as 'select' | 'insert' | 'update' | 'delete') {
-         case 'insert':
-           // Batch insert operations
-           const insertParams = group.map(op => op.params);
-           const insertResult = await client.from(table).insert(insertParams).select();
-           // Map results back to individual operations
-           for (let i = 0; i < group.length; i++) {
-             results.push({
-               data: insertResult.data ? insertResult.data[i] : null,
-               error: insertResult.error
-             });
-           }
-           break;
-           
-         case 'update':
-           // For updates, we need to execute each separately since they may have different match conditions
-           for (const op of group) {
-             const updateResult = await client.from(table).update(op.params.data).match(op.params.filter || op.params);
-             results.push({
-               data: updateResult.data as T | null,
-               error: updateResult.error
-             });
-           }
-           break;
-           
-         case 'delete':
-           // For deletes, we can batch by match conditions
-           const uniqueParams = [...new Set(group.map(op => JSON.stringify(op.params)))];
-           for (const paramStr of uniqueParams) {
-             const param = JSON.parse(paramStr);
-             const deleteResult = await client.from(table).delete().match(param);
-             results.push({
-               data: deleteResult.data as T | null,
-               error: deleteResult.error
-             });
-           }
-           break;
-           
-         default:
-           // For select operations, execute each separately
-           for (const op of group) {
-             const selectResult = await client.from(table).select('*').match(op.params);
-             results.push({
-               data: selectResult.data as T | null,
-               error: selectResult.error
-             });
-           }
-           break;
-       }
-     }
-
-     return results;
-   }
+    return results;
+  }
 
   /**
    * Group similar queries for batching
@@ -428,19 +344,13 @@ class DatabaseOptimizer {
     return queries.map(() => ({ data: null as T | null, error: null }));
   }
 
-   /**
-    * Execute a single query (placeholder implementation)
-    */
-   private async executeQuery<T>(operation: string, params: any): Promise<T> {
-     // Placeholder implementation
-     return { data: null, error: null } as any;
-   }
-
-
-
-
-
-
+  /**
+   * Execute a single query (placeholder implementation)
+   */
+  private async executeQuery<T>(operation: string, params: any): Promise<T> {
+    // Placeholder implementation
+    return { data: null, error: null } as any;
+  }
  
   /**
    * Get query optimization recommendations based on current performance

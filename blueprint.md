@@ -73,3 +73,15 @@ graph TD
 *   **API Keys**: Accessed via `process.env`.
 *   **Input Sanitization**: Filenames are sanitized before download.
 *   **Prompt Engineering**: System prompts prevents the AI from generating harmful or non-MQL5 content.
+
+## 6. Deployment Considerations
+
+### Build Compatibility
+- **Cross-Platform Environment**: All code must work in browser, Node.js, and edge environments
+- **Module Restrictions**: Avoid Node.js-specific modules (`crypto`, `fs`, `path`) in frontend code
+- **Schema Compliance**: Platform configuration files must follow current schema requirements
+
+### Known Issues & Solutions
+- **Browser Crypto**: Replace Node.js `crypto` with browser-compatible alternatives
+- **Vercel Schema**: Use minimal, schema-compliant `vercel.json` configuration
+- **Build Validation**: Always run build and typecheck before deployment

@@ -226,37 +226,19 @@ dbUtils.resetPerformanceMetrics();
 ## 9. Best Practices
 
 ### For Developers
- 1. Use `searchRobots()` instead of filtering in components for better performance
- 2. Use `getRobotsPaginated()` for large datasets to avoid memory issues
- 3. Monitor performance metrics regularly using `dbUtils.logPerformanceMetrics()`
- 4. Call `optimizeDatabase()` periodically to maintain data quality
- 5. Use `batchUpdateRobots()` for bulk updates instead of individual calls
- 6. Leverage `databaseOptimizer` for advanced optimization features
- 7. Implement proper error handling with the resilient Supabase client
- 8. Use securityManager to validate all inputs before database operations
+1. Use `searchRobots()` instead of filtering in components for better performance
+2. Use `getRobotsPaginated()` for large datasets to avoid memory issues
+3. Monitor performance metrics regularly using `dbUtils.logPerformanceMetrics()`
+4. Call `optimizeDatabase()` periodically to maintain data quality
+5. Use `batchUpdateRobots()` for bulk updates instead of individual calls
+6. Leverage `databaseOptimizer` for advanced optimization features
+7. Implement proper error handling with the resilient Supabase client
+8. Use securityManager to validate all inputs before database operations
 
 ### For Users
- 1. Large robot collections will now perform better due to indexing
- 2. Search operations are significantly faster with full-text search
- 3. Database maintenance helps keep data clean and efficient
- 4. Performance metrics help identify bottlenecks
- 5. Enhanced security protects against malicious inputs
- 6. Better resilience during network issues
-
-## 10. Additional Database Optimizations (Latest)
-
-### 10.1 Enhanced Query Optimizer Features
-- **Popular Robots Query**: Optimized method to retrieve most viewed robots efficiently
-- **User Robots Query**: Specialized query for user-specific robot retrieval with higher default limits
-- **Trending Robots Query**: Time-based popularity queries with automatic caching
-- **Advanced Filtering**: Support for isActive, isPublic, and minViews filters
-
-### 10.2 Migration Files
-- **001_database_optimizations.sql**: Core schema and indexing optimizations
-- **002_additional_database_optimizations.sql**: Advanced indexes, functions, and analytics views
-
-### 10.3 Performance Enhancements
-- **Connection Pool Optimization**: Health checks and efficient connection reuse
-- **Predictive Caching**: Preloading based on usage patterns
-- **Advanced Analytics**: Enhanced robot recommendation engine
-- **Bulk Operation Optimization**: Improved performance for batch operations
+1. Large robot collections will now perform better due to indexing
+2. Search operations are significantly faster with full-text search
+3. Database maintenance helps keep data clean and efficient
+4. Performance metrics help identify bottlenecks
+5. Enhanced security protects against malicious inputs
+6. Better resilience during network issues
