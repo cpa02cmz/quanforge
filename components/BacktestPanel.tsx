@@ -22,7 +22,7 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = React.memo(({
     onRun, 
     result, 
     isRunning,
-    _analysisExists 
+    analysisExists 
 }) => {
     const { t } = useTranslation();
 
