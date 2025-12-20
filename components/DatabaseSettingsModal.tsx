@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, memo } from 'react';
-import { DBSettings } from '../types';
+import { DBSettings, DatabaseStats, ConnectionTestResult, MigrationResult, DBMode } from '../types';
 import { settingsManager, DEFAULT_DB_SETTINGS } from '../services/settingsManager';
 import { dbUtils } from '../services/supabase';
 import { useToast } from './Toast';
@@ -18,7 +18,7 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
     const { showToast } = useToast();
     const { t } = useTranslation();
     const [settings, setSettings] = useState<DBSettings>(DEFAULT_DB_SETTINGS);
-    const [stats, setStats] = useState<{ count: number; storageType: string } | null>(null);
+    const [stats, setStats] = useState<DatabaseStats | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isMigrating, setIsMigrating] = useState(false);
 
@@ -38,8 +38,8 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
         }
     };
 
-    const handleSave = (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSave = (_e: React.FormEvent) => {
+        _e.preventDefault();
         settingsManager.saveDBSettings(settings);
         showToast('Database Settings saved. Client reloaded.', 'success');
         loadStats();
@@ -50,7 +50,7 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
         // Save temporary settings to test connection against input values
         settingsManager.saveDBSettings(settings);
         
-        const result = await dbUtils.checkConnection();
+        const result: ConnectionTestResult = await dbUtils.checkConnection();
         setIsLoading(false);
         
         if (result.success) {
@@ -70,15 +70,16 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
         
         setIsMigrating(true);
         try {
-            const res = await dbUtils.migrateMockToSupabase();
+            const res: MigrationResult = await dbUtils.migrateMockToSupabase();
             if (res.success) {
                 showToast(`Successfully migrated ${res.count} robots to Cloud.`, 'success');
                 loadStats();
             } else {
                 showToast(`Migration failed: ${res.error}`, 'error');
             }
-        } catch (e: any) {
-             showToast(`Migration error: ${e.message}`, 'error');
+        } catch (e: unknown) {
+            const error = e as Error;
+            showToast(`Migration error: ${error.message}`, 'error');
         } finally {
             setIsMigrating(false);
         }
@@ -114,7 +115,7 @@ return (
                                     name="mode"
                                     value="mock"
                                     checked={settings.mode === 'mock'}
-                                    onChange={(e) => setSettings({ ...settings, mode: e.target.value as any })}
+                                    onChange={(e) => setSettings({ ...settings, mode: e.target.value as DBMode })}
                                     className="mr-3 text-brand-600 focus:ring-brand-500"
                                 />
                                 <div>
@@ -128,7 +129,7 @@ return (
                                     name="mode"
                                     value="supabase"
                                     checked={settings.mode === 'supabase'}
-                                    onChange={(e) => setSettings({ ...settings, mode: e.target.value as any })}
+                                    onChange={(e) => setSettings({ ...settings, mode: e.target.value as DBMode })}
                                     className="mr-3 text-brand-600 focus:ring-brand-500"
                                 />
                                 <div>

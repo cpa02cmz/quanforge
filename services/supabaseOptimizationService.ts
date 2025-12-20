@@ -3,7 +3,7 @@
  * Provides advanced optimization for Supabase integration in edge environments
  */
 
-import { enhancedConnectionPool } from './enhancedSupabasePool';
+import { advancedSupabasePool } from './advancedSupabasePool';
 import { edgeConnectionPool } from './edgeSupabasePool';
 import { settingsManager } from './settingsManager';
 import { globalCache } from './unifiedCacheManager';
@@ -107,7 +107,7 @@ class SupabaseOptimizationService {
 
   private configureConnectionPools(): void {
     // Optimize enhanced connection pool for Supabase
-    enhancedConnectionPool.updateConfig({
+    advancedSupabasePool.updateConfig({
       maxConnections: 6,
       minConnections: 2,
       acquireTimeout: 1000,
@@ -124,7 +124,7 @@ class SupabaseOptimizationService {
   }
 
   private updateMetrics(): void {
-    const poolStats = enhancedConnectionPool.getStats();
+    const poolStats = advancedSupabasePool.getStats();
     const cacheMetrics = globalCache.getMetrics();
     
     this.metrics.connections = {
@@ -206,7 +206,7 @@ class SupabaseOptimizationService {
     
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        const client = await enhancedConnectionPool.acquire(undefined, useReadReplica);
+        const client = await advancedSupabasePool.acquire(undefined, useReadReplica);
         
         try {
           const result = await Promise.race([
@@ -219,7 +219,7 @@ class SupabaseOptimizationService {
           return result;
           
         } finally {
-          enhancedConnectionPool.release(client);
+          advancedSupabasePool.release(client);
         }
         
       } catch (error) {

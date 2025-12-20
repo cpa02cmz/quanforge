@@ -246,8 +246,8 @@ class QueryBatcher {
     const results: BatchResult[] = [];
 
     // Get Supabase client
-    const { enhancedConnectionPool } = await import('./enhancedSupabasePool');
-    const client = await enhancedConnectionPool.acquire(undefined, operation === 'select');
+    const { advancedSupabasePool } = await import('./advancedSupabasePool');
+    const client = await advancedSupabasePool.acquire(undefined, operation === 'select');
 
     try {
       switch (operation) {
@@ -267,7 +267,7 @@ class QueryBatcher {
           throw new Error(`Unsupported operation: ${operation}`);
       }
     } finally {
-      enhancedConnectionPool.release(client);
+      advancedSupabasePool.release('default', client);
     }
 
     return results;
@@ -291,19 +291,23 @@ class QueryBatcher {
       try {
         let queryBuilder = client.from(combined.table!);
 
+        // Build the query - type assertion to handle chaining
+        let query: any = client.from(combined.table!);
+
         // Apply combined filters
         if (combined.combinedFilters) {
           for (const filter of combined.combinedFilters) {
-            queryBuilder = queryBuilder.filter(filter.column, filter.operator, filter.value);
+            query = query.filter(filter.column, filter.operator, filter.value);
           }
         }
 
         // Apply select columns
         if (combined.selectColumns) {
-          queryBuilder = queryBuilder.select(combined.selectColumns);
+          query = query.select(combined.selectColumns);
         }
 
-        const { data, error } = await queryBuilder;
+        // Execute the query
+        const { data, error } = await query;
 
         const executionTime = performance.now() - startTime;
 

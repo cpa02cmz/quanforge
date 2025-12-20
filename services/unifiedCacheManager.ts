@@ -51,6 +51,7 @@ interface CacheStrategy {
 // Enhanced Unified Cache Manager for edge optimization
 export class UnifiedCacheManager {
   private cache = new Map<string, CacheEntry>();
+  private strategies = new Map<string, CacheStrategy>();
   private metrics: CacheMetrics;
   private options: Required<CacheOptions>;
   private cleanupTimer: number | null = null;
@@ -679,4 +680,13 @@ export const cacheInvalidateByTags = (tags: string[]): Promise<number> =>
 export const cacheInvalidateByRegion = (region: string): Promise<number> => 
   globalCache.invalidateByRegion(region);
 
-export type { CacheOptions, CacheMetrics };
+// Export specialized cache instances for backward compatibility
+export const robotCache = globalCache;
+export const marketDataCache = globalCache;
+export const analysisCache = globalCache;
+
+export type { CacheOptions, CacheMetrics, CacheEntry, CacheStrategy };
+
+// For backward compatibility, export CacheFactory and CacheStats aliases
+export const CacheFactory = globalCache;
+export type CacheStats = CacheMetrics;

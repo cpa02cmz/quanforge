@@ -185,11 +185,10 @@ class StreamingQueryResults {
     }
 
     // Execute batches with concurrency control
-    const concurrentTasks = this.limitConcurrency(tasks, this.config.maxConcurrency);
+    const batchResults = await this.limitConcurrency(tasks, this.config.maxConcurrency);
     
-    for (const task of concurrentTasks) {
+    for (const batch of batchResults) {
       try {
-        const batch = await task;
         
         // Apply transformations and filters
         const processedBatch = this.processBatch(batch, streamOptions);
@@ -250,7 +249,7 @@ class StreamingQueryResults {
     },
     batchNumber: number
   ): Promise<T[]> {
-    let query = client.from(table);
+    let query: any = client.from(table);
 
     if (options.select) {
       query = query.select(options.select);
@@ -363,11 +362,17 @@ class StreamingQueryResults {
    * Check if memory threshold is exceeded
    */
   private isMemoryThresholdExceeded(): boolean {
-    if (typeof performance === 'undefined' || !performance.memory) {
+    if (typeof performance === 'undefined') {
       return false;
     }
 
-    const memoryMB = performance.memory.usedJSHeapSize / 1024 / 1024;
+    // Type cast to access memory property (Chrome-specific extension)
+    const perf = performance as any;
+    if (!perf.memory) {
+      return false;
+    }
+
+    const memoryMB = perf.memory.usedJSHeapSize / 1024 / 1024;
     return memoryMB > this.config.memoryThreshold;
   }
 
@@ -397,8 +402,11 @@ class StreamingQueryResults {
     }
 
     // Update memory usage
-    if (typeof performance !== 'undefined' && performance.memory) {
-      this.metrics.memoryUsage = performance.memory.usedJSHeapSize / 1024 / 1024; // MB
+    if (typeof performance !== 'undefined') {
+      const perf = performance as any;
+      if (perf.memory) {
+        this.metrics.memoryUsage = perf.memory.usedJSHeapSize / 1024 / 1024; // MB
+      }
     }
   }
 

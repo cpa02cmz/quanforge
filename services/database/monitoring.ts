@@ -63,7 +63,7 @@ export class QueryOptimizer {
       return result;
     } catch (error) {
       DatabaseMonitor.recordOperation(queryName, performance.now() - startTime, false);
-      handleError(error, queryName);
+      handleError(error as Error | string, queryName);
       throw error;
     }
   }
@@ -165,7 +165,7 @@ if (typeof window !== 'undefined') {
   ConnectionHealthMonitor.startHealthCheck();
   
   // Log metrics periodically in development
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env['NODE_ENV'] === 'development') {
     setInterval(() => {
       const metrics = collectDatabaseMetrics();
       console.log('Database Metrics:', metrics);

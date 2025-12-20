@@ -10,10 +10,10 @@ export * from './edgeAnalytics';
 export * from './performanceMonitorEnhanced';
 export * from './realUserMonitoring';
 export * from './apiDeduplicator';
-export * from './advancedAPICache';
+
 export * from './databaseOptimizer';
 export * from './realtimeManager';
-export * from './edgeCacheManager';
+
 export * from './edgeSupabaseClient';
 export * from './marketData';
 export * from './edgeMonitoring';
@@ -24,4 +24,3 @@ export * from './requestThrottler';
 export * from './readReplicaManager';
 export * from './queryBatcher';
 export * from './edgeKVStorage';
-export * from './realTimeUXScoring';

@@ -6,7 +6,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { queryOptimizer } from './queryOptimizer';
 import { databasePerformanceMonitor } from './databasePerformanceMonitor';
-import { robotCache } from './advancedCache';
+import { globalCache } from './unifiedCacheManager';
 
 interface RequestDeduplicationEntry {
   promise: Promise<any>;
@@ -250,7 +250,7 @@ class BackendOptimizer {
       const dbMetrics = databasePerformanceMonitor.getMetrics();
       
       // Get cache metrics
-      const cacheStats = robotCache.getStats();
+      const cacheStats = globalCache.getMetrics();
       
       const responseTime = Date.now() - startTime;
       

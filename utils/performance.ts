@@ -1,21 +1,6 @@
 import React from 'react';
 import { logger } from './logger';
-
-// Performance monitoring utilities for production optimization
-
-interface PerformanceMetric {
-  name: string;
-  value: number;
-  timestamp: number;
-}
-
-interface PageLoadMetrics {
-  fcp: number; // First Contentful Paint
-  lcp: number; // Largest Contentful Paint
-  fid: number; // First Input Delay
-  cls: number; // Cumulative Layout Shift
-  ttfb: number; // Time to First Byte
-}
+import { PerformanceMetric, PageLoadMetrics, MemoryUsage, PerformanceHealthCheck } from '../types/analytics';
 
 class PerformanceMonitor {
   private metrics: PerformanceMetric[] = [];
@@ -59,8 +44,9 @@ class PerformanceMonitor {
         let clsValue = 0;
         const observerCLS = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            if (!(entry as any).hadRecentInput) {
-              clsValue += (entry as any).value;
+            const layoutShiftEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+            if (!layoutShiftEntry.hadRecentInput) {
+              clsValue += layoutShiftEntry.value || 0;
             }
           }
           this.recordMetric('cls', clsValue);
@@ -71,7 +57,8 @@ class PerformanceMonitor {
         // First Input Delay
         const observerFID = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            this.recordMetric('fid', (entry as any).processingStart - entry.startTime);
+            const inputEntry = entry as PerformanceEntry & { processingStart?: number };
+            this.recordMetric('fid', (inputEntry.processingStart || 0) - entry.startTime);
           }
         });
         observerFID.observe({ entryTypes: ['first-input'] });
@@ -246,10 +233,14 @@ private recordInteraction(name: string, duration: number) {
        }
      }
 
-   // Memory usage snapshot
-   captureMemorySnapshot() {
+// Memory usage snapshot
+    captureMemorySnapshot() {
      if ('memory' in performance) {
-       const memory = (performance as any).memory;
+       const memory = performance.memory as {
+         usedJSHeapSize: number;
+         totalJSHeapSize: number;
+         jsHeapSizeLimit: number;
+       };
        if (memory) {
          this.recordMetric('memory_used', memory.usedJSHeapSize);
          this.recordMetric('memory_total', memory.totalJSHeapSize);
@@ -283,15 +274,21 @@ private recordInteraction(name: string, duration: number) {
    }
 
   // Memory usage monitoring (if available)
-     getMemoryUsage() {
+     getMemoryUsage(): MemoryUsage | null {
       if ('memory' in performance) {
-        const memory = (performance as any).memory;
-        return {
-          used: memory.usedJSHeapSize,
-          total: memory.totalJSHeapSize,
-          limit: memory.jsHeapSizeLimit,
-          utilization: memory.usedJSHeapSize / memory.jsHeapSizeLimit * 100,
+        const memory = performance.memory as {
+          usedJSHeapSize: number;
+          totalJSHeapSize: number;
+          jsHeapSizeLimit: number;
         };
+        if (memory) {
+          return {
+            used: memory.usedJSHeapSize,
+            total: memory.totalJSHeapSize,
+            limit: memory.jsHeapSizeLimit,
+            utilization: (memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100,
+          };
+        }
       }
       return null;
     }
@@ -343,10 +340,10 @@ private recordInteraction(name: string, duration: number) {
         this.observers.forEach(observer => observer.disconnect());
         this.observers.length = 0;
         
-        // Force garbage collection if available
-        if ('gc' in globalThis) {
-          (globalThis as any).gc();
-        }
+// Force garbage collection if available
+         if ('gc' in globalThis) {
+           (globalThis as { gc?: () => void }).gc?.();
+         }
         
         logger.warn('Emergency memory cleanup performed');
         this.recordMetric('emergency_cleanup', 1);
@@ -418,11 +415,7 @@ private recordInteraction(name: string, duration: number) {
      }
      
      // Performance health check
-     async performHealthCheck(): Promise<{
-       score: number;
-       issues: string[];
-       suggestions: string[];
-     }> {
+     async performHealthCheck(): Promise<PerformanceHealthCheck> {
        const webVitals = this.getWebVitals();
        const memory = this.getMemoryUsage();
        
@@ -469,9 +462,10 @@ private recordInteraction(name: string, duration: number) {
    
 // Stop memory monitoring
     stopMemoryMonitoring(): void {
-      if ((globalThis as any).__memoryMonitoringInterval) {
-        clearInterval((globalThis as any).__memoryMonitoringInterval);
-        delete (globalThis as any).__memoryMonitoringInterval;
+      const globalObj = globalThis as { __memoryMonitoringInterval?: NodeJS.Timeout };
+      if (globalObj.__memoryMonitoringInterval) {
+        clearInterval(globalObj.__memoryMonitoringInterval);
+        delete globalObj.__memoryMonitoringInterval;
       }
     }
     

@@ -25,7 +25,7 @@ class CSRFProtection {
     tokenExpiry: 3600000, // 1 hour
     cookieName: 'csrf-token',
     headerName: 'X-CSRF-Token',
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env['NODE_ENV'] === 'production',
     sameSite: 'strict'
   };
   private tokens: Map<string, CSRFToken> = new Map();
@@ -49,7 +49,7 @@ class CSRFProtection {
   private initializeToken(): void {
     const existingToken = this.getTokenFromCookie();
     
-    if (existingToken && this.validateToken(existingToken)) {
+    if (existingToken && this.validateTokenFormat(existingToken)) {
       this.currentToken = {
         token: existingToken,
         expires: Date.now() + this.config.tokenExpiry,
@@ -132,7 +132,7 @@ class CSRFProtection {
   /**
    * Validate CSRF token format and expiry
    */
-  private validateToken(token: string): boolean {
+  private validateTokenFormat(token: string): boolean {
     if (!token || token.length !== this.config.tokenLength * 2) {
       return false;
     }
@@ -364,7 +364,7 @@ export const csrfProtection = CSRFProtection.getInstance();
 
 // Utility functions for common use cases
 export const withCSRF = (fetch: typeof global.fetch) => {
-  return async (url: string, options?: RequestInit) => {
+  return async (url: string, options?: { headers?: Record<string, string>; method?: string; body?: string }) => {
     const optionsWithCSRF = csrfProtection.addToFetchOptions(options);
     return fetch(url, optionsWithCSRF);
   };

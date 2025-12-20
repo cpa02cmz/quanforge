@@ -1,5 +1,7 @@
 
-import { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { createLazyComponent } from './components/LazyWrapper';
+import { LoadingStates } from './constants';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './services/supabase';
 import { ToastProvider } from './components/Toast';
@@ -8,49 +10,65 @@ import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
-  import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
-  import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
-  import { frontendOptimizer } from './services/frontendOptimizer';
-  import { edgeAnalytics } from './services/edgeAnalytics';
-  import { edgeMonitoring } from './services/edgeMonitoring';
-  import { advancedAPICache } from './services/advancedAPICache';
-  import { frontendPerformanceOptimizer } from './services/frontendPerformanceOptimizer';
+import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
+import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
+import { frontendOptimizer } from './services/frontendOptimizer';
+import { edgeAnalytics } from './services/edgeAnalytics';
+import { edgeMonitoring } from './services/edgeMonitoring';
+import { globalCache } from './services/unifiedCacheManager';
+import { frontendPerformanceOptimizer } from './services/frontendPerformanceOptimizer';
 
 // Enhanced lazy loading with route-based code splitting and preloading
-const Auth = lazy(() => 
-  import('./components/Auth').then(module => ({ default: module.Auth }))
+const Auth = createLazyComponent(
+  () => import('./components/Auth').then(module => ({ default: module.Auth })),
+  { 
+    fallback: LoadingStates.FullScreen(),
+    preloadingStrategy: 'immediate'
+  }
 );
 
 // Group related components for better chunking
-const DashboardComponents = lazy(() => 
-  import('./pages/Dashboard').then(module => ({ default: module.Dashboard }))
+const DashboardComponents = createLazyComponent(
+  () => import('./pages/Dashboard').then(module => ({ default: module.Dashboard })),
+  { 
+    fallback: LoadingStates.FullScreen(),
+    preloadingStrategy: 'immediate'
+  }
 );
 
-const GeneratorComponents = lazy(() => 
-  import('./pages/Generator').then(module => ({ default: module.Generator }))
+const GeneratorComponents = createLazyComponent(
+  () => import('./pages/Generator').then(module => ({ default: module.Generator })),
+  { 
+    fallback: LoadingStates.FullScreen(),
+    preloadingStrategy: 'immediate'
+  }
 );
 
 // Static pages grouped together
-const StaticPages = lazy(() => 
-  Promise.all([
+const StaticPages = createLazyComponent(
+  () => Promise.all([
     import('./pages/Wiki'),
     import('./pages/About'),
     import('./pages/FAQ'),
     import('./pages/Blog'),
     import('./pages/Features')
-  ]).then(([Wiki]) => ({ default: Wiki.Wiki }))
+  ]).then(([Wiki]) => ({ default: Wiki.Wiki })),
+  { 
+    fallback: LoadingStates.FullScreen(),
+    preloadingStrategy: 'on-hover'
+  }
 );
 
-const Layout = lazy(() => 
-  import('./components/Layout').then(module => ({ default: module.Layout }))
+const Layout = createLazyComponent(
+  () => import('./components/Layout').then(module => ({ default: module.Layout })),
+  { 
+    fallback: LoadingStates.Inline({ message: 'Loading navigation...' }),
+    preloadingStrategy: 'immediate'
+  }
 );
 
-// Dynamic import utilities for services and heavy components
-export const loadGeminiService = () => import('./services/gemini');
-export const loadSEOUtils = () => import('./utils/seoEnhanced');
-export const loadChartComponents = () => import('./components/ChartComponents');
-export const loadCodeEditor = () => import('./components/CodeEditor');
-export const loadBacktestPanel = () => import('./components/BacktestPanel');
+// Dynamic import utilities are now exported from utils/dynamicImports.ts
+// to avoid react-refresh warnings
 
 // Enhanced preloading strategy with route-based optimization
    const preloadCriticalRoutes = () => {
@@ -150,12 +168,13 @@ useEffect(() => {
            logger.info('Edge monitoring status:', monitoringStatus);
          }, 300);
          
-         // Initialize Advanced API Cache (non-blocking)
-         setTimeout(() => {
-           advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
-             logger.warn('API cache prefetch failed:', err)
-           );
-         }, 400);
+// Initialize UnifiedCache Manager (non-blocking)
+          setTimeout(() => {
+            // Pre-warm cache with commonly accessed data
+            globalCache.set('robots', [], 60000).catch((err: Error) => 
+              logger.warn('Cache warmup failed:', err)
+            );
+          }, 400);
        } catch (error) {
          logger.warn('Non-critical service initialization failed:', error);
        }
@@ -192,8 +211,7 @@ useEffect(() => {
               )
             ]}
           />
-          <Suspense fallback={LoadingComponent}>
-            <Routes>
+          <Routes>
               <Route 
                 path="/login" 
                 element={!session ? <Auth /> : <Navigate to="/" replace />} 
@@ -217,7 +235,6 @@ useEffect(() => {
                 />
               </Route>
             </Routes>
-          </Suspense>
         </BrowserRouter>
       </ToastProvider>
     </ErrorBoundary>

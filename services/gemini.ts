@@ -524,7 +524,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
              }
              
              // Shorter messages are more likely to be concise and valuable
-             if (data.length < 300) {
+             if (data.content.length < 300) {
                  data.importance += 0.5;
              }
          });
@@ -538,7 +538,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
          });
          
          // Smart selection algorithm with adaptive truncation
-         const selectedMessages = [];
+         const selectedMessages: Array<{msg: Message; index: number; content: string; length: number; importance: number}> = [];
          let usedBudget = 0;
          const separatorLength = 2; // \n\n
          

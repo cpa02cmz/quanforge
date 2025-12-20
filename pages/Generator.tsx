@@ -1,5 +1,7 @@
 
-import React, { useState, useEffect, memo, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, memo, useMemo, Suspense } from 'react';
+import { createLazyComponent } from '../components/LazyWrapper';
+import { LoadingStates } from '../constants';
 import { useParams } from 'react-router-dom';
 import { StrategyConfig } from '../components/StrategyConfig';
 import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
@@ -9,10 +11,37 @@ import { performanceMonitor } from '../utils/performance';
 import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
 
 // Lazy load heavy components to reduce initial bundle size
-const ChatInterface = lazy(() => import('../components/ChatInterface').then(module => ({ default: module.ChatInterface })));
-const CodeEditor = lazy(() => import('../components/CodeEditor').then(module => ({ default: module.CodeEditor })));
-const BacktestPanel = lazy(() => import('../components/BacktestPanel').then(module => ({ default: module.BacktestPanel })));
-const ChartComponents = lazy(() => import('../components/ChartComponents').then(module => ({ default: module.ChartComponents })));
+const ChatInterface = createLazyComponent(
+  () => import('../components/ChatInterface').then(module => ({ default: module.ChatInterface })),
+  { 
+    fallback: LoadingStates.Chat(),
+    preloadingStrategy: 'immediate'
+  }
+);
+
+const CodeEditor = createLazyComponent(
+  () => import('../components/CodeEditor').then(module => ({ default: module.CodeEditor })),
+  { 
+    fallback: LoadingStates.Editor(),
+    preloadingStrategy: 'on-hover'
+  }
+);
+
+const BacktestPanel = createLazyComponent(
+  () => import('../components/BacktestPanel').then(module => ({ default: module.BacktestPanel })),
+  { 
+    fallback: LoadingStates.Backtest(),
+    preloadingStrategy: 'on-hover'
+  }
+);
+
+const ChartComponents = createLazyComponent(
+  () => import('../components/ChartComponents').then(module => ({ default: module.ChartComponents })),
+  { 
+    fallback: LoadingStates.Charts(),
+    preloadingStrategy: 'on-hover'
+  }
+);
 
 export const Generator: React.FC = memo(() => {
   const { id } = useParams();

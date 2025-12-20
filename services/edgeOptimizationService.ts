@@ -3,7 +3,7 @@
  * Provides advanced optimization for Vercel Edge deployment and Supabase integration
  */
 
-import { enhancedConnectionPool } from './enhancedSupabasePool';
+import { advancedSupabasePool } from './advancedSupabasePool';
 import { edgeConnectionPool } from './edgeSupabasePool';
 import { globalCache } from './unifiedCacheManager';
 import { logger } from '../utils/logger';
@@ -98,10 +98,10 @@ class EdgeOptimizationService {
 
   private optimizeConnectionPools(): void {
     // Optimize enhanced connection pool for edge
-    enhancedConnectionPool.optimizeForEdge();
+    advancedSupabasePool.optimizeForEdge();
     
     // Update configuration for edge environment
-    enhancedConnectionPool.updateConfig({
+    advancedSupabasePool.updateConfig({
       maxConnections: this.config.maxConnections,
       acquireTimeout: this.config.connectionTimeout,
       retryAttempts: this.config.retryAttempts,
@@ -139,8 +139,8 @@ class EdgeOptimizationService {
   }
 
   private async collectMetrics(): Promise<EdgeMetrics> {
-    const poolStats = enhancedConnectionPool.getStats();
-    const edgeMetrics = enhancedConnectionPool.getEdgeMetrics();
+    const poolStats = advancedSupabasePool.getStats();
+    const edgeMetrics = advancedSupabasePool.getEdgeMetrics();
     const cacheMetrics = globalCache.getMetrics();
     
     const metrics: EdgeMetrics = {
@@ -214,19 +214,19 @@ class EdgeOptimizationService {
 
   private async optimizeConnectionPool(): Promise<void> {
     // Increase max connections if acquisition is slow
-    const currentConfig = enhancedConnectionPool.getStats();
+    const currentConfig = advancedSupabasePool.getStats();
     if (currentConfig.totalConnections < this.config.maxConnections) {
-      enhancedConnectionPool.updateConfig({
+      advancedSupabasePool.updateConfig({
         maxConnections: Math.min(currentConfig.totalConnections + 2, this.config.maxConnections)
       });
     }
     
     // Force health check to remove unhealthy connections
-    await enhancedConnectionPool.forceHealthCheck();
+    await advancedSupabasePool.forceHealthCheck();
     
     // Warm up additional connections for current region
     if (this.config.enableConnectionWarming) {
-      await enhancedConnectionPool.forceEdgeWarming();
+      await advancedSupabasePool.forceEdgeWarming();
     }
   }
 
@@ -251,19 +251,19 @@ class EdgeOptimizationService {
     }
     
     // Optimize connection timeout for faster failover
-    enhancedConnectionPool.updateConfig({
+    advancedSupabasePool.updateConfig({
       acquireTimeout: Math.max(this.config.connectionTimeout - 200, 500)
     });
   }
 
   private async mitigateErrors(): Promise<void> {
     // Increase retry attempts for better reliability
-    enhancedConnectionPool.updateConfig({
+    advancedSupabasePool.updateConfig({
       retryAttempts: Math.min(this.config.retryAttempts + 1, 5)
     });
     
     // Force cleanup of unhealthy connections
-    await enhancedConnectionPool.cleanupForEdge();
+    await advancedSupabasePool.cleanupForEdge();
   }
 
   private cleanupExpiredData(): void {
@@ -295,7 +295,7 @@ class EdgeOptimizationService {
     
     try {
       // Warm up enhanced connection pool
-      await enhancedConnectionPool.forceEdgeWarming();
+      await advancedSupabasePool.forceEdgeWarming();
       
       // Warm up edge connection pool
       await edgeConnectionPool.warmEdgeConnections();
@@ -459,7 +459,7 @@ class EdgeOptimizationService {
     }
     
     // Close connection pools
-    await enhancedConnectionPool.closeAll();
+    await advancedSupabasePool.closeAll();
     await edgeConnectionPool.clearConnections();
     
     // Clear metrics
