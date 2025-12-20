@@ -111,6 +111,7 @@ class PerformanceMonitor {
       // Load web-vitals library dynamically
       let webVitals: any;
       try {
+        // @ts-ignore - web-vitals may not be available in all environments
         webVitals = await import('web-vitals');
       } catch (error) {
         console.warn('web-vitals not available, skipping core web vitals monitoring');
@@ -401,8 +402,8 @@ class PerformanceMonitor {
   private async sendMetric(name: string, data: any): Promise<void> {
     try {
       // Send to edge metrics endpoint
-      if (process.env.ENABLE_EDGE_METRICS === 'true') {
-        const endpoint = process.env.EDGE_METRICS_ENDPOINT || '/api/edge-metrics'; // Note: API endpoints removed, will need server implementation
+      if (process.env['ENABLE_EDGE_METRICS'] === 'true') {
+        const endpoint = process.env['EDGE_METRICS_ENDPOINT'] || '/api/edge-metrics'; // Note: API endpoints removed, will need server implementation
         
         await fetch(endpoint, {
           method: 'POST',
