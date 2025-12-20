@@ -66,7 +66,10 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Analytics API failed:', error);
+    // Log error quietly in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Analytics API failed:', error);
+    }
     
     return NextResponse.json({
       success: false,

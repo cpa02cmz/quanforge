@@ -28,13 +28,15 @@ const STORAGE_KEY = 'mock_session';
 const ROBOTS_KEY = 'mock_robots';
 
 // Helper for safe JSON parsing with enhanced security
-const safeParse = (data: string | null, fallback: any) => {
+const safeParse = <T>(data: string | null, fallback: T): T => {
     if (!data) return fallback;
     try {
         // Use security manager's safe JSON parsing
         return securityManager.safeJSONParse(data) || fallback;
     } catch (e) {
-        console.error("Failed to parse data from storage:", e);
+        if (process.env['NODE_ENV'] === 'development') {
+            console.error("Failed to parse data from storage:", e);
+        }
         return fallback;
     }
 };
@@ -43,12 +45,13 @@ const safeParse = (data: string | null, fallback: any) => {
 const trySaveToStorage = (key: string, value: string) => {
     try {
         localStorage.setItem(key, value);
-    } catch (e: any) {
+    } catch (e: unknown) {
+        const error = e as { name?: string; code?: number };
         if (
-            e.name === 'QuotaExceededError' || 
-            e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-            e.code === 22 ||
-            e.code === 1014
+            error.name === 'QuotaExceededError' || 
+            error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+            error.code === 22 ||
+            error.code === 1014
         ) {
             throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
         }
@@ -226,10 +229,12 @@ const withRetry = async <T>(
         throw error; // Not found errors shouldn't be retried
       }
       
-      if (attempt === RETRY_CONFIG.maxRetries) {
-        console.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, error);
-        throw error;
-      }
+if (attempt === RETRY_CONFIG.maxRetries) {
+         if (process.env['NODE_ENV'] === 'development') {
+             console.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, error);
+         }
+         throw error;
+       }
       
       // Enhanced exponential backoff with jitter
       let delay = RETRY_CONFIG.retryDelay * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt);
@@ -260,7 +265,9 @@ const getClient = async () => {
             }, 'getClient');
             activeClient = client;
         } catch (e) {
-            console.error("Connection pool failed, using mock client", e);
+            if (process.env['NODE_ENV'] === 'development') {
+                console.error("Connection pool failed, using mock client", e);
+            }
             activeClient = mockClient;
         }
     } else {
@@ -311,11 +318,13 @@ class PerformanceMonitor {
   // Log performance metrics periodically
   logMetrics() {
     const allMetrics = this.getAllMetrics();
-    console.group('Database Performance Metrics');
-    for (const [operation, metric] of Object.entries(allMetrics)) {
-      console.log(`${operation}: ${metric.count} calls, avg: ${metric.avgTime.toFixed(2)}ms`);
-    }
-    console.groupEnd();
+if (process.env['NODE_ENV'] === 'development') {
+         console.group('Database Performance Metrics');
+         for (const [operation, metric] of Object.entries(allMetrics)) {
+            console.log(`${operation}: ${metric.count} calls, avg: ${metric.avgTime.toFixed(2)}ms`);
+         }
+         console.groupEnd();
+     }
   }
 }
 
@@ -448,7 +457,7 @@ async getRobots() {
        
        if (settings.mode === 'mock') {
          const stored = localStorage.getItem(ROBOTS_KEY);
-         const robots = safeParse(stored, []);
+         const robots = safeParse<Robot[]>(stored, []);
          // Create index for performance
          robotIndexManager.getIndex(robots);
          const duration = performance.now() - startTime;
@@ -485,10 +494,10 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
            const duration = performance.now() - startTime;
            performanceMonitor.record('getRobots', duration);
            
-           // Log slow operations only in development
-           if (import.meta.env.DEV && duration > 500) {
-             console.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
-           }
+// Log slow operations only in development
+            if (process.env['NODE_ENV'] === 'development' && duration > 500) {
+              console.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
+            }
            
            return result;
           }, 'getRobots');
@@ -511,12 +520,12 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
        
        if (settings.mode === 'mock') {
          const stored = localStorage.getItem(ROBOTS_KEY);
-         const robots = safeParse(stored, []);
+         const robots = safeParse<Robot[]>(stored, []);
          
          updates.forEach(update => {
            const index = robots.findIndex((r: Robot) => r.id === update.id);
            if (index !== -1) {
-             robots[index] = { ...robots[index], ...update.data, updated_at: new Date().toISOString() };
+             robots[index] = { ...robots[index], ...update.data, id: robots[index].id, updated_at: new Date().toISOString() };
            }
          });
          
@@ -578,7 +587,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
         
         if (settings.mode === 'mock') {
           const stored = localStorage.getItem(ROBOTS_KEY);
-          const allRobots = safeParse(stored, []);
+          const allRobots = safeParse<Robot[]>(stored, []);
           const index = robotIndexManager.getIndex(allRobots);
           
           let results = index.byDate;
@@ -676,10 +685,10 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
             const duration = performance.now() - startTime;
             performanceMonitor.record('getRobotsPaginated_supabase', duration);
             
-            // Log slow queries in development
-            if (import.meta.env.DEV && duration > 1000) {
-              console.warn(`Slow getRobotsPaginated query: ${duration.toFixed(2)}ms for ${result.count} results`);
-            }
+// Log slow queries in development
+            if (process.env['NODE_ENV'] === 'development' && duration > 1000) {
+               console.warn(`Slow getRobotsPaginated query: ${duration.toFixed(2)}ms for ${result.count} results`);
+             }
             
             return response;
           }
@@ -706,7 +715,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
        
        if (settings.mode === 'mock') {
          const stored = localStorage.getItem(ROBOTS_KEY);
-         const allRobots = safeParse(stored, []);
+         const allRobots = safeParse<Robot[]>(stored, []);
          const robots = allRobots.filter((robot: Robot) => ids.includes(robot.id));
          
          const duration = performance.now() - startTime;
@@ -774,7 +783,7 @@ if (result.data && !result.error) {
       if (settings.mode === 'mock') {
         try {
             const stored = localStorage.getItem(ROBOTS_KEY);
-            const robots = safeParse(stored, []);
+            const robots = safeParse<Robot[]>(stored, []);
             
             const newRobot = { ...sanitizedRobot, id: generateUUID(), created_at: new Date().toISOString() };
             robots.unshift(newRobot);
@@ -822,7 +831,7 @@ if (result.data && !result.error) {
       if (settings.mode === 'mock') {
           try {
               const stored = localStorage.getItem(ROBOTS_KEY);
-              const robots = safeParse(stored, []);
+              const robots = safeParse<Robot[]>(stored, []);
               
               // Find and update the robot in place for better performance
               const robotIndex = robots.findIndex((r: any) => r.id === id);
@@ -879,7 +888,7 @@ if (result.data && !result.error) {
       if (settings.mode === 'mock') {
           try {
               const stored = localStorage.getItem(ROBOTS_KEY);
-              let robots = safeParse(stored, []);
+              let robots: Robot[] = safeParse<Robot[]>(stored, []);
               const initialLength = robots.length;
               robots = robots.filter((r: any) => r.id !== id);
               
@@ -928,7 +937,7 @@ if (result.data && !result.error) {
       if (settings.mode === 'mock') {
           try {
               const stored = localStorage.getItem(ROBOTS_KEY);
-              const robots = safeParse(stored, []);
+              const robots = safeParse<Robot[]>(stored, []);
               const original = robots.find((r: any) => r.id === id);
               
               if (!original) {
@@ -1016,7 +1025,7 @@ export const dbUtils = {
         const settings = settingsManager.getDBSettings();
         if (settings.mode === 'mock') {
             const stored = localStorage.getItem(ROBOTS_KEY);
-            const robots = safeParse(stored, []);
+            const robots = safeParse<Robot[]>(stored, []);
             return { count: robots.length, storageType: 'Browser Local Storage' };
         } else {
             const client = await getClient();
@@ -1027,11 +1036,11 @@ export const dbUtils = {
 
     async exportDatabase(): Promise<string> {
         const settings = settingsManager.getDBSettings();
-        let robots = [];
+        let robots: Robot[] = [];
 
         if (settings.mode === 'mock') {
             const stored = localStorage.getItem(ROBOTS_KEY);
-            robots = safeParse(stored, []);
+            robots = safeParse<Robot[]>(stored, []);
         } else {
             const client = await getClient();
             const { data, error } = await client.from('robots').select('*');
@@ -1073,7 +1082,7 @@ export const dbUtils = {
 
             if (settings.mode === 'mock') {
                 const stored = localStorage.getItem(ROBOTS_KEY);
-                const currentRobots = merge ? safeParse(stored, []) : [];
+                const currentRobots = merge ? safeParse<Robot[]>(stored, []) : [];
                 
                 const newRobots = validRobots.map((r: Robot) => ({
                     ...r,
@@ -1136,7 +1145,7 @@ export const dbUtils = {
      */
     async migrateMockToSupabase(): Promise<{ success: boolean; count: number; error?: string }> {
         const stored = localStorage.getItem(ROBOTS_KEY);
-        const localRobots = safeParse(stored, []);
+        const localRobots = safeParse<Robot[]>(stored, []);
         
         if (localRobots.length === 0) {
             return { success: false, count: 0, error: "No local robots found to migrate." };
@@ -1171,11 +1180,13 @@ export const dbUtils = {
             for (let i = 0; i < payload.length; i += BATCH_SIZE) {
                 const chunk = payload.slice(i, i + BATCH_SIZE);
                 const { error } = await client.from('robots').insert(chunk);
-                if (error) {
-                    console.error("Batch migration failed", error);
-                    failCount += chunk.length;
-                    lastError = error.message;
-                } else {
+if (error) {
+                     if (process.env['NODE_ENV'] === 'development') {
+                         console.error("Batch migration failed", error);
+                     }
+                     failCount += chunk.length;
+                     lastError = error.message;
+                 } else {
                     successCount += chunk.length;
                 }
             }
@@ -1219,7 +1230,7 @@ export const dbUtils = {
             
             if (settings.mode === 'mock') {
                 const stored = localStorage.getItem(ROBOTS_KEY);
-                const robots = safeParse(stored, []);
+                const robots = safeParse<Robot[]>(stored, []);
                 const index = robotIndexManager.getIndex(robots);
                 
                 if (!searchTerm && (!filterType || filterType === 'All')) {
@@ -1288,7 +1299,7 @@ export const dbUtils = {
             
             if (settings.mode === 'mock') {
                 const stored = localStorage.getItem(ROBOTS_KEY);
-                const robots = safeParse(stored, []);
+                const robots = safeParse<Robot[]>(stored, []);
                 const index = robotIndexManager.getIndex(robots);
                 
                 // Get all unique types from the index
@@ -1335,7 +1346,7 @@ export const dbUtils = {
             if (settings.mode === 'mock') {
                 try {
                     const stored = localStorage.getItem(ROBOTS_KEY);
-                    const robots = safeParse(stored, []);
+                    const robots = safeParse<Robot[]>(stored, []);
                     
                     for (const item of updates) {
                         const robotIndex = robots.findIndex((r: any) => r.id === item.id);
@@ -1457,7 +1468,7 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
             if (settings.mode === 'mock') {
                 // For mock mode, run maintenance tasks
                 const stored = localStorage.getItem(ROBOTS_KEY);
-                const robots = safeParse(stored, []);
+                const robots = safeParse<Robot[]>(stored, []);
                 
                 // Remove any potential duplicates by ID
                 const seenIds = new Set<string>();
@@ -1494,10 +1505,12 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                 const client = await getClient();
                 const { error } = await client.rpc('pg_stat_reset');
                 
-                if (error) {
-                    console.warn("Could not run database optimization:", error.message);
-                    // Non-critical error, just return success with warning
-                }
+if (error) {
+                     if (process.env['NODE_ENV'] === 'development') {
+                         console.warn("Could not run database optimization:", error.message);
+                     }
+                     // Non-critical error, just return success with warning
+                 }
                 
                 return { 
                     success: true, 
@@ -1527,7 +1540,7 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
         
         if (settings.mode === 'mock') {
             const stored = localStorage.getItem(ROBOTS_KEY);
-            const robots = safeParse(stored, []);
+            const robots = safeParse<Robot[]>(stored, []);
             
             // Calculate total size
             const totalSize = new Blob([JSON.stringify(robots)]).size;

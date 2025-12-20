@@ -29,8 +29,8 @@ const base64Encode = (str: string): string => {
       return btoa(String.fromCharCode(...uint8Array));
     }
     return btoa(unescape(encodeURIComponent(str)));
-  } catch (e) {
-    console.error('Base64 encode failed:', e);
+  } catch {
+    // Base64 encode failed
     return str;
   }
 };
@@ -48,8 +48,8 @@ const base64Decode = (str: string): string => {
       return decoder.decode(bytes);
     }
     return decodeURIComponent(escape(atob(str)));
-  } catch (e) {
-    console.error('Base64 decode failed:', e);
+  } catch {
+    // Base64 decode failed
     return str;
   }
 };
@@ -59,8 +59,8 @@ export const encryptApiKey = (apiKey: string): string => {
   try {
     const xorred = xorCipher(apiKey, ENCRYPTION_KEY);
     return base64Encode(xorred);
-  } catch (e) {
-    console.error('Encryption failed:', e);
+  } catch {
+    // Encryption failed
     return '';
   }
 };
@@ -70,8 +70,8 @@ export const decryptApiKey = (encryptedKey: string): string => {
   try {
     const decoded = base64Decode(encryptedKey);
     return xorCipher(decoded, ENCRYPTION_KEY);
-  } catch (e) {
-    console.error('Decryption failed:', e);
+  } catch {
+    // Decryption failed
     return '';
   }
 };
@@ -101,24 +101,27 @@ export const maskApiKey = (apiKey: string, strategy: 'standard' | 'aggressive' |
   if (!apiKey) return '***';
   
   switch (strategy) {
-    case 'aggressive':
+    case 'aggressive': {
       // Show only first 2 and last 2 characters
       if (apiKey.length <= 4) return '*'.repeat(Math.max(1, apiKey.length));
       const startAgg = apiKey.substring(0, 2);
       const endAgg = apiKey.substring(apiKey.length - 2);
       return `${startAgg}${'*'.repeat(apiKey.length - 4)}${endAgg}`;
-    case 'minimal':
+    }
+    case 'minimal': {
       // Show first 6 and last 4 characters
       if (apiKey.length <= 10) return '*'.repeat(Math.max(1, apiKey.length));
       const startMin = apiKey.substring(0, 6);
       const endMin = apiKey.substring(apiKey.length - 4);
       return `${startMin}${'*'.repeat(apiKey.length - 10)}${endMin}`;
+    }
     case 'standard':
-    default:
+    default: {
       if (apiKey.length < 8) return '*'.repeat(Math.max(1, apiKey.length));
       const start = apiKey.substring(0, 4);
       const end = apiKey.substring(apiKey.length - 4);
       return `${start}${'*'.repeat(apiKey.length - 8)}${end}`;
+    }
   }
 };
 

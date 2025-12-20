@@ -36,7 +36,7 @@ export default defineConfig({
             if (id.includes('@google/genai')) {
               return 'ai-vendor';
             }
-            // Chart libraries - split more granularly
+            // Chart libraries - split more granularly to reduce large chunks
             if (id.includes('recharts')) {
               if (id.includes('AreaChart') || id.includes('LineChart')) {
                 return 'chart-core';
@@ -44,7 +44,31 @@ export default defineConfig({
               if (id.includes('PieChart') || id.includes('BarChart')) {
                 return 'chart-misc';
               }
+              // Split recharts components more granularly
+              if (id.includes('CartesianGrid') || id.includes('XAxis') || id.includes('YAxis')) {
+                return 'chart-axis';
+              }
+              if (id.includes('Tooltip') || id.includes('Legend')) {
+                return 'chart-interaction';
+              }
               return 'chart-vendor';
+            }
+            // Split React vendor more granularly
+            if (id.includes('react')) {
+              if (id.includes('react-dom')) {
+                return 'react-dom';
+              }
+              if (id.includes('react-router')) {
+                return 'react-router';
+              }
+              return 'react-core';
+            }
+            // Split AI vendor libraries
+            if (id.includes('@google/genai') || id.includes('@google-ai')) {
+              return 'ai-google';
+            }
+            if (id.includes('openai') || id.includes('gpt')) {
+              return 'ai-openai';
             }
             // Security utilities - bundled together
             if (id.includes('dompurify') || id.includes('lz-string')) {
@@ -222,7 +246,7 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 100, // More aggressive optimization for edge performance
+    chunkSizeWarningLimit: 85, // More aggressive limit for edge performance
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification

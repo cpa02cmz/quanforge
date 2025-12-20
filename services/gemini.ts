@@ -396,9 +396,12 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
                              error.message?.includes('ETIMEDOUT') ||
                              error.message?.includes('ECONNRESET');
 
-        // Only retry on Rate Limits, Server Errors, or Network Issues
+// Only retry on Rate Limits, Server Errors, or Network Issues
         if (isRateLimit || isServerErr || isNetworkErr) {
-            console.warn(`API Error (${error.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
+            // Log in development only
+            if (process.env['NODE_ENV'] === 'development') {
+              console.error(`API Error (${error.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
+            }
             // Add jitter to prevent thundering herd
             const jitter = Math.random() * 0.1 * delay;
             const nextDelay = Math.min(delay * 1.5 + jitter, maxDelay); // Use 1.5 multiplier instead of 2 for gentler backoff
@@ -625,9 +628,6 @@ FINAL REMINDERS:
             
             // Early truncation with better buffer management
             if (baseLength > TokenBudgetManager.MAX_CONTEXT_CHARS) {
-                if (import.meta.env.DEV) {
-                    console.warn("Base context exceeds token budget, truncating code block");
-                }
                 const availableForCode = TokenBudgetManager.MAX_CONTEXT_CHARS - paramsContext.length - prompt.length - footerReminder.length - 1000;
                 codeContext = this.buildCodeContext(currentCode, Math.max(availableForCode, 1000));
             }
@@ -765,7 +765,9 @@ const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, si
         const activeKey = getActiveKey(settings.apiKey);
 
         if (!activeKey && !settings.baseUrl?.includes('localhost')) {
-             console.warn("API Key is empty for OpenAI Provider");
+             if (process.env['NODE_ENV'] === 'development') {
+               console.error("API Key is empty for OpenAI Provider");
+             }
         }
 
         const baseUrl = settings.baseUrl ? settings.baseUrl.replace(/\/$/, '') : 'https://api.openai.com/v1';
