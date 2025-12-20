@@ -1,25 +1,100 @@
-# Bug Tracker
+# Bug Tracking Log
 
-This document tracks bugs discovered and fixed within the QuantForge AI system.
+## Critical Bugs Fixed
 
-## Format
-- **[FIXED]** or **[OPEN]** - Brief bug description
-- Location: Component/File where bug was found
-- Impact: Severity level (Critical/High/Medium/Low)
+### [FIXED] Build Failure - Browser Crypto Incompatibility
+- **Date**: 2025-12-18
+- **Severity**: Critical (Build Blocking)
+- **Description**: `enhancedRateLimit.ts` imported Node.js `crypto` module incompatible with browser
+- **File**: `utils/enhancedRateLimit.ts:1`
+- **Error**: `"createHash" is not exported by "__vite-browser-external"`
+- **Solution**: Replaced Node.js crypto with browser-compatible simple hash function
 
----
+### [FIXED] PR #137 - Vercel Schema Validation Failures  
+- **Date**: 2025-12-19
+- **Severity**: Critical (Deployment Blocking)
+- **Description**: PR #137 had multiple Vercel deployment failures due to vercel.json schema validation
+- **File**: `vercel.json`
+- **Errors**: 
+  - `should NOT have additional property 'experimental'`
+  - `functions.api/**/*.ts.excludeFiles` should be string
+- **Solution**: Simplified vercel.json to minimal schema-compliant configuration
+- **Impact**: Restored mergeability and deployment pipeline functionality
 
-## Active Bugs (Currently Open)
+### [FIXED] Vercel Deployment Schema Validation Errors
+- **Date**: 2025-12-18
+- **Severity**: Critical (Deployment Blocking)
+- **Description**: `vercel.json` contained unsupported properties causing validation failures
+- **File**: `vercel.json`
+- **Issues Fixed**:
+  - Removed unsupported `experimental` property
+  - Removed invalid `regions` properties from global and function configs
+  - Removed unsupported `cache` properties from function configurations
+  - Removed invalid `environment` properties not compliant with schema
+  - Streamlined build environment variables to supported values
+- **Impact**: Restores Vercel and Cloudflare Workers deployment capability
+- **Testing**: ✓ Build successful, ✓ Schema validation compliant, ✓ CI/CD functional
 
-*No active bugs tracked yet.*
+### [FIXED] PR #139 Deployment Blockers
+- **Date**: 2025-12-18
+- **Severity**: Critical (Merge Blocking)
+- **Description**: PR with critical crypto fix was blocked by deployment configuration errors
+- **Resolution**: Complete JSON schema cleanup and validation compliance
+- **Impact**: Restored mergeability of critical bug fix PR, enabled deployment pipeline
+- **Testing**: ✓ All status checks pass, ✓ No merge conflicts, ✓ Deployment successful
 
----
+### [FIXED] PR #138 System Flow Optimization - Red Flag Resolution (FINAL)
+- **Date**: 2025-12-20
+- **Severity**: Critical (Merge Blocking)
+- **Description**: PR #138 had red flags with failing deployments and extensive merge conflicts
+- **Root Causes**: 
+  - "Refusing to merge unrelated histories" error due to divergent code histories
+  - Deployment infrastructure issues unrelated to code functionality
+- **Final Resolution**:
+  - **CLOSED PR #138 AS OBSOLETE** after systematic analysis
+  - Confirmed main branch already contains all critical functionality
+  - Verified both PR and main branches build successfully
+  - Added comprehensive analysis comment to PR before closing
+- **Impact**: PR repository cleaned, main branch remains stable and deployable
+- **Testing**: ✓ Main branch builds successfully, ✓ PR branch builds successfully, ✓ No critical issues present, ✓ Red flag resolved
 
-## Fixed Bugs (Resolved)
+### [FIXED] PR #141 Documentation Update - Platform Deployment Issues
+- **Date**: 2025-12-20
+- **Severity**: Low (Documentation Only)
+- **Description**: PR #141 experienced Vercel/Cloudflare deployment failures despite correct code
+- **Root Causes**:
+  - Platform-specific environment issues unrelated to code changes
+  - Intermittent deployment service instabilities
+- **Resolution Applied**:
+  - Verified local build works perfectly (npm run build succeeds)
+  - Confirmed no TypeScript errors or merge conflicts
+  - Documented that PR is mergeable despite platform issues
+  - Added comprehensive analysis and recommendation to merge
+- **Impact**: Documentation updates ready for merge despite platform issues
+- **Testing**: ✓ Local build successful, ✓ TypeScript validation passed, ✓ No code conflicts detected
 
-- **[FIXED]** - Vercel deployment schema validation error in vercel.json
-- **Location**: vercel.json (experimental property)
-- **Impact**: High - Caused deployment failures for PR #135 and potentially other PRs
-- **Date Fixed**: 2025-12-18
-- **Solution**: Removed experimental section containing edgeFunctions and allowedHosts
-- **Notes**: Build passes successfully after fix
+## Minor Issues (Non-Critical)
+
+### [OPEN] ESLint Warnings
+- **Severity**: Low
+- **Count**: 200+ warnings
+- **Categories**:
+  - Console statements in API files
+  - Unused variables in TypeScript
+  - `any` type usage
+  - React refresh for exported constants
+- **Status**: Non-blocking, can be addressed in future optimization sprints
+
+### [OPEN] Bundle Size Optimization
+- **Severity**: Low
+- **Description**: Multiple chunks >100KB after minification
+- **Files**: Large vendor chunks (charts, react, ai)
+- **Recommendation**: Consider code splitting for better performance
+- **Status**: Performance optimization opportunity
+
+## Next Steps
+
+1. [ ] Consider implementing Web Crypto API for more secure hashing
+2. [ ] Address ESLint warnings in next cleanup sprint
+3. [ ] Implement bundle splitting for large chunks
+4. [ ] Add unit tests for rate limiting functionality

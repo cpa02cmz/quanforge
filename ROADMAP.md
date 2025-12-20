@@ -45,3 +45,12 @@
 - [x] **Component Memoization**: Extended React.memo to NumericInput, AISettingsModal, and DatabaseSettingsModal components
 - [x] **Error Handling Patterns**: Standardized error handling across services using the unified error handler utility
 - [x] **API Client Fixes**: Resolved async/await issues in Supabase client calls for better reliability
+
+## Critical Fixes (v1.6) - December 2025
+- [x] **Build Compatibility**: Fixed browser crypto module incompatibility causing complete build failure
+- [x] **Vercel Schema Validation**: Resolved `vercel.json` schema validation errors preventing deployments
+- [x] **Cross-Platform Support**: Replaced Node.js-specific crypto with browser-compatible hashing
+- [x] **Deployment Pipeline**: Restored all development and deployment workflows after critical blockers
+- [x] **PR Management**: Systematic resolution of merge conflicts and deployment failures across multiple PRs
+- [x] **Schema Compliance**: Implemented platform-agnostic deployment configurations
+- [x] **PR #138 Analysis**: Analyzed red-flag PR and determined it was obsolete - main branch already contained all critical fixes

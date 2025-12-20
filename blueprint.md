@@ -74,16 +74,14 @@ graph TD
 *   **Input Sanitization**: Filenames are sanitized before download.
 *   **Prompt Engineering**: System prompts prevents the AI from generating harmful or non-MQL5 content.
 
-## Agent Workflow
+## 6. Deployment Considerations
 
-### Development Process
-1. **Branch Strategy**: Main for production, develop for integration work
-2. **PR Management**: All changes via pull requests with automated checks
-3. **Documentation First**: Update AGENTS.md before major architectural changes
-4. **Quality Gates**: Build, lint, and type-check must pass before merge
+### Build Compatibility
+- **Cross-Platform Environment**: All code must work in browser, Node.js, and edge environments
+- **Module Restrictions**: Avoid Node.js-specific modules (`crypto`, `fs`, `path`) in frontend code
+- **Schema Compliance**: Platform configuration files must follow current schema requirements
 
-### Deployment Considerations
-- **Vercel Config**: Avoid experimental features that break schema validation (CRITICAL)
-- **Edge Functions**: Regional deployment for performance
-- **Bundle Analysis**: Monitor chunks >100KB for optimization opportunities
-- **Environment Variables**: Never expose sensitive data in client bundles
+### Known Issues & Solutions
+- **Browser Crypto**: Replace Node.js `crypto` with browser-compatible alternatives
+- **Vercel Schema**: Use minimal, schema-compliant `vercel.json` configuration
+- **Build Validation**: Always run build and typecheck before deployment
