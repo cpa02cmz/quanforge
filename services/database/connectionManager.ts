@@ -130,8 +130,8 @@ class ConnectionManager {
       url: settings.url || process.env['VITE_SUPABASE_URL'] || '',
       anonKey: settings.anonKey || process.env['VITE_SUPABASE_ANON_KEY'] || '',
       region: process.env['VITE_SUPABASE_REGION'] || 'us-east-1',
-      maxConnections: parseInt(process.env['VITE_DB_MAX_CONNECTIONS'] || '10'),
-      minConnections: parseInt(process.env['VITE_DB_MIN_CONNECTIONS'] || '2'),
+      maxConnections: parseInt(process.env['VITE_DB_MAX_CONNECTIONS'] || '50'),
+      minConnections: parseInt(process.env['VITE_DB_MIN_CONNECTIONS'] || '10'),
       connectionTimeout: parseInt(process.env['VITE_DB_CONNECTION_TIMEOUT'] || '5000'),
       idleTimeout: parseInt(process.env['VITE_DB_IDLE_TIMEOUT'] || '300000'), // 5 minutes
       healthCheckInterval: parseInt(process.env['VITE_DB_HEALTH_CHECK_INTERVAL'] || '30000'), // 30 seconds

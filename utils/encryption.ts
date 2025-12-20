@@ -13,6 +13,34 @@ class SecureEncryption {
   private static readonly ITERATIONS = 100000;
   
   /**
+   * Get the encryption key from environment or generate secure fallback
+   * Uses multiple environment variables for better security
+   */
+  private static getEncryptionKey(): string {
+    // Try environment variables first (most secure)
+    const envKeys = [
+      process.env['VITE_ENCRYPTION_KEY'],
+      process.env['ENCRYPTION_KEY'],
+      process.env['VITE_CRYPTO_SECRET'],
+      process.env['CRYPTO_SECRET']
+    ].filter(Boolean);
+    
+    if (envKeys.length > 0 && envKeys[0]!.length >= 32) {
+      return envKeys[0]!;
+    }
+    
+    // Derive from combination of available env vars (fallback)
+    const fallbackSeed = [
+      process.env['VITE_SUPABASE_URL'] || '',
+      process.env['VITE_SUPABASE_ANON_KEY'] || '',
+      (typeof window !== 'undefined' && window.location?.hostname) || 'localhost',
+      'QuantForge_AI_2024_Secure'
+    ].join('|');
+    
+    return fallbackSeed;
+  }
+  
+  /**
    * Generate a proper cryptographic key from a password
    */
   private static async deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
@@ -51,8 +79,8 @@ class SecureEncryption {
       const salt = crypto.getRandomValues(new Uint8Array(this.SALT_LENGTH));
       const iv = crypto.getRandomValues(new Uint8Array(this.IV_LENGTH));
       
-      // Derive key from password (using default key for convenience)
-      const key = await this.deriveKey('QuantForge_AI_Secure_Key_2024_Fallback', salt);
+      // Derive key from secure environment-based key
+      const key = await this.deriveKey(this.getEncryptionKey(), salt);
       
       // Encrypt the data
       const encoder = new TextEncoder();
@@ -94,7 +122,7 @@ class SecureEncryption {
       const ciphertext = combined.slice(this.SALT_LENGTH + this.IV_LENGTH);
       
       // Derive the same key
-      const key = await this.deriveKey('QuantForge_AI_Secure_Key_2024_Fallback', salt);
+      const key = await this.deriveKey(this.getEncryptionKey(), salt);
       
       // Decrypt the data
       const decrypted = await crypto.subtle.decrypt(
@@ -124,9 +152,61 @@ class SecureEncryption {
     return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
   }
 
-  /**
-   * Create a secure hash using SHA-256
-   */
+/**
+    * Migration method for legacy encrypted data (hardcoded keys)
+    * Attempts to decrypt using both new and legacy methods
+    */
+   static async migrateDecrypt(encryptedData: string): Promise<string> {
+     // First try with new secure method
+     try {
+       const result = await this.decrypt(encryptedData);
+       if (result) return result;
+     } catch (e) {
+       // Continue to legacy method
+     }
+     
+     // Try legacy hardcoded keys for backward compatibility
+     const legacyKeys = [
+       'QuantForge_AI_Secure_Key_2024_Fallback',
+       'QuantForge_AI_Secure_Key_2024'
+     ];
+     
+     for (const legacyKey of legacyKeys) {
+       try {
+         const salt = new Uint8Array(this.SALT_LENGTH).fill(0); // Zero salt for legacy
+         const key = await this.deriveKey(legacyKey, salt);
+         
+         const combined = new Uint8Array(
+           atob(encryptedData).split('').map(char => char.charCodeAt(0))
+         );
+         
+         const iv = combined.slice(0, this.IV_LENGTH);
+         const ciphertext = combined.slice(this.IV_LENGTH);
+         
+         const decrypted = await crypto.subtle.decrypt(
+           { name: this.ALGORITHM, iv },
+           key,
+           ciphertext
+         );
+         
+         const decoder = new TextDecoder();
+         return decoder.decode(decrypted);
+       } catch (e) {
+         // Continue to next key
+       }
+     }
+     
+     // Try fallback XOR cipher as last resort
+     try {
+       return await FallbackEncryption.decrypt(encryptedData);
+     } catch (e) {
+       return '';
+     }
+   }
+
+   /**
+    * Create a secure hash using SHA-256
+    */
   static async hash(data: string): Promise<string> {
     try {
       const encoder = new TextEncoder();
@@ -155,7 +235,29 @@ class SecureEncryption {
 
 // Fallback for environments without Web Crypto API
 class FallbackEncryption {
-  private static readonly ENCRYPTION_KEY = 'QuantForge_AI_Secure_Key_2024';
+  private static getEncryptionKey(): string {
+      // Try environment variables first (most secure)
+      const envKeys = [
+        process.env['VITE_ENCRYPTION_KEY'],
+        process.env['ENCRYPTION_KEY'],
+        process.env['VITE_CRYPTO_SECRET'],
+        process.env['CRYPTO_SECRET']
+      ].filter(Boolean);
+      
+      if (envKeys.length > 0 && envKeys[0]!.length >= 32) {
+        return envKeys[0]!;
+      }
+      
+      // Derive from combination of available env vars (fallback)
+      const fallbackSeed = [
+        process.env['VITE_SUPABASE_URL'] || '',
+        process.env['VITE_SUPABASE_ANON_KEY'] || '',
+        (typeof window !== 'undefined' && window.location?.hostname) || 'localhost',
+        'QuantForge_AI_2024_Secure'
+      ].join('|');
+      
+      return fallbackSeed;
+    }
 
   private static xorCipher(text: string, key: string): string {
     let result = '';
@@ -213,7 +315,7 @@ class FallbackEncryption {
   static async encrypt(data: string): Promise<string> {
     if (!data) return '';
     try {
-      const xorred = this.xorCipher(data, this.ENCRYPTION_KEY);
+      const xorred = this.xorCipher(data, this.getEncryptionKey());
       return this.base64Encode(xorred);
     } catch (e) {
       console.error('Fallback encryption failed:', e);
@@ -225,7 +327,7 @@ class FallbackEncryption {
     if (!encryptedData) return '';
     try {
       const decoded = this.base64Decode(encryptedData);
-      return this.xorCipher(decoded, this.ENCRYPTION_KEY);
+      return this.xorCipher(decoded, this.getEncryptionKey());
     } catch (e) {
       console.error('Fallback decryption failed:', e);
       return '';
@@ -262,7 +364,7 @@ const isWebCryptoAvailable = (): boolean => {
          typeof TextDecoder !== 'undefined';
 };
 
-// Legacy export functions for backward compatibility
+// Enhanced export functions with migration support
 export const encryptApiKey = async (apiKey: string): Promise<string> => {
   if (!apiKey) return '';
   const encryptionInterface = isWebCryptoAvailable() ? SecureEncryption : FallbackEncryption;
@@ -271,8 +373,13 @@ export const encryptApiKey = async (apiKey: string): Promise<string> => {
 
 export const decryptApiKey = async (encryptedKey: string): Promise<string> => {
   if (!encryptedKey) return '';
-  const encryptionInterface = isWebCryptoAvailable() ? SecureEncryption : FallbackEncryption;
-  return await encryptionInterface.decrypt(encryptedKey);
+  
+  // Use migration system for backward compatibility
+  if (isWebCryptoAvailable()) {
+    return await SecureEncryption.migrateDecrypt(encryptedKey);
+  } else {
+    return await FallbackEncryption.decrypt(encryptedKey);
+  }
 };
 
 // Enhanced API key validation with more providers
