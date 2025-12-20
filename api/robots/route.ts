@@ -123,8 +123,6 @@ export async function GET(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('robots_api_error', duration);
     
-    console.error('Robots API GET error:', error);
-    
     return NextResponse.json(
       {
         success: false,
@@ -208,8 +206,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('robots_api_create_error', duration);
-    
-    console.error('Robots API POST error:', error);
     
     return NextResponse.json(
       {
@@ -296,8 +292,6 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('robots_api_batch_update_error', duration);
-    
-    console.error('Robots API PUT error:', error);
     
     return NextResponse.json(
       {
@@ -398,8 +392,6 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('robots_api_delete_error', duration);
-    
-    console.error('Robots API DELETE error:', error);
     
     return NextResponse.json(
       {

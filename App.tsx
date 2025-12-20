@@ -15,6 +15,13 @@ import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
   import { edgeMonitoring } from './services/edgeMonitoring';
   import { advancedAPICache } from './services/advancedAPICache';
   import { frontendPerformanceOptimizer } from './services/frontendPerformanceOptimizer';
+  import { 
+    LAZY_LOADING_ROUTES, 
+    PRELOAD_DELAYS, 
+    SERVICE_INITIALIZATION_DELAYS,
+    LOADING_ANIMATION_CLASSES,
+    SEO_CONFIG 
+  } from './constants/app';
 
 // Enhanced lazy loading with route-based code splitting and preloading
 const Auth = lazy(() => 
@@ -27,13 +34,13 @@ const DashboardComponents = lazy(() =>
 );
 
 const GeneratorComponents = lazy(() => 
-  import('./pages/Generator').then(module => ({ default: module.Generator }))
+  import(LAZY_LOADING_ROUTES.GENERATOR).then(module => ({ default: module.Generator }))
 );
 
 // Static pages grouped together
 const StaticPages = lazy(() => 
   Promise.all([
-    import('./pages/Wiki'),
+    import(LAZY_LOADING_ROUTES.STATIC_PAGES),
     import('./pages/About'),
     import('./pages/FAQ'),
     import('./pages/Blog'),
@@ -45,23 +52,18 @@ const Layout = lazy(() =>
   import('./components/Layout').then(module => ({ default: module.Layout }))
 );
 
-// Dynamic import utilities for services and heavy components
-export const loadGeminiService = () => import('./services/gemini');
-export const loadSEOUtils = () => import('./utils/seoEnhanced');
-export const loadChartComponents = () => import('./components/ChartComponents');
-export const loadCodeEditor = () => import('./components/CodeEditor');
-export const loadBacktestPanel = () => import('./components/BacktestPanel');
+
 
 // Enhanced preloading strategy with route-based optimization
    const preloadCriticalRoutes = () => {
      // Preload Dashboard components (most likely route after login)
      import('./pages/Dashboard').catch(err => logger.warn('Dashboard preload failed:', err));
      // Preload Generator components (second most likely)
-     setTimeout(() => import('./pages/Generator').catch(err => logger.warn('Generator preload failed:', err)), 1000);
+     setTimeout(() => import(LAZY_LOADING_ROUTES.GENERATOR).catch(err => logger.warn('Generator preload failed:', err)), PRELOAD_DELAYS.GENERATOR);
      // Preload Layout (essential for navigation)
-     setTimeout(() => import('./components/Layout').catch(err => logger.warn('Layout preload failed:', err)), 500);
+     setTimeout(() => import('./components/Layout').catch(err => logger.warn('Layout preload failed:', err)), PRELOAD_DELAYS.LAYOUT);
      // Preload static pages in background
-     setTimeout(() => import('./pages/Wiki').catch(err => logger.warn('Wiki preload failed:', err)), 2000);
+     setTimeout(() => import(LAZY_LOADING_ROUTES.STATIC_PAGES).catch(err => logger.warn('Wiki preload failed:', err)), PRELOAD_DELAYS.WIKI);
    };
 
 
@@ -121,41 +123,41 @@ useEffect(() => {
      // Use setTimeout to defer non-critical initialization
      const initializeServices = async () => {
        try {
-         // Initialize Vercel Edge Optimizer (non-blocking)
-         setTimeout(() => {
-           vercelEdgeOptimizer.optimizeBundleForEdge();
-           vercelEdgeOptimizer.enableEdgeSSR();
-           vercelEdgeOptimizer.setupEdgeErrorHandling();
-         }, 100);
-         
-         // Initialize Frontend Optimizer (non-blocking)
-         setTimeout(() => {
-           frontendOptimizer.warmUp().catch(err => logger.warn('Frontend optimizer warmup failed:', err));
-         }, 200);
-         
-         // Initialize Advanced Frontend Performance Optimizer (non-blocking)
-         setTimeout(() => {
-           frontendPerformanceOptimizer.warmUp().catch(err => logger.warn('Frontend performance optimizer warmup failed:', err));
-         }, 250);
-         
-         // Initialize Edge Analytics (non-blocking)
-         setTimeout(() => {
-           edgeAnalytics.trackCustomEvent('app_initialization', {
-             timestamp: Date.now(),
-             userAgent: navigator.userAgent,
-             region: 'unknown' // Will be detected by edge analytics
-           });
-           
-           const monitoringStatus = edgeMonitoring.getMonitoringStatus();
-           logger.info('Edge monitoring status:', monitoringStatus);
-         }, 300);
-         
-         // Initialize Advanced API Cache (non-blocking)
-         setTimeout(() => {
-           advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
-             logger.warn('API cache prefetch failed:', err)
-           );
-         }, 400);
+// Initialize Vercel Edge Optimizer (non-blocking)
+          setTimeout(() => {
+            vercelEdgeOptimizer.optimizeBundleForEdge();
+            vercelEdgeOptimizer.enableEdgeSSR();
+            vercelEdgeOptimizer.setupEdgeErrorHandling();
+          }, SERVICE_INITIALIZATION_DELAYS.VERCEL_EDGE_OPTIMIZER);
+          
+          // Initialize Frontend Optimizer (non-blocking)
+          setTimeout(() => {
+            frontendOptimizer.warmUp().catch(err => logger.warn('Frontend optimizer warmup failed:', err));
+          }, SERVICE_INITIALIZATION_DELAYS.FRONTEND_OPTIMIZER);
+          
+          // Initialize Advanced Frontend Performance Optimizer (non-blocking)
+          setTimeout(() => {
+            frontendPerformanceOptimizer.warmUp().catch(err => logger.warn('Frontend performance optimizer warmup failed:', err));
+          }, SERVICE_INITIALIZATION_DELAYS.FRONTEND_PERFORMANCE_OPTIMIZER);
+          
+          // Initialize Edge Analytics (non-blocking)
+          setTimeout(() => {
+            edgeAnalytics.trackCustomEvent('app_initialization', {
+              timestamp: Date.now(),
+              userAgent: navigator.userAgent,
+              region: 'unknown' // Will be detected by edge analytics
+            });
+            
+            const monitoringStatus = edgeMonitoring.getMonitoringStatus();
+            logger.info('Edge monitoring status:', monitoringStatus);
+          }, SERVICE_INITIALIZATION_DELAYS.EDGE_ANALYTICS);
+          
+          // Initialize Advanced API Cache (non-blocking)
+          setTimeout(() => {
+            advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
+              logger.warn('API cache prefetch failed:', err)
+            );
+          }, SERVICE_INITIALIZATION_DELAYS.ADVANCED_API_CACHE);
        } catch (error) {
          logger.warn('Non-critical service initialization failed:', error);
        }
@@ -165,14 +167,14 @@ useEffect(() => {
      initializeServices();
    }, []);
 
-   // Enhanced loading component with better UX
-   const LoadingComponent = useMemo(() => (
-     <div className="flex flex-col items-center justify-center h-screen bg-dark-bg text-white">
-       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mb-4"></div>
-       <p className="text-lg font-medium">Loading QuantForge AI...</p>
-       <p className="text-sm text-gray-400 mt-2">Initializing your trading environment</p>
-     </div>
-   ), []);
+// Enhanced loading component with better UX
+    const LoadingComponent = useMemo(() => (
+      <div className="flex flex-col items-center justify-center h-screen bg-dark-bg text-white">
+        <div className={LOADING_ANIMATION_CLASSES}></div>
+        <p className="text-lg font-medium">Loading QuantForge AI...</p>
+        <p className="text-sm text-gray-400 mt-2">Initializing your trading environment</p>
+      </div>
+    ), []);
 
   if (loading) {
     return LoadingComponent;
@@ -182,16 +184,16 @@ useEffect(() => {
     <ErrorBoundary>
       <ToastProvider>
         <BrowserRouter>
-          <SEOHead 
-            structuredData={[
-              structuredDataTemplates.softwareApplication,
-              structuredDataTemplates.webPage(
-                'QuantForge AI - Advanced MQL5 Trading Robot Generator',
-                'Generate professional MQL5 trading robots and Expert Advisors using AI. Powered by Google Gemini 3.0/2.5.',
-                'https://quanforge.ai'
-              )
-            ]}
-          />
+<SEOHead 
+             structuredData={[
+               structuredDataTemplates.softwareApplication,
+               structuredDataTemplates.webPage(
+                 SEO_CONFIG.TITLE,
+                 SEO_CONFIG.DESCRIPTION,
+                 SEO_CONFIG.URL
+               )
+             ]}
+           />
           <Suspense fallback={LoadingComponent}>
             <Routes>
               <Route 

@@ -167,3 +167,101 @@ export const isUser = (obj: unknown): obj is User => {
     ('email' in obj ? typeof obj.email === 'string' : true)
   );
 };
+
+// Chart component interfaces
+import React from 'react';
+
+export interface RechartsComponentTypes {
+  PieChart: React.ComponentType<any>;
+  Pie: React.ComponentType<any>;
+  Cell: React.ComponentType<any>;
+  ResponsiveContainer: React.ComponentType<any>;
+  Tooltip: React.ComponentType<any>;
+  AreaChart: React.ComponentType<any>;
+  Area: React.ComponentType<any>;
+  XAxis: React.ComponentType<any>;
+  YAxis: React.ComponentType<any>;
+  CartesianGrid: React.ComponentType<any>;
+}
+
+export interface ChartDataPoint {
+  date: string;
+  balance: number;
+}
+
+export interface RiskDataPoint {
+  name: string;
+  value: number;
+  color: string;
+}
+
+export interface ChartAnalysis {
+  riskScore: number;
+  profitability: number;
+  description: string;
+}
+
+// AI Response interfaces for chat interface
+export interface AIResponse {
+  content: string;
+  thinking?: string | null;
+  role: MessageRole;
+  timestamp?: number;
+}
+
+export interface StrategySuggestion {
+  label: string;
+  prompt: string;
+  category?: string;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+}
+
+// Database operation interfaces
+export interface DatabaseStats {
+  count: number;
+  storageType: string;
+  lastSync?: string;
+  size?: string;
+}
+
+export interface ConnectionTestResult {
+  success: boolean;
+  message: string;
+  latency?: number;
+  details?: Record<string, unknown>;
+}
+
+export interface MigrationResult {
+  success: boolean;
+  count: number;
+  error?: string;
+  details?: Record<string, unknown>;
+}
+
+// Enhanced error handling interfaces
+export interface APIError {
+  message: string;
+  code?: string | number;
+  details?: Record<string, unknown>;
+  timestamp?: number;
+}
+
+export interface ValidationError extends APIError {
+  field?: string;
+  value?: unknown;
+}
+
+// Import/Export interfaces
+export interface ConfigExport {
+  params: StrategyParams;
+  version: string;
+  timestamp: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ConfigImport {
+  timeframe?: string;
+  riskPercent?: number;
+  customInputs?: CustomInput[];
+  [key: string]: unknown; // Allow additional properties
+}

@@ -1,24 +1,14 @@
 import React, { memo, useState, useEffect } from 'react';
+import { RechartsComponentTypes, ChartDataPoint, RiskDataPoint, ChartAnalysis } from '../types';
 
 // Dynamic import for Recharts to optimize bundle size
-interface RechartsComponents {
-  PieChart: any;
-  Pie: any;
-  Cell: any;
-  ResponsiveContainer: any;
-  Tooltip: any;
-  AreaChart: any;
-  Area: any;
-  XAxis: any;
-  YAxis: any;
-  CartesianGrid: any;
-}
+type RechartsComponents = RechartsComponentTypes;
 
 interface ChartComponentsProps {
-  riskData: Array<{ name: string; value: number; color: string }> | undefined;
-  analysis: { riskScore: number; profitability: number; description: string } | undefined;
+  riskData: RiskDataPoint[] | undefined;
+  analysis: ChartAnalysis | undefined;
   t: ((key: string) => string) | undefined;
-  data: Array<{ date: string; balance: number }> | undefined;
+  data: ChartDataPoint[] | undefined;
   totalReturn: number | undefined;
 }
 
@@ -83,7 +73,7 @@ const RechartsInner = memo(({
                 paddingAngle={5}
                 dataKey="value"
               >
-                {riskData.map((entry, index) => (
+                {riskData.map((entry: RiskDataPoint, index: number) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>

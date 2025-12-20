@@ -117,8 +117,6 @@ const checkRateLimit = async (
     };
     
   } catch (error) {
-    console.error('Rate limit check error:', error);
-    
     // Fail open - allow request if rate limiting fails
     return {
       allowed: true,
@@ -172,8 +170,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('rate_limit_error', duration);
-    
-    console.error('Rate limit API error:', error);
     
     return NextResponse.json(
       {
@@ -321,8 +317,6 @@ export async function POST(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('rate_limit_error', duration);
     
-    console.error('Rate limit API error:', error);
-    
     return NextResponse.json(
       {
         success: false,
@@ -393,8 +387,6 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('rate_limit_error', duration);
-    
-    console.error('Rate limit reset error:', error);
     
     return NextResponse.json(
       {

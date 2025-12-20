@@ -49,7 +49,7 @@ class CSRFProtection {
   private initializeToken(): void {
     const existingToken = this.getTokenFromCookie();
     
-    if (existingToken && this.validateToken(existingToken)) {
+    if (existingToken && this.validateTokenFormat(existingToken)) {
       this.currentToken = {
         token: existingToken,
         expires: Date.now() + this.config.tokenExpiry,
@@ -132,7 +132,7 @@ class CSRFProtection {
   /**
    * Validate CSRF token format and expiry
    */
-  private validateToken(token: string): boolean {
+  private validateTokenFormat(token: string): boolean {
     if (!token || token.length !== this.config.tokenLength * 2) {
       return false;
     }

@@ -9,6 +9,7 @@ import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
 interface EdgeResponse<T = any> {
   data?: T;
   error?: string;
+  message?: string;
   cached?: boolean;
   region?: string;
   responseTime?: number;
@@ -89,10 +90,7 @@ export default async function edgeHandler(request: Request): Promise<Response> {
     response.responseTime = Math.round(responseTime);
     response.region = region;
 
-    // Log performance metrics
-    if (process.env.NODE_ENV === 'production') {
-      console.log(`Edge function ${path} executed in ${responseTime}ms from ${region}`);
-    }
+    
 
     return new Response(JSON.stringify(response), {
       status: response.error ? 500 : 200,
@@ -104,10 +102,9 @@ export default async function edgeHandler(request: Request): Promise<Response> {
     });
 
   } catch (error) {
-    console.error('Edge function error:', error);
-    
     return new Response(JSON.stringify({
       error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Unknown error',
       region,
       responseTime: Math.round(performance.now() - startTime),
     }), {
@@ -171,8 +168,7 @@ async function handleRobots(
     return { data: result.data, cached: false };
 
   } catch (error) {
-    console.error('Robots edge function error:', error);
-    return { error: 'Failed to fetch robots' };
+    return { error: 'Failed to fetch robots', message: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
@@ -201,8 +197,7 @@ async function handleStrategies(
     return { data: result.data };
 
   } catch (error) {
-    console.error('Strategies edge function error:', error);
-    return { error: 'Failed to fetch strategies' };
+    return { error: 'Failed to fetch strategies', message: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
@@ -240,8 +235,7 @@ async function handlePerformanceAnalytics(
     return { data: analytics };
 
   } catch (error) {
-    console.error('Analytics edge function error:', error);
-    return { error: 'Failed to fetch analytics' };
+    return { error: 'Failed to fetch analytics', message: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
@@ -268,8 +262,7 @@ async function handleHealthCheck(region: string): Promise<EdgeResponse> {
     return { data: health };
 
   } catch (error) {
-    console.error('Health check error:', error);
-    return { error: 'Health check failed' };
+    return { error: 'Health check failed', message: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
@@ -329,8 +322,7 @@ async function handleCacheWarmup(
     };
 
   } catch (error) {
-    console.error('Cache warmup error:', error);
-    return { error: 'Cache warmup failed' };
+    return { error: 'Cache warmup failed', message: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
@@ -349,8 +341,7 @@ async function handleOptimization(_request: Request, region: string): Promise<Ed
     return { data: optimizations };
 
   } catch (error) {
-    console.error('Optimization error:', error);
-    return { error: 'Optimization failed' };
+    return { error: 'Optimization failed', message: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
