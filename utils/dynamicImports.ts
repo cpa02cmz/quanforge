@@ -1,0 +1,11 @@
+/**
+ * Dynamic import utilities for services and heavy components
+ * Separated from App.tsx to enable React fast refresh
+ */
+
+// Dynamic import utilities for services and heavy components
+export const loadGeminiService = () => import('../services/gemini');
+export const loadSEOUtils = () => import('../utils/seoEnhanced');
+export const loadChartComponents = () => import('../components/ChartComponents');
+export const loadCodeEditor = () => import('../components/CodeEditor');
+export const loadBacktestPanel = () => import('../components/BacktestPanel');

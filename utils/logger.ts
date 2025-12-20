@@ -1,6 +1,14 @@
 /**
- * Conditional logging utility for development vs production
+ * Enhanced centralized logging utility for consistent logging across the application
+ * Replaces console statements for better maintainability and production readiness
  */
+
+export enum LogLevel {
+  ERROR = 'error',
+  WARN = 'warn',
+  INFO = 'info',
+  DEBUG = 'debug'
+}
 
 interface Logger {
   log: (...args: any[]) => void;
@@ -82,3 +90,50 @@ export const createScopedLogger = (scope: string): Logger => {
     debug: () => {},
   };
 };
+
+/**
+ * API-specific logging methods for consistent API error handling
+ */
+export const apiLogger = {
+  error: (message: string, context?: Record<string, any>) => {
+    if (context) {
+      errorLogger.error(message, context);
+    } else {
+      errorLogger.error(message);
+    }
+  },
+  
+  warn: (message: string, context?: Record<string, any>) => {
+    if (context) {
+      errorLogger.warn(message, context);
+    } else {
+      errorLogger.warn(message);
+    }
+  },
+  
+  info: (message: string, context?: Record<string, any>) => {
+    if (import.meta.env.DEV) {
+      const prefix = '[API]';
+      if (context) {
+        console.info(prefix, message, context);
+      } else {
+        console.info(prefix, message);
+      }
+    }
+  }
+};
+
+/**
+ * Service-specific logging methods
+ */
+export const serviceLogger = (serviceName: string) => ({
+  error: (message: string, context?: Record<string, any>) => {
+    const scopedLogger = createScopedLogger(serviceName);
+    scopedLogger.error(message, context);
+  },
+  
+  warn: (message: string, context?: Record<string, any>) => {
+    const scopedLogger = createScopedLogger(serviceName);
+    scopedLogger.warn(message, context);
+  }
+});

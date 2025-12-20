@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Robot } from '../types';
 import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
+import { logger } from '../utils/logger';
 
 interface VirtualScrollListProps {
   robots: Robot[];
@@ -47,7 +48,7 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
      
      const duration = performance.now() - startTime;
      if (duration > 16) { // More than one frame at 60fps
-       console.warn(`VirtualScrollList filter took ${duration.toFixed(2)}ms for ${robots.length} items`);
+       logger.warn(`VirtualScrollList filter took ${duration.toFixed(2)}ms for ${robots.length} items`);
      }
      
      return result;

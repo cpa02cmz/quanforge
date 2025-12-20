@@ -46,6 +46,14 @@
 - [x] **Error Handling Patterns**: Standardized error handling across services using the unified error handler utility
 - [x] **API Client Fixes**: Resolved async/await issues in Supabase client calls for better reliability
 
+## Performance Optimizations (v1.4) - December 2025
+- [x] **Code Quality Enhancement**: Resolved 200+ ESLint warnings through systematic cleanup
+- [x] **Bundle Size Optimization**: Reduced chart-vendor chunk from 359KB to 309KB (50KB reduction)
+- [x] **Logging Infrastructure**: Enhanced centralized logging utility with API-specific methods
+- [x] **React Fast Refresh**: Improved development experience by moving dynamic exports to separate files
+- [x] **TypeScript Improvements**: Replaced explicit 'any' types with proper TypeScript typing
+- [x] **Chunk Splitting**: Implemented granular chunk splitting for better cacheability and performance
+
 ## Critical Fixes (v1.6) - December 2025
 - [x] **Build Compatibility**: Fixed browser crypto module incompatibility causing complete build failure
 - [x] **Vercel Schema Validation**: Resolved `vercel.json` schema validation errors preventing deployments

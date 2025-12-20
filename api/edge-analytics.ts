@@ -3,8 +3,9 @@
  * Collects and analyzes edge performance metrics with live streaming capabilities
  */
 
-import { edgeMetricsCollector } from '../services/edgeMetrics';
+import { edgeMetrics } from '../services/edgeMetrics';
 import { vercelEdgeOptimizer } from '../services/vercelEdgeOptimizer';
+import { apiLogger } from '../utils/logger';
 
 export const config = {
   runtime: 'edge',
@@ -112,7 +113,7 @@ export default async function handler(req: Request): Promise<Response> {
         const responseTime = Date.now() - startTime;
         
         // Record edge metrics
-        edgeMetricsCollector.recordMetric(region, {
+        edgeMetrics.recordMetric(region, {
           responseTime,
           cacheHitRate: payload.analytics.globalCacheHitRate || 0,
           bandwidthSaved: payload.analytics.totalBandwidthSaved || 0,
@@ -167,10 +168,10 @@ export default async function handler(req: Request): Promise<Response> {
         const timeWindow = parseInt(url.searchParams.get('window') || '300000'); // 5 minutes default
         
         // Get edge metrics
-        const edgeMetrics = edgeMetricsCollector.getMetricsByRegion(region);
-        const averageMetrics = edgeMetricsCollector.getAverageMetrics(timeWindow);
-        const performanceScore = edgeMetricsCollector.getPerformanceScore();
-        const cachePerformance = edgeMetricsCollector.getCachePerformance();
+        const edgeMetrics = edgeMetrics.getMetricsByRegion(region);
+        const averageMetrics = edgeMetrics.getAverageMetrics(timeWindow);
+        const performanceScore = edgeMetrics.getPerformanceScore();
+        const cachePerformance = edgeMetrics.getCachePerformance();
         
         // Get Vercel edge optimizer metrics
         const vercelMetrics = vercelEdgeOptimizer.getEdgeMetrics();
@@ -189,7 +190,7 @@ export default async function handler(req: Request): Promise<Response> {
           },
           cachePerformance,
           vercelMetrics,
-          recommendations: edgeMetricsCollector.getPerformanceRecommendations(),
+          recommendations: edgeMetrics.getPerformanceRecommendations(),
           timestamp: Date.now(),
         };
 
@@ -219,8 +220,8 @@ export default async function handler(req: Request): Promise<Response> {
     if (url.pathname === '/api/analytics/performance-score' && req.method === 'GET') {
       try {
         const region = req.headers.get('x-vercel-region') || 'unknown';
-        const performanceScore = edgeMetricsCollector.getPerformanceScore();
-        const recommendations = edgeMetricsCollector.getPerformanceRecommendations();
+        const performanceScore = edgeMetrics.getPerformanceScore();
+        const recommendations = edgeMetrics.getPerformanceRecommendations();
         
         const response = {
           success: true,
@@ -387,7 +388,7 @@ export default async function handler(req: Request): Promise<Response> {
     // Simulate edge performance for testing
     if (url.pathname === '/api/analytics/simulate' && req.method === 'POST') {
       try {
-        edgeMetricsCollector.simulateEdgePerformance();
+        edgeMetrics.simulateEdgePerformance();
         
         // Broadcast to all streaming connections
         broadcastToStreams({
@@ -455,8 +456,8 @@ export default async function handler(req: Request): Promise<Response> {
  * Collect metrics for streaming
  */
 function collectStreamingMetrics(region: string, filters: AnalyticsFilters): StreamingMetrics {
-  const edgeMetrics = edgeMetricsCollector.getMetricsByRegion(region);
-  const averageMetrics = edgeMetricsCollector.getAverageMetrics(filters.timeWindow || 300000);
+  const edgeMetrics = edgeMetrics.getMetricsByRegion(region);
+  const averageMetrics = edgeMetrics.getAverageMetrics(filters.timeWindow || 300000);
   
   // Apply filters
   let filteredMetrics = edgeMetrics;
@@ -519,7 +520,7 @@ async function aggregateAnalyticsData(options: {
   const aggregated: Record<string, any> = {};
 
   for (const region of options.regions) {
-    const metrics = edgeMetricsCollector.getMetricsByRegion(region);
+    const metrics = edgeMetrics.getMetricsByRegion(region);
     const filteredMetrics = metrics.filter(m => 
       Date.now() - m.timestamp <= timeWindow
     );

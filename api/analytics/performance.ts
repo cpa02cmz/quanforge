@@ -8,6 +8,7 @@ import { databasePerformanceMonitor } from '../../services/databasePerformanceMo
 import { edgeCacheStrategy } from '../../services/edgeCacheStrategy';
 import { enhancedConnectionPool } from '../../services/enhancedSupabasePool';
 import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
+import { apiLogger } from '../../utils/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Analytics API failed:', error);
+    apiLogger.error('Analytics API failed:', { error: error instanceof Error ? error.message : String(error) });
     
     return NextResponse.json({
       success: false,
@@ -137,7 +138,7 @@ async function getAnalyticsSummary(region: string, timeRange: string) {
   };
 }
 
-async function getPerformanceAnalytics(region: string, timeRange: string) {
+async function getPerformanceAnalytics(_region: string, _timeRange: string) {
   const dbReport = databasePerformanceMonitor.getPerformanceReport();
   const edgeMetrics = vercelEdgeOptimizer.getEdgeMetrics();
   
@@ -157,7 +158,7 @@ async function getPerformanceAnalytics(region: string, timeRange: string) {
           bandwidthSaved: metric.bandwidthSaved
         };
         return acc;
-      }, {} as Record<string, any>)
+}, {} as Record<string, { responseTime: number; cacheHitRate: number; requestsServed: number; bandwidthSaved: number; }>)
     },
     trends: {
       queryTime: calculateTrend(dbReport.summary.queryTime),
@@ -167,16 +168,14 @@ async function getPerformanceAnalytics(region: string, timeRange: string) {
   };
 }
 
-async function getDatabaseAnalytics(region: string, timeRange: string) {
+async function getDatabaseAnalytics(_region: string, _timeRange: string) {
   const metrics = databasePerformanceMonitor.getMetrics();
   const alerts = databasePerformanceMonitor.getAlerts();
   const connectionStats = enhancedConnectionPool.getDetailedStats();
   
   return {
     metrics,
-    alerts: alerts.filter(alert => 
-      Date.now() - alert.timestamp < getTimeRangeMs(timeRange)
-    ),
+    alerts: alerts, // Full alerts list, time filtering done at caller level
     connections: connectionStats,
     optimization: {
       suggestedIndexes: getSuggestedIndexes(),
@@ -186,7 +185,7 @@ async function getDatabaseAnalytics(region: string, timeRange: string) {
   };
 }
 
-async function getCacheAnalytics(region: string, timeRange: string) {
+async function getCacheAnalytics(_region: string, _timeRange: string) {
   const stats = edgeCacheStrategy.getStats();
   const tagIndex = edgeCacheStrategy.getTagIndex();
   
@@ -211,7 +210,7 @@ async function getCacheAnalytics(region: string, timeRange: string) {
   };
 }
 
-async function getEdgeAnalytics(region: string, timeRange: string) {
+async function getEdgeAnalytics(_region: string, _timeRange: string) {
   const metrics = vercelEdgeOptimizer.getEdgeMetrics();
   const config = vercelEdgeOptimizer.getConfig();
   
@@ -234,17 +233,17 @@ async function getEdgeAnalytics(region: string, timeRange: string) {
       acc[metric.region].bandwidthSaved += metric.bandwidthSaved;
       
       return acc;
-    }, {} as Record<string, any>),
+    }, {} as Record<string, { responseTime: number[]; cacheHitRate: number[]; requestsServed: number; bandwidthSaved: number; }>),
     optimization: {
       enabledFeatures: Object.entries(config)
-        .filter(([_, value]) => value === true)
+        .filter(([, value]) => value === true)
         .map(([key]) => key),
       recommendations: getEdgeOptimizationRecommendations(metrics)
     }
   };
 }
 
-async function getConnectionAnalytics(region: string, timeRange: string) {
+async function getConnectionAnalytics(_region: string, _timeRange: string) {
   const stats = await enhancedConnectionPool.getDetailedStats();
   
   return {
@@ -272,10 +271,10 @@ async function getConnectionAnalytics(region: string, timeRange: string) {
   };
 }
 
-async function getAlertsAnalytics(region: string, timeRange: string) {
+async function getAlertsAnalytics(_region: string, _timeRange: string) {
   const alerts = databasePerformanceMonitor.getAlerts();
   const filteredAlerts = alerts.filter(alert => 
-    Date.now() - alert.timestamp < getTimeRangeMs(timeRange)
+    Date.now() - alert.timestamp < getTimeRangeMs(_timeRange)
   );
   
   return {
@@ -302,22 +301,22 @@ async function getAlertsAnalytics(region: string, timeRange: string) {
   };
 }
 
-async function getTrendsAnalytics(region: string, timeRange: string) {
+async function getTrendsAnalytics(_region: string, timeRange: string) {
   // This would typically query a time-series database
   // For now, return simulated trend data
-  const timePoints = getTimePoints(timeRange);
+  const _timePoints = getTimePoints(timeRange);
   
   return {
     timeRange,
-    timePoints,
+    timePoints: _timePoints,
     metrics: {
-      queryTime: generateTrendData(timePoints, 100, 500),
-      errorRate: generateTrendData(timePoints, 0, 0.1),
-      cacheHitRate: generateTrendData(timePoints, 0.7, 0.95),
-      responseTime: generateTrendData(timePoints, 50, 300),
-      throughput: generateTrendData(timePoints, 10, 100)
+      queryTime: generateTrendData(_timePoints, 100, 500),
+      errorRate: generateTrendData(_timePoints, 0, 0.1),
+      cacheHitRate: generateTrendData(_timePoints, 0.7, 0.95),
+      responseTime: generateTrendData(_timePoints, 50, 300),
+      throughput: generateTrendData(_timePoints, 10, 100)
     },
-    insights: generateTrendInsights(timePoints)
+    insights: generateTrendInsights(_timePoints)
   };
 }
 
@@ -344,7 +343,7 @@ function getTimePoints(timeRange: string): number[] {
   return points;
 }
 
-function getOverallStatus(dbMetrics: any, cacheStats: any, alerts: any[]): string {
+function getOverallStatus(dbMetrics: { queryTime: number; errorRate: number; }, cacheStats: { hitRate: number; }, alerts: { severity: string; }[]): string {
   if (alerts.some(a => a.severity === 'critical')) return 'critical';
   if (alerts.some(a => a.severity === 'high')) return 'degraded';
   if (dbMetrics.errorRate > 0.05 || dbMetrics.queryTime > 1000) return 'warning';
@@ -352,7 +351,7 @@ function getOverallStatus(dbMetrics: any, cacheStats: any, alerts: any[]): strin
   return 'healthy';
 }
 
-function calculateTrend(currentValue: number): { direction: 'up' | 'down' | 'stable'; percentage: number } {
+function calculateTrend(_currentValue: number): { direction: 'up' | 'down' | 'stable'; percentage: number } {
   // This would typically compare with historical data
   // For now, return a simulated trend
   const change = (Math.random() - 0.5) * 0.2; // -10% to +10%
@@ -360,7 +359,7 @@ function calculateTrend(currentValue: number): { direction: 'up' | 'down' | 'sta
   return { direction, percentage: Math.abs(change * 100) };
 }
 
-function calculateCacheEfficiency(stats: any): number {
+function calculateCacheEfficiency(stats: { hitRate: number; size: number; }): number {
   return Math.round((stats.hitRate * 100) - (stats.size / 1024 / 100) * 100) / 100;
 }
 
@@ -381,7 +380,7 @@ function getQueryOptimizations(): string[] {
   ];
 }
 
-function getPerformanceTips(metrics: any): string[] {
+function getPerformanceTips(metrics: { queryTime: number; cacheHitRate: number; errorRate: number; }): string[] {
   const tips: string[] = [];
   
   if (metrics.queryTime > 500) {
@@ -399,7 +398,7 @@ function getPerformanceTips(metrics: any): string[] {
   return tips;
 }
 
-function getCacheRecommendations(stats: any): string[] {
+function getCacheRecommendations(stats: { hitRate: number; size: number; entries: number; }): string[] {
   const recommendations: string[] = [];
   
   if (stats.hitRate < 0.8) {
@@ -417,7 +416,7 @@ function getCacheRecommendations(stats: any): string[] {
   return recommendations;
 }
 
-function getEdgeOptimizationRecommendations(metrics: any[]): string[] {
+function getEdgeOptimizationRecommendations(metrics: { responseTime: number; cacheHitRate: number; }[]): string[] {
   const recommendations: string[] = [];
   
   const avgResponseTime = metrics.length > 0 
@@ -439,7 +438,7 @@ function getEdgeOptimizationRecommendations(metrics: any[]): string[] {
   return recommendations;
 }
 
-function getConnectionRecommendations(poolStats: any): string[] {
+function getConnectionRecommendations(poolStats: { hitRate: number; avgAcquireTime: number; waitingRequests: number; }): string[] {
   const recommendations: string[] = [];
   
   if (poolStats.hitRate < 0.8) {
@@ -457,7 +456,7 @@ function getConnectionRecommendations(poolStats: any): string[] {
   return recommendations;
 }
 
-function calculateAlertTrends(alerts: any[]): any[] {
+function calculateAlertTrends(alerts: { timestamp: number; }[]): { timestamp: number; count: number; }[] {
   // Group alerts by hour
   const hourly = new Map<number, number>();
   
@@ -472,7 +471,7 @@ function calculateAlertTrends(alerts: any[]): any[] {
   }));
 }
 
-function calculateResolutionTrends(alerts: any[]): any[] {
+function calculateResolutionTrends(_alerts: { timestamp: number; resolvedAt?: number; }[]): { timestamp: number; resolvedAt: number; }[] {
   // This would track alert resolution times
   // For now, return empty array
   return [];
