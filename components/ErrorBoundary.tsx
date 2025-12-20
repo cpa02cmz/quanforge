@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode, memo } from 'react';
+import React, { ErrorInfo, ReactNode, memo } from 'react';
 import { createScopedLogger } from '../utils/logger';
 
 const logger = createScopedLogger('ErrorBoundary');
@@ -15,7 +15,7 @@ interface State {
   retryCount: number;
 }
 
-class ErrorBoundaryClass extends Component<Props, State> {
+class ErrorBoundaryClass extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false, error: null, errorId: null, retryCount: 0 };

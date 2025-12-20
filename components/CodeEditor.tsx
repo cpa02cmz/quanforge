@@ -6,7 +6,7 @@ interface CodeEditorProps {
   code: string;
   readOnly?: boolean;
   filename?: string;
-  onChange?: (newCode: string) => void;
+  onChange?: (_newCode: string) => void;
   onRefine?: () => void;
   onExplain?: () => void;
 }

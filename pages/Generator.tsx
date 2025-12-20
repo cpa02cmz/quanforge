@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, memo, useMemo, Suspense } from 'react';
 import { createLazyComponent } from '../components/LazyWrapper';
-import { LoadingStates } from '../constants';
+import { LoadingComponents } from '../components/LoadingComponents';
 import { useParams } from 'react-router-dom';
 import { StrategyConfig } from '../components/StrategyConfig';
 import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
@@ -14,7 +14,7 @@ import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOpt
 const ChatInterface = createLazyComponent(
   () => import('../components/ChatInterface').then(module => ({ default: module.ChatInterface })),
   { 
-    fallback: LoadingStates.Chat(),
+    fallback: LoadingComponents.Chat(),
     preloadingStrategy: 'immediate'
   }
 );
@@ -22,7 +22,7 @@ const ChatInterface = createLazyComponent(
 const CodeEditor = createLazyComponent(
   () => import('../components/CodeEditor').then(module => ({ default: module.CodeEditor })),
   { 
-    fallback: LoadingStates.Editor(),
+    fallback: LoadingComponents.Editor(),
     preloadingStrategy: 'on-hover'
   }
 );
@@ -30,7 +30,7 @@ const CodeEditor = createLazyComponent(
 const BacktestPanel = createLazyComponent(
   () => import('../components/BacktestPanel').then(module => ({ default: module.BacktestPanel })),
   { 
-    fallback: LoadingStates.Backtest(),
+    fallback: LoadingComponents.Backtest(),
     preloadingStrategy: 'on-hover'
   }
 );
@@ -38,7 +38,7 @@ const BacktestPanel = createLazyComponent(
 const ChartComponents = createLazyComponent(
   () => import('../components/ChartComponents').then(module => ({ default: module.ChartComponents })),
   { 
-    fallback: LoadingStates.Charts(),
+    fallback: LoadingComponents.Charts(),
     preloadingStrategy: 'on-hover'
   }
 );

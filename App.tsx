@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createLazyComponent } from './components/LazyWrapper';
-import { LoadingStates } from './constants';
+import { LoadingComponents } from './components/LoadingComponents';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './services/supabase';
 import { ToastProvider } from './components/Toast';
@@ -22,7 +22,7 @@ import { frontendPerformanceOptimizer } from './services/frontendPerformanceOpti
 const Auth = createLazyComponent(
   () => import('./components/Auth').then(module => ({ default: module.Auth })),
   { 
-    fallback: LoadingStates.FullScreen(),
+    fallback: LoadingComponents.FullScreen(),
     preloadingStrategy: 'immediate'
   }
 );
@@ -31,7 +31,7 @@ const Auth = createLazyComponent(
 const DashboardComponents = createLazyComponent(
   () => import('./pages/Dashboard').then(module => ({ default: module.Dashboard })),
   { 
-    fallback: LoadingStates.FullScreen(),
+    fallback: LoadingComponents.FullScreen(),
     preloadingStrategy: 'immediate'
   }
 );
@@ -39,7 +39,7 @@ const DashboardComponents = createLazyComponent(
 const GeneratorComponents = createLazyComponent(
   () => import('./pages/Generator').then(module => ({ default: module.Generator })),
   { 
-    fallback: LoadingStates.FullScreen(),
+    fallback: LoadingComponents.FullScreen(),
     preloadingStrategy: 'immediate'
   }
 );
@@ -54,7 +54,7 @@ const StaticPages = createLazyComponent(
     import('./pages/Features')
   ]).then(([Wiki]) => ({ default: Wiki.Wiki })),
   { 
-    fallback: LoadingStates.FullScreen(),
+    fallback: LoadingComponents.FullScreen(),
     preloadingStrategy: 'on-hover'
   }
 );

@@ -1,5 +1,5 @@
-import React, { Suspense, Component, ErrorInfo, ReactNode } from 'react';
-import { LoadingStates } from '../constants/loadingStates';
+import React, { Suspense, ErrorInfo, ReactNode } from 'react';
+import { LoadingComponents } from './LoadingComponents';
 
 interface LazyWrapperProps {
   children: ReactNode;
@@ -15,7 +15,7 @@ interface LazyWrapperState {
 }
 
 // Enhanced error boundary for lazy-loaded components
-class LazyErrorBoundary extends Component<LazyWrapperProps, LazyWrapperState> {
+class LazyErrorBoundary extends React.Component<LazyWrapperProps, LazyWrapperState> {
   constructor(props: LazyWrapperProps) {
     super(props);
     this.state = {
@@ -87,14 +87,7 @@ class LazyErrorBoundary extends Component<LazyWrapperProps, LazyWrapperState> {
     return (
       <Suspense 
         key={key}
-        fallback={this.props.fallback || (
-          <div className="flex items-center justify-center p-8 bg-dark-bg border border-dark-border rounded-2xl">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500 mx-auto mb-3"></div>
-              <p className="text-gray-400 text-sm">Loading component...</p>
-            </div>
-          </div>
-        )}
+        fallback={this.props.fallback || <LoadingComponents.Inline /> }
       >
         {this.props.children}
       </Suspense>
@@ -141,7 +134,7 @@ export const createLazyComponent = <T extends React.ComponentType<any>>(
   );
 
   // Add preload method to the component
-  (WrappedComponent as any).preload = preload;
+  (WrappedComponent as { preload?: () => void }).preload = preload;
 
 return WrappedComponent;
 };
