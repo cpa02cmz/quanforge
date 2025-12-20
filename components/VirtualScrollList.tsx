@@ -7,9 +7,9 @@ interface VirtualScrollListProps {
   searchTerm: string;
   filterType: string;
   processingId: string | null;
-  onDuplicate: (id: string) => void;
-  onDelete: (id: string, name: string) => void;
-  t: (key: string, params?: Record<string, string>) => string;
+  onDuplicate: (_id: string) => void;
+  onDelete: (_id: string, _name: string) => void;
+  t: (_key: string, _params?: Record<string, string>) => string;
 }
 
 export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({

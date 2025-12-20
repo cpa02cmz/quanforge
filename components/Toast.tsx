@@ -1,17 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { ToastType, Toast, ToastContextType } from '../types/toast';
 import { TOAST_BASE_CLASSES, TOAST_VARIANTS, TOAST_ICON_COLORS, TOAST_AUTO_DISMISS_DELAY } from '../constants/toast';
-
-export type ToastType = 'success' | 'error' | 'info';
-
-interface Toast {
-  id: string;
-  message: string;
-  type: ToastType;
-}
-
-interface ToastContextType {
-  showToast: (_message: string, _type?: ToastType) => void;
-}
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
@@ -36,12 +25,12 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, TOAST_AUTO_DISMISS_DELAY);
   }, []);
 
-  const removeToast = (id: string) => {
+  const hideToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+  }, []);
 
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={{ toasts, showToast, hideToast }}>
       {children}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none">
         {toasts.map((toast) => (
@@ -69,7 +58,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             </div>
             <div className="text-sm font-medium">{toast.message}</div>
             <button
-              onClick={() => removeToast(toast.id)}
+              onClick={() => hideToast(toast.id)}
               className="ml-auto -mx-1.5 -my-1.5 rounded-lg p-1.5 text-gray-400 hover:text-white focus:ring-2 focus:ring-gray-300"
             >
               <span className="sr-only">Close</span>

@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, memo, useMemo, Suspense } from 'react';
-import { createLazyComponent, LoadingStates } from '../components/LazyWrapper';
+import { createLazyComponent } from '../components/LazyWrapper';
+import { LoadingStates } from '../constants';
 import { useParams } from 'react-router-dom';
 import { StrategyConfig } from '../components/StrategyConfig';
 import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
