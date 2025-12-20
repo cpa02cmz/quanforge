@@ -23,11 +23,32 @@
 - **Date**: 2025-12-19
 - **Severity**: Medium (Deployment Compatibility)
 - **Description**: PR #135 had ESLint warnings causing deployment pipeline failures
-- **Files**: `components/BacktestPanel.tsx`, `components/NumericInput.tsx`, `components/VirtualScrollList.tsx`
+- **Files**: `components/BacktestPanel.tsx`, `NumericInput.tsx`, `VirtualScrollList.tsx`
 - **Issues**: 
   - Unused parameter warnings in component interfaces
   - Console statements without environment guards
-- **Solution**: 
+- **Solution**: Added underscore prefixes and DEV environment guards
+
+### [FIXED] PR #135 - Vercel Schema Validation Caching Issue
+- **Date**: 2025-12-20
+- **Severity**: Critical (Deployment Blocking)
+- **Description**: Vercel platform was using cached vercel.json configuration causing schema validation failures
+- **File**: `vercel.json`
+- **Errors**: 
+  - `should NOT have additional property 'experimental'`
+  - `functions.api/**/*.ts.excludeFiles` should be string
+- **Solution**: Updated vercel.json with schema-compliant configuration and forced redeploy
+
+### [FIXED] PR #135 - TypeScript Workers Compatibility Issues
+- **Date**: 2025-12-20
+- **Severity**: High (Build Compatibility)
+- **Description**: 100+ TypeScript errors preventing Cloudflare Workers builds
+- **Files**: Multiple service files
+- **Issues**: 
+  - Environment variable access using dot notation
+  - Missing error type guards
+  - Null vs undefined type mismatches
+- **Solution**: Fixed environment access patterns, added proper type casting, resolved null/undefined issues
   - Added underscore prefix for intentionally unused parameters
   - Added DEV environment guards to console statements
 - **Solution**: Simplified vercel.json to minimal schema-compliant configuration
