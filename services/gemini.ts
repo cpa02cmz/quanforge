@@ -228,34 +228,36 @@ const validateStrategyParams = (params: StrategyParams): StrategyParams => {
 };
 
 // Enhanced input validation for strategy parameters (boolean check)
-export const isValidStrategyParams = (params: any): boolean => {
+export const isValidStrategyParams = (params: unknown): params is StrategyParams => {
   if (!params || typeof params !== 'object') {
     return false;
   }
   
+  const obj = params as Record<string, unknown>;
+  
   // Validate required fields
   const requiredFields = ['timeframe', 'symbol', 'riskPercent', 'stopLoss', 'takeProfit'];
   for (const field of requiredFields) {
-    if (!(field in params) || params[field] === null || params[field] === undefined) {
+    if (!(field in obj) || obj[field] === null || obj[field] === undefined) {
       return false;
     }
   }
   
   // Validate numeric ranges
-  if (params.riskPercent < 0.1 || params.riskPercent > 100) {
+  if (typeof obj['riskPercent'] === 'number' && (obj['riskPercent'] < 0.1 || obj['riskPercent'] > 100)) {
     return false;
   }
   
-  if (params.stopLoss < 1 || params.stopLoss > 1000) {
+  if (typeof obj['stopLoss'] === 'number' && (obj['stopLoss'] < 1 || obj['stopLoss'] > 1000)) {
     return false;
   }
   
-  if (params.takeProfit < 1 || params.takeProfit > 1000) {
+  if (typeof obj['takeProfit'] === 'number' && (obj['takeProfit'] < 1 || obj['takeProfit'] > 1000)) {
     return false;
   }
   
   // Validate symbol format
-  if (!/^[A-Z]{6}$|^[A-Z]{3}\/[A-Z]{3}$|^[A-Z]{6}$/.test(params.symbol)) {
+  if (typeof obj['symbol'] === 'string' && !/^[A-Z]{6}$|^[A-Z]{3}\/[A-Z]{3}$|^[A-Z]{6}$/.test(obj['symbol'])) {
     return false;
   }
   
@@ -383,22 +385,26 @@ const requestDeduplicator = new RequestDeduplicator();
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, maxDelay = 10000): Promise<T> {
     try {
         return await fn();
-    } catch (error: any) {
-        if (error.name === 'AbortError') throw error; // Do not retry if aborted by user
-
+} catch (error: unknown) {
+        // Handle AbortError
+        if (error instanceof Error && error.name === 'AbortError') throw error;
+        
         if (retries === 0) throw error;
         
-        const isRateLimit = error.status === 429 || (error.message && error.message.includes('429'));
-        const isServerErr = error.status >= 500;
-        const isNetworkErr = error.message?.includes('fetch failed') || 
-                             error.message?.includes('network') || 
-                             error.message?.includes('timeout') ||
-                             error.message?.includes('ETIMEDOUT') ||
-                             error.message?.includes('ECONNRESET');
+        // Type guard for error with status and message properties
+        const errorWithStatus = error as { status?: number; message?: string; name?: string };
+        
+        const isRateLimit = errorWithStatus.status === 429 || (errorWithStatus.message && errorWithStatus.message.includes('429'));
+        const isServerErr = (errorWithStatus.status || 0) >= 500;
+        const isNetworkErr = errorWithStatus.message?.includes('fetch failed') || 
+                             errorWithStatus.message?.includes('network') || 
+                             errorWithStatus.message?.includes('timeout') ||
+                             errorWithStatus.message?.includes('ETIMEDOUT') ||
+                             errorWithStatus.message?.includes('ECONNRESET');
 
         // Only retry on Rate Limits, Server Errors, or Network Issues
         if (isRateLimit || isServerErr || isNetworkErr) {
-            console.warn(`API Error (${error.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
+            console.warn(`API Error (${errorWithStatus.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
             // Add jitter to prevent thundering herd
             const jitter = Math.random() * 0.1 * delay;
             const nextDelay = Math.min(delay * 1.5 + jitter, maxDelay); // Use 1.5 multiplier instead of 2 for gentler backoff
@@ -494,17 +500,26 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
  
          if (effectiveHistory.length === 0) return '';
          
-         // Pre-calculate message sizes and sort by importance
-         const messageData = effectiveHistory.map((msg, index) => {
-             const content = `${msg.role === MessageRole.USER ? 'User' : 'Model'}: ${msg.content}`;
-             return {
-                 msg,
-                 index,
-                 content,
-                 length: content.length,
-                 importance: 0
-             };
-         });
+// Define interface for message data with importance scoring
+          interface MessageData {
+              msg: Message;
+              index: number;
+              content: string;
+              length: number;
+              importance: number;
+          }
+          
+          // Pre-calculate message sizes and sort by importance
+          const messageData: MessageData[] = effectiveHistory.map((msg, index) => {
+              const content = `${msg.role === MessageRole.USER ? 'User' : 'Model'}: ${msg.content}`;
+              return {
+                  msg,
+                  index,
+                  content,
+                  length: content.length,
+                  importance: 0
+              };
+          });
          
          // Calculate importance scores with more sophisticated logic
          messageData.forEach(data => {
@@ -537,10 +552,10 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
              return b.index - a.index;
          });
          
-         // Smart selection algorithm with adaptive truncation
-         const selectedMessages = [];
-         let usedBudget = 0;
-         const separatorLength = 2; // \n\n
+// Smart selection algorithm with adaptive truncation
+          const selectedMessages: MessageData[] = [];
+          let usedBudget = 0;
+          const separatorLength = 2; // \n\n
          
          // First, try to fit as many complete messages as possible
          for (const data of messageData) {
@@ -737,7 +752,13 @@ const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?
         
         if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
-        const config: any = {
+        const config: { 
+          systemInstruction: string; 
+          temperature?: number; 
+          maxOutputTokens?: number;
+          topP?: number;
+          topK?: number;
+        } = {
           systemInstruction: systemInstruction
         };
         
@@ -877,7 +898,7 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
          } else {
              response = extractThinking(rawResponse);
          }
-     } catch (error) {
+} catch (error: unknown) {
          logger.warn('Web Worker response processing failed, using fallback:', error);
          response = extractThinking(rawResponse);
      }
@@ -968,8 +989,9 @@ Use Markdown formatting (bullet points, bold text) for readability. Do NOT inclu
              rawResponse = await callGoogleGenAI(settings, prompt, signal, 0.4) || "";
         }
         return extractThinking(rawResponse);
-    } catch (e: any) {
-        throw new Error("Explanation failed: " + e.message);
+    } catch (e: unknown) {
+        const error = e instanceof Error ? e : new Error(String(e));
+        throw new Error("Explanation failed: " + error.message);
     }
 };
 
@@ -989,7 +1011,7 @@ const stripJsonComments = (jsonString: string) => {
   return jsonString.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
 };
 
-const extractJson = (text: string): any => {
+const extractJson = (text: string): StrategyAnalysis | null => {
     let cleanText = text;
     cleanText = cleanText.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, '');
 
@@ -1013,7 +1035,20 @@ const extractJson = (text: string): any => {
         }
     }
 
-    return JSON.parse(cleanText);
+    try {
+        const parsed = JSON.parse(cleanText);
+        // Validate that the parsed object has the expected StrategyAnalysis structure
+        if (parsed && typeof parsed === 'object' && 
+            'riskScore' in parsed && 
+            'profitability' in parsed && 
+            'description' in parsed) {
+            return parsed as StrategyAnalysis;
+        }
+    } catch (e) {
+        // Parsing failed, return null
+    }
+    
+    return null;
 };
 
 export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promise<StrategyAnalysis> => {
@@ -1121,11 +1156,12 @@ const response = await ai!.models.generateContent({
              
              return result;
 
-         } catch (e: any) {
-             if (e.name === 'AbortError') throw e;
-             handleError(e, 'analyzeStrategy', 'gemini');
-             return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };
-         }
+} catch (e: unknown) {
+           const error = e instanceof Error ? e : new Error(String(e));
+           if (error.name === 'AbortError') throw error; // Don't wrap abort errors
+           handleError(error, 'refineCode', 'gemini');
+           throw new Error("Refinement failed: " + error.message);
+       }
        });
 }
 

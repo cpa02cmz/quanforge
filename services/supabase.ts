@@ -1,7 +1,10 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
-import { Robot, UserSession } from '../types';
+import { Robot, UserSession, isRobot } from '../types';
+
+type RobotUpdate = Partial<Omit<Robot, 'id' | 'user_id' | 'created_at'>>;
+type RobotInput = Omit<Robot, 'id' | 'created_at'> & { user_id?: string };
 import { edgeConnectionPool } from './edgeSupabasePool';
 import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
@@ -28,7 +31,7 @@ const STORAGE_KEY = 'mock_session';
 const ROBOTS_KEY = 'mock_robots';
 
 // Helper for safe JSON parsing with enhanced security
-const safeParse = (data: string | null, fallback: any) => {
+const safeParse = <T>(data: string | null, fallback: T) => {
     if (!data) return fallback;
     try {
         // Use security manager's safe JSON parsing
@@ -68,13 +71,8 @@ const generateUUID = (): string => {
     });
 };
 
-const isValidRobot = (r: any): boolean => {
-    return (
-        typeof r === 'object' &&
-        r !== null &&
-        typeof r.name === 'string' &&
-        typeof r.code === 'string'
-    );
+const isValidRobot = (r: unknown): r is Robot => {
+    return isRobot(r); // Use the type guard from types.ts
 };
 
 // --- Mock Implementation ---
@@ -218,11 +216,12 @@ const withRetry = async <T>(
   for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
     try {
       return await operation();
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
       
       // Don't retry on certain errors
-      if (error?.code === 'PGRST116' || error?.status === 404) {
+      const errorObj = error as { code?: string; status?: number };
+      if (errorObj?.code === 'PGRST116' || errorObj?.status === 404) {
         throw error; // Not found errors shouldn't be retried
       }
       
@@ -746,7 +745,7 @@ if (result.data && !result.error) {
      }
    },
 
-   async saveRobot(robot: any) {
+   async saveRobot(robot: RobotInput) {
     const startTime = performance.now();
     try {
       const settings = settingsManager.getDBSettings();
@@ -814,7 +813,7 @@ if (result.data && !result.error) {
     }
   },
 
-  async updateRobot(id: string, updates: any) {
+  async updateRobot(id: string, updates: RobotUpdate) {
     const startTime = performance.now();
     try {
       const settings = settingsManager.getDBSettings();
@@ -825,7 +824,7 @@ if (result.data && !result.error) {
               const robots = safeParse(stored, []);
               
               // Find and update the robot in place for better performance
-              const robotIndex = robots.findIndex((r: any) => r.id === id);
+              const robotIndex = robots.findIndex((r: Robot) => r.id === id);
               if (robotIndex === -1) {
                   const duration = performance.now() - startTime;
                   performanceMonitor.record('updateRobot', duration);
@@ -1396,9 +1395,10 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                                 successCount++;
                             }
                         }
-                    } catch (e: any) {
+} catch (e: unknown) {
                         failedCount += batch.length;
-                        errors.push(e.message);
+                        const error = e instanceof Error ? e : new Error(String(e));
+                        errors.push(error.message);
                     }
                 }
                 

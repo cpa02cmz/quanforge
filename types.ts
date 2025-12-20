@@ -167,3 +167,71 @@ export const isUser = (obj: unknown): obj is User => {
     ('email' in obj ? typeof obj.email === 'string' : true)
   );
 };
+
+export const isStrategyParams = (obj: unknown): obj is StrategyParams => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'timeframe' in obj &&
+    'symbol' in obj &&
+    'riskPercent' in obj &&
+    'stopLoss' in obj &&
+    'takeProfit' in obj &&
+    'magicNumber' in obj &&
+    'customInputs' in obj &&
+    typeof obj.timeframe === 'string' &&
+    typeof obj.symbol === 'string' &&
+    typeof obj.riskPercent === 'number' &&
+    typeof obj.stopLoss === 'number' &&
+    typeof obj.takeProfit === 'number' &&
+    typeof obj.magicNumber === 'number' &&
+    Array.isArray(obj.customInputs) &&
+    obj.customInputs.every((input: unknown) => isCustomInput(input))
+  );
+};
+
+export const isCustomInput = (obj: unknown): obj is CustomInput => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'id' in obj &&
+    'name' in obj &&
+    'type' in obj &&
+    'value' in obj &&
+    typeof obj.id === 'string' &&
+    typeof obj.name === 'string' &&
+    ['int', 'double', 'string', 'bool'].includes(obj.type as string) &&
+    typeof obj.value === 'string'
+  );
+};
+
+export const isStrategyAnalysis = (obj: unknown): obj is StrategyAnalysis => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'riskScore' in obj &&
+    'profitability' in obj &&
+    'description' in obj &&
+    typeof obj.riskScore === 'number' &&
+    typeof obj.profitability === 'number' &&
+    typeof obj.description === 'string'
+  );
+};
+
+export const isAISettings = (obj: unknown): obj is AISettings => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'provider' in obj &&
+    'apiKey' in obj &&
+    'modelName' in obj &&
+    'language' in obj &&
+    ['google', 'openai'].includes(obj.provider as string) &&
+    typeof obj.apiKey === 'string' &&
+    typeof obj.modelName === 'string' &&
+    ['en', 'id'].includes(obj.language as string) &&
+    (!('baseUrl' in obj) || typeof obj.baseUrl === 'string') &&
+    (!('customInstructions' in obj) || typeof obj.customInstructions === 'string') &&
+    (!('twelveDataApiKey' in obj) || typeof obj.twelveDataApiKey === 'string')
+  );
+};

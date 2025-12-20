@@ -2,7 +2,7 @@ export interface ErrorContext {
   operation: string;
   component?: string;
   userId?: string;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }
 
 export interface ErrorInfo {
@@ -166,7 +166,7 @@ export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
     fallback?: () => Promise<ReturnType<T>> | ReturnType<T>;
     backoff?: 'linear' | 'exponential';
     backoffBase?: number;
-    shouldRetry?: (error: any) => boolean;
+    shouldRetry?: (error: unknown) => boolean;
   } = {}
 ): T => {
   const { 
@@ -178,7 +178,7 @@ export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
   } = options;
   
   return (async (...args: Parameters<T>) => {
-    let lastError: any;
+    let lastError: unknown;
     
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -299,21 +299,22 @@ export const errorRecovery = {
     for (let i = 0; i <= maxRetries; i++) {
       try {
         return await operation();
-      } catch (error: any) {
-        lastError = error;
+      } catch (error: unknown) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        const typedError = error instanceof Error ? error : new Error(String(error));
         
         if (i === maxRetries) {
-          throw error;
+          throw typedError;
         }
         
         // Check if this error should be retried
-        if (shouldRetry && !shouldRetry(error)) {
-          throw error;
+        if (shouldRetry && !shouldRetry(typedError)) {
+          throw typedError;
         }
         
         // Don't retry on validation or auth errors
-        if (errorClassifier.isValidationError(error) || errorClassifier.isAuthError(error)) {
-          throw error;
+        if (errorClassifier.isValidationError(typedError) || errorClassifier.isAuthError(typedError)) {
+          throw typedError;
         }
         
         const delay = baseDelay * Math.pow(2, i); // Exponential backoff

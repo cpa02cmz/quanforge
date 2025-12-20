@@ -2,7 +2,7 @@
 import { useReducer, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Message, MessageRole, Robot, StrategyParams, StrategyAnalysis, BacktestSettings, SimulationResult } from '../types';
-import { mockDb } from '../services/supabase';
+import { mockDb, supabase } from '../services/supabase';
 import { useToast } from '../components/Toast';
 import { DEFAULT_STRATEGY_PARAMS } from '../constants';
 import { runMonteCarloSimulation } from '../services/simulation';
@@ -454,23 +454,27 @@ const stopGeneration = () => {
       }
 
       dispatch({ type: 'SET_SAVING', payload: true });
-      const robotData = {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id || 'anonymous';
+      
+      const baseRobotData = {
+          user_id: userId,
           name: ValidationService.sanitizeInput(state.robotName),
           code: state.code,
           description: state.analysis?.description || 'Generated Strategy',
-          strategy_type: (state.analysis?.riskScore || 0) > 7 ? 'Scalping' : 'Trend',
+          strategy_type: ((state.analysis?.riskScore || 0) > 7 ? 'Scalping' : 'Trend') as 'Scalping' | 'Trend',
           strategy_params: state.strategyParams, 
           backtest_settings: state.backtestSettings,
-          analysis_result: state.analysis, 
+          analysis_result: state.analysis || undefined, 
           chat_history: state.messages, 
           updated_at: new Date().toISOString()
       };
 
       try {
         if (id) {
-            await mockDb.updateRobot(id, robotData);
+            await mockDb.updateRobot(id, baseRobotData);
         } else {
-            const { data } = await mockDb.saveRobot(robotData);
+            const { data } = await mockDb.saveRobot(baseRobotData);
             if (data && data[0] && data[0].id) {
                 navigate(`/generator/${data[0].id}`, { replace: true });
             }
