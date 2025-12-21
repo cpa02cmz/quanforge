@@ -3,22 +3,22 @@
  * Real-time data for specific trading symbols
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { advancedCache } from '../../../services/advancedCache';
-import { performanceMonitorEnhanced } from '../../../services/performanceMonitorEnhanced';
+import { NextRequest } from 'next/server';
 import { securityManager } from '../../../services/securityManager';
+import {
+  edgeConfig,
+  handleGetRequest,
+  handlePostRequest,
+  handleCORS,
+  RouteContext,
+  validateRouteParam,
+  APIError,
+} from '../../../utils/apiShared';
 
-export const config = {
-  runtime: 'edge',
-  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
-};
-
-interface RouteContext {
-  params: Promise<{ symbol: string }>;
-}
+export const config = edgeConfig;
 
 // Available symbols and their base prices
-const SYMBOLS = {
+const SYMBOLS: Record<string, { basePrice: number; pipValue: number }> = {
   'EURUSD': { basePrice: 1.0850, pipValue: 0.0001 },
   'GBPUSD': { basePrice: 1.2750, pipValue: 0.0001 },
   'USDJPY': { basePrice: 157.50, pipValue: 0.01 },
@@ -34,7 +34,7 @@ const SYMBOLS = {
 };
 
 const generateSymbolData = (symbol: string, timeframe: string = '1m') => {
-  const symbolConfig = SYMBOLS[symbol as keyof typeof SYMBOLS];
+  const symbolConfig = SYMBOLS[symbol];
   if (!symbolConfig) {
     throw new Error(`Unknown symbol: ${symbol}`);
   }
@@ -45,7 +45,7 @@ const generateSymbolData = (symbol: string, timeframe: string = '1m') => {
   const spread = pipValue * (1 + Math.random()); // 1-2 pips spread
   
   // Generate historical data based on timeframe
-  const periods = {
+  const periods: Record<string, number> = {
     '1m': 60,
     '5m': 12,
     '15m': 4,
@@ -54,7 +54,7 @@ const generateSymbolData = (symbol: string, timeframe: string = '1m') => {
     '1d': 0.0625,
   };
 
-  const periodCount = periods[timeframe as keyof typeof periods] || 60;
+  const periodCount = periods[timeframe] || 60;
   const historicalData = [];
 
   for (let i = periodCount; i >= 0; i--) {
@@ -110,49 +110,15 @@ const generateSymbolData = (symbol: string, timeframe: string = '1m') => {
  * GET /api/market-data/[symbol] - Get real-time data for a specific symbol
  */
 export async function GET(request: NextRequest, context: RouteContext) {
-  const startTime = performance.now();
-  
-  try {
+  return handleGetRequest(request, async (params) => {
     const { symbol } = await context.params;
-    const { searchParams } = new URL(request.url);
-    const timeframe = searchParams.get('timeframe') || '1m';
-    const includeTechnical = searchParams.get('technical') === 'true';
+    const { timeframe, includeTechnical } = params;
 
     // Validate and sanitize symbol
-    const sanitizedSymbol = securityManager.sanitizeInput(symbol.trim().toUpperCase(), 'symbol');
+    const sanitizedSymbol = securityManager.sanitizeInput(symbol.trim().toUpperCase(), 'symbol' as any);
     
-    if (!sanitizedSymbol || !SYMBOLS[sanitizedSymbol as keyof typeof SYMBOLS]) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid symbol',
-          availableSymbols: Object.keys(SYMBOLS),
-        },
-        { 
-          status: 400,
-          headers: {
-            'X-Response-Time': `${(performance.now() - startTime).toFixed(2)}ms`,
-          },
-        }
-      );
-    }
-
-    // Check cache first (very short cache for real-time data)
-    const cacheKey = `symbol_data_${sanitizedSymbol}_${timeframe}_${includeTechnical}`;
-    const cached = await advancedCache.get(cacheKey);
-    
-    if (cached) {
-      const duration = performance.now() - startTime;
-      performanceMonitorEnhanced.recordMetric('symbol_api_cache_hit', duration);
-      
-      return NextResponse.json(cached, {
-        headers: {
-          'X-Cache': 'HIT',
-          'X-Response-Time': `${duration.toFixed(2)}ms`,
-          'Cache-Control': 'public, max-age=3, stale-while-revalidate=1',
-          'Access-Control-Allow-Origin': '*',
-        },
-      });
+    if (!sanitizedSymbol || !SYMBOLS[sanitizedSymbol]) {
+      throw new APIError('Invalid symbol', 400, { availableSymbols: Object.keys(SYMBOLS) });
     }
 
     // Generate symbol data
@@ -163,7 +129,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       delete symbolData.technical;
     }
 
-    const response = {
+    return {
       success: true,
       data: symbolData,
       meta: {
@@ -172,86 +138,33 @@ export async function GET(request: NextRequest, context: RouteContext) {
         includeTechnical,
         timestamp: Date.now(),
         dataSource: 'mock',
-        region: process.env.VERCEL_REGION || 'unknown',
+        region: process.env['VERCEL_REGION'] || 'unknown',
       },
     };
-
-    // Cache for very short time (3 seconds) for real-time data
-    await advancedCache.set(cacheKey, response, {
-      ttl: 3 * 1000, // 3 seconds
-      tags: ['symbol_data', sanitizedSymbol],
-      priority: 'high',
-    });
-
-    const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('symbol_api_get', duration);
-
-    return NextResponse.json(response, {
-      headers: {
-        'X-Cache': 'MISS',
-        'X-Response-Time': `${duration.toFixed(2)}ms`,
-        'Cache-Control': 'public, max-age=3, stale-while-revalidate=1',
-        'Access-Control-Allow-Origin': '*',
-        'X-Edge-Region': process.env.VERCEL_REGION || 'unknown',
-      },
-    });
-
-  } catch (error) {
-    const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('symbol_api_error', duration);
-    
-    console.error('Symbol API GET error:', error);
-    
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to fetch symbol data',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { 
-        status: 500,
-        headers: {
-          'X-Response-Time': `${duration.toFixed(2)}ms`,
-          'Cache-Control': 'no-cache',
-          'Access-Control-Allow-Origin': '*',
-        },
-      }
-    );
-  }
+  }, {
+    key: 'symbol_data',
+    ttl: 3 * 1000, // 3 seconds for real-time data
+    tags: ['symbol_data'],
+  });
 }
 
 /**
  * POST /api/market-data/[symbol] - Create subscription for specific symbol
  */
 export async function POST(request: NextRequest, context: RouteContext) {
-  const startTime = performance.now();
-  
-  try {
+  return handlePostRequest(request, async (data, params) => {
     const { symbol } = await context.params;
-    const body = await request.json();
-    const { webhook_url, alert_conditions = [] } = body;
+    const { webhook_url, alert_conditions = [] } = data;
 
     // Validate and sanitize symbol
-    const sanitizedSymbol = securityManager.sanitizeInput(symbol.trim().toUpperCase(), 'symbol');
+    const sanitizedSymbol = securityManager.sanitizeInput(symbol.trim().toUpperCase(), 'symbol' as any);
     
-    if (!sanitizedSymbol || !SYMBOLS[sanitizedSymbol as keyof typeof SYMBOLS]) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid symbol',
-          availableSymbols: Object.keys(SYMBOLS),
-        },
-        { 
-          status: 400,
-          headers: {
-            'X-Response-Time': `${(performance.now() - startTime).toFixed(2)}ms`,
-          },
-        }
-      );
+    if (!sanitizedSymbol || !SYMBOLS[sanitizedSymbol]) {
+      throw new APIError('Invalid symbol', 400, { availableSymbols: Object.keys(SYMBOLS) });
     }
 
     // Generate subscription ID
-    const subscriptionId = `sub_${sanitizedSymbol}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const subscriptionId = `sub_${sanitizedSymbol}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     // Validate alert conditions
     const sanitizedConditions = alert_conditions.map((condition: any) => ({
@@ -268,68 +181,20 @@ export async function POST(request: NextRequest, context: RouteContext) {
       alert_conditions: sanitizedConditions,
       created_at: new Date().toISOString(),
       status: 'active',
-      region: process.env.VERCEL_REGION || 'unknown',
+      region: process.env['VERCEL_REGION'] || 'unknown',
     };
 
-    // Cache subscription
-    await advancedCache.set(`subscription_${subscriptionId}`, subscription, {
-      ttl: 24 * 60 * 60 * 1000, // 24 hours
-      tags: ['subscription', 'symbol', sanitizedSymbol],
-      priority: 'medium',
-    });
-
-    const response = {
+    return {
       success: true,
       data: subscription,
       message: `Subscription created for ${sanitizedSymbol}`,
     };
-
-    const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('symbol_api_subscribe', duration);
-
-    return NextResponse.json(response, {
-      status: 201,
-      headers: {
-        'X-Response-Time': `${duration.toFixed(2)}ms`,
-        'Cache-Control': 'no-cache',
-        'X-Edge-Region': process.env.VERCEL_REGION || 'unknown',
-      },
-    });
-
-  } catch (error) {
-    const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('symbol_api_subscribe_error', duration);
-    
-    console.error('Symbol API POST error:', error);
-    
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to create subscription',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { 
-        status: 500,
-        headers: {
-          'X-Response-Time': `${duration.toFixed(2)}ms`,
-          'Cache-Control': 'no-cache',
-        },
-      }
-    );
-  }
+  });
 }
 
 /**
  * OPTIONS /api/market-data/[symbol] - Handle CORS preflight requests
  */
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Max-Age': '86400',
-    },
-  });
+  return handleCORS();
 }

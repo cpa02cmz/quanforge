@@ -45,8 +45,7 @@ export async function POST(request: NextRequest) {
       patterns = [], 
       tags = [], 
       cascade = false, 
-      regions = [],
-      priority = 'medium' 
+      regions = []
     } = body;
     
     const currentRegion = request.headers.get('x-vercel-region') || 'unknown';

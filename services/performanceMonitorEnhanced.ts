@@ -9,7 +9,7 @@ interface CoreWebVital {
   id: string;
   name: string;
   value: number;
-  rating: 'good' | 'needs-improvement' | 'poor';
+  rating: 'good' | 'needs-improvement' | 'poor' | 'unknown';
   delta: number;
   navigationType: string;
 }
@@ -109,7 +109,8 @@ class PerformanceMonitor {
   private async monitorCoreWebVitals(): Promise<void> {
     try {
       // Load web-vitals library dynamically
-      const webVitals = await import('web-vitals');
+      // Web vitals library not available in this environment
+      // Using native performance APIs instead
       
       const recordMetric = (metric: any) => {
         const vital: CoreWebVital = {
@@ -125,38 +126,36 @@ class PerformanceMonitor {
         this.sendMetric('core-web-vital', vital);
       };
 
-      webVitals.getCLS(recordMetric);
-      webVitals.getFID(recordMetric);
-      webVitals.getFCP(recordMetric);
-      webVitals.getLCP(recordMetric);
-      webVitals.getTTFB(recordMetric);
-      
-      // Also monitor INP if available
-      if (webVitals.getINP) {
-        webVitals.getINP(recordMetric);
-      }
-    } catch (error) {
-      console.warn('Failed to load web-vitals:', error);
-    }
-  }
-
-  private monitorEdgePerformance(): void {
-    if (!('PerformanceObserver' in window)) return;
-
-    const observer = new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) {
-        if (entry.name.includes('/api/') || entry.name.includes('/edge/')) {
-          const resource = entry as PerformanceResourceTiming;
-          
-          const edgeMetric: EdgeMetric = {
-            url: entry.name,
-            method: 'GET', // Default, could be enhanced with custom headers
-            status: 200, // Would need to be captured from fetch
-            duration: resource.duration,
-            size: resource.transferSize || 0,
-            cache: this.getCacheStatus(resource),
-            region: this.detectEdgeRegion()
-          };
+// Using native performance APIs instead of web-vitals
+      if ('PerformanceObserver' in window) {
+        const observer = new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            if (entry.entryType === 'largest-contentful-paint') {
+              const vital: CoreWebVital = {
+                id: crypto.randomUUID(),
+                name: 'LCP',
+                value: entry.startTime,
+                rating: entry.startTime < 2500 ? 'good' : entry.startTime < 4000 ? 'needs-improvement' : 'poor',
+                delta: 0,
+                navigationType: 'load'
+              };
+              this.coreWebVitals.push(vital);
+              this.sendMetric('core-web-vital', vital);
+            }
+            if (entry.entryType === 'first-input') {
+              const vital: CoreWebVital = {
+                id: crypto.randomUUID(),
+                name: 'FID',
+                value: (entry as any).processingStart - entry.startTime,
+                rating: (entry as any).processingStart - entry.startTime < 100 ? 'good' : (entry as any).processingStart - entry.startTime < 300 ? 'needs-improvement' : 'poor',
+                delta: 0,
+                navigationType: 'input'
+              };
+              this.coreWebVitals.push(vital);
+              this.sendMetric('core-web-vital', vital);
+            }
+          }
+        });
           
           this.edgeMetrics.push(edgeMetric);
           this.sendMetric('edge-performance', edgeMetric);
@@ -395,8 +394,8 @@ class PerformanceMonitor {
   private async sendMetric(name: string, data: any): Promise<void> {
     try {
       // Send to edge metrics endpoint
-      if (process.env.ENABLE_EDGE_METRICS === 'true') {
-        const endpoint = process.env.EDGE_METRICS_ENDPOINT || '/api/edge-metrics';
+      if (process.env['ENABLE_EDGE_METRICS'] === 'true') {
+        const endpoint = process.env['EDGE_METRICS_ENDPOINT'] || '/api/edge-metrics';
         
         await fetch(endpoint, {
           method: 'POST',
@@ -457,7 +456,8 @@ class PerformanceMonitor {
     };
     edgeMetrics: EdgePerformanceMetrics;
   } {
-    const latestVitals = this.coreWebVitals[this.coreWebVitals.length - 1] || {};
+    const latestVitals = this.coreWebVitals[this.coreWebVitals.length - 1] || 
+          { name: 'unknown', value: 0, rating: 'unknown' };
     
     const edgeMetrics = this.edgeMetrics;
     const totalRequests = edgeMetrics.length;

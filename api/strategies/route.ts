@@ -3,18 +3,20 @@
  * Manage trading strategy templates and configurations
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { securityManager } from '../../services/securityManager';
-import { advancedCache } from '../../services/advancedCache';
-import { performanceMonitorEnhanced } from '../../services/performanceMonitorEnhanced';
+import {
+  edgeConfig,
+  handleGetRequest,
+  handlePostRequest,
+  validateRequiredFields,
+  sanitizeArray,
+  buildPaginatedResponse,
+  buildOperationResponse,
+  APIError,
+} from '../../utils/apiShared';
 
-export const config = {
-  runtime: 'edge',
-  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
-  maxDuration: 15,
-  memory: 512,
-  cache: 'max-age=300, s-maxage=900, stale-while-revalidate=300',
-};
+export const config = edgeConfig;
 
 // Strategy templates (in production, these would come from a database)
 const STRATEGY_TEMPLATES = [
@@ -138,30 +140,8 @@ if (macdMain > macdSignal && macdMain[1] <= macdSignal[1]) {
  * GET /api/strategies - List all available strategy templates
  */
 export async function GET(request: NextRequest) {
-  const startTime = performance.now();
-  
-  try {
-    const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category');
-    const difficulty = searchParams.get('difficulty');
-    const search = searchParams.get('search');
-
-    // Check cache first
-    const cacheKey = `strategies_list_${category || 'all'}_${difficulty || 'all'}_${search || ''}`;
-    const cached = await advancedCache.get(cacheKey);
-    
-    if (cached) {
-      const duration = performance.now() - startTime;
-      performanceMonitorEnhanced.recordMetric('strategies_api_cache_hit', duration);
-      
-      return NextResponse.json(cached, {
-        headers: {
-          'X-Cache': 'HIT',
-          'X-Response-Time': `${duration.toFixed(2)}ms`,
-          'Cache-Control': 'public, max-age=1800, stale-while-revalidate=300',
-        },
-      });
-    }
+  return handleGetRequest(request, async (params) => {
+    const { category, difficulty, search } = params;
 
     let filteredStrategies = [...STRATEGY_TEMPLATES];
 
@@ -182,7 +162,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const response = {
+    return {
       success: true,
       data: filteredStrategies,
       meta: {
@@ -196,85 +176,30 @@ export async function GET(request: NextRequest) {
         },
       },
     };
-
-    // Cache the result
-    await advancedCache.set(cacheKey, response, {
-      ttl: 30 * 60 * 1000, // 30 minutes
-      tags: ['strategies', 'list'],
-      priority: 'medium',
-    });
-
-    const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('strategies_api_get', duration);
-
-    return NextResponse.json(response, {
-      headers: {
-        'X-Cache': 'MISS',
-        'X-Response-Time': `${duration.toFixed(2)}ms`,
-        'Cache-Control': 'public, max-age=1800, stale-while-revalidate=300',
-        'X-Edge-Region': process.env.VERCEL_REGION || 'unknown',
-      },
-    });
-
-  } catch (error) {
-    const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('strategies_api_error', duration);
-    
-    console.error('Strategies API GET error:', error);
-    
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to fetch strategies',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { 
-        status: 500,
-        headers: {
-          'X-Response-Time': `${duration.toFixed(2)}ms`,
-          'Cache-Control': 'no-cache',
-        },
-      }
-    );
-  }
+  }, {
+    key: 'strategies_list',
+    ttl: 30 * 60 * 1000, // 30 minutes
+    tags: ['strategies', 'list'],
+  });
 }
 
 /**
  * POST /api/strategies - Create a custom strategy template
  */
 export async function POST(request: NextRequest) {
-  const startTime = performance.now();
-  
-  try {
-    const body = await request.json();
-    
+  return handlePostRequest(request, async (data, params) => {
     // Validate required fields
     const requiredFields = ['name', 'description', 'category', 'code_template'];
-    for (const field of requiredFields) {
-      if (!body[field]) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `Missing required field: ${field}`,
-          },
-          { 
-            status: 400,
-            headers: {
-              'X-Response-Time': `${(performance.now() - startTime).toFixed(2)}ms`,
-            },
-          }
-        );
-      }
-    }
+    validateRequiredFields(data, requiredFields);
 
     // Sanitize input
     const sanitizedData = {
-      name: securityManager.sanitizeInput(body.name, 'text'),
-      description: securityManager.sanitizeInput(body.description, 'text'),
-      category: securityManager.sanitizeInput(body.category, 'text'),
-      difficulty: body.difficulty || 'custom',
-      parameters: body.parameters || {},
-      code_template: securityManager.sanitizeInput(body.code_template, 'code'),
+      name: securityManager.sanitizeInput(data.name, 'text'),
+      description: securityManager.sanitizeInput(data.description, 'text'),
+      category: securityManager.sanitizeInput(data.category, 'text'),
+      difficulty: data.difficulty || 'custom',
+      parameters: data.parameters || {},
+      code_template: securityManager.sanitizeInput(data.code_template, 'code'),
     };
 
     // Generate ID and timestamps
@@ -288,46 +213,6 @@ export async function POST(request: NextRequest) {
     // In production, save to database
     // For now, just return the created strategy
     
-    // Invalidate caches
-    await advancedCache.clearByTags(['strategies', 'list']);
-
-    const response = {
-      success: true,
-      data: newStrategy,
-      message: 'Strategy created successfully',
-    };
-
-    const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('strategies_api_create', duration);
-
-    return NextResponse.json(response, {
-      status: 201,
-      headers: {
-        'X-Response-Time': `${duration.toFixed(2)}ms`,
-        'Cache-Control': 'no-cache',
-        'X-Edge-Region': process.env.VERCEL_REGION || 'unknown',
-      },
-    });
-
-  } catch (error) {
-    const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('strategies_api_create_error', duration);
-    
-    console.error('Strategies API POST error:', error);
-    
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to create strategy',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { 
-        status: 500,
-        headers: {
-          'X-Response-Time': `${duration.toFixed(2)}ms`,
-          'Cache-Control': 'no-cache',
-        },
-      }
-    );
-  }
+    return buildOperationResponse('create', 1, 'strategy');
+  }, undefined, ['strategies', 'list']);
 }
