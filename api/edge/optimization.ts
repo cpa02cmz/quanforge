@@ -247,7 +247,6 @@ export async function POST(request: NextRequest) {
 // Edge function configuration for optimal performance
 export const config = {
   runtime: 'edge',
-  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'],
   maxDuration: 30,
   memory: 512,
   cache: 'max-age=300, s-maxage=900'

@@ -68,145 +68,20 @@
 - Build system optimizations (offline install, no audit) improve deployment reliability
 - Always test local build before pushing deployment configuration changes
 
-### Recommended Development Patterns
-
-#### Browser Compatibility Checklist
-- [ ] Verify all imports work in browser environment
-- [ ] Avoid Node.js-specific modules (`crypto`, `fs`, `path`, etc.)
-- [ ] Use Web APIs or browser-compatible alternatives
-- [ ] Test build process after adding new dependencies
-
-#### Error Handling Strategy
-- **Current**: Build-blocking errors must be resolved immediately
-- **Priority**: Critical > High > Medium > Low
-- **Critical Impact**: Build failures, security vulnerabilities, data loss
-- **Approach**: Fix first, optimize later
-
-#### Module Design Principles
-1. **Cross-Platform First**: Always target browser environment
-2. **Graceful Degradation**: Provide fallbacks when possible
-3. **Type Safety**: Strong TypeScript typing preferred
-4. **Single Responsibility**: Each utility should have one clear purpose
-
-## Agent Guidelines for Future Work
-
-### When Addressing Bugs
-1. **Verify Build Impact**: Always run `npm run build` to check for breaking changes
-2. **Type Check**: Use `npm run typecheck` to catch TypeScript issues
-3. **Lint Quality**: Address critical lint issues but prioritize function over form
-4. **Document**: Record root cause, solution, and prevention strategies
-
-### When Managing PRs with Red Flags
-1. **Conflict Resolution**: Merge main branch into PR branch to resolve merge conflicts
-2. **Schema Validation**: Verify vercel.json complies with current Vercel schema requirements
-3. **Build Testing**: Ensure local build passes before pushing changes
-4. **Incremental Pushes**: Push small changes and allow deployment systems to complete
-5. **Monitor Status**: Use `gh pr checks` to track deployment status and identify specific failures
-6. **Cross-PR Propagation**: Critical fixes must be cherry-picked to all affected PR branches
-7. **Documentation**: Update AGENTS.md, bug.md, and task.md with resolution details for future reference
-### When Optimizing Features
-1. **Measure First**: Use bundle analysis before and after changes
-2. **User Impact**: Prioritize visible improvements over internal optimizations
-3. **Backwards Compatibility**: Maintain existing APIs where possible
-4. **Testing**: Verify optimization doesn't break existing functionality
-
-### When Improving Code Quality
-1. **Incremental**: Fix issues in logical groups rather than random scatter
-2. **Context-Aware**: Understand file purpose before changing patterns
-3. **Consistent**: Follow existing conventions unless clearly problematic
-4. **Document Changes**: Update relevant documentation files
-
-## Codebase Analysis Results (2025-12-20 Comprehensive Review)
-
-#### Overall Assessment: 73/100 - Good Architecture with Technical Debt
-
-**Key Findings:**
-- **Build System**: CRITICAL - Broken TypeScript compilation blocking development
-- **Type Safety**: HIGH RISK - 905 `any` type instances throughout codebase
-- **Maintainability**: CONCERN - Monolithic services and complex dependencies
-- **Performance**: STRONG (85/100) - Advanced monitoring and optimizations
-- **Security**: STRONG (88/100) - Comprehensive protection systems
-
-#### Immediate Agent Priorities:
-1. **Fix Build System**: Restore functional development environment first
-2. **Reduce Any Types**: Target <450 instances within 30 days
-3. **Break Down Monoliths**: Services >500 lines need decomposition
-4. **Standardize Patterns**: Error handling, naming, and code organization
-
-## Future Agent Tasks
-
-### Critical (Week 1 - IMMEDIATE)
-- **CRITICAL**: Fix broken TypeScript compilation and build system
-- **CRITICAL**: Install missing dependencies and restore development environment
-- **HIGH**: Implement comprehensive ESLint configuration and fix critical warnings
-- **HIGH**: Begin systematic reduction of `any` types (target 50% reduction)
-
-### Immediate (Next Sprint)
-- **HIGH**: Complete any type reduction to <450 instances
-- Complete address of ESLint warnings (console.log, unused vars)
-- Implement bundle splitting for performance
-- Add unit tests for critical utilities
-
-### Short Term (Next Month)
-- Upgrade to Web Crypto API for security
-- Comprehensive lint cleanup and code standardization
-- Performance optimization pass
-- Break down monolithic service classes (>500 lines)
-
-### Long Term
-- Enhanced error boundary coverage
-- Component refactoring for maintainability
-- Advanced testing strategy implementation
-- Service layer decoupling and dependency injection
-
-## Development Workflow Recommendations
-
-1. **Start with Build Check**: Always verify build works before major changes
-2. **Test Incrementally**: Run type checking and linting during development  
-3. **Document Decisions**: Record why changes were made, not just what was changed
-4. **Think Cross-Platform**: Consider browser, server, and edge environments
-5. **Security Mindset**: Validate inputs, avoid exposing secrets, use secure defaults
-
-## Known Issues & Solutions
-
-### Build Compatibility
-- **Issue**: Node.js modules in frontend code
-- **Solution**: Use browser-compatible alternatives or Web APIs
-- **Detection**: Build failures with module resolution errors
-
-### Deployment Configuration
-- **Issue**: Platform schema validation failures
-- **Solution**: Review platform documentation and remove deprecated properties
-- **Detection**: Deployment logs show validation errors
-
-### Code Quality
-- **Issue**: 200+ ESLint warnings (console.log, unused vars, any types)
-- **Solution**: Incremental cleanup with focus on critical issues
-- **Detection**: `npm run lint` shows extensive warnings
-
-## Multi-PR Conflict Resolution Strategy
-
-### Scenario Overview
-When multiple PRs have interdependent fixes with deployment failures:
-1. **Identify Root Causes**: Distinguish between build, schema, and merge conflict issues
-2. **Prioritize Critical Fixes**: Build-blocking issues take precedence over optimization PRs
-3. **Branch Management**: Use cherry-pick to transfer fixes between PR branches
-4. **Validation Process**: Test build+typecheck after each fix integration
-
-### Success Indicators
-- All deployments show "pending" or "pass" status instead of immediate failure
-- Local build and typecheck pass consistently
-- No merge conflicts remain
-- Schema validation compliant across all platforms
-
-## Success Metrics
-
-- ✅ Build passes without errors
-- ✅ Type checking passes
-- ✅ Deployment pipelines functional
-- ✅ Cross-platform compatibility maintained
-- ✅ No regressions introduced
-- ✅ Documentation updated
+### PR #136 Schema Compliance Resolution (2025-12-21)
+**Issue**: PR #136 had immediate Vercel and Cloudflare Workers deployment failures
+**Root Cause**: API route configurations contained unsupported `regions` property violating platform schemas
+**Solution Applied**:
+- Removed `regions` property from all API route configuration exports
+- Updated configurations to be schema-compliant with deployment platforms
+- Verified build and typecheck pass successfully after changes
+- Maintained functional integrity while fixing schema violations
+**Results**: Deployments transition from immediate "failure" to "pending" status, PR ready for merge
+**Key Insights**: 
+- Schema violations often manifest as immediate deployment failures
+- Platform schema updates can affect all branches simultaneously  
+- Functional changes should be separated from configuration fixes
+- Always validate schema compliance after platform updates
 
 ## Latest PR Resolution (2025-12-21)
 

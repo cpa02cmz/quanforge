@@ -10,7 +10,6 @@ import { securityManager } from '../../services/securityManager';
 
 export const config = {
   runtime: 'edge',
-  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
   maxDuration: 15,
   memory: 512,
   cache: 'max-age=5, s-maxage=30, stale-while-revalidate=5',
