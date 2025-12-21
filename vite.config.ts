@@ -17,9 +17,17 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
-            // React ecosystem - optimized for edge caching
+            // React ecosystem - split aggressively for edge caching
             if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
-              return 'react-vendor';
+              // Split router for better caching
+              if (id.includes('react-router') || id.includes('react-router-dom')) {
+                return 'react-router';
+              }
+              // Split core React
+              if (id.includes('react-dom')) {
+                return 'react-dom';
+              }
+              return 'react-core';
             }
             // Supabase - isolated for better connection pooling
             if (id.includes('@supabase')) {
@@ -32,17 +40,29 @@ export default defineConfig({
               }
               return 'supabase-vendor';
             }
-            // AI services - lazy loaded for edge optimization
-            if (id.includes('@google/genai')) {
+            // AI services - split aggressively for edge optimization
+            if (id.includes('@google/genai') || id.includes('google/generative-ai')) {
+              // Split core AI functionality
+              if (id.includes('generative') || id.includes('protos')) {
+                return 'ai-core';
+              }
               return 'ai-vendor';
             }
-            // Chart libraries - split more granularly
+            // Chart libraries - split more aggressively to reduce size
             if (id.includes('recharts')) {
-              if (id.includes('AreaChart') || id.includes('LineChart')) {
+              // Split individual components for maximum optimization
+              if (id.includes('AreaChart') || id.includes('LineChart') || id.includes('Area') || id.includes('XAxis') || id.includes('YAxis') || id.includes('CartesianGrid')) {
                 return 'chart-core';
               }
-              if (id.includes('PieChart') || id.includes('BarChart')) {
+              if (id.includes('PieChart') || id.includes('BarChart') || id.includes('Pie') || id.includes('Cell')) {
                 return 'chart-misc';
+              }
+              if (id.includes('Tooltip') || id.includes('Legend') || id.includes('Brush')) {
+                return 'chart-interaction';
+              }
+              // Base recharts components
+              if (id.includes('ResponsiveContainer') || id.includes('chart')) {
+                return 'chart-vendor';
               }
               return 'chart-vendor';
             }
@@ -222,7 +242,7 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 100, // More aggressive optimization for edge performance
+    chunkSizeWarningLimit: 80, // Very aggressive optimization for edge performance
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification

@@ -75,7 +75,7 @@ class AdvancedAPICache {
          const data = JSON.parse(event.newValue);
          this.cache = new Map(data);
        } catch (e) {
-         console.error('Failed to sync cache from storage:', e);
+         // Cache sync failed
        }
      }
    };
@@ -86,7 +86,7 @@ class AdvancedAPICache {
          localStorage.setItem(this.storageKey, JSON.stringify(Array.from(this.cache.entries())));
        } catch (e) {
          // Storage might be full or unavailable, handle gracefully
-         console.error('Failed to save cache to storage:', e);
+         // Cache save failed
        }
      }
    }
@@ -100,7 +100,7 @@ class AdvancedAPICache {
            this.cache = new Map(data);
          }
        } catch (e) {
-         console.error('Failed to load cache from storage:', e);
+         // Cache load failed
        }
      }
    }
@@ -203,7 +203,7 @@ private generateKey(url: string, options?: RequestInit): string {
       const decrypted = this.decryptData(decompressed);
       return decrypted as T;
     } catch (e) {
-      console.warn('Failed to retrieve cached data:', e);
+      // Cache retrieval failed
       this.cache.delete(key);
       return null;
     }
@@ -293,7 +293,7 @@ private generateKey(url: string, options?: RequestInit): string {
     
     if (cached) {
       // Return stale data while revalidating
-      this.revalidate(url, options, cacheKey, ttl).catch(console.error);
+      this.revalidate(url, options, cacheKey, ttl).catch(() => {/* Revalidation failed */});
       return { data: cached, isStale };
     }
     
@@ -315,7 +315,7 @@ const response = await fetch(url, options as any);
         await this.set(cacheKey, data, ttl);
       }
     } catch (error) {
-      console.warn('Revalidation failed:', error);
+      // Revalidation failed
       // Keep the stale data in cache
     }
   }

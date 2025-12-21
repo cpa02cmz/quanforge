@@ -433,14 +433,14 @@ class PredictiveCacheStrategy {
    */
   private startCleanup(): void {
     this.cleanupTimer = window.setInterval(() => {
-      this.cleanup();
+      this.performCleanup();
     }, this.config.cleanupInterval);
   }
 
   /**
    * Cleanup old patterns and behaviors
    */
-  private cleanup(): void {
+  private performCleanup(): void {
     const now = Date.now();
     const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
     let cleanedCount = 0;
@@ -558,7 +558,7 @@ class PredictiveCacheStrategy {
   /**
    * Cleanup resources
    */
-  cleanup(): void {
+public cleanup(): void {
     if (this.cleanupTimer) {
       window.clearInterval(this.cleanupTimer);
       this.cleanupTimer = null;

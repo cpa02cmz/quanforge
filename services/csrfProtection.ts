@@ -3,6 +3,31 @@
  * Provides comprehensive CSRF protection for API requests
  */
 
+// Type definitions for compatibility
+type HeadersInit = string[][] | Record<string, string> | Headers;
+type BodyInit = Blob | ArrayBuffer | Uint8Array | DataView | FormData | URLSearchParams | ReadableStream | string;
+type RequestCache = 'default' | 'force-cache' | 'no-cache' | 'no-store' | 'only-if-cached' | 'reload';
+type RequestCredentials = 'include' | 'omit' | 'same-origin';
+type RequestRedirect = 'error' | 'follow' | 'manual';
+type ReferrerPolicy = '' | 'no-referrer' | 'no-referrer-when-downgrade' | 'origin' | 'origin-when-cross-origin' | 'same-origin' | 'strict-origin-when-cross-origin' | 'unsafe-url';
+type RequestMode = 'cors' | 'navigate' | 'no-cors' | 'same-origin';
+
+// Define RequestInit interface for compatibility
+interface RequestInit {
+  method?: string;
+  headers?: HeadersInit | Record<string, string>;
+  body?: BodyInit | null;
+  cache?: RequestCache;
+  credentials?: RequestCredentials;
+  redirect?: RequestRedirect;
+  referrer?: string;
+  referrerPolicy?: ReferrerPolicy;
+  integrity?: string;
+  keepalive?: boolean;
+  signal?: AbortSignal | null;
+  mode?: RequestMode;
+}
+
 interface CSRFToken {
   token: string;
   expires: number;
@@ -49,7 +74,7 @@ class CSRFProtection {
   private initializeToken(): void {
     const existingToken = this.getTokenFromCookie();
     
-    if (existingToken && this.validateToken(existingToken)) {
+    if (existingToken && this.validateTokenFormat(existingToken)) {
       this.currentToken = {
         token: existingToken,
         expires: Date.now() + this.config.tokenExpiry,
@@ -132,7 +157,7 @@ class CSRFProtection {
   /**
    * Validate CSRF token format and expiry
    */
-  private validateToken(token: string): boolean {
+  private validateTokenFormat(token: string): boolean {
     if (!token || token.length !== this.config.tokenLength * 2) {
       return false;
     }
@@ -342,7 +367,7 @@ class CSRFProtection {
     const token = request.headers.get(this.config.headerName);
     if (!token) {
       errors.push('CSRF token missing');
-    } else if (!this.validateToken(token)) {
+    } else if (!this.validateTokenFormat(token)) {
       errors.push('Invalid CSRF token');
     }
 
