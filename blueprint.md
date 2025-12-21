@@ -101,6 +101,12 @@ graph TD
 - **Schema Compliance**: Clean, deployment-ready configuration files
 - **PR Management**: Systematic resolution of deployment issues across multiple PRs
 
+### Recent Critical Fixes (2025-12-21 Resolution)
+- **#136 API Route Schema**: Fixed Vercel schema validation by removing unsupported `regions` from 11 API routes
+- **Cross-Platform Deployment**: Restored deployment success on Vercel & Cloudflare Workers  
+- **PR Workflow**: Established working systematic resolution pattern for schema compliance issues
+- **Documentation**: Updated all relevant docs with complete fix details and lessons learned
+
 ### Code Quality Standards
 - **Type Safety**: Minimize `any` usage, implement strict TypeScript
 - **Modularity**: Service files should be <500 lines, well-decoupled
