@@ -300,7 +300,7 @@ export class WebApplicationFirewall {
     }
 
     // In production, send to external monitoring service
-    if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production') {
+    if (typeof process !== 'undefined' && process.env?.['NODE_ENV'] === 'production') {
       // Integration with external monitoring service would go here
     }
 

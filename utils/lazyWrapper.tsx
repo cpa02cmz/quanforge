@@ -51,7 +51,9 @@ class LazyErrorBoundary extends React.Component<LazyWrapperProps, LazyWrapperSta
     // Track error in performance monitoring if available
     if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>)['performanceMonitor']) {
       const monitor = (window as unknown as Record<string, Record<string, (name: string, value: number) => void>>)['performanceMonitor'];
-      monitor['recordMetric']('lazy_component_error', 1);
+      if (monitor && monitor['recordMetric']) {
+        monitor['recordMetric']('lazy_component_error', 1);
+      }
     }
   }
 
@@ -141,4 +143,5 @@ export const createLazyComponent = <T extends React.ComponentType<any>>(
 return WrappedComponent;
 };
 
+export { LazyErrorBoundary };
 export default LazyErrorBoundary;

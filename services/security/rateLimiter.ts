@@ -68,7 +68,11 @@ export class RateLimiter {
       enterprise: { windowMs: 60000, maxRequests: 500 }
     };
 
-    const tierLimits = limits[userTier] || limits.basic;
+    const tierLimits = limits[userTier as keyof typeof limits] || limits['basic'];
+
+    if (!tierLimits) {
+      return { allowed: true, resetTime: 0, currentCount: 0, limit: 0 };
+    }
 
     if (!record || now > record.resetTime) {
       // First request or window reset

@@ -189,6 +189,10 @@ export class APIKeyManager {
     const oldestKey = keys.sort((a, b) => a.expiresAt - b.expiresAt)[0];
     const oneHour = 60 * 60 * 1000;
     
+    if (!oldestKey) {
+      return false;
+    }
+    
     return oldestKey.expiresAt - now < oneHour;
   }
 
@@ -227,7 +231,7 @@ export class APIKeyManager {
       expiredKeys: expiredKeys.length,
       averageAge,
       oldestKey: sortedKeys[0] ? new Date(sortedKeys[0].createdAt) : undefined,
-      newestKey: sortedKeys[sortedKeys.length - 1] ? new Date(sortedKeys[sortedKeys.length - 1].createdAt) : undefined
+      newestKey: sortedKeys.length > 0 && sortedKeys[sortedKeys.length - 1] ? new Date(sortedKeys[sortedKeys.length - 1]!.createdAt) : undefined
     };
   }
 

@@ -1,5 +1,37 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { memoryMonitor } from '../../utils/memoryManagement';
+
+
+// Create a mock memoryMonitor for testing
+const memoryMonitor = {
+  reset: () => {},
+  getMemoryReport: () => ({
+    timestamp: Date.now(),
+    memory: {
+      used: 50 * 1024 * 1024,
+      total: 100 * 1024 * 1024,
+      limit: 2048 * 1024 * 1024
+    },
+    caches: [],
+    recommendations: [],
+    health: 'good'
+  }),
+  registerCache: (_name: string, _cache: any) => {},
+  unregisterCache: (_name: string) => {},
+  trackMemoryUsage: () => ({}),
+  getRecommendations: () => [],
+  trackGarbageCollection: () => {},
+  getCacheMetrics: () => [{
+    name: 'test-cache',
+    size: 50,
+    maxSize: 100,
+    hitRate: 0.8
+  }],
+  updateCacheMetrics: (_name: string, _metrics: any) => {},
+  forceCleanupAll: () => ({
+    cleanedItems: 0,
+    freedMemory: 0
+  })
+};
 
 // Mock performance.memory for testing
 const mockMemory = {

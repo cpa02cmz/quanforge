@@ -1,28 +1,39 @@
 # QuantForge AI - Optimized Documentation Index
+**Last Updated**: 2025-12-21 | **Files**: 8 Core Documents
 
-This directory contains the most efficient, AI-agent-friendly documentation for the QuantForge AI codebase.
+> **AI Agent Efficiency**: This documentation is optimized for AI agent context with minimal file count and comprehensive information.
 
-## Core Architecture Documents
-- `CONSOLIDATED_GUIDE.md` - Complete agent guidance for repository navigation and development
-- `AI_REPOSITORY_INDEX.md` - Quick navigation index for AI agents
-- `blueprint.md` - System architecture and design documentation
-- `ROADMAP.md` - Product roadmap and feature planning
-- `ARCHITECTURE.md` - Technical architecture details
+## 🎯 Core Architecture Documents (Essential)
 
-## Development Documentation
-- `task.md` - Task tracking and completion status
-- `AGENTS.md` - Agent insights and technical decisions
-- `bug.md` - Bug tracking and resolution log
-- `coding_standard.md` - Development and coding standards
-- `how-to.md` - Common procedures and guides
+- **`COMPREHENSIVE_OPTIMIZATION_GUIDE.md`** - ⭐ **NEW**: Single source of truth for ALL optimizations, performance, security, and architecture improvements
+- **`CONSOLIDATED_GUIDE.md`** - Complete agent guidance for repository navigation and development
+- **`AI_REPOSITORY_INDEX.md`** - Quick navigation index for AI agents
+- **`blueprint.md`** - System architecture and design documentation
+- **`ROADMAP.md`** - Product roadmap and feature planning
 
-## Specialized Guides
-- `BACKUP_DISASTER_RECOVERY_GUIDE.md` - Backup and disaster recovery procedures
-- `fitur.md` - Feature documentation in Indonesian
-- `README.md` - Main repository documentation
+## 📋 Development Documentation
 
-## Legacy Documentation (for reference only)
-Individual files in `docs/` directory contain specialized information but are consolidated into the core documents above for AI agent efficiency.
+- **`task.md`** - Task tracking and completion status
+- **`AGENTS.md`** - Agent insights, decisions, and technical patterns
+- **`bug.md`** - Bug tracking and resolution log
+- **`coding_standard.md`** - Development and coding standards
+
+## 📚 Specialized Guides
+
+- **`README.md`** - Main repository documentation
+- **`BACKUP_DISASTER_RECOVERY_GUIDE.md`** - Backup and disaster recovery procedures
+- **`fitur.md`** - Feature documentation (Indonesian)
+
+## 🗑️ Deprecated Documentation
+
+The following 68+ optimization files have been **consolidated** into `COMPREHENSIVE_OPTIMIZATION_GUIDE.md`:
+- All `*OPTIMIZATION*.md` files (merged)
+- All `*VERCEL_*.md` files (merged)  
+- All `*EDGE_*.md` files (merged)
+- All `*PERFORMANCE_*.md` files (merged)
+- All `*SEO_*.md` files (merged)
+
+> **Action**: These files should be removed to reduce context noise and improve AI agent efficiency.
 
 ---
 
