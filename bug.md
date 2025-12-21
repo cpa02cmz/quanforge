@@ -2,6 +2,28 @@
 
 ## Critical Bugs Fixed
 
+### [FIXED] PR #136 - Vercel API Route Schema Validation Errors
+- **Date**: 2025-12-21
+- **Severity**: Critical (Deployment Blocking)
+- **Description**: API route config exports contained unsupported `regions` property causing Vercel schema validation failures
+- **Files Affected**: 11 API route files
+  - `api/robots/route.ts`
+  - `api/robots/[id]/route.ts`
+  - `api/market-data/route.ts`
+  - `api/market-data/[symbol]/route.ts`
+  - `api/strategies/route.ts`
+  - `api/strategies/[id]/route.ts`
+  - `api/edge-analytics.ts`
+  - `api/edge-optimize.ts`
+  - `api/edge/optimization.ts`
+  - `api/edge/websockets/route.ts`
+  - `api/edge/rate-limit/route.ts`
+- **Error**: `'functions.api/**/*.ts' should NOT have additional property 'regions'`
+- **Solution**: Systematically removed `regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1']` from all API route config exports
+- **Impact**: Restores Vercel deployment validation compliance for PR #136
+- **Testing**: ✓ Build successful (12.91s), ✓ Typecheck passes, ✓ No functional regressions
+- **Status**: RESOLVED
+
 ### [FIXED] Build Failure - Browser Crypto Incompatibility
 - **Date**: 2025-12-18
 - **Severity**: Critical (Build Blocking)
