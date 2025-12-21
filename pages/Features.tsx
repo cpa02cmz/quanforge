@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, lazy, Suspense } from 'react';
 import { useTranslation } from '../services/i18n';
 import { PageMeta, enhancedStructuredData } from '../utils/pageMeta';
+
+// Lazy load React Router Link to reduce initial bundle size
+const Link = lazy(() => import('react-router-dom').then(module => ({ default: module.Link })));
 
 const FeaturesComponent: React.FC = () => {
   const { language } = useTranslation();
@@ -188,12 +190,18 @@ const FeaturesComponent: React.FC = () => {
                 : 'Discover powerful tools that transform trading ideas into profitable automated strategies'
               }
             </p>
-            <Link 
-              to="/generator"
-              className="bg-brand-600 hover:bg-brand-500 px-8 py-3 rounded-lg font-semibold transition-colors inline-block"
-            >
-              {language === 'id' ? 'Coba Sekarang' : 'Try Now'}
-            </Link>
+            <Suspense fallback={
+              <button className="bg-brand-600 px-8 py-3 rounded-lg font-semibold text-white">
+                {language === 'id' ? 'Coba Sekarang' : 'Try Now'}
+              </button>
+            }>
+              <Link 
+                to="/generator"
+                className="bg-brand-600 hover:bg-brand-500 px-8 py-3 rounded-lg font-semibold transition-colors inline-block"
+              >
+                {language === 'id' ? 'Coba Sekarang' : 'Try Now'}
+              </Link>
+            </Suspense>
           </div>
         </section>
 
@@ -304,18 +312,30 @@ const FeaturesComponent: React.FC = () => {
               }
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link 
-                to="/generator"
-                className="bg-brand-600 hover:bg-brand-500 px-8 py-3 rounded-lg font-semibold transition-colors"
-              >
-                {language === 'id' ? 'Mulai Gratis' : 'Start Free'}
-              </Link>
-              <Link 
-                to="/wiki"
-                className="border border-brand-500 text-brand-400 hover:bg-brand-500 hover:text-white px-8 py-3 rounded-lg font-semibold transition-colors"
-              >
-                {language === 'id' ? 'Pelajari Lebih Lanjut' : 'Learn More'}
-              </Link>
+              <Suspense fallback={
+                <button className="bg-brand-600 px-8 py-3 rounded-lg font-semibold text-white">
+                  {language === 'id' ? 'Mulai Gratis' : 'Start Free'}
+                </button>
+              }>
+                <Link 
+                  to="/generator"
+                  className="bg-brand-600 hover:bg-brand-500 px-8 py-3 rounded-lg font-semibold transition-colors"
+                >
+                  {language === 'id' ? 'Mulai Gratis' : 'Start Free'}
+                </Link>
+              </Suspense>
+              <Suspense fallback={
+                <button className="border border-brand-500 text-brand-400 px-8 py-3 rounded-lg font-semibold">
+                  {language === 'id' ? 'Pelajari Lebih Lanjut' : 'Learn More'}
+                </button>
+              }>
+                <Link 
+                  to="/wiki"
+                  className="border border-brand-500 text-brand-400 hover:bg-brand-500 hover:text-white px-8 py-3 rounded-lg font-semibold transition-colors"
+                >
+                  {language === 'id' ? 'Pelajari Lebih Lanjut' : 'Learn More'}
+                </Link>
+              </Suspense>
             </div>
           </div>
         </section>

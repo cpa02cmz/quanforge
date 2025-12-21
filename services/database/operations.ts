@@ -1,6 +1,6 @@
 import { Robot } from '../../types';
 import { getClient, STORAGE_KEYS, safeParse, trySaveToStorage, generateUUID } from './client';
-import { handleError } from '../../utils/errorHandler';
+import { handleErrorCompat as handleError } from '../../utils/errorManager';
 
 // Robot operations
 export const getRobots = async (userId: string): Promise<Robot[]> => {

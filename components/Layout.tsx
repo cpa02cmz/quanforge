@@ -1,12 +1,16 @@
 
-import React, { useState, memo, useMemo, useCallback } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import React, { useState, memo, useMemo, useCallback, Suspense, lazy } from 'react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { AISettingsModal } from './AISettingsModal';
 import { DatabaseSettingsModal } from './DatabaseSettingsModal';
 import { useTranslation } from '../services/i18n';
 import { UserSession } from '../types';
 import PerformanceInsights from './PerformanceInsights';
+
+// Lazy load React Router components to reduce initial bundle size
+const Outlet = lazy(() => import('react-router-dom').then(module => ({ default: module.Outlet })));
+const Link = lazy(() => import('react-router-dom').then(module => ({ default: module.Link })));
 
 interface LayoutProps {
   session: UserSession | null;
@@ -100,22 +104,33 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
         <nav className="flex-1 px-4 space-y-2" role="navigation" aria-label="Site navigation">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.name}
-                to={item.path}
-                onClick={closeMobileMenu}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive 
-                    ? 'bg-brand-500/10 text-brand-400 border border-brand-500/20' 
-                    : 'text-gray-400 hover:bg-dark-border hover:text-white'
-                }`}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                {item.icon}
-                <span className="font-medium">{item.name}</span>
-              </Link>
-            );
+return (
+               <Suspense fallback={
+                 <div className={`flex items-center space-x-3 px-4 py-3 rounded-lg ${
+                   isActive 
+                     ? 'bg-brand-500/10 text-brand-400 border border-brand-500/20' 
+                     : 'text-gray-400'
+                 }`}>
+                   {item.icon}
+                   <span className="font-medium">{item.name}</span>
+                 </div>
+               }>
+                 <Link
+                   key={item.name}
+                   to={item.path}
+                   onClick={closeMobileMenu}
+                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                     isActive 
+                       ? 'bg-brand-500/10 text-brand-400 border border-brand-500/20' 
+                       : 'text-gray-400 hover:bg-dark-border hover:text-white'
+                   }`}
+                   aria-current={isActive ? 'page' : undefined}
+                 >
+                   {item.icon}
+                   <span className="font-medium">{item.name}</span>
+                 </Link>
+               </Suspense>
+             );
           })}
 
           <div className="pt-4 mt-4 border-t border-dark-border space-y-2">
@@ -183,9 +198,15 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
              </button>
           </div>
         </header>
-         <div className="flex-1 overflow-y-auto">
-           <Outlet />
-         </div>
+<div className="flex-1 overflow-y-auto">
+            <Suspense fallback={
+              <div className="flex items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+              </div>
+            }>
+              <Outlet />
+            </Suspense>
+          </div>
          <PerformanceInsights />
        </main>
      </div>

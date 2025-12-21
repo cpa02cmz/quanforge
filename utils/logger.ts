@@ -1,6 +1,9 @@
 /**
  * Conditional logging utility for development vs production
+ * Integrates with ErrorManager for centralized error tracking
  */
+
+import { ErrorManager, ErrorCategory, ErrorSeverity } from './errorManager';
 
 interface Logger {
   log: (...args: any[]) => void;
@@ -22,12 +25,36 @@ const devLogger: Logger = {
 };
 
 /**
- * Production logger that only outputs errors
+ * Production logger that outputs errors and tracks them in ErrorManager
  */
 const prodLogger: Logger = {
   log: () => {},
   warn: () => {},
-  error: (...args: any[]) => console.error(...args),
+  error: (...args: any[]) => {
+    console.error(...args);
+    
+    // Log errors to ErrorManager for centralized tracking
+    try {
+      const errorMessage = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' ');
+      
+      ErrorManager.getInstance().handleError(
+        errorMessage,
+        ErrorCategory.UNKNOWN,
+        { 
+          source: 'production_logger',
+          args: args.map(arg => typeof arg === 'object' ? '[Object]' : arg)
+        },
+        { 
+          severity: ErrorSeverity.HIGH,
+          showToast: false // Don't double-show toasts for logger errors
+        }
+      );
+    } catch (e) {
+      // Silently fail if ErrorManager fails to avoid infinite loops
+    }
+  },
   info: () => {},
   debug: () => {},
 };

@@ -21,8 +21,8 @@ let Type: GenAIType | null = null;
 import { MQL5_SYSTEM_PROMPT } from "../constants";
 import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
 import { settingsManager } from "./settingsManager";
-import { getActiveKey } from "../utils/apiKeyUtils";
-import { handleError } from "../utils/errorHandler";
+import { secureAPIKeyManager } from "./secureAPIKeyManager";
+import { handleErrorCompat as handleError } from "../utils/errorManager";
 import { apiDeduplicator } from "./apiDeduplicator";
 import { createScopedLogger } from "../utils/logger";
 import { aiWorkerManager } from "./aiWorkerManager";
@@ -727,8 +727,8 @@ const getGoogleGenAI = async () => {
 
 const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?: AbortSignal, temperature?: number) => {
     return withRetry(async () => {
-        const activeKey = getActiveKey(settings.apiKey);
-        if (!activeKey) throw new Error("Google API Key missing in settings.");
+        const activeKey = await secureAPIKeyManager.getAPIKey('google', 'generate');
+        if (!activeKey) throw new Error("Failed to retrieve secure Google API Key.");
         
         const GoogleGenAIClass = await getGoogleGenAI();
         if (!GoogleGenAIClass) throw new Error('Failed to load Google GenAI');
@@ -762,10 +762,10 @@ const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?
  */
 const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, signal?: AbortSignal, temperature?: number, jsonMode: boolean = false) => {
     return withRetry(async () => {
-        const activeKey = getActiveKey(settings.apiKey);
+        const activeKey = await secureAPIKeyManager.getAPIKey('openai', 'generate');
 
         if (!activeKey && !settings.baseUrl?.includes('localhost')) {
-             console.warn("API Key is empty for OpenAI Provider");
+             console.warn("Failed to retrieve secure OpenAI API Key");
         }
 
         const baseUrl = settings.baseUrl ? settings.baseUrl.replace(/\/$/, '') : 'https://api.openai.com/v1';
@@ -899,9 +899,9 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
  */
 export const refineCode = async (currentCode: string, signal?: AbortSignal) => {
     const settings = settingsManager.getSettings();
-    const activeKey = getActiveKey(settings.apiKey);
+    const activeKey = await secureAPIKeyManager.getAPIKey(settings.provider, 'analyze');
     
-    if (!activeKey && settings.provider === 'google') throw new Error("API Key missing");
+    if (!activeKey) throw new Error(`Failed to retrieve secure ${settings.provider} API Key`);
 
     const prompt = `
 You are a Senior MQL5 Code Reviewer and Optimizer.
@@ -1023,7 +1023,7 @@ export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promi
       }
       
       const settings = settingsManager.getSettings();
-      const activeKey = getActiveKey(settings.apiKey);
+      const activeKey = await secureAPIKeyManager.getAPIKey(settings.provider, 'analyze');
       
       // Create a more efficient cache key using a proper hash function
       const codeHash = createHash(code.substring(0, 5000));
