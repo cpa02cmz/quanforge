@@ -5,7 +5,6 @@
   "outputDirectory": "dist",
   "installCommand": "npm ci --prefer-offline --no-audit",
   "devCommand": "npm run dev",
-  "functions": {},
   "build": {
     "env": {
       "NODE_OPTIONS": "--max-old-space-size=4096"
