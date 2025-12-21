@@ -20,11 +20,13 @@ export class UnifiedValidator {
       // First run security validation - convert string data for security check
       let securityValid = true;
       if (typeof data === 'string') {
-        const securityResult = securityManager.sanitizeAndValidate(data);
-        securityValid = securityResult.allowed;
+        const securityResult = securityManager.sanitizeAndValidate(JSON.parse(data || '{}'), 'robot');
+        securityValid = securityResult.isValid;
         if (!securityValid) {
           errors.push('Security validation failed - potential injection detected');
+          errors.push(...securityResult.errors);
         }
+        riskScore = Math.max(riskScore, securityResult.riskScore || 0);
       }
 
       // Basic structure validation

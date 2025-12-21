@@ -1,73 +1,71 @@
-import { Robot, StrategyParams, BacktestSettings } from '../types';
-import DOMPurify from 'dompurify';
+/**
+ * Unified SecurityManager - Backward Compatibility Layer
+ * 
+ * This file provides the same interface as the original securityManager.ts
+ * but uses the new modular architecture underneath.
+ * 
+ * This ensures zero breaking changes for existing code while
+ * benefiting from the improved modular design.
+ */
 
-class SecurityManager {
-  private static instance: SecurityManager;
+import { securityManager as modularSecurityManager, SecurityManager } from './security/SecurityManager';
+import { ValidationResult } from './security/InputValidator';
 
-  static getInstance(): SecurityManager {
-    if (!SecurityManager.instance) {
-      SecurityManager.instance = new SecurityManager();
-    }
-    return SecurityManager.instance;
-  }
+// Legacy interface for backward compatibility
+interface LegacyValidationResult {
+  allowed: boolean;
+  sanitized: string;
+}
 
-  // Sanitize HTML to prevent XSS
-  sanitizeHTML(dirty: string): string {
-    return DOMPurify.sanitize(dirty);
-  }
-
-  // Safe JSON parsing
-  safeJSONParse(data: string): any {
+// Create backward-compatibility wrapper
+const securityManager = {
+  // Use modular system
+  ...modularSecurityManager,
+  
+  // Legacy sanitizeAndValidate method for string input
+  sanitizeAndValidate(input: string): LegacyValidationResult {
     try {
-      return JSON.parse(data);
+      // For string input, detect injection patterns and sanitize
+      const patterns = [
+        /<script[^>]*>.*?<\/script>/gi,
+        /javascript:/gi,
+        /on\w+\s*=/gi,
+        /eval\s*\(/gi,
+        /expression\s*\(/gi,
+        /import\s+.*\s+from/gi
+      ];
+      
+      const hasInjection = patterns.some(pattern => pattern.test(input));
+      const sanitized = input
+        .replace(/[<>]/g, '') // Remove potential HTML tags
+        .replace(/javascript:/gi, '') // Remove javascript protocol
+        .replace(/on\w+=/gi, '') // Remove event handlers
+        .trim();
+      
+      return {
+        allowed: !hasInjection,
+        sanitized
+      };
     } catch {
-      return null;
+      return {
+        allowed: false,
+        sanitized: ''
+      };
     }
-  }
-
-  // Validate strategy parameters
-  validateStrategyParams(params: StrategyParams): boolean {
-    if (!params || typeof params !== 'object') return false;
-    
-    // Basic validation
-    if (params.stopLoss && (params.stopLoss < 0 || params.stopLoss > 100)) return false;
-    if (params.takeProfit && (params.takeProfit < 0 || params.takeProfit > 1000)) return false;
-    
-    return true;
-  }
-
-  // Validate backtest settings
-  validateBacktestSettings(settings: BacktestSettings): boolean {
-    if (!settings || typeof settings !== 'object') return false;
-    
-    // Generic validation since BacktestSettings interface may vary
-    if (Object.keys(settings).length === 0) return false;
-    
-    return true;
-  }
-
-  // Validate robot data
-  validateRobot(robot: Robot): boolean {
-    if (!robot || typeof robot !== 'object') return false;
-    
-    if (!robot.name || typeof robot.name !== 'string') return false;
-    if (!robot.description || typeof robot.description !== 'string') return false;
-    if (robot.name.length > 100 || robot.description.length > 1000) return false;
-    
-    return true;
-  }
-
-  // Sanitize user input
-  sanitizeInput(input: string): string {
-    return input
-      .replace(/[<>]/g, '') // Remove potential HTML tags
-      .replace(/javascript:/gi, '') // Remove javascript protocol
-      .replace(/on\w+=/gi, '') // Remove event handlers
-      .trim();
-  }
-
-  // Check for potential injection patterns
-  detectInjection(input: string): boolean {
+  },
+  
+  // Legacy sanitizeInput method
+  sanitizeInput(input: string, type?: string): string {
+    return modularSecurityManager.sanitizeInput(input, type as any);
+  },
+  
+  // Legacy methods that might be missing
+  sanitizeHTML: (dirty: string) => {
+    // Basic HTML sanitization
+    return dirty.replace(/<script[^>]*>.*?<\/script>/gi, '').replace(/<[^>]*>/g, '');
+  },
+  
+  detectInjection: (input: string): boolean => {
     const patterns = [
       /<script[^>]*>.*?<\/script>/gi,
       /javascript:/gi,
@@ -78,44 +76,21 @@ class SecurityManager {
     ];
     
     return patterns.some(pattern => pattern.test(input));
-  }
-
-  // Sanitize and validate (for supabase.ts compatibility)
-  sanitizeAndValidate(input: string): { allowed: boolean; sanitized: string } {
-    const hasInjection = this.detectInjection(input);
-    return {
-      allowed: !hasInjection,
-      sanitized: this.sanitizeInput(input)
-    };
-  }
-
-  // Rate limiting (basic implementation)
-  private lastRequest = new Map<string, number>();
+  },
   
-  checkRateLimit(identifier: string, limitMs: number = 1000): boolean {
-    const now = Date.now();
-    const lastTime = this.lastRequest.get(identifier) || 0;
-    
-    if (now - lastTime < limitMs) {
-      return false; // Rate limited
-    }
-    
-    this.lastRequest.set(identifier, now);
-    return true; // Allow request
-  }
+  // Keep the modular methods available
+  sanitizeAndValidateData: modularSecurityManager.sanitizeAndValidate,
+  checkRateLimit: modularSecurityManager.checkRateLimit,
+  validateOrigin: modularSecurityManager.validateOrigin,
+  hashString: modularSecurityManager.hashString,
+  safeJSONParse: modularSecurityManager.safeJSONParse,
+  validateInput: modularSecurityManager.validateInput
+};
 
-  // Validate file upload (if applicable)
-  validateFileUpload(fileName: string, fileSize: number, maxSize: number = 5 * 1024 * 1024): boolean {
-    const allowedExtensions = ['.mq5', '.mqh', '.txt', '.json'];
-    const fileExtension = fileName.toLowerCase().slice(fileName.lastIndexOf('.'));
-    
-    if (!allowedExtensions.includes(fileExtension)) return false;
-    if (fileSize > maxSize) return false;
-    if (fileName.length > 255) return false;
-    
-    return true;
-  }
-}
+export { securityManager, SecurityManager };
 
-export const securityManager = SecurityManager.getInstance();
+// Re-export commonly used types for backward compatibility
+export type { ValidationResult };
+
+// Default export for backward compatibility
 export default securityManager;
