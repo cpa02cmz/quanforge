@@ -221,9 +221,6 @@
 2. **AI Agent Priority**: Optimized loading order for AI context processing
 3. **Archive Redundancy**: Move old versions to archive, don't delete for reference
 4. **Single Source Truth**: Each topic covered comprehensively in one location
-
-=======
->>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 ## Agent Guidelines for Future Work
 
 ### When Addressing Bugs
