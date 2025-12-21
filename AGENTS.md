@@ -79,6 +79,20 @@
 3. **Lint Quality**: Address critical lint issues but prioritize function over form
 4. **Document**: Record root cause, solution, and prevention strategies
 
+### Codebase Quality Standards (Post-Analysis v2.0)
+- **Quality Gate**: New features must maintain or improve overall quality scores
+- **Bundle Impact**: Any new dependency must pass bundle size analysis (<100KB chunks)
+- **Security Review**: All code changes must pass security manager validation
+- **Performance Testing**: Implement performance monitoring for new critical paths
+- **Type Safety**: Maintain TypeScript strict mode - minimize `any` type usage
+- **Documentation**: Update quality metrics in blueprint.md after major changes
+
+### Quality Scoring Integration
+- **Baseline Scores**: Use Dec 2025 analysis as baseline (Overall: 80/100)
+- **Regression Prevention**: Score decreases trigger immediate review
+- **Improvement Tracking**: Document quality improvements in bug.md
+- **Monthly Assessment**: Re-run comprehensive analysis monthly
+
 ### When Managing PRs with Red Flags
 1. **Conflict Resolution**: Merge main branch into PR branch to resolve merge conflicts
 2. **Schema Validation**: Verify vercel.json complies with current Vercel schema requirements
