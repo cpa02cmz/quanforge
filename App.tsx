@@ -4,9 +4,12 @@ import { supabase } from './services/supabase';
 import { ToastProvider } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { UserSession } from './types';
-import { performanceMonitor } from './utils/performance';
+import { performanceManager } from './utils/performanceConsolidated';
+
+// Create alias for backward compatibility
+const performanceMonitor = performanceManager;
 import { logger } from './utils/logger';
-import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
+import { SEOHead, structuredDataTemplates } from './utils/seoUnified';
 
 // Dynamic import utilities are available via constants/appExports.ts
 

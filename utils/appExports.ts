@@ -3,7 +3,7 @@
 import { logger } from './logger';
 
 export const loadGeminiService = () => import('../services/gemini');
-export const loadSEOUtils = () => import('./seoEnhanced');
+export const loadSEOUtils = () => import('./seoUnified');
 export const loadChartComponents = () => import('../components/ChartComponents');
 export const loadCodeEditor = () => import('../components/CodeEditor');
 export const loadBacktestPanel = () => import('../components/BacktestPanel');

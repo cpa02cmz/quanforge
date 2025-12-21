@@ -1,5 +1,5 @@
 import React from 'react';
-import { SEOHead, structuredDataTemplates } from './seoEnhanced';
+import { SEOHead, structuredDataTemplates } from './seoUnified';
 
 interface PageMetaProps {
   title?: string;

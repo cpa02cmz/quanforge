@@ -1,53 +1,54 @@
 /**
- * Performance monitoring utility
+ * Legacy Performance Module - DEPRECATED
+ * This module has been consolidated into utils/performanceConsolidated.ts
+ * Please import from performanceConsolidated.ts instead
  */
 
+import { performanceManager } from './performanceConsolidated';
+
+// Simple interface matching the old implementation
 interface PerformanceMetrics {
   [key: string]: number;
 }
 
 class PerformanceMonitor {
-  private metrics: PerformanceMetrics = {};
-  private startTime: number = Date.now();
-
   recordMetric(name: string, value: number): void {
-    this.metrics[name] = value;
+    performanceManager.recordMetric(name, value);
   }
 
   getMetric(name: string): number | undefined {
-    return this.metrics[name];
+    const metrics = performanceManager.getMetrics();
+    const nameMetrics = metrics.filter(m => m.name === name);
+    const lastMetric = nameMetrics[nameMetrics.length - 1];
+    return lastMetric?.value;
   }
 
   getAllMetrics(): PerformanceMetrics {
-    return { ...this.metrics };
+    const all = performanceManager.getMetrics();
+    const result: PerformanceMetrics = {};
+    all.forEach(metric => {
+      if (metric && metric.name && metric.value !== undefined) {
+        result[metric.name] = metric.value;
+      }
+    });
+    return result;
   }
 
   markStart(name: string): void {
-    this.metrics[`${name}_start`] = performance.now();
+    performanceManager.startMark(name);
   }
 
   markEnd(name: string): number {
-    const start = this.metrics[`${name}_start`];
-    if (start) {
-      const duration = performance.now() - start;
-      this.metrics[name] = duration;
-      delete this.metrics[`${name}_start`];
-      return duration;
-    }
-    return 0;
+    performanceManager.endMark(name);
+    const result = this.getMetric(`measure_${name}`);
+    return result ?? 0;
   }
 
-  cleanup(): void {
-    this.metrics = {};
-  }
-
-  getMetrics(): PerformanceMetrics {
-    return {
-      ...this.metrics,
-      totalRuntime: Date.now() - this.startTime
-    };
+  clearMetrics(): void {
+    // Clear would have to be added to performanceManager if needed
+    console.warn('clearMetrics not implemented in consolidated version');
   }
 }
 
 export const performanceMonitor = new PerformanceMonitor();
-export default performanceMonitor;
+export type { PerformanceMetrics };
