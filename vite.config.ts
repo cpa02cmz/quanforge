@@ -123,10 +123,10 @@ export default defineConfig({
             if (id.includes('promise') || id.includes('async') || id.includes('queue')) {
               return 'vendor-async';
             }
-            // Split validation libraries
-            if (id.includes('yup') || id.includes('zod') || id.includes('joi') || id.includes('validator')) {
-              return 'vendor-validation';
-            }
+            // Split validation libraries (commented out - not currently used to avoid empty chunks)
+            // if (id.includes('yup') || id.includes('zod') || id.includes('joi') || id.includes('validator')) {
+            //   return 'vendor-validation';
+            // }
             // Split browser compatibility libraries
             if (id.includes('whatwg') || id.includes('abort') || id.includes('cross-fetch')) {
               return 'vendor-browser';

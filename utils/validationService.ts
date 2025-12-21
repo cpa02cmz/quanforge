@@ -21,7 +21,7 @@ export {
 import { validateStrategyParams as _validateStrategyParams } from './strategyValidation';
 import { validateChatMessage as _validateChatMessage, sanitizeInput as _sanitizeInput } from './inputValidation';
 import { isValid as _isValid, formatErrors as _formatErrors } from './validationHelpers';
-import type { ValidationResult } from './validationTypes';
+import type { ValidationResult, ValidationError } from './validationTypes';
 import type { StrategyParams, CustomInput, Message } from '../types';
 
 // Missing interfaces for backward compatibility
@@ -41,29 +41,29 @@ export class ValidationService {
   
   // Robot validation
   static validateRobot(data: any): ValidationResult {
-    const errors: string[] = [];
+    const errors: ValidationError[] = [];
     const warnings: string[] = [];
 
     if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0) {
-      errors.push('Robot name is required and must be a non-empty string');
+      errors.push({ field: 'name', message: 'Robot name is required and must be a non-empty string' });
     }
 
     if (!data.code || typeof data.code !== 'string' || data.code.trim().length === 0) {
-      errors.push('Robot code is required and must be a non-empty string');
+      errors.push({ field: 'code', message: 'Robot code is required and must be a non-empty string' });
     }
 
     if (!data.user_id || typeof data.user_id !== 'string') {
-      errors.push('User ID is required and must be a string');
+      errors.push({ field: 'user_id', message: 'User ID is required and must be a string' });
     }
 
     if (!data.strategy_type || !['Trend', 'Scalping', 'Grid', 'Martingale', 'Custom'].includes(data.strategy_type)) {
-      errors.push('Strategy type must be one of: Trend, Scalping, Grid, Martingale, Custom');
+      errors.push({ field: 'strategy_type', message: 'Strategy type must be one of: Trend, Scalping, Grid, Martingale, Custom' });
     }
 
     // Validate strategy parameters if present
     if (data.strategy_params) {
       const strategyValidation = this.validateStrategyParams(data.strategy_params);
-      errors.push(...strategyValidation.map(e => e.message));
+      errors.push(...strategyValidation);
     }
 
     // MQL5 code validation
@@ -82,31 +82,31 @@ export class ValidationService {
 
   // Strategy parameters validation (using imported function)
   static validateStrategyParamsWrapper(params: StrategyParams): ValidationResult {
-    const errors: string[] = [];
+    const errors: ValidationError[] = [];
     const warnings: string[] = [];
 
     if (!params.timeframe || typeof params.timeframe !== 'string') {
-      errors.push('Timeframe is required and must be a string');
+      errors.push({ field: 'timeframe', message: 'Timeframe is required and must be a string' });
     }
 
     if (!params.symbol || typeof params.symbol !== 'string') {
-      errors.push('Symbol is required and must be a string');
+      errors.push({ field: 'symbol', message: 'Symbol is required and must be a string' });
     }
 
     if (typeof params.riskPercent !== 'number' || params.riskPercent < 0 || params.riskPercent > 100) {
-      errors.push('Risk percent must be a number between 0 and 100');
+      errors.push({ field: 'riskPercent', message: 'Risk percent must be a number between 0 and 100' });
     }
 
     if (typeof params.stopLoss !== 'number' || params.stopLoss < 0) {
-      errors.push('Stop loss must be a non-negative number');
+      errors.push({ field: 'stopLoss', message: 'Stop loss must be a non-negative number' });
     }
 
     if (typeof params.takeProfit !== 'number' || params.takeProfit < 0) {
-      errors.push('Take profit must be a non-negative number');
+      errors.push({ field: 'takeProfit', message: 'Take profit must be a non-negative number' });
     }
 
     if (typeof params.magicNumber !== 'number' || params.magicNumber < 0) {
-      errors.push('Magic number must be a non-negative number');
+      errors.push({ field: 'magicNumber', message: 'Magic number must be a non-negative number' });
     }
 
     // Validate custom inputs
@@ -114,7 +114,7 @@ export class ValidationService {
       params.customInputs.forEach((input, index) => {
         const inputValidation = this.validateCustomInput(input);
         if (!inputValidation.isValid) {
-          errors.push(`Custom input ${index + 1}: ${inputValidation.errors.join(', ')}`);
+          errors.push({ field: `customInputs[${index}]`, message: inputValidation.errors.map(e => e.message).join(', ') });
         }
         warnings.push(...inputValidation.warnings.map(w => `Custom input ${index + 1}: ${w}`));
       });
@@ -138,31 +138,31 @@ export class ValidationService {
 
   // Custom input validation
   static validateCustomInput(input: CustomInput): ValidationResult {
-    const errors: string[] = [];
+    const errors: ValidationError[] = [];
     const warnings: string[] = [];
 
     if (!input.name || typeof input.name !== 'string') {
-      errors.push('Input name is required and must be a string');
+      errors.push({ field: 'name', message: 'Input name is required and must be a string' });
     }
 
     if (!['int', 'double', 'string', 'bool'].includes(input.type)) {
-      errors.push('Input type must be one of: int, double, string, bool');
+      errors.push({ field: 'type', message: 'Input type must be one of: int, double, string, bool' });
     }
 
     if (input.value === undefined || input.value === null) {
-      errors.push('Input value is required');
+      errors.push({ field: 'value', message: 'Input value is required' });
     }
 
     // Type-specific validation
     if (input.type === 'int' || input.type === 'double') {
       const numValue = parseFloat(input.value);
       if (isNaN(numValue)) {
-        errors.push(`Value must be a valid number for type ${input.type}`);
+        errors.push({ field: 'value', message: `Value must be a valid number for type ${input.type}` });
       }
     }
 
     if (input.type === 'bool' && !['true', 'false', '1', '0'].includes(input.value.toLowerCase())) {
-      errors.push('Boolean value must be true, false, 1, or 0');
+      errors.push({ field: 'value', message: 'Boolean value must be true, false, 1, or 0' });
     }
 
     return {
@@ -174,23 +174,23 @@ export class ValidationService {
 
   // AI Settings validation
   static validateAISettings(settings: AISettings): ValidationResult {
-    const errors: string[] = [];
+    const errors: ValidationError[] = [];
     const warnings: string[] = [];
 
     if (!settings.provider || !['google', 'openai'].includes(settings.provider)) {
-      errors.push('AI provider must be either "google" or "openai"');
+      errors.push({ field: 'provider', message: 'AI provider must be either "google" or "openai"' });
     }
 
     if (!settings.apiKey || typeof settings.apiKey !== 'string' || settings.apiKey.length < 10) {
-      errors.push('API key is required and must be at least 10 characters long');
+      errors.push({ field: 'apiKey', message: 'API key is required and must be at least 10 characters long' });
     }
 
     if (!settings.modelName || typeof settings.modelName !== 'string') {
-      errors.push('Model name is required and must be a string');
+      errors.push({ field: 'modelName', message: 'Model name is required and must be a string' });
     }
 
     if (settings.baseUrl && !this.isValidUrl(settings.baseUrl)) {
-      errors.push('Base URL must be a valid URL');
+      errors.push({ field: 'baseUrl', message: 'Base URL must be a valid URL' });
     }
 
     // API key security warnings
@@ -207,23 +207,23 @@ export class ValidationService {
 
   // Message validation
   static validateMessage(message: Message): ValidationResult {
-    const errors: string[] = [];
+    const errors: ValidationError[] = [];
     const warnings: string[] = [];
 
     if (!message.id || typeof message.id !== 'string') {
-      errors.push('Message ID is required and must be a string');
+      errors.push({ field: 'id', message: 'Message ID is required and must be a string' });
     }
 
     if (!message.role || !['user', 'model', 'system'].includes(message.role)) {
-      errors.push('Message role must be one of: user, model, system');
+      errors.push({ field: 'role', message: 'Message role must be one of: user, model, system' });
     }
 
     if (!message.content || typeof message.content !== 'string') {
-      errors.push('Message content is required and must be a string');
+      errors.push({ field: 'content', message: 'Message content is required and must be a string' });
     }
 
     if (typeof message.timestamp !== 'number' || message.timestamp <= 0) {
-      errors.push('Message timestamp must be a positive number');
+      errors.push({ field: 'timestamp', message: 'Message timestamp must be a positive number' });
     }
 
     // Content warnings
@@ -240,11 +240,11 @@ export class ValidationService {
 
   // MQL5 code validation
   static validateMQL5Code(code: string): ValidationResult {
-    const errors: string[] = [];
+    const errors: ValidationError[] = [];
     const warnings: string[] = [];
 
     if (!code || typeof code !== 'string') {
-      errors.push('Code is required and must be a string');
+      errors.push({ field: 'code', message: 'Code is required and must be a string' });
       return { isValid: false, errors, warnings };
     }
 
@@ -281,7 +281,7 @@ export class ValidationService {
 
     dangerousPatterns.forEach(pattern => {
       if (pattern.test(code)) {
-        errors.push('Code contains potentially dangerous system functions');
+        errors.push({ field: 'code', message: 'Code contains potentially dangerous system functions' });
       }
     });
 
@@ -310,12 +310,15 @@ export class ValidationService {
 
   // Batch validation for multiple items
   static validateBatch<T>(items: T[], validator: (item: T) => ValidationResult): ValidationResult {
-    const allErrors: string[] = [];
+    const allErrors: ValidationError[] = [];
     const allWarnings: string[] = [];
 
     items.forEach((item, index) => {
       const result = validator(item);
-      result.errors.forEach(error => allErrors.push(`Item ${index + 1}: ${error}`));
+      result.errors.forEach(error => allErrors.push({ 
+        field: `item${index + 1}.${error.field}`, 
+        message: `Item ${index + 1}: ${error.message}` 
+      }));
       result.warnings.forEach(warning => allWarnings.push(`Item ${index + 1}: ${warning}`));
     });
 
