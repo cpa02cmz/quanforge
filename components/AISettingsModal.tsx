@@ -111,9 +111,9 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, o
             const { testAIConnection } = await import('../services/gemini');
             await testAIConnection(settings);
             showToast(t('settings_test_success'), 'success');
-        } catch (error: any) {
+        } catch (error: unknown) {
             logger.error(error);
-            showToast(`Connection Failed: ${error.message}`, 'error');
+            showToast(`Connection Failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
         } finally {
             setIsTesting(false);
         }

@@ -77,8 +77,8 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
             } else {
                 showToast(`Migration failed: ${res.error}`, 'error');
             }
-        } catch (e: any) {
-             showToast(`Migration error: ${e.message}`, 'error');
+        } catch (e: unknown) {
+             showToast(`Migration error: ${e instanceof Error ? e.message : 'Unknown error'}`, 'error');
         } finally {
             setIsMigrating(false);
         }
@@ -114,7 +114,7 @@ return (
                                     name="mode"
                                     value="mock"
                                     checked={settings.mode === 'mock'}
-                                    onChange={(e) => setSettings({ ...settings, mode: e.target.value as any })}
+                                    onChange={(e) => setSettings({ ...settings, mode: e.target.value as 'mock' | 'supabase' })}
                                     className="mr-3 text-brand-600 focus:ring-brand-500"
                                 />
                                 <div>
@@ -128,7 +128,7 @@ return (
                                     name="mode"
                                     value="supabase"
                                     checked={settings.mode === 'supabase'}
-                                    onChange={(e) => setSettings({ ...settings, mode: e.target.value as any })}
+                                    onChange={(e) => setSettings({ ...settings, mode: e.target.value as 'mock' | 'supabase' })}
                                     className="mr-3 text-brand-600 focus:ring-brand-500"
                                 />
                                 <div>
