@@ -1,13 +1,14 @@
 {
   "version": 2,
-  "framework": "vite", 
+  "framework": "vite",
   "buildCommand": "npm ci --prefer-offline --no-audit && npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm ci --prefer-offline --no-audit",
   "devCommand": "npm run dev",
+  "functions": {},
   "build": {
     "env": {
-      "NODE_ENV": "production"
+      "NODE_OPTIONS": "--max-old-space-size=4096"
     }
   }
 }
