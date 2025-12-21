@@ -1,6 +1,28 @@
 # API Documentation - QuantForge AI
 
-This document outlines the new API endpoints implemented for Vercel Edge deployment and Supabase integration optimization.
+This comprehensive document outlines all API endpoints, internal services, and optimization patterns implemented for Vercel Edge deployment and Supabase integration optimization.
+
+## 🎯 Architecture Overview
+
+QuantForge AI implements a multi-layered API architecture optimized for:
+- **Edge Performance**: Global caching and optimization endpoints
+- **Real-Time Trading**: Live market data and strategy execution
+- **Security**: Multi-layered security management and validation
+- **Scalability**: Modular service design with proper separation of concerns
+
+## 🏗️ System Architecture
+
+```
+Client (React SPA) → API Routes → Service Layer → Edge Cache → Supabase DB
+                        →         ↗   Edge Optimization   ↘
+                        ↘ Security Services   ↘   Market Data API   ↗
+```
+
+### Key Design Principles
+- **Cross-Platform Compatibility**: Works on browser, Node.js, and Edge environments
+- **Browser-First Design**: All frontend components use browser-compatible APIs
+- **Graceful Degradation**: Fallback mechanisms when optimization services are unavailable
+- **Type Safety**: Strong TypeScript typing throughout the service layer
 
 ## 🚀 Core API Endpoints
 
@@ -450,5 +472,184 @@ Required environment variables for production:
 - Clear cache when updating data
 - Use appropriate cache invalidation strategies
 - Monitor cache hit rates for performance optimization
+
+---
+
+## 🏗️ Service Layer Architecture (AI Agent Guide)
+
+### Critical Service Analysis (2025-12-21)
+
+#### Monolithic Services Requiring Decomposition
+
+**1. Security Management (`services/securityManager.ts`)**
+- **Size**: 1,611 lines (exceeds 500-line threshold)
+- **Purpose**: Multi-layered security system
+- **Decomposition Targets**:
+  - `requestValidator.ts` (400 lines) - Input validation and sanitization
+  - `apiKeyManager.ts` (400 lines) - API key rotation and management
+  - `threatDetector.ts` (400 lines) - Security threat detection
+  - `rateLimitService.ts` (311 lines) - Rate limiting implementation
+
+**2. Database Integration (`services/supabase.ts`)**
+- **Size**: 1,583 lines (exceeds 500-line threshold)
+- **Purpose**: Supabase integration with fallback patterns
+- **Decomposition Targets**:
+  - `authService.ts` (500 lines) - Authentication flow management
+  - `databaseService.ts` (500 lines) - Database operations and queries
+  - `realtimeService.ts` (300 lines) - Real-time subscriptions
+  - `localStorageService.ts` (283 lines) - Local storage fallback
+
+**3. Enhanced Supabase Pool (`services/enhancedSupabasePool.ts`)**
+- **Size**: 1,405 lines (exceeds 500-line threshold)
+- **Purpose**: Advanced database connection optimization
+- **Impact**: Critical for performance under load
+
+#### Well-Structured Services (Reference Examples)
+
+**1. AI Integration (`services/gemini.ts`)**
+- **Size**: 1,141 lines (large but focused)
+- **Purpose**: Google Gemini AI integration
+- **Assessment**: Well-structured, consider AI-specific extraction
+
+**2. Cache Management (`services/consolidatedCacheManager.ts`)**
+- **Size**: 791 lines (moderate)
+- **Purpose**: Multi-level caching system
+- **Assessment**: Good separation of concerns
+
+### Bundle Optimization Analysis
+
+#### Current Bundle State
+- **Build Time**: 15.07s (acceptable)
+- **Total Chunks**: 25+ optimized categories
+- **Large Chunks Requiring Attention**:
+  - Chart vendor: 356.36 kB (can be lazy-loaded)
+  - React vendor: 224.27 kB (core dependency)
+  - AI vendor: 214.68 kB (conditionall loaded)
+  - Misc vendor: 153.96 kB (optimization opportunity)
+
+#### Optimization Recommendations
+1. **Lazy Load Charts**: Chart libraries only load on dashboard/generator pages
+2. **Conditional AI Loading**: AI components load only when features used
+3. **Vendor Splitting**: Break down misc vendor into specific categories
+
+### Type Safety Assessment
+
+#### Current State
+- **Total `any` Usage**: High count but mostly in node_modules
+- **Application `any`**: Low focused usage in SEO utilities
+- **Critical Files**: SEO utility files have highest `any` concentration
+
+#### Improvement Plan
+1. **Priority 1**: Focus on core business logic type safety
+2. **SEO Utilities**: Accept some `any` usage due to dynamic nature
+3. **API Layer**: Implement strict typing for all endpoints
+
+### Performance Patterns
+
+#### Successful Implementations
+```typescript
+// React.memo pattern for performance
+const Generator = React.memo(({ robotId }: { robotId?: string }) => {
+  // Component logic
+});
+
+// Dynamic imports for code splitting
+const ChartComponents = lazy(() => import('./ChartComponents'));
+
+// Request deduplication pattern
+const requestCache = new Map();
+export const deduplicatedRequest = async (key: string, request: Promise<any>) => {
+  if (requestCache.has(key)) {
+    return requestCache.get(key);
+  }
+  requestCache.set(key, request);
+  return request;
+};
+```
+
+#### Optimization Patterns to Apply
+1. **Service Decomposition**: Break down >500 line services
+2. **Type Safety**: Systematic `any` reduction in core logic
+3. **Bundle Optimization**: Strategic lazy loading
+4. **Performance Monitoring**: Built-in metrics collection
+
+---
+
+## 🎯 AI Agent Development Guidelines
+
+### When Modifying Services
+1. **Maintain Cross-Platform Compatibility**: Avoid Node.js-specific modules
+2. **Preserve Fallback Patterns**: Keep localStorage fallbacks
+3. **Follow Error Handling Standards**: Use consistent error format
+4. **Update Type Definitions**: Maintain strong typing for new features
+
+### When Adding New Features
+1. **Service Size Management**: Keep new services <500 lines
+2. **Bundle Impact Analysis**: Check bundle size implications
+3. **Performance Testing**: Measure impact on build/lint times
+4. **Documentation Updates**: Update API docs and type definitions
+
+### Common Patterns to Follow
+```typescript
+// Standard error handling
+try {
+  const result = await operation();
+  return { success: true, data: result };
+} catch (error) {
+  return { 
+    success: false, 
+    error: {
+      code: 'OPERATION_FAILED',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    }
+  };
+}
+
+// Cross-platform crypto usage
+const hashData = (data: string): string => {
+  // Browser-compatible hashing (not Node.js crypto)
+  return btoa(data).split('').reduce((hash, char) => {
+    return ((hash << 5) - hash) + char.charCodeAt(0);
+  }, 0).toString(16);
+};
+
+// Environment-aware initialization
+const initializeService = () => {
+  if (typeof window !== 'undefined') {
+    // Browser-specific initialization
+  } else {
+    // Server/edge-specific initialization
+  }
+};
+```
+
+### Performance Budgeting
+- **Build Time**: Keep under 20 seconds
+- **Bundle Size**: Individual chunks <100KB where possible
+- **Type Checking**: Zero TypeScript errors
+- **Lint Warnings**: Address critical warnings, tolerate non-blocking ones
+
+---
+
+## 📊 Current Code Quality Metrics
+
+### Build Health ✅
+- **Build Status**: Passing (15.07s)
+- **TypeScript**: No compilation errors
+- **Bundle**: Optimized with 25+ chunks
+- **Platform**: Cross-platform compatible
+
+### Areas for Improvement ⚠️
+- **Service Size**: 9 services exceed 500 lines
+- **Lint Warnings**: 200+ warnings (non-critical)
+- **Bundle Size**: Some chunks >100KB
+- **Type Safety**: Room for improvement in core logic
+
+### Success Criteria ✅
+- **No Broken Features**: All functionality preserved
+- **Performance**: Advanced optimization implemented
+- **Security**: Multi-layered protection active
+- **Scalability**: Service architecture supports growth
 
 For more detailed troubleshooting information, refer to the performance monitoring endpoints and logs.

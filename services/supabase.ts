@@ -28,7 +28,7 @@ const STORAGE_KEY = 'mock_session';
 const ROBOTS_KEY = 'mock_robots';
 
 // Helper for safe JSON parsing with enhanced security
-const safeParse = (data: string | null, fallback: any) => {
+const safeParse = (data: string | null, fallback: unknown) => {
     if (!data) return fallback;
     try {
         // Use security manager's safe JSON parsing
@@ -43,12 +43,13 @@ const safeParse = (data: string | null, fallback: any) => {
 const trySaveToStorage = (key: string, value: string) => {
     try {
         localStorage.setItem(key, value);
-    } catch (e: any) {
+    } catch (e) {
+        const error = e as { name?: string; code?: number };
         if (
-            e.name === 'QuotaExceededError' || 
-            e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-            e.code === 22 ||
-            e.code === 1014
+            error.name === 'QuotaExceededError' || 
+            error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+            error.code === 22 ||
+            error.code === 1014
         ) {
             throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
         }
@@ -68,7 +69,7 @@ const generateUUID = (): string => {
     });
 };
 
-const isValidRobot = (r: any): boolean => {
+const isValidRobot = (r: { name?: unknown; code?: unknown }): boolean => {
     return (
         typeof r === 'object' &&
         r !== null &&
@@ -213,16 +214,17 @@ const withRetry = async <T>(
   operation: () => Promise<T>,
   operationName: string
 ): Promise<T> => {
-  let lastError: any;
+  let lastError: unknown;
   
   for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
     try {
       return await operation();
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
       
       // Don't retry on certain errors
-      if (error?.code === 'PGRST116' || error?.status === 404) {
+      const errorObj = error as { code?: string; status?: number };
+      if (errorObj?.code === 'PGRST116' || errorObj?.status === 404) {
         throw error; // Not found errors shouldn't be retried
       }
       
@@ -746,7 +748,7 @@ if (result.data && !result.error) {
      }
    },
 
-   async saveRobot(robot: any) {
+   async saveRobot(robot: Robot) {
     const startTime = performance.now();
     try {
       const settings = settingsManager.getDBSettings();
@@ -788,10 +790,10 @@ if (result.data && !result.error) {
             await consolidatedCache.invalidateByTags(['robots', 'list']);
             
             return { data: [newRobot], error: null };
-        } catch (e: any) {
+        } catch (e) {
             const duration = performance.now() - startTime;
             performanceMonitor.record('saveRobot', duration);
-            return { data: null, error: e.message };
+            return { data: null, error: (e as Error).message };
         }
       }
       
@@ -814,7 +816,7 @@ if (result.data && !result.error) {
     }
   },
 
-  async updateRobot(id: string, updates: any) {
+  async updateRobot(id: string, updates: Partial<Robot>) {
     const startTime = performance.now();
     try {
       const settings = settingsManager.getDBSettings();
@@ -825,7 +827,7 @@ if (result.data && !result.error) {
               const robots = safeParse(stored, []);
               
               // Find and update the robot in place for better performance
-              const robotIndex = robots.findIndex((r: any) => r.id === id);
+              const robotIndex = robots.findIndex((r: Robot) => r.id === id);
               if (robotIndex === -1) {
                   const duration = performance.now() - startTime;
                   performanceMonitor.record('updateRobot', duration);
@@ -841,10 +843,10 @@ if (result.data && !result.error) {
               performanceMonitor.record('updateRobot', duration);
               robotIndexManager.clear(); // Clear index since data changed
               return { data: updatedRobot, error: null };
-          } catch (e: any) {
+          } catch (e) {
               const duration = performance.now() - startTime;
               performanceMonitor.record('updateRobot', duration);
-              return { data: null, error: e.message };
+              return { data: null, error: (e as Error).message };
           }
       }
       
@@ -881,7 +883,7 @@ if (result.data && !result.error) {
               const stored = localStorage.getItem(ROBOTS_KEY);
               let robots = safeParse(stored, []);
               const initialLength = robots.length;
-              robots = robots.filter((r: any) => r.id !== id);
+              robots = robots.filter((r: Robot) => r.id !== id);
               
               if (robots.length === initialLength) {
                   const duration = performance.now() - startTime;
@@ -894,10 +896,10 @@ if (result.data && !result.error) {
               performanceMonitor.record('deleteRobot', duration);
               robotIndexManager.clear(); // Clear index since data changed
               return { data: true, error: null };
-          } catch (e: any) {
+          } catch (e) {
               const duration = performance.now() - startTime;
               performanceMonitor.record('deleteRobot', duration);
-              return { error: e.message };
+              return { error: (e as Error).message };
           }
       }
       
@@ -929,7 +931,7 @@ if (result.data && !result.error) {
           try {
               const stored = localStorage.getItem(ROBOTS_KEY);
               const robots = safeParse(stored, []);
-              const original = robots.find((r: any) => r.id === id);
+              const original = robots.find((r: Robot) => r.id === id);
               
               if (!original) {
                   const duration = performance.now() - startTime;
@@ -951,10 +953,10 @@ if (result.data && !result.error) {
               performanceMonitor.record('duplicateRobot', duration);
               robotIndexManager.clear(); // Clear index since data changed
               return { data: [newRobot], error: null };
-          } catch (e: any) {
+          } catch (e) {
               const duration = performance.now() - startTime;
               performanceMonitor.record('duplicateRobot', duration);
-              return { data: null, error: e.message };
+              return { data: null, error: (e as Error).message };
           }
       }
       
@@ -1007,8 +1009,9 @@ export const dbUtils = {
             
             if (error) throw error;
             return { success: true, message: `Connected to Supabase. Found ${count} records.`, mode: 'supabase' };
-        } catch (e: any) {
-            return { success: false, message: `Connection Failed: ${e.message || e}`, mode: 'supabase' };
+        } catch (e) {
+            const error = e as Error & { message?: string };
+            return { success: false, message: `Connection Failed: ${error.message || e}`, mode: 'supabase' };
         }
     },
 
@@ -1124,8 +1127,8 @@ export const dbUtils = {
                 return importResult;
             }
 
-        } catch (e: any) {
-            return { success: false, count: 0, error: e.message };
+        } catch (e) {
+            return { success: false, count: 0, error: (e as Error).message };
         }
     },
 
@@ -1194,8 +1197,8 @@ export const dbUtils = {
             }
             
             return migrationResult;
-        } catch (e: any) {
-            return { success: false, count: 0, error: e.message };
+        } catch (e) {
+            return { success: false, count: 0, error: (e as Error).message };
         }
     },
     
@@ -1324,7 +1327,7 @@ export const dbUtils = {
     /**
      * Batch operations for better performance
      */
-    async batchUpdateRobots(updates: Array<{ id: string; updates: any }>): Promise<{ success: number; failed: number; errors?: string[] }> {
+    async batchUpdateRobots(updates: Array<{ id: string; updates: Partial<Robot> }>): Promise<{ success: number; failed: number; errors?: string[] }> {
         const startTime = performance.now();
         try {
             const settings = settingsManager.getDBSettings();
@@ -1338,7 +1341,7 @@ export const dbUtils = {
                     const robots = safeParse(stored, []);
                     
                     for (const item of updates) {
-                        const robotIndex = robots.findIndex((r: any) => r.id === item.id);
+                        const robotIndex = robots.findIndex((r: Robot) => r.id === item.id);
                         if (robotIndex !== -1) {
                             robots[robotIndex] = { 
                                 ...robots[robotIndex], 
@@ -1367,10 +1370,10 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                     }
                     
                     return batchResult;
-                } catch (e: any) {
+                } catch (e) {
                     const duration = performance.now() - startTime;
                     performanceMonitor.record('batchUpdateRobots', duration);
-                    return { success: 0, failed: updates.length, errors: [e.message] };
+                    return { success: 0, failed: updates.length, errors: [(e as Error).message] };
                 }
             } else {
                 // For Supabase, process in batches to avoid query limits
@@ -1396,9 +1399,9 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                                 successCount++;
                             }
                         }
-                    } catch (e: any) {
+} catch (e) {
                         failedCount += batch.length;
-                        errors.push(e.message);
+                        errors.push((e as Error).message);
                     }
                 }
                 
@@ -1461,7 +1464,7 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                 
                 // Remove any potential duplicates by ID
                 const seenIds = new Set<string>();
-                const uniqueRobots = robots.filter((robot: any) => {
+                const uniqueRobots = robots.filter((robot: Robot) => {
                     if (seenIds.has(robot.id)) {
                         return false; // Duplicate, remove
                     }
@@ -1470,7 +1473,7 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                 });
                 
                 // Clean up any invalid robots
-                const validRobots = uniqueRobots.filter((robot: any) => 
+                const validRobots = uniqueRobots.filter((robot: Robot) => 
                     robot && 
                     typeof robot === 'object' && 
                     robot.id && 
@@ -1504,10 +1507,10 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                     message: "Database optimization commands issued successfully" 
                 };
             }
-        } catch (e: any) {
+        } catch (e) {
             return { 
                 success: false, 
-                message: `Database optimization failed: ${e.message}` 
+                message: `Database optimization failed: ${(e as Error).message}` 
             };
         }
     },

@@ -8,6 +8,7 @@ import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
+import { bundleAnalyzer } from './utils/bundleAnalyzer';
   import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
   import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
   import { frontendOptimizer } from './services/frontendOptimizer';
@@ -72,6 +73,9 @@ export default function App() {
 
 useEffect(() => {
     const startTime = performance.now();
+    
+    // Initialize bundle analyzer for monitoring
+    bundleAnalyzer.start();
     
     // Critical path: Auth initialization first
     supabase.auth.getSession().then(({ data: { session } }) => {

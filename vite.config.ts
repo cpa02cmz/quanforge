@@ -17,10 +17,14 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
-            // React ecosystem - optimized for edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
-              return 'react-vendor';
+            // React ecosystem - split core and optional for better optimization
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-core';
             }
+            if (id.includes('react-router') || id.includes('react-is')) {
+              return 'react-routing';
+            }
+            
             // Supabase - isolated for better connection pooling
             if (id.includes('@supabase')) {
               // Separate realtime and storage for better caching
@@ -32,25 +36,74 @@ export default defineConfig({
               }
               return 'supabase-vendor';
             }
-            // AI services - lazy loaded for edge optimization
+            
+            // AI services - split by usage patterns for conditional loading
             if (id.includes('@google/genai')) {
-              return 'ai-vendor';
+              if (id.includes('generators') || id.includes('models')) {
+                return 'ai-models';
+              }
+              if (id.includes('chat') || id.includes('streaming')) {
+                return 'ai-chat';
+              }
+              return 'ai-core';
             }
-            // Chart libraries - split more granularly
+            
+            // Chart libraries - heavily optimized for lazy loading
             if (id.includes('recharts')) {
+              // Core chart types - load on demand
               if (id.includes('AreaChart') || id.includes('LineChart')) {
                 return 'chart-core';
               }
               if (id.includes('PieChart') || id.includes('BarChart')) {
                 return 'chart-misc';
               }
+              // Chart utilities and components
+              if (id.includes('ResponsiveContainer') || id.includes('Tooltip')) {
+                return 'chart-utils';
+              }
+              // Heavy chart components - separate for optimal loading
+              if (id.includes('ComposedChart') || id.includes('ScatterChart') || id.includes('RadarChart')) {
+                return 'chart-advanced';
+              }
               return 'chart-vendor';
             }
+            
+            // Split vendor-misc into specific categories
+            // Date and time utilities
+            if (id.includes('date-fns') || id.includes('dayjs') || id.includes('moment')) {
+              return 'vendor-date';
+            }
+            // HTTP and fetch utilities
+            if (id.includes('axios') || id.includes('node-fetch') || id.includes('whatwg-fetch')) {
+              return 'vendor-http';
+            }
+            // Utility libraries
+            if (id.includes('lodash') || id.includes('underscore') || id.includes('ramda')) {
+              return 'vendor-utils';
+            }
+            // Form handling
+            if (id.includes('formik') || id.includes('react-hook-form') || id.includes('yup') || id.includes('zod')) {
+              return 'vendor-forms';
+            }
+            // State management
+            if (id.includes('zustand') || id.includes('redux') || id.includes('mobx') || id.includes(' recoil')) {
+              return 'vendor-state';
+            }
+            // UI component libraries
+            if (id.includes('@radix-ui') || id.includes('@headlessui') || id.includes('framer-motion')) {
+              return 'vendor-ui';
+            }
+            // Development and testing tools - should not be in production
+            if (id.includes('@testing-library') || id.includes('vitest') || id.includes('jsdom') || id.includes('msw')) {
+              return 'vendor-dev';
+            }
+            
             // Security utilities - bundled together
-            if (id.includes('dompurify') || id.includes('lz-string')) {
+            if (id.includes('dompurify') || id.includes('lz-string') || id.includes('crypto-js')) {
               return 'security-vendor';
             }
-            // All other vendor libraries
+            
+            // All other vendor libraries - reduced by aggressive categorization
             return 'vendor-misc';
           }
           
@@ -136,8 +189,25 @@ export default defineConfig({
           
           return 'chunk-default';
         },
-        chunkFileNames: 'assets/js/[name]-[hash].js',
-        entryFileNames: 'assets/js/[name]-[hash].js',
+        chunkFileNames: (chunkInfo) => {
+          // Enhanced chunk naming for better caching strategy
+          if (chunkInfo.name.includes('vendor')) {
+            return `assets/vendor/${chunkInfo.name}-[hash].js`;
+          }
+          if (chunkInfo.name.includes('chart')) {
+            return `assets/charts/${chunkInfo.name}-[hash].js`;
+          }
+          if (chunkInfo.name.includes('ai')) {
+            return `assets/ai/${chunkInfo.name}-[hash].js`;
+          }
+          return `assets/js/${chunkInfo.name}-[hash].js`;
+        },
+        entryFileNames: (entryInfo) => {
+          if (entryInfo.name === 'main') {
+            return 'assets/js/[name]-[hash].js';
+          }
+          return `assets/entries/${entryInfo.name}-[hash].js`;
+        },
         assetFileNames: (assetInfo) => {
           const name = assetInfo.names?.[0] || 'unknown';
           const info = name.split('.');
@@ -229,14 +299,26 @@ export default defineConfig({
     // Enhanced edge optimization
     assetsInlineLimit: 256, // Optimized for edge performance
     modulePreload: {
-      polyfill: false
+      polyfill: false,
+      resolveDependencies: (_, deps) => {
+        // Prioritize critical dependencies
+        const critical = ['react', 'react-dom'];
+        const important = ['react-router-dom', '@supabase/supabase-js'];
+        const deferred = ['@google/genai', 'recharts'];
+        
+        return deps.sort((a, b) => {
+          const aImportance = critical.includes(a) ? 0 : important.includes(a) ? 1 : deferred.includes(a) ? 2 : 3;
+          const bImportance = critical.includes(b) ? 0 : important.includes(b) ? 1 : deferred.includes(b) ? 2 : 3;
+          return aImportance - bImportance;
+        });
+      }
     },
     // Additional build optimizations
     emptyOutDir: true,
     // Dynamic import optimization
     dynamicImportVarsOptions: {
       warnOnError: false
-    },
+    }
     
   },
   resolve: {
@@ -254,16 +336,21 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: [
+      // Core dependencies - pre-bundle for optimal performance
       'react',
       'react-dom',
       'react-router-dom',
       '@supabase/supabase-js',
-      '@google/genai',
-      'recharts',
       'dompurify',
       'lz-string'
     ],
     exclude: [
+      // Conditional/lazy-loaded dependencies - don't pre-bundle
+      '@google/genai',
+      'recharts',
+      '@supabase/realtime-js',
+      '@supabase/storage-js',
+      
       // Exclude edge-specific modules from pre-bundling
       'node:fs',
       'node:path',
@@ -271,7 +358,6 @@ export default defineConfig({
       'node:fs/promises',
       'node:worker_threads',
       'node:child_process',
-      // Add missing edge-specific exclusions
       'node:buffer',
       'node:stream',
       'node:util',
@@ -287,24 +373,57 @@ export default defineConfig({
       'node:net',
       'node:tls',
       'node:zlib',
-      // Heavy dependencies for dynamic loading
-      '@supabase/realtime-js',
-      '@supabase/storage-js',
+      
+      // Chart libraries for lazy loading
       'recharts/es6',
       'recharts/es6/components/ResponsiveContainer',
       'recharts/es6/chart/AreaChart',
       'recharts/es6/chart/LineChart',
       'recharts/es6/chart/BarChart',
+      'recharts/es6/chart/PieChart',
+      'recharts/es6/chart/ComposedChart',
+      'recharts/es6/chart/ScatterChart',
+      'recharts/es6/chart/RadarChart',
+      
+      // AI libraries for conditional loading
       '@google/genai/dist/generators',
+      '@google/genai/dist/chat',
+      '@google/genai/dist/models',
+      
+      // Security libraries - exclude heavy distributions
       'dompurify/dist/purify.cjs',
-      // Additional heavy modules
+      
+      // Development and testing tools
       '@testing-library/jest-dom',
       '@testing-library/react',
       '@testing-library/user-event',
       'jsdom',
       'vitest',
       '@vitest/coverage-v8',
-      '@vitest/ui'
+      '@vitest/ui',
+      
+      // Optional vendor libraries that should be loaded on demand
+      'date-fns',
+      'dayjs',
+      'moment',
+      'lodash',
+      'underscore',
+      'ramda',
+      'formik',
+      'react-hook-form',
+      'yup',
+      'zod',
+      'zustand',
+      'redux',
+      'mobx',
+      'recoil',
+      '@radix-ui',
+      '@headlessui',
+      'framer-motion',
+      'axios',
+      'node-fetch',
+      'whatwg-fetch',
+      'crypto-js'
     ]
   },
   // Edge optimization for Vercel deployment
