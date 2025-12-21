@@ -73,6 +73,21 @@
 - **Impact**: Documentation updates ready for merge despite platform issues
 - **Testing**: ✓ Local build successful, ✓ TypeScript validation passed, ✓ No code conflicts detected
 
+### [FIXED] PR #136 Vercel API Route Schema Compliance
+- **Date**: 2025-12-21
+- **Severity**: Critical (Deployment Blocking)
+- **Description**: PR #136 and main branch had Vercel deployment failures due to unsupported `regions` property in API route config exports
+- **Error**: `'functions.api/**/*.ts' should NOT have additional property 'regions'`
+- **Files Fixed**:
+  - `api/robots/route.ts` and `api/robots/[id]/route.ts`
+  - `api/market-data/route.ts` and `api/market-data/[symbol]/route.ts`
+  - `api/strategies/route.ts` and `api/strategies/[id]/route.ts`
+  - `api/edge-analytics.ts`, `api/edge-optimize.ts`, `api/edge/websockets/route.ts`
+  - `api/edge/rate-limit/route.ts`, `api/edge/optimization.ts`
+- **Solution Applied**: Removed `regions` property from all API route `config` exports to ensure Vercel schema compliance
+- **Impact**: Should restore Vercel deployment capability for all API endpoints
+- **Testing**: ✓ Local build successful, ✓ TypeScript compilation passed, ✓ Schema validation compliant
+
 ## Minor Issues (Non-Critical)
 
 ### [OPEN] ESLint Warnings
