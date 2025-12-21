@@ -49,9 +49,9 @@ class EnhancedSupabaseConnectionPool {
     reject: (error: Error) => void;
     timestamp: number;
   }> = [];
-  private config: ConnectionConfig = {
-    maxConnections: 4, // Optimized for edge performance
-    minConnections: 1, // Reduced minimum for edge efficiency
+private config: ConnectionConfig = {
+    maxConnections: 15, // Increased for improved concurrent user support
+    minConnections: 3, // Increased minimum for better baseline performance
     acquireTimeout: 1000, // Faster timeout for edge failover
     idleTimeout: 180000, // 3 minutes - optimized for serverless
     healthCheckInterval: 30000, // 30 seconds - balanced for edge
@@ -102,14 +102,14 @@ class EnhancedSupabaseConnectionPool {
     }
 
     // Create minimum connections
-    const promises = [];
+    const promises: Promise<Connection>[] = [];
     for (let i = 0; i < this.config.minConnections; i++) {
       promises.push(this.createConnection());
     }
 
     try {
       await Promise.all(promises);
-      console.log(`Enhanced connection pool initialized with ${this.config.minConnections} connections`);
+      console.log(`Enhanced connection pool initialized with ${this.config.minConnections} connections (max: ${this.config.maxConnections})`);
     } catch (error) {
       console.error('Failed to initialize connection pool:', error);
     }
@@ -1090,8 +1090,8 @@ class EnhancedSupabaseConnectionPool {
   optimizeForEdge(): void {
     // Update configuration for edge optimization
     this.updateConfig({
-      maxConnections: Math.min(this.config.maxConnections, 6), // Lower max for edge
-      minConnections: Math.max(this.config.minConnections, 1), // Ensure at least 1
+      maxConnections: Math.min(this.config.maxConnections, 12), // Increased edge limit for better concurrency
+      minConnections: Math.max(this.config.minConnections, 2), // Ensure at least 2 for edge
       acquireTimeout: 800, // Faster timeout for edge
       idleTimeout: 45000, // Faster cleanup for serverless
       healthCheckInterval: 10000, // More frequent health checks

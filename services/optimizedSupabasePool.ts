@@ -30,8 +30,8 @@ class OptimizedSupabasePool {
   private static instance: OptimizedSupabasePool;
   private connections: Map<string, OptimizedConnection> = new Map();
   private config: OptimizedConnectionConfig = {
-    maxConnections: 4, // Optimized for edge
-    minConnections: 1, // Reduced for edge efficiency
+    maxConnections: 12, // Increased for better concurrent user support
+    minConnections: 2, // Increased minimum for better baseline performance
     acquireTimeout: 1000, // Fast timeout for edge
     idleTimeout: 180000, // 3 minutes
     healthCheckInterval: 30000, // 30 seconds
@@ -291,8 +291,8 @@ class OptimizedSupabasePool {
   // Optimize for edge deployment
   optimizeForEdge(): void {
     this.updateConfig({
-      maxConnections: 4,
-      minConnections: 1,
+      maxConnections: 10, // Increased edge limit for better concurrency
+      minConnections: 2,
       acquireTimeout: 1000,
       idleTimeout: 180000,
       healthCheckInterval: 30000

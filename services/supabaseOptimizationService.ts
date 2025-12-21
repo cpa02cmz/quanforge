@@ -108,8 +108,8 @@ class SupabaseOptimizationService {
   private configureConnectionPools(): void {
     // Optimize enhanced connection pool for Supabase
     enhancedConnectionPool.updateConfig({
-      maxConnections: 6,
-      minConnections: 2,
+      maxConnections: 15, // Increased for better concurrent user support
+      minConnections: 3,
       acquireTimeout: 1000,
       retryAttempts: this.config.maxRetries,
       connectionWarming: true,

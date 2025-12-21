@@ -52,8 +52,8 @@ class AdvancedSupabasePool {
   private healthCheckTimer: NodeJS.Timeout | null = null;
   private cleanupTimer: NodeJS.Timeout | null = null;
   private readonly DEFAULT_CONFIG: Partial<ConnectionConfig> = {
-    maxConnections: 10,
-    minConnections: 2,
+    maxConnections: 15,
+    minConnections: 3,
     connectionTimeout: 5000,
     idleTimeout: 30000,
     healthCheckInterval: 15000,

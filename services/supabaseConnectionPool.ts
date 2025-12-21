@@ -35,8 +35,8 @@ class SupabaseConnectionPool {
   private readReplicas: Map<string, ReadReplicaConfig> = new Map();
   private healthStatus: Map<string, ConnectionHealth> = new Map();
   private config: ConnectionPoolConfig = {
-    minConnections: 1, // Optimized for edge serverless
-    maxConnections: 3, // Further reduced for edge constraints
+    minConnections: 2, // Increased minimum for better baseline performance
+    maxConnections: 10, // Increased for better concurrent user support
     idleTimeout: 45000, // 45 seconds (optimized for edge)
     healthCheckInterval: 15000, // 15 seconds (faster health checks)
     connectionTimeout: 800, // 0.8 seconds (faster failover)

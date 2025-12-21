@@ -25,7 +25,7 @@ class RealtimeConnectionManager {
   private static instance: RealtimeConnectionManager;
   private connections: Map<string, RealtimeConnection> = new Map();
   private config: RealtimeConfig = {
-    maxConnections: 3, // Optimized for serverless
+    maxConnections: 8, // Increased for better concurrent realtime support
     connectionTimeout: 5000, // 5 seconds
     retryAttempts: 3,
     retryDelay: 2000, // 2 seconds

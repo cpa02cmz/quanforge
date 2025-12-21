@@ -54,7 +54,7 @@ class EdgeOptimizationService {
     enableRegionAffinity: true,
     enableCompression: true,
     cacheStrategy: 'balanced',
-    maxConnections: 6,
+    maxConnections: 12, // Increased for better concurrent support
     connectionTimeout: 1000,
     retryAttempts: 3,
     healthCheckInterval: 30000
