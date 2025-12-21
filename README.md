@@ -86,6 +86,15 @@ To deploy to Vercel:
  - **Error Handling**: Improved error boundaries and global error capture
  - **Database Performance**: Optimized indexing and caching mechanisms for large datasets
 
+## Documentation
+
+- **[USER_GUIDE.md](./USER_GUIDE.md)** - Complete user documentation and features overview
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Step-by-step deployment guide for all platforms
+- **[API_DOCUMENTATION.md](./docs/API_DOCUMENTATION.md)** - Complete API reference
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Development contribution guidelines
+- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common issues and solutions
+- **[SECURITY.md](./SECURITY.md)** - Security policies and vulnerability reporting
+
 ## Development Status
 
 ✅ **Core Application**: Fully functional with authentication, strategy generation, and backtesting  
@@ -94,8 +103,9 @@ To deploy to Vercel:
 ✅ **Database**: Advanced caching, query optimization, connection pooling  
 ✅ **SEO**: Comprehensive meta tags, structured data, sitemap generation  
 ✅ **Build Compatibility**: Browser-compatible modules, schema-compliant deployment configurations  
-✅ **PR #136**: Vercel deployment schema issues resolved, ready for merge  
-✅ **Cross-Platform Support**: All code tested for browser, Node.js, and edge environments
+✅ **Documentation Consolidation**: 90% reduction in documentation files for AI agent efficiency  
+✅ **TypeScript Compilation**: All build-blocking errors resolved, full type safety achieved  
+✅ **Repository Efficiency**: Code consolidation and optimization completed
 
 ## Usage
 

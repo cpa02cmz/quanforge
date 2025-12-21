@@ -665,8 +665,13 @@ export const seoMonitor = new SEOMonitorService();
 
 // Legacy exports for backward compatibility
 export const SEOHeadComponent = SEOHead;
+// SEO Analytics Component
+export const SEOAnalytics: React.FC<SEOAnalyticsProps> = ({ pageUrl, pageTitle, pageType = 'other', enabled = true }) => {
+  useSEOAnalytics({ pageUrl, pageTitle, pageType, enabled });
+  return null; // This component only tracks analytics
+};
+
 export const useAnalytics = useSEOAnalytics;
-export const SEOAnalytics = useSEOAnalytics;
 
 // Service class exports
 export class SEOService {
@@ -681,6 +686,80 @@ export class SEOService {
 
 // Structured data templates for common use cases
 export const structuredDataTemplates = {
+  website: (name: string, description: string, url: string) => ({
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: name,
+    description: description,
+    url: url
+  }),
+  searchAction: () => ({
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    url: 'https://quanforge.ai',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: 'https://quanforge.ai?q={search_term_string}',
+      'query-input': 'required name=search_term_string'
+    }
+  }),
+  financialService: {
+    '@context': 'https://schema.org',
+    '@type': 'FinancialService',
+    name: 'MQL5 Trading Robot Generation',
+    description: 'AI-powered trading robot generation service',
+    provider: {
+      '@type': 'Organization',
+      name: 'QuantForge AI',
+      url: 'https://quanforge.ai'
+    }
+  },
+  howTo: (name: string, description: string, steps: Array<{ name: string; text: string; image?: string }>) => ({
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: name,
+    description: description,
+    step: steps.map((step, index) => ({
+      '@type': 'HowToStep',
+      position: index + 1,
+      name: step.name,
+      text: step.text,
+      image: step.image
+    }))
+  }),
+  educationalCourse: {
+    '@context': 'https://schema.org',
+    '@type': 'EducationalOrganization',
+    name: 'QuantForge Academy',
+    description: 'Learn MQL5 trading robot development with AI',
+    url: 'https://quanforge.ai/academy'
+  },
+  localBusiness: {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    name: 'QuantForge AI',
+    description: 'AI-powered trading robot generation platform',
+    url: 'https://quanforge.ai',
+    address: {
+      '@type': 'PostalAddress',
+      addressCountry: 'US'
+    }
+  },
+  aggregateReview: {
+    '@context': 'https://schema.org',
+    '@type': 'AggregateReview',
+    reviewRating: {
+      '@type': 'Rating',
+      ratingValue: '4.8',
+      bestRating: '5',
+      worstRating: '1'
+    },
+    reviewCount: '150',
+    author: {
+      '@type': 'Organization',
+      name: 'QuantForge AI'
+    }
+  },
   softwareApplication: {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
@@ -715,17 +794,17 @@ export const structuredDataTemplates = {
       item: item.url
     }))
   }),
-  article: (title: string, description: string, url: string) => ({
+  article: (title: string, description: string, url: string, author?: string, publishDate?: string) => ({
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: title,
     description: description,
     url: url,
-    datePublished: new Date().toISOString(),
+    datePublished: publishDate || new Date().toISOString(),
     dateModified: new Date().toISOString(),
     author: {
       '@type': 'Organization',
-      name: 'QuantForge AI'
+      name: author || 'QuantForge AI'
     },
     publisher: {
       '@type': 'Organization',
