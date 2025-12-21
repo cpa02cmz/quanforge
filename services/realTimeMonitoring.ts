@@ -1,4 +1,4 @@
-import { handleError } from '../utils/errorHandler';
+import { handleErrorCompat as handleError } from '../utils/errorManager';
 import { consolidatedCache } from './consolidatedCacheManager';
 
 interface CoreWebVitals {

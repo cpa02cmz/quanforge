@@ -39,7 +39,7 @@ export class ErrorManager {
   private errorHandlers: Map<ErrorCategory, ErrorHandler[]> = new Map();
   private errorHistory: StructuredError[] = [];
   private maxHistorySize = 1000;
-  private toastNotification?: (toast: Toast) => void;
+  private toastNotification?: (toast: { message: string; type: Toast['type']; duration?: number }) => void;
 
   private constructor() {
     // Initialize default handlers for each category
@@ -59,7 +59,7 @@ export class ErrorManager {
   }
 
   // Set toast notification handler
-  setToastHandler(handler: (toast: Toast) => void): void {
+  setToastHandler(handler: (toast: { message: string; type: Toast['type']; duration?: number }) => void): void {
     this.toastNotification = handler;
   }
 
@@ -324,25 +324,15 @@ export class ErrorManager {
       return;
     }
     
-    // Note: Using simplified toast interface that doesn't include duration
     const toastType = this.getToastType(error.severity);
+    const duration = this.getToastDuration(error.severity);
+    
+    // Use enhanced toast interface with duration support
     this.toastNotification({
       message: error.userMessage,
-      type: toastType
-    } as any); // Cast to any since the actual interface includes duration
-  }
-
-  // Map severity to toast type
-  private getToastType(severity: ErrorSeverity): Toast['type'] {
-    switch (severity) {
-      case ErrorSeverity.CRITICAL:
-      case ErrorSeverity.HIGH:
-        return 'error';
-      case ErrorSeverity.MEDIUM:
-        return 'error'; // Use error instead of warning since warning type doesn't exist
-      default:
-        return 'info';
-    }
+      type: toastType,
+      duration
+    });
   }
 
   // Get toast duration based on severity
@@ -355,6 +345,19 @@ export class ErrorManager {
         return 5000; // 5 seconds
       default:
         return 3000; // 3 seconds
+    }
+  }
+
+  // Map severity to toast type
+  private getToastType(severity: ErrorSeverity): Toast['type'] {
+    switch (severity) {
+      case ErrorSeverity.CRITICAL:
+      case ErrorSeverity.HIGH:
+        return 'error';
+      case ErrorSeverity.MEDIUM:
+        return 'error'; // Use error instead of warning since warning type doesn't exist
+      default:
+        return 'info';
     }
   }
 
@@ -535,6 +538,232 @@ export const handleSecurityError = (error: Error | string, context?: Record<stri
     action: 'abort',
     showToast: true
   });
+};
+
+// Legacy compatibility function
+export const handleErrorCompat = (
+  error: Error | string,
+  operation: string,
+  component?: string,
+  additionalData?: Record<string, any>
+): StructuredError => {
+  return ErrorManager.getInstance().handleError(error, ErrorCategory.UNKNOWN, {
+    operation,
+    component,
+    ...additionalData
+  }, { showToast: true });
+};
+
+// Higher-order function for wrapping async functions with retry logic
+export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
+  fn: T,
+  operation: string,
+  component?: string,
+  options: {
+    retries?: number;
+    fallback?: () => Promise<ReturnType<T>> | ReturnType<T>;
+    backoff?: 'linear' | 'exponential';
+    backoffBase?: number;
+    shouldRetry?: (error: any) => boolean;
+  } = {}
+): T => {
+  const { 
+    retries = 0, 
+    fallback, 
+    backoff = 'exponential', 
+    backoffBase = 1000,
+    shouldRetry = () => true
+  } = options;
+  
+  return (async (...args: Parameters<T>) => {
+    let lastError: any;
+    
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        if (attempt > 0) {
+          // Apply backoff delay
+          const delay = backoff === 'exponential' 
+            ? backoffBase * Math.pow(2, attempt - 1)
+            : backoffBase * attempt;
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        
+        return await fn(...args);
+      } catch (error) {
+        lastError = error;
+        
+        // Log error on each attempt
+        handleErrorCompat(error as Error, `${operation} (attempt ${attempt + 1}/${retries + 1})`, component || 'unknown', { 
+          args, 
+          attempt: attempt + 1,
+          error: error instanceof Error ? error.message : String(error)
+        });
+        
+        // Check if we should retry this error
+        if (!shouldRetry(error) || attempt === retries) {
+          break;
+        }
+      }
+    }
+    
+    // If fallback is provided, try that instead of re-throwing
+    if (fallback) {
+      try {
+        console.warn(`Using fallback for ${operation} after ${retries + 1} attempts`);
+        return await fallback();
+      } catch (fallbackError) {
+        console.error(`Fallback failed for ${operation}:`, fallbackError);
+      }
+    }
+    
+    throw lastError; // Re-throw the original error if no fallback worked
+  }) as T;
+};
+
+// React hook for error handling (legacy compatibility)
+export const useErrorHandler = () => {
+  const errorManager = ErrorManager.getInstance();
+
+  return {
+    handleError: (error: Error | string, operation: string, component?: string, additionalData?: Record<string, any>) => {
+      handleErrorCompat(error, operation, component, additionalData);
+    },
+    getErrors: () => errorManager.getErrorHistory(),
+    clearErrors: () => errorManager.clearHistory(),
+    getErrorStats: () => errorManager.getErrorStats(),
+  };
+};
+
+// Error classification utilities
+export const errorClassifier = {
+  isNetworkError: (error: Error): boolean => {
+    return error.name === 'NetworkError' || 
+           error.message.includes('Network') ||
+           error.message.includes('fetch') ||
+           error.message.includes('Failed to fetch') ||
+           error.message.includes('Load failed');
+  },
+  
+  isTimeoutError: (error: Error): boolean => {
+    return error.name === 'TimeoutError' || 
+           error.message.includes('timeout') ||
+           error.message.includes('timed out');
+  },
+  
+  isAuthError: (error: Error): boolean => {
+    return error.message.includes('Unauthorized') ||
+           error.message.includes('Authentication') ||
+           error.message.includes('401') ||
+           error.message.includes('403');
+  },
+  
+  isValidationError: (error: Error): boolean => {
+    return error.message.includes('Validation') ||
+           error.message.includes('Invalid') ||
+           error.message.includes('400') ||
+           error.message.includes('Required');
+  },
+  
+  isDatabaseError: (error: Error): boolean => {
+    return error.message.includes('Database') ||
+           error.message.includes('Connection') ||
+           error.message.includes('Query') ||
+           error.message.includes('500');
+  }
+};
+
+// Circuit breaker pattern for resilience
+export class CircuitBreaker {
+  private failureThreshold = 5;
+  private recoveryTimeout = 60000; // 1 minute
+  private failures = 0;
+  private lastFailureTime = 0;
+  private state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';
+
+  constructor(options?: {
+    failureThreshold?: number;
+    recoveryTimeout?: number;
+  }) {
+    if (options?.failureThreshold) this.failureThreshold = options.failureThreshold;
+    if (options?.recoveryTimeout) this.recoveryTimeout = options.recoveryTimeout;
+  }
+
+  async execute<T>(fn: () => Promise<T>, context?: { operation: string; component?: string }): Promise<T> {
+    const now = Date.now();
+    
+    // Check if we should attempt to reset the circuit
+    if (this.state === 'OPEN' && now - this.lastFailureTime > this.recoveryTimeout) {
+      this.state = 'HALF_OPEN';
+    }
+    
+    // Reject immediately if circuit is open
+    if (this.state === 'OPEN') {
+      const error = new Error('Circuit breaker is OPEN');
+      handleErrorCompat(error, context?.operation || 'Circuit breaker blocked', context?.component, {
+        state: this.state,
+        failures: this.failures
+      });
+      throw error;
+    }
+    
+    try {
+      const result = await fn();
+      
+      // Success: reset failures if we were half-open
+      if (this.state === 'HALF_OPEN') {
+        this.state = 'CLOSED';
+        this.failures = 0;
+      }
+      
+      return result;
+    } catch (error) {
+      this.failures++;
+      this.lastFailureTime = now;
+      
+      handleErrorCompat(error as Error, context?.operation || 'Circuit breaker failure', context?.component, {
+        state: this.state,
+        failures: this.failures
+      });
+      
+      // Open circuit if threshold reached
+      if (this.failures >= this.failureThreshold) {
+        this.state = 'OPEN';
+      } else if (this.state === 'HALF_OPEN') {
+        // We actually remain half-open until success
+        this.state = 'OPEN';
+      }
+      
+      throw error;
+    }
+  }
+}
+
+// Edge-specific error handling
+export const edgeErrorHandler = {
+  isEdgeError: (error: Error): boolean => {
+    return error.message.includes('EDGE') ||
+           error.message.includes('timeout') ||
+           error.message.includes('memory limit') ||
+           error.message.includes('EDGE_FUNCTION_TIMEOUT') ||
+           error.message.includes('EDGE_MEMORY_LIMIT') ||
+           error.message.includes('EDGE_RATE_LIMIT');
+  },
+  
+  handleEdgeError: (error: Error, context: { operation: string; component?: string; additionalData?: Record<string, any> }): void => {
+    if (edgeErrorHandler.isEdgeError(error)) {
+      // Fallback to client-side processing
+      console.warn('Edge error, falling back to client:', error);
+      // Implement fallback logic
+      handleErrorCompat(error, `${context.operation} (edge fallback)`, context.component || 'unknown', {
+        ...context.additionalData,
+        edgeError: true,
+        fallbackTriggered: true
+      });
+    } else {
+      handleErrorCompat(error, context.operation, context.component || 'unknown', context.additionalData);
+    }
+  }
 };
 
 export const errorManager = ErrorManager.getInstance();

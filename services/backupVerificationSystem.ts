@@ -5,7 +5,7 @@
  */
 
 import { automatedBackupService, BackupMetadata } from './automatedBackupService';
-import { handleError } from '../utils/errorHandler';
+import { handleErrorCompat as handleError } from '../utils/errorManager';
 import { globalCache } from './unifiedCacheManager';
 
 // Verification configuration

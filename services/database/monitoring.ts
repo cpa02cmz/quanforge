@@ -1,6 +1,6 @@
 import { robotCache, queryCache } from './cache';
 import { getClient } from './client';
-import { handleError } from '../../utils/errorHandler';
+import { handleErrorCompat as handleError } from '../../utils/errorManager';
 
 // Performance monitoring for database operations
 export class DatabaseMonitor {

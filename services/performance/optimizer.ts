@@ -4,7 +4,7 @@
  * Provides unified performance optimization across frontend, backend, and edge
  */
 
-import { handleError } from '../../utils/errorHandler';
+import { handleErrorCompat as handleError } from '../../utils/errorManager';
 import { globalCache } from '../unifiedCacheManager';
 import { connectionManager } from '../database/connectionManager';
 

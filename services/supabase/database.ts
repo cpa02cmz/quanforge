@@ -3,7 +3,7 @@
  * Provides Supabase-compatible database interface using localStorage
  */
 
-import { handleError } from '../../utils/errorHandler';
+import { handleErrorCompat as handleError } from '../../utils/errorManager';
 import { globalCache } from '../unifiedCacheManager';
 import { Robot } from '../../types';
 import { STORAGE_KEYS, safeParse, trySaveToStorage, generateUUID, isValidRobot } from './storage';

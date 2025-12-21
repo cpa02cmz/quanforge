@@ -8,17 +8,13 @@ export interface APIRequest extends Request {}
 export interface APIResponse extends Response {}
 import { securityManager } from '../services/securityManager';
 import { robotCache } from '../services/advancedCache';
-import { performanceMonitor } from '../services/performanceMonitorEnhanced';
+import { ErrorManager, ErrorCategory } from './errorManager';
 
 // Create alias for advancedCache compatibility
 const advancedCache = robotCache;
 
-// Create alias for performanceMonitor compatibility
-const performanceMonitorEnhanced = {
-  recordMetric: (name: string, duration: number) => {
-    performanceMonitor.recordMetric(name, duration);
-  }
-};
+// ErrorManager integration for API routes
+const errorManager = ErrorManager.getInstance();
 
 // Standard edge configuration for all API routes
 export const edgeConfig = {
@@ -52,6 +48,20 @@ export const createErrorResponse = (
 ) => {
   const duration = performance.now() - startTime;
   const status = error instanceof APIError ? error.status : 500;
+  
+  // Log error with ErrorManager for centralized tracking
+  errorManager.handleError(
+    error.message,
+    ErrorCategory.UNKNOWN,
+    {
+      status,
+      duration,
+      stack: error.stack,
+      isAPIError: error instanceof APIError,
+      details: error instanceof APIError ? error.details : undefined,
+      route: 'api_response'
+    }
+  );
   
   return Response.json(
     {
@@ -182,11 +192,21 @@ export const withPerformanceMonitoring = async <T>(
   try {
     const result = await fn();
     const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric(metricName, duration);
+    // Record metric with error manager for consistency
+    errorManager.handleError(`API metric: ${metricName} completed in ${duration}ms`, ErrorCategory.UNKNOWN, {
+      metricName,
+      duration,
+      route: 'api_shared'
+    });
     return result;
   } catch (error) {
     const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric(`${metricName}_error`, duration);
+    errorManager.handleError(`API metric: ${metricName} failed after ${duration}ms`, ErrorCategory.UNKNOWN, {
+      metricName,
+      duration,
+      error: error instanceof Error ? error.message : String(error),
+      route: 'api_shared'
+    });
     throw error;
   }
 };
@@ -385,9 +405,9 @@ export const validateRequiredFields = (body: any, requiredFields: string[]) => {
   }
 };
 
-export const sanitizeArray = (arr: any[], sanitizeType: string): string[] => {
+export const sanitizeArray = (arr: any[]): string[] => {
   return arr
-    .map(item => securityManager.sanitizeInput(String(item).trim(), sanitizeType as any))
+    .map(item => securityManager.sanitizeInput(String(item).trim()))
     .filter(Boolean);
 };
 

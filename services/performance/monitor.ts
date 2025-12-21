@@ -4,7 +4,7 @@
  * Provides unified performance monitoring, metrics collection, and optimization
  */
 
-import { handleError } from '../../utils/errorHandler';
+import { handleErrorCompat as handleError } from '../../utils/errorManager';
 import { globalCache } from '../unifiedCacheManager';
 
 // Unified performance interfaces

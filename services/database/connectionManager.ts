@@ -6,7 +6,7 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from '../settingsManager';
-import { handleError } from '../../utils/errorHandler';
+import { handleErrorCompat as handleError } from '../../utils/errorManager';
 
 // Dynamic client creation function (replaced dynamicSupabaseLoader)
 const createDynamicSupabaseClient = async (

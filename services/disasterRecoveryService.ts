@@ -6,7 +6,7 @@
 
 import { automatedBackupService, BackupMetadata } from './automatedBackupService';
 import { settingsManager } from './settingsManager';
-import { handleError } from '../utils/errorHandler';
+import { handleErrorCompat as handleError } from '../utils/errorManager';
 import { globalCache } from './unifiedCacheManager';
 
 // Recovery configuration

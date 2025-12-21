@@ -3,7 +3,7 @@ import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getEnv } from './settingsManager';
 import { queryCache } from './advancedCache';
-import { withErrorHandling } from '../utils/errorHandler';
+import { withErrorHandling } from '../utils/errorManager';
 
 interface ReadReplicaConfig {
   readonly: boolean;

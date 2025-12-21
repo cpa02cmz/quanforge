@@ -1,5 +1,5 @@
 import { settingsManager } from './settingsManager';
-import { handleError } from '../utils/errorHandler';
+import { handleErrorCompat as handleError } from '../utils/errorManager';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { connectionPool } from './supabaseConnectionPool';
 

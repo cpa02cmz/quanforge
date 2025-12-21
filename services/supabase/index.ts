@@ -9,7 +9,7 @@ import { connectionManager } from '../database/connectionManager';
 import { settingsManager } from '../settingsManager';
 import { mockAuth, addAuthListener, removeAuthListener } from './auth';
 import { mockDB, getRobotsPaginated, searchRobots, getRobots, saveRobot, updateRobot, deleteRobot, duplicateRobot } from './database';
-import { handleError } from '../../utils/errorHandler';
+import { handleErrorCompat as handleError } from '../../utils/errorManager';
 
 // Determine if we're in mock mode
 const isMockMode = settingsManager.getDBSettings().mode !== 'supabase';

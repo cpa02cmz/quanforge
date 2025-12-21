@@ -4,7 +4,7 @@ export { logger } from './logger';
 export { CircularBuffer, debounce, throttle } from './memoryManagement';
 export { MessageBuffer, useMessageBuffer } from './messageBuffer';
 export { validateChatMessage, sanitizeInput, validateApiKey, validateSymbol } from './inputValidation';
-export { ErrorHandler } from './errorHandler';
+// Note: Legacy ErrorHandler replaced by ErrorManager - use errorManager instead
 
 // Browser-compatible performance monitoring (import the one that works)
 // Note: The PerformanceMonitor class is not directly exported, only the instance
