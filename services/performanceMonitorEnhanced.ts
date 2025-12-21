@@ -1,565 +1,244 @@
 interface PerformanceMetric {
+  id: string;
   name: string;
   value: number;
   timestamp: number;
-  tags?: Record<string, string>;
+  metadata?: Record<string, any>;
 }
 
 interface CoreWebVital {
   id: string;
-  name: string;
+  name: 'LCP' | 'FID' | 'CLS' | 'FCP' | 'TTFB';
   value: number;
-  rating: 'good' | 'needs-improvement' | 'poor' | 'unknown';
+  rating: 'good' | 'needs-improvement' | 'poor';
   delta: number;
   navigationType: string;
 }
 
-interface EdgeMetric {
-  url: string;
-  method: string;
-  status: number;
-  duration: number;
-  size: number;
-  cache: 'hit' | 'miss' | 'stale';
-  region: string;
-}
-
-// Add missing edge performance metrics
-interface EdgePerformanceMetrics {
-  coldStartMetrics: {
-    frequency: number;
-    averageDuration: number;
-    regions: Record<string, number>;
-  };
-  cacheEfficiency: {
-    hitRate: number;
-    missRate: number;
-    staleRate: number;
-  };
-  regionPerformance: {
-    [region: string]: {
-      averageResponseTime: number;
-      errorRate: number;
-      requestCount: number;
-    };
-  };
-}
-
-interface BundleMetric {
-  name: string;
-  size: number;
-  gzippedSize: number;
-  loadTime: number;
-  type: 'js' | 'css' | 'asset';
-}
-
-class PerformanceMonitor {
-  private static instance: PerformanceMonitor;
-  private metrics: Map<string, PerformanceMetric[]> = new Map();
+export class PerformanceMonitorEnhanced {
+  private static instance: PerformanceMonitorEnhanced;
+  private metrics: PerformanceMetric[] = [];
   private coreWebVitals: CoreWebVital[] = [];
-  private edgeMetrics: EdgeMetric[] = [];
-  private bundleMetrics: BundleMetric[] = [];
-  private isMonitoring = false;
-  private sampleRate = 0.1; // 10% sampling rate
-  // Add missing edge-specific monitoring
-  private edgePerformanceMetrics: EdgePerformanceMetrics = {
-    coldStartMetrics: {
-      frequency: 0,
-      averageDuration: 0,
-      regions: {}
-    },
-    cacheEfficiency: {
-      hitRate: 0,
-      missRate: 0,
-      staleRate: 0
-    },
-    regionPerformance: {}
-  };
-  private coldStartThreshold = 1000; // 1 second threshold for cold starts
+  private edgeMetrics: PerformanceMetric[] = [];
 
   private constructor() {
     this.initializeMonitoring();
   }
 
-  static getInstance(): PerformanceMonitor {
-    if (!PerformanceMonitor.instance) {
-      PerformanceMonitor.instance = new PerformanceMonitor();
+  static getInstance(): PerformanceMonitorEnhanced {
+    if (!PerformanceMonitorEnhanced.instance) {
+      PerformanceMonitorEnhanced.instance = new PerformanceMonitorEnhanced();
     }
-    return PerformanceMonitor.instance;
+    return PerformanceMonitorEnhanced.instance;
   }
 
   private initializeMonitoring(): void {
-    if (typeof window === 'undefined') return;
-
-    // Check sample rate
-    if (Math.random() > this.sampleRate) return;
-
-    this.isMonitoring = true;
-    this.monitorCoreWebVitals();
-    this.monitorEdgePerformance();
-    this.monitorBundleLoading();
-    this.monitorUserInteractions();
-    // Add missing edge monitoring
-    this.monitorEdgePerformance();
-    this.monitorColdStarts();
-    this.monitorRegionalPerformance();
-    this.monitorCacheEfficiency();
+    if (typeof window !== 'undefined') {
+      this.observePerformanceMetrics();
+      this.observeCoreWebVitals();
+      this.monitorEdgePerformance();
+    }
   }
 
-  private async monitorCoreWebVitals(): Promise<void> {
+  private observePerformanceMetrics(): void {
     try {
-      // Load web-vitals library dynamically
-      // Web vitals library not available in this environment
-      // Using native performance APIs instead
-      
-      const recordMetric = (metric: any) => {
-        const vital: CoreWebVital = {
-          id: metric.id,
-          name: metric.name,
-          value: metric.value,
-          rating: metric.rating,
-          delta: metric.delta,
-          navigationType: metric.navigationType || 'navigate'
-        };
-        
-        this.coreWebVitals.push(vital);
-        this.sendMetric('core-web-vital', vital);
-      };
-
-// Using native performance APIs instead of web-vitals
-      if ('PerformanceObserver' in window) {
-        const observer = new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) {
-            if (entry.entryType === 'largest-contentful-paint') {
-              const vital: CoreWebVital = {
-                id: crypto.randomUUID(),
-                name: 'LCP',
-                value: entry.startTime,
-                rating: entry.startTime < 2500 ? 'good' : entry.startTime < 4000 ? 'needs-improvement' : 'poor',
-                delta: 0,
-                navigationType: 'load'
-              };
-              this.coreWebVitals.push(vital);
-              this.sendMetric('core-web-vital', vital);
-            }
-            if (entry.entryType === 'first-input') {
-              const vital: CoreWebVital = {
-                id: crypto.randomUUID(),
-                name: 'FID',
-                value: (entry as any).processingStart - entry.startTime,
-                rating: (entry as any).processingStart - entry.startTime < 100 ? 'good' : (entry as any).processingStart - entry.startTime < 300 ? 'needs-improvement' : 'poor',
-                delta: 0,
-                navigationType: 'input'
-              };
-              this.coreWebVitals.push(vital);
-              this.sendMetric('core-web-vital', vital);
-            }
+      const observer = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (entry.entryType === 'navigation') {
+            const navEntry = entry as PerformanceNavigationTiming;
+            const metric: PerformanceMetric = {
+              id: crypto.randomUUID(),
+              name: 'page-load',
+              value: navEntry.loadEventEnd - navEntry.startTime,
+              timestamp: Date.now(),
+              metadata: {
+                domContentLoaded: navEntry.domContentLoadedEventEnd - navEntry.domContentLoadedEventStart,
+                firstPaint: navEntry.loadEventEnd - navEntry.startTime,
+                transferSize: navEntry.transferSize
+              }
+            };
+            this.metrics.push(metric);
           }
-        });
-          
-          this.edgeMetrics.push(edgeMetric);
-          this.sendMetric('edge-performance', edgeMetric);
-          
-          // Update region performance metrics
-          this.updateRegionPerformance(edgeMetric);
         }
-      }
-    });
+      });
 
-    observer.observe({ entryTypes: ['resource'] });
-  }
-
-  /**
-   * Monitor cold starts for edge functions
-   */
-  private monitorColdStarts(): void {
-    // Monitor navigation timing for cold start detection
-    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-    
-    if (navigation) {
-      const serverResponseTime = navigation.responseStart - navigation.requestStart;
-      
-      if (serverResponseTime > this.coldStartThreshold) {
-        const region = this.detectEdgeRegion();
-        
-        this.edgePerformanceMetrics.coldStartMetrics.frequency++;
-        this.edgePerformanceMetrics.coldStartMetrics.averageDuration = 
-          (this.edgePerformanceMetrics.coldStartMetrics.averageDuration + serverResponseTime) / 2;
-        
-        if (!this.edgePerformanceMetrics.coldStartMetrics.regions[region]) {
-          this.edgePerformanceMetrics.coldStartMetrics.regions[region] = 0;
-        }
-        this.edgePerformanceMetrics.coldStartMetrics.regions[region]++;
-        
-        this.sendMetric('cold-start', {
-          duration: serverResponseTime,
-          region,
-          threshold: this.coldStartThreshold
-        });
-      }
+      observer.observe({ entryTypes: ['navigation'] });
+    } catch (error) {
+      console.error('Failed to initialize performance monitoring:', error);
     }
   }
 
-  /**
-   * Monitor regional performance
-   */
-  private monitorRegionalPerformance(): void {
-    // This would be enhanced with actual region detection from headers
-    const region = this.detectEdgeRegion();
-    
-    if (!this.edgePerformanceMetrics.regionPerformance[region]) {
-      this.edgePerformanceMetrics.regionPerformance[region] = {
-        averageResponseTime: 0,
-        errorRate: 0,
-        requestCount: 0
-      };
-    }
-  }
-
-  /**
-   * Monitor cache efficiency
-   */
-  private monitorCacheEfficiency(): void {
-    const totalRequests = this.edgeMetrics.length;
-    if (totalRequests === 0) return;
-
-    const cacheHits = this.edgeMetrics.filter(m => m.cache === 'hit').length;
-    const cacheMisses = this.edgeMetrics.filter(m => m.cache === 'miss').length;
-    const cacheStale = this.edgeMetrics.filter(m => m.cache === 'stale').length;
-
-    this.edgePerformanceMetrics.cacheEfficiency.hitRate = (cacheHits / totalRequests) * 100;
-    this.edgePerformanceMetrics.cacheEfficiency.missRate = (cacheMisses / totalRequests) * 100;
-    this.edgePerformanceMetrics.cacheEfficiency.staleRate = (cacheStale / totalRequests) * 100;
-  }
-
-  /**
-   * Update region performance metrics
-   */
-  private updateRegionPerformance(metric: EdgeMetric): void {
-    const region = metric.region;
-    
-    if (!this.edgePerformanceMetrics.regionPerformance[region]) {
-      this.edgePerformanceMetrics.regionPerformance[region] = {
-        averageResponseTime: 0,
-        errorRate: 0,
-        requestCount: 0
-      };
-    }
-
-    const regionMetrics = this.edgePerformanceMetrics.regionPerformance[region];
-    regionMetrics.requestCount++;
-    
-    // Update average response time
-    regionMetrics.averageResponseTime = 
-      (regionMetrics.averageResponseTime * (regionMetrics.requestCount - 1) + metric.duration) / regionMetrics.requestCount;
-    
-    // Update error rate (status >= 400)
-    if (metric.status >= 400) {
-      regionMetrics.errorRate = ((regionMetrics.errorRate * (regionMetrics.requestCount - 1)) + 1) / regionMetrics.requestCount;
-    }
-  }
-
-  private monitorBundleLoading(): void {
-    if (!('PerformanceObserver' in window)) return;
-
-    const observer = new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) {
-        const resource = entry as PerformanceResourceTiming;
-        
-        if (resource.name.includes('.js') || resource.name.includes('.css')) {
-          const bundleMetric: BundleMetric = {
-            name: resource.name.split('/').pop() || 'unknown',
-            size: resource.transferSize || 0,
-            gzippedSize: resource.encodedBodySize || 0,
-            loadTime: resource.duration,
-            type: resource.name.includes('.js') ? 'js' : 'css'
-          };
-          
-          this.bundleMetrics.push(bundleMetric);
-          this.sendMetric('bundle-loading', bundleMetric);
+  private observeCoreWebVitals(): void {
+    try {
+      const observer = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (entry.entryType === 'largest-contentful-paint') {
+            const vital: CoreWebVital = {
+              id: crypto.randomUUID(),
+              name: 'LCP',
+              value: entry.startTime,
+              rating: entry.startTime < 2500 ? 'good' : entry.startTime < 4000 ? 'needs-improvement' : 'poor',
+              delta: 0,
+              navigationType: 'navigation'
+            };
+            this.coreWebVitals.push(vital);
+          }
         }
-      }
-    });
+      });
 
-    observer.observe({ entryTypes: ['resource'] });
+      observer.observe({ entryTypes: ['largest-contentful-paint'] });
+    } catch (error) {
+      console.error('Failed to initialize Core Web Vitals monitoring:', error);
+    }
   }
 
-  private monitorUserInteractions(): void {
-    // Monitor First Input Delay (already covered by web-vitals)
-    // Monitor Largest Contentful Paint (already covered by web-vitals)
-    // Monitor Cumulative Layout Shift (already covered by web-vitals)
-    
-    // Additional custom metrics
-    this.monitorTimeToInteractive();
-    this.monitorRouteChanges();
-  }
-
-  private monitorTimeToInteractive(): void {
-    if (!('PerformanceObserver' in window)) return;
-
-    const observer = new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) {
-        if (entry.entryType === 'paint' && entry.name === 'first-contentful-paint') {
-          const tti = this.calculateTimeToInteractive(entry.startTime);
-          this.sendMetric('time-to-interactive', { value: tti });
+  private monitorEdgePerformance(): void {
+    try {
+      // Monitor edge-specific metrics
+      const observer = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (entry.name.includes('edge') || entry.name.includes('cdn')) {
+            const edgeMetric: PerformanceMetric = {
+              id: crypto.randomUUID(),
+              name: 'edge-response',
+              value: entry.duration,
+              timestamp: Date.now(),
+              metadata: {
+                url: entry.name,
+                size: (entry as any).transferSize,
+                cached: (entry as any).transferSize === 0
+              }
+            };
+            this.edgeMetrics.push(edgeMetric);
+          }
         }
-      }
-    });
+      });
 
-    observer.observe({ entryTypes: ['paint'] });
+      observer.observe({ entryTypes: ['resource'] });
+    } catch (error) {
+      console.error('Failed to initialize edge performance monitoring:', error);
+    }
   }
 
-  private monitorRouteChanges(): void {
-    // Monitor client-side route changes
-    let lastNavigationStart = performance.timing.navigationStart;
-    
-    const originalPushState = history.pushState;
-    const originalReplaceState = history.replaceState;
-    
-    const recordRouteChange = () => {
-      const now = performance.now();
-      const routeChangeTime = now - lastNavigationStart;
-      this.sendMetric('route-change', { value: routeChangeTime });
-      lastNavigationStart = now;
-    };
-    
-    history.pushState = function(...args) {
-      originalPushState.apply(history, args);
-      setTimeout(recordRouteChange, 0);
-    };
-    
-    history.replaceState = function(...args) {
-      originalReplaceState.apply(history, args);
-      setTimeout(recordRouteChange, 0);
-    };
-    
-    window.addEventListener('popstate', recordRouteChange);
-  }
-
-  private getCacheStatus(resource: PerformanceResourceTiming): 'hit' | 'miss' | 'stale' {
-    const transferSize = resource.transferSize;
-    const encodedSize = resource.encodedBodySize;
-    
-    if (transferSize === 0 && encodedSize > 0) return 'hit';
-    if (transferSize === encodedSize) return 'miss';
-    return 'stale';
-  }
-
-  private detectEdgeRegion(): string {
-    // Try to detect edge region from response headers or timing
-    // This is a simplified implementation
-    const headers = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-    
-    // In a real implementation, you'd parse response headers
-    // For now, return a default or try to infer from timing
-    const avgResponseTime = headers.responseEnd - headers.requestStart;
-    
-    if (avgResponseTime < 100) return 'nearest';
-    if (avgResponseTime < 300) return 'regional';
-    return 'origin';
-  }
-
-  private calculateTimeToInteractive(fcpTime: number): number {
-    // Simplified TTI calculation
-    // In a real implementation, you'd monitor long tasks
-    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-    return Math.max(fcpTime, navigation.loadEventEnd - navigation.fetchStart);
-  }
-
-  recordMetric(name: string, value: number, tags?: Record<string, string>): void {
-    if (!this.isMonitoring) return;
-
+  public recordCustomMetric(
+    name: string,
+    value: number,
+    metadata?: Record<string, any>
+  ): void {
     const metric: PerformanceMetric = {
+      id: crypto.randomUUID(),
       name,
       value,
       timestamp: Date.now(),
-      tags
+      metadata
     };
-
-    if (!this.metrics.has(name)) {
-      this.metrics.set(name, []);
-    }
-    
-    this.metrics.get(name)!.push(metric);
-    
-    // Keep only last 100 metrics per type
-    const metrics = this.metrics.get(name)!;
-    if (metrics.length > 100) {
-      metrics.splice(0, metrics.length - 100);
-    }
-
-    this.sendMetric(name, metric);
+    this.metrics.push(metric);
   }
 
-  private async sendMetric(name: string, data: any): Promise<void> {
+  public sendMetric(name: string, data: PerformanceMetric | CoreWebVital): void {
+    // Send to analytics service or monitoring system
     try {
-      // Send to edge metrics endpoint
-      if (process.env['ENABLE_EDGE_METRICS'] === 'true') {
-        const endpoint = process.env['EDGE_METRICS_ENDPOINT'] || '/api/edge-metrics';
-        
-        await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name,
-            data,
-            timestamp: Date.now(),
-            userAgent: navigator.userAgent,
-            url: window.location.href
-          })
-        });
+      const payload = {
+        metric: name,
+        data,
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'server',
+        url: typeof window !== 'undefined' ? window.location.href : 'server',
+        timestamp: Date.now()
+      };
+
+      // In a real implementation, this would send to your monitoring service
+      if (typeof window !== 'undefined' && window.navigator.sendBeacon) {
+        window.navigator.sendBeacon('/api/metrics', JSON.stringify(payload));
       }
     } catch (error) {
-      // Silently fail to not impact user experience
-      console.debug('Failed to send metric:', error);
+      console.error('Failed to send metric:', error);
     }
   }
 
-  // Public API methods
-  getMetrics(name?: string): PerformanceMetric[] {
-    if (name) {
-      return this.metrics.get(name) || [];
-    }
-    
-    const allMetrics: PerformanceMetric[] = [];
-    for (const metrics of this.metrics.values()) {
-      allMetrics.push(...metrics);
-    }
-    return allMetrics;
+  public getMetrics(): {
+    general: PerformanceMetric[];
+    coreWebVitals: CoreWebVital[];
+    edgeMetrics: PerformanceMetric[];
+  } {
+    return {
+      general: [...this.metrics],
+      coreWebVitals: [...this.coreWebVitals],
+      edgeMetrics: [...this.edgeMetrics]
+    };
   }
 
-  getCoreWebVitals(): CoreWebVital[] {
-    return [...this.coreWebVitals];
-  }
-
-  getEdgeMetrics(): EdgeMetric[] {
-    return [...this.edgeMetrics];
-  }
-
-  getBundleMetrics(): BundleMetric[] {
-    return [...this.bundleMetrics];
-  }
-
-  getPerformanceSummary(): {
-    coreWebVitals: Partial<CoreWebVital>;
+  public getPerformanceReport(): {
+    pageLoadTime: number;
+    lcp: number | null;
+    fid: number | null;
+    cls: number | null;
     edgePerformance: {
       averageResponseTime: number;
       cacheHitRate: number;
       totalRequests: number;
     };
-    bundlePerformance: {
-      totalSize: number;
-      totalGzippedSize: number;
-      averageLoadTime: number;
-    };
-    edgeMetrics: EdgePerformanceMetrics;
   } {
-    const latestVitals = this.coreWebVitals[this.coreWebVitals.length - 1] || 
-          { name: 'unknown', value: 0, rating: 'unknown' };
-    
-    const edgeMetrics = this.edgeMetrics;
-    const totalRequests = edgeMetrics.length;
-    const averageResponseTime = totalRequests > 0 
-      ? edgeMetrics.reduce((sum, m) => sum + m.duration, 0) / totalRequests 
-      : 0;
-    const cacheHits = edgeMetrics.filter(m => m.cache === 'hit').length;
-    const cacheHitRate = totalRequests > 0 ? (cacheHits / totalRequests) * 100 : 0;
-    
-    const bundleMetrics = this.bundleMetrics;
-    const totalSize = bundleMetrics.reduce((sum, m) => sum + m.size, 0);
-    const totalGzippedSize = bundleMetrics.reduce((sum, m) => sum + m.gzippedSize, 0);
-    const averageLoadTime = bundleMetrics.length > 0 
-      ? bundleMetrics.reduce((sum, m) => sum + m.loadTime, 0) / bundleMetrics.length 
+    const pageLoadMetrics = this.metrics.filter(m => m.name === 'page-load');
+    const avgPageLoadTime = pageLoadMetrics.length > 0 
+      ? pageLoadMetrics.reduce((sum, m) => sum + m.value, 0) / pageLoadMetrics.length 
       : 0;
 
+    const lcp = this.coreWebVitals.find(v => v.name === 'LCP')?.value || null;
+    const fid = this.coreWebVitals.find(v => v.name === 'FID')?.value || null;
+    const cls = this.coreWebVitals.find(v => v.name === 'CLS')?.value || null;
+
+    const edgePerformance = this.calculateEdgePerformance();
+
     return {
-      coreWebVitals: {
-        name: latestVitals.name,
-        value: latestVitals.value,
-        rating: latestVitals.rating
-      },
-      edgePerformance: {
-        averageResponseTime,
-        cacheHitRate,
-        totalRequests
-      },
-      bundlePerformance: {
-        totalSize,
-        totalGzippedSize,
-        averageLoadTime
-      },
-      edgeMetrics: { ...this.edgePerformanceMetrics }
+      pageLoadTime: avgPageLoadTime,
+      lcp,
+      fid,
+      cls,
+      edgePerformance
     };
   }
 
-  clearMetrics(): void {
-    this.metrics.clear();
+  private calculateEdgePerformance(): {
+    averageResponseTime: number;
+    cacheHitRate: number;
+    totalRequests: number;
+  } {
+    if (this.edgeMetrics.length === 0) {
+      return {
+        averageResponseTime: 0,
+        cacheHitRate: 0,
+        totalRequests: 0
+      };
+    }
+
+    const avgResponseTime = this.edgeMetrics.reduce((sum, m) => sum + m.value, 0) / this.edgeMetrics.length;
+    const cachedRequests = this.edgeMetrics.filter(m => m.metadata?.['cached']).length;
+    const cacheHitRate = (cachedRequests / this.edgeMetrics.length) * 100;
+
+    return {
+      averageResponseTime: avgResponseTime,
+      cacheHitRate,
+      totalRequests: this.edgeMetrics.length
+    };
+  }
+
+  public clearMetrics(): void {
+    this.metrics = [];
     this.coreWebVitals = [];
     this.edgeMetrics = [];
-    this.bundleMetrics = [];
-    // Clear edge metrics
-    this.edgePerformanceMetrics = {
-      coldStartMetrics: {
-        frequency: 0,
-        averageDuration: 0,
-        regions: {}
-      },
-      cacheEfficiency: {
-        hitRate: 0,
-        missRate: 0,
-        staleRate: 0
-      },
-      regionPerformance: {}
+  }
+
+  public exportMetrics(): string {
+    const data = {
+      timestamp: Date.now(),
+      metrics: this.metrics,
+      coreWebVitals: this.coreWebVitals,
+      edgeMetrics: this.edgeMetrics,
+      report: this.getPerformanceReport()
     };
-  }
-
-  /**
-   * Get edge-specific performance metrics
-   */
-  getEdgePerformanceMetrics(): EdgePerformanceMetrics {
-    return { ...this.edgePerformanceMetrics };
-  }
-
-  /**
-   * Get cold start statistics
-   */
-  getColdStartStats(): {
-    frequency: number;
-    averageDuration: number;
-    regions: Record<string, number>;
-    threshold: number;
-  } {
-    return {
-      ...this.edgePerformanceMetrics.coldStartMetrics,
-      threshold: this.coldStartThreshold
-    };
-  }
-
-  /**
-   * Get regional performance breakdown
-   */
-  getRegionalPerformance(): Record<string, {
-    averageResponseTime: number;
-    errorRate: number;
-    requestCount: number;
-  }> {
-    return { ...this.edgePerformanceMetrics.regionPerformance };
-  }
-
-  setSampleRate(rate: number): void {
-    this.sampleRate = Math.max(0, Math.min(1, rate));
+    return JSON.stringify(data, null, 2);
   }
 }
 
-export const performanceMonitor = PerformanceMonitor.getInstance();
-
-// Export convenience functions
-export const recordMetric = (name: string, value: number, tags?: Record<string, string>) => {
-  performanceMonitor.recordMetric(name, value, tags);
-};
-
-export const getPerformanceSummary = () => {
-  return performanceMonitor.getPerformanceSummary();
-};
+export const performanceMonitor = PerformanceMonitorEnhanced.getInstance();
+export default PerformanceMonitorEnhanced;

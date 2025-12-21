@@ -1,6 +1,6 @@
 
 import { AISettings, DBSettings } from "../types";
-import { encryptApiKey, decryptApiKey, validateApiKey } from "../utils/encryption";
+import { encryptApiKey, decryptApiKey, encryptApiKeyAsync, decryptApiKeyAsync, validateApiKey } from "../utils/encryption";
 
 const AI_SETTINGS_KEY = 'quantforge_ai_settings';
 const DB_SETTINGS_KEY = 'quantforge_db_settings';
@@ -80,6 +80,43 @@ export const settingsManager = {
         }
     },
 
+    // Enhanced async version with better security
+    async getSettingsAsync(): Promise<AISettings> {
+        try {
+            const stored = localStorage.getItem(AI_SETTINGS_KEY);
+            if (!stored) return DEFAULT_AI_SETTINGS;
+            
+            const parsed = JSON.parse(stored);
+            
+            // Decrypt API key with enhanced async decryption
+            if (parsed.apiKey) {
+                try {
+                    const decrypted = await decryptApiKeyAsync(parsed.apiKey);
+                    if (decrypted && validateApiKey(decrypted, parsed.provider)) {
+                        parsed.apiKey = decrypted;
+                    }
+                } catch (e) {
+                    console.warn("Enhanced decryption failed, trying legacy:", e);
+                    // Fallback to sync version for backward compatibility
+                    try {
+                        const decrypted = decryptApiKey(parsed.apiKey);
+                        if (decrypted && validateApiKey(decrypted, parsed.provider)) {
+                            parsed.apiKey = decrypted;
+                        }
+                    } catch (e2) {
+                        // Legacy unencrypted key, keep as is
+                    }
+                }
+            }
+            
+            // Merge with defaults to ensure new fields exist
+            return { ...DEFAULT_AI_SETTINGS, ...parsed };
+        } catch (e) {
+            console.error("Failed to load AI settings asynchronously:", e);
+            return this.getSettings(); // Fallback to sync version
+        }
+    },
+
     saveSettings(settings: AISettings) {
         try {
             // Encrypt API key before saving
@@ -92,6 +129,25 @@ export const settingsManager = {
             window.dispatchEvent(new Event('ai-settings-changed'));
         } catch (e) {
             console.error("Failed to save AI settings", e);
+        }
+    },
+
+    // Enhanced async version with better encryption
+    async saveSettingsAsync(settings: AISettings) {
+        try {
+            // Use enhanced async encryption for better security
+            const encryptedApiKey = await encryptApiKeyAsync(settings.apiKey);
+            const settingsToSave = {
+                ...settings,
+                apiKey: encryptedApiKey
+            };
+            
+            localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settingsToSave));
+            window.dispatchEvent(new Event('ai-settings-changed'));
+        } catch (e) {
+            console.error("Failed to save AI settings with enhanced encryption:", e);
+            // Fallback to sync version
+            this.saveSettings(settings);
         }
     },
 
