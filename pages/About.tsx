@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useTranslation } from '../services/i18n';
 import { AdvancedSEO } from '../utils/advancedSEO';
 import { generateTableOfContents } from '../utils/seoEnhanced';
+
+// Lazy load React Router Link to reduce initial bundle size
+const Link = lazy(() => import('react-router-dom').then(module => ({ default: module.Link })));
 
 const AboutComponent: React.FC = () => {
   const { language } = useTranslation();
@@ -143,18 +145,30 @@ const AboutComponent: React.FC = () => {
               }
             </p>
             <div className="flex justify-center space-x-4">
-              <Link 
-                to="/generator"
-                className="bg-brand-600 hover:bg-brand-500 px-8 py-3 rounded-lg font-semibold transition-colors"
-              >
-                {language === 'id' ? 'Mulai Sekarang' : 'Get Started'}
-              </Link>
-              <Link 
-                to="/wiki"
-                className="border border-brand-500 text-brand-400 hover:bg-brand-500 hover:text-white px-8 py-3 rounded-lg font-semibold transition-colors"
-              >
-                {language === 'id' ? 'Pelajari Lebih Lanjut' : 'Learn More'}
-              </Link>
+              <Suspense fallback={
+                <button className="bg-brand-600 px-8 py-3 rounded-lg font-semibold text-white">
+                  {language === 'id' ? 'Mulai Sekarang' : 'Get Started'}
+                </button>
+              }>
+                <Link 
+                  to="/generator"
+                  className="bg-brand-600 hover:bg-brand-500 px-8 py-3 rounded-lg font-semibold transition-colors"
+                >
+                  {language === 'id' ? 'Mulai Sekarang' : 'Get Started'}
+                </Link>
+              </Suspense>
+              <Suspense fallback={
+                <button className="border border-brand-500 text-brand-400 px-8 py-3 rounded-lg font-semibold">
+                  {language === 'id' ? 'Pelajari Lebih Lanjut' : 'Learn More'}
+                </button>
+              }>
+                <Link 
+                  to="/wiki"
+                  className="border border-brand-500 text-brand-400 hover:bg-brand-500 hover:text-white px-8 py-3 rounded-lg font-semibold transition-colors"
+                >
+                  {language === 'id' ? 'Pelajari Lebih Lanjut' : 'Learn More'}
+                </Link>
+              </Suspense>
             </div>
           </div>
         </section>
@@ -245,12 +259,18 @@ const AboutComponent: React.FC = () => {
                 : 'Whether you\'re an experienced quantitative trader or just starting your journey in automated trading, QuantForge AI is here to help you succeed.'
               }
             </p>
-            <Link 
-              to="/generator"
-              className="bg-brand-600 hover:bg-brand-500 px-8 py-3 rounded-lg font-semibold transition-colors inline-block"
-            >
-              {language === 'id' ? 'Mulai Gratis' : 'Start Free'}
-            </Link>
+            <Suspense fallback={
+              <button className="bg-brand-600 hover:bg-brand-500 px-8 py-3 rounded-lg font-semibold transition-colors inline-block text-white">
+                {language === 'id' ? 'Mulai Gratis' : 'Start Free'}
+              </button>
+            }>
+              <Link 
+                to="/generator"
+                className="bg-brand-600 hover:bg-brand-500 px-8 py-3 rounded-lg font-semibold transition-colors inline-block"
+              >
+                {language === 'id' ? 'Mulai Gratis' : 'Start Free'}
+              </Link>
+            </Suspense>
           </div>
         </section>
       </div>

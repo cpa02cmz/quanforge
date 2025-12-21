@@ -3,7 +3,7 @@
  * Real-time performance monitoring and analytics for edge deployment
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { edgeSupabase } from '../../services/edgeSupabaseClient';
 import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
 

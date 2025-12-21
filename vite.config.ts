@@ -17,8 +17,12 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
-            // React ecosystem - optimized for edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
+            // React ecosystem - split more granularly
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-is')) {
+              // Split react core from react router
+              if (id.includes('react-router') || id.includes('react-router-dom')) {
+                return 'react-router';
+              }
               return 'react-vendor';
             }
             // Supabase - isolated for better connection pooling
@@ -32,17 +36,32 @@ export default defineConfig({
               }
               return 'supabase-vendor';
             }
-            // AI services - lazy loaded for edge optimization
+            // AI services - split for edge optimization
             if (id.includes('@google/genai')) {
+              // Split AI components
+              if (id.includes('generators') || id.includes('models')) {
+                return 'ai-models';
+              }
+              if (id.includes('chat') || id.includes('conversation')) {
+                return 'ai-chat';
+              }
               return 'ai-vendor';
             }
             // Chart libraries - split more granularly
             if (id.includes('recharts')) {
-              if (id.includes('AreaChart') || id.includes('LineChart')) {
+              // Split recharts into smaller chunks
+              if (id.includes('AreaChart') || id.includes('LineChart') || id.includes('XAxis') || id.includes('YAxis') || id.includes('CartesianGrid')) {
                 return 'chart-core';
               }
-              if (id.includes('PieChart') || id.includes('BarChart')) {
+              if (id.includes('PieChart') || id.includes('BarChart') || id.includes('RadarChart') || id.includes('ScatterChart')) {
                 return 'chart-misc';
+              }
+              // Split chart components further
+              if (id.includes('Tooltip') || id.includes('Legend') || id.includes('ResponsiveContainer')) {
+                return 'chart-components';
+              }
+              if (id.includes('polar') || id.includes('radial') || id.includes('treemap')) {
+                return 'chart-advanced';
               }
               return 'chart-vendor';
             }
@@ -50,7 +69,13 @@ export default defineConfig({
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'security-vendor';
             }
-            // All other vendor libraries
+            // Split other vendor libraries more granularly
+            if (id.includes('lodash') || id.includes('date-fns') || id.includes('moment')) {
+              return 'vendor-utils';
+            }
+            if (id.includes('axios') || id.includes('fetch') || id.includes('node-fetch')) {
+              return 'vendor-http';
+            }
             return 'vendor-misc';
           }
           
@@ -222,7 +247,7 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 100, // More aggressive optimization for edge performance
+    chunkSizeWarningLimit: 80, // More aggressive optimization for edge performance
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification

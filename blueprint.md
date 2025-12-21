@@ -42,14 +42,19 @@ graph TD
 2.  **Context Construction**: The service builds a prompt that enforces the configuration (Timeframe, Risk, Inputs) as "Hard Constraints" and the User Prompt as "Soft Logic".
 3.  **Model Interaction**: Calls `gemini-3-pro-preview` for high-reasoning code generation.
 4.  **Parsing**: A robust extraction layer identifies Markdown code blocks to separate executable code from conversational text.
+5.  **Performance Integration**: Generation metrics tracked through unified performance monitoring system.
 
 ### B. Persistence Layer (`services/supabase.ts`)
-*   **Design Pattern**: Adapter Pattern.
+*   **Design Pattern**: Adapter Pattern with Performance Monitoring.
 *   **Behavior**:
     *   If `SUPABASE_URL` is present -> Connects to real backend.
     *   If missing -> Falls back to `localStorage` (Mock Mode).
 *   **Entities**:
     *   `Robot`: Contains `code`, `strategy_params`, `chat_history`, `analysis_result`.
+*   **Optimizations**:
+    *   Query performance monitoring and pattern analysis
+    *   Automatic connection pooling and optimization
+    *   Edge-compatible cache integration
 
 ### C. Market Simulation (`services/marketData.ts`)
 *   **Pattern**: Observer (Pub/Sub) + Singleton.
@@ -74,6 +79,7 @@ graph TD
 *   **Input Sanitization**: Filenames are sanitized before download.
 *   **Prompt Engineering**: System prompts prevents the AI from generating harmful or non-MQL5 content.
 
+<<<<<<< HEAD
 ## 6. Code Quality Assessment (2025-12-21)
 
 ### Overall Health Score: 77/100
@@ -101,15 +107,43 @@ graph TD
 - Comprehensive error handling with circuit breakers
 - Advanced type safety with TypeScript interfaces
 - Modular component design following atomic principles
+=======
+## 6. Performance Optimizations (v1.7)
+
+### Bundle Optimization
+- **Advanced Code Splitting**: Granular chunking for vendor libraries (react-vendor, chart-vendor, ai-vendor)
+- **Dynamic Imports**: Lazy loading of heavy components and route-based code splitting
+- **Chunk Size Limits**: Aggressive 80KB limit with smart manual chunking strategy
+- **Tree Shaking**: Elimination of dead code with optimized rollup configuration
+
+### Performance Monitoring
+- **Unified Performance Module**: Consolidated performance utilities in `utils/performanceConsolidated.ts`
+- **Web Vitals Tracking**: FCP, LCP, CLS, FID, TTFB monitoring
+- **Edge Performance**: Cold start detection and region-specific metrics
+- **Database Performance**: Query execution timing and pattern analysis
+
+### API Architecture
+- **Shared API Utilities**: Common patterns consolidated in `utils/apiShared.ts`
+- **Error Handling**: Unified error responses with proper HTTP status codes
+- **Request Validation**: Type-safe validation and sanitization
+- **Caching Strategy**: Automatic response caching with TTL and tags
 
 ## 7. Deployment Considerations
 
 ### Build Compatibility
-- **Cross-Platform Environment**: All code must work in browser, Node.js, and edge environments
-- **Module Restrictions**: Avoid Node.js-specific modules (`crypto`, `fs`, `path`) in frontend code
-- **Schema Compliance**: Platform configuration files must follow current schema requirements
+- **Cross-Platform Environment**: All code works in browser, Node.js, and edge environments
+- **Module Restrictions**: Browser-compatible implementations for all Node.js modules
+- **Schema Compliance**: Platform-specific configurations follow current schema requirements
+- **Vercel Edge Optimization**: Enhanced edge runtime support with proper caching headers
+
+### Performance Deployment
+- **Bundle Analysis**: Regular analysis of chunk sizes and loading patterns
+- **CDN Optimization**: Assets optimized for edge caching with proper cache headers
+- **Dynamic Loading**: Critical resources prioritized, non-critical loaded on-demand
+- **Monitoring**: Real-time performance metrics and optimization recommendations
 
 ### Known Issues & Solutions
-- **Browser Crypto**: Replace Node.js `crypto` with browser-compatible alternatives
-- **Vercel Schema**: Use minimal, schema-compliant `vercel.json` configuration
-- **Build Validation**: Always run build and typecheck before deployment
+- **Browser Compatibility**: All Node.js modules replaced with browser-compatible alternatives
+- **Build Optimization**: Granular chunking resolves large bundle warnings
+- **Schema Validation**: Minimal configuration files pass all platform validations
+- **Performance Monitoring**: Comprehensive metrics track optimization effectiveness

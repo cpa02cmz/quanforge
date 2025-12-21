@@ -3,8 +3,11 @@
  * Provides comprehensive performance optimizations for the frontend
  */
 
-import { performanceMonitor } from '../utils/performance';
+import { performanceManager } from '../utils/performanceConsolidated';
 import { logger } from '../utils/logger';
+
+// Add compatibility layer for the old performanceMonitor
+const performanceMonitor = performanceManager;
 
 interface PerformanceOptimizerConfig {
   enableResourcePrefetching: boolean;
