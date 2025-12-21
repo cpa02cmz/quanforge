@@ -92,14 +92,25 @@
 
 ## Minor Issues (Non-Critical)
 
+### [PARTIALLY FIXED] React Fast Refresh Warnings
+- **Date**: 2025-12-21
+- **Severity**: Low (Development Experience)
+- **Description**: React Fast Refresh warnings for mixing component and utility exports
+- **Files Fixed**:
+  - `App.tsx` - Extracted utility functions to `utils/appConstants.ts`
+  - `Toast.tsx` - Separated hook to `hooks/useToast.ts` and context to `contexts/ToastContext.tsx`
+  - Updated 6 component imports to use new locations
+- **Status**: App.tsx and Toast.tsx warnings resolved, remaining files still need attention
+- **Impact**: Improved development experience with optimal React Fast Refresh behavior
+
 ### [OPEN] ESLint Warnings
 - **Severity**: Low
 - **Count**: 200+ warnings
 - **Categories**:
-  - Console statements in API files
+  - Console statements in API files (40+ instances)
   - Unused variables in TypeScript
-  - `any` type usage
-  - React refresh for exported constants
+  - `any` type usage (905 instances)
+  - React refresh for exported constants (remaining files)
 - **Status**: Non-blocking, can be addressed in future optimization sprints
 
 ### [OPEN] Bundle Size Optimization

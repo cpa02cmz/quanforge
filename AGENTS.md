@@ -218,11 +218,35 @@ When multiple PRs have interdependent fixes with deployment failures:
 **Resolution Applied**:
 - Updated `vercel.json` with optimized build commands using `--prefer-offline --no-audit` flags
 - Added Node.js memory configuration for reliable builds
-- Verified build compatibility across both platforms
+- Verified build compatibility across both Vercel and Cloudflare platforms
 - Local build and typecheck confirmed working
 - Fixed merge conflicts between PR branch and main
 **Results**: PR status improved from red-flag failures to mergeable state
 **Key Insights**: Build system optimization is critical for deployment reliability
+
+## React Fast Refresh Optimization (2025-12-21)
+
+### Code Quality Enhancement - React Fast Refresh
+**Issue**: React Fast Refresh warnings blocking optimal development experience
+**Root Causes**:
+- App.tsx exported utility functions conflicting with component optimization
+- Toast.tsx exported both hooks and components in same file
+- Mixed concerns (hooks, constants, components) in single files
+**Resolution Applied**:
+- ✅ Created `utils/appConstants.ts` - Extracted dynamic import utilities
+- ✅ Created `hooks/useToast.ts` - Separated custom hook from component
+- ✅ Created `contexts/ToastContext.tsx` - Extracted React context
+- ✅ Updated 6 component files to use new import structure
+- ✅ Ensured component files only export components
+**Results**: React Fast Refresh now works optimally for main components
+**Key Insights**: Separation of concerns enables better DX and React optimization
+
+### Development Best Practices Established
+1. **Component-Only Exports**: Component files should only export React components
+2. **Hook Separation**: Custom hooks belong in dedicated `hooks/` directory
+3. **Context Isolation**: React contexts should be in separate files
+4. **Constants Organization**: Utility functions in `utils/` for better reusability
+5. **Import Structure**: Clear, maintainable import paths throughout codebase
 
 ## Agent Contact & Handoff
 

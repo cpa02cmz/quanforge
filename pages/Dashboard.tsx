@@ -4,7 +4,7 @@ import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOpt
 import { Link } from 'react-router-dom';
 import { mockDb } from '../services/supabase';
 import { Robot, UserSession } from '../types';
-import { useToast } from '../components/Toast';
+import { useToast } from '../hooks/useToast';
 import { useTranslation } from '../services/i18n';
 import { AdvancedSEO } from '../utils/advancedSEO';
 import { createScopedLogger } from '../utils/logger';
