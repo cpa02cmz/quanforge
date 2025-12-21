@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { getDefaultDuration } from '../constants/toast';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -25,17 +26,7 @@ export const useToast = () => {
   return context;
 };
 
-// Helper function to get default duration based on toast type (extracted to avoid react refresh warning)
-export const getDefaultDuration = (type: ToastType): number => {
-  switch (type) {
-    case 'error':
-      return 5000; // 5 seconds for errors
-    case 'success':
-      return 3000; // 3 seconds for success
-    default:
-      return 3000; // 3 seconds for info
-  }
-};
+
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);

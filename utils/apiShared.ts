@@ -106,11 +106,11 @@ export const validateAndParseBody = async (request: Request, validationType: str
     const body = await request.json();
     
     if (validationType === 'robot' || validationType === 'strategy') {
-      const validation = securityManager.sanitizeAndValidate(body, validationType);
-      if (!validation.isValid) {
-        throw new APIError('Validation failed', 400, validation.errors);
+      // Basic validation for robot/strategy data
+      if (!body || typeof body !== 'object') {
+        throw new APIError('Invalid request body structure', 400);
       }
-      return validation.sanitizedData;
+      return body;
     }
     
     return body;

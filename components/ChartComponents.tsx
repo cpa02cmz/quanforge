@@ -19,6 +19,10 @@ interface ChartComponentsProps {
   type?: 'pie' | 'area';
   width?: number;
   height?: number;
+  riskData?: any[];
+  analysis?: any;
+  totalReturn?: number;
+  t?: (key: string, params?: Record<string, string>) => string;
 }
 
 // Memoized chart components for performance

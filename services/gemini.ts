@@ -827,7 +827,13 @@ const extractThinking = (rawText: string): { thinking?: string, content: string 
 };
 
 export const generateMQL5Code = async (prompt: string, currentCode?: string, strategyParams?: StrategyParams, history: Message[] = [], signal?: AbortSignal) => {
-   const settings = settingsManager.getSettings();
+   const settings = settingsManager.getSettings() || {
+     provider: 'google',
+     apiKey: '',
+     modelName: 'gemini-pro',
+     baseUrl: '',
+     language: 'en'
+   };
 
    try {
      // Security: Validate and sanitize inputs
@@ -898,8 +904,14 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
  * Self-Refining Agent: Analyzes current code and improves it.
  */
 export const refineCode = async (currentCode: string, signal?: AbortSignal) => {
-    const settings = settingsManager.getSettings();
-const activeKey = getActiveKey(settings.apiKey);
+    const settings = settingsManager.getSettings() || {
+     provider: 'google',
+     apiKey: '',
+     modelName: 'gemini-pro',
+     baseUrl: '',
+     language: 'en'
+   };
+ const activeKey = getActiveKey(settings.apiKey);
     
     if (!activeKey && settings.provider === 'google') throw new Error("API Key missing");
 
@@ -943,7 +955,13 @@ Output ONLY the improved code in a markdown block. Do not output conversational 
  * Explain Code Feature
  */
 export const explainCode = async (currentCode: string, signal?: AbortSignal) => {
-    const settings = settingsManager.getSettings();
+    const settings = settingsManager.getSettings() || {
+     provider: 'google',
+     apiKey: '',
+     modelName: 'gemini-pro',
+     baseUrl: '',
+     language: 'en'
+   };
     const prompt = `
 You are an expert MQL5 educator. 
 Explain the logic of the following trading robot in simple, clear terms suitable for a trader.
@@ -1017,13 +1035,19 @@ const extractJson = (text: string): any => {
 };
 
 export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promise<StrategyAnalysis> => {
-      // Early return for empty or invalid code
+       const settings = settingsManager.getSettings() || {
+         provider: 'google',
+         apiKey: '',
+         modelName: 'gemini-pro',
+         baseUrl: '',
+         language: 'en'
+       };
+       // Early return for empty or invalid code
       if (!code || code.trim().length === 0) {
         return { riskScore: 0, profitability: 0, description: "No code provided for analysis." };
       }
       
-      const settings = settingsManager.getSettings();
-const activeKey = getActiveKey(settings.apiKey);
+ const activeKey = getActiveKey(settings.apiKey);
       
       // Create a more efficient cache key using a proper hash function
       const codeHash = createHash(code.substring(0, 5000));

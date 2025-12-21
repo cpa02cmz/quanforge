@@ -66,11 +66,15 @@ export class ValidationService {
       errors.push(...strategyValidation);
     }
 
-    // MQL5 code validation
+// MQL5 code validation
     if (data.code) {
       const mql5Validation = this.validateMQL5Code(data.code);
-      errors.push(...mql5Validation.errors);
-      warnings.push(...mql5Validation.warnings);
+      errors.push(...mql5Validation.errors.map(err => 
+        typeof err === 'string' ? { field: 'mql5', message: err } : err
+      ));
+      if (mql5Validation.warnings) {
+        warnings.push(...mql5Validation.warnings);
+      }
     }
 
     return {
@@ -114,9 +118,14 @@ export class ValidationService {
       params.customInputs.forEach((input, index) => {
         const inputValidation = this.validateCustomInput(input);
         if (!inputValidation.isValid) {
-          errors.push({ field: `customInputs[${index}]`, message: inputValidation.errors.map(e => e.message).join(', ') });
+          const errorMessages = inputValidation.errors.map(e => 
+            typeof e === 'string' ? e : e.message
+          ).join(', ');
+          errors.push({ field: `customInputs[${index}]`, message: errorMessages });
         }
-        warnings.push(...inputValidation.warnings.map(w => `Custom input ${index + 1}: ${w}`));
+        if (inputValidation.warnings) {
+          warnings.push(...inputValidation.warnings.map(w => `Custom input ${index + 1}: ${w}`));
+        }
       });
     }
 
@@ -315,11 +324,22 @@ export class ValidationService {
 
     items.forEach((item, index) => {
       const result = validator(item);
-      result.errors.forEach(error => allErrors.push({ 
-        field: `item${index + 1}.${error.field}`, 
-        message: `Item ${index + 1}: ${error.message}` 
-      }));
-      result.warnings.forEach(warning => allWarnings.push(`Item ${index + 1}: ${warning}`));
+      result.errors.forEach(error => {
+        if (typeof error === 'string') {
+          allErrors.push({ 
+            field: `item${index + 1}`, 
+            message: `Item ${index + 1}: ${error}` 
+          });
+        } else {
+          allErrors.push({ 
+            field: `item${index + 1}.${error.field}`, 
+            message: `Item ${index + 1}: ${error.message}` 
+          });
+        }
+      });
+      if (result.warnings) {
+        result.warnings.forEach(warning => allWarnings.push(`Item ${index + 1}: ${warning}`));
+      }
     });
 
     return {

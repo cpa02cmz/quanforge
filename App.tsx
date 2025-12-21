@@ -8,8 +8,7 @@ import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
 
-// Re-export dynamic import utilities from constants
-export { loadGeminiService, loadSEOUtils, loadChartComponents, loadCodeEditor, loadBacktestPanel } from './constants/appExports';
+// Dynamic import utilities are available via constants/appExports.ts
 
 // Enhanced lazy loading with route-based code splitting and preloading
 const Auth = lazy(() => 

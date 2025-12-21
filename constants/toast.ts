@@ -13,3 +13,17 @@ export const TOAST_ICON_COLORS = {
 } as const;
 
 export const TOAST_AUTO_DISMISS_DELAY = 3000;
+
+// Helper function to get default duration based on toast type
+export const getDefaultDuration = (type: 'success' | 'error' | 'info'): number => {
+  switch (type) {
+    case 'success':
+      return 3000;
+    case 'error':
+      return 5000;
+    case 'info':
+      return 4000;
+    default:
+      return 3000;
+  }
+};

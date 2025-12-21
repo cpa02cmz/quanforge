@@ -4,17 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { edgeOptimizationService } from '../../services/edgeOptimizationService';
-import { enhancedConnectionPool } from '../../services/enhancedSupabasePool';
-import { globalCache } from '../../services/unifiedCacheManager';
-<<<<<<< HEAD
-import { logger } from '../../utils/logger';
-  import { performanceMonitor } from '../../utils/performance';
-=======
-import { optimizedSupabase } from '../../services/supabaseOptimized';
 import { logger } from '../../utils/logger';
 import { performanceMonitor } from '../../utils/performance';
->>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 
 export async function GET(request: NextRequest) {
   const startTime = performance.now();
@@ -252,10 +243,6 @@ export async function POST(request: NextRequest) {
 // Edge function configuration for optimal performance
 export const config = {
   runtime: 'edge',
-<<<<<<< HEAD
-=======
-  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'],
->>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
   maxDuration: 30,
   memory: 512,
   cache: 'max-age=300, s-maxage=900'

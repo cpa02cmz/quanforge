@@ -5,7 +5,13 @@
 
 export interface ValidationResult {
   isValid: boolean;
-  errors: string[];
+  errors: ValidationError[] | string[];
+  warnings?: string[];
+}
+
+export interface ValidationError {
+  field: string;
+  message: string;
 }
 
 export const validateEmail = (email: string): ValidationResult => {

@@ -88,7 +88,7 @@ class OptimizedAIService {
     await this.initializeAI();
 
     const settings = settingsManager.getSettings();
-    if (!settings.apiKey) {
+    if (!settings || !settings.apiKey) {
       throw new Error('API key not configured');
     }
 
@@ -351,6 +351,9 @@ class OptimizedAIService {
     await this.initializeAI();
 
     const settings = settingsManager.getSettings();
+    if (!settings || !settings.apiKey) {
+      throw new Error('API key not configured');
+    }
     const ai = new GoogleGenAI({ apiKey: settings.apiKey });
 
     const prompt = `

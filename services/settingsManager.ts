@@ -3,6 +3,21 @@ import { AISettings, DBSettings, DBMode } from "../types";
 const AI_SETTINGS_KEY = 'quantforge_ai_settings';
 const DB_SETTINGS_KEY = 'quantforge_db_settings';
 
+// Default settings exports
+export const DEFAULT_AI_SETTINGS: AISettings = {
+  provider: 'google' as const,
+  apiKey: '',
+  modelName: 'gemini-pro',
+  baseUrl: '',
+  language: 'en' as const
+};
+
+export const DEFAULT_DB_SETTINGS: DBSettings = {
+  mode: 'mock' as DBMode,
+  url: 'mock://localhost:3000',
+  anonKey: 'mock-key'
+};
+
 class SettingsManager {
   private static instance: SettingsManager;
 

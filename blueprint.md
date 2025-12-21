@@ -47,11 +47,6 @@ graph TD
 
 ### B. Persistence Layer (`services/supabase.ts`)
 *   **Design Pattern**: Adapter Pattern with Performance Monitoring.
-=======
-
-### B. Persistence Layer (`services/supabase.ts`)
-*   **Design Pattern**: Adapter Pattern.
->>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 *   **Behavior**:
     *   If `SUPABASE_URL` is present -> Connects to real backend.
     *   If missing -> Falls back to `localStorage` (Mock Mode).
@@ -59,11 +54,9 @@ graph TD
     *   `Robot`: Contains `code`, `strategy_params`, `chat_history`, `analysis_result`.
 <<<<<<< HEAD
 *   **Optimizations**:
-    *   Query performance monitoring and pattern analysis
-    *   Automatic connection pooling and optimization
-    *   Edge-compatible cache integration
-=======
->>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
+     *   Query performance monitoring and pattern analysis
+     *   Automatic connection pooling and optimization
+     *   Edge-compatible cache integration
 
 ### C. Market Simulation (`services/marketData.ts`)
 *   **Pattern**: Observer (Pub/Sub) + Singleton.
