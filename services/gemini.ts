@@ -19,7 +19,7 @@ type GenAIType = {
 let GoogleGenAI: GoogleGenAIConstructor | null = null;
 let Type: GenAIType | null = null;
 import { MQL5_SYSTEM_PROMPT } from "../constants";
-import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
+import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings, CaughtError, JSONFallback } from "../types";
 import { settingsManager } from "./settingsManager";
 import { getActiveKey } from "../utils/apiKeyUtils";
 import { handleError } from "../utils/errorHandler";
@@ -228,34 +228,48 @@ const validateStrategyParams = (params: StrategyParams): StrategyParams => {
 };
 
 // Enhanced input validation for strategy parameters (boolean check)
-export const isValidStrategyParams = (params: any): boolean => {
+export const isValidStrategyParams = (params: unknown): boolean => {
   if (!params || typeof params !== 'object') {
     return false;
   }
   
+  const p = params as Record<string, unknown>;
+  
   // Validate required fields
   const requiredFields = ['timeframe', 'symbol', 'riskPercent', 'stopLoss', 'takeProfit'];
   for (const field of requiredFields) {
-    if (!(field in params) || params[field] === null || params[field] === undefined) {
+    if (!(field in p) || p[field] === null || p[field] === undefined) {
       return false;
     }
   }
   
-  // Validate numeric ranges
-  if (params.riskPercent < 0.1 || params.riskPercent > 100) {
+  // Type validation for numeric fields
+  if (
+    typeof p['riskPercent'] !== 'number' || 
+    p['riskPercent'] < 0.1 || 
+    p['riskPercent'] > 100
+  ) {
     return false;
   }
   
-  if (params.stopLoss < 1 || params.stopLoss > 1000) {
+  if (
+    typeof p['stopLoss'] !== 'number' || 
+    p['stopLoss'] < 1 || 
+    p['stopLoss'] > 1000
+  ) {
     return false;
   }
   
-  if (params.takeProfit < 1 || params.takeProfit > 1000) {
+  if (
+    typeof p['takeProfit'] !== 'number' || 
+    p['takeProfit'] < 1 || 
+    p['takeProfit'] > 1000
+  ) {
     return false;
   }
   
-  // Validate symbol format
-  if (!/^[A-Z]{6}$|^[A-Z]{3}\/[A-Z]{3}$|^[A-Z]{6}$/.test(params.symbol)) {
+  // Symbol validation (multiple formats: EURUSD, EUR/USD, etc.)
+  if (typeof p['symbol'] !== 'string' || !/^[A-Z]{6}$|^[A-Z]{3}\/[A-Z]{3}$/.test(p['symbol'])) {
     return false;
   }
   
@@ -383,22 +397,25 @@ const requestDeduplicator = new RequestDeduplicator();
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, maxDelay = 10000): Promise<T> {
     try {
         return await fn();
-    } catch (error: any) {
-        if (error.name === 'AbortError') throw error; // Do not retry if aborted by user
+    } catch (error: CaughtError) {
+        if (error instanceof Error && error.name === 'AbortError') throw error; // Do not retry if aborted by user
 
         if (retries === 0) throw error;
         
-        const isRateLimit = error.status === 429 || (error.message && error.message.includes('429'));
-        const isServerErr = error.status >= 500;
-        const isNetworkErr = error.message?.includes('fetch failed') || 
-                             error.message?.includes('network') || 
-                             error.message?.includes('timeout') ||
-                             error.message?.includes('ETIMEDOUT') ||
-                             error.message?.includes('ECONNRESET');
+        const errorStatus = error && typeof error === 'object' && 'status' in error ? (error as { status?: number }).status : undefined;
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        
+        const isRateLimit = errorStatus === 429 || errorMessage.includes('429');
+        const isServerErr = errorStatus !== undefined && errorStatus >= 500;
+        const isNetworkErr = errorMessage.includes('fetch failed') || 
+                             errorMessage.includes('network') || 
+                             errorMessage.includes('timeout') ||
+                             errorMessage.includes('ETIMEDOUT') ||
+                             errorMessage.includes('ECONNRESET');
 
         // Only retry on Rate Limits, Server Errors, or Network Issues
         if (isRateLimit || isServerErr || isNetworkErr) {
-            console.warn(`API Error (${error.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
+            console.warn(`API Error (${errorStatus || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
             // Add jitter to prevent thundering herd
             const jitter = Math.random() * 0.1 * delay;
             const nextDelay = Math.min(delay * 1.5 + jitter, maxDelay); // Use 1.5 multiplier instead of 2 for gentler backoff
@@ -737,12 +754,12 @@ const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?
         
         if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
-        const config: any = {
+        const config: Record<string, unknown> = {
           systemInstruction: systemInstruction
         };
         
         if (temperature !== undefined) {
-          config.temperature = temperature;
+          (config as Record<string, unknown>)['temperature'] = temperature;
         }
 
         const response = await ai!.models.generateContent({
@@ -887,11 +904,12 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
      
      return response;
 
-   } catch (error: any) {
-     if (error.name === 'AbortError') throw error;
-     handleError(error, 'generateMQL5Code', 'gemini');
-     return { content: `Error generating response: ${error.message || error}` };
-   }
+} catch (error: CaughtError) {
+      if (error instanceof Error && error.name === 'AbortError') throw error;
+      handleError(error instanceof Error ? error : String(error), 'generateMQL5Code', 'gemini');
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return { content: `Error generating response: ${errorMessage}` };
+    }
  };
 
 /**
@@ -989,7 +1007,7 @@ const stripJsonComments = (jsonString: string) => {
   return jsonString.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
 };
 
-const extractJson = (text: string): any => {
+const extractJson = (text: string): JSONFallback => {
     let cleanText = text;
     cleanText = cleanText.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, '');
 
@@ -1094,38 +1112,45 @@ const response = await ai!.models.generateContent({
                  }
              });
 
-             const result = extractJson(textResponse);
-             
-             // Validate the result before caching
-             if (result && typeof result === 'object' && 
-                 typeof result.riskScore === 'number' && 
-                 typeof result.profitability === 'number' && 
-                 typeof result.description === 'string') {
-                  // Ensure values are within expected ranges
-                  result.riskScore = Math.min(10, Math.max(1, Number(result.riskScore) || 0));
-                  result.profitability = Math.min(10, Math.max(1, Number(result.profitability) || 0));
-                  
-                  // Cache the result in both caches
-                  analysisCache.set(cacheKey, result);
-                  enhancedAnalysisCache.set(cacheKey, result, 600000); // 10 minutes TTL for enhanced cache
-                  
-                  // Also cache by shorter code snippet for similar code detection
-                  const shortCodeHash = createHash(code.substring(0, 1000));
-                  const shortCacheKey = `short-${shortCodeHash}-${settings.provider}`;
-                  analysisCache.set(shortCacheKey, result);
-                  enhancedAnalysisCache.set(shortCacheKey, result, 600000);
-             } else {
-                 // Return a default response if parsing fails
-                 return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };
-             }
-             
-             return result;
+const rawResult = extractJson(textResponse);
+              
+              // Validate and type cast the result before caching
+              if (rawResult && typeof rawResult === 'object' && !Array.isArray(rawResult)) {
+                   const result = rawResult as Record<string, unknown>;
+                   
+                   // Validate required properties
+                   if (typeof result['riskScore'] === 'number' && 
+                       typeof result['profitability'] === 'number' && 
+                       typeof result['description'] === 'string') {
+                       
+                       const analysisResult: StrategyAnalysis = {
+                           riskScore: Math.min(10, Math.max(1, Number(result['riskScore']) || 0)),
+                           profitability: Math.min(10, Math.max(1, Number(result['profitability']) || 0)),
+                           description: String(result['description'])
+                       };
+                       
+                       // Cache the result in both caches
+                       analysisCache.set(cacheKey, analysisResult);
+                       enhancedAnalysisCache.set(cacheKey, analysisResult, 600000); // 10 minutes TTL for enhanced cache
+                       
+                       // Also cache by shorter code snippet for similar code detection
+                       const shortCodeHash = createHash(code.substring(0, 1000));
+                       const shortCacheKey = `short-${shortCodeHash}-${settings.provider}`;
+                       analysisCache.set(shortCacheKey, analysisResult);
+                       enhancedAnalysisCache.set(shortCacheKey, analysisResult, 600000);
+                       
+                       return analysisResult;
+                   }
+              }
+              
+              // Return a default response if parsing fails
+              return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };
 
-         } catch (e: any) {
-             if (e.name === 'AbortError') throw e;
-             handleError(e, 'analyzeStrategy', 'gemini');
-             return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };
-         }
+} catch (e: CaughtError) {
+              if (e instanceof Error && e.name === 'AbortError') throw e;
+              handleError(e instanceof Error ? e : String(e), 'analyzeStrategy', 'gemini');
+              return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };
+          }
        });
 }
 

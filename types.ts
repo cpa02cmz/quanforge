@@ -167,3 +167,100 @@ export const isUser = (obj: unknown): obj is User => {
     ('email' in obj ? typeof obj.email === 'string' : true)
   );
 };
+
+// Enhanced error types for better error handling
+export interface AppError {
+  name: string;
+  message: string;
+  code?: number | string;
+  stack?: string;
+}
+
+// Storage quota error types
+export interface StorageError extends AppError {
+  name: 'QuotaExceededError' | 'NS_ERROR_DOM_QUOTA_REACHED';
+  code: 22 | 1014;
+}
+
+// Database operation result types
+export interface DBResult<T> {
+  data: T | null;
+  error: AppError | null;
+}
+
+export interface DBResultList<T> {
+  data: T[] | null;
+  error: AppError | null;
+}
+
+// Batch operation types
+export interface BatchUpdateItem<T> {
+  id: string;
+  updates: Partial<T>;
+}
+
+export interface BatchUpdateResult {
+  success: number;
+  failed: number;
+  errors?: string[];
+}
+
+// Function parameter types for dynamic databases
+export type QueryParams = Array<string | number | boolean | null | undefined>;
+
+export interface QueryMetrics {
+  executionTime: number;
+  cacheHit: boolean;
+  timestamp: number;
+}
+
+// API Configuration types
+export interface APIConfig {
+  url?: string;
+  headers?: Record<string, string>;
+  timeout?: number;
+  retries?: number;
+}
+
+// Circuit breaker types
+export interface CircuitBreakerConfig {
+  failureThreshold: number;
+  recoveryTimeout: number;
+  monitoringPeriod: number;
+}
+
+// Cache configuration types
+export interface CacheConfig {
+  ttl: number;
+  maxSize: number;
+  strategy: 'lru' | 'fifo' | 'custom';
+}
+
+// Performance monitoring types
+export interface PerformanceMetrics {
+  timestamp: number;
+  operation: string;
+  duration: number;
+  success: boolean;
+  errorMessage?: string;
+}
+
+// Rate limiting types
+export interface RateLimitConfig {
+  windowMs: number;
+  maxRequests: number;
+  skipSuccessfulRequests?: boolean;
+}
+
+// Robot update types (partial robot for updates)
+export type RobotUpdate = Partial<Omit<Robot, 'id' | 'user_id' | 'created_at'>>;
+
+// Generic function types
+export type GenericFunction = (...args: any[]) => any;
+export type AsyncFunction<T = any> = (...args: any[]) => Promise<T>;
+
+// JSON parsing fallback types
+export type JSONFallback = string | number | boolean | null | undefined | Record<string, unknown> | unknown[];
+
+// Enhanced error handling for catch blocks
+export type CaughtError = unknown;

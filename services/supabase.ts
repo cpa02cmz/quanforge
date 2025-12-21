@@ -1,7 +1,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
-import { Robot, UserSession } from '../types';
+import { Robot, UserSession, JSONFallback, StorageError, CaughtError, RobotUpdate, BatchUpdateItem } from '../types';
 import { edgeConnectionPool } from './edgeSupabasePool';
 import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
@@ -28,7 +28,7 @@ const STORAGE_KEY = 'mock_session';
 const ROBOTS_KEY = 'mock_robots';
 
 // Helper for safe JSON parsing with enhanced security
-const safeParse = (data: string | null, fallback: any) => {
+const safeParse = (data: string | null, fallback: JSONFallback) => {
     if (!data) return fallback;
     try {
         // Use security manager's safe JSON parsing
@@ -43,12 +43,13 @@ const safeParse = (data: string | null, fallback: any) => {
 const trySaveToStorage = (key: string, value: string) => {
     try {
         localStorage.setItem(key, value);
-    } catch (e: any) {
+    } catch (e: CaughtError) {
         if (
-            e.name === 'QuotaExceededError' || 
-            e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-            e.code === 22 ||
-            e.code === 1014
+            e instanceof Error && 
+            (e.name === 'QuotaExceededError' || 
+             e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+             (e as StorageError).code === 22 ||
+             (e as StorageError).code === 1014)
         ) {
             throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
         }
@@ -68,12 +69,14 @@ const generateUUID = (): string => {
     });
 };
 
-const isValidRobot = (r: any): boolean => {
+const isValidRobot = (r: unknown): r is Robot => {
     return (
         typeof r === 'object' &&
         r !== null &&
-        typeof r.name === 'string' &&
-        typeof r.code === 'string'
+        'name' in r &&
+        'code' in r &&
+        typeof (r as Robot).name === 'string' &&
+        typeof (r as Robot).code === 'string'
     );
 };
 
@@ -213,16 +216,19 @@ const withRetry = async <T>(
   operation: () => Promise<T>,
   operationName: string
 ): Promise<T> => {
-  let lastError: any;
+  let lastError: CaughtError;
   
   for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
     try {
       return await operation();
-    } catch (error: any) {
+    } catch (error: CaughtError) {
       lastError = error;
       
       // Don't retry on certain errors
-      if (error?.code === 'PGRST116' || error?.status === 404) {
+      if (
+        (error && typeof error === 'object' && 'code' in error && error.code === 'PGRST116') ||
+        (error && typeof error === 'object' && 'status' in error && error.status === 404)
+      ) {
         throw error; // Not found errors shouldn't be retried
       }
       
@@ -746,7 +752,7 @@ if (result.data && !result.error) {
      }
    },
 
-   async saveRobot(robot: any) {
+   async saveRobot(robot: Robot) {
     const startTime = performance.now();
     try {
       const settings = settingsManager.getDBSettings();
@@ -788,10 +794,10 @@ if (result.data && !result.error) {
             await consolidatedCache.invalidateByTags(['robots', 'list']);
             
             return { data: [newRobot], error: null };
-        } catch (e: any) {
+        } catch (e: CaughtError) {
             const duration = performance.now() - startTime;
             performanceMonitor.record('saveRobot', duration);
-            return { data: null, error: e.message };
+            return { data: null, error: e instanceof Error ? e.message : String(e) };
         }
       }
       
@@ -814,7 +820,7 @@ if (result.data && !result.error) {
     }
   },
 
-  async updateRobot(id: string, updates: any) {
+  async updateRobot(id: string, updates: RobotUpdate) {
     const startTime = performance.now();
     try {
       const settings = settingsManager.getDBSettings();
@@ -841,10 +847,10 @@ if (result.data && !result.error) {
               performanceMonitor.record('updateRobot', duration);
               robotIndexManager.clear(); // Clear index since data changed
               return { data: updatedRobot, error: null };
-          } catch (e: any) {
+          } catch (e: CaughtError) {
               const duration = performance.now() - startTime;
               performanceMonitor.record('updateRobot', duration);
-              return { data: null, error: e.message };
+              return { data: null, error: e instanceof Error ? e.message : String(e) };
           }
       }
       
@@ -894,10 +900,10 @@ if (result.data && !result.error) {
               performanceMonitor.record('deleteRobot', duration);
               robotIndexManager.clear(); // Clear index since data changed
               return { data: true, error: null };
-          } catch (e: any) {
+          } catch (e: CaughtError) {
               const duration = performance.now() - startTime;
               performanceMonitor.record('deleteRobot', duration);
-              return { error: e.message };
+              return { error: e instanceof Error ? e.message : String(e) };
           }
       }
       
@@ -951,10 +957,10 @@ if (result.data && !result.error) {
               performanceMonitor.record('duplicateRobot', duration);
               robotIndexManager.clear(); // Clear index since data changed
               return { data: [newRobot], error: null };
-          } catch (e: any) {
+          } catch (e: CaughtError) {
               const duration = performance.now() - startTime;
               performanceMonitor.record('duplicateRobot', duration);
-              return { data: null, error: e.message };
+              return { data: null, error: e instanceof Error ? e.message : String(e) };
           }
       }
       
@@ -1007,8 +1013,8 @@ export const dbUtils = {
             
             if (error) throw error;
             return { success: true, message: `Connected to Supabase. Found ${count} records.`, mode: 'supabase' };
-        } catch (e: any) {
-            return { success: false, message: `Connection Failed: ${e.message || e}`, mode: 'supabase' };
+        } catch (e: CaughtError) {
+            return { success: false, message: `Connection Failed: ${e instanceof Error ? e.message : String(e)}`, mode: 'supabase' };
         }
     },
 
@@ -1124,8 +1130,8 @@ export const dbUtils = {
                 return importResult;
             }
 
-        } catch (e: any) {
-            return { success: false, count: 0, error: e.message };
+        } catch (e: CaughtError) {
+            return { success: false, count: 0, error: e instanceof Error ? e.message : String(e) };
         }
     },
 
@@ -1194,8 +1200,8 @@ export const dbUtils = {
             }
             
             return migrationResult;
-        } catch (e: any) {
-            return { success: false, count: 0, error: e.message };
+        } catch (e: CaughtError) {
+            return { success: false, count: 0, error: e instanceof Error ? e.message : String(e) };
         }
     },
     
@@ -1324,7 +1330,7 @@ export const dbUtils = {
     /**
      * Batch operations for better performance
      */
-    async batchUpdateRobots(updates: Array<{ id: string; updates: any }>): Promise<{ success: number; failed: number; errors?: string[] }> {
+    async batchUpdateRobots(updates: BatchUpdateItem<Robot>[]): Promise<{ success: number; failed: number; errors?: string[] }> {
         const startTime = performance.now();
         try {
             const settings = settingsManager.getDBSettings();
@@ -1367,10 +1373,10 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                     }
                     
                     return batchResult;
-                } catch (e: any) {
+                } catch (e: CaughtError) {
                     const duration = performance.now() - startTime;
                     performanceMonitor.record('batchUpdateRobots', duration);
-                    return { success: 0, failed: updates.length, errors: [e.message] };
+                    return { success: 0, failed: updates.length, errors: [e instanceof Error ? e.message : String(e)] };
                 }
             } else {
                 // For Supabase, process in batches to avoid query limits
@@ -1396,9 +1402,9 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                                 successCount++;
                             }
                         }
-                    } catch (e: any) {
+} catch (e: CaughtError) {
                         failedCount += batch.length;
-                        errors.push(e.message);
+                        errors.push(e instanceof Error ? e.message : String(e));
                     }
                 }
                 
@@ -1504,10 +1510,10 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                     message: "Database optimization commands issued successfully" 
                 };
             }
-        } catch (e: any) {
+        } catch (e: CaughtError) {
             return { 
                 success: false, 
-                message: `Database optimization failed: ${e.message}` 
+                message: `Database optimization failed: ${e instanceof Error ? e.message : String(e)}` 
             };
         }
     },
