@@ -369,6 +369,20 @@ When multiple PRs have interdependent fixes with deployment failures:
 - **Context Optimization**: Structure documentation for AI agent scanning efficiency
 - **Maintenance Cadence**: Regular documentation audits to prevent redundancy accumulation
 
+### TypeScript Critical Error Resolution (2025-12-21)
+
+#### Dynamic Export Type Exposure Issue
+**Problem Solved**: TypeScript compilation blocked by Recharts LayerProps type exposure in dynamic imports  
+**Implementation**: Removed unused `loadRecharts` function that was exposing internal library types  
+**Decision Rationale**: ChartComponents.tsx already uses direct dynamic import, making the utility function redundant  
+**Positive Outcomes**: TypeScript compilation restored, build pipeline functional, cleaner codebase
+
+#### TypeScript Error Prevention Strategy
+- **Module Boundaries**: Avoid exporting functions that expose internal library types
+- **Direct Imports**: Prefer direct dynamic imports over utility wrappers for complex libraries  
+- **Type Safety**: Verify all exports maintain proper type boundaries
+- **Code Analysis**: Regularly audit dynamic imports for type exposure issues
+
 ## Agent Contact & Handoff
 
 When handing off between agents:

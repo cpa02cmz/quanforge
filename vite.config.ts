@@ -96,6 +96,13 @@ export default defineConfig({
             if (id.includes('axios') || id.includes('fetch') || id.includes('node-fetch')) {
               return 'vendor-http';
             }
+            // Split large utility libraries to reduce vendor-misc size
+            if (id.includes('prismjs') || id.includes('prism')) {
+              return 'vendor-syntax';
+            }
+            if (id.includes('marked') || id.includes('markdown')) {
+              return 'vendor-markdown';
+            }
             // Split polyfills and core utilities from miscellaneous vendor
             if (id.includes('polyfill') || id.includes('core-js') || id.includes('@babel/runtime')) {
               return 'vendor-polyfills';

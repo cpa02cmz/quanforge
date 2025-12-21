@@ -67,7 +67,7 @@ async function logApiKeyUsage(
     });
   } catch (logError) {
     // Don't fail the request if logging fails
-    console.error('Failed to log API key usage:', logError);
+    // Silent logging for security
   }
 }
 
@@ -146,7 +146,7 @@ export default async function handler(req: Request) {
     );
 
   } catch (error) {
-    console.error('API key management error:', error);
+    // Security error logged silently
     
     return new Response(
       JSON.stringify({ 
