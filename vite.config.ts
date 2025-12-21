@@ -19,9 +19,20 @@ export default defineConfig({
           if (id.includes('node_modules')) {
             // React ecosystem - split more granularly
             if (id.includes('react') || id.includes('react-dom') || id.includes('react-is')) {
-              // Split react core from react router
+              // Split react core from react router with granular splitting
               if (id.includes('react-router') || id.includes('react-router-dom')) {
-                return 'react-router';
+                // Split react-router more granularly for better caching
+                if (id.includes('useNavigate') || id.includes('useLocation') || id.includes('useParams') || id.includes('hooks')) {
+                  return 'react-router-hooks';
+                }
+                if (id.includes('Link') || id.includes('NavLink') || id.includes('components')) {
+                  return 'react-router-components';
+                }
+                return 'react-router-core';
+              }
+              // Split React scheduler from core React
+              if (id.includes('scheduler') || id.includes('react-reconciler')) {
+                return 'react-scheduler';
               }
               return 'react-vendor';
             }
@@ -33,6 +44,15 @@ export default defineConfig({
               }
               if (id.includes('@supabase/storage-js')) {
                 return 'supabase-storage';
+              }
+              if (id.includes('@supabase/auth-js') || id.includes('@supabase/auth-helpers')) {
+                return 'supabase-auth';
+              }
+              if (id.includes('@supabase/postgrest-js')) {
+                return 'supabase-postgrest';
+              }
+              if (id.includes('@supabase/functions-js')) {
+                return 'supabase-functions';
               }
               return 'supabase-vendor';
             }
@@ -75,6 +95,14 @@ export default defineConfig({
             }
             if (id.includes('axios') || id.includes('fetch') || id.includes('node-fetch')) {
               return 'vendor-http';
+            }
+            // Split polyfills and core utilities from miscellaneous vendor
+            if (id.includes('polyfill') || id.includes('core-js') || id.includes('@babel/runtime')) {
+              return 'vendor-polyfills';
+            }
+            // Split React-related utilities from general vendor
+            if (id.includes('object-assign') || id.includes('prop-types') || id.includes('scheduler')) {
+              return 'vendor-react-utils';
             }
             return 'vendor-misc';
           }
