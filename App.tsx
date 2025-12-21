@@ -16,6 +16,9 @@ import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
   import { advancedAPICache } from './services/advancedAPICache';
   import { frontendPerformanceOptimizer } from './services/frontendPerformanceOptimizer';
 
+// Re-export dynamic import utilities from constants
+export { loadGeminiService, loadSEOUtils, loadChartComponents, loadCodeEditor, loadBacktestPanel } from './constants/appExports';
+
 // Enhanced lazy loading with route-based code splitting and preloading
 const Auth = lazy(() => 
   import('./components/Auth').then(module => ({ default: module.Auth }))
@@ -45,12 +48,7 @@ const Layout = lazy(() =>
   import('./components/Layout').then(module => ({ default: module.Layout }))
 );
 
-// Dynamic import utilities for services and heavy components
-export const loadGeminiService = () => import('./services/gemini');
-export const loadSEOUtils = () => import('./utils/seoEnhanced');
-export const loadChartComponents = () => import('./components/ChartComponents');
-export const loadCodeEditor = () => import('./components/CodeEditor');
-export const loadBacktestPanel = () => import('./components/BacktestPanel');
+// Dynamic import utilities moved to constants/appExports.ts
 
 // Enhanced preloading strategy with route-based optimization
    const preloadCriticalRoutes = () => {

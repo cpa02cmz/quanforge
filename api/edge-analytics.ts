@@ -146,7 +146,7 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
-        console.error('Analytics processing error:', error);
+        // Error handled in response
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to process analytics data'
@@ -201,7 +201,7 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
-        console.error('Analytics summary error:', error);
+        // Error handled in response
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to retrieve analytics summary'
@@ -238,7 +238,7 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
-        console.error('Performance score error:', error);
+        // Error handled in response
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to calculate performance score'
@@ -303,7 +303,7 @@ export default async function handler(req: Request): Promise<Response> {
                 };
                 controller.enqueue(`data: ${JSON.stringify(message)}\n\n`);
               } catch (error) {
-                console.error('Streaming error:', error);
+                // Stream error handled
                 const errorMessage = {
                   type: 'error',
                   error: 'Failed to collect metrics',
@@ -331,7 +331,7 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
-        console.error('Streaming setup error:', error);
+        // Setup error handled
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to establish streaming connection'
@@ -370,7 +370,7 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
-        console.error('Aggregation error:', error);
+        // Aggregation error handled
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to aggregate analytics data'
@@ -410,7 +410,7 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
-        console.error('Simulation error:', error);
+        // Simulation error handled
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to simulate edge performance'
@@ -436,7 +436,7 @@ export default async function handler(req: Request): Promise<Response> {
     });
 
   } catch (error) {
-    console.error('Edge analytics function error:', error);
+    // Function error handled
     return new Response(JSON.stringify({
       success: false,
       error: 'Internal Server Error',
@@ -500,7 +500,7 @@ function broadcastToStreams(message: any): void {
       // Send message
       connection.controller.enqueue(`data: ${JSON.stringify(message)}\n\n`);
     } catch (error) {
-      console.error(`Failed to send to stream ${clientId}:`, error);
+      // Stream send failed
       streamingConnections.delete(clientId);
     }
   }
@@ -695,6 +695,6 @@ setInterval(() => {
   });
   
   if (staleConnections.length > 0) {
-    console.log(`Cleaned up ${staleConnections.length} stale streaming connections`);
+    // Cleanup completed
   }
 }, 10000); // Check every 10 seconds
