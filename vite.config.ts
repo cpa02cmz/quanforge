@@ -111,6 +111,26 @@ export default defineConfig({
             if (id.includes('object-assign') || id.includes('prop-types') || id.includes('scheduler')) {
               return 'vendor-react-utils';
             }
+            // Split event and promise libraries
+            if (id.includes('eventemitter') || id.includes('mitt') || id.includes('nanoid') || id.includes('uuid')) {
+              return 'vendor-events';
+            }
+            // Split string manipulation libraries
+            if (id.includes('string-hash') || id.includes('crypto-js') || id.includes('buffer') || id.includes('base64')) {
+              return 'vendor-string';
+            }
+            // Split async/await utilities
+            if (id.includes('promise') || id.includes('async') || id.includes('queue')) {
+              return 'vendor-async';
+            }
+            // Split validation libraries
+            if (id.includes('yup') || id.includes('zod') || id.includes('joi') || id.includes('validator')) {
+              return 'vendor-validation';
+            }
+            // Split browser compatibility libraries
+            if (id.includes('whatwg') || id.includes('abort') || id.includes('cross-fetch')) {
+              return 'vendor-browser';
+            }
             return 'vendor-misc';
           }
           

@@ -26,8 +26,8 @@ export const useToast = () => {
   return context;
 };
 
-// Helper function to get default duration based on toast type
-const getDefaultDuration = (type: ToastType): number => {
+// Helper function to get default duration based on toast type (extracted to avoid react refresh warning)
+export const getDefaultDuration = (type: ToastType): number => {
   switch (type) {
     case 'error':
       return 5000; // 5 seconds for errors

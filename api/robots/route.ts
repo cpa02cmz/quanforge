@@ -3,12 +3,11 @@
  * Optimized for Vercel Edge with caching and validation
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { mockDb, dbUtils } from '../../services/supabase';
+import { mockDb } from '../../services/supabase';
 import { securityManager } from '../../services/securityManager';
-import { advancedCache } from '../../services/advancedCache';
-import { performanceMonitorEnhanced } from '../../services/performanceMonitorEnhanced';
-import { Robot } from '../../types';
+import { AdvancedCache } from '../../services/advancedCache';
+import { PerformanceMonitorEnhanced } from '../../services/performanceMonitorEnhanced';
+import { APIErrorHandler } from '../../utils/apiErrorHandler';
 
 export const config = {
   runtime: 'edge',
