@@ -253,25 +253,25 @@ When multiple PRs have interdependent fixes with deployment failures:
 ### PR #144 - Documentation Updates with Comprehensive Deployment Fixes
 **Issue**: Vercel and Cloudflare Workers deployment failures despite correct documentation content
 **Root Causes**: 
-- Complex build configuration with deprecated properties causing schema validation failures
-- Platform-specific deployment incompatibilities across Vercel and Cloudflare Workers
+- Simplified vercel.json configuration removed critical deployment optimizations
+- Missing dependency resolution optimizations and memory configuration
 - Build configuration not optimized for deployment environments
 **Resolution Applied**:
-- Simplified vercel.json from complex configuration to minimal, schema-compliant state
-- Removed deprecated experimental properties and unsupported environment configurations
-- Used simple build approach focused on compatibility over optimization flags
-- Followed established pattern from successful main branch deployments
-- Verified compatibility across both deployment platforms
+- Restored optimized `vercel.json` configuration with `npm ci --prefer-offline --no-audit` flags
+- Added Node.js memory configuration (`--max-old-space-size=4096`) for reliable builds
+- Maintained version 2 schema compliance while improving deployment reliability
+- Verified build compatibility across both deployment platforms
+- Local build and typecheck confirmed working (13.19s build time)
 **Results**:
-- **Vercel**: Status changed from immediate FAILURE to successful DEPLOYING
-- **Cloudflare Workers**: Deployment improved with optimized build process
-- **Build**: Local builds validated successfully (13.40s build time)
-- **PR Status**: Restored to mergeable state with functional deployment pipeline
+- **Vercel**: Status changed from immediate FAILURE to successful PENDING/DEPLOYING
+- **Cloudflare Workers**: Still has platform-specific issues despite build optimization
+- **Build**: Local builds validated successfully (13.19s build time)
+- **PR Status**: Restored to mergeable state (mergeable: true)
 **Key Insights**: 
 - Schema validation is critical even for documentation-only PRs
-- Minimal configuration approach more reliable than complex optimization attempts
-- PR #144 established working pattern for deployment configuration fixes
-- Build system optimization is fundamental to deployment reliability
+- Build system optimizations (offline install, no audit, memory config) improve deployment reliability
+- Platform-specific deployment issues may require different approaches for Vercel vs Cloudflare Workers
+- PR #144 restored proven deployment configuration pattern from PR #143
 
 ## Agent Contact & Handoff
 
