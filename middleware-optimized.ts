@@ -1,8 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server';
+// Vite-compatible Edge Optimization Service
+// Replaces Next.js middleware with browser/edge-compatible implementation
 
-export function middleware(request: NextRequest) {
+interface EdgeRequest {
+  url: string;
+  headers: Map<string, string>;
+  geo?: {
+    region?: string;
+  };
+}
+
+interface EdgeResponse {
+  headers: Map<string, string>;
+}
+
+/**
+ * Vite-compatible edge optimization function
+ * This replaces the Next.js middleware for Vite applications
+ */
+export function optimizeRequest(request: EdgeRequest): EdgeResponse {
   const startTime = performance.now();
-  const response = NextResponse.next();
+  const response: EdgeResponse = {
+    headers: new Map()
+  };
   
   // Enhanced security headers for edge deployment
   response.headers.set('X-Edge-Optimized', 'true');
@@ -20,13 +39,13 @@ export function middleware(request: NextRequest) {
   response.headers.set('X-Powered-By', 'QuantForge-AI-Edge-Optimized');
   
   // Enhanced region-based caching and optimization
-  const region = request.geo?.region || request.headers.get('x-vercel-ip-country') || 'unknown';
-  const edgeRegion = request.headers.get('x-vercel-region') || 'unknown';
+  const region = request.geo?.region || getHeader(request.headers, 'x-vercel-ip-country') || 'unknown';
+  const edgeRegion = getHeader(request.headers, 'x-vercel-region') || 'unknown';
   response.headers.set('X-Edge-Region', region);
   response.headers.set('X-Edge-Function-Region', edgeRegion);
   
   // Smart edge caching with predictive optimization
-  const url = request.nextUrl;
+  const url = new URL(request.url);
   const isEdgeOptimization = url.pathname.startsWith('/api/edge/');
   
   if (url.pathname.startsWith('/api/')) {
@@ -91,7 +110,7 @@ export function middleware(request: NextRequest) {
   response.headers.set('X-Edge-Processing-Time', responseTime.toFixed(2));
   
   // Enhanced security and bot detection
-  const userAgent = request.headers.get('user-agent') || '';
+  const userAgent = getHeader(request.headers, 'user-agent') || '';
   const isBot = userAgent.includes('bot') || userAgent.includes('crawler') || userAgent.includes('spider');
   
   if (isBot) {
@@ -104,7 +123,7 @@ export function middleware(request: NextRequest) {
   }
   
   // Enhanced rate limiting and client identification
-  const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+  const clientIP = getHeader(request.headers, 'x-forwarded-for') || getHeader(request.headers, 'x-real-ip') || 'unknown';
   const clientID = Buffer.from(clientIP).toString('base64').slice(0, 16);
   response.headers.set('X-Client-ID', clientID);
   
@@ -132,9 +151,84 @@ export function middleware(request: NextRequest) {
   return response;
 }
 
-export const config = {
-  matcher: [
-    '/api/:path*',
-    '/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.json).*)'
-  ]
-};
+/**
+ * Utility function to get header value case-insensitively
+ */
+function getHeader(headers: Map<string, string>, name: string): string | undefined {
+  // Case-insensitive header lookup
+  for (const [key, value] of headers.entries()) {
+    if (key.toLowerCase() === name.toLowerCase()) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Edge Optimization Service Class
+ * Provides a singleton for managing edge optimizations in Vite applications
+ */
+export class EdgeOptimizationService {
+  private static instance: EdgeOptimizationService;
+  private version = '3.2.0';
+
+  static getInstance(): EdgeOptimizationService {
+    if (!EdgeOptimizationService.instance) {
+      EdgeOptimizationService.instance = new EdgeOptimizationService();
+    }
+    return EdgeOptimizationService.instance;
+  }
+
+  /**
+   * Public API for client-side usage
+   */
+  getOptimizationHeaders(url: string, headers: Record<string, string> = {}): EdgeResponse {
+    const request: EdgeRequest = {
+      url,
+      headers: new Map(Object.entries(headers))
+    };
+
+    return optimizeRequest(request);
+  }
+
+  /**
+   * Utility to apply optimizations to fetch requests
+   */
+  async optimizedFetch(url: string, options: RequestInit = {}): Promise<Response> {
+    const headers = new Headers(options.headers);
+    
+    // Get optimization headers for this request
+    const optimization = this.getOptimizationHeaders(url, Object.fromEntries(headers));
+    
+    // Apply optimization headers
+    optimization.headers.forEach((value, key) => {
+      if (!headers.has(key)) {
+        headers.set(key, value);
+      }
+    });
+
+    return fetch(url, { ...options, headers });
+  }
+
+  /**
+   * Apply optimization headers to existing Headers object
+   */
+  applyOptimizationHeaders(url: string, existingHeaders: Headers): void {
+    const optimization = this.getOptimizationHeaders(url, Object.fromEntries(existingHeaders));
+    
+    optimization.headers.forEach((value, key) => {
+      if (!existingHeaders.has(key)) {
+        existingHeaders.set(key, value);
+      }
+    });
+  }
+}
+
+// Export singleton instance for easy usage
+export const edgeOptimizer = EdgeOptimizationService.getInstance();
+
+// Export types for external usage
+export type { EdgeRequest, EdgeResponse };
+
+// Legacy export for backward compatibility
+export const middleware = optimizeRequest;
