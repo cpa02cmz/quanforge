@@ -1,39 +1,64 @@
-# QuantForge AI - Optimized Documentation Index
-**Last Updated**: 2025-12-21 | **Files**: 8 Core Documents
+# Repository Documentation Index
+# AI-AGENT-OPTIMIZED STRUCTURE
 
-> **AI Agent Efficiency**: This documentation is optimized for AI agent context with minimal file count and comprehensive information.
+## 🚀 Core Documentation (8 Essential Files)
 
-## 🎯 Core Architecture Documents (Essential)
+### **Must Read First (AI-Agent Priority)**
+1. **[blueprint.md](./blueprint.md)** - System architecture & component hierarchy
+2. **[ROADMAP.md](./ROADMAP.md)** - Development phases & feature timeline  
+3. **[AGENTS.md](./AGENTS.md)** - AI agent guidelines & development patterns
+4. **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Technical architecture patterns
 
-- **`COMPREHENSIVE_OPTIMIZATION_GUIDE.md`** - ⭐ **NEW**: Single source of truth for ALL optimizations, performance, security, and architecture improvements
-- **`CONSOLIDATED_GUIDE.md`** - Complete agent guidance for repository navigation and development
-- **`AI_REPOSITORY_INDEX.md`** - Quick navigation index for AI agents
-- **`blueprint.md`** - System architecture and design documentation
-- **`ROADMAP.md`** - Product roadmap and feature planning
+### **Implementation Guides**
+5. **[COMPREHENSIVE_OPTIMIZATION_GUIDE.md](./COMPREHENSIVE_OPTIMIZATION_GUIDE.md)** - Performance & efficiency strategies
+6. **[API_DOCUMENTATION.md](./docs/API_DOCUMENTATION.md)** - Complete API reference
 
-## 📋 Development Documentation
+### **Development Standards** 
+7. **[coding_standard.md](./coding_standard.md)** - Code guidelines & patterns
+8. **[task.md](./task.md)** - Active tasks & completed features
 
-- **`task.md`** - Task tracking and completion status
-- **`AGENTS.md`** - Agent insights, decisions, and technical patterns
-- **`bug.md`** - Bug tracking and resolution log
-- **`coding_standard.md`** - Development and coding standards
+## 📚 Specialized Documentation
 
-## 📚 Specialized Guides
+### **Security & Performance**
+- **[BACKUP_DISASTER_RECOVERY_GUIDE.md](./BACKUP_DISASTER_RECOVERY_GUIDE.md)** - Recovery procedures
 
-- **`README.md`** - Main repository documentation
-- **`BACKUP_DISASTER_RECOVERY_GUIDE.md`** - Backup and disaster recovery procedures
-- **`fitur.md`** - Feature documentation (Indonesian)
+### **Feature-Specific**
+- **[fitur.md](./fitur.md)** - Feature list (Indonesian)
+- **[how-to.md](./how-to.md)** - Usage instructions
 
-## 🗑️ Deprecated Documentation
+---
 
-The following 68+ optimization files have been **consolidated** into `COMPREHENSIVE_OPTIMIZATION_GUIDE.md`:
-- All `*OPTIMIZATION*.md` files (merged)
-- All `*VERCEL_*.md` files (merged)  
-- All `*EDGE_*.md` files (merged)
-- All `*PERFORMANCE_*.md` files (merged)
-- All `*SEO_*.md` files (merged)
+## ⚠️ ARCHIVED DOCUMENTS (80+ files moved)
 
-> **Action**: These files should be removed to reduce context noise and improve AI agent efficiency.
+All deprecated and duplicate documentation has been moved to:
+- **`/archive/deprecated-docs/`** - Historical optimization notes
+- **`/archive/deprecated-docs/`** - Old implementation guides
+
+These are retained for reference but should NOT be used for current development.
+
+---
+
+## 🤖 AI Agent Usage Guide
+
+### **Primary Context Loading (Critical - Load First)**
+1. **blueprint.md** - Understand system design goals
+2. **ROADMAP.md** - Current development phase context
+3. **AGENTS.md** - Development patterns and guidelines
+4. **ARCHITECTURE.md** - Technical implementation approach
+
+### **Deep Dive Context (Load as Needed)**
+5. **COMPREHENSIVE_OPTIMIZATION_GUIDE.md** - Performance optimization context
+6. **API_DOCUMENTATION.md** - API implementation reference
+
+### **Quick Reference Tasks**
+7. **coding_standard.md** - Code style and patterns
+8. **task.md** - Current development priorities
+
+### **When Archive is Referenced**
+Only access `/archive/deprecated-docs/` when:
+- Researching historical decisions
+- Understanding previous implementation attempts
+- Troubleshooting legacy code patterns
 
 ---
 
