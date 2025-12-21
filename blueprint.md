@@ -84,6 +84,7 @@ graph TD
 ### Known Issues & Solutions
 - **Browser Crypto**: Replace Node.js `crypto` with browser-compatible alternatives
 - **Vercel Schema**: Use minimal, schema-compliant `vercel.json` configuration
+- **API Route Schema**: API route config exports must avoid unsupported properties like `regions`
 - **Build Validation**: Always run build and typecheck before deployment
 
 ### Critical Technical Debt (2025-12-20 Analysis)

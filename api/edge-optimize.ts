@@ -1,7 +1,6 @@
 // Edge function for optimizing API requests
 export const config = {
   runtime: 'edge',
-  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
   prefersStatic: true
 };
 

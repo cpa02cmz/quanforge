@@ -3,6 +3,7 @@
 
 ## Completed Tasks
 
+- [x] **PR #136 Resolution**: Fixed Vercel deployment schema validation errors by removing `regions` property from all API route config exports (11 files).
 - [x] **Project Setup**: React + Tailwind + Supabase Client.
 - [x] **Authentication**: Login/Signup flows with Mock fallback.
 - [x] **Layout**: Responsive Sidebar and Mobile Navigation.
