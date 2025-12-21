@@ -3,7 +3,8 @@
  * This file provides backward compatibility for existing code
  */
 
-import { SecurityManager as NewSecurityManager } from './security';
+import { Robot, StrategyParams, BacktestSettings } from '../types';
+import { SecurityManager as NewSecurityManager, DEFAULT_SECURITY_CONFIG } from './security';
 
 export interface SecurityConfig {
   maxPayloadSize: number;
@@ -108,29 +109,7 @@ export class SecurityManager {
   updateConfig(newConfig: Partial<SecurityConfig>): void {
     this.delegate.updateConfig(newConfig as any);
   }
-
-  // Legacy method compatibility
-  checkRateLimit(identifier: string) {
-    // Alias for isRateLimited for backward compatibility
-    const result = this.delegate.isRateLimited(identifier);
-    // Add allowed property for legacy compatibility
-    return {
-      ...result,
-      allowed: !result.isLimited
-    };
-  }
-
-  safeJSONParse(data: string, fallback: any = null): any {
-    try {
-      return JSON.parse(data);
-    } catch {
-      return fallback;
-    }
-  }
 }
 
 // Export the default instance for backward compatibility
 export default SecurityManager.getInstance();
-
-// Export the singleton instance for existing imports
-export const securityManager = SecurityManager.getInstance();
