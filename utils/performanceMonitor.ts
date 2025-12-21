@@ -1,12 +1,66 @@
 import { performance } from 'perf_hooks';
 
+// Extend Performance interface to include memory API (available in browsers)
+interface PerformanceWithMemory extends Performance {
+  memory?: {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
+}
+
+// Performance entry types for Web Vitals
+interface PerformanceEntryWithStartTime extends PerformanceEntry {
+  startTime: number;
+}
+
+interface PaintEntry extends PerformanceEntry {
+  name: string;
+  startTime: number;
+}
+
+interface NavigationEntry extends PerformanceEntry {
+  name: string;
+  startTime: number;
+  duration: number;
+}
+
+interface LargestContentfulPaintEntry extends PerformanceEntryWithStartTime {
+  startTime: number;
+}
+
+interface LayoutShiftEntry extends PerformanceEntry {
+  value: number;
+  hadRecentInput: boolean;
+}
+
+interface FirstInputEntry extends PerformanceEntryWithStartTime {
+  processingStart: number;
+  startTime: number;
+}
+
+interface WebVitalsData {
+  navigation: NavigationEntry | null;
+  paint: {
+    firstPaint: PaintEntry | null;
+    firstContentfulPaint: PaintEntry | null;
+  };
+  coreWebVitals: {
+    lcp: number;
+    cls: number;
+    fid: number;
+  };
+  resourcesCount: number;
+  domContentLoaded: boolean;
+}
+
 interface PerformanceMetrics {
   operation: string;
   startTime: number;
   endTime: number;
   duration: number;
   memoryUsage: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 interface PerformanceReport {
@@ -25,7 +79,7 @@ class PerformanceMonitor {
   private reportingThreshold = 200; // Increased from 100 to reduce overhead
   private samplingRate = 0.1; // Sample 10% of operations to reduce overhead
 
-  startTimer(operation: string, metadata?: Record<string, any>): () => PerformanceMetrics {
+  startTimer(operation: string, metadata?: Record<string, unknown>): () => PerformanceMetrics {
     // Skip monitoring for some operations to reduce overhead
     if (Math.random() > this.samplingRate) {
       return () => ({} as PerformanceMetrics);
@@ -74,9 +128,9 @@ class PerformanceMonitor {
     }
   }
 
-  private getMemoryUsage(): number {
-    if (typeof performance !== 'undefined' && (performance as any).memory) {
-      return (performance as any).memory.usedJSHeapSize || 0;
+private getMemoryUsage(): number {
+    if (typeof performance !== 'undefined' && (performance as unknown as PerformanceWithMemory).memory) {
+      return (performance as unknown as PerformanceWithMemory).memory!.usedJSHeapSize || 0;
     }
     return 0;
   }
@@ -180,12 +234,13 @@ class PerformanceMonitor {
   }
 
 // Web performance API integration
-    getWebVitals(): any {
+    getWebVitals(): WebVitalsData | null {
       if (typeof performance !== 'undefined' && 'getEntriesByType' in performance) {
-        // Use any type to avoid strict typing issues with performance entries
-        const performanceAPI: any = performance;
-        const navigationEntries = performanceAPI.getEntriesByType?.('navigation') || [];
-        const paintEntries = performanceAPI.getEntriesByType?.('paint') || [];
+        const performanceAPI = performance as unknown as {
+          getEntriesByType?: (type: string) => PerformanceEntry[];
+        };
+        const navigationEntries = performanceAPI.getEntriesByType?.('navigation') as NavigationEntry[] || [];
+        const paintEntries = performanceAPI.getEntriesByType?.('paint') as PaintEntry[] || [];
         const resourceEntries = performanceAPI.getEntriesByType?.('resource') || [];
         
         // Calculate Core Web Vitals
@@ -194,14 +249,16 @@ class PerformanceMonitor {
         let fidValue = 0;
         
         // LCP (Largest Contentful Paint)
-        const lcpEntries = performanceAPI.getEntriesByType?.('largest-contentful-paint') || [];
+        const lcpEntries = performanceAPI.getEntriesByType?.('largest-contentful-paint') as LargestContentfulPaintEntry[] || [];
         if (lcpEntries.length > 0) {
           const lcpEntry = lcpEntries[lcpEntries.length - 1];
-          lcpValue = lcpEntry.startTime;
+          if (lcpEntry) {
+            lcpValue = lcpEntry.startTime;
+          }
         }
         
         // Calculate CLS (Cumulative Layout Shift)
-        const layoutShiftEntries = performanceAPI.getEntriesByType?.('layout-shift') || [];
+        const layoutShiftEntries = performanceAPI.getEntriesByType?.('layout-shift') as LayoutShiftEntry[] || [];
         let clsSessionWindow = 0;
         for (const entry of layoutShiftEntries) {
           if (!entry.hadRecentInput) {
@@ -211,17 +268,19 @@ class PerformanceMonitor {
         clsValue = clsSessionWindow;
         
         // Calculate FID (First Input Delay) - only available after user interaction
-        const fidEntries = performanceAPI.getEntriesByType?.('first-input') || [];
+        const fidEntries = performanceAPI.getEntriesByType?.('first-input') as FirstInputEntry[] || [];
         if (fidEntries.length > 0) {
           const fidEntry = fidEntries[0];
-          fidValue = fidEntry.processingStart - fidEntry.startTime;
+          if (fidEntry) {
+            fidValue = fidEntry.processingStart - fidEntry.startTime;
+          }
         }
         
         return {
-          navigation: navigationEntries.length > 0 ? navigationEntries[0] : null,
+          navigation: navigationEntries.length > 0 ? (navigationEntries[0] || null) : null,
           paint: {
-            firstPaint: Array.isArray(paintEntries) ? paintEntries.find((entry: any) => entry.name === 'first-paint') : null,
-            firstContentfulPaint: Array.isArray(paintEntries) ? paintEntries.find((entry: any) => entry.name === 'first-contentful-paint') : null,
+            firstPaint: Array.isArray(paintEntries) ? paintEntries.find((entry: PaintEntry) => entry.name === 'first-paint') || null : null,
+            firstContentfulPaint: Array.isArray(paintEntries) ? paintEntries.find((entry: PaintEntry) => entry.name === 'first-contentful-paint') || null : null,
           },
           coreWebVitals: {
             lcp: lcpValue,
@@ -268,13 +327,13 @@ export const performanceMonitor = new PerformanceMonitor();
 
 // Decorator for automatic performance monitoring
 export function measurePerformance(operationName?: string) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
-    const method = descriptor.value;
-    const operation = operationName || `${target.constructor.name}.${propertyName}`;
+  return function (target: Record<string, unknown>, propertyName: string, descriptor: PropertyDescriptor) {
+    const method = descriptor.value as (...args: unknown[]) => unknown;
+    const operation = operationName || `${(target.constructor as { name: string }).name}.${propertyName}`;
 
-    descriptor.value = function (...args: any[]) {
+    descriptor.value = function (...args: unknown[]) {
       const endTimer = performanceMonitor.startTimer(operation, {
-        className: target.constructor.name,
+        className: (target.constructor as { name: string }).name,
         methodName: propertyName,
         argsCount: args.length
       });
@@ -282,14 +341,14 @@ export function measurePerformance(operationName?: string) {
       try {
         const result = method.apply(this, args);
         
-        if (result && typeof result.then === 'function') {
+        if (result && typeof result === 'object' && 'then' in result && typeof result.then === 'function') {
           // Handle async methods
-          return result
-            .then((value: any) => {
+          return (result as Promise<unknown>)
+            .then((value: unknown) => {
               endTimer();
               return value;
             })
-            .catch((error: any) => {
+            .catch((error: Error | unknown) => {
               endTimer();
               throw error;
             });
@@ -312,7 +371,7 @@ export function measurePerformance(operationName?: string) {
 export function measureAsync<T>(
   operation: string,
   fn: () => Promise<T>,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): Promise<T> {
   const endTimer = performanceMonitor.startTimer(operation, metadata);
   
@@ -321,7 +380,7 @@ export function measureAsync<T>(
       endTimer();
       return result;
     })
-    .catch(error => {
+    .catch((error: Error | unknown) => {
       endTimer();
       throw error;
     });
@@ -331,7 +390,7 @@ export function measureAsync<T>(
 export function measure<T>(
   operation: string,
   fn: () => T,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): T {
   const endTimer = performanceMonitor.startTimer(operation, metadata);
   try {
@@ -349,7 +408,7 @@ interface LogEntry {
   timestamp: number;
   level: 'debug' | 'info' | 'warn' | 'error';
   message: string;
-  context: Record<string, any>;
+  context: Record<string, unknown>;
   operation?: string;
   userId?: string;
   sessionId?: string;
@@ -383,7 +442,7 @@ class Logger {
     return levels[level] >= levels[this.logLevel];
   }
 
-  log(level: 'debug' | 'info' | 'warn' | 'error', message: string, context: Record<string, any> = {}): void {
+  log(level: 'debug' | 'info' | 'warn' | 'error', message: string, context: Record<string, unknown> = {}): void {
     if (!this.shouldLog(level)) return;
 
     const logEntry: LogEntry = {
@@ -412,19 +471,19 @@ class Logger {
     }
   }
 
-  debug(message: string, context: Record<string, any> = {}): void {
+  debug(message: string, context: Record<string, unknown> = {}): void {
     this.log('debug', message, context);
   }
 
-  info(message: string, context: Record<string, any> = {}): void {
+  info(message: string, context: Record<string, unknown> = {}): void {
     this.log('info', message, context);
   }
 
-  warn(message: string, context: Record<string, any> = {}): void {
+  warn(message: string, context: Record<string, unknown> = {}): void {
     this.log('warn', message, context);
   }
 
-  error(message: string, context: Record<string, any> = {}): void {
+  error(message: string, context: Record<string, unknown> = {}): void {
     this.log('error', message, context);
   }
 
@@ -433,7 +492,7 @@ class Logger {
       // In a real implementation, you would send to a logging service like LogRocket, Sentry, etc.
       // For now, we'll just log to console to avoid external dependencies
       console.log('External logging service call:', logEntry);
-    } catch (e) {
+    } catch (e: unknown) {
       console.warn('Failed to send log to external service:', e);
     }
   }
@@ -524,19 +583,19 @@ class MonitoringService {
     return this.logger;
   }
 
-  log(level: 'debug' | 'info' | 'warn' | 'error', message: string, context: Record<string, any> = {}): void {
+  log(level: 'debug' | 'info' | 'warn' | 'error', message: string, context: Record<string, unknown> = {}): void {
     this.logger.log(level, message, context);
   }
 
-  info(message: string, context: Record<string, any> = {}): void {
+  info(message: string, context: Record<string, unknown> = {}): void {
     this.logger.info(message, context);
   }
 
-  warn(message: string, context: Record<string, any> = {}): void {
+  warn(message: string, context: Record<string, unknown> = {}): void {
     this.logger.warn(message, context);
   }
 
-  error(message: string, context: Record<string, any> = {}): void {
+  error(message: string, context: Record<string, unknown> = {}): void {
     this.logger.error(message, context);
   }
 

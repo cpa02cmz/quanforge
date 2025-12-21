@@ -19,22 +19,108 @@ interface EdgeSupabaseConfig {
   retryDelay: number;
 }
 
-interface QueryCacheEntry {
-  data: any;
+interface QueryCacheEntry<T = unknown> {
+  data: T;
   timestamp: number;
   ttl: number;
   queryHash: string;
   hitCount: number;
 }
 
-interface BatchedQuery {
+interface BatchedQuery<T = unknown> {
   id: string;
   query: string;
-  params: any[];
-  resolve: (value: any) => void;
-  reject: (reason: any) => void;
+  params: unknown[];
+  resolve: (value: T) => void;
+  reject: (reason: Error | unknown) => void;
   timestamp: number;
 }
+
+interface QueryOptions {
+  cacheKey?: string;
+  cacheTTL?: number;
+  useBatch?: boolean;
+  priority?: 'low' | 'normal' | 'high';
+}
+
+interface BatchQueryDefinition {
+  query: string;
+  params?: unknown[];
+  cacheKey?: string;
+  cacheTTL?: number;
+}
+
+interface UncachedQuery extends BatchQueryDefinition {
+  index: number;
+}
+
+interface WarmupQueryDefinition {
+  query: string;
+  params?: unknown[];
+  cacheKey: string;
+  cacheTTL?: number;
+}
+
+interface PerformanceMetrics {
+  queriesExecuted: number;
+  cacheHits: number;
+  batchesProcessed: number;
+  averageQueryTime: number;
+  connectionPoolHits: number;
+}
+
+interface ExtendedMetrics extends PerformanceMetrics {
+  cacheHitRate: number;
+  connectionPoolHitRate: number;
+}
+
+interface RobotQueryParams {
+  user_id?: string;
+  strategy_type?: string;
+  id?: string;
+  limit?: number;
+  offset?: number;
+  search?: string;
+  order?: string;
+  data?: unknown;
+}
+
+interface StrategyQueryParams {
+  category?: string;
+  difficulty?: string;
+  id?: string;
+  limit?: number;
+  search?: string;
+  data?: unknown;
+}
+
+interface AnalyticsParams {
+  table?: string;
+}
+
+interface UpdateParams {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface DeleteParams {
+  id: string;
+}
+
+interface AnalyticsResult {
+  total: number;
+  distribution: Record<string, number>;
+  timestamp: number;
+}
+
+// Use actual Supabase types instead of custom interfaces
+type SupabaseClient = any; // Will be replaced by actual Supabase client type
+type SupabaseQueryBuilder = any; // Will be replaced by actual Supabase query builder
+type SupabaseResult<T = unknown> = {
+  data: T | null;
+  error: Error | null;
+  count?: number;
+};
 
 export class EdgeSupabaseOptimizer {
   private static instance: EdgeSupabaseOptimizer;
@@ -51,9 +137,9 @@ export class EdgeSupabaseOptimizer {
   };
 
   private queryCache = new Map<string, QueryCacheEntry>();
-  private batchQueue: BatchedQuery[] = [];
+  private batchQueue: BatchedQuery<unknown>[] = [];
   private batchTimer: NodeJS.Timeout | null = null;
-  private metrics = {
+  private metrics: PerformanceMetrics = {
     queriesExecuted: 0,
     cacheHits: 0,
     batchesProcessed: 0,
@@ -75,22 +161,17 @@ export class EdgeSupabaseOptimizer {
   /**
    * Execute optimized query with caching and connection pooling
    */
-  async executeQuery<T = any>(
+  async executeQuery<T = unknown>(
     query: string,
-    params: any[] = [],
-    options: {
-      cacheKey?: string;
-      cacheTTL?: number;
-      useBatch?: boolean;
-      priority?: 'low' | 'normal' | 'high';
-    } = {}
+    params: unknown[] = [],
+    options: QueryOptions = {}
   ): Promise<T> {
     const startTime = performance.now();
     
     try {
       // Check cache first
       if (this.config.enableResultCaching && options.cacheKey) {
-        const cached = await this.getFromCache(options.cacheKey);
+        const cached = await this.getFromCache<T>(options.cacheKey);
         if (cached) {
           this.metrics.cacheHits++;
           return cached;
@@ -99,11 +180,11 @@ export class EdgeSupabaseOptimizer {
 
       // Use batching if enabled and appropriate
       if (this.config.enableBatching && options.useBatch !== false) {
-        return this.executeBatchedQuery(query, params, options);
+        return this.executeBatchedQuery<T>(query, params, options);
       }
 
       // Execute query with optimized connection
-      const result = await this.executeQueryWithOptimization(query, params, options);
+      const result = await this.executeQueryWithOptimization<T>(query, params, options);
       
       // Cache result if applicable
       if (this.config.enableResultCaching && options.cacheKey && result) {
@@ -125,25 +206,14 @@ export class EdgeSupabaseOptimizer {
   /**
    * Execute multiple queries in parallel with optimization
    */
-  async executeBatch(queries: Array<{
-    query: string;
-    params?: any[];
-    cacheKey?: string;
-    cacheTTL?: number;
-  }>): Promise<any[]> {
+  async executeBatch(queries: BatchQueryDefinition[]): Promise<unknown[]> {
     const startTime = performance.now();
     
     try {
       // Check cache for all queries first
-      const uncachedQueries: Array<{
-        index: number;
-        query: string;
-        params: any[];
-        cacheKey?: string;
-        cacheTTL?: number;
-      }> = [];
+      const uncachedQueries: UncachedQuery[] = [];
       
-      const results: any[] = new Array(queries.length);
+      const results: unknown[] = new Array(queries.length);
 
       for (let i = 0; i < queries.length; i++) {
         const { query, params = [], cacheKey, cacheTTL } = queries[i];
@@ -165,7 +235,7 @@ export class EdgeSupabaseOptimizer {
         const client = await this.getOptimizedClient();
         
         const parallelQueries = uncachedQueries.map(async ({ query, params }) => {
-          return this.executeQueryWithRetry(client, query, params);
+          return this.executeQueryWithRetry(client, query, params || []);
         });
 
         const parallelResults = await Promise.allSettled(parallelQueries);
@@ -204,12 +274,7 @@ export class EdgeSupabaseOptimizer {
   /**
    * Warm up cache with common queries
    */
-  async warmupCache(queries: Array<{
-    query: string;
-    params?: any[];
-    cacheKey: string;
-    cacheTTL?: number;
-  }>): Promise<{ success: number; failed: number }> {
+  async warmupCache(queries: WarmupQueryDefinition[]): Promise<{ success: number; failed: number }> {
     let success = 0;
     let failed = 0;
 
@@ -263,7 +328,7 @@ export class EdgeSupabaseOptimizer {
   /**
    * Get optimized Supabase client with connection pooling
    */
-  private async getOptimizedClient() {
+  private async getOptimizedClient(): Promise<SupabaseClient> {
     if (!this.config.enableConnectionPooling) {
       // Fallback to regular client
       const settings = settingsManager.getDBSettings();
@@ -293,15 +358,15 @@ export class EdgeSupabaseOptimizer {
   /**
    * Execute query with retry logic
    */
-  private async executeQueryWithRetry(client: any, query: string, params: any[]): Promise<any> {
-    let lastError: any;
+  private async executeQueryWithRetry(client: SupabaseClient, query: string, params: unknown[]): Promise<unknown> {
+    let lastError: Error | unknown;
     
     for (let attempt = 0; attempt <= this.config.retryAttempts; attempt++) {
       try {
         // Execute query with timeout
         const result = await Promise.race([
           this.executeSupabaseQuery(client, query, params),
-          new Promise((_, reject) => 
+          new Promise<never>((_, reject) => 
             setTimeout(() => reject(new Error('Query timeout')), this.config.queryTimeout)
           )
         ]);
@@ -326,27 +391,28 @@ export class EdgeSupabaseOptimizer {
   /**
    * Execute Supabase query with proper query builder pattern
    */
-  private async executeSupabaseQuery(client: any, query: string, params: any[]): Promise<any> {
+  private async executeSupabaseQuery(client: SupabaseClient, query: string, params: unknown[]): Promise<unknown> {
     try {
       // Parse and execute optimized queries based on table and operation
       if (query.includes('robots')) {
         let builder = client.from('robots').select('*');
+        const robotParams = params as RobotQueryParams;
         
         // Apply filters from params
-        if (params?.user_id) builder = builder.eq('user_id', params.user_id);
-        if (params?.strategy_type) builder = builder.eq('strategy_type', params.strategy_type);
-        if (params?.id) builder = builder.eq('id', params.id);
-        if (params?.limit) builder = builder.limit(params.limit);
-        if (params?.offset) builder = builder.range(params.offset, params.offset + (params.limit || 20) - 1);
+        if (robotParams?.user_id) builder = builder.eq('user_id', robotParams.user_id);
+        if (robotParams?.strategy_type) builder = builder.eq('strategy_type', robotParams.strategy_type);
+        if (robotParams?.id) builder = builder.eq('id', robotParams.id);
+        if (robotParams?.limit) builder = builder.limit(robotParams.limit);
+        if (robotParams?.offset) builder = builder.range(robotParams.offset, robotParams.offset + (robotParams.limit || 20) - 1);
         
         // Apply search filters
-        if (params?.search) {
-          builder = builder.or(`name.ilike.%${params.search}%,description.ilike.%${params.search}%`);
+        if (robotParams?.search) {
+          builder = builder.or(`name.ilike.%${robotParams.search}%,description.ilike.%${robotParams.search}%`);
         }
         
         // Apply ordering
-        if (params?.order) {
-          const [column, direction] = params.order.split('.');
+        if (robotParams?.order) {
+          const [column, direction] = robotParams.order.split('.');
           builder = builder.order(column, { ascending: direction === 'asc' });
         } else {
           builder = builder.order('created_at', { ascending: false });
@@ -358,16 +424,17 @@ export class EdgeSupabaseOptimizer {
       
       if (query.includes('strategies')) {
         let builder = client.from('strategies').select('*');
+        const strategyParams = params as StrategyQueryParams;
         
         // Apply filters
-        if (params?.category) builder = builder.eq('category', params.category);
-        if (params?.difficulty) builder = builder.eq('difficulty', params.difficulty);
-        if (params?.id) builder = builder.eq('id', params.id);
-        if (params?.limit) builder = builder.limit(params.limit);
+        if (strategyParams?.category) builder = builder.eq('category', strategyParams.category);
+        if (strategyParams?.difficulty) builder = builder.eq('difficulty', strategyParams.difficulty);
+        if (strategyParams?.id) builder = builder.eq('id', strategyParams.id);
+        if (strategyParams?.limit) builder = builder.limit(strategyParams.limit);
         
         // Apply search
-        if (params?.search) {
-          builder = builder.or(`name.ilike.%${params.search}%,description.ilike.%${params.search}%`);
+        if (strategyParams?.search) {
+          builder = builder.or(`name.ilike.%${strategyParams.search}%,description.ilike.%${strategyParams.search}%`);
         }
         
         // Apply ordering
@@ -378,8 +445,10 @@ export class EdgeSupabaseOptimizer {
       }
       
       if (query.includes('analytics') || query.includes('metrics')) {
+        const analyticsParams = params as AnalyticsParams;
+        
         // Handle analytics queries
-        if (params?.table === 'robots') {
+        if (analyticsParams?.table === 'robots') {
           const { count, error } = await client
             .from('robots')
             .select('*', { count: 'exact', head: true });
@@ -391,24 +460,26 @@ export class EdgeSupabaseOptimizer {
             .from('robots')
             .select('strategy_type');
           
-          const distribution = strategyData?.reduce((acc: any, item: any) => {
+          const distribution = strategyData?.reduce((acc: Record<string, number>, item: { strategy_type?: string }) => {
             const type = item.strategy_type || 'Custom';
             acc[type] = (acc[type] || 0) + 1;
             return acc;
-          }, {});
+          }, {} as Record<string, number>);
           
-          return {
-            total: count,
+          const analyticsResult: AnalyticsResult = {
+            total: count || 0,
             distribution,
             timestamp: Date.now()
           };
+          
+          return analyticsResult;
         }
       }
       
       // Handle insert operations
       if (query.includes('INSERT') || query.includes('insert')) {
         const table = query.includes('robots') ? 'robots' : 'strategies';
-        const data = params?.data || params;
+        const data = (params as RobotQueryParams | StrategyQueryParams)?.data || params;
         
         const result = await client
           .from(table)
@@ -421,7 +492,8 @@ export class EdgeSupabaseOptimizer {
       // Handle update operations
       if (query.includes('UPDATE') || query.includes('update')) {
         const table = query.includes('robots') ? 'robots' : 'strategies';
-        const { id, ...updateData } = params || {};
+        const updateParams = params as unknown as UpdateParams;
+        const { id, ...updateData } = updateParams || {};
         
         if (!id) throw new Error('ID required for update operations');
         
@@ -437,7 +509,8 @@ export class EdgeSupabaseOptimizer {
       // Handle delete operations
       if (query.includes('DELETE') || query.includes('delete')) {
         const table = query.includes('robots') ? 'robots' : 'strategies';
-        const { id } = params || {};
+        const deleteParams = params as unknown as DeleteParams;
+        const { id } = deleteParams || {};
         
         if (!id) throw new Error('ID required for delete operations');
         
@@ -462,11 +535,11 @@ export class EdgeSupabaseOptimizer {
   /**
    * Execute query with optimization
    */
-  private async executeQueryWithOptimization(
+  private async executeQueryWithOptimization<T = unknown>(
     query: string,
-    params: any[],
-    options: any
-  ): Promise<any> {
+    params: unknown[],
+    options: QueryOptions
+  ): Promise<T> {
     const client = await this.getOptimizedClient();
     
     if (this.config.enableQueryOptimization) {
@@ -474,19 +547,19 @@ export class EdgeSupabaseOptimizer {
       query = this.optimizeQuery(query);
     }
     
-    return this.executeQueryWithRetry(client, query, params);
+    return this.executeQueryWithRetry(client, query, params) as Promise<T>;
   }
 
   /**
    * Execute batched query
    */
-  private async executeBatchedQuery(
+  private async executeBatchedQuery<T = unknown>(
     query: string,
-    params: any[],
-    options: any
-  ): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const batchedQuery: BatchedQuery = {
+    params: unknown[],
+    options: QueryOptions
+  ): Promise<T> {
+    return new Promise((resolve: (value: T) => void, reject: (reason: Error | unknown) => void) => {
+      const batchedQuery: BatchedQuery<T> = {
         id: this.generateQueryId(),
         query,
         params,
@@ -495,7 +568,7 @@ export class EdgeSupabaseOptimizer {
         timestamp: Date.now(),
       };
       
-      this.batchQueue.push(batchedQuery);
+      this.batchQueue.push(batchedQuery as BatchedQuery<unknown>);
       
       // Set batch timer if not already set
       if (!this.batchTimer) {
@@ -527,14 +600,14 @@ export class EdgeSupabaseOptimizer {
       const client = await this.getOptimizedClient();
       
       // Execute all queries in parallel
-      const queryPromises = batch.map(async (batchedQuery) => {
+      const queryPromises = batch.map(async (batchedQuery: BatchedQuery<unknown>) => {
         try {
           const result = await this.executeQueryWithRetry(
             client,
             batchedQuery.query,
             batchedQuery.params
           );
-          batchedQuery.resolve(result);
+          batchedQuery.resolve(result as unknown);
         } catch (error) {
           batchedQuery.reject(error);
         }
@@ -574,12 +647,12 @@ export class EdgeSupabaseOptimizer {
   /**
    * Get data from cache
    */
-  private async getFromCache(key: string): Promise<any> {
+  private async getFromCache<T = unknown>(key: string): Promise<T | null> {
     try {
       return await edgeCacheManager.get(key, {
         preferEdge: true,
         staleWhileRevalidate: true,
-      });
+      }) as Promise<T>;
     } catch (error) {
       console.debug('Cache get failed:', error);
       return null;
@@ -589,7 +662,7 @@ export class EdgeSupabaseOptimizer {
   /**
    * Set data to cache
    */
-  private async setCache(key: string, data: any, ttl?: number): Promise<void> {
+  private async setCache<T = unknown>(key: string, data: T, ttl?: number): Promise<void> {
     try {
       await edgeCacheManager.set(key, data, {
         ttl: ttl || 15 * 60 * 1000, // 15 minutes default
@@ -626,7 +699,7 @@ export class EdgeSupabaseOptimizer {
   /**
    * Get performance metrics
    */
-  getMetrics() {
+  getMetrics(): ExtendedMetrics {
     return {
       ...this.metrics,
       cacheHitRate: this.metrics.queriesExecuted > 0 

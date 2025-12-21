@@ -1,6 +1,44 @@
 import { Robot, StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
 
+// Enhanced type definitions for security operations
+interface UserData {
+  email?: string;
+  [key: string]: unknown;
+}
+
+type SanitizableData = Robot | Partial<Robot> | Partial<StrategyParams> | Partial<BacktestSettings> | UserData | Record<string, unknown>;
+
+interface CSPViolation {
+  blockedURI: string;
+  documentURI: string;
+  referrer: string;
+  violatedDirective: string;
+  effectiveDirective: string;
+  originalPolicy: string;
+  disposition: string;
+  sourceFile?: string;
+  lineNumber?: number;
+  columnNumber?: number;
+  statusCode?: number;
+  sample?: string;
+  timestamp: number;
+}
+
+interface SecurityAlert {
+  type: string;
+  data: unknown;
+  timestamp: number;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  url: string;
+}
+
+interface EdgeRequestPattern {
+  requestFrequency: number;
+  consistentTiming: boolean;
+  missingHeaders: boolean;
+}
+
 interface SecurityConfig {
   maxPayloadSize: number;
   allowedOrigins: string[];
@@ -32,8 +70,56 @@ interface SecurityConfig {
 interface ValidationResult {
   isValid: boolean;
   errors: string[];
-  sanitizedData?: any;
+  sanitizedData?: SanitizableData;
   riskScore: number;
+}
+
+// XSS prevention result interface
+interface XSSResult {
+  hasXSS: boolean;
+  sanitizedData: SanitizableData | undefined;
+}
+
+// SQL injection prevention result interface
+interface SQLInjectionResult {
+  hasSQLInjection: boolean;
+  sanitizedData: SanitizableData | undefined;
+}
+
+// Bot detection result interface
+interface BotDetectionResult {
+  isBot: boolean;
+  confidence: number;
+  botType?: string;
+}
+
+// Security statistics interfaces
+interface ThreatStats {
+  threat: string;
+  count: number;
+}
+
+interface ViolationStats {
+  directive: string;
+  count: number;
+}
+
+interface WAFStats {
+  totalRequests: number;
+  blockedRequests: number;
+  topThreats: ThreatStats[];
+}
+
+interface CSPStats {
+  totalViolations: number;
+  highSeverityViolations: number;
+  topViolations: ViolationStats[];
+}
+
+interface RateLimitStats {
+  activeEntries: number;
+  blockedRequests: number;
+  topBlockedIPs: ThreatStats[];
 }
 
 class SecurityManager {
@@ -84,7 +170,7 @@ class SecurityManager {
   }
 
   // Input sanitization and validation
-  sanitizeAndValidate(data: any, type: 'robot' | 'strategy' | 'backtest' | 'user'): ValidationResult {
+  sanitizeAndValidate(data: SanitizableData, type: 'robot' | 'strategy' | 'backtest' | 'user'): ValidationResult {
     const errors: string[] = [];
     let sanitizedData = data;
     let riskScore = 0;
@@ -108,28 +194,36 @@ class SecurityManager {
         case 'robot':
           const robotResult = this.validateRobotData(data);
           errors.push(...robotResult.errors);
-          sanitizedData = robotResult.sanitizedData;
+          if (robotResult.sanitizedData) {
+            sanitizedData = robotResult.sanitizedData;
+          }
           riskScore += robotResult.riskScore;
           break;
 
         case 'strategy':
           const strategyResult = this.validateStrategyData(data);
           errors.push(...strategyResult.errors);
-          sanitizedData = strategyResult.sanitizedData;
+          if (strategyResult.sanitizedData) {
+            sanitizedData = strategyResult.sanitizedData;
+          }
           riskScore += strategyResult.riskScore;
           break;
 
         case 'backtest':
           const backtestResult = this.validateBacktestData(data);
           errors.push(...backtestResult.errors);
-          sanitizedData = backtestResult.sanitizedData;
+          if (backtestResult.sanitizedData) {
+            sanitizedData = backtestResult.sanitizedData;
+          }
           riskScore += backtestResult.riskScore;
           break;
 
         case 'user':
           const userResult = this.validateUserData(data);
           errors.push(...userResult.errors);
-          sanitizedData = userResult.sanitizedData;
+          if (userResult.sanitizedData) {
+            sanitizedData = userResult.sanitizedData;
+          }
           riskScore += userResult.riskScore;
           break;
       }
@@ -139,7 +233,9 @@ class SecurityManager {
       if (xssResult.hasXSS) {
         errors.push('Potential XSS detected and removed');
         riskScore += 30;
-        sanitizedData = xssResult.sanitizedData;
+        if (xssResult.sanitizedData) {
+          sanitizedData = xssResult.sanitizedData;
+        }
       }
 
       // SQL injection prevention
@@ -147,7 +243,9 @@ class SecurityManager {
       if (sqlResult.hasSQLInjection) {
         errors.push('Potential SQL injection detected and removed');
         riskScore += 40;
-        sanitizedData = sqlResult.sanitizedData;
+        if (sqlResult.sanitizedData) {
+          sanitizedData = sqlResult.sanitizedData;
+        }
       }
 
     } catch (error) {
@@ -163,7 +261,7 @@ class SecurityManager {
     };
   }
 
-private validateRobotData(data: any): ValidationResult {
+private validateRobotData(data: SanitizableData): ValidationResult {
      const errors: string[] = [];
      let riskScore = 0;
      const sanitized: Partial<Robot> = {};
@@ -176,8 +274,8 @@ private validateRobotData(data: any): ValidationResult {
      }
 
      // Name validation
-     if (data.name) {
-       const sanitizedName = this.sanitizeString(data.name);
+     if (data && typeof data === 'object' && 'name' in data && data.name) {
+       const sanitizedName = this.sanitizeString(String(data.name));
        if (sanitizedName.length < 3 || sanitizedName.length > 100) {
          errors.push('Robot name must be between 3 and 100 characters');
          riskScore += 10;
@@ -189,8 +287,8 @@ private validateRobotData(data: any): ValidationResult {
      }
 
     // Description validation
-    if (data.description) {
-      const sanitizedDescription = this.sanitizeString(data.description);
+    if (data && typeof data === 'object' && 'description' in data && data.description) {
+      const sanitizedDescription = this.sanitizeString(String(data.description));
       if (sanitizedDescription.length > 1000) {
         errors.push('Description too long (max 1000 characters)');
         riskScore += 5;
@@ -199,8 +297,8 @@ private validateRobotData(data: any): ValidationResult {
     }
 
     // Code validation - critical for security
-    if (data.code) {
-      const codeValidation = this.validateMQL5Code(data.code);
+    if (data && typeof data === 'object' && 'code' in data && data.code) {
+      const codeValidation = this.validateMQL5Code(String(data.code));
       if (!codeValidation.isValid) {
         errors.push(...codeValidation.errors);
         riskScore += 25;
@@ -212,13 +310,14 @@ private validateRobotData(data: any): ValidationResult {
     }
 
     // Strategy type validation
-    if (data.strategy_type) {
+    if (data && typeof data === 'object' && 'strategy_type' in data && data.strategy_type) {
+      const strategyType = String(data.strategy_type);
       const validTypes = ['Trend', 'Scalping', 'Grid', 'Martingale', 'Custom'];
-      if (!validTypes.includes(data.strategy_type)) {
+      if (!validTypes.includes(strategyType)) {
         errors.push('Invalid strategy type');
         riskScore += 10;
       }
-      sanitized.strategy_type = data.strategy_type;
+      sanitized.strategy_type = strategyType as Robot['strategy_type'];
     }
 
     return {
@@ -229,24 +328,25 @@ private validateRobotData(data: any): ValidationResult {
     };
   }
 
-  private validateStrategyData(data: any): ValidationResult {
+  private validateStrategyData(data: SanitizableData): ValidationResult {
     const errors: string[] = [];
     let riskScore = 0;
     const sanitized: Partial<StrategyParams> = {};
 
     // Timeframe validation
-    if (data.timeframe) {
+    if (data && typeof data === 'object' && 'timeframe' in data && data.timeframe) {
+      const timeframe = String(data.timeframe);
       const validTimeframes = ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'];
-      if (!validTimeframes.includes(data.timeframe)) {
+      if (!validTimeframes.includes(timeframe)) {
         errors.push('Invalid timeframe');
         riskScore += 10;
       }
-      sanitized.timeframe = data.timeframe;
+      sanitized.timeframe = timeframe as StrategyParams['timeframe'];
     }
 
     // Symbol validation
-    if (data.symbol) {
-      const sanitizedSymbol = this.sanitizeSymbol(data.symbol);
+    if (data && typeof data === 'object' && 'symbol' in data && data.symbol) {
+      const sanitizedSymbol = this.sanitizeSymbol(String(data.symbol));
       if (!sanitizedSymbol) {
         errors.push('Invalid symbol format');
         riskScore += 10;
@@ -255,7 +355,7 @@ private validateRobotData(data: any): ValidationResult {
     }
 
     // Risk percent validation
-    if (typeof data.riskPercent === 'number') {
+    if (data && typeof data === 'object' && 'riskPercent' in data && typeof data.riskPercent === 'number') {
       if (data.riskPercent < 0.01 || data.riskPercent > 100) {
         errors.push('Risk percent must be between 0.01 and 100');
         riskScore += 10;
@@ -271,13 +371,13 @@ private validateRobotData(data: any): ValidationResult {
     };
   }
 
-  private validateBacktestData(data: any): ValidationResult {
+  private validateBacktestData(data: SanitizableData): ValidationResult {
     const errors: string[] = [];
     let riskScore = 0;
     const sanitized: Partial<BacktestSettings> = {};
 
     // Initial deposit validation
-    if (typeof data.initialDeposit === 'number') {
+    if (data && typeof data === 'object' && 'initialDeposit' in data && typeof data.initialDeposit === 'number') {
       if (data.initialDeposit < 100 || data.initialDeposit > 10000000) {
         errors.push('Initial deposit must be between $100 and $10,000,000');
         riskScore += 10;
@@ -286,7 +386,7 @@ private validateRobotData(data: any): ValidationResult {
     }
 
     // Days validation
-    if (typeof data.days === 'number') {
+    if (data && typeof data === 'object' && 'days' in data && typeof data.days === 'number') {
       if (data.days < 1 || data.days > 365) {
         errors.push('Backtest duration must be between 1 and 365 days');
         riskScore += 10;
@@ -302,19 +402,20 @@ private validateRobotData(data: any): ValidationResult {
     };
   }
 
-  private validateUserData(data: any): ValidationResult {
+  private validateUserData(data: SanitizableData): ValidationResult {
     const errors: string[] = [];
     let riskScore = 0;
-    const sanitized: any = {};
+    const sanitized: UserData = {};
 
     // Email validation
-    if (data.email) {
+    if (data && typeof data === 'object' && 'email' in data && data.email) {
+      const email = String(data.email);
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(data.email)) {
+      if (!emailRegex.test(email)) {
         errors.push('Invalid email format');
         riskScore += 15;
       }
-      sanitized.email = data.email.toLowerCase().trim();
+      sanitized.email = email.toLowerCase().trim();
     }
 
     return {
@@ -505,7 +606,7 @@ private validateRobotData(data: any): ValidationResult {
       };
    }
 
-   private preventXSS(data: any): { hasXSS: boolean; sanitizedData: any } {
+   private preventXSS(data: SanitizableData): XSSResult {
      let hasXSS = false;
      const sanitized = Array.isArray(data) ? [...data] : { ...data };
 
@@ -535,7 +636,7 @@ private validateRobotData(data: any): ValidationResult {
        /unescape\(/gi,
      ];
 
-    const sanitizeValue = (value: any): any => {
+    const sanitizeValue = (value: unknown): unknown => {
       if (typeof value === 'string') {
         let sanitized = value;
         for (const pattern of xssPatterns) {
@@ -545,21 +646,24 @@ private validateRobotData(data: any): ValidationResult {
           }
         }
         return sanitized;
-      } else if (typeof value === 'object' && value !== null) {
-        const sanitizedObj = Array.isArray(value) ? [] : {};
+      } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        const sanitizedObj: Record<string, unknown> = {};
         for (const [key, val] of Object.entries(value)) {
-          (sanitizedObj as any)[key] = sanitizeValue(val);
+          sanitizedObj[key] = sanitizeValue(val);
         }
         return sanitizedObj;
+      } else if (Array.isArray(value)) {
+        return value.map(item => sanitizeValue(item));
       }
       return value;
     };
 
-    const sanitizedData = sanitizeValue(sanitized);
+    const sanitizedDataResult = sanitizeValue(sanitized);
+    const sanitizedData = sanitizedDataResult as SanitizableData;
     return { hasXSS, sanitizedData };
   }
 
-  private preventSQLInjection(data: any): { hasSQLInjection: boolean; sanitizedData: any } {
+  private preventSQLInjection(data: SanitizableData): SQLInjectionResult {
     let hasSQLInjection = false;
     const sanitized = Array.isArray(data) ? [...data] : { ...data };
 
@@ -571,7 +675,7 @@ private validateRobotData(data: any): ValidationResult {
       /('.*'|".*")/g,
     ];
 
-    const sanitizeValue = (value: any): any => {
+    const sanitizeValue = (value: unknown): unknown => {
       if (typeof value === 'string') {
         let sanitized = value;
         for (const pattern of sqlPatterns) {
@@ -581,17 +685,20 @@ private validateRobotData(data: any): ValidationResult {
           }
         }
         return sanitized;
-      } else if (typeof value === 'object' && value !== null) {
-        const sanitizedObj = Array.isArray(value) ? [] : {};
+      } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        const sanitizedObj: Record<string, unknown> = {};
         for (const [key, val] of Object.entries(value)) {
-          (sanitizedObj as any)[key] = sanitizeValue(val);
+          sanitizedObj[key] = sanitizeValue(val);
         }
         return sanitizedObj;
+      } else if (Array.isArray(value)) {
+        return value.map(item => sanitizeValue(item));
       }
       return value;
     };
 
-    const sanitizedData = sanitizeValue(sanitized);
+    const sanitizedDataResult = sanitizeValue(sanitized);
+    const sanitizedData = sanitizedDataResult as SanitizableData;
     return { hasSQLInjection, sanitizedData };
   }
 
@@ -992,7 +1099,7 @@ private validateRobotData(data: any): ValidationResult {
     });
   }
 
-  private storeCSPViolation(violation: any): void {
+  private storeCSPViolation(violation: CSPViolation): void {
     const violations = JSON.parse(localStorage.getItem('csp_violations') || '[]');
     violations.push(violation);
     
@@ -1004,7 +1111,7 @@ private validateRobotData(data: any): ValidationResult {
     localStorage.setItem('csp_violations', JSON.stringify(violations));
   }
 
-  private isHighSeverityViolation(violation: any): boolean {
+  private isHighSeverityViolation(violation: CSPViolation): boolean {
     const highSeverityDirectives = [
       'script-src',
       'object-src',
@@ -1016,12 +1123,12 @@ private validateRobotData(data: any): ValidationResult {
     return highSeverityDirectives.includes(violation.effectiveDirective);
   }
 
-  private triggerSecurityAlert(type: string, data: any): void {
-    const alert = {
+  private triggerSecurityAlert(type: string, data: unknown): void {
+    const alert: SecurityAlert = {
       type,
       data,
       timestamp: Date.now(),
-      severity: 'high',
+      severity: 'high' as const,
       url: window.location.href
     };
 
@@ -1033,7 +1140,7 @@ private validateRobotData(data: any): ValidationResult {
     }
   }
 
-  private async sendSecurityAlert(alert: any): Promise<void> {
+  private async sendSecurityAlert(alert: SecurityAlert): Promise<void> {
     try {
       await fetch(`${this.config.endpoint}/security-alerts`, {
         method: 'POST',
@@ -1095,21 +1202,9 @@ private validateRobotData(data: any): ValidationResult {
 
   // Get comprehensive security statistics
   getComprehensiveSecurityStats(): {
-    wafStats: {
-      totalRequests: number;
-      blockedRequests: number;
-      topThreats: Array<{ threat: string; count: number }>;
-    };
-    cspStats: {
-      totalViolations: number;
-      highSeverityViolations: number;
-      topViolations: Array<{ directive: string; count: number }>;
-    };
-    rateLimitStats: {
-      activeEntries: number;
-      blockedRequests: number;
-      topBlockedIPs: Array<{ ip: string; count: number }>;
-    };
+    wafStats: WAFStats;
+    cspStats: CSPStats;
+    rateLimitStats: RateLimitStats;
   } {
     // WAF Statistics
     const wafStats = {
@@ -1120,13 +1215,13 @@ private validateRobotData(data: any): ValidationResult {
 
     // CSP Statistics
     const cspViolations = JSON.parse(localStorage.getItem('csp_violations') || '[]');
-    const highSeverityViolations = cspViolations.filter((v: any) => this.isHighSeverityViolation(v));
+    const highSeverityViolations = cspViolations.filter((v: CSPViolation) => this.isHighSeverityViolation(v));
     
-    const directiveCounts = cspViolations.reduce((acc: any, violation: any) => {
+    const directiveCounts = cspViolations.reduce((acc: Record<string, number>, violation: CSPViolation) => {
       const directive = violation.effectiveDirective;
       acc[directive] = (acc[directive] || 0) + 1;
       return acc;
-    }, {});
+    }, {} as Record<string, number>);
 
     const cspStats = {
       totalViolations: cspViolations.length,
@@ -1282,11 +1377,7 @@ private validateRobotData(data: any): ValidationResult {
   /**
    * Bot detection for edge functions
    */
-  detectEdgeBot(userAgent: string, _ip: string, requestPattern: any): { 
-    isBot: boolean; 
-    confidence: number; 
-    botType?: string;
-  } {
+  detectEdgeBot(userAgent: string, _ip: string, requestPattern: EdgeRequestPattern): BotDetectionResult {
     if (!this.config.botDetection.enabled) {
       return { isBot: false, confidence: 0 };
     }
@@ -1363,7 +1454,7 @@ private validateRobotData(data: any): ValidationResult {
 
       case 'code':
         // Allow code characters but remove dangerous patterns
-        sanitized = sanitized.replace(/<script[^>]*>.*?<\/script>/gis, '');
+        sanitized = sanitized.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
         sanitized = sanitized.replace(/javascript:/gi, '');
         sanitized = sanitized.substring(0, 50000);
         break;
@@ -1532,24 +1623,26 @@ private validateRobotData(data: any): ValidationResult {
   }
 
   // Prevent prototype pollution attacks
-  private isPrototypePollution(obj: any): boolean {
+  private isPrototypePollution(obj: unknown): boolean {
     if (!obj || typeof obj !== 'object') {
       return false;
     }
+
+    const objAsRecord = obj as Record<string, unknown>;
 
     // Check for dangerous prototype pollution patterns
     const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
     
     for (const key of dangerousKeys) {
-      if (key in obj) {
+      if (key in objAsRecord) {
         return true;
       }
     }
 
     // Check nested objects
-    for (const key in obj) {
-      if (obj.hasOwnProperty(key) && typeof obj[key] === 'object') {
-        if (this.isPrototypePollution(obj[key])) {
+    for (const key in objAsRecord) {
+      if (Object.prototype.hasOwnProperty.call(objAsRecord, key) && typeof objAsRecord[key] === 'object') {
+        if (this.isPrototypePollution(objAsRecord[key])) {
           return true;
         }
       }
@@ -1559,7 +1652,7 @@ private validateRobotData(data: any): ValidationResult {
   }
 
    // Safe JSON parsing with prototype pollution protection
-   safeJSONParse(jsonString: string): any {
+   safeJSONParse(jsonString: string): unknown {
      try {
        // First, parse the JSON
        const parsed = JSON.parse(jsonString);
@@ -1579,7 +1672,7 @@ private validateRobotData(data: any): ValidationResult {
    /**
     * Validate input based on type
     */
-   validateInput(input: any, type: 'search' | 'record' | 'robot' | 'strategy' | 'backtest' | 'user' | 'text' | 'code' | 'symbol' | 'url' | 'token' | 'html' = 'text'): boolean {
+   validateInput(input: unknown, type: 'search' | 'record' | 'robot' | 'strategy' | 'backtest' | 'user' | 'text' | 'code' | 'symbol' | 'url' | 'token' | 'html' = 'text'): boolean {
      if (input === null || input === undefined) {
        return false;
      }
@@ -1590,15 +1683,17 @@ private validateRobotData(data: any): ValidationResult {
          const searchValidation = this.sanitizeAndValidate({ searchTerm: input }, 'strategy');
          return searchValidation.isValid && searchValidation.riskScore < 30;
          
-       case 'record':
-         const recordValidation = this.sanitizeAndValidate(input, 'robot');
-         return recordValidation.isValid && recordValidation.riskScore < 50;
-         
-       case 'robot':
-       case 'strategy':
-       case 'backtest':
-       case 'user':
-         const validation = this.sanitizeAndValidate(input, type);
+case 'record':
+          const inputData = input as SanitizableData;
+          const recordValidation = this.sanitizeAndValidate(inputData, 'robot');
+          return recordValidation.isValid && recordValidation.riskScore < 50;
+          
+        case 'robot':
+        case 'strategy':
+        case 'backtest':
+        case 'user':
+          const typeData = input as SanitizableData;
+          const validation = this.sanitizeAndValidate(typeData, type);
          return validation.isValid && validation.riskScore < 70;
          
        default:

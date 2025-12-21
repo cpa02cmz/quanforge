@@ -1,4 +1,4 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient, PostgrestError } from '@supabase/supabase-js';
 import { Robot } from '../types';
 import { queryOptimizer } from './queryOptimizer';
 import { robotCache } from './advancedCache';
@@ -23,6 +23,21 @@ interface OptimizationMetrics {
   compressionRatio: number;
   totalOptimizedQueries: number;
 }
+
+interface QueryMetrics {
+  executionTime: number;
+  resultCount?: number;
+  cacheHit?: boolean;
+  queryHash?: string;
+}
+
+type DatabaseOperation = {
+  table: string;
+  operation: 'select' | 'insert' | 'update' | 'delete';
+  params: Record<string, unknown> | { data: unknown; filter: Record<string, unknown> };
+};
+
+type DatabaseError = PostgrestError | null | { message: string };
 
 class DatabaseOptimizer {
   private config: OptimizationConfig = {
@@ -63,7 +78,7 @@ class DatabaseOptimizer {
       limit?: number;
       offset?: number;
     } = {}
-  ): Promise<{ data: Robot[] | null; error: any }> {
+  ): Promise<{ data: Robot[] | null; error: DatabaseError }> {
     if (!securityManager.validateInput(searchTerm, 'search')) {
       return { data: null, error: { message: 'Invalid search term' } };
     }
@@ -106,7 +121,7 @@ class DatabaseOptimizer {
       orderBy?: 'created_at' | 'updated_at' | 'name';
       orderDirection?: 'asc' | 'desc';
     } = {}
-  ): Promise<{ data: Robot[] | null; error: any; metrics: any }> {
+  ): Promise<{ data: Robot[] | null; error: DatabaseError; metrics: QueryMetrics }> {
     // Use the existing queryOptimizer for the database query
     const result = await queryOptimizer.getRobotsOptimized(client, {
       userId: options.userId,
@@ -138,7 +153,7 @@ class DatabaseOptimizer {
       batchSize?: number;
       validateRecords?: boolean;
     } = {}
-  ): Promise<{ data: T[] | null; error: any; metrics: any }> {
+  ): Promise<{ data: T[] | null; error: DatabaseError; metrics: { executionTime: number } }> {
     const startTime = performance.now();
     const batchSize = options.batchSize || 100;
     
@@ -172,7 +187,7 @@ class DatabaseOptimizer {
   /**
    * Update optimization metrics
    */
-  private updateMetrics(queryMetrics: any): void {
+  private updateMetrics(queryMetrics: QueryMetrics): void {
     this.metrics.totalOptimizedQueries++;
     this.metrics.queryResponseTime = 
       (this.metrics.queryResponseTime + queryMetrics.executionTime) / this.metrics.totalOptimizedQueries;
@@ -206,17 +221,13 @@ class DatabaseOptimizer {
    */
   async executeBatchedQueries<T>(
     client: SupabaseClient,
-    operations: Array<{ 
-      table: string; 
-      operation: 'select' | 'insert' | 'update' | 'delete'; 
-      params: any 
-    }>
-  ): Promise<Array<{ data: T | null; error: any }>> {
+    operations: DatabaseOperation[]
+): Promise<Array<{ data: T | null; error: DatabaseError }>> {
     if (!this.config.enableQueryBatching) {
       // Execute operations individually if batching is disabled
-      const results: Array<{ data: T | null; error: any }> = [];
+const results: Array<{ data: T | null; error: DatabaseError }> = [];
       for (const op of operations) {
-        let result: { data: T | null; error: any };
+        let result: { data: T | null; error: DatabaseError };
         switch (op.operation) {
           case 'select':
             const selectResult = await client.from(op.table).select('*').match(op.params);
@@ -227,7 +238,8 @@ class DatabaseOptimizer {
             result = { data: insertResult.data as T | null, error: insertResult.error };
             break;
           case 'update':
-            const updateResult = await client.from(op.table).update(op.params.data).match(op.params.filter);
+            const updateParams = op.params as { data: Record<string, unknown>; filter: Record<string, unknown> };
+            const updateResult = await client.from(op.table).update(updateParams.data).match(updateParams.filter);
             result = { data: updateResult.data as T | null, error: updateResult.error };
             break;
           case 'delete':
@@ -244,13 +256,13 @@ class DatabaseOptimizer {
 
     // Group similar queries for optimization
     const groupedOperations = this.groupSimilarQueries(operations);
-    const results: Array<{ data: T | null; error: any }> = [];
+    const results: Array<{ data: T | null; error: DatabaseError }> = [];
 
     for (const group of groupedOperations) {
       if (group.length === 1) {
         // Execute single operation
         const op = group[0];
-        let result: { data: T | null; error: any };
+        let result: { data: T | null; error: DatabaseError };
         switch (op.operation) {
           case 'select':
             const selectResult = await client.from(op.table).select('*').match(op.params);
@@ -261,7 +273,8 @@ class DatabaseOptimizer {
             result = { data: insertResult.data as T | null, error: insertResult.error };
             break;
           case 'update':
-            const updateResult = await client.from(op.table).update(op.params.data).match(op.params.filter);
+            const updateParams = op.params as { data: Record<string, unknown>; filter: Record<string, unknown> };
+            const updateResult = await client.from(op.table).update(updateParams.data).match(updateParams.filter);
             result = { data: updateResult.data as T | null, error: updateResult.error };
             break;
           case 'delete':
@@ -285,20 +298,8 @@ class DatabaseOptimizer {
   /**
    * Group similar queries for batching
    */
-  private groupSimilarQueries<T>(queries: Array<{ 
-    table: string; 
-    operation: 'select' | 'insert' | 'update' | 'delete'; 
-    params: any 
-  }>): Array<Array<{ 
-    table: string; 
-    operation: 'select' | 'insert' | 'update' | 'delete'; 
-    params: any 
-  }>> {
-    const groups: Array<Array<{ 
-      table: string; 
-      operation: 'select' | 'insert' | 'update' | 'delete'; 
-      params: any 
-    }>> = [];
+  private groupSimilarQueries(queries: DatabaseOperation[]): DatabaseOperation[][] {
+    const groups: DatabaseOperation[][] = [];
     
     for (const query of queries) {
       let foundGroup = false;
@@ -324,8 +325,8 @@ class DatabaseOptimizer {
    * Check if two queries are similar enough for batching
    */
   private areQueriesSimilar(
-    query1: { table: string; operation: string; params: any }, 
-    query2: { table: string; operation: string; params: any }
+    query1: DatabaseOperation, 
+    query2: DatabaseOperation
   ): boolean {
     // Queries are similar if they have the same table and operation type
     return query1.table === query2.table && query1.operation === query2.operation;
@@ -334,11 +335,7 @@ class DatabaseOptimizer {
   /**
    * Execute batched query
    */
-  private async executeBatchedQuery<T>(queries: Array<{ 
-    table: string; 
-    operation: 'select' | 'insert' | 'update' | 'delete'; 
-    params: any 
-  }>): Promise<Array<{ data: T | null; error: any }>> {
+  private async executeBatchedQuery<T>(queries: DatabaseOperation[]): Promise<Array<{ data: T | null; error: DatabaseError }>> {
     // Implementation would combine queries into a single database operation
     console.log(`Executing batched query for ${queries.length} operations`);
     return queries.map(() => ({ data: null as T | null, error: null }));
@@ -347,9 +344,9 @@ class DatabaseOptimizer {
   /**
    * Execute a single query (placeholder implementation)
    */
-  private async executeQuery<T>(operation: string, params: any): Promise<T> {
+  private async executeQuery<T>(operation: string, params: Record<string, unknown>): Promise<T> {
     // Placeholder implementation
-    return { data: null, error: null } as any;
+    return { data: null, error: null } as T;
   }
  
   /**
@@ -375,7 +372,7 @@ class DatabaseOptimizer {
       
       if (!error && slowQueries && slowQueries.length > 0) {
         // Check for queries without indexes
-        slowQueries.forEach((query: any) => {
+        slowQueries.forEach((query: { query: string; mean_time: number; calls: number }) => {
           if (query.mean_time > 100 && query.calls > 100) { // Slow and frequently called
             recommendations.push(`Query taking ${query.mean_time.toFixed(2)}ms avg time with ${query.calls} calls may need indexing: ${query.query.substring(0, 100)}...`);
           }
@@ -406,7 +403,7 @@ class DatabaseOptimizer {
         .limit(10);
       
       if (!tableError && tableStats && tableStats.length > 0) {
-        tableStats.forEach((table: any) => {
+        tableStats.forEach((table: { relname: string; n_tup_del: number }) => {
           recommendations.push(`Table "${table.relname}" has ${table.n_tup_del} deleted rows, consider VACUUM operation for optimization.`);
         });
       }
@@ -425,11 +422,11 @@ class DatabaseOptimizer {
    * Advanced query optimization with materialized views and performance insights
    */
   async getAdvancedOptimizationInsights(client: SupabaseClient): Promise<{
-    performanceInsights: any[];
+    performanceInsights: Record<string, unknown>[];
     materializedViewRecommendations: string[];
     indexRecommendations: string[];
   }> {
-    const performanceInsights: any[] = [];
+    const performanceInsights: Record<string, unknown>[] = [];
     const materializedViewRecommendations: string[] = [];
     const indexRecommendations: string[] = [];
     
@@ -468,7 +465,7 @@ class DatabaseOptimizer {
   /**
    * Run comprehensive database optimization including VACUUM, ANALYZE, and maintenance
    */
-  async runComprehensiveOptimization(client: SupabaseClient): Promise<{ success: boolean; message: string; details?: any }> {
+  async runComprehensiveOptimization(client: SupabaseClient): Promise<{ success: boolean; message: string; details?: { operations: string[]; duration: number; analyzedTables: number; slowQueryCount: number } }> {
     try {
       const startTime = Date.now();
       
@@ -509,7 +506,7 @@ class DatabaseOptimizer {
     } catch (error) {
       return {
         success: false,
-        message: `Comprehensive optimization failed: ${error}`,
+        message: `Comprehensive optimization failed: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }
@@ -546,7 +543,7 @@ class DatabaseOptimizer {
       console.error('Database maintenance failed:', error);
       return {
         success: false,
-        message: `Database maintenance failed: ${error}`
+        message: `Database maintenance failed: ${error instanceof Error ? error.message : String(error)}`
       };
     }
   }

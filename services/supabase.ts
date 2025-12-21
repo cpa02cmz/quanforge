@@ -28,7 +28,7 @@ const STORAGE_KEY = 'mock_session';
 const ROBOTS_KEY = 'mock_robots';
 
 // Helper for safe JSON parsing with enhanced security
-const safeParse = (data: string | null, fallback: any) => {
+const safeParse = <T>(data: string | null, fallback: T): T => {
     if (!data) return fallback;
     try {
         // Use security manager's safe JSON parsing
@@ -43,16 +43,17 @@ const safeParse = (data: string | null, fallback: any) => {
 const trySaveToStorage = (key: string, value: string) => {
     try {
         localStorage.setItem(key, value);
-    } catch (e: any) {
+    } catch (e: unknown) {
+        const error = e as { name?: string; code?: number; message?: string };
         if (
-            e.name === 'QuotaExceededError' || 
-            e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-            e.code === 22 ||
-            e.code === 1014
+            error.name === 'QuotaExceededError' || 
+            error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+            error.code === 22 ||
+            error.code === 1014
         ) {
             throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
         }
-        throw e;
+        throw error;
     }
 };
 
@@ -68,12 +69,12 @@ const generateUUID = (): string => {
     });
 };
 
-const isValidRobot = (r: any): boolean => {
+const isValidRobot = (r: unknown): r is Robot => {
+    if (!r || typeof r !== 'object') return false;
+    const robot = r as Record<string, unknown>;
     return (
-        typeof r === 'object' &&
-        r !== null &&
-        typeof r.name === 'string' &&
-        typeof r.code === 'string'
+        typeof robot['name'] === 'string' &&
+        typeof robot['code'] === 'string'
     );
 };
 
@@ -144,7 +145,7 @@ const mockClient = {
 
 // --- Dynamic Client Manager ---
 
-let activeClient: SupabaseClient | any = null;
+let activeClient: SupabaseClient | typeof mockClient | null = null;
 
 // LRU Cache implementation for better performance and memory management
 class LRUCache<T> {
