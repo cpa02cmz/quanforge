@@ -3,7 +3,11 @@ let GoogleGenAI: any;
 import { MQL5_SYSTEM_PROMPT } from "../constants";
 import { StrategyParams, StrategyAnalysis, Message, MessageRole } from "../types";
 import { settingsManager } from "./settingsManager";
+<<<<<<< HEAD
+import { handleErrorCompat as handleError } from "../utils/errorManager";
+=======
 import { handleError } from "../utils/errorHandler";
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 import { robotCache } from "./optimizedCache";
 
 const logger = console; // Simplified logger for performance
@@ -84,7 +88,7 @@ class OptimizedAIService {
     await this.initializeAI();
 
     const settings = settingsManager.getSettings();
-    if (!settings.apiKey) {
+    if (!settings || !settings.apiKey) {
       throw new Error('API key not configured');
     }
 
@@ -347,6 +351,9 @@ class OptimizedAIService {
     await this.initializeAI();
 
     const settings = settingsManager.getSettings();
+    if (!settings || !settings.apiKey) {
+      throw new Error('API key not configured');
+    }
     const ai = new GoogleGenAI({ apiKey: settings.apiKey });
 
     const prompt = `

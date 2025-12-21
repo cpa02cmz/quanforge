@@ -141,6 +141,7 @@ class MarketDataService {
 
   private ensureTwelveDataConnection() {
       const settings = settingsManager.getSettings();
+      if (!settings) return;
       const apiKey = settings.twelveDataApiKey;
 
       if (!apiKey) return; // Cannot connect without key

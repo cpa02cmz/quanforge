@@ -4,10 +4,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { edgeOptimizationService } from '../../services/edgeOptimizationService';
-import { enhancedConnectionPool } from '../../services/enhancedSupabasePool';
-import { globalCache } from '../../services/unifiedCacheManager';
-import { optimizedSupabase } from '../../services/supabaseOptimized';
 import { logger } from '../../utils/logger';
 import { performanceMonitor } from '../../utils/performance';
 

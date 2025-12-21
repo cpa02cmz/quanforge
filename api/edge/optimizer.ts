@@ -260,7 +260,6 @@ async function handleHealthCheck(region: string): Promise<EdgeResponse> {
       edge: {
         optimized: true,
         cache: vercelEdgeOptimizer.getConfig().enableEdgeCaching,
-        regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'],
       },
       database: await checkDatabaseHealth(),
     };

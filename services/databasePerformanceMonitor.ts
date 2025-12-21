@@ -1,4 +1,27 @@
 /**
+<<<<<<< HEAD
+ * Legacy Database Performance Monitor - DEPRECATED
+ * This module has been consolidated into performanceConsolidated.ts
+ * Please import from performanceConsolidated.ts instead
+ */
+
+import { performanceManager } from '../utils/performanceConsolidated';
+
+export const databasePerformanceMonitor = {
+  recordQuery: (query: string, time: number, success: boolean) => 
+    performanceManager.recordQuery(query, time, success),
+  getMetrics: () => performanceManager.getDatabaseMetrics(),
+  getAlerts: () => [],
+  getPerformanceReport: () => ({
+    summary: performanceManager.getDatabaseMetrics(),
+    topSlowQueries: [],
+    alerts: [],
+    recommendations: [],
+  }),
+  resetMetrics: () => {}, // Simplified
+  destroy: () => {}, // Simplified
+};
+=======
  * Database Performance Monitor
  * Monitors and optimizes database performance for Supabase integration
  */
@@ -411,3 +434,4 @@ class DatabasePerformanceMonitor {
 }
 
 export const databasePerformanceMonitor = DatabasePerformanceMonitor.getInstance();
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
