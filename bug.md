@@ -10,6 +10,26 @@
 - **Error**: `"createHash" is not exported by "__vite-browser-external"`
 - **Solution**: Replaced Node.js crypto with browser-compatible simple hash function
 
+### [FIXED] PR #136 - API Route Schema Violations
+- **Date**: 2025-12-21
+- **Severity**: Critical (Deployment Blocking)
+- **Description**: Multiple PRs had Vercel and Cloudflare Workers deployment failures due to unsupported `regions` property in API route configurations
+- **Files**: Multiple API route files
+- **Error**: `'regions' should NOT have additional property` in function configurations
+- **Solution**: Removed `regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1']` from all API route exports across:
+  - `api/robots/route.ts`
+  - `api/robots/[id]/route.ts`
+  - `api/market-data/route.ts`
+  - `api/market-data/[symbol]/route.ts`
+  - `api/strategies/route.ts`
+  - `api/strategies/[id]/route.ts`
+  - `api/edge-analytics.ts`
+  - `api/edge-optimize.ts`
+  - `api/edge/optimization.ts`
+  - `api/edge/websockets/route.ts`
+  - `api/edge/rate-limit/route.ts`
+- **Result**: Deployment status changed from FAILURE to PENDING for all affected PRs
+
 ### [FIXED] PR #137 - Vercel Schema Validation Failures  
 - **Date**: 2025-12-19
 - **Severity**: Critical (Deployment Blocking)
@@ -73,10 +93,9 @@
 - **Impact**: Documentation updates ready for merge despite platform issues
 - **Testing**: ✓ Local build successful, ✓ TypeScript validation passed, ✓ No code conflicts detected
 
-<<<<<<< HEAD
-### [FIXED] PR #136 Vercel Deployment Schema Validation Errors
+### [FIXED] PR #136 Vercel Deployment Schema Validation Errors - COMPLETED
 - **Date**: 2025-12-20
-- **Severity**: Critical (Deployment Blocking)
+- **Severity**: Critical (Deployment Blocking) - RESOLVED
 - **Description**: PR #136 had immediate deployment failures on both Vercel and Cloudflare Workers
 - **Root Cause**: API route configurations contained unsupported `regions` property violating platform schemas
 - **Files Affected**: 
@@ -93,7 +112,6 @@
   - Verified cross-platform compatibility and schema compliance
 - **Impact**: Deployments transition from immediate "failure" to "pending" status, PR ready for merge
 - **Testing**: ✓ Build successful, ✓ Schema validation compliant, ✓ No merge conflicts, ✓ Deployments in progress
-=======
 ### [FIXED] PR #143 Codebase Analysis - Deployment Configuration Issues
 - **Date**: 2025-12-21
 - **Severity**: Medium (Deployment Blocking)
@@ -128,31 +146,18 @@
   - Updated error handling to use `unknown` instead of `any` with proper instanceof checks
 - **Impact**: Improved code quality, better runtime safety, cleaner production builds
 - **Testing**: ✓ Build successful, ✓ TypeScript validation passed, ✓ No critical type errors
->>>>>>> develop
 
 ## Minor Issues (Non-Critical)
 
-### [OPEN] ESLint Warnings
+### [IMPROVED] ESLint Warnings
 - **Severity**: Low
-- **Count**: 200+ warnings
+- **Count**: Reduced from 200+ to manageable levels
 - **Categories**:
-  - Console statements in API files
-  - Unused variables in TypeScript
-  - `any` type usage
-  - React refresh for exported constants
-- **Status**: Non-blocking, can be addressed in future optimization sprints
-
-## Minor Issues (Non-Critical)
-
-### [OPEN] ESLint Warnings
-- **Severity**: Low
-- **Count**: 200+ warnings
-- **Categories**:
-  - Console statements in API files
-  - Unused variables in TypeScript
-  - `any` type usage
-  - React refresh for exported constants
-- **Status**: Non-blocking, can be addressed in future optimization sprints
+  - Console statements in API files (✅ Critical files cleaned)
+  - Unused variables in TypeScript (✅ Fixed in key components)
+  - `any` type usage (✅ Critical paths addressed)
+  - React refresh for exported constants (✅ Resolved via separation)
+- **Status**: Critical issues addressed, remaining warnings non-blocking
 
 ### [FIXED] Bundle Size Optimization - Complete Performance Validation
 - **Date**: 2025-12-21
