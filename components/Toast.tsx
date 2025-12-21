@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { ErrorManager } from '../utils/errorManager';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -6,10 +7,13 @@ interface Toast {
   id: string;
   message: string;
   type: ToastType;
+  duration?: number;
 }
 
 interface ToastContextType {
-  showToast: (message: string, type?: ToastType) => void;
+  toasts: Toast[];
+  showToast: (message: string, _type?: ToastType) => void;
+  hideToast: (id: string) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -22,25 +26,52 @@ export const useToast = () => {
   return context;
 };
 
+// Helper function to get default duration based on toast type
+const getDefaultDuration = (type: ToastType): number => {
+  switch (type) {
+    case 'error':
+      return 5000; // 5 seconds for errors
+    case 'success':
+      return 3000; // 3 seconds for success
+    default:
+      return 3000; // 3 seconds for info
+  }
+};
+
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = useCallback((message: string, type: ToastType = 'info') => {
+  const showToast = useCallback((message: string, type: ToastType = 'info', duration?: number) => {
     const id = Date.now().toString();
-    setToasts((prev) => [...prev, { id, message, type }]);
+    const toastDuration = duration || getDefaultDuration(type);
+    setToasts((prev) => [...prev, { id, message, type, duration: toastDuration }]);
 
     // Auto dismiss
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3000);
+    }, toastDuration);
   }, []);
+
+  // Set up ErrorManager toast integration
+  useEffect(() => {
+    // Register toast handler with ErrorManager
+    const errorManager = ErrorManager.getInstance();
+    errorManager.setToastHandler((toast: { message: string; type: ToastType }) => {
+      showToast(toast.message, toast.type);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      // ErrorManager doesn't have a cleanup method, which is fine for singleton pattern
+    };
+  }, [showToast]);
 
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={{ toasts, showToast, hideToast: removeToast }}>
       {children}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none">
         {toasts.map((toast) => (

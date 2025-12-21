@@ -1,7 +1,6 @@
 
-import React, { useEffect, useState, useMemo, useCallback, memo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, memo, Suspense, lazy } from 'react';
 import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
-import { Link } from 'react-router-dom';
 import { mockDb } from '../services/supabase';
 import { Robot, UserSession } from '../types';
 import { useToast } from '../components/Toast';
@@ -9,6 +8,9 @@ import { useTranslation } from '../services/i18n';
 import { AdvancedSEO } from '../utils/advancedSEO';
 import { createScopedLogger } from '../utils/logger';
 import { VirtualScrollList } from '../components/VirtualScrollList';
+
+// Lazy load React Router to reduce initial bundle size
+const Link = lazy(() => import('react-router-dom').then(module => ({ default: module.Link })));
 
 // Debounce utility for search optimization
 const debounce = <T extends (...args: any[]) => any>(func: T, delay: number): T => {
@@ -100,12 +102,18 @@ const RobotCard: React.FC<RobotCardProps> = memo(({
             </svg>
           </button>
           
-          <Link 
-            to={`/generator/${robot.id}`}
-            className="ml-2 px-3 py-1.5 bg-dark-bg border border-dark-border hover:border-brand-500 text-xs font-medium text-gray-300 hover:text-white rounded-md transition-all flex items-center"
-          >
-            Edit
-          </Link>
+          <Suspense fallback={
+            <button className="ml-2 px-3 py-1.5 bg-dark-bg border border-dark-border text-xs font-medium text-gray-300 rounded-md" disabled>
+              Edit
+            </button>
+          }>
+            <Link 
+              to={`/generator/${robot.id}`}
+              className="ml-2 px-3 py-1.5 bg-dark-bg border border-dark-border hover:border-brand-500 text-xs font-medium text-gray-300 hover:text-white rounded-md transition-all flex items-center"
+            >
+              Edit
+            </Link>
+          </Suspense>
         </div>
       </div>
     </div>
@@ -272,13 +280,20 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
           <h1 className="text-3xl font-bold text-white mb-2">{t('dash_title')}</h1>
           <p className="text-gray-400">{t('dash_subtitle')}</p>
         </div>
-        <Link 
-          to="/generator" 
-          className="flex items-center justify-center space-x-2 bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg transition-colors font-medium shadow-lg shadow-brand-600/20"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-          <span>{t('dash_create_btn')}</span>
-        </Link>
+        <Suspense fallback={
+          <div className="flex items-center justify-center space-x-2 bg-brand-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg shadow-brand-600/20 opacity-50">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+            <span>{t('dash_create_btn')}</span>
+          </div>
+        }>
+          <Link 
+            to="/generator" 
+            className="flex items-center justify-center space-x-2 bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg transition-colors font-medium shadow-lg shadow-brand-600/20"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+            <span>{t('dash_create_btn')}</span>
+          </Link>
+        </Suspense>
       </div>
 
       {/* Search and Filter Toolbar */}
@@ -324,7 +339,11 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
             </div>
             <h3 className="text-xl font-medium text-white mb-2">{t('dash_no_robots_title')}</h3>
             <p className="text-gray-400 mb-6 max-w-sm mx-auto">{t('dash_no_robots_desc')}</p>
-            <Link to="/generator" className="text-brand-400 hover:text-brand-300 font-medium hover:underline">{t('dash_start_generating')} &rarr;</Link>
+            <Suspense fallback={
+          <span className="text-brand-400 font-medium">{t('dash_start_generating')} &rarr;</span>
+        }>
+          <Link to="/generator" className="text-brand-400 hover:text-brand-300 font-medium hover:underline">{t('dash_start_generating')} &rarr;</Link>
+        </Suspense>
         </div>
       ) : filteredRobots.length === 0 ? (
           <div className="bg-dark-surface border border-dark-border rounded-xl p-12 text-center">

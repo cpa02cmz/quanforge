@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { handleError } from '../utils/errorHandler';
+import { handleErrorCompat as handleError } from '../utils/errorManager';
 
 interface RetryConfig {
   maxRetries: number;

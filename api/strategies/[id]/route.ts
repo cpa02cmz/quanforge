@@ -3,19 +3,21 @@
  * Handle operations for specific strategies by ID
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { securityManager } from '../../../services/securityManager';
-import { advancedCache } from '../../../services/advancedCache';
-import { performanceMonitorEnhanced } from '../../../services/performanceMonitorEnhanced';
+import {
+  edgeConfig,
+  handleGetRequest,
+  handlePutRequest,
+  handleDeleteRequest,
+  RouteContext,
+  validateRouteParam,
+  buildSingleResourceResponse,
+  buildOperationResponse,
+  APIError,
+} from '../../../utils/apiShared';
 
-export const config = {
-  runtime: 'edge',
-  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
-};
-
-interface RouteContext {
-  params: Promise<{ id: string }>;
-}
+export const config = edgeConfig;
 
 // Strategy templates (same as in the main strategies endpoint)
 const STRATEGY_TEMPLATES = [
@@ -139,170 +141,49 @@ if (macdMain > macdSignal && macdMain[1] <= macdSignal[1]) {
  * GET /api/strategies/[id] - Get a specific strategy by ID
  */
 export async function GET(request: NextRequest, context: RouteContext) {
-  const startTime = performance.now();
-  
-  try {
+  return handleGetRequest(request, async (params) => {
     const { id } = await context.params;
-    
-    if (!id || typeof id !== 'string') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid strategy ID',
-        },
-        { 
-          status: 400,
-          headers: {
-            'X-Response-Time': `${(performance.now() - startTime).toFixed(2)}ms`,
-          },
-        }
-      );
-    }
-
-    // Check cache first
-    const cacheKey = `strategy_${id}`;
-    const cached = await advancedCache.get(cacheKey);
-    
-    if (cached) {
-      const duration = performance.now() - startTime;
-      performanceMonitorEnhanced.recordMetric('strategy_api_cache_hit', duration);
-      
-      return NextResponse.json(cached, {
-        headers: {
-          'X-Cache': 'HIT',
-          'X-Response-Time': `${duration.toFixed(2)}ms`,
-          'Cache-Control': 'public, max-age=3600, stale-while-revalidate=600',
-        },
-      });
-    }
+    const validatedId = validateRouteParam(id, 'ID');
 
     // Find the strategy
-    const strategy = STRATEGY_TEMPLATES.find(s => s.id === id);
+    const strategy = STRATEGY_TEMPLATES.find(s => s.id === validatedId);
     
     if (!strategy) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Strategy not found',
-        },
-        { 
-          status: 404,
-          headers: {
-            'X-Response-Time': `${(performance.now() - startTime).toFixed(2)}ms`,
-            'Cache-Control': 'no-cache',
-          },
-        }
-      );
+      throw new APIError('Strategy not found', 404);
     }
 
-    const response = {
-      success: true,
-      data: strategy,
-    };
-
-    // Cache the result
-    await advancedCache.set(cacheKey, response, {
-      ttl: 60 * 60 * 1000, // 1 hour
-      tags: ['strategy', id],
-      priority: 'medium',
-    });
-
-    const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('strategy_api_get', duration);
-
-    return NextResponse.json(response, {
-      headers: {
-        'X-Cache': 'MISS',
-        'X-Response-Time': `${duration.toFixed(2)}ms`,
-        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=600',
-        'X-Edge-Region': process.env.VERCEL_REGION || 'unknown',
-      },
-    });
-
-  } catch (error) {
-    const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('strategy_api_error', duration);
-    
-    console.error('Strategy API GET error:', error);
-    
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to fetch strategy',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { 
-        status: 500,
-        headers: {
-          'X-Response-Time': `${duration.toFixed(2)}ms`,
-          'Cache-Control': 'no-cache',
-        },
-      }
-    );
-  }
+    return buildSingleResourceResponse(strategy, 'fetched');
+  }, {
+    key: 'strategy',
+    ttl: 60 * 60 * 1000, // 1 hour
+    tags: ['strategy'],
+  });
 }
 
 /**
  * PUT /api/strategies/[id] - Update a strategy (only for custom strategies)
  */
 export async function PUT(request: NextRequest, context: RouteContext) {
-  const startTime = performance.now();
-  
-  try {
-    const { id } = await context.params;
-    
-    if (!id || typeof id !== 'string') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid strategy ID',
-        },
-        { 
-          status: 400,
-          headers: {
-            'X-Response-Time': `${(performance.now() - startTime).toFixed(2)}ms`,
-          },
-        }
-      );
-    }
-
+  return handlePutRequest(request, context, async (id, data) => {
     // Check if it's a custom strategy (starts with 'custom_')
     if (!id.startsWith('custom_')) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Cannot update built-in strategy templates',
-        },
-        { 
-          status: 403,
-          headers: {
-            'X-Response-Time': `${(performance.now() - startTime).toFixed(2)}ms`,
-          },
-        }
-      );
+      throw new APIError('Cannot update built-in strategy templates', 403);
     }
 
-    // Parse request body
-    const body = await request.json();
-    
     // Sanitize input
     const sanitizedData = {
-      name: body.name ? securityManager.sanitizeInput(body.name, 'text') : undefined,
-      description: body.description ? securityManager.sanitizeInput(body.description, 'text') : undefined,
-      category: body.category ? securityManager.sanitizeInput(body.category, 'text') : undefined,
-      difficulty: body.difficulty || undefined,
-      parameters: body.parameters || undefined,
-      code_template: body.code_template ? securityManager.sanitizeInput(body.code_template, 'code') : undefined,
+      name: data.name ? securityManager.sanitizeInput(data.name, 'text') : undefined,
+      description: data.description ? securityManager.sanitizeInput(data.description, 'text') : undefined,
+      category: data.category ? securityManager.sanitizeInput(data.category, 'text') : undefined,
+      difficulty: data.difficulty || undefined,
+      parameters: data.parameters || undefined,
+      code_template: data.code_template ? securityManager.sanitizeInput(data.code_template, 'code') : undefined,
     };
 
     // In production, update in database
     // For now, just return success
     
-    // Invalidate caches
-    await advancedCache.delete(`strategy_${id}`);
-    await advancedCache.clearByTags(['strategies', 'list']);
-
-    const response = {
+    return {
       success: true,
       data: {
         id,
@@ -311,124 +192,22 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       },
       message: 'Strategy updated successfully',
     };
-
-    const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('strategy_api_update', duration);
-
-    return NextResponse.json(response, {
-      headers: {
-        'X-Response-Time': `${duration.toFixed(2)}ms`,
-        'Cache-Control': 'no-cache',
-        'X-Edge-Region': process.env.VERCEL_REGION || 'unknown',
-      },
-    });
-
-  } catch (error) {
-    const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('strategy_api_update_error', duration);
-    
-    console.error('Strategy API PUT error:', error);
-    
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to update strategy',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { 
-        status: 500,
-        headers: {
-          'X-Response-Time': `${duration.toFixed(2)}ms`,
-          'Cache-Control': 'no-cache',
-        },
-      }
-    );
-  }
+  }, undefined, ['strategies', 'list']);
 }
 
 /**
  * DELETE /api/strategies/[id] - Delete a custom strategy
  */
 export async function DELETE(request: NextRequest, context: RouteContext) {
-  const startTime = performance.now();
-  
-  try {
-    const { id } = await context.params;
-    
-    if (!id || typeof id !== 'string') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid strategy ID',
-        },
-        { 
-          status: 400,
-          headers: {
-            'X-Response-Time': `${(performance.now() - startTime).toFixed(2)}ms`,
-          },
-        }
-      );
-    }
-
+  return handleDeleteRequest(request, context, async (id, params) => {
     // Check if it's a custom strategy (starts with 'custom_')
     if (!id.startsWith('custom_')) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Cannot delete built-in strategy templates',
-        },
-        { 
-          status: 403,
-          headers: {
-            'X-Response-Time': `${(performance.now() - startTime).toFixed(2)}ms`,
-          },
-        }
-      );
+      throw new APIError('Cannot delete built-in strategy templates', 403);
     }
 
     // In production, delete from database
     // For now, just return success
     
-    // Invalidate caches
-    await advancedCache.delete(`strategy_${id}`);
-    await advancedCache.clearByTags(['strategies', 'list']);
-
-    const response = {
-      success: true,
-      data: { deleted: true, id },
-      message: 'Strategy deleted successfully',
-    };
-
-    const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('strategy_api_delete', duration);
-
-    return NextResponse.json(response, {
-      headers: {
-        'X-Response-Time': `${duration.toFixed(2)}ms`,
-        'Cache-Control': 'no-cache',
-        'X-Edge-Region': process.env.VERCEL_REGION || 'unknown',
-      },
-    });
-
-  } catch (error) {
-    const duration = performance.now() - startTime;
-    performanceMonitorEnhanced.recordMetric('strategy_api_delete_error', duration);
-    
-    console.error('Strategy API DELETE error:', error);
-    
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to delete strategy',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { 
-        status: 500,
-        headers: {
-          'X-Response-Time': `${duration.toFixed(2)}ms`,
-          'Cache-Control': 'no-cache',
-        },
-      }
-    );
-  }
+    return buildOperationResponse('delete', 1, 'strategy');
+  }, ['strategies', 'list']);
 }

@@ -3,7 +3,7 @@ let GoogleGenAI: any;
 import { MQL5_SYSTEM_PROMPT } from "../constants";
 import { StrategyParams, StrategyAnalysis, Message, MessageRole } from "../types";
 import { settingsManager } from "./settingsManager";
-import { handleError } from "../utils/errorHandler";
+import { handleErrorCompat as handleError } from "../utils/errorManager";
 import { robotCache } from "./optimizedCache";
 
 const logger = console; // Simplified logger for performance
