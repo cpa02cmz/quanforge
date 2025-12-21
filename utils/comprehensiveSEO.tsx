@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
+import { urlConfig } from '../config/urls.config';
 
 interface ComprehensiveSEOProps {
   title?: string;
@@ -311,8 +312,8 @@ export const ComprehensiveSEO: React.FC<ComprehensiveSEOProps> = ({
   description = 'Generate professional MQL5 trading robots and Expert Advisors using AI. Powered by Google Gemini 3.0/2.5. Create, test, and deploy automated trading strategies for MetaTrader 5 with visual strategy configuration and real-time market simulation.',
   keywords = 'MQL5 generator, MetaTrader 5, trading robot, Expert Advisor, AI trading, automated trading, forex robot, algorithmic trading, Gemini AI, trading strategy generator, MT5 EA, quantitative trading, forex EA, MQL5 EA builder, automated forex trading, AI trading bot, MetaTrader expert advisor, trading algorithm generator, MQL5 development, forex algorithm, trading automation, AI trading system, quantitative finance, algorithmic trading platform, MT5 programming, Expert Advisor development, forex bot creator, automated trading software, MQL5 coder, trading strategy automation, AI-powered trading, forex robot development, MetaTrader automation',
   ogImage = SEO_CONFIG.defaultImage,
-  ogUrl = 'https://quanforge.ai',
-  canonicalUrl = 'https://quanforge.ai',
+  ogUrl = urlConfig.site.url,
+  canonicalUrl = urlConfig.site.url,
   type = 'website',
   structuredData = [],
   noIndex = false,
@@ -466,7 +467,7 @@ export const ComprehensiveSEO: React.FC<ComprehensiveSEOProps> = ({
       "@type": "Organization",
       "name": organizationData?.name || "QuantForge AI",
       "description": organizationData?.description || "Advanced MQL5 Trading Robot Generator powered by AI",
-      "url": organizationData?.url || "https://quanforge.ai",
+      "url": organizationData?.url || urlConfig.site.url,
       "logo": organizationData?.logo || {
         "@type": "ImageObject",
         "url": "https://quanforge.ai/logo.png",
@@ -506,7 +507,7 @@ export const ComprehensiveSEO: React.FC<ComprehensiveSEOProps> = ({
       "operatingSystem": "Web",
       "description": description,
       "url": canonicalUrl,
-      "downloadUrl": "https://quanforge.ai/download",
+      "downloadUrl": `${urlConfig.site.url}/download`,
       "softwareVersion": "1.0.0",
       "applicationSubCategory": [
         "Trading Software",
@@ -516,7 +517,7 @@ export const ComprehensiveSEO: React.FC<ComprehensiveSEOProps> = ({
       ],
       "softwareHelp": {
         "@type": "CreativeWork",
-        "url": "https://quanforge.ai/wiki"
+        "url": `${urlConfig.site.url}/wiki`
       },
       "softwareRequirements": [
         "MetaTrader 5 Platform",

@@ -7,21 +7,7 @@ import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
-
-// Enhanced connection retry configuration with exponential backoff
-const RETRY_CONFIG = {
-  maxRetries: 5,
-  retryDelay: 500,
-  backoffMultiplier: 1.5,
-  maxDelay: 10000, // Cap at 10 seconds
-  jitter: true, // Add jitter to prevent thundering herd
-};
-
-// Cache configuration
-const CACHE_CONFIG = {
-  ttl: 15 * 60 * 1000, // 15 minutes for better edge performance
-  maxSize: 200, // Max cached items
-};
+import { performanceConfig } from '../config/performance.config';
 
 // Mock session storage
 const STORAGE_KEY = 'mock_session';
@@ -204,7 +190,7 @@ class LRUCache<T> {
   }
 }
 
-const cache = new LRUCache<any>(CACHE_CONFIG.ttl, CACHE_CONFIG.maxSize);
+const cache = new LRUCache<any>(performanceConfig.cache.ttl, performanceConfig.cache.maxSize);
 
 
 
@@ -215,7 +201,7 @@ const withRetry = async <T>(
 ): Promise<T> => {
   let lastError: any;
   
-  for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+  for (let attempt = 0; attempt <= performanceConfig.retry.maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error: any) {
@@ -226,17 +212,17 @@ const withRetry = async <T>(
         throw error; // Not found errors shouldn't be retried
       }
       
-      if (attempt === RETRY_CONFIG.maxRetries) {
-        console.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, error);
+      if (attempt === performanceConfig.retry.maxRetries) {
+        console.error(`Operation ${operationName} failed after ${performanceConfig.retry.maxRetries} retries:`, error);
         throw error;
       }
       
       // Enhanced exponential backoff with jitter
-      let delay = RETRY_CONFIG.retryDelay * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt);
-      delay = Math.min(delay, RETRY_CONFIG.maxDelay);
+      let delay = performanceConfig.retry.retryDelay * Math.pow(performanceConfig.retry.backoffMultiplier, attempt);
+      delay = Math.min(delay, performanceConfig.retry.maxDelay);
       
       // Add jitter to prevent thundering herd
-      if (RETRY_CONFIG.jitter) {
+      if (performanceConfig.retry.jitter) {
         delay = delay * (0.5 + Math.random() * 0.5);
       }
       
@@ -474,7 +460,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
               .from('robots')
               .select('*')
               .order('created_at', { ascending: false })
-              .limit(100); // Add reasonable limit to prevent performance issues
+              .limit(performanceConfig.database.queryLimit); // Use configured query limit
             
             if (result.data && !result.error) {
               // Create index for performance
@@ -485,10 +471,10 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
            const duration = performance.now() - startTime;
            performanceMonitor.record('getRobots', duration);
            
-           // Log slow operations only in development
-           if (import.meta.env.DEV && duration > 500) {
-             console.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
-           }
+// Log slow operations only in development
+            if (import.meta.env.DEV && duration > performanceConfig.database.slowOperationThreshold) {
+              console.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
+            }
            
            return result;
           }, 'getRobots');
@@ -677,7 +663,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
             performanceMonitor.record('getRobotsPaginated_supabase', duration);
             
             // Log slow queries in development
-            if (import.meta.env.DEV && duration > 1000) {
+            if (import.meta.env.DEV && duration > performanceConfig.database.slowQueryThreshold) {
               console.warn(`Slow getRobotsPaginated query: ${duration.toFixed(2)}ms for ${result.count} results`);
             }
             

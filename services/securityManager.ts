@@ -1,33 +1,6 @@
 import { Robot, StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
-
-interface SecurityConfig {
-  maxPayloadSize: number;
-  allowedOrigins: string[];
-  endpoint?: string;
-  rateLimiting: {
-    windowMs: number;
-    maxRequests: number;
-  };
-  encryption: {
-    algorithm: string;
-    keyRotationInterval: number;
-  };
-  // Add missing edge-specific security configuration
-  edgeRateLimiting: {
-    enabled: boolean;
-    requestsPerSecond: number;
-    burstLimit: number;
-  };
-  regionBlocking: {
-    enabled: boolean;
-    blockedRegions: string[];
-  };
-  botDetection: {
-    enabled: boolean;
-    suspiciousPatterns: string[];
-  };
-}
+import { securityConfig } from '../config/security.config';
 
 interface ValidationResult {
   isValid: boolean;
@@ -38,40 +11,7 @@ interface ValidationResult {
 
 class SecurityManager {
   private static instance: SecurityManager;
-  private config: SecurityConfig = {
-    maxPayloadSize: 5 * 1024 * 1024, // Reduced to 5MB for better security
-    allowedOrigins: [
-      'https://quanforge.ai',
-      'https://www.quanforge.ai',
-      'http://localhost:3000',
-      'http://localhost:5173' // Vite dev server
-    ],
-    rateLimiting: {
-      windowMs: 60000, // 1 minute
-      maxRequests: 100,
-    },
-    encryption: {
-      algorithm: 'AES-256-GCM',
-      keyRotationInterval: 43200000, // 12 hours - more frequent rotation
-    },
-    // Add missing edge security configurations
-    edgeRateLimiting: {
-      enabled: true,
-      requestsPerSecond: 10,
-      burstLimit: 20
-    },
-    regionBlocking: {
-      enabled: true,
-      blockedRegions: ['CN', 'RU', 'IR', 'KP'] // Example blocked regions
-    },
-    botDetection: {
-      enabled: true,
-      suspiciousPatterns: [
-        'sqlmap', 'nikto', 'nmap', 'masscan', 'dirb', 'gobuster', 
-        'wfuzz', 'burp', 'owasp', 'scanner', 'bot', 'crawler', 'spider'
-      ]
-    }
-  };
+  private config = securityConfig;
   private rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
   private constructor() {}
@@ -175,24 +115,24 @@ private validateRobotData(data: any): ValidationResult {
        return { isValid: false, errors, riskScore: 100 };
      }
 
-     // Name validation
-     if (data.name) {
-       const sanitizedName = this.sanitizeString(data.name);
-       if (sanitizedName.length < 3 || sanitizedName.length > 100) {
-         errors.push('Robot name must be between 3 and 100 characters');
-         riskScore += 10;
-       }
-       sanitized.name = sanitizedName;
-     } else {
-       errors.push('Robot name is required');
-       riskScore += 15;
-     }
+// Name validation
+      if (data.name) {
+        const sanitizedName = this.sanitizeString(data.name);
+        if (sanitizedName.length < this.config.validation.name.minLength || sanitizedName.length > this.config.validation.name.maxLength) {
+          errors.push(`Robot name must be between ${this.config.validation.name.minLength} and ${this.config.validation.name.maxLength} characters`);
+          riskScore += 10;
+        }
+        sanitized.name = sanitizedName;
+      } else {
+        errors.push('Robot name is required');
+        riskScore += 15;
+      }
 
     // Description validation
     if (data.description) {
       const sanitizedDescription = this.sanitizeString(data.description);
-      if (sanitizedDescription.length > 1000) {
-        errors.push('Description too long (max 1000 characters)');
+      if (sanitizedDescription.length > this.config.validation.description.maxLength) {
+        errors.push(`Description too long (max ${this.config.validation.description.maxLength} characters)`);
         riskScore += 5;
       }
       sanitized.description = sanitizedDescription;
@@ -256,11 +196,11 @@ private validateRobotData(data: any): ValidationResult {
 
     // Risk percent validation
     if (typeof data.riskPercent === 'number') {
-      if (data.riskPercent < 0.01 || data.riskPercent > 100) {
-        errors.push('Risk percent must be between 0.01 and 100');
+      if (data.riskPercent < this.config.validation.risk.minPercentage || data.riskPercent > this.config.validation.risk.maxPercentage) {
+        errors.push(`Risk percent must be between ${this.config.validation.risk.minPercentage} and ${this.config.validation.risk.maxPercentage}`);
         riskScore += 10;
       }
-      sanitized.riskPercent = Math.max(0.01, Math.min(100, data.riskPercent));
+      sanitized.riskPercent = Math.max(this.config.validation.risk.minPercentage, Math.min(this.config.validation.risk.maxPercentage, data.riskPercent));
     }
 
     return {
@@ -278,20 +218,20 @@ private validateRobotData(data: any): ValidationResult {
 
     // Initial deposit validation
     if (typeof data.initialDeposit === 'number') {
-      if (data.initialDeposit < 100 || data.initialDeposit > 10000000) {
-        errors.push('Initial deposit must be between $100 and $10,000,000');
+      if (data.initialDeposit < this.config.validation.deposit.minAmount || data.initialDeposit > this.config.validation.deposit.maxAmount) {
+        errors.push(`Initial deposit must be between $${this.config.validation.deposit.minAmount} and $${this.config.validation.deposit.maxAmount}`);
         riskScore += 10;
       }
-      sanitized.initialDeposit = Math.max(100, Math.min(10000000, data.initialDeposit));
+      sanitized.initialDeposit = Math.max(this.config.validation.deposit.minAmount, Math.min(this.config.validation.deposit.maxAmount, data.initialDeposit));
     }
 
     // Days validation
     if (typeof data.days === 'number') {
-      if (data.days < 1 || data.days > 365) {
-        errors.push('Backtest duration must be between 1 and 365 days');
+      if (data.days < this.config.validation.backtest.minDays || data.days > this.config.validation.backtest.maxDays) {
+        errors.push(`Backtest duration must be between ${this.config.validation.backtest.minDays} and ${this.config.validation.backtest.maxDays} days`);
         riskScore += 10;
       }
-      sanitized.days = Math.max(1, Math.min(365, data.days));
+      sanitized.days = Math.max(this.config.validation.backtest.minDays, Math.min(this.config.validation.backtest.maxDays, data.days));
     }
 
     return {
