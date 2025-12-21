@@ -10,6 +10,10 @@ import { performanceMonitorEnhanced } from '../../services/performanceMonitorEnh
 
 export const config = {
   runtime: 'edge',
+<<<<<<< HEAD
+=======
+  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
   maxDuration: 15,
   memory: 512,
   cache: 'max-age=300, s-maxage=900, stale-while-revalidate=300',

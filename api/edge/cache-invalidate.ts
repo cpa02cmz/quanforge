@@ -45,7 +45,12 @@ export async function POST(request: NextRequest) {
       patterns = [], 
       tags = [], 
       cascade = false, 
+<<<<<<< HEAD
       regions = []
+=======
+      regions = [],
+      priority = 'medium' 
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
     } = body;
     
     const currentRegion = request.headers.get('x-vercel-region') || 'unknown';

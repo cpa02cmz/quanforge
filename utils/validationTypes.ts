@@ -3,77 +3,65 @@
  * Complementary module to validationCore.ts for type definitions and helper utilities
  */
 
-// ========== TYPE DEFINITIONS ==========
-
-export interface ValidationError {
-  field: string;
-  message: string;
-}
-
 export interface ValidationResult {
   isValid: boolean;
-  errors: ValidationError[];
-  warnings: string[];
-  field?: string;
+  errors: string[];
 }
 
-export interface StrategyValidationResult {
-  isValid: boolean;
-  errors: ValidationError[];
-  sanitizedParams?: any;
-}
+export const validateEmail = (email: string): ValidationResult => {
+  const errors: string[] = [];
+  
+  if (!email) {
+    errors.push('Email is required');
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.push('Invalid email format');
+  }
 
-export interface RateLimiterEntry {
-  count: number;
-  resetTime: number;
-}
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
 
-// Strategy-specific interfaces
-export interface CustomInput {
-  name: string;
-  type: 'number' | 'string' | 'boolean';
-  defaultValue: any;
-  description?: string;
-  minValue?: number;
-  maxValue?: number;
-  options?: string[];
-}
+export const validateApiKey = (apiKey: string): ValidationResult => {
+  const errors: string[] = [];
+  
+  if (!apiKey) {
+    errors.push('API key is required');
+  } else if (apiKey.length < 10) {
+    errors.push('API key must be at least 10 characters');
+  } else if (apiKey.length > 2000) {
+    errors.push('API key cannot exceed 2000 characters');
+  }
 
-export interface StrategyParams {
-  timeframe: string;
-  riskPercent: number;
-  stopLossPips?: number;
-  takeProfitPips?: number;
-  symbol?: string;
-  customInputs?: CustomInput[];
-  magicNumber?: number;
-  initialDeposit?: number;
-  duration?: number;
-  leverage?: number;
-}
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
 
-// Validation rule interfaces
-export interface ValidationRule<T = any> {
-  name: string;
-  validator: (value: T) => ValidationError | null;
-  required?: boolean;
-  sanitizer?: (value: T) => T;
-}
+export const validateStrategyParams = (params: any): ValidationResult => {
+  const errors: string[] = [];
+  
+  if (!params) {
+    errors.push('Strategy parameters are required');
+    return { isValid: false, errors };
+  }
 
-export interface ValidationSchema<T = any> {
-  [key: string]: ValidationRule<T> | ValidationRule<T>[];
-}
+  if (!params.symbol || typeof params.symbol !== 'string') {
+    errors.push('Symbol is required');
+  }
 
-// Legacy types for backward compatibility
-export interface InputValidationOptions {
-  sanitize?: boolean;
-  checkXSS?: boolean;
-  maxLength?: number;
-  minLength?: number;
-}
+  if (!params.timeframe || typeof params.timeframe !== 'string') {
+    errors.push('Timeframe is required');
+  }
 
-export interface SecurityValidationOptions {
-  checkMQL5?: boolean;
-  allowFileOperations?: boolean;
-  allowNetworkOperations?: boolean;
-}
+  if (typeof params.riskPercent !== 'number' || params.riskPercent <= 0) {
+    errors.push('Risk percent must be a positive number');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};

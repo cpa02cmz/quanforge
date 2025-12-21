@@ -3,6 +3,7 @@
  * Optimized for Vercel Edge with caching and validation
  */
 
+<<<<<<< HEAD
 import { mockDb } from '../../services/supabase';
 import { securityManager } from '../../services/securityManager';
 import { AdvancedCache } from '../../services/advancedCache';
@@ -11,6 +12,18 @@ import { APIErrorHandler } from '../../utils/apiErrorHandler';
 
 export const config = {
   runtime: 'edge',
+=======
+import { NextRequest, NextResponse } from 'next/server';
+import { mockDb, dbUtils } from '../../services/supabase';
+import { securityManager } from '../../services/securityManager';
+import { advancedCache } from '../../services/advancedCache';
+import { performanceMonitorEnhanced } from '../../services/performanceMonitorEnhanced';
+import { Robot } from '../../types';
+
+export const config = {
+  runtime: 'edge',
+  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
   maxDuration: 15,
   memory: 512,
   cache: 'max-age=300, s-maxage=900, stale-while-revalidate=300',

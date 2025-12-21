@@ -3,7 +3,11 @@ import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getEnv } from './settingsManager';
 import { queryCache } from './advancedCache';
+<<<<<<< HEAD
 import { withErrorHandling } from '../utils/errorManager';
+=======
+import { withErrorHandling } from '../utils/errorHandler';
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 
 interface ReadReplicaConfig {
   readonly: boolean;

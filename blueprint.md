@@ -42,19 +42,28 @@ graph TD
 2.  **Context Construction**: The service builds a prompt that enforces the configuration (Timeframe, Risk, Inputs) as "Hard Constraints" and the User Prompt as "Soft Logic".
 3.  **Model Interaction**: Calls `gemini-3-pro-preview` for high-reasoning code generation.
 4.  **Parsing**: A robust extraction layer identifies Markdown code blocks to separate executable code from conversational text.
+<<<<<<< HEAD
 5.  **Performance Integration**: Generation metrics tracked through unified performance monitoring system.
 
 ### B. Persistence Layer (`services/supabase.ts`)
 *   **Design Pattern**: Adapter Pattern with Performance Monitoring.
+=======
+
+### B. Persistence Layer (`services/supabase.ts`)
+*   **Design Pattern**: Adapter Pattern.
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 *   **Behavior**:
     *   If `SUPABASE_URL` is present -> Connects to real backend.
     *   If missing -> Falls back to `localStorage` (Mock Mode).
 *   **Entities**:
     *   `Robot`: Contains `code`, `strategy_params`, `chat_history`, `analysis_result`.
+<<<<<<< HEAD
 *   **Optimizations**:
     *   Query performance monitoring and pattern analysis
     *   Automatic connection pooling and optimization
     *   Edge-compatible cache integration
+=======
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 
 ### C. Market Simulation (`services/marketData.ts`)
 *   **Pattern**: Observer (Pub/Sub) + Singleton.
@@ -79,6 +88,7 @@ graph TD
 *   **Input Sanitization**: Filenames are sanitized before download.
 *   **Prompt Engineering**: System prompts prevents the AI from generating harmful or non-MQL5 content.
 
+<<<<<<< HEAD
 ## 6. Flow Optimization & Security Enhancement (v1.8)
 
 ### Code Quality Assessment (2025-12-21)
@@ -163,3 +173,28 @@ graph TD
 - **Build Optimization**: Granular chunking resolves large bundle warnings
 - **Schema Validation**: Minimal configuration files pass all platform validations
 - **Performance Monitoring**: Comprehensive metrics track optimization effectiveness
+=======
+## 6. Deployment Considerations
+
+### Build Compatibility
+- **Cross-Platform Environment**: All code must work in browser, Node.js, and edge environments
+- **Module Restrictions**: Avoid Node.js-specific modules (`crypto`, `fs`, `path`) in frontend code
+- **Schema Compliance**: Platform configuration files must follow current schema requirements
+
+### Known Issues & Solutions
+- **Browser Crypto**: Replace Node.js `crypto` with browser-compatible alternatives
+- **Vercel Schema**: Use minimal, schema-compliant `vercel.json` configuration
+- **Build Validation**: Always run build and typecheck before deployment
+
+### Critical Technical Debt (2025-12-20 Analysis)
+- **Build System**: Broken TypeScript compilation requiring immediate fix
+- **Type Safety**: 905 `any` type usages creating runtime risks
+- **Maintainability**: Monolithic services limiting development velocity
+- **Code Quality**: Inconsistent patterns and missing ESLint configuration
+
+### Code Quality Standards
+- **Type Safety**: Minimize `any` usage, implement strict TypeScript
+- **Modularity**: Service files should be <500 lines, well-decoupled
+- **Consistency**: Unified error handling, naming conventions, patterns
+- **Testing**: >80% test coverage for critical paths
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)

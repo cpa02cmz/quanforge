@@ -3,6 +3,7 @@
  * Collects and analyzes edge performance metrics with live streaming capabilities
  */
 
+<<<<<<< HEAD
 import { edgeMetrics as edgeMetricsCollector } from '../services/edgeMetrics';
 import { vercelEdgeOptimizer } from '../services/vercelEdgeOptimizer';
 
@@ -27,6 +28,14 @@ const edgeLogger: EdgeLogger = {
 
 export const config = {
   runtime: 'edge',
+=======
+import { edgeMetricsCollector } from '../services/edgeMetrics';
+import { vercelEdgeOptimizer } from '../services/vercelEdgeOptimizer';
+
+export const config = {
+  runtime: 'edge',
+  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
   prefersStatic: true
 };
 
@@ -38,12 +47,21 @@ const streamingConnections = new Map<string, {
   filters: AnalyticsFilters;
 }>();
 
+<<<<<<< HEAD
 // Analytics data buffer for streaming (not used currently but available for future)
 // const analyticsBuffer = new Map<string, {
 //   data: StreamingMetrics[];
 //   maxSize: number;
 //   ttl: number;
 // }>();
+=======
+// Analytics data buffer for streaming
+const analyticsBuffer = new Map<string, {
+  data: any[];
+  maxSize: number;
+  ttl: number;
+}>();
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 
 interface AnalyticsFilters {
   regions?: string[];
@@ -52,6 +70,7 @@ interface AnalyticsFilters {
   threshold?: number;
 }
 
+<<<<<<< HEAD
 interface EdgeMetrics {
   region: string;
   responseTime: number;
@@ -61,6 +80,8 @@ interface EdgeMetrics {
   timestamp: number;
 }
 
+=======
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 interface StreamingMetrics {
   timestamp: number;
   region: string;
@@ -76,6 +97,7 @@ interface StreamingMetrics {
 
 interface AnalyticsPayload {
   timestamp: number;
+<<<<<<< HEAD
   analytics: {
     globalCacheHitRate?: number;
     totalBandwidthSaved?: number;
@@ -83,12 +105,16 @@ interface AnalyticsPayload {
     errorRate?: number;
     performanceScore?: number;
   };
+=======
+  analytics: any;
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
   userAgent: string;
   url: string;
 }
 
 interface AnalyticsResponse {
   success: boolean;
+<<<<<<< HEAD
   metrics?: {
     region: string;
     responseTime: number;
@@ -96,6 +122,9 @@ interface AnalyticsResponse {
     totalRequests: number;
     cacheHitRate: number;
   };
+=======
+  metrics?: any;
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
   recommendations?: string[];
   performanceScore?: number;
   error?: string;
@@ -150,6 +179,7 @@ export default async function handler(req: Request): Promise<Response> {
         const region = req.headers.get('x-vercel-region') || 'unknown';
         const responseTime = Date.now() - startTime;
         
+<<<<<<< HEAD
 // Record edge metrics
         edgeMetricsCollector.recordMetric({
           region,
@@ -158,6 +188,15 @@ export default async function handler(req: Request): Promise<Response> {
           throughput: 100, // Mock throughput in requests/month  
           errorRate: payload.analytics.errorRate || 0,
           timestamp: Date.now()
+=======
+        // Record edge metrics
+        edgeMetricsCollector.recordMetric(region, {
+          responseTime,
+          cacheHitRate: payload.analytics.globalCacheHitRate || 0,
+          bandwidthSaved: payload.analytics.totalBandwidthSaved || 0,
+          requestsServed: payload.analytics.totalRequests || 1,
+          errorRate: payload.analytics.errorRate || 0,
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
         });
 
         // Get performance recommendations
@@ -186,10 +225,14 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
+<<<<<<< HEAD
         edgeLogger.error('Analytics processing error', { 
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: Date.now()
       });
+=======
+        console.error('Analytics processing error:', error);
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to process analytics data'
@@ -209,8 +252,13 @@ export default async function handler(req: Request): Promise<Response> {
         const region = req.headers.get('x-vercel-region') || 'unknown';
         const timeWindow = parseInt(url.searchParams.get('window') || '300000'); // 5 minutes default
         
+<<<<<<< HEAD
 // Get edge metrics
         const currentEdgeMetrics = edgeMetricsCollector.getMetricsByRegion(region);
+=======
+        // Get edge metrics
+        const edgeMetrics = edgeMetricsCollector.getMetricsByRegion(region);
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
         const averageMetrics = edgeMetricsCollector.getAverageMetrics(timeWindow);
         const performanceScore = edgeMetricsCollector.getPerformanceScore();
         const cachePerformance = edgeMetricsCollector.getCachePerformance();
@@ -223,7 +271,11 @@ export default async function handler(req: Request): Promise<Response> {
           region,
           timeWindow,
           edgeMetrics: {
+<<<<<<< HEAD
             totalRequests: currentEdgeMetrics.length,
+=======
+            totalRequests: edgeMetrics.length,
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
             averageResponseTime: averageMetrics.avgResponseTime,
             cacheHitRate: averageMetrics.avgCacheHitRate,
             errorRate: averageMetrics.avgErrorRate,
@@ -232,7 +284,11 @@ export default async function handler(req: Request): Promise<Response> {
           },
           cachePerformance,
           vercelMetrics,
+<<<<<<< HEAD
           recommendations: [], // getPerformanceRecommendations method doesn't exist
+=======
+          recommendations: edgeMetricsCollector.getPerformanceRecommendations(),
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
           timestamp: Date.now(),
         };
 
@@ -244,10 +300,14 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
+<<<<<<< HEAD
         edgeLogger.error('Analytics summary error', { 
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: Date.now()
       });
+=======
+        console.error('Analytics summary error:', error);
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to retrieve analytics summary'
@@ -266,7 +326,11 @@ export default async function handler(req: Request): Promise<Response> {
       try {
         const region = req.headers.get('x-vercel-region') || 'unknown';
         const performanceScore = edgeMetricsCollector.getPerformanceScore();
+<<<<<<< HEAD
         const recommendations: string[] = []; // getPerformanceRecommendations method doesn't exist
+=======
+        const recommendations = edgeMetricsCollector.getPerformanceRecommendations();
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
         
         const response = {
           success: true,
@@ -284,10 +348,14 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
+<<<<<<< HEAD
         edgeLogger.error('Performance score error', { 
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: Date.now()
       });
+=======
+        console.error('Performance score error:', error);
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to calculate performance score'
@@ -352,10 +420,14 @@ export default async function handler(req: Request): Promise<Response> {
                 };
                 controller.enqueue(`data: ${JSON.stringify(message)}\n\n`);
               } catch (error) {
+<<<<<<< HEAD
                 edgeLogger.error('Streaming error', { 
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: Date.now()
       });
+=======
+                console.error('Streaming error:', error);
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
                 const errorMessage = {
                   type: 'error',
                   error: 'Failed to collect metrics',
@@ -383,10 +455,14 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
+<<<<<<< HEAD
         edgeLogger.error('Streaming setup error', { 
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: Date.now()
       });
+=======
+        console.error('Streaming setup error:', error);
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to establish streaming connection'
@@ -425,10 +501,14 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
+<<<<<<< HEAD
         edgeLogger.error('Aggregation error', { 
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: Date.now()
       });
+=======
+        console.error('Aggregation error:', error);
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to aggregate analytics data'
@@ -444,8 +524,15 @@ export default async function handler(req: Request): Promise<Response> {
 
     // Simulate edge performance for testing
     if (url.pathname === '/api/analytics/simulate' && req.method === 'POST') {
+<<<<<<< HEAD
 try {
         edgeMetricsCollector.simulateEdgePerformance();
+=======
+      try {
+        edgeMetricsCollector.simulateEdgePerformance();
+        
+        // Broadcast to all streaming connections
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
         broadcastToStreams({
           type: 'simulation',
           message: 'Edge performance simulation completed',
@@ -466,10 +553,14 @@ try {
           }
         });
       } catch (error) {
+<<<<<<< HEAD
         edgeLogger.error('Simulation error', { 
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: Date.now()
       });
+=======
+        console.error('Simulation error:', error);
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to simulate edge performance'
@@ -495,10 +586,14 @@ try {
     });
 
   } catch (error) {
+<<<<<<< HEAD
     edgeLogger.error('Edge analytics function error', { 
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: Date.now()
       });
+=======
+    console.error('Edge analytics function error:', error);
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
     return new Response(JSON.stringify({
       success: false,
       error: 'Internal Server Error',
@@ -517,11 +612,19 @@ try {
  * Collect metrics for streaming
  */
 function collectStreamingMetrics(region: string, filters: AnalyticsFilters): StreamingMetrics {
+<<<<<<< HEAD
   const currentEdgeMetrics = edgeMetricsCollector.getMetricsByRegion(region);
   const averageMetrics = edgeMetricsCollector.getAverageMetrics(filters.timeWindow || 300000);
   
   // Apply filters
   let filteredMetrics = currentEdgeMetrics;
+=======
+  const edgeMetrics = edgeMetricsCollector.getMetricsByRegion(region);
+  const averageMetrics = edgeMetricsCollector.getAverageMetrics(filters.timeWindow || 300000);
+  
+  // Apply filters
+  let filteredMetrics = edgeMetrics;
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
   if (filters.regions && filters.regions.length > 0) {
     filteredMetrics = filteredMetrics.filter(m => filters.regions!.includes(m.region));
   }
@@ -543,6 +646,7 @@ function collectStreamingMetrics(region: string, filters: AnalyticsFilters): Str
 /**
  * Broadcast message to all streaming connections
  */
+<<<<<<< HEAD
 function broadcastToStreams(message: {
   type: string;
   message?: string;
@@ -550,6 +654,9 @@ function broadcastToStreams(message: {
   data?: StreamingMetrics;
   error?: string;
 }): void {
+=======
+function broadcastToStreams(message: any): void {
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
   const now = Date.now();
   
   for (const [clientId, connection] of streamingConnections.entries()) {
@@ -558,7 +665,11 @@ function broadcastToStreams(message: {
       if (now - connection.lastPing > 30000) { // 30 seconds timeout
         try {
           connection.controller.close();
+<<<<<<< HEAD
         } catch {
+=======
+        } catch (e) {
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
           // Ignore close errors
         }
         streamingConnections.delete(clientId);
@@ -568,10 +679,14 @@ function broadcastToStreams(message: {
       // Send message
       connection.controller.enqueue(`data: ${JSON.stringify(message)}\n\n`);
     } catch (error) {
+<<<<<<< HEAD
       edgeLogger.error(`Failed to send to stream ${clientId}`, { 
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: Date.now()
       });
+=======
+      console.error(`Failed to send to stream ${clientId}:`, error);
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
       streamingConnections.delete(clientId);
     }
   }
@@ -585,6 +700,7 @@ async function aggregateAnalyticsData(options: {
   groupBy: string;
   metrics: string[];
   regions: string[];
+<<<<<<< HEAD
 }): Promise<{
   aggregation: {
     timeRange: string;
@@ -623,6 +739,11 @@ async function aggregateAnalyticsData(options: {
     minTimestamp?: number;
     maxTimestamp?: number;
   }> = {};
+=======
+}): Promise<any> {
+  const timeWindow = parseTimeRange(options.timeRange);
+  const aggregated: Record<string, any> = {};
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 
   for (const region of options.regions) {
     const metrics = edgeMetricsCollector.getMetricsByRegion(region);
@@ -674,8 +795,13 @@ function parseTimeRange(timeRange: string): number {
 /**
  * Group metrics by time buckets
  */
+<<<<<<< HEAD
 function groupByTimeBuckets(metrics: EdgeMetrics[], bucketSize: number): Map<number, EdgeMetrics[]> {
   const buckets = new Map<number, EdgeMetrics[]>();
+=======
+function groupByTimeBuckets(metrics: any[], bucketSize: number): Map<number, any[]> {
+  const buckets = new Map<number, any[]>();
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
   
   metrics.forEach(metric => {
     const bucketTimestamp = Math.floor(metric.timestamp / bucketSize) * bucketSize;
@@ -693,7 +819,11 @@ function groupByTimeBuckets(metrics: EdgeMetrics[], bucketSize: number): Map<num
 /**
  * Calculate aggregated metrics for a group of data points
  */
+<<<<<<< HEAD
 function calculateAggregatedMetrics(dataPoints: EdgeMetrics[], requestedMetrics: string[]): Record<string, number> {
+=======
+function calculateAggregatedMetrics(dataPoints: any[], requestedMetrics: string[]): any {
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
   if (dataPoints.length === 0) {
     return requestedMetrics.reduce((acc, metric) => {
       acc[metric] = 0;
@@ -734,24 +864,32 @@ function calculateAggregatedMetrics(dataPoints: EdgeMetrics[], requestedMetrics:
 /**
  * Calculate summary statistics for aggregated data
  */
+<<<<<<< HEAD
 function calculateSummaryStats(aggregatedData: Record<string, Record<string, number>>): Record<string, {
   min: number;
   max: number;
   avg: number;
   total: number;
 }> {
+=======
+function calculateSummaryStats(aggregatedData: Record<string, any>): any {
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
   const values = Object.values(aggregatedData);
   
   if (values.length === 0) {
     return {};
   }
 
+<<<<<<< HEAD
   const summary: Record<string, {
   min: number;
   max: number;
   avg: number;
   total: number;
 }> = {};
+=======
+  const summary: Record<string, any> = {};
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
   const metrics = Object.keys(values[0]).filter(key => 
     !['count', 'minTimestamp', 'maxTimestamp'].includes(key)
   );
@@ -803,7 +941,11 @@ setInterval(() => {
     if (connection) {
       try {
         connection.controller.close();
+<<<<<<< HEAD
       } catch {
+=======
+      } catch (e) {
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
         // Ignore close errors
       }
       streamingConnections.delete(clientId);
@@ -811,9 +953,13 @@ setInterval(() => {
   });
   
   if (staleConnections.length > 0) {
+<<<<<<< HEAD
     edgeLogger.log(`Cleaned up ${staleConnections.length} stale streaming connections`, { 
         count: staleConnections.length,
         timestamp: Date.now()
       });
+=======
+    console.log(`Cleaned up ${staleConnections.length} stale streaming connections`);
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
   }
 }, 10000); // Check every 10 seconds

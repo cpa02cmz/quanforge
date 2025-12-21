@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { ErrorManager } from '../utils/errorManager';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -12,7 +11,7 @@ interface Toast {
 
 interface ToastContextType {
   toasts: Toast[];
-  showToast: (message: string, _type?: ToastType) => void;
+  showToast: (message: string, type?: ToastType, duration?: number) => void;
   hideToast: (id: string) => void;
 }
 
@@ -52,26 +51,12 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, toastDuration);
   }, []);
 
-  // Set up ErrorManager toast integration
-  useEffect(() => {
-    // Register toast handler with ErrorManager
-    const errorManager = ErrorManager.getInstance();
-    errorManager.setToastHandler((toast: { message: string; type: ToastType }) => {
-      showToast(toast.message, toast.type);
-    });
-
-    // Cleanup on unmount
-    return () => {
-      // ErrorManager doesn't have a cleanup method, which is fine for singleton pattern
-    };
-  }, [showToast]);
-
-  const removeToast = (id: string) => {
+  const hideToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+  }, []);
 
   return (
-    <ToastContext.Provider value={{ toasts, showToast, hideToast: removeToast }}>
+    <ToastContext.Provider value={{ toasts, showToast, hideToast }}>
       {children}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none">
         {toasts.map((toast) => (
@@ -83,7 +68,6 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               ${toast.type === 'success' ? 'border-brand-500/50 bg-brand-900/10' : ''}
               ${toast.type === 'error' ? 'border-red-500/50 bg-red-900/10' : ''}
               ${toast.type === 'info' ? 'border-blue-500/50 bg-blue-900/10' : ''}
-              animate-fade-in-up
             `}
             role="alert"
           >
@@ -106,7 +90,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             </div>
             <div className="text-sm font-medium">{toast.message}</div>
             <button
-              onClick={() => removeToast(toast.id)}
+              onClick={() => hideToast(toast.id)}
               className="ml-auto -mx-1.5 -my-1.5 rounded-lg p-1.5 text-gray-400 hover:text-white focus:ring-2 focus:ring-gray-300"
             >
               <span className="sr-only">Close</span>

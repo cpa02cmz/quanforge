@@ -195,7 +195,11 @@ export class AdvancedCache {
         const data = await loader();
         this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
       } catch (error) {
+<<<<<<< HEAD
          if (process.env['NODE_ENV'] === 'development') {
+=======
+         if (process.env.NODE_ENV === 'development') {
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
            console.warn(`Failed to preload cache entry: ${key}`, error);
          }
       }
@@ -333,7 +337,11 @@ this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
     });
     
      // Use logger instead of console.log for production safety
+<<<<<<< HEAD
      if (process.env['NODE_ENV'] === 'development') {
+=======
+     if (process.env.NODE_ENV === 'development') {
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
        console.log(`Invalidated ${deletedCount} cache entries for region: ${region}`);
      }
     return deletedCount;

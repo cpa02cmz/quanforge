@@ -1,15 +1,12 @@
-
 import { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './services/supabase';
 import { ToastProvider } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { UserSession } from './types';
-import { performanceMonitor } from './utils/performance-consolidated';
+import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
-
-// Enhanced lazy loading with route-based code splitting and preloading
 
 // Enhanced lazy loading with route-based code splitting and preloading
 const Auth = lazy(() => 
@@ -40,10 +37,23 @@ const Layout = lazy(() =>
   import('./components/Layout').then(module => ({ default: module.Layout }))
 );
 
-// Dynamic import utilities for services and heavy components
-import { preloadCriticalRoutes } from './utils/appExports';
+export const loadGeminiService = () => import('./services/gemini');
+export const loadSEOUtils = () => import('./utils/seoEnhanced');
+export const loadChartComponents = () => import('./components/ChartComponents');
+export const loadCodeEditor = () => import('./components/CodeEditor');
+export const loadBacktestPanel = () => import('./components/BacktestPanel');
 
-
+// Enhanced preloading strategy with route-based optimization
+const preloadCriticalRoutes = () => {
+  // Preload Dashboard components (most likely route after login)
+  import('./pages/Dashboard').catch(err => logger.warn('Dashboard preload failed:', err));
+  // Preload Generator components (second most likely)
+  setTimeout(() => import('./pages/Generator').catch(err => logger.warn('Generator preload failed:', err)), 1000);
+  // Preload Layout (essential for navigation)
+  setTimeout(() => import('./components/Layout').catch(err => logger.warn('Layout preload failed:', err)), 500);
+  // Preload static pages in background
+  setTimeout(() => import('./pages/Wiki').catch(err => logger.warn('Wiki preload failed:', err)), 2000);
+};
 
 export default function App() {
   const [session, setSession] = useState<UserSession | null>(null);
@@ -56,7 +66,6 @@ useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       performanceMonitor.recordMetric('auth_init', performance.now() - startTime);
-      performanceMonitor.recordMetric('auth_getSession_success', performance.now() - startTime);
       
       // Preload critical routes after successful auth
       if (session) {
@@ -68,7 +77,6 @@ useEffect(() => {
     }).catch((err) => {
       logger.warn("Auth initialization failed:", err);
       performanceMonitor.recordMetric('auth_error', 1);
-      performanceMonitor.recordMetric('auth_getSession_error', performance.now() - startTime);
       
       // Still initialize non-critical services even on auth error
       initializeNonCriticalServices();

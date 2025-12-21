@@ -1,182 +1,136 @@
-
-import { AISettings, DBSettings } from "../types";
-import { encryptApiKey, decryptApiKey, encryptApiKeyAsync, decryptApiKeyAsync, validateApiKey } from "../utils/encryption";
+import { AISettings, DBSettings, DBMode } from "../types";
 
 const AI_SETTINGS_KEY = 'quantforge_ai_settings';
 const DB_SETTINGS_KEY = 'quantforge_db_settings';
 
-// Safe Environment Variable Access
-export const getEnv = (key: string): string => {
-    // Check Vite (import.meta.env)
-    // We use try-catch or safe checks to avoid "process is not defined" in pure ESM browsers
+class SettingsManager {
+  private static instance: SettingsManager;
+
+  static getInstance(): SettingsManager {
+    if (!SettingsManager.instance) {
+      SettingsManager.instance = new SettingsManager();
+    }
+    return SettingsManager.instance;
+  }
+
+  // AI Settings Management
+  getSettings(): AISettings | null {
     try {
-        // @ts-ignore
-        if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[`VITE_${key}`]) {
-            // @ts-ignore
-            return import.meta.env[`VITE_${key}`];
-        }
-    } catch (e) {
-        // Ignore
-    }
+      const stored = localStorage.getItem(AI_SETTINGS_KEY);
+      if (!stored) {
+        return {
+          provider: 'google' as const,
+          apiKey: '',
+          modelName: 'gemini-pro',
+          baseUrl: '',
+          language: 'en' as const
+        };
+      }
 
-    // Check Node/CRA (process.env)
+      const settings = JSON.parse(stored);
+      return this.validateAISettings(settings);
+    } catch (error) {
+      console.error('Failed to get AI settings:', error);
+      return {
+        provider: 'google' as const,
+        apiKey: '',
+        modelName: 'gemini-pro',
+        baseUrl: '',
+        language: 'en' as const
+      };
+    }
+  }
+
+  async saveAISettings(settings: AISettings): Promise<void> {
     try {
-        if (typeof process !== 'undefined' && process.env) {
-            return process.env[`REACT_APP_${key}`] || process.env[key] || process.env[`VITE_${key}`] || '';
-        }
-    } catch (e) {
-        // Ignore
+      const validSettings = this.validateAISettings(settings);
+      localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(validSettings));
+    } catch (error) {
+      console.error('Failed to save AI settings:', error);
+      throw new Error('Failed to save AI settings');
     }
+  }
 
-    return '';
-};
+  private validateAISettings(settings: any): AISettings {
+    return {
+      provider: settings.provider || 'google',
+      apiKey: settings.apiKey || '',
+      modelName: settings.modelName || 'gemini-pro',
+      baseUrl: settings.baseUrl || '',
+      language: settings.language || 'en'
+    };
+  }
 
-// Default settings if nothing is saved
- export const DEFAULT_AI_SETTINGS: AISettings = {
-     provider: 'google',
-     apiKey: getEnv('API_KEY'), // Fallback to env var if available
-     modelName: 'gemini-3-pro-preview',
-     baseUrl: '',
-     customInstructions: '',
-     language: 'en', // Default to English for broader compatibility
-     twelveDataApiKey: '' 
- };
+  // DB Settings Management
+  getDBSettings(): DBSettings | null {
+    try {
+      const stored = localStorage.getItem(DB_SETTINGS_KEY);
+      if (!stored) {
+        // Return default mock settings
+        return {
+          mode: 'mock' as DBMode,
+          url: 'mock://localhost:3000',
+          anonKey: 'mock-key'
+        };
+      }
 
-// Check if env vars are present to default to supabase, otherwise mock
-const hasEnvDb = !!(getEnv('SUPABASE_URL') && getEnv('SUPABASE_ANON_KEY'));
-
-export const DEFAULT_DB_SETTINGS: DBSettings = {
-    mode: hasEnvDb ? 'supabase' : 'mock',
-    url: getEnv('SUPABASE_URL'),
-    anonKey: getEnv('SUPABASE_ANON_KEY')
-};
-
-export const settingsManager = {
-    getSettings(): AISettings {
-        try {
-            const stored = localStorage.getItem(AI_SETTINGS_KEY);
-            if (!stored) return DEFAULT_AI_SETTINGS;
-            
-            const parsed = JSON.parse(stored);
-            
-            // Decrypt API key if it's encrypted
-            if (parsed.apiKey) {
-                // Try to decrypt - if it fails, assume it's unencrypted (legacy)
-                try {
-                    const decrypted = decryptApiKey(parsed.apiKey);
-                    if (decrypted && validateApiKey(decrypted, parsed.provider)) {
-                        parsed.apiKey = decrypted;
-                    }
-                } catch (e) {
-                    // Legacy unencrypted key, keep as is
-                }
-            }
-            
-            // Merge with defaults to ensure new fields like 'language' exist on old saved data
-            return { ...DEFAULT_AI_SETTINGS, ...parsed };
-        } catch (e) {
-            console.error("Failed to load AI settings", e);
-            return DEFAULT_AI_SETTINGS;
-        }
-    },
-
-    // Enhanced async version with better security
-    async getSettingsAsync(): Promise<AISettings> {
-        try {
-            const stored = localStorage.getItem(AI_SETTINGS_KEY);
-            if (!stored) return DEFAULT_AI_SETTINGS;
-            
-            const parsed = JSON.parse(stored);
-            
-            // Decrypt API key with enhanced async decryption
-            if (parsed.apiKey) {
-                try {
-                    const decrypted = await decryptApiKeyAsync(parsed.apiKey);
-                    if (decrypted && validateApiKey(decrypted, parsed.provider)) {
-                        parsed.apiKey = decrypted;
-                    }
-                } catch (e) {
-                    console.warn("Enhanced decryption failed, trying legacy:", e);
-                    // Fallback to sync version for backward compatibility
-                    try {
-                        const decrypted = decryptApiKey(parsed.apiKey);
-                        if (decrypted && validateApiKey(decrypted, parsed.provider)) {
-                            parsed.apiKey = decrypted;
-                        }
-                    } catch (e2) {
-                        // Legacy unencrypted key, keep as is
-                    }
-                }
-            }
-            
-            // Merge with defaults to ensure new fields exist
-            return { ...DEFAULT_AI_SETTINGS, ...parsed };
-        } catch (e) {
-            console.error("Failed to load AI settings asynchronously:", e);
-            return this.getSettings(); // Fallback to sync version
-        }
-    },
-
-    saveSettings(settings: AISettings) {
-        try {
-            // Encrypt API key before saving
-            const settingsToSave = {
-                ...settings,
-                apiKey: encryptApiKey(settings.apiKey)
-            };
-            
-            localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settingsToSave));
-            window.dispatchEvent(new Event('ai-settings-changed'));
-        } catch (e) {
-            console.error("Failed to save AI settings", e);
-        }
-    },
-
-    // Enhanced async version with better encryption
-    async saveSettingsAsync(settings: AISettings) {
-        try {
-            // Use enhanced async encryption for better security
-            const encryptedApiKey = await encryptApiKeyAsync(settings.apiKey);
-            const settingsToSave = {
-                ...settings,
-                apiKey: encryptedApiKey
-            };
-            
-            localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settingsToSave));
-            window.dispatchEvent(new Event('ai-settings-changed'));
-        } catch (e) {
-            console.error("Failed to save AI settings with enhanced encryption:", e);
-            // Fallback to sync version
-            this.saveSettings(settings);
-        }
-    },
-
-    resetSettings() {
-        localStorage.removeItem(AI_SETTINGS_KEY);
-        return DEFAULT_AI_SETTINGS;
-    },
-
-    // --- DB Settings ---
-
-    getDBSettings(): DBSettings {
-        try {
-            const stored = localStorage.getItem(DB_SETTINGS_KEY);
-            if (!stored) return DEFAULT_DB_SETTINGS;
-            const parsed = JSON.parse(stored);
-            return { ...DEFAULT_DB_SETTINGS, ...parsed };
-        } catch (e) {
-            console.error("Failed to load DB settings", e);
-            return DEFAULT_DB_SETTINGS;
-        }
-    },
-
-    saveDBSettings(settings: DBSettings) {
-        try {
-            localStorage.setItem(DB_SETTINGS_KEY, JSON.stringify(settings));
-            // Dispatch event to notify Supabase service to re-init
-            window.dispatchEvent(new Event('db-settings-changed'));
-        } catch (e) {
-            console.error("Failed to save DB settings", e);
-        }
+      const settings = JSON.parse(stored);
+      return this.validateDBSettings(settings);
+    } catch (error) {
+      console.error('Failed to get DB settings:', error);
+      // Return default mock settings on error
+      return {
+        mode: 'mock' as DBMode,
+        url: 'mock://localhost:3000',
+        anonKey: 'mock-key'
+      };
     }
-};
+  }
+
+  async saveDBSettings(settings: DBSettings): Promise<void> {
+    try {
+      const validSettings = this.validateDBSettings(settings);
+      localStorage.setItem(DB_SETTINGS_KEY, JSON.stringify(validSettings));
+    } catch (error) {
+      console.error('Failed to save DB settings:', error);
+      throw new Error('Failed to save DB settings');
+    }
+  }
+
+  private validateDBSettings(settings: any): DBSettings {
+    return {
+      mode: settings.mode || 'mock',
+      url: settings.url || 'mock://localhost:3000',
+      anonKey: settings.anonKey || 'mock-key'
+    };
+  }
+
+  // Settings Reset
+  async resetAllSettings(): Promise<void> {
+    try {
+      localStorage.removeItem(AI_SETTINGS_KEY);
+      localStorage.removeItem(DB_SETTINGS_KEY);
+    } catch (error) {
+      console.error('Failed to reset settings:', error);
+      throw new Error('Failed to reset settings');
+    }
+  }
+
+  // Get API key for current AI provider
+  async getCurrentApiKey(): Promise<string> {
+    const settings = this.getSettings();
+    if (!settings) {
+      throw new Error('No AI settings found');
+    }
+    return settings.apiKey;
+  }
+
+  // Check if settings are configured
+  async isConfigured(): Promise<boolean> {
+    const aiSettings = this.getSettings();
+    return aiSettings !== null && aiSettings.apiKey.length > 0;
+  }
+}
+
+export const settingsManager = SettingsManager.getInstance();
+export default settingsManager;

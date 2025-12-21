@@ -15,147 +15,137 @@ interface RechartsComponents {
 }
 
 interface ChartComponentsProps {
-  riskData: Array<{ name: string; value: number; color: string }> | undefined;
-  analysis: { riskScore: number; profitability: number; description: string } | undefined;
-  t: ((key: string) => string) | undefined;
-  data: Array<{ date: string; balance: number }> | undefined;
-  totalReturn: number | undefined;
+  data?: any[];
+  type?: 'pie' | 'area';
+  width?: number;
+  height?: number;
 }
 
-const RechartsInner = memo(({ 
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip, 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  riskData, analysis, t, data, totalReturn 
-}: RechartsComponents & ChartComponentsProps) => {
-  // Render equity curve chart if data is provided
-  if (data && totalReturn !== undefined) {
-    return (
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data}>
-          <defs>
-            <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={totalReturn >= 0 ? '#22c55e' : '#ef4444'} stopOpacity={0.3}/>
-              <stop offset="95%" stopColor={totalReturn >= 0 ? '#22c55e' : '#ef4444'} stopOpacity={0}/>
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-          <XAxis 
-            dataKey="date" 
-            stroke="#94a3b8" 
-            tick={{fontSize: 12}} 
-            minTickGap={30}
-          />
-          <YAxis 
-            stroke="#94a3b8" 
-            tick={{fontSize: 12}}
-            domain={['auto', 'auto']}
-            tickFormatter={(val: number) => `$${val}`}
-          />
-          <Tooltip 
-            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', color: '#f8fafc' }}
-            formatter={(value: number) => [`$${value.toLocaleString()}`, 'Balance']}
-          />
-          <Area 
-            type="monotone" 
-            dataKey="balance" 
-            stroke={totalReturn >= 0 ? '#22c55e' : '#ef4444'} 
-            strokeWidth={2}
-            fillOpacity={1} 
-            fill="url(#colorBalance)" 
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    );
-  }
-
-  // Render risk profile pie chart if risk data is provided
-  if (riskData && analysis && t) {
-    return (
-      <div className="bg-dark-surface p-6 rounded-xl border border-dark-border">
-        <h3 className="text-lg font-bold text-white mb-4">{t('gen_risk_profile')}</h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={riskData}
-                innerRadius={60}
-                outerRadius={80}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {riskData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }} itemStyle={{ color: '#fff' }} />
-              <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="24" fontWeight="bold">
-                {analysis.riskScore}
-              </text>
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
-});
-
-RechartsInner.displayName = 'RechartsInner';
-
-export const ChartComponents: React.FC<ChartComponentsProps> = memo(({ riskData, analysis, t, data, totalReturn }) => {
+// Memoized chart components for performance
+export const ChartComponents = memo<ChartComponentsProps>(({ 
+  data = [], 
+  type = 'pie', 
+  width = 400, 
+  height = 300 
+}) => {
   const [Recharts, setRecharts] = useState<RechartsComponents | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    import('recharts').then((module) => {
-      setRecharts({
-        PieChart: module.PieChart,
-        Pie: module.Pie,
-        Cell: module.Cell,
-        ResponsiveContainer: module.ResponsiveContainer,
-        Tooltip: module.Tooltip,
-        AreaChart: module.AreaChart,
-        Area: module.Area,
-        XAxis: module.XAxis,
-        YAxis: module.YAxis,
-        CartesianGrid: module.CartesianGrid
-      });
-      setLoading(false);
-    }).catch(() => {
-      setLoading(false);
-    });
+    const loadRecharts = async () => {
+      try {
+        setLoading(true);
+        const recharts = await import('recharts');
+        setRecharts({
+          PieChart: recharts.PieChart,
+          Pie: recharts.Pie,
+          Cell: recharts.Cell,
+          ResponsiveContainer: recharts.ResponsiveContainer,
+          Tooltip: recharts.Tooltip,
+          AreaChart: recharts.AreaChart,
+          Area: recharts.Area,
+          XAxis: recharts.XAxis,
+          YAxis: recharts.YAxis,
+          CartesianGrid: recharts.CartesianGrid,
+        });
+      } catch (err) {
+        console.error('Failed to load Recharts:', err);
+        setError('Failed to load chart components');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRecharts();
   }, []);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-64 bg-dark-surface rounded-lg">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
       </div>
     );
   }
 
-  if (!Recharts) {
+  if (error || !Recharts) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center text-gray-400">
-          <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      <div className="flex items-center justify-center h-64 bg-dark-surface rounded-lg">
+        <div className="text-center">
+          <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
-          <p>Chart unavailable</p>
+          <p className="text-gray-400">Chart unavailable</p>
+          {error && <p className="text-xs text-gray-500 mt-1">{error}</p>}
         </div>
       </div>
     );
   }
 
-  return <RechartsInner 
-      {...Recharts} 
-      riskData={riskData} 
-      analysis={analysis} 
-      t={t} 
-      data={data} 
-      totalReturn={totalReturn} 
-    />;
+  if (type === 'pie' && data.length > 0) {
+    const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+    
+    return (
+      <div className="w-full h-full">
+        <Recharts.ResponsiveContainer width={width} height={height}>
+          <Recharts.PieChart>
+            <Recharts.Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              label={({ name, percent }: { name: any; percent: any }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              outerRadius={80}
+              fill="#8884d8"
+              dataKey="value"
+            >
+              {data.map((_entry, index) => (
+                <Recharts.Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Recharts.Pie>
+            <Recharts.Tooltip />
+          </Recharts.PieChart>
+        </Recharts.ResponsiveContainer>
+      </div>
+    );
+  }
+
+  if (type === 'area' && data.length > 0) {
+    return (
+      <div className="w-full h-full">
+        <Recharts.ResponsiveContainer width={width} height={height}>
+          <Recharts.AreaChart data={data}>
+            <Recharts.CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+            <Recharts.XAxis dataKey="name" stroke="#9ca3af" />
+            <Recharts.YAxis stroke="#9ca3af" />
+            <Recharts.Tooltip 
+              contentStyle={{ 
+                backgroundColor: '#1f2937', 
+                border: '1px solid #374151',
+                borderRadius: '0.5rem'
+              }} 
+            />
+            <Recharts.Area 
+              type="monotone" 
+              dataKey="value" 
+              stroke="#3b82f6" 
+              fill="#3b82f6" 
+              fillOpacity={0.3}
+            />
+          </Recharts.AreaChart>
+        </Recharts.ResponsiveContainer>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-center h-64 bg-dark-surface rounded-lg">
+      <p className="text-gray-400">No data available</p>
+    </div>
+  );
 });
 
 ChartComponents.displayName = 'ChartComponents';
+
+// Helper function to dynamically load chart components
+export const loadChartComponents = () => import('./ChartComponents');

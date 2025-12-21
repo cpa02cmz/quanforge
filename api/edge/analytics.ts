@@ -3,7 +3,11 @@
  * Real-time performance monitoring and analytics for edge deployment
  */
 
+<<<<<<< HEAD
 import { NextResponse } from 'next/server';
+=======
+import { NextRequest, NextResponse } from 'next/server';
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 import { edgeSupabase } from '../../services/edgeSupabaseClient';
 import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
 

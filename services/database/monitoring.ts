@@ -1,6 +1,10 @@
 import { robotCache, queryCache } from './cache';
 import { getClient } from './client';
+<<<<<<< HEAD
 import { handleErrorCompat as handleError } from '../../utils/errorManager';
+=======
+import { handleError } from '../../utils/errorHandler';
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 
 // Performance monitoring for database operations
 export class DatabaseMonitor {

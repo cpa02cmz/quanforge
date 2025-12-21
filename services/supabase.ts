@@ -4,7 +4,7 @@ import { settingsManager } from './settingsManager';
 import { Robot, UserSession } from '../types';
 import { edgeConnectionPool } from './edgeSupabasePool';
 import { securityManager } from './securityManager';
-import { handleErrorCompat as handleError } from '../utils/errorManager';
+import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
 

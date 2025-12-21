@@ -45,7 +45,7 @@ export default [
       'no-console': 'warn',
       'prefer-const': 'warn',
       'no-var': 'error',
-      'no-unused-vars': 'off',
+'no-unused-vars': 'warn',
       'no-redeclare': 'warn',
     },
   },

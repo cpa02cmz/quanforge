@@ -14,6 +14,10 @@ declare global {
 
 export const config = {
   runtime: 'edge',
+<<<<<<< HEAD
+=======
+  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 };
 
 // WebSocket connection store (in production, use Redis or similar)

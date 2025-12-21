@@ -1,77 +1,112 @@
-/**
- * Legacy Performance Monitor - DEPRECATED
- * This module has been consolidated into utils/performanceConsolidated.ts
- * Please import from performanceConsolidated.ts instead
- */
+// Performance monitoring utilities
 
-import { performanceManager } from './performanceConsolidated';
-
-interface PerformanceMetrics {
-  operation: string;
-  startTime: number;
-  endTime: number;
-  duration: number;
-  memoryUsage: number;
-  metadata: Record<string, any>;
+interface PerformanceMetric {
+  id: string;
+  name: string;
+  value: number;
+  timestamp: number;
+  category: 'render' | 'network' | 'memory' | 'custom';
 }
 
-interface PerformanceReport {
-  totalOperations: number;
-  averageDuration: number;
-  slowestOperation: PerformanceMetrics;
-  fastestOperation: PerformanceMetrics;
-  operationsByType: Record<string, PerformanceMetrics[]>;
-  memoryTrend: number[];
-}
-
-// Legacy PerformanceMonitor class for backward compatibility
 class PerformanceMonitor {
-  startTimer(operation: string, metadata?: Record<string, any>): () => PerformanceMetrics {
-    const startTime = performance.now();
-    
-    return (): PerformanceMetrics => {
-      const endTime = performance.now();
-      const duration = endTime - startTime;
-      
-      // Record in consolidated performance manager
-      performanceManager.recordMetric(operation, duration);
-      
-      return {
-        operation,
-        startTime,
-        endTime,
-        duration,
-        memoryUsage: 0, // Simplified for legacy compatibility
-        metadata: metadata || {}
-      };
+  private metrics: PerformanceMetric[] = [];
+  private observers: PerformanceObserver[] = [];
+
+  constructor() {
+    this.initializeObservers();
+  }
+
+  private initializeObservers(): void {
+    if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
+      // Monitor navigation timing
+      try {
+        const navObserver = new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            if (entry.entryType === 'navigation') {
+              const navEntry = entry as PerformanceNavigationTiming;
+              this.recordMetric({
+                id: 'navigation',
+                name: 'page-load',
+                value: navEntry.loadEventEnd - navEntry.loadEventStart,
+                timestamp: Date.now(),
+                category: 'network'
+              });
+            }
+          }
+        });
+        navObserver.observe({ entryTypes: ['navigation'] });
+        this.observers.push(navObserver);
+      } catch (error) {
+        console.warn('Navigation observer not supported:', error);
+      }
+
+      // Monitor largest contentful paint
+      try {
+        const lcpObserver = new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            this.recordMetric({
+              id: 'lcp',
+              name: 'largest-contentful-paint',
+              value: entry.startTime,
+              timestamp: Date.now(),
+              category: 'render'
+            });
+          }
+        });
+        lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+        this.observers.push(lcpObserver);
+      } catch (error) {
+        console.warn('LCP observer not supported:', error);
+      }
+    }
+  }
+
+  recordMetric(metric: Partial<PerformanceMetric>): void {
+    const fullMetric: PerformanceMetric = {
+      id: metric.id || Math.random().toString(36).substr(2, 9),
+      name: metric.name || 'unknown',
+      value: metric.value || 0,
+      timestamp: metric.timestamp || Date.now(),
+      category: metric.category || 'custom'
     };
+
+    this.metrics.push(fullMetric);
+
+    // Keep only last 100 metrics
+    if (this.metrics.length > 100) {
+      this.metrics = this.metrics.slice(-100);
+    }
   }
 
-  getPerformanceReport(): PerformanceReport {
-    const metrics = performanceManager.getMetrics();
+  getMetrics(category?: string): PerformanceMetric[] {
+    if (category) {
+      return this.metrics.filter(m => m.category === category);
+    }
+    return [...this.metrics];
+  }
+
+  getMetricByName(name: string): PerformanceMetric[] {
+    return this.metrics.filter(m => m.name === name);
+  }
+
+  getAverageMetric(name: string): number {
+    const nameMetrics = this.getMetricByName(name);
+    if (nameMetrics.length === 0) return 0;
     
-    return {
-      totalOperations: metrics.length,
-      averageDuration: 0, // Simplified
-      slowestOperation: {} as PerformanceMetrics,
-      fastestOperation: {} as PerformanceMetrics,
-      operationsByType: {},
-      memoryTrend: []
-    };
+    const sum = nameMetrics.reduce((acc, m) => acc + m.value, 0);
+    return sum / nameMetrics.length;
   }
 
-  // Delegate specific methods to consolidated manager
-  recordMetric(name: string, value: number) {
-    performanceManager.recordMetric(name, value);
+  clearMetrics(): void {
+    this.metrics = [];
   }
 
-  getMetrics() {
-    return performanceManager.getMetrics();
+  destroy(): void {
+    this.observers.forEach(observer => observer.disconnect());
+    this.observers = [];
+    this.metrics = [];
   }
 }
 
-// Export for backward compatibility
 export const performanceMonitor = new PerformanceMonitor();
-
-// Export types
-export type { PerformanceMetrics, PerformanceReport };
+export default performanceMonitor;

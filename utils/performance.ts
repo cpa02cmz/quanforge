@@ -1,35 +1,53 @@
 /**
- * Legacy Performance Module - DEPRECATED
- * This module has been consolidated into performanceConsolidated.ts
- * Please import from performanceConsolidated.ts instead
+ * Performance monitoring utility
  */
 
-import { performanceManager } from './performanceConsolidated';
-import React from 'react';
+interface PerformanceMetrics {
+  [key: string]: number;
+}
 
-// Legacy exports for backward compatibility
-export const performanceMonitor = performanceManager;
-export const measureRender = (componentName: string) => {
-  const start = performance.now();
-  
-  return {
-    end: () => {
+class PerformanceMonitor {
+  private metrics: PerformanceMetrics = {};
+  private startTime: number = Date.now();
+
+  recordMetric(name: string, value: number): void {
+    this.metrics[name] = value;
+  }
+
+  getMetric(name: string): number | undefined {
+    return this.metrics[name];
+  }
+
+  getAllMetrics(): PerformanceMetrics {
+    return { ...this.metrics };
+  }
+
+  markStart(name: string): void {
+    this.metrics[`${name}_start`] = performance.now();
+  }
+
+  markEnd(name: string): number {
+    const start = this.metrics[`${name}_start`];
+    if (start) {
       const duration = performance.now() - start;
-      performanceManager.recordMetric(`render_${componentName}`, duration);
+      this.metrics[name] = duration;
+      delete this.metrics[`${name}_start`];
+      return duration;
     }
-  };
-};
+    return 0;
+  }
 
-// Hook for React components
-export const usePerformanceMonitor = (componentName: string) => {
-  const startTime = React.useRef<number>(performance.now());
-  
-  React.useEffect(() => {
-    return () => {
-      if (startTime.current) {
-        const duration = performance.now() - startTime.current;
-        performanceManager.recordMetric(`component_${componentName}`, duration);
-      }
+  cleanup(): void {
+    this.metrics = {};
+  }
+
+  getMetrics(): PerformanceMetrics {
+    return {
+      ...this.metrics,
+      totalRuntime: Date.now() - this.startTime
     };
-  }, [componentName]);
-};
+  }
+}
+
+export const performanceMonitor = new PerformanceMonitor();
+export default performanceMonitor;

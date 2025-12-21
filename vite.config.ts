@@ -17,71 +17,25 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
-            // React ecosystem - split more granularly
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-is')) {
-              // Split react core from react router with granular splitting
-              if (id.includes('react-router') || id.includes('react-router-dom')) {
-                // Split react-router more granularly for better caching
-                if (id.includes('useNavigate') || id.includes('useLocation') || id.includes('useParams') || id.includes('hooks')) {
-                  return 'react-router-hooks';
-                }
-                if (id.includes('Link') || id.includes('NavLink') || id.includes('components')) {
-                  return 'react-router-components';
-                }
-                return 'react-router-core';
-              }
-              // Split React scheduler from core React
-              if (id.includes('scheduler') || id.includes('react-reconciler')) {
-                return 'react-scheduler';
-              }
+            // React ecosystem - optimized for edge caching
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
               return 'react-vendor';
             }
             // Supabase - isolated for better connection pooling
             if (id.includes('@supabase')) {
-              // Separate realtime and storage for better caching
-              if (id.includes('@supabase/realtime-js')) {
-                return 'supabase-realtime';
-              }
-              if (id.includes('@supabase/storage-js')) {
-                return 'supabase-storage';
-              }
-              if (id.includes('@supabase/auth-js') || id.includes('@supabase/auth-helpers')) {
-                return 'supabase-auth';
-              }
-              if (id.includes('@supabase/postgrest-js')) {
-                return 'supabase-postgrest';
-              }
-              if (id.includes('@supabase/functions-js')) {
-                return 'supabase-functions';
-              }
               return 'supabase-vendor';
             }
-            // AI services - split for edge optimization
+            // AI services - lazy loaded for edge optimization
             if (id.includes('@google/genai')) {
-              // Split AI components
-              if (id.includes('generators') || id.includes('models')) {
-                return 'ai-models';
-              }
-              if (id.includes('chat') || id.includes('conversation')) {
-                return 'ai-chat';
-              }
               return 'ai-vendor';
             }
             // Chart libraries - split more granularly
             if (id.includes('recharts')) {
-              // Split recharts into smaller chunks
-              if (id.includes('AreaChart') || id.includes('LineChart') || id.includes('XAxis') || id.includes('YAxis') || id.includes('CartesianGrid')) {
+              if (id.includes('AreaChart') || id.includes('LineChart')) {
                 return 'chart-core';
               }
-              if (id.includes('PieChart') || id.includes('BarChart') || id.includes('RadarChart') || id.includes('ScatterChart')) {
+              if (id.includes('PieChart') || id.includes('BarChart')) {
                 return 'chart-misc';
-              }
-              // Split chart components further
-              if (id.includes('Tooltip') || id.includes('Legend') || id.includes('ResponsiveContainer')) {
-                return 'chart-components';
-              }
-              if (id.includes('polar') || id.includes('radial') || id.includes('treemap')) {
-                return 'chart-advanced';
               }
               return 'chart-vendor';
             }
@@ -89,48 +43,7 @@ export default defineConfig({
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'security-vendor';
             }
-            // Split other vendor libraries more granularly
-            if (id.includes('lodash') || id.includes('date-fns') || id.includes('moment')) {
-              return 'vendor-utils';
-            }
-            if (id.includes('axios') || id.includes('fetch') || id.includes('node-fetch')) {
-              return 'vendor-http';
-            }
-            // Split large utility libraries to reduce vendor-misc size
-            if (id.includes('prismjs') || id.includes('prism')) {
-              return 'vendor-syntax';
-            }
-            if (id.includes('marked') || id.includes('markdown')) {
-              return 'vendor-markdown';
-            }
-            // Split polyfills and core utilities from miscellaneous vendor
-            if (id.includes('polyfill') || id.includes('core-js') || id.includes('@babel/runtime')) {
-              return 'vendor-polyfills';
-            }
-            // Split React-related utilities from general vendor
-            if (id.includes('object-assign') || id.includes('prop-types') || id.includes('scheduler')) {
-              return 'vendor-react-utils';
-            }
-            // Split event and promise libraries
-            if (id.includes('eventemitter') || id.includes('mitt') || id.includes('nanoid') || id.includes('uuid')) {
-              return 'vendor-events';
-            }
-            // Split string manipulation libraries
-            if (id.includes('string-hash') || id.includes('crypto-js') || id.includes('buffer') || id.includes('base64')) {
-              return 'vendor-string';
-            }
-            // Split async/await utilities
-            if (id.includes('promise') || id.includes('async') || id.includes('queue')) {
-              return 'vendor-async';
-            }
-            // Split validation libraries (commented out - not currently used to avoid empty chunks)
-            // if (id.includes('yup') || id.includes('zod') || id.includes('joi') || id.includes('validator')) {
-            //   return 'vendor-validation';
-            // }
-            // Split browser compatibility libraries
-            if (id.includes('whatwg') || id.includes('abort') || id.includes('cross-fetch')) {
-              return 'vendor-browser';
-            }
+// All other vendor libraries
             return 'vendor-misc';
           }
           
@@ -302,7 +215,7 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 80, // More aggressive optimization for edge performance
+    chunkSizeWarningLimit: 100, // More aggressive optimization for edge performance
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
