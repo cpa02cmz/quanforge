@@ -1,4 +1,10 @@
 {
-  "buildCommand": "npm ci --prefer-offline --no-audit && npm run build",
-  "outputDirectory": "dist"
+  "buildCommand": "npm ci --prefer-offline --no-audit --no-optional && npm run build",
+  "outputDirectory": "dist",
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max-old-space-size=4096"
+    }
+  },
+  "installCommand": "npm ci --prefer-offline --no-audit --no-optional"
 }
