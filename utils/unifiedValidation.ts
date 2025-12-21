@@ -1,5 +1,5 @@
 import { StrategyParams, CustomInput, AISettings, Message } from '../types';
-import { securityManager } from '../services/securityManager';
+import { securityManager } from '../services/security/SecurityManager';
 
 export interface ValidationResult {
   isValid: boolean;

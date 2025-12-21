@@ -43,5 +43,5 @@ export class UnifiedPerformanceMonitor {
   }
 }
 
-// Export the performance monitor instance and utilities
-export { performanceMonitor, measureRender, usePerformanceMonitor } from './performance';
+// Export the performance monitor instance
+export { performanceMonitor } from './performance';

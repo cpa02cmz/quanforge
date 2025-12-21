@@ -59,14 +59,16 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, o
     useEffect(() => {
         if (isOpen) {
             const current = settingsManager.getSettings();
-            setSettings(current);
-            // Try to detect preset based on baseUrl
-            if (current.provider === 'google') setActivePreset('google');
-            else if (current.baseUrl?.includes('groq')) setActivePreset('groq');
-            else if (current.baseUrl?.includes('openrouter')) setActivePreset('openrouter');
-            else if (current.baseUrl?.includes('deepseek')) setActivePreset('deepseek');
-            else if (current.baseUrl?.includes('localhost')) setActivePreset('local');
-            else setActivePreset('openai');
+            if (current) {
+                setSettings(current);
+                // Try to detect preset based on baseUrl
+                if (current.provider === 'google') setActivePreset('google');
+                else if (current.baseUrl?.includes('groq')) setActivePreset('groq');
+                else if (current.baseUrl?.includes('openrouter')) setActivePreset('openrouter');
+                else if (current.baseUrl?.includes('deepseek')) setActivePreset('deepseek');
+                else if (current.baseUrl?.includes('localhost')) setActivePreset('local');
+                else setActivePreset('openai');
+            }
         }
     }, [isOpen]);
 
@@ -83,11 +85,16 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, o
         }
     };
 
-    const handleSave = (e: React.FormEvent) => {
+    const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        settingsManager.saveSettings(settings);
-        showToast('Settings saved successfully', 'success');
-        onClose();
+        try {
+            await settingsManager.saveAISettings(settings);
+            showToast('Settings saved successfully', 'success');
+            onClose();
+        } catch (error) {
+            logger.error('Failed to save AI settings:', error);
+            showToast('Failed to save settings', 'error');
+        }
     };
 
     // const handleReset = () => {

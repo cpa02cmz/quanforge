@@ -24,8 +24,11 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
 
     useEffect(() => {
         if (isOpen) {
-            setSettings(settingsManager.getDBSettings());
-            loadStats();
+            const dbSettings = settingsManager.getDBSettings();
+            if (dbSettings) {
+                setSettings(dbSettings);
+                loadStats();
+            }
         }
     }, [isOpen]);
 

@@ -5,8 +5,7 @@ import { StrategyConfig } from '../components/StrategyConfig';
 import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
 import { useTranslation } from '../services/i18n';
 import { AdvancedSEO } from '../utils/advancedSEO';
-import { performanceMonitor } from '../utils/performance';
-import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
+import { performanceMonitor, frontendPerformanceOptimizer } from '../utils/performanceConsolidated';
 
 // Lazy load heavy components to reduce initial bundle size
 const ChatInterface = lazy(() => import('../components/ChatInterface').then(module => ({ default: module.ChatInterface })));
@@ -22,8 +21,8 @@ export const Generator: React.FC = memo(() => {
    useEffect(() => {
      return () => {
        performanceMonitor.cleanup();
-       // Reset frontend performance optimizer on unmount
-       frontendPerformanceOptimizer.reset();
+       // Record cleanup in frontend performance optimizer on unmount
+       frontendPerformanceOptimizer.recordMetric('generator_cleanup', Date.now());
      };
    }, []);
   
