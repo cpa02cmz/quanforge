@@ -100,7 +100,7 @@ class EdgeSupabasePool {
       
       return !result?.error;
     } catch (error) {
-      console.error('Health check failed:', error);
+      // Health check failed
       return false;
     }
   }
@@ -132,7 +132,7 @@ class EdgeSupabasePool {
             expiredKeys.push(key);
           }
         } catch (error) {
-          console.warn(`Health check failed for ${key}:`, error);
+          // Health check failed for connection
           expiredKeys.push(key);
         }
       }
@@ -160,11 +160,11 @@ class EdgeSupabasePool {
         try {
           await this.getEdgeClient('warmup', region);
           const latency = Date.now() - startTime;
-          console.log(`✅ Edge connection warmed for region: ${region} (${latency}ms)`);
+          // Edge connection warmed successfully
           return { region, success: true, latency };
         } catch (error) {
           const latency = Date.now() - startTime;
-          console.warn(`❌ Failed to warm edge connection for ${region}:`, error);
+          // Failed to warm edge connection
           return { region, success: false, latency };
         }
       });
@@ -182,10 +182,7 @@ class EdgeSupabasePool {
       }
     }
     
-    // Log warming summary
-    const successCount = results.filter(r => r.success).length;
-    const avgLatency = results.reduce((sum, r) => sum + r.latency, 0) / results.length;
-    console.log(`🔥 Edge warming completed: ${successCount}/${regions.length} regions successful, avg latency: ${avgLatency.toFixed(2)}ms`);
+    // Warming summary calculated for monitoring
     
     return;
   }

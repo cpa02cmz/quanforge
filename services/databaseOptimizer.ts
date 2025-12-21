@@ -340,7 +340,7 @@ class DatabaseOptimizer {
     params: any 
   }>): Promise<Array<{ data: T | null; error: any }>> {
     // Implementation would combine queries into a single database operation
-    console.log(`Executing batched query for ${queries.length} operations`);
+    // Executing batched query operations
     return queries.map(() => ({ data: null as T | null, error: null }));
   }
 
@@ -383,7 +383,7 @@ class DatabaseOptimizer {
       }
     } catch (err) {
       // pg_stat_statements might not be available, which is fine
-      console.debug('Query statistics not available for optimization recommendations');
+      // Query statistics unavailable for optimization
     }
     
     // Add general recommendations based on our metrics
@@ -411,7 +411,7 @@ class DatabaseOptimizer {
         });
       }
     } catch (err) {
-      console.debug('Table statistics not available for optimization recommendations');
+      // Table statistics unavailable for optimization
     }
     
     return {
@@ -442,7 +442,7 @@ class DatabaseOptimizer {
         performanceInsights.push(...strategyInsights);
       }
     } catch (err) {
-      console.debug('Strategy performance insights not available');
+      // Strategy performance insights unavailable
     }
     
     // Suggest materialized views for complex aggregations
@@ -486,7 +486,7 @@ class DatabaseOptimizer {
         for (const table of tables) {
           if (table.n_tup_del > 1000) {
             // In a real implementation, we would run VACUUM ANALYZE on the table
-            console.log(`Table ${table.relname} has ${table.n_tup_del} deleted tuples, optimization recommended`);
+            // Table optimization recommended
           }
         }
       }
@@ -522,7 +522,7 @@ class DatabaseOptimizer {
       // Run ANALYZE to update table statistics
       const { error: analyzeError } = await client.rpc('pg_stat_reset');
       if (analyzeError) {
-        console.error('Error running ANALYZE:', analyzeError);
+        // Error running ANALYZE operation
       }
       
       // Get tables that need maintenance
@@ -533,7 +533,7 @@ class DatabaseOptimizer {
       
       if (!tableError && tables) {
         for (const table of tables) {
-          console.log(`Table ${table.relname} has ${table.n_tup_del} deleted tuples, maintenance recommended`);
+          // Table maintenance recommended
           // In a real scenario, we would run VACUUM operations here
         }
       }
@@ -543,7 +543,7 @@ class DatabaseOptimizer {
         message: 'Database maintenance completed'
       };
     } catch (error) {
-      console.error('Database maintenance failed:', error);
+      // Database maintenance failed
       return {
         success: false,
         message: `Database maintenance failed: ${error}`

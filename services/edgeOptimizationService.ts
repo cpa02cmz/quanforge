@@ -77,7 +77,7 @@ class EdgeOptimizationService {
   }
 
   private async initializeOptimizations(): Promise<void> {
-    console.log(`Initializing Edge Optimization Service for region: ${this.currentRegion}`);
+    // console.log(`Initializing Edge Optimization Service for region: ${this.currentRegion}`);
     
     // Optimize connection pools for edge
     this.optimizeConnectionPools();
@@ -291,7 +291,7 @@ class EdgeOptimizationService {
   }
 
   private async warmupConnections(): Promise<void> {
-    console.log('Starting edge connection warm-up...');
+    // console.log('Starting edge connection warm-up...');
     
     try {
       // Warm up enhanced connection pool
@@ -300,7 +300,7 @@ class EdgeOptimizationService {
       // Warm up edge connection pool
       await edgeConnectionPool.warmEdgeConnections();
       
-      console.log('Edge connection warm-up completed');
+      // console.log('Edge connection warm-up completed');
     } catch (error) {
       console.warn('Edge connection warm-up failed:', error);
     }
@@ -347,7 +347,7 @@ class EdgeOptimizationService {
    */
   updateConfig(newConfig: Partial<EdgeOptimizationConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    console.log('Edge optimization configuration updated:', this.config);
+    // console.log('Edge optimization configuration updated:', this.config);
     
     // Re-apply optimizations with new config
     this.optimizeConnectionPools();
@@ -357,7 +357,7 @@ class EdgeOptimizationService {
    * Force immediate optimization cycle
    */
   async forceOptimization(): Promise<void> {
-    console.log('Forcing immediate edge optimization...');
+    // console.log('Forcing immediate edge optimization...');
     await this.performOptimizations();
   }
 
@@ -465,7 +465,7 @@ class EdgeOptimizationService {
     // Clear metrics
     this.metrics.clear();
     
-    console.log('Edge Optimization Service shutdown completed');
+    // console.log('Edge Optimization Service shutdown completed');
   }
 }
 

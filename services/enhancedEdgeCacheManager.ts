@@ -197,7 +197,7 @@ class EnhancedEdgeCacheManager {
       try {
         data = await this.decompressData(entry.data);
       } catch (error) {
-        console.warn('Failed to decompress cached data:', error);
+        // Decompression failed for cached data
         this.cache.delete(key);
         this.recordMiss(region);
         return null;
@@ -252,7 +252,7 @@ class EnhancedEdgeCacheManager {
           this.metrics.compressions++;
         }
       } catch (error) {
-        console.warn('Compression failed:', error);
+        // Cache compression failed
       }
     }
 
@@ -323,12 +323,12 @@ class EnhancedEdgeCacheManager {
       try {
         await this.set(prediction.key, prediction.data, prediction.strategy, ['warmup']);
       } catch (error) {
-        console.warn(`Failed to warm cache for key ${prediction.key}:`, error);
+        // Cache warm-up failed for predicted key
       }
     });
 
     await Promise.allSettled(warmupPromises);
-    console.log(`Cache warm-up completed for ${predictions.length} entries`);
+    // Cache warm-up completed
   }
 
   /**
@@ -511,7 +511,7 @@ class EnhancedEdgeCacheManager {
     if (cleaned > 0) {
       this.metrics.deletes += cleaned;
       this.updateTotalSize();
-      console.debug(`Cleaned up ${cleaned} expired cache entries`);
+      // Expired cache entries cleaned up
     }
   }
 
@@ -585,7 +585,7 @@ class EnhancedEdgeCacheManager {
     this.cache.clear();
     this.metrics.deletes += this.cache.size;
     this.updateTotalSize();
-    console.log('Cache cleared');
+    // Cache cleared
   }
 
   /**
@@ -597,7 +597,7 @@ class EnhancedEdgeCacheManager {
     this.config.cleanupInterval = 15000; // 15 seconds
     this.config.defaultTTL = 3 * 60 * 1000; // 3 minutes
     
-    console.log('Cache optimized for edge deployment');
+    // Cache optimized for edge deployment
   }
 
   /**
@@ -612,7 +612,7 @@ class EnhancedEdgeCacheManager {
    */
   importConfig(config: Partial<CacheConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('Cache configuration updated');
+    // Cache configuration updated
   }
 }
 
