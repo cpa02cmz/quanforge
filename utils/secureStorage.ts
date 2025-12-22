@@ -23,7 +23,20 @@ export class WebCryptoEncryption {
   private static readonly IV_LENGTH = 12;
   private static readonly SALT_LENGTH = 32;
   private static readonly ITERATIONS = 100000;
-  private static readonly BASE_KEY = 'QuantForge2025SecureKey';
+  
+  // Dynamic key generation with environment variable support
+  private static get BASE_KEY(): string {
+    // Use environment variable if available
+    if (import.meta.env && import.meta.env['VITE_ENCRYPTION_BASE_KEY']) {
+      return import.meta.env['VITE_ENCRYPTION_BASE_KEY'];
+    }
+    
+    // Generate dynamic key based on domain and user agent
+    const domain = window.location.hostname || 'localhost';
+    const userAgent = navigator.userAgent.slice(0, 50);
+    const timestamp = new Date().toISOString().slice(0, 10); // Daily key rotation
+    return btoa(`${domain}_${userAgent}_${timestamp}`).slice(0, 32);
+  }
   
   private static async deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
     const encoder = new TextEncoder();
@@ -128,7 +141,14 @@ export class WebCryptoEncryption {
 
 // Legacy XOR decryption for migration (marked as deprecated)
 export class LegacyXORDecryption {
-  private static readonly key = 'QuantForge2025SecureKey';
+  private static get key(): string {
+    // Use environment variable if available for legacy compatibility
+    if (import.meta.env && import.meta.env['VITE_LEGACY_ENCRYPTION_KEY']) {
+      return import.meta.env['VITE_LEGACY_ENCRYPTION_KEY'];
+    }
+    // Fallback to the original key for backward compatibility
+    return 'QuantForge2025SecureKey';
+  }
   
   static encrypt(text: string): string {
     if (!text) return text;

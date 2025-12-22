@@ -10,6 +10,7 @@ import { performanceManager } from './utils/performanceConsolidated';
 const performanceMonitor = performanceManager;
 import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seoUnified';
+import { configureSecurity } from './utils/envValidation';
 
 // Dynamic import utilities are available via constants/appExports.ts
 
@@ -56,17 +57,29 @@ const preloadCriticalRoutes = () => {
   setTimeout(() => import('./pages/Wiki').catch(err => logger.warn('Wiki preload failed:', err)), 2000);
 };
 
+// Initialize security configuration
+const initializeSecurity = () => {
+  try {
+    configureSecurity();
+  } catch (error) {
+    logger.error('Security initialization failed:', error);
+  }
+};
+
 export default function App() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
+  useEffect(() => {
     const startTime = performance.now();
     
     // Critical path: Auth initialization first
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       performanceMonitor.recordMetric('auth_init', performance.now() - startTime);
+      
+      // Initialize security configuration first
+      initializeSecurity();
       
       // Preload critical routes after successful auth
       if (session) {
