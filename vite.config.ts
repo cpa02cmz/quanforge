@@ -17,9 +17,25 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
-            // React ecosystem - optimized for edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
+            // React ecosystem - split core from DOM, exclude dev modules
+            if (id.includes('react')) {
+              // React core only (smallest chunk)
+              if (id.includes('react/index') || !id.includes('react-dom')) {
+                return 'react-core';
+              }
+              // React DOM client-side only
+              if (id.includes('react-dom/client')) {
+                return 'react-dom';
+              }
+              // React DOM server-side excluded
+              if (id.includes('react-dom/server') || id.includes('react-dom/test-utils')) {
+                return 'vendor-dev'; // Exclude from main bundle
+              }
               return 'react-vendor';
+            }
+            // React Router - separate chunk
+            if (id.includes('react-router') || id.includes('react-is')) {
+              return 'react-router';
             }
             // Supabase - isolated for better connection pooling
             if (id.includes('@supabase')) {
@@ -36,13 +52,35 @@ export default defineConfig({
             if (id.includes('@google/genai')) {
               return 'ai-vendor';
             }
-            // Chart libraries - split more granularly
+            // Chart libraries - highly granular splitting for optimal bundle size
             if (id.includes('recharts')) {
-              if (id.includes('AreaChart') || id.includes('LineChart')) {
+              // Core utilities and components (smallest)
+              if (id.includes('util') || id.includes('component') || id.includes('Cell') || id.includes('Label') || id.includes('Tooltip') || id.includes('Legend')) {
                 return 'chart-core';
               }
-              if (id.includes('PieChart') || id.includes('BarChart')) {
+              // Area charts
+              if (id.includes('Area') || id.includes('AreaChart')) {
+                return 'chart-areas';
+              }
+              // Line charts
+              if (id.includes('Line') || id.includes('LineChart')) {
+                return 'chart-lines';
+              }
+              // Pie charts
+              if (id.includes('Pie') || id.includes('PieChart') || id.includes('RadialBar')) {
+                return 'chart-pies';
+              }
+              // Bar charts
+              if (id.includes('Bar') || id.includes('BarChart')) {
+                return 'chart-bars';
+              }
+              // Scatter and Cartesian charts
+              if (id.includes('Scatter') || id.includes('ComposedChart') || id.includes('Cartesian')) {
                 return 'chart-misc';
+              }
+              // Responsive container and layout
+              if (id.includes('ResponsiveContainer') || id.includes('Brush')) {
+                return 'chart-layout';
               }
               return 'chart-vendor';
             }
@@ -50,7 +88,16 @@ export default defineConfig({
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'security-vendor';
             }
-            // All other vendor libraries
+            // Split vendor-misc by category for better caching
+            if (id.includes('lodash') || id.includes('date-fns') || id.includes('clsx') || id.includes('tailwind')) {
+              return 'vendor-utils';
+            }
+            if (id.includes('prismjs') || id.includes('monaco') || id.includes('codemirror')) {
+              return 'vendor-code';
+            }
+            if (id.includes('axios') || id.includes('fetch') || id.includes('xhr')) {
+              return 'vendor-network';
+            }
             return 'vendor-misc';
           }
           
@@ -175,12 +222,13 @@ export default defineConfig({
         if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return;
         warn(warning);
       },
-      // Enhanced tree-shaking with aggressive optimizations
+      // Enhanced tree-shaking with aggressive optimizations for minimal bundle
       treeshake: {
         moduleSideEffects: false,
         propertyReadSideEffects: false,
         tryCatchDeoptimization: false,
-        unknownGlobalSideEffects: false
+        unknownGlobalSideEffects: false,
+        annotations: true
       }
     },
     minify: 'terser',
@@ -189,7 +237,7 @@ export default defineConfig({
         drop_console: process.env['NODE_ENV'] === 'production',
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'],
-        passes: 3, // Triple pass for better compression
+        passes: 2, // Double pass for reasonable compression
         sequences: true,
         properties: true,
         dead_code: true,
@@ -206,23 +254,28 @@ export default defineConfig({
         reduce_vars: true,
         module: true,
         ecma: 2020,
-        // Additional compression options for bundle size
+        // Enhanced compression options for smaller bundles
         arrows: true,
-        inline: true,
+        inline: 2, // More aggressive inlining
         reduce_funcs: true,
         toplevel: true,
-        typeofs: false, // Avoid transforming typeof to void 0
+        typeofs: false,
+        // Safe dead code elimination
+        negate_iife: true
       },
       mangle: {
         properties: {
           regex: /^_/, // Mangle private properties
         },
+        toplevel: true, // Mangle top-level names for maximum compression
+        keep_classnames: false,
+        keep_fnames: false
       },
       format: {
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 100, // More aggressive optimization for edge performance
+    chunkSizeWarningLimit: 80, // More aggressive optimization for smaller chunks
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
@@ -255,11 +308,9 @@ export default defineConfig({
   optimizeDeps: {
     include: [
       'react',
-      'react-dom',
+      'react-dom/client', // Only include client-side parts
       'react-router-dom',
       '@supabase/supabase-js',
-      '@google/genai',
-      'recharts',
       'dompurify',
       'lz-string'
     ],
