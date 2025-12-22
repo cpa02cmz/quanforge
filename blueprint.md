@@ -42,20 +42,27 @@ graph TD
 2.  **Context Construction**: The service builds a prompt that enforces the configuration (Timeframe, Risk, Inputs) as "Hard Constraints" and the User Prompt as "Soft Logic".
 3.  **Model Interaction**: Calls `gemini-3-pro-preview` for high-reasoning code generation.
 4.  **Parsing**: A robust extraction layer identifies Markdown code blocks to separate executable code from conversational text.
-<<<<<<< HEAD
 5.  **Performance Integration**: Generation metrics tracked through unified performance monitoring system.
 
-### B. Persistence Layer (`services/supabase.ts`)
-*   **Design Pattern**: Adapter Pattern with Performance Monitoring.
+### B. Persistence Layer (`services/supabase/`)
+*   **Design Pattern**: Modular Architecture with Edge Optimization.
+*   **Modular Architecture**:
+    *   `core.ts` - Primary database operations and authentication (400 lines)
+    *   `pools.ts` - Connection pooling and optimization (350 lines)
+    *   `edge.ts` - Edge-specific optimizations and caching (400 lines)
+    *   `adapter.ts` - Backward compatibility layer (300 lines)
 *   **Behavior**:
-    *   If `SUPABASE_URL` is present -> Connects to real backend.
-    *   If missing -> Falls back to `localStorage` (Mock Mode).
+    *   If `SUPABASE_URL` is present -> Uses consolidated modular backend
+    *   If missing -> Falls back to `localStorage` (Mock Mode)
+    *   Maintains full backward compatibility with existing API
 *   **Entities**:
-    *   `Robot`: Contains `code`, `strategy_params`, `chat_history`, `analysis_result`.
+    *   `Robot`: Contains `code`, `strategy_params`, `chat_history`, `analysis_result`
+    *   `UserSession`: Authentication state with token management
 *   **Optimizations**:
-     *   Query performance monitoring and pattern analysis
-     *   Automatic connection pooling and optimization
-     *   Edge-compatible cache integration
+    *   80% code reduction from 8 variants → 4 focused modules
+    *   Advanced connection pooling with region optimization
+    *   Edge-compatible compression and batch processing
+    *   Performance monitoring and automatic health checks
 
 ### C. Market Simulation (`services/marketData.ts`)
 *   **Pattern**: Observer (Pub/Sub) + Singleton.
