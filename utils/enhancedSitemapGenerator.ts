@@ -1,6 +1,3 @@
-import { writeFileSync } from 'fs';
-import { join } from 'path';
-
 interface SitemapEntry {
   url: string;
   lastmod?: string;
@@ -48,7 +45,39 @@ class EnhancedSitemapGenerator {
     this.outputPath = outputPath;
   }
 
-  generateMainSitemap(): void {
+  /**
+   * Helper method for cross-platform file writing
+   */
+  private async writeFile(filename: string, content: string): Promise<void> {
+    try {
+      if (typeof window === 'undefined' && typeof process !== 'undefined') {
+        // Server-side environment
+        const fs = require('fs');
+        const path = require('path');
+        const fullPath = path.join(this.outputPath, filename);
+        fs.writeFileSync(fullPath, content, 'utf8');
+        console.log(`File generated: ${fullPath}`);
+      } else {
+        // Browser environment - provide fallback behavior
+        console.warn(`File system operations not available for ${filename} in browser environment`);
+        if (typeof window !== 'undefined') {
+          // Offer download to user in browser
+          const blob = new Blob([content], { type: 'application/xml' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to write ${filename}:`, error);
+      throw new Error(`Failed to write ${filename}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async generateMainSitemap(): Promise<void> {
     const entries: SitemapEntry[] = [
       // Homepage
       {
@@ -493,10 +522,10 @@ class EnhancedSitemapGenerator {
     });
 
     const sitemap = this.generateSitemapXML(entries);
-    writeFileSync(join(this.outputPath, 'sitemap.xml'), sitemap);
+    await this.writeFile('sitemap.xml', sitemap);
   }
 
-  generateSitemapIndex(): void {
+  async generateSitemapIndex(): Promise<void> {
     const sitemaps: SitemapIndexEntry[] = [
       {
         loc: `${this.baseUrl}/sitemap.xml`,
@@ -517,10 +546,10 @@ class EnhancedSitemapGenerator {
     ];
 
     const sitemapIndex = this.generateSitemapIndexXML(sitemaps);
-    writeFileSync(join(this.outputPath, 'sitemap-index.xml'), sitemapIndex);
+    await this.writeFile('sitemap-index.xml', sitemapIndex);
   }
 
-  generateImageSitemap(): void {
+  async generateImageSitemap(): Promise<void> {
     const images = [
       {
         loc: `${this.baseUrl}/og-image.png`,
@@ -605,10 +634,10 @@ class EnhancedSitemapGenerator {
     ];
 
     const sitemap = this.generateImageSitemapXML(images);
-    writeFileSync(join(this.outputPath, 'sitemap-images.xml'), sitemap);
+    await this.writeFile('sitemap-images.xml', sitemap);
   }
 
-  generateVideoSitemap(): void {
+  async generateVideoSitemap(): Promise<void> {
     const videos = [
       {
         thumbnail_loc: `${this.baseUrl}/videos/mql5-tutorial-thumb.jpg`,
@@ -629,10 +658,10 @@ class EnhancedSitemapGenerator {
     ];
 
     const sitemap = this.generateVideoSitemapXML(videos);
-    writeFileSync(join(this.outputPath, 'sitemap-videos.xml'), sitemap);
+    await this.writeFile('sitemap-videos.xml', sitemap);
   }
 
-  generateNewsSitemap(): void {
+  async generateNewsSitemap(): Promise<void> {
     const news = [
       {
         title: 'QuantForge AI Launches Advanced MQL5 Trading Robot Generator',
@@ -655,7 +684,7 @@ class EnhancedSitemapGenerator {
     ];
 
     const sitemap = this.generateNewsSitemapXML(news);
-    writeFileSync(join(this.outputPath, 'sitemap-news.xml'), sitemap);
+    await this.writeFile('sitemap-news.xml', sitemap);
   }
 
   private generateSitemapXML(entries: SitemapEntry[]): string {
@@ -867,12 +896,12 @@ class EnhancedSitemapGenerator {
       .replace(/'/g, '&#39;');
   }
 
-  generateAll(): void {
-    this.generateMainSitemap();
-    this.generateSitemapIndex();
-    this.generateImageSitemap();
-    this.generateVideoSitemap();
-    this.generateNewsSitemap();
+  async generateAll(): Promise<void> {
+    await this.generateMainSitemap();
+    await this.generateSitemapIndex();
+    await this.generateImageSitemap();
+    await this.generateVideoSitemap();
+    await this.generateNewsSitemap();
     console.log('Enhanced sitemaps generated successfully!');
   }
 }
@@ -880,7 +909,7 @@ class EnhancedSitemapGenerator {
 // Generate sitemaps if run directly
 if (require.main === module) {
   const generator = new EnhancedSitemapGenerator('https://quanforge.ai');
-  generator.generateAll();
+  generator.generateAll().catch(console.error);
 }
 
 export default EnhancedSitemapGenerator;
