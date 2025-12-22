@@ -20,7 +20,7 @@ export interface ValidationRule {
   min?: number;
   max?: number;
   pattern?: RegExp;
-  allowedValues?: any[];
+  allowedValues?: (string | number | boolean)[];
   sanitize?: boolean;
 }
 
@@ -49,7 +49,7 @@ export class UnifiedValidationService {
   private static readonly RATE_LIMIT_MAX_REQUESTS = 30;
 
   // Core validation helpers
-  static validateRequired(value: any, field: string): ValidationError | null {
+  static validateRequired(value: unknown, field: string): ValidationError | null {
     if (value === null || value === undefined || value === '') {
       return { field, message: `${field} is required` };
     }
@@ -76,7 +76,7 @@ export class UnifiedValidationService {
     return null;
   }
 
-  static validateInSet(value: any, field: string, allowedValues: any[]): ValidationError | null {
+  static validateInSet(value: unknown, field: string, allowedValues: unknown[]): ValidationError | null {
     if (!allowedValues.includes(value)) {
       return { field, message: `${field} must be one of: ${allowedValues.join(', ')}` };
     }
@@ -313,7 +313,7 @@ export class UnifiedValidationService {
   }
 
   // Generic validation using rules
-  static validateWithRules(data: Record<string, any>, rules: ValidationRule[]): ValidationResult {
+  static validateWithRules(data: Record<string, unknown>, rules: ValidationRule[]): ValidationResult {
     const errors: ValidationError[] = [];
 
     rules.forEach(rule => {

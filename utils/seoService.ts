@@ -1,5 +1,13 @@
 import { logger } from './logger';
 
+// Extended window interface for global analytics objects
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+    dataLayer?: unknown[];
+  }
+}
+
 interface SEOMetrics {
   pageLoadTime: number;
   domContentLoaded: number;
@@ -8,6 +16,18 @@ interface SEOMetrics {
   cumulativeLayoutShift: number;
   firstInputDelay: number;
   timeToInteractive: number;
+}
+
+interface PageDataBase {
+  title?: string;
+  description?: string;
+  url?: string;
+  publishDate?: string;
+}
+
+
+interface FAQPageData extends PageDataBase {
+  faqs?: Array<{ question: string; answer: string }>;
 }
 
 interface SEOAuditResult {
@@ -86,9 +106,9 @@ class SEOService {
         let clsValue = 0;
         const clsObserver = new PerformanceObserver((list) => {
           const entries = list.getEntries();
-          entries.forEach((entry: any) => {
-            if (!entry.hadRecentInput) {
-              clsValue += entry.value;
+          entries.forEach((entry: PerformanceEntry) => {
+            if (!(entry as any).hadRecentInput) {
+              clsValue += (entry as any).value;
             }
           });
           this.metrics.cumulativeLayoutShift = clsValue;
@@ -103,9 +123,10 @@ class SEOService {
       try {
         const fidObserver = new PerformanceObserver((list) => {
           const entries = list.getEntries();
-          entries.forEach((entry: any) => {
-            if (entry.processingStart && entry.startTime) {
-              const fid = entry.processingStart - entry.startTime;
+          entries.forEach((entry: PerformanceEntry) => {
+            const fidEntry = entry as any;
+            if (fidEntry.processingStart && fidEntry.startTime) {
+              const fid = fidEntry.processingStart - fidEntry.startTime;
               this.metrics.firstInputDelay = fid;
               this.sendMetricToAnalytics('FID', fid);
             }
@@ -182,13 +203,13 @@ class SEOService {
   private sendMetricToAnalytics(
     metricName: string, 
     value: number, 
-    additionalData?: Record<string, any>
+    additionalData?: Record<string, unknown>
   ): void {
     if (typeof window === 'undefined') return;
 
     // Send to Google Analytics 4
-    if ((window as any).gtag) {
-      (window as any).gtag('event', metricName.toLowerCase(), {
+    if (window.gtag) {
+      window.gtag('event', metricName.toLowerCase(), {
         value: Math.round(value),
         event_category: 'Web Vitals',
         custom_parameter_1: 'quantforge_ai',
@@ -197,8 +218,8 @@ class SEOService {
     }
 
     // Send to data layer for GTM
-    if ((window as any).dataLayer) {
-      (window as any).dataLayer.push({
+    if (window.dataLayer) {
+      window.dataLayer.push({
         event: metricName.toLowerCase(),
         value: Math.round(value),
         category: 'Web Vitals',
@@ -396,8 +417,11 @@ class SEOService {
   }
 
   // Generate structured data for page
-  generateStructuredData(pageType: string, pageData: any): Record<string, any>[] {
-    const structuredData: Record<string, any>[] = [];
+  generateStructuredData(
+  pageType: string, 
+  pageData: PageDataBase | FAQPageData
+): Record<string, unknown>[] {
+    const structuredData: Record<string, unknown>[] = [];
 
     // Add basic webpage schema
     structuredData.push({
@@ -461,11 +485,12 @@ class SEOService {
         break;
 
       case 'faq':
-        if (pageData.faqs && Array.isArray(pageData.faqs)) {
+        const faqData = pageData as FAQPageData;
+        if (faqData.faqs && Array.isArray(faqData.faqs)) {
           structuredData.push({
             '@context': 'https://schema.org',
             '@type': 'FAQPage',
-            mainEntity: pageData.faqs.map((faq: { question: string; answer: string }) => ({
+            mainEntity: faqData.faqs.map((faq: { question: string; answer: string }) => ({
               '@type': 'Question',
               name: faq.question,
               acceptedAnswer: {
@@ -508,7 +533,7 @@ class SEOService {
   }
 
   // Analyze performance trends
-  private analyzeTrends(metrics: any[]): void {
+  private analyzeTrends(metrics: Array<Partial<SEOMetrics> & { timestamp: number }>): void {
     if (metrics.length < 2) return;
 
     const recent = metrics.slice(-5);

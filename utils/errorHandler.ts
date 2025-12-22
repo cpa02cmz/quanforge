@@ -2,7 +2,7 @@ export interface ErrorContext {
   operation: string;
   component?: string;
   userId?: string;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }
 
 export interface ErrorInfo {
@@ -147,7 +147,7 @@ export class ErrorHandler {
 }
 
 // Convenience function for global error handling
-export const handleError = (error: Error | string, operation: string, component?: string, additionalData?: Record<string, any>) => {
+export const handleError = (error: Error | string, operation: string, component?: string, additionalData?: Record<string, unknown>) => {
   const errorHandler = ErrorHandler.getInstance();
   errorHandler.handleError(error, { 
     operation, 
@@ -157,7 +157,7 @@ export const handleError = (error: Error | string, operation: string, component?
 };
 
 // Higher-order function for wrapping async functions with retry logic
-export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
+export const withErrorHandling = <T extends (...args: unknown[]) => Promise<unknown>>(
   fn: T,
   operation: string,
   component?: string,
@@ -166,7 +166,7 @@ export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
     fallback?: () => Promise<ReturnType<T>> | ReturnType<T>;
     backoff?: 'linear' | 'exponential';
     backoffBase?: number;
-    shouldRetry?: (error: any) => boolean;
+    shouldRetry?: (error: unknown) => boolean;
   } = {}
 ): T => {
   const { 
@@ -178,7 +178,7 @@ export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
   } = options;
   
   return (async (...args: Parameters<T>) => {
-    let lastError: any;
+    let lastError: unknown;
     
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -228,7 +228,7 @@ export const useErrorHandler = () => {
   const errorHandler = ErrorHandler.getInstance();
 
   return {
-    handleError: (error: Error | string, operation: string, component?: string, additionalData?: Record<string, any>) => {
+    handleError: (error: Error | string, operation: string, component?: string, additionalData?: Record<string, unknown>) => {
       errorHandler.handleError(error, { operation, component: component || 'unknown', ...(additionalData && { additionalData }) });
     },
     getErrors: () => errorHandler.getErrors(),
@@ -292,7 +292,7 @@ export const errorRecovery = {
     operation: () => Promise<T>, 
     maxRetries: number = 3,
     baseDelay: number = 1000,
-    shouldRetry?: (error: any) => boolean
+    shouldRetry?: (error: unknown) => boolean
   ): Promise<T> {
     let lastError: Error;
     
@@ -346,7 +346,7 @@ export const errorRecovery = {
   },
   
   // Circuit breaker pattern implementation
-  createCircuitBreaker<T extends (...args: any[]) => Promise<any>>(
+  createCircuitBreaker<T extends (...args: unknown[]) => Promise<unknown>>(
     operation: T,
     options: {
       failureThreshold?: number;
@@ -388,7 +388,7 @@ export const errorRecovery = {
         // Success - reset failure count and close circuit
         failureCount = 0;
         state = 'CLOSED';
-        return result;
+        return result as ReturnType<T>;
       } catch (error) {
         failureCount++;
         lastFailureTime = now;

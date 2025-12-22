@@ -3,22 +3,22 @@
  */
 
 interface Logger {
-  log: (...args: any[]) => void;
-  warn: (...args: any[]) => void;
-  error: (...args: any[]) => void;
-  info: (...args: any[]) => void;
-  debug: (...args: any[]) => void;
+  log: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+  info: (...args: unknown[]) => void;
+  debug: (...args: unknown[]) => void;
 }
 
 /**
  * Development logger that outputs all messages
  */
 const devLogger: Logger = {
-  log: (...args: any[]) => console.log(...args),
-  warn: (...args: any[]) => console.warn(...args),
-  error: (...args: any[]) => console.error(...args),
-  info: (...args: any[]) => console.info(...args),
-  debug: (...args: any[]) => console.debug(...args),
+  log: (...args: unknown[]) => console.log(...args),
+  warn: (...args: unknown[]) => console.warn(...args),
+  error: (...args: unknown[]) => console.error(...args),
+  info: (...args: unknown[]) => console.info(...args),
+  debug: (...args: unknown[]) => console.debug(...args),
 };
 
 /**
@@ -27,7 +27,7 @@ const devLogger: Logger = {
 const prodLogger: Logger = {
   log: () => {},
   warn: () => {},
-  error: (...args: any[]) => console.error(...args),
+  error: (...args: unknown[]) => console.error(...args),
   info: () => {},
   debug: () => {},
 };
@@ -42,7 +42,7 @@ export const logger: Logger = import.meta.env.DEV ? devLogger : prodLogger;
  */
 export const perfLogger = {
   log: import.meta.env.DEV 
-    ? (...args: any[]) => console.log(`[PERF]`, ...args)
+    ? (...args: unknown[]) => console.log(`[PERF]`, ...args)
     : () => {},
   
   time: import.meta.env.DEV 
@@ -58,8 +58,8 @@ export const perfLogger = {
  * Error logging utility - always logs errors regardless of environment
  */
 export const errorLogger = {
-  error: (...args: any[]) => console.error('[ERROR]', ...args),
-  warn: (...args: any[]) => console.warn('[WARN]', ...args),
+  error: (...args: unknown[]) => console.error('[ERROR]', ...args),
+  warn: (...args: unknown[]) => console.warn('[WARN]', ...args),
 };
 
 /**
@@ -69,15 +69,15 @@ export const createScopedLogger = (scope: string): Logger => {
   const prefix = `[${scope}]`;
   
   return import.meta.env.DEV ? {
-    log: (...args: any[]) => console.log(prefix, ...args),
-    warn: (...args: any[]) => console.warn(prefix, ...args),
-    error: (...args: any[]) => console.error(prefix, ...args),
-    info: (...args: any[]) => console.info(prefix, ...args),
-    debug: (...args: any[]) => console.debug(prefix, ...args),
+    log: (...args: unknown[]) => console.log(prefix, ...args),
+    warn: (...args: unknown[]) => console.warn(prefix, ...args),
+    error: (...args: unknown[]) => console.error(prefix, ...args),
+    info: (...args: unknown[]) => console.info(prefix, ...args),
+    debug: (...args: unknown[]) => console.debug(prefix, ...args),
   } : {
     log: () => {},
     warn: () => {},
-    error: (...args: any[]) => console.error(prefix, ...args),
+    error: (...args: unknown[]) => console.error(prefix, ...args),
     info: () => {},
     debug: () => {},
   };

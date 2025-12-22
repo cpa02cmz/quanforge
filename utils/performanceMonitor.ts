@@ -6,7 +6,7 @@ interface PerformanceMetrics {
   endTime: number;
   duration: number;
   memoryUsage: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 interface PerformanceReport {
@@ -25,7 +25,7 @@ class PerformanceMonitor {
   private reportingThreshold = 200; // Increased from 100 to reduce overhead
   private samplingRate = 0.1; // Sample 10% of operations to reduce overhead
 
-  startTimer(operation: string, metadata?: Record<string, any>): () => PerformanceMetrics {
+  startTimer(operation: string, metadata?: Record<string, unknown>): () => PerformanceMetrics {
     // Skip monitoring for some operations to reduce overhead
     if (Math.random() > this.samplingRate) {
       return () => ({} as PerformanceMetrics);
