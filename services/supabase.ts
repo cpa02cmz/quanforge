@@ -7,25 +7,28 @@ import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
+import { defaultCache, CacheKeys } from './cacheService';
+import { 
+  defaultPerformanceMonitor,
+  defaultEdgePerformanceTracker
+} from './performanceMonitor';
+import {
+  RETRY_CONFIG,
+  STORAGE_KEYS,
+  QUERY_LIMITS,
+  PERFORMANCE_LIMITS,
+  AUTH_CONFIG,
+  CACHE_TTL_LIMITS,
+  MIGRATION_CONFIG,
+  BULK_OPERATIONS,
+  DATABASE_STATS,
+  STORAGE_ERROR_CODES,
+  PAGINATION_DEFAULTS,
+  PAGINATION_CALCULATIONS
+} from './config/constants';
 
-// Enhanced connection retry configuration with exponential backoff
-const RETRY_CONFIG = {
-  maxRetries: 5,
-  retryDelay: 500,
-  backoffMultiplier: 1.5,
-  maxDelay: 10000, // Cap at 10 seconds
-  jitter: true, // Add jitter to prevent thundering herd
-};
-
-// Cache configuration
-const CACHE_CONFIG = {
-  ttl: 15 * 60 * 1000, // 15 minutes for better edge performance
-  maxSize: 200, // Max cached items
-};
-
-// Mock session storage
-const STORAGE_KEY = 'mock_session';
-const ROBOTS_KEY = 'mock_robots';
+// Mock session storage - using constants from config
+const { SESSION: STORAGE_KEY, ROBOTS: ROBOTS_KEY } = STORAGE_KEYS;
 
 // Helper for safe JSON parsing with enhanced security
 const safeParse = (data: string | null, fallback: any) => {
@@ -47,8 +50,8 @@ const trySaveToStorage = (key: string, value: string) => {
         if (
             e.name === 'QuotaExceededError' || 
             e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-            e.code === 22 ||
-            e.code === 1014
+            e.code === STORAGE_ERROR_CODES.QUOTA_EXCEEDED ||
+            e.code === STORAGE_ERROR_CODES.MOZILLA_QUOTA_EXCEEDED
         ) {
             throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
         }
@@ -106,7 +109,7 @@ const mockAuth = {
     const session = {
       user: { id: generateUUID(), email },
       access_token: 'mock-token-' + Date.now(),
-      expires_in: 3600
+      expires_in: AUTH_CONFIG.EXPIRES_IN
     };
     trySaveToStorage(STORAGE_KEY, JSON.stringify(session));
     authListeners.forEach(cb => cb('SIGNED_IN', session));
@@ -116,7 +119,7 @@ const mockAuth = {
     const session = {
       user: { id: generateUUID(), email },
       access_token: 'mock-token-' + Date.now(),
-      expires_in: 3600
+      expires_in: AUTH_CONFIG.EXPIRES_IN
     };
     trySaveToStorage(STORAGE_KEY, JSON.stringify(session));
     authListeners.forEach(cb => cb('SIGNED_IN', session));
@@ -146,65 +149,8 @@ const mockClient = {
 
 let activeClient: SupabaseClient | any = null;
 
-// LRU Cache implementation for better performance and memory management
-class LRUCache<T> {
-  private cache = new Map<string, { data: T; timestamp: number }>();
-  private readonly ttl: number;
-  private readonly maxSize: number;
-
-  constructor(ttl: number, maxSize: number) {
-    this.ttl = ttl;
-    this.maxSize = maxSize;
-  }
-
-  get(key: string): T | null {
-    const item = this.cache.get(key);
-    if (!item) return null;
-
-    if (Date.now() - item.timestamp > this.ttl) {
-      this.cache.delete(key);
-      return null;
-    }
-
-    // Move to end (most recently used)
-    this.cache.delete(key);
-    this.cache.set(key, item);
-    return item.data;
-  }
-
-  set(key: string, data: T): void {
-    // Evict oldest if at max size
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      if (firstKey) {
-        this.cache.delete(firstKey);
-      }
-    }
-    
-    this.cache.set(key, { data, timestamp: Date.now() });
-  }
-
-  delete(key: string): boolean {
-    return this.cache.delete(key);
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-
-  has(key: string): boolean {
-    const item = this.cache.get(key);
-    if (!item) return false;
-    
-    if (Date.now() - item.timestamp > this.ttl) {
-      this.cache.delete(key);
-      return false;
-    }
-    return true;
-  }
-}
-
-const cache = new LRUCache<any>(CACHE_CONFIG.ttl, CACHE_CONFIG.maxSize);
+// Cache service is now imported from ./cacheService
+const cache = defaultCache;
 
 
 
@@ -284,91 +230,9 @@ export const supabase = new Proxy({}, {
 
 // --- Database Operations Wrapper ---
 
-// Performance monitoring utilities
-class PerformanceMonitor {
-  private metrics: Map<string, { count: number; totalTime: number; avgTime: number }> = new Map();
-
-  record(operation: string, duration: number) {
-    const metric = this.metrics.get(operation) || { count: 0, totalTime: 0, avgTime: 0 };
-    metric.count++;
-    metric.totalTime += duration;
-    metric.avgTime = metric.totalTime / metric.count;
-    this.metrics.set(operation, metric);
-  }
-
-  getMetrics(operation: string) {
-    return this.metrics.get(operation);
-  }
-
-  getAllMetrics() {
-    return Object.fromEntries(this.metrics);
-  }
-
-  reset() {
-    this.metrics.clear();
-  }
-
-  // Log performance metrics periodically
-  logMetrics() {
-    const allMetrics = this.getAllMetrics();
-    console.group('Database Performance Metrics');
-    for (const [operation, metric] of Object.entries(allMetrics)) {
-      console.log(`${operation}: ${metric.count} calls, avg: ${metric.avgTime.toFixed(2)}ms`);
-    }
-    console.groupEnd();
-  }
-}
-
-const performanceMonitor = new PerformanceMonitor();
-
-// Enhanced performance monitoring with edge metrics
-class EdgePerformanceTracker {
-  private metrics: Map<string, number[]> = new Map();
-  
-  recordMetric(operation: string, value: number) {
-    if (!this.metrics.has(operation)) {
-      this.metrics.set(operation, []);
-    }
-    const values = this.metrics.get(operation)!;
-    values.push(value);
-    
-    // Keep only last 100 values
-    if (values.length > 100) {
-      values.splice(0, values.length - 100);
-    }
-  }
-  
-  getAverage(operation: string): number {
-    const values = this.metrics.get(operation) || [];
-    return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-  }
-  
-  getPercentile(operation: string, percentile: number): number {
-    const values = this.metrics.get(operation) || [];
-    if (values.length === 0) return 0;
-    
-    const sorted = [...values].sort((a, b) => a - b);
-    const index = Math.floor(sorted.length * (percentile / 100));
-    return sorted[Math.min(index, sorted.length - 1)] || 0;
-  }
-  
-  getAllMetrics() {
-    const result: Record<string, { avg: number; p95: number; p99: number; count: number }> = {};
-    
-    for (const [operation] of this.metrics) {
-      result[operation] = {
-        avg: this.getAverage(operation),
-        p95: this.getPercentile(operation, 95),
-        p99: this.getPercentile(operation, 99),
-        count: this.metrics.get(operation)!.length,
-      };
-    }
-    
-    return result;
-  }
-}
-
-const edgePerformanceTracker = new EdgePerformanceTracker();
+// Performance monitoring is now imported from ./performanceMonitor
+const performanceMonitor = defaultPerformanceMonitor;
+const edgePerformanceTracker = defaultEdgePerformanceTracker;
 
 // Index structure for faster searching and filtering
 interface RobotIndex {
@@ -456,7 +320,7 @@ async getRobots() {
          return { data: robots, error: null };
        }
         
-        const cacheKey = 'robots_list';
+        const cacheKey = CacheKeys.ROBOTS_LIST;
 const cached = await consolidatedCache.get<Robot[]>(cacheKey);
         if (cached) {
           // Create index for performance
@@ -474,7 +338,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
               .from('robots')
               .select('*')
               .order('created_at', { ascending: false })
-              .limit(100); // Add reasonable limit to prevent performance issues
+              .limit(QUERY_LIMITS.DEFAULT_LIMIT); // Add reasonable limit to prevent performance issues
             
             if (result.data && !result.error) {
               // Create index for performance
@@ -486,7 +350,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
            performanceMonitor.record('getRobots', duration);
            
            // Log slow operations only in development
-           if (import.meta.env.DEV && duration > 500) {
+           if (import.meta.env.DEV && duration > PERFORMANCE_LIMITS.SLOW_QUERY_THRESHOLD_MS) {
              console.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
            }
            
@@ -559,14 +423,14 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
       * Get robots with pagination for better performance with large datasets
       * Optimized with smart caching and query batching
       */
-    async getRobotsPaginated(page: number = 1, limit: number = 20, searchTerm?: string, filterType?: string) {
+    async getRobotsPaginated(page: number = 1, limit: number = PAGINATION_DEFAULTS.PAGE_SIZE, searchTerm?: string, filterType?: string) {
       const startTime = performance.now();
       try {
         const settings = settingsManager.getDBSettings();
         const offset = (page - 1) * limit;
         
         // Generate optimized cache key with consistent ordering
-        const cacheKey = `robots_paginated_${page}_${limit}_${(searchTerm || '').toLowerCase()}_${(filterType || 'All')}`;
+        const cacheKey = CacheKeys.ROBOTS_PAGINATED(page, limit, searchTerm, filterType);
         
         // Try consolidated cache first for both mock and supabase modes
         const cached = await consolidatedCache.get(cacheKey);
@@ -586,7 +450,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
           // Enhanced search with optimized filtering and early termination
           if (searchTerm) {
             const term = searchTerm.toLowerCase();
-            const searchTerms = term.split(' ').filter(t => t.length > 0); // Split for multi-word search
+            const searchTerms = term.split(' ').filter(t => t.length > PAGINATION_CALCULATIONS.MIN_SEARCH_TERM_LENGTH); // Split for multi-word search
             
             results = results.filter(robot => {
               // Check name match first (higher priority)
@@ -621,7 +485,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
           };
           
           // Cache the result with smart TTL based on data size
-          const ttl = Math.min(300000, Math.max(60000, totalCount * 100)); // 1-5 minutes based on result size
+          const ttl = Math.min(CACHE_TTL_LIMITS.MAX_TTL_MS, Math.max(CACHE_TTL_LIMITS.MIN_TTL_MS, totalCount * CACHE_TTL_LIMITS.MULTIPLIER_MIN)); // 1-5 minutes based on result size
           await consolidatedCache.set(cacheKey, response, ttl, ['robots', 'paginated']);
           
           const duration = performance.now() - startTime;
@@ -670,14 +534,14 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
             };
             
             // Smart caching with adaptive TTL
-            const ttl = Math.min(300000, Math.max(60000, (result.count || 0) * 50));
+            const ttl = Math.min(CACHE_TTL_LIMITS.MAX_TTL_MS, Math.max(CACHE_TTL_LIMITS.MIN_TTL_MS, (result.count || 0) * CACHE_TTL_LIMITS.MULTIPLIER_MAX));
             await consolidatedCache.set(cacheKey, response, ttl, ['robots', 'paginated']);
             
             const duration = performance.now() - startTime;
             performanceMonitor.record('getRobotsPaginated_supabase', duration);
             
             // Log slow queries in development
-            if (import.meta.env.DEV && duration > 1000) {
+            if (import.meta.env.DEV && duration > PERFORMANCE_LIMITS.PAGINATED_QUERY_THRESHOLD_MS) {
               console.warn(`Slow getRobotsPaginated query: ${duration.toFixed(2)}ms for ${result.count} results`);
             }
             
@@ -714,7 +578,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
          return { data: robots, error: null };
        }
        
-const cacheKey = `robots_batch_${ids.sort().join('_')}`;
+const cacheKey = CacheKeys.ROBOTS_BATCH(ids);
         const cached = await consolidatedCache.get<Robot[]>(cacheKey);
         if (cached) {
           const duration = performance.now() - startTime;
@@ -1040,13 +904,13 @@ export const dbUtils = {
         }
 
         const exportObj = {
-            version: "1.0",
+            version: MIGRATION_CONFIG.EXPORT_VERSION,
             timestamp: new Date().toISOString(),
             source: settings.mode,
             robots: robots
         };
 
-        return JSON.stringify(exportObj, null, 2);
+        return JSON.stringify(exportObj, null, MIGRATION_CONFIG.JSON_INDENT);
     },
 
     async importDatabase(jsonString: string, merge: boolean = true): Promise<{ success: boolean; count: number; error?: string }> {
@@ -1167,7 +1031,7 @@ export const dbUtils = {
 
             if (payload.length === 0) return { success: false, count: 0, error: "Local data invalid." };
 
-            const BATCH_SIZE = 10;
+            const BATCH_SIZE = BULK_OPERATIONS.BATCH_SIZE;
             for (let i = 0; i < payload.length; i += BATCH_SIZE) {
                 const chunk = payload.slice(i, i + BATCH_SIZE);
                 const { error } = await client.from('robots').insert(chunk);
@@ -1374,7 +1238,7 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                 }
             } else {
                 // For Supabase, process in batches to avoid query limits
-                const BATCH_SIZE = 10;
+                const BATCH_SIZE = BULK_OPERATIONS.BATCH_SIZE;
                 
                 for (let i = 0; i < updates.length; i += BATCH_SIZE) {
                     const batch = updates.slice(i, i + BATCH_SIZE);
@@ -1552,8 +1416,8 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
             
             return {
                 totalRecords: robots.length,
-                totalSizeKB: Math.round(totalSize / 1024),
-                avgRecordSizeKB: Math.round(avgSize / 1024),
+                totalSizeKB: Math.round(totalSize / DATABASE_STATS.BYTES_PER_KB),
+                avgRecordSizeKB: Math.round(avgSize / DATABASE_STATS.BYTES_PER_KB),
                 duplicateRecords: duplicateCount,
                 invalidRecords: invalidCount
             };

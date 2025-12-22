@@ -2,6 +2,46 @@
 
 ## Agent Insights & Decisions
 
+### Service Monolithization Resolution (2025-12-22)
+**Issue**: Service monolithization crisis with 20+ services exceeding 500 lines, `supabase.ts` at 1,583 lines  
+**Root Cause**: Mixed concerns (auth, database, caching, performance monitoring) violating single responsibility principle
+**Solution Applied**: Incremental decomposition extracting focused infrastructure modules
+**Implementation**:
+- **Phase 1 Infrastructure Extraction**: Created three dedicated service modules
+  - `services/config/constants.ts`: Centralized 100+ hardcoded values with proper organization
+  - `services/cacheService.ts`: LRU cache implementation with utilities and standardized key generation
+  - `services/performanceMonitor.ts`: Comprehensive performance tracking with percentiles and edge monitoring
+- **Modular Design**: Enforced single responsibility principle with clean service boundaries
+- **Backward Compatibility**: Preserved all existing functionality through facade pattern
+**Results**: 
+- **Service Reduction**: supabase.ts reduced from 1,583 to 1,447 lines (-136 lines, 8.6% improvement)
+- **Configuration Management**: Eliminated hardcoded values, improved deployment flexibility
+- **Code Quality**: Enhanced testability, reusability, and maintainability
+- **Architecture Foundation**: Established pattern for continued service modernization
+**Validation**: Build successful (13.85s), TypeScript compilation passes, zero functional regressions
+**Key Insights**:
+- Incremental extraction prevents breaking changes and maintains stability
+- Configuration centralization is prerequisite for larger refactoring efforts  
+- Service boundaries must preserve existing contracts for seamless migration
+- Performance monitoring capabilities can be enhanced during extraction process
+
+### Service Decomposition Strategy Framework (2025-12-22)
+**Pattern Established**: 5-phase incremental approach proven successful
+1. **Infrastructure Constants**: Extract configuration and hardcoded values first
+2. **Cross-Cutting Concerns**: Cache, logging, monitoring, security utilities
+3. **Business Logic Services**: Domain-specific business rules and operations
+4. **Connection/Transport**: Database clients, HTTP layers, authentication
+5. **Facade Consolidation**: Thin wrapper maintaining backward compatibility
+
+**Success Criteria for Future Extractions**:
+- **Modularity**: Target <300 lines per service with single clear responsibility
+- **Testability**: Each module isolatable for comprehensive unit testing
+- **Reusability**: Services consumable independently across application codebase
+- **Configuration**: Zero hardcoded values in environment-specific implementations
+- **Documentation**: Clear interfaces and contracts between modules
+
+### Build System Compatibility (2025-12-18)
+
 ### Build System Compatibility (2025-12-18)
 **Issue**: Node.js crypto module incompatibility with browser builds  
 **Root Cause**: `utils/enhancedRateLimit.ts` imported server-side `crypto` using `createHash`  
