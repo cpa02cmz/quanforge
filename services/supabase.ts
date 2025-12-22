@@ -7,20 +7,24 @@ import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
+import { getDatabaseConfig } from '../config/service';
+
+// Load configuration from centralized config service
+const dbConfig = getDatabaseConfig();
 
 // Enhanced connection retry configuration with exponential backoff
 const RETRY_CONFIG = {
-  maxRetries: 5,
-  retryDelay: 500,
-  backoffMultiplier: 1.5,
-  maxDelay: 10000, // Cap at 10 seconds
-  jitter: true, // Add jitter to prevent thundering herd
+  maxRetries: dbConfig.retry.maxRetries,
+  retryDelay: dbConfig.retry.retryDelay,
+  backoffMultiplier: dbConfig.retry.backoffMultiplier,
+  maxDelay: dbConfig.retry.maxDelay,
+  jitter: dbConfig.retry.jitter,
 };
 
 // Cache configuration
 const CACHE_CONFIG = {
-  ttl: 15 * 60 * 1000, // 15 minutes for better edge performance
-  maxSize: 200, // Max cached items
+  ttl: dbConfig.cache.ttl,
+  maxSize: dbConfig.cache.maxSize,
 };
 
 // Mock session storage
@@ -474,7 +478,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
               .from('robots')
               .select('*')
               .order('created_at', { ascending: false })
-              .limit(100); // Add reasonable limit to prevent performance issues
+              .limit(dbConfig.query.defaultLimit); // Use configured limit
             
             if (result.data && !result.error) {
               // Create index for performance

@@ -8,6 +8,7 @@ import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
+import { initializeConfig } from './config/service';
   import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
   import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
   import { frontendOptimizer } from './services/frontendOptimizer';
@@ -70,8 +71,17 @@ export default function App() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
+  useEffect(() => {
     const startTime = performance.now();
+    
+    // Initialize configuration service before anything else
+    try {
+      initializeConfig();
+      logger.info('Configuration service initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize configuration service:', error);
+      // Continue with defaults for better UX
+    }
     
     // Critical path: Auth initialization first
     supabase.auth.getSession().then(({ data: { session } }) => {

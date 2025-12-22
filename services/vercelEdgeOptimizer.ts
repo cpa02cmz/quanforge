@@ -3,6 +3,8 @@
  * Provides edge-specific optimizations for better performance
  */
 
+import { getEdgeConfig } from '../config/service';
+
 interface EdgeConfig {
   enableEdgeRuntime: boolean;
   enableEdgeCaching: boolean;
@@ -23,18 +25,21 @@ interface EdgeMetrics {
 
 class VercelEdgeOptimizer {
   private static instance: VercelEdgeOptimizer;
-  private config: EdgeConfig = {
-    enableEdgeRuntime: process.env['VITE_EDGE_RUNTIME'] === 'true',
-    enableEdgeCaching: true,
-    enableCompression: process.env['VITE_ENABLE_COMPRESSION'] === 'true',
-    enablePrefetch: process.env['VITE_ENABLE_PREFETCH'] === 'true',
-    enablePreload: process.env['VITE_ENABLE_PRELOAD'] === 'true',
-    cacheTTL: 31536000, // 1 year for static assets
-    edgeRegions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1'],
-  };
+  private config: EdgeConfig;
   private metrics: Map<string, EdgeMetrics> = new Map();
 
   private constructor() {
+    // Load configuration from centralized config service
+    const edgeConfig = getEdgeConfig();
+    this.config = {
+      enableEdgeRuntime: edgeConfig.enableEdgeRuntime,
+      enableEdgeCaching: edgeConfig.enableEdgeCaching,
+      enableCompression: edgeConfig.enableCompression,
+      enablePrefetch: edgeConfig.enablePrefetch,
+      enablePreload: edgeConfig.enablePreload,
+      cacheTTL: edgeConfig.staticAssetsCacheTTL,
+      edgeRegions: edgeConfig.regions,
+    };
     this.initializeEdgeFeatures();
   }
 
@@ -76,8 +81,9 @@ class VercelEdgeOptimizer {
         
         // Set up periodic cache updates
         if ('periodicSync' in registration) {
+          const edgeConfig = getEdgeConfig();
           (registration as any).periodicSync.register('cache-update', {
-            minInterval: 24 * 60 * 60 * 1000 // 24 hours
+            minInterval: edgeConfig.periodicSyncInterval // From config
           }).then(() => {
             console.log('Periodic cache sync registered');
           }).catch((error: any) => {
@@ -556,7 +562,7 @@ const entries = list.getEntries();
 
     // Add limit for performance
     if (!query.includes('limit') && !query.includes('LIMIT')) {
-      optimizedQuery += '.limit(100)';
+      optimizedQuery += '.limit(100)'; // TODO: Migrate to use getDatabaseConfig().query.defaultLimit
     }
 
     // Generate cache key

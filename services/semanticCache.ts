@@ -6,6 +6,7 @@
 
 // Import React hooks for the hook implementation
 import { useState, useCallback, useEffect } from 'react';
+import { getCacheConfig } from '../config/service';
 
 interface SemanticCacheEntry<T = any> {
   data: T;
@@ -60,15 +61,17 @@ class SemanticCache {
   private cleanupTimer?: NodeJS.Timeout;
 
   constructor(config: Partial<SemanticConfig> = {}) {
+    // Load configuration from environment with fallback to provided config
+    const cacheConfig = getCacheConfig();
     this.config = {
-      maxCacheSize: 1000,
-      maxMemoryUsage: 100, // 100MB
-      defaultTTL: 300000, // 5 minutes
-      cleanupInterval: 60000, // 1 minute
-      enableCompression: true,
-      enableMetrics: true,
-      semanticThreshold: 0.8,
-      ...config,
+      maxCacheSize: cacheConfig.semantic.maxCacheSize,
+      maxMemoryUsage: cacheConfig.semantic.maxMemoryUsage,
+      defaultTTL: cacheConfig.semantic.defaultTTL,
+      cleanupInterval: cacheConfig.semantic.cleanupInterval,
+      enableCompression: cacheConfig.semantic.enableCompression,
+      enableMetrics: cacheConfig.semantic.enableMetrics,
+      semanticThreshold: cacheConfig.semantic.semanticThreshold,
+      ...config, // Allow runtime override
     };
 
     this.metrics = {
@@ -695,16 +698,8 @@ class SemanticCache {
   }
 }
 
-// Global instance
-export const semanticCache = new SemanticCache({
-  maxCacheSize: 1000,
-  maxMemoryUsage: 100,
-  defaultTTL: 300000,
-  cleanupInterval: 60000,
-  enableCompression: true,
-  enableMetrics: true,
-  semanticThreshold: 0.8,
-});
+// Global instance with configuration from environment
+export const semanticCache = new SemanticCache();
 
 // Export factory function
 export const createSemanticCache = (config?: Partial<SemanticConfig>): SemanticCache => {

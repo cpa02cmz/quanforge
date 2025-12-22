@@ -1,6 +1,7 @@
 import { createScopedLogger } from '../utils/logger';
 import { AdvancedCache, CacheFactory } from './advancedCache';
 import { securityManager } from './securityManager';
+import { getCacheConfig } from '../config/service';
 
 const logger = createScopedLogger('UnifiedCache');
 
@@ -54,13 +55,17 @@ export interface CacheMetrics {
 export class UnifiedCache {
   private memoryCache: AdvancedCache;
   private metrics: CacheMetrics;
-  private compressionThreshold = 1024; // 1KB
+  private compressionThreshold: number;
   private cleanupInterval: NodeJS.Timeout;
 
   constructor(name: string, options: { maxSize?: number; defaultTTL?: number } = {}) {
+    // Load configuration from environment
+    const cacheConfig = getCacheConfig();
+    
+    this.compressionThreshold = cacheConfig.unified.compressionThreshold;
     this.memoryCache = CacheFactory.getInstance(name, {
-      maxSize: options.maxSize || 10 * 1024 * 1024, // 10MB default
-      defaultTTL: options.defaultTTL || 300000 // 5 minutes default
+      maxSize: options.maxSize || cacheConfig.unified.maxSize,
+      defaultTTL: options.defaultTTL || cacheConfig.unified.defaultTTL
     });
 
     this.metrics = {
@@ -73,10 +78,10 @@ export class UnifiedCache {
       decompressions: 0
     };
 
-    // Cleanup expired entries every 5 minutes
+    // Use configured cleanup interval
     this.cleanupInterval = setInterval(() => {
       this.cleanup();
-    }, 300000);
+    }, cacheConfig.unified.cleanupInterval);
   }
 
   /**
@@ -358,20 +363,22 @@ export class UnifiedCache {
   }
 }
 
-// Global cache instances
+// Global cache instances with environment-based configuration
+const cacheConfig = getCacheConfig();
+
 export const unifiedRobotCache = new UnifiedCache('robots', {
-  maxSize: 20 * 1024 * 1024, // 20MB
-  defaultTTL: 600000 // 10 minutes
+  maxSize: cacheConfig.api.robots ? cacheConfig.api.robots * 10 : 20 * 1024 * 1024, // Scale with API TTL
+  defaultTTL: cacheConfig.api.robots || 600000
 });
 
 export const unifiedQueryCache = new UnifiedCache('queries', {
   maxSize: 5 * 1024 * 1024, // 5MB
-  defaultTTL: 120000 // 2 minutes
+  defaultTTL: cacheConfig.api.analytics || 120000
 });
 
 export const unifiedUserCache = new UnifiedCache('users', {
   maxSize: 2 * 1024 * 1024, // 2MB
-  defaultTTL: 900000 // 15 minutes
+  defaultTTL: cacheConfig.api.strategies || 900000
 });
 
 // Cache manager for coordinating multiple caches
