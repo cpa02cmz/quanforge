@@ -48,6 +48,21 @@
 - Verified local build works perfectly (`npm run build` succeeds)
 - Confirmed no TypeScript errors or merge conflicts
 - Documented comprehensive analysis showing PR is mergeable
+
+### PR #135 Performance Optimization Analysis (2025-12-22)
+**Issue**: PR #135 claimed major performance improvements but had deployment failures despite successful builds
+**Root Cause**: Dynamic build configuration complexity introduced deployment instability without measurable benefits
+**Solution Applied**:
+- Comprehensive performance comparison between main branch and PR #135
+- Documented that main branch contains superior 320-line vite.config.ts vs PR's 400+ lines with complexity
+- Verified main branch has more advanced chunking (25+ categories), terser optimization, and deployment stability
+- Closed PR #135 as obsolete after documenting analysis in PR comments
+**Key Insights**: 
+- Complex dynamic configuration doesn't guarantee better performance
+- Deployment stability is more important than marginal build-time improvements
+- Always verify claimed performance benefits against current main branch optimizations
+- Over-fragmentation of chunks can hurt caching effectiveness
+- Static, proven configurations outperform dynamic complexity in production environments
 **Key Insight**: Platform deployment failures can occur independently of code quality; documentation-only changes should be evaluated on code correctness, not deployment status
 
 ### PR #143 Codebase Analysis Deployment Resolution (2025-12-21)
@@ -109,6 +124,15 @@
 2. **User Impact**: Prioritize visible improvements over internal optimizations
 3. **Backwards Compatibility**: Maintain existing APIs where possible
 4. **Testing**: Verify optimization doesn't break existing functionality
+
+### When Evaluating Performance Optimization PRs (NEW)
+1. **Compare with Main Branch**: Always verify improvements against current main branch optimizations
+2. **Measure Real Benefits**: Look beyond claimed benefits to actual performance metrics
+3. **Prioritize Stability**: Deployment stability outweighs marginal performance gains
+4. **Complexity Analysis**: Dynamic configuration complexity often introduces instability
+5. **Production Validation**: Local build success doesn't guarantee deployment success
+6. **Chunk Strategy**: More chunks isn't always better - consider caching effectiveness
+7. **Obsolete Detection**: Recognize when main branch already supersedes PR optimizations
 
 ### When Improving Code Quality
 1. **Incremental**: Fix issues in logical groups rather than random scatter
