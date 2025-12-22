@@ -73,6 +73,27 @@ class CoreSupabaseService {
 - **Central Constants**: `constants/config.ts` with environment overrides
 - **Feature Flags**: Environment-based feature toggles
 - **No Hardcoded Values**: All magic numbers centralized
+- **Dynamic Build Configuration**: Environment-aware build settings via `getBuildConfig()`
+- **Performance Tuning**: Runtime-specific optimizations for edge and production deployments
+- **Vendor Chunking**: Granular control over bundle splitting and chunk size limits
+
+#### Build Environment Variables
+```bash
+# Chunk optimization
+CHUNK_SIZE_WARNING_LIMIT=150    # Override default chunk warning size (kB)
+ASSETS_INLINE_LIMIT=256         # Asset inlining threshold (bytes) 
+TERSER_COMPRESSION_PASSES=3     # Number of terser compression passes
+
+# Feature toggles
+CSS_MINIFY=true                 # Enable/disable CSS minification
+CSS_CODE_SPLIT=true             # Enable/disable CSS code splitting
+DROP_CONSOLE=true               # Remove console statements in production
+
+# Performance modes
+PERFORMANCE_MODE=true           # Enable aggressive optimizations
+EDGE_RUNTIME=true              # Edge runtime specific optimizations
+DEBUG_MODE=true                # Development debug features
+```
 
 ### Documentation Standards
 - **Single Source Truth**: One file per major topic

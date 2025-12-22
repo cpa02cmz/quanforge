@@ -1,13 +1,17 @@
 import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { getBuildConfig } from './constants/config';
+
+// Get dynamic build configuration
+const buildConfig = getBuildConfig();
 
 export default defineConfig({
   plugins: [react()],
   build: {
     manifest: true,
     outDir: 'dist',
-    sourcemap: process.env['NODE_ENV'] !== 'production' ? 'hidden' : false,
+    sourcemap: buildConfig.SOURCE_MAP_DEV,
     target: 'esnext',
     rollupOptions: {
       input: {
@@ -17,25 +21,43 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
-            // React ecosystem - optimized for edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
-              return 'react-vendor';
+            // React ecosystem - split more granularly for better caching
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-core';
+            }
+            if (id.includes('react-router') || id.includes('react-is')) {
+              return 'react-routing';
+            }
+            if (id.includes('react') && id.includes('scheduler')) {
+              return 'react-scheduler';
             }
             // Supabase - isolated for better connection pooling
             if (id.includes('@supabase')) {
               return 'supabase-vendor';
             }
-            // AI services - lazy loaded for edge optimization
+            // AI services - split more granularly for edge optimization
             if (id.includes('@google/genai')) {
+              if (id.includes('generators') || id.includes('models')) {
+                return 'ai-generators';
+              }
+              if (id.includes('embeddings') || id.includes('tokens')) {
+                return 'ai-processors';
+              }
               return 'ai-vendor';
             }
-            // Chart libraries - split more granularly
+            // Chart libraries - split more granularly for better performance
             if (id.includes('recharts')) {
               if (id.includes('AreaChart') || id.includes('LineChart')) {
                 return 'chart-core';
               }
               if (id.includes('PieChart') || id.includes('BarChart')) {
                 return 'chart-misc';
+              }
+              if (id.includes('ResponsiveContainer') || id.includes('Tooltip')) {
+                return 'chart-responsive';
+              }
+              if (id.includes('CartesianGrid') || id.includes('XAxis') || id.includes('YAxis')) {
+                return 'chart-axes';
               }
               return 'chart-vendor';
             }
@@ -179,10 +201,10 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: process.env['NODE_ENV'] === 'production',
+        drop_console: buildConfig.DROP_CONSOLE,
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'],
-        passes: 3, // Triple pass for better compression
+        passes: buildConfig.TERSER_COMPRESSION_PASSES, // Dynamic configuration for optimal compression
         sequences: true,
         properties: true,
         dead_code: true,
@@ -215,12 +237,12 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 100, // More aggressive optimization for edge performance
+    chunkSizeWarningLimit: buildConfig.CHUNK_SIZE_WARNING_LIMIT, // Dynamic configuration for edge performance
     reportCompressedSize: true,
-    cssCodeSplit: true,
-    cssMinify: true, // Add CSS minification
+    cssCodeSplit: buildConfig.CSS_CODE_SPLIT,
+    cssMinify: buildConfig.CSS_MINIFY, // Dynamic configuration
     // Enhanced edge optimization
-    assetsInlineLimit: 256, // Optimized for edge performance
+    assetsInlineLimit: buildConfig.ASSETS_INLINE_LIMIT, // Dynamic configuration for edge performance
     modulePreload: {
       polyfill: false
     },

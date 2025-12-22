@@ -266,30 +266,111 @@ export const MONITORING_CONFIG = {
   MAX_ALERTS_PER_HOUR: 20,
 };
 
+// ========== BUILD CONFIGURATION ==========
+export const BUILD_CONFIG = {
+  // Chunk size optimization - adjusted for modern web standards
+  CHUNK_SIZE_WARNING_LIMIT: 150, // kB - increased to account for large vendor deps
+  CHUNK_SIZE_LARGE_LIMIT: 250,   // kB for large chunks
+  CHUNK_SIZE_VENDORS_LIMIT: 350, // kB for vendor chunks - realistic for modern libraries
+  
+  // Asset optimization
+  ASSETS_INLINE_LIMIT: 256,      // bytes
+  MAX_ASSET_SIZE: 50 * 1024 * 1024, // 50MB
+  
+  // Terser optimization
+  TERSER_COMPRESSION_PASSES: 3,
+  TERSER_COMPRESSION_THRESHOLD: 1024, // 1KB
+  
+  // Tree shaking
+  TREE_SHAKING_AGGRESSIVE: true,
+  DEAD_CODE_ELIMINATION: true,
+  
+  // Code splitting
+  CSS_CODE_SPLIT: true,
+  CSS_MINIFY: true,
+  DYNAMIC_IMPORTS: true,
+  
+  // Build targets
+  TARGET_BROWSER_SUPPORT: ['esnext', 'chrome87', 'firefox78', 'safari14'],
+  TARGET_EDGE_RUNTIME: true,
+  
+  // Source maps
+  SOURCE_MAP_DEV: 'hidden',
+  SOURCE_MAP_PROD: false,
+  
+  // Performance budgets
+  BUNDLE_MAX_SIZE: 1024 * 1024,    // 1MB total
+  VENDOR_MAX_SIZE: 500 * 1024,     // 500KB per vendor chunk
+  CHUNK_MAX_SIZE: 100 * 1024,      // 100KB per chunk
+  
+  // Compression targets
+  COMPRESSION_RATIO_TARGET: 0.7,   // 30% reduction target
+  GZIP_THRESHOLD: 1024,           // 1KB gzip threshold
+};
+
+// Environment-overridable build configuration
+export const getBuildConfig = () => {
+  const envConfig = getEnvironmentConfig();
+  const isEdgeDeployed = (typeof process !== 'undefined' && process?.env?.['EDGE_RUNTIME']) === 'true';
+  const isPerformanceMode = (typeof process !== 'undefined' && process?.env?.['PERFORMANCE_MODE']) === 'true';
+  
+  return {
+    ...BUILD_CONFIG,
+    
+    // Environment-specific overrides with performance considerations
+    CHUNK_SIZE_WARNING_LIMIT: parseInt(
+      (typeof process !== 'undefined' && process?.env?.['CHUNK_SIZE_WARNING_LIMIT']) || 
+      (isEdgeDeployed ? '120' : BUILD_CONFIG.CHUNK_SIZE_WARNING_LIMIT.toString())
+    ),
+    ASSETS_INLINE_LIMIT: parseInt((typeof process !== 'undefined' && process?.env?.['ASSETS_INLINE_LIMIT']) || BUILD_CONFIG.ASSETS_INLINE_LIMIT.toString()),
+    TERSER_COMPRESSION_PASSES: parseInt(
+      (typeof process !== 'undefined' && process?.env?.['TERSER_COMPRESSION_PASSES']) || 
+      (isPerformanceMode ? '4' : BUILD_CONFIG.TERSER_COMPRESSION_PASSES.toString())
+    ),
+    
+    // Feature-based overrides
+    CSS_MINIFY: (typeof process !== 'undefined' && process?.env?.['CSS_MINIFY']) !== 'false' && BUILD_CONFIG.CSS_MINIFY,
+    CSS_CODE_SPLIT: (typeof process !== 'undefined' && process?.env?.['CSS_CODE_SPLIT']) !== 'false' && BUILD_CONFIG.CSS_CODE_SPLIT,
+    
+    // Performance mode optimizations
+    PERFORMANCE_MODE: isPerformanceMode,
+    DEBUG_MODE: envConfig.isDevelopment || (typeof process !== 'undefined' && process?.env?.['DEBUG_MODE']) === 'true',
+    EDGE_OPTIMIZED: isEdgeDeployed,
+    
+    // Source map configuration based on environment
+    SOURCE_MAP_DEV: envConfig.isDevelopment ? BUILD_CONFIG.SOURCE_MAP_DEV as boolean | 'hidden' | 'inline' | undefined : BUILD_CONFIG.SOURCE_MAP_PROD as boolean | 'hidden' | 'inline' | undefined,
+    DROP_CONSOLE: !envConfig.isDevelopment && (typeof process !== 'undefined' && process?.env?.['DROP_CONSOLE']) !== 'false',
+    
+    // Dynamic optimization levels
+    AGGRESSIVE_TREESHAKING: isPerformanceMode,
+    ENHANCED_COMPRESSION: isEdgeDeployed,
+  };
+};
+
 // ========== ENVIRONMENT-OVERRIDABLE CONFIGURATION ==========
 export const getEnvironmentConfig = () => ({
   // Development overrides
-  isDevelopment: process?.env?.['NODE_ENV'] === 'development',
-  isProduction: process?.env?.['NODE_ENV'] === 'production',
-  isTest: process?.env?.['NODE_ENV'] === 'test',
+  isDevelopment: (typeof process !== 'undefined' && process?.env?.['NODE_ENV']) === 'development',
+  isProduction: (typeof process !== 'undefined' && process?.env?.['NODE_ENV']) === 'production',
+  isTest: (typeof process !== 'undefined' && process?.env?.['NODE_ENV']) === 'test',
   
   // API endpoints
-  API_BASE_URL: process?.env?.['API_BASE_URL'] || '/api',
-  WEBSOCKET_URL: process?.env?.['WEBSOCKET_URL'] || 'ws://localhost:3001',
+  API_BASE_URL: (typeof process !== 'undefined' && process?.env?.['API_BASE_URL']) || '/api',
+  WEBSOCKET_URL: (typeof process !== 'undefined' && process?.env?.['WEBSOCKET_URL']) || 'ws://localhost:3001',
   
   // Feature flags
   FEATURES: {
-    EDGE_CACHING: process?.env?.['ENABLE_EDGE_CACHING'] !== 'false',
-    PERFORMANCE_MONITORING: process?.env?.['ENABLE_PERFORMANCE_MONITORING'] !== 'false',
-    ADVANCED_VALIDATION: process?.env?.['ENABLE_ADVANCED_VALIDATION'] !== 'false',
-    BETA_FEATURES: process?.env?.['ENABLE_BETA_FEATURES'] === 'true',
+    EDGE_CACHING: (typeof process !== 'undefined' && process?.env?.['ENABLE_EDGE_CACHING']) !== 'false',
+    PERFORMANCE_MONITORING: (typeof process !== 'undefined' && process?.env?.['ENABLE_PERFORMANCE_MONITORING']) !== 'false',
+    ADVANCED_VALIDATION: (typeof process !== 'undefined' && process?.env?.['ENABLE_ADVANCED_VALIDATION']) !== 'false',
+    BETA_FEATURES: (typeof process !== 'undefined' && process?.env?.['ENABLE_BETA_FEATURES']) === 'true',
   },
   
   // Debug settings
   DEBUG: {
-    ENABLE_CONSOLE_LOGS: process?.env?.['NODE_ENV'] === 'development',
-    ENABLE_PERFORMANCE_LOGS: process?.env?.['ENABLE_PERFORMANCE_LOGS'] === 'true',
-    ENABLE_CACHE_DEBUG: process?.env?.['ENABLE_CACHE_DEBUG'] === 'true',
+    ENABLE_CONSOLE_LOGS: (typeof process !== 'undefined' && process?.env?.['NODE_ENV']) === 'development',
+    ENABLE_PERFORMANCE_LOGS: (typeof process !== 'undefined' && process?.env?.['ENABLE_PERFORMANCE_LOGS']) === 'true',
+    ENABLE_CACHE_DEBUG: (typeof process !== 'undefined' && process?.env?.['ENABLE_CACHE_DEBUG']) === 'true',
   },
 });
 
@@ -307,6 +388,7 @@ export const getConfig = <T>(section: string, key: string): T => {
     VALIDATION_CONFIG,
     ERROR_CONFIG,
     MONITORING_CONFIG,
+    BUILD_CONFIG,
   };
   
   const sectionConfig = configMap[section];
@@ -330,6 +412,7 @@ export const APP_CONFIG = {
   VALIDATION_CONFIG,
   ERROR_CONFIG,
   MONITORING_CONFIG,
+  BUILD_CONFIG,
   getEnvironmentConfig,
   getConfig,
 };
