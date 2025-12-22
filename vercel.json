@@ -1,8 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "npm ci --prefer-offline --no-audit && npm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "installCommand": "npm ci --prefer-offline --no-audit",
   "build": {
     "env": {
       "NODE_OPTIONS": "--max-old-space-size=4096"
