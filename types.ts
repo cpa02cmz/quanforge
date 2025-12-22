@@ -165,6 +165,8 @@ export interface SupabaseLikeClient {
     signOut(): Promise<{ error: string | null }>;
   };
   from(table: string): SupabaseTableQuery;
+  // RPC method for stored procedures
+  rpc(fn: string, params?: any): Promise<DatabaseResponse<any>>;
 }
 
 export interface SupabaseTableQuery {
@@ -176,6 +178,11 @@ export interface SupabaseTableQuery {
   match(criteria: Record<string, any>): SupabaseQuery;
   order(column: string, options?: { ascending?: boolean }): SupabaseQuery;
   single(): Promise<DatabaseResponse<any>>;
+  // Additional methods for pagination and filtering
+  limit(count: number): SupabaseQuery;
+  range(from: number, to: number): SupabaseQuery;
+  or(filters: string): SupabaseQuery;
+  in(column: string, values: any[]): SupabaseQuery;
 }
 
 export interface SupabaseQuery {
@@ -184,6 +191,15 @@ export interface SupabaseQuery {
   order(column: string, options?: { ascending?: boolean }): SupabaseQuery;
   select(columns?: string): SupabaseQuery;
   single(): Promise<DatabaseResponse<any>>;
+  // Additional methods for pagination and filtering
+  limit(count: number): SupabaseQuery;
+  range(from: number, to: number): SupabaseQuery;
+  or(filters: string): SupabaseQuery;
+  in(column: string, values: any[]): SupabaseQuery;
+  // Response properties
+  data?: any;
+  error?: any;
+  count?: number;
 }
 
 export type DBMode = 'mock' | 'supabase';

@@ -2,7 +2,7 @@
 import { useReducer, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Message, MessageRole, Robot, StrategyParams, StrategyAnalysis, BacktestSettings, SimulationResult } from '../types';
-import { mockDb } from '../services/supabase';
+import { mockDb, supabase } from '../services/supabase';
 import { useToast } from '../components/Toast';
 import { DEFAULT_STRATEGY_PARAMS } from '../constants';
 import { runMonteCarloSimulation } from '../services/simulation';
@@ -454,15 +454,20 @@ const stopGeneration = () => {
       }
 
       dispatch({ type: 'SET_SAVING', payload: true });
+      // Get user session for user_id
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id || 'mock-user-id';
+      
       const robotData = {
           name: ValidationService.sanitizeInput(state.robotName),
           code: state.code,
           description: state.analysis?.description || 'Generated Strategy',
-          strategy_type: (state.analysis?.riskScore || 0) > 7 ? 'Scalping' : 'Trend',
+          strategy_type: ((state.analysis?.riskScore || 0) > 7 ? 'Scalping' : 'Trend') as 'Trend' | 'Scalping' | 'Grid' | 'Martingale' | 'Custom',
           strategy_params: state.strategyParams, 
           backtest_settings: state.backtestSettings,
-          analysis_result: state.analysis, 
+          analysis_result: state.analysis || undefined, 
           chat_history: state.messages, 
+          user_id: userId,
           updated_at: new Date().toISOString()
       };
 
