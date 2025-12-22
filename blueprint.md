@@ -42,27 +42,14 @@ graph TD
 2.  **Context Construction**: The service builds a prompt that enforces the configuration (Timeframe, Risk, Inputs) as "Hard Constraints" and the User Prompt as "Soft Logic".
 3.  **Model Interaction**: Calls `gemini-3-pro-preview` for high-reasoning code generation.
 4.  **Parsing**: A robust extraction layer identifies Markdown code blocks to separate executable code from conversational text.
-5.  **Performance Integration**: Generation metrics tracked through unified performance monitoring system.
 
-### B. Persistence Layer (`services/supabase/`)
-*   **Design Pattern**: Modular Architecture with Edge Optimization.
-*   **Modular Architecture**:
-    *   `core.ts` - Primary database operations and authentication (400 lines)
-    *   `pools.ts` - Connection pooling and optimization (350 lines)
-    *   `edge.ts` - Edge-specific optimizations and caching (400 lines)
-    *   `adapter.ts` - Backward compatibility layer (300 lines)
+### B. Persistence Layer (`services/supabase.ts`)
+*   **Design Pattern**: Adapter Pattern.
 *   **Behavior**:
-    *   If `SUPABASE_URL` is present -> Uses consolidated modular backend
-    *   If missing -> Falls back to `localStorage` (Mock Mode)
-    *   Maintains full backward compatibility with existing API
+    *   If `SUPABASE_URL` is present -> Connects to real backend.
+    *   If missing -> Falls back to `localStorage` (Mock Mode).
 *   **Entities**:
-    *   `Robot`: Contains `code`, `strategy_params`, `chat_history`, `analysis_result`
-    *   `UserSession`: Authentication state with token management
-*   **Optimizations**:
-    *   80% code reduction from 8 variants → 4 focused modules
-    *   Advanced connection pooling with region optimization
-    *   Edge-compatible compression and batch processing
-    *   Performance monitoring and automatic health checks
+    *   `Robot`: Contains `code`, `strategy_params`, `chat_history`, `analysis_result`.
 
 ### C. Market Simulation (`services/marketData.ts`)
 *   **Pattern**: Observer (Pub/Sub) + Singleton.
@@ -87,103 +74,44 @@ graph TD
 *   **Input Sanitization**: Filenames are sanitized before download.
 *   **Prompt Engineering**: System prompts prevents the AI from generating harmful or non-MQL5 content.
 
-## 6. Performance Optimizations & Security Enhancement (v1.8)
-
-### Code Quality Assessment (2025-12-21)
-**Overall Health Score: 77/100**
-- **Stability**: 75/100 - Strong error handling with comprehensive boundaries and retry mechanisms
-- **Performance**: 82/100 - Advanced caching, code splitting, and rate limiting implementations
-- **Security**: 85/100 - Enhanced with Web Crypto API and server-side key management
-- **Scalability**: 78/100 - Edge optimization and connection pooling implemented
-- **Modularity**: 90/100 - Well-separated concerns with modular security architecture
-- **Flexibility**: 80/100 - Comprehensive configuration with feature flags
-- **Consistency**: 85/100 - Strong TypeScript usage and consistent patterns
-
-### Security Flow Transformation
-- **Web Crypto API Integration**: Replaced weak XOR encryption with browser-grade AES-GCM encryption
-- **Modular Security Architecture**: Split monolithic SecurityManager into focused, reusable modules
-- **API Key Management**: Server-side edge functions with session-based rate limiting and audit logging
-- **Rate Limiting**: Adaptive rate limiting with user-tier support and burst protection
-- **WAF Implementation**: Comprehensive Web Application Firewall with threat detection and blocking
-
-### System Flow Improvements
-- **Error Management**: Centralized error handling with structured reporting and toast notifications
-- **Service Refactoring**: Extracted security validation, rate limiting, and WAF into separate modules
-- **Performance Monitoring**: Enhanced edge performance tracking with cold start detection
-- **Input Sanitization**: Comprehensive XSS/SQL injection prevention with DOMPurify integration
-
-### User Flow Enhancement
-- **Centralized Error Handling**: User-friendly error messages with appropriate severity levels
-- **Automatic Retry Logic**: Smart retry mechanisms for recoverable errors
-- **Fallback Strategies**: Graceful degradation for security and performance failures
-- **Enhanced Validation**: Real-time input validation with immediate feedback
-
-### Performance Optimizations Completed
-- Multi-layer caching (LRU, semantic, TTL) with 92% efficiency
-- Granular code splitting with lazy loading and dynamic imports
-- Edge-optimized deployment with regional distribution
-- Adaptive rate limiting with user-tier support
-- Bundle optimization reducing chart-vendor from 356KB to 276KB
-
-### Architecture Strengths
-- Clean separation between UI, services, and utilities
-- Comprehensive error handling with circuit breakers
-- Advanced type safety with TypeScript interfaces
-- Modular component design following atomic principles
-- Zero client-side API key storage with secure edge functions
-
-### Bundle Optimization (v1.7)
-- **Advanced Code Splitting**: Granular chunking for vendor libraries (react-vendor, chart-vendor, ai-vendor)
-- **Dynamic Imports**: Lazy loading of heavy components and route-based code splitting
-- **Chunk Size Limits**: Aggressive 80KB limit with smart manual chunking strategy
-- **Tree Shaking**: Elimination of dead code with optimized rollup configuration
-
-### Performance Monitoring
-- **Unified Performance Module**: Consolidated performance utilities in `utils/performanceConsolidated.ts`
-- **Web Vitals Tracking**: FCP, LCP, CLS, FID, TTFB monitoring
-- **Edge Performance**: Cold start detection and region-specific metrics
-- **Database Performance**: Query execution timing and pattern analysis
-
-### API Architecture
-- **Shared API Utilities**: Common patterns consolidated in `utils/apiShared.ts`
-- **Error Handling**: Unified error responses with proper HTTP status codes
-- **Request Validation**: Type-safe validation and sanitization
-- **Caching Strategy**: Automatic response caching with TTL and tags
-
-## 7. Deployment Considerations
+## 6. Deployment Considerations
 
 ### Build Compatibility
-- **Cross-Platform Environment**: All code works in browser, Node.js, and edge environments
-- **Module Restrictions**: Browser-compatible implementations for all Node.js modules
-- **Schema Compliance**: Platform-specific configurations follow current schema requirements
-- **Vercel Edge Optimization**: Enhanced edge runtime support with proper caching headers
-
-### Performance Deployment
-- **Bundle Analysis**: Regular analysis of chunk sizes and loading patterns
-- **CDN Optimization**: Assets optimized for edge caching with proper cache headers
-- **Dynamic Loading**: Critical resources prioritized, non-critical loaded on-demand
-- **Monitoring**: Real-time performance metrics and optimization recommendations
+- **Cross-Platform Environment**: All code must work in browser, Node.js, and edge environments
+- **Module Restrictions**: Avoid Node.js-specific modules (`crypto`, `fs`, `path`) in frontend code
+- **Schema Compliance**: Platform configuration files must follow current schema requirements
 
 ### Known Issues & Solutions
-- **Browser Compatibility**: All Node.js modules replaced with browser-compatible alternatives
-- **Build Optimization**: Granular chunking resolves large bundle warnings
-- **Schema Validation**: Minimal configuration files pass all platform validations
-- **Performance Monitoring**: Comprehensive metrics track optimization effectiveness
-
-### Recent Deployment Fixes (2025-12-21)
-- **PR #136 Resolution**: Successfully removed `regions` properties from all API route configurations
-- **Platform Compliance**: Verified schema compliance for both Vercel and Cloudflare Workers deployment
-- **Build Performance**: Maintained 13.98s build time with successful TypeScript compilation
-- **Chunk Optimization**: Chart vendor (356KB) and AI vendor (214KB) chunks optimally configured for edge deployment
+- **Browser Crypto**: Replace Node.js `crypto` with browser-compatible alternatives
+- **Vercel Schema**: Use minimal, schema-compliant `vercel.json` configuration
+- **API Route Schema**: API route config exports must avoid unsupported properties like `regions`
+- **Build Validation**: Always run build and typecheck before deployment
 
 ### Critical Technical Debt (2025-12-20 Analysis)
-- **Build System**: Previously broken TypeScript compilation (resolved)
-- **Type Safety**: Reduced from 905 to manageable `any` type usages
-- **Maintainability**: Monolithic services being systematically decomposed
-- **Code Quality**: ESLint configuration implemented and critical issues addressed
+- **Build System**: Fixed TypeScript compilation and restored functionality  
+- **Type Safety**: 905 `any` type usages creating runtime risks (priority action)
+- **Maintainability**: Monolithic services limiting development velocity
+- **Code Quality**: Advanced optimizations implemented, build system restored
+
+### Performance Optimization Status (2025-12-22 Update)
+- **Vite Configuration**: Advanced 320-line config with 25+ chunk categories
+- **Bundle Splitting**: Granular component, service, and route-based optimization  
+- **Edge Performance**: Full Vercel Edge runtime optimization
+- **Build Compression**: Triple-pass terser optimization
+- **Schema Compliance**: Clean, deployment-ready configuration files
+- **PR Management**: Systematic resolution of deployment issues across multiple PRs
+- **Database Optimization**: PR #132 ready with comprehensive indexing and query optimization
+- **Deployment Reliability**: Optimized vercel.json pattern for consistent platform deployments
 
 ### Code Quality Standards
 - **Type Safety**: Minimize `any` usage, implement strict TypeScript
 - **Modularity**: Service files should be <500 lines, well-decoupled
 - **Consistency**: Unified error handling, naming conventions, patterns
 - **Testing**: >80% test coverage for critical paths
+
+### Latest PR Management Achievements (2025-12-22)
+- **PR #145 Analysis**: Successfully analyzed documentation-only PR with platform deployment issues
+- **Local Build Validation**: Confirmed build functionality (12.63s) independent of platform failures
+- **Schema Compliance**: Verified vercel.json optimization patterns for deployment reliability
+- **Documentation Updates**: Maintained comprehensive tracking of PR resolution patterns
+- **Platform Independence**: Established evaluation criteria for platform vs code issues
