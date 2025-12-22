@@ -1,28 +1,42 @@
-import React, { memo, useState, useEffect } from 'react';
+import { memo, useState, useEffect } from 'react';
 
-// Dynamic import for Recharts to optimize bundle size
-interface RechartsComponents {
-  PieChart: React.ComponentType<any>;
-  Pie: React.ComponentType<any>;
-  Cell: React.ComponentType<any>;
-  ResponsiveContainer: React.ComponentType<any>;
-  Tooltip: React.ComponentType<any>;
-  AreaChart: React.ComponentType<any>;
-  Area: React.ComponentType<any>;
-  XAxis: React.ComponentType<any>;
-  YAxis: React.ComponentType<any>;
-  CartesianGrid: React.ComponentType<any>;
+// Chart data interfaces
+interface ChartDataPoint {
+  name: string;
+  value: number;
+  [key: string]: unknown;
+}
+
+interface StrategyAnalysis {
+  risk: number;
+  profit: number;
+  confidence: number;
+  [key: string]: unknown;
 }
 
 interface ChartComponentsProps {
-  data?: any[];
+  data?: ChartDataPoint[];
   type?: 'pie' | 'area';
   width?: number;
   height?: number;
-  riskData?: any[];
-  analysis?: any;
+  riskData?: ChartDataPoint[];
+  analysis?: StrategyAnalysis;
   totalReturn?: number;
   t?: (key: string, params?: Record<string, string>) => string;
+}
+
+// Dynamic import for Recharts to optimize bundle size
+interface RechartsComponents {
+  PieChart: any;
+  Pie: any;
+  Cell: any;
+  ResponsiveContainer: any;
+  Tooltip: any;
+  AreaChart: any;
+  Area: any;
+  XAxis: any;
+  YAxis: any;
+  CartesianGrid: any;
 }
 
 // Memoized chart components for performance
@@ -53,8 +67,8 @@ export const ChartComponents = memo<ChartComponentsProps>(({
           YAxis: recharts.YAxis,
           CartesianGrid: recharts.CartesianGrid,
         });
-      } catch (err) {
-        console.error('Failed to load Recharts:', err);
+      } catch {
+        // Failed to load Recharts silently
         setError('Failed to load chart components');
       } finally {
         setLoading(false);
@@ -98,12 +112,12 @@ export const ChartComponents = memo<ChartComponentsProps>(({
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ name, percent }: { name: any; percent: any }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
               outerRadius={80}
               fill="#8884d8"
               dataKey="value"
             >
-              {data.map((_entry, index) => (
+              {data.map((_, index) => (
                 <Recharts.Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Recharts.Pie>
