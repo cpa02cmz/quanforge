@@ -14,6 +14,7 @@ interface PieProps {
   cy?: string | number;
   innerRadius?: number;
   outerRadius?: number;
+  paddingAngle?: number;
   fill?: string;
   children?: React.ReactNode;
 }
@@ -31,6 +32,9 @@ interface ResponsiveContainerProps {
 
 interface TooltipProps {
   content?: React.ComponentType<any>;
+  contentStyle?: Record<string, any>;
+  itemStyle?: Record<string, any>;
+  formatter?: (value: any, name?: any) => any[] | string;
   children?: React.ReactNode;
 }
 
@@ -45,22 +49,30 @@ interface AreaProps {
   stroke?: string;
   fill?: string;
   fillOpacity?: number;
+  strokeWidth?: number;
   children?: React.ReactNode;
 }
 
 interface XAxisProps {
   dataKey?: string;
-  tick?: React.ComponentType<any>;
+  tick?: any;
+  stroke?: string;
+  minTickGap?: number;
   children?: React.ReactNode;
 }
 
 interface YAxisProps {
-  tick?: React.ComponentType<any>;
+  tick?: any;
+  stroke?: string;
+  domain?: Array<string | number>;
+  tickFormatter?: (value: any) => string;
   children?: React.ReactNode;
 }
 
 interface CartesianGridProps {
   strokeDasharray?: string;
+  stroke?: string;
+  vertical?: boolean;
   children?: React.ReactNode;
 }
 
@@ -105,8 +117,8 @@ const RechartsInner = memo(({
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
           <XAxis 
             dataKey="date" 
-            stroke="#94a3b8" 
-            tick={{fontSize: 12}} 
+stroke="#94a3b8" 
+            tick={{ fontSize: 12 }}
             minTickGap={30}
           />
           <YAxis 
@@ -174,16 +186,16 @@ export const ChartComponents: React.FC<ChartComponentsProps> = memo(({ riskData,
   useEffect(() => {
     import('recharts').then((module) => {
       setRecharts({
-        PieChart: module.PieChart,
-        Pie: module.Pie,
-        Cell: module.Cell,
-        ResponsiveContainer: module.ResponsiveContainer,
-        Tooltip: module.Tooltip,
-        AreaChart: module.AreaChart,
-        Area: module.Area,
-        XAxis: module.XAxis,
-        YAxis: module.YAxis,
-        CartesianGrid: module.CartesianGrid
+        PieChart: module.PieChart as React.ComponentType<PieChartProps>,
+        Pie: module.Pie as React.ComponentType<PieProps>,
+        Cell: module.Cell as React.ComponentType<CellProps>,
+        ResponsiveContainer: module.ResponsiveContainer as React.ComponentType<ResponsiveContainerProps>,
+        Tooltip: module.Tooltip as React.ComponentType<TooltipProps>,
+        AreaChart: module.AreaChart as React.ComponentType<AreaChartProps>,
+        Area: module.Area as React.ComponentType<AreaProps>,
+        XAxis: module.XAxis as React.ComponentType<XAxisProps>,
+        YAxis: module.YAxis as React.ComponentType<YAxisProps>,
+        CartesianGrid: module.CartesianGrid as React.ComponentType<CartesianGridProps>
       });
       setLoading(false);
     }).catch(() => {

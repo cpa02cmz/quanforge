@@ -17,7 +17,7 @@ export class Logger {
   private static instance: Logger;
   private logs: LogEntry[] = [];
   private maxLogs = 1000;
-  private isProduction = process.env.NODE_ENV === 'production';
+  private isProduction = process.env['NODE_ENV'] === 'production';
   private minLevel = this.isProduction ? LogLevel.WARN : LogLevel.DEBUG;
 
   private constructor() {}
