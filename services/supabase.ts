@@ -1,7 +1,19 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
-import { Robot, UserSession } from '../types';
+import { 
+  Robot, 
+  UserSession, 
+  RobotUpdate, 
+  RobotBatchUpdate, 
+  BatchUpdateResult,
+  DatabaseResponse,
+  AuthResponse,
+  SafeParseOptions,
+  CacheEntry,
+  SupabaseLikeClient,
+  StorageError
+} from '../types';
 import { edgeConnectionPool } from './edgeSupabasePool';
 import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
@@ -28,31 +40,36 @@ const STORAGE_KEY = 'mock_session';
 const ROBOTS_KEY = 'mock_robots';
 
 // Helper for safe JSON parsing with enhanced security
-const safeParse = (data: string | null, fallback: any) => {
-    if (!data) return fallback;
+const safeParse = <T>(data: string | null, options: SafeParseOptions<T>): T => {
+    if (!data) return options.fallback;
     try {
-        // Use security manager's safe JSON parsing
-        return securityManager.safeJSONParse(data) || fallback;
+        const parsed = securityManager.safeJSONParse(data);
+        if (options.schema) {
+            const validated = options.schema(parsed);
+            return validated !== null ? validated : options.fallback;
+        }
+        return parsed || options.fallback;
     } catch (e) {
         console.error("Failed to parse data from storage:", e);
-        return fallback;
+        return options.fallback;
     }
 };
 
 // Helper: Try save to storage with Quota handling
-const trySaveToStorage = (key: string, value: string) => {
+const trySaveToStorage = (key: string, value: string): void => {
     try {
         localStorage.setItem(key, value);
-    } catch (e: any) {
+    } catch (e: unknown) {
+        const error = e as StorageError;
         if (
-            e.name === 'QuotaExceededError' || 
-            e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-            e.code === 22 ||
-            e.code === 1014
+            error.name === 'QuotaExceededError' || 
+            error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+            error.code === 22 ||
+            error.code === 1014
         ) {
             throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
         }
-        throw e;
+        throw error;
     }
 };
 
@@ -68,19 +85,24 @@ const generateUUID = (): string => {
     });
 };
 
-const isValidRobot = (r: any): boolean => {
+const isValidRobot = (r: unknown): r is Robot => {
+    if (!r || typeof r !== 'object') return false;
+    const robot = r as Record<string, unknown>;
     return (
-        typeof r === 'object' &&
-        r !== null &&
-        typeof r.name === 'string' &&
-        typeof r.code === 'string'
+        typeof robot['id'] === 'string' &&
+        typeof robot['user_id'] === 'string' &&
+        typeof robot['name'] === 'string' &&
+        typeof robot['description'] === 'string' &&
+        typeof robot['code'] === 'string' &&
+        typeof robot['created_at'] === 'string' &&
+        typeof robot['updated_at'] === 'string'
     );
 };
 
 // --- Mock Implementation ---
 
 const getMockSession = () => {
-  return safeParse(localStorage.getItem(STORAGE_KEY), null);
+  return safeParse(localStorage.getItem(STORAGE_KEY), { fallback: null });
 };
 
 const authListeners: Array<(event: string, session: UserSession | null) => void> = [];
@@ -144,11 +166,11 @@ const mockClient = {
 
 // --- Dynamic Client Manager ---
 
-let activeClient: SupabaseClient | any = null;
+let activeClient: SupabaseClient | SupabaseLikeClient | null = null;
 
 // LRU Cache implementation for better performance and memory management
 class LRUCache<T> {
-  private cache = new Map<string, { data: T; timestamp: number }>();
+  private cache = new Map<string, CacheEntry<T>>();
   private readonly ttl: number;
   private readonly maxSize: number;
 
@@ -204,7 +226,7 @@ class LRUCache<T> {
   }
 }
 
-const cache = new LRUCache<any>(CACHE_CONFIG.ttl, CACHE_CONFIG.maxSize);
+const cache = new LRUCache<Robot[]>(CACHE_CONFIG.ttl, CACHE_CONFIG.maxSize);
 
 
 
@@ -213,12 +235,12 @@ const withRetry = async <T>(
   operation: () => Promise<T>,
   operationName: string
 ): Promise<T> => {
-  let lastError: any;
+  let lastError: Error | unknown;
   
   for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
     try {
       return await operation();
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
       
       // Don't retry on certain errors
@@ -746,7 +768,7 @@ if (result.data && !result.error) {
      }
    },
 
-   async saveRobot(robot: any) {
+   async saveRobot(robot: Omit<Robot, 'id' | 'created_at' | 'updated_at'>) {
     const startTime = performance.now();
     try {
       const settings = settingsManager.getDBSettings();
@@ -772,9 +794,9 @@ if (result.data && !result.error) {
       const sanitizedRobot = validation.sanitizedData;
 
       if (settings.mode === 'mock') {
-        try {
-            const stored = localStorage.getItem(ROBOTS_KEY);
-            const robots = safeParse(stored, []);
+try {
+                    const stored = localStorage.getItem(ROBOTS_KEY);
+                    const robots = safeParse(stored, { fallback: [] as Robot[] });
             
             const newRobot = { ...sanitizedRobot, id: generateUUID(), created_at: new Date().toISOString() };
             robots.unshift(newRobot);
@@ -788,10 +810,11 @@ if (result.data && !result.error) {
             await consolidatedCache.invalidateByTags(['robots', 'list']);
             
             return { data: [newRobot], error: null };
-        } catch (e: any) {
+        } catch (e: unknown) {
             const duration = performance.now() - startTime;
             performanceMonitor.record('saveRobot', duration);
-            return { data: null, error: e.message };
+            const error = e as Error;
+            return { data: null, error: error.message };
         }
       }
       
@@ -814,7 +837,7 @@ if (result.data && !result.error) {
     }
   },
 
-  async updateRobot(id: string, updates: any) {
+  async updateRobot(id: string, updates: RobotUpdate) {
     const startTime = performance.now();
     try {
       const settings = settingsManager.getDBSettings();
@@ -825,7 +848,7 @@ if (result.data && !result.error) {
               const robots = safeParse(stored, []);
               
               // Find and update the robot in place for better performance
-              const robotIndex = robots.findIndex((r: any) => r.id === id);
+              const robotIndex = robots.findIndex((r: Robot) => r.id === id);
               if (robotIndex === -1) {
                   const duration = performance.now() - startTime;
                   performanceMonitor.record('updateRobot', duration);
@@ -841,11 +864,12 @@ if (result.data && !result.error) {
               performanceMonitor.record('updateRobot', duration);
               robotIndexManager.clear(); // Clear index since data changed
               return { data: updatedRobot, error: null };
-          } catch (e: any) {
-              const duration = performance.now() - startTime;
-              performanceMonitor.record('updateRobot', duration);
-              return { data: null, error: e.message };
-          }
+} catch (e: unknown) {
+               const duration = performance.now() - startTime;
+               performanceMonitor.record('updateRobot', duration);
+               const error = e as Error;
+               return { data: null, error: error.message };
+           }
       }
       
       return withRetry(async () => {
@@ -879,9 +903,9 @@ if (result.data && !result.error) {
       if (settings.mode === 'mock') {
           try {
               const stored = localStorage.getItem(ROBOTS_KEY);
-              let robots = safeParse(stored, []);
-              const initialLength = robots.length;
-              robots = robots.filter((r: any) => r.id !== id);
+let robots = safeParse(stored, { fallback: [] as Robot[] });
+               const initialLength = robots.length;
+               robots = robots.filter((r: Robot) => r.id !== id);
               
               if (robots.length === initialLength) {
                   const duration = performance.now() - startTime;
@@ -894,11 +918,12 @@ if (result.data && !result.error) {
               performanceMonitor.record('deleteRobot', duration);
               robotIndexManager.clear(); // Clear index since data changed
               return { data: true, error: null };
-          } catch (e: any) {
-              const duration = performance.now() - startTime;
-              performanceMonitor.record('deleteRobot', duration);
-              return { error: e.message };
-          }
+} catch (e: unknown) {
+               const duration = performance.now() - startTime;
+               performanceMonitor.record('deleteRobot', duration);
+               const error = e as Error;
+               return { error: error.message };
+           }
       }
       
       return withRetry(async () => {
@@ -928,8 +953,8 @@ if (result.data && !result.error) {
       if (settings.mode === 'mock') {
           try {
               const stored = localStorage.getItem(ROBOTS_KEY);
-              const robots = safeParse(stored, []);
-              const original = robots.find((r: any) => r.id === id);
+const robots = safeParse(stored, { fallback: [] as Robot[] });
+               const original = robots.find((r: Robot) => r.id === id);
               
               if (!original) {
                   const duration = performance.now() - startTime;
@@ -951,11 +976,12 @@ if (result.data && !result.error) {
               performanceMonitor.record('duplicateRobot', duration);
               robotIndexManager.clear(); // Clear index since data changed
               return { data: [newRobot], error: null };
-          } catch (e: any) {
-              const duration = performance.now() - startTime;
-              performanceMonitor.record('duplicateRobot', duration);
-              return { data: null, error: e.message };
-          }
+} catch (e: unknown) {
+               const duration = performance.now() - startTime;
+               performanceMonitor.record('duplicateRobot', duration);
+               const error = e as Error;
+               return { data: null, error: error.message };
+           }
       }
       
       const client = await getClient();
@@ -1007,8 +1033,9 @@ export const dbUtils = {
             
             if (error) throw error;
             return { success: true, message: `Connected to Supabase. Found ${count} records.`, mode: 'supabase' };
-        } catch (e: any) {
-            return { success: false, message: `Connection Failed: ${e.message || e}`, mode: 'supabase' };
+        } catch (e: unknown) {
+            const error = e as Error;
+            return { success: false, message: `Connection Failed: ${error.message || error}`, mode: 'supabase' };
         }
     },
 
@@ -1073,7 +1100,7 @@ export const dbUtils = {
 
             if (settings.mode === 'mock') {
                 const stored = localStorage.getItem(ROBOTS_KEY);
-                const currentRobots = merge ? safeParse(stored, []) : [];
+                const currentRobots = merge ? safeParse(stored, { fallback: [] as Robot[] }) : [];
                 
                 const newRobots = validRobots.map((r: Robot) => ({
                     ...r,
@@ -1124,8 +1151,9 @@ export const dbUtils = {
                 return importResult;
             }
 
-        } catch (e: any) {
-            return { success: false, count: 0, error: e.message };
+        } catch (e: unknown) {
+            const error = e as Error;
+            return { success: false, count: 0, error: error.message };
         }
     },
 
@@ -1136,7 +1164,7 @@ export const dbUtils = {
      */
     async migrateMockToSupabase(): Promise<{ success: boolean; count: number; error?: string }> {
         const stored = localStorage.getItem(ROBOTS_KEY);
-        const localRobots = safeParse(stored, []);
+        const localRobots = safeParse(stored, { fallback: [] as Robot[] });
         
         if (localRobots.length === 0) {
             return { success: false, count: 0, error: "No local robots found to migrate." };
@@ -1194,8 +1222,9 @@ export const dbUtils = {
             }
             
             return migrationResult;
-        } catch (e: any) {
-            return { success: false, count: 0, error: e.message };
+        } catch (e: unknown) {
+            const error = e as Error;
+            return { success: false, count: 0, error: error.message };
         }
     },
     
@@ -1324,7 +1353,7 @@ export const dbUtils = {
     /**
      * Batch operations for better performance
      */
-    async batchUpdateRobots(updates: Array<{ id: string; updates: any }>): Promise<{ success: number; failed: number; errors?: string[] }> {
+    async batchUpdateRobots(updates: RobotBatchUpdate[]): Promise<BatchUpdateResult> {
         const startTime = performance.now();
         try {
             const settings = settingsManager.getDBSettings();
@@ -1335,10 +1364,10 @@ export const dbUtils = {
             if (settings.mode === 'mock') {
                 try {
                     const stored = localStorage.getItem(ROBOTS_KEY);
-                    const robots = safeParse(stored, []);
+const robots = safeParse(stored, { fallback: [] as Robot[] });
                     
                     for (const item of updates) {
-                        const robotIndex = robots.findIndex((r: any) => r.id === item.id);
+                        const robotIndex = robots.findIndex((r: Robot) => r.id === item.id);
                         if (robotIndex !== -1) {
                             robots[robotIndex] = { 
                                 ...robots[robotIndex], 
@@ -1367,10 +1396,11 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                     }
                     
                     return batchResult;
-                } catch (e: any) {
+                } catch (e: unknown) {
                     const duration = performance.now() - startTime;
                     performanceMonitor.record('batchUpdateRobots', duration);
-                    return { success: 0, failed: updates.length, errors: [e.message] };
+                    const error = e as Error;
+                    return { success: 0, failed: updates.length, errors: [error.message] };
                 }
             } else {
                 // For Supabase, process in batches to avoid query limits
@@ -1396,9 +1426,10 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                                 successCount++;
                             }
                         }
-                    } catch (e: any) {
+} catch (e: unknown) {
                         failedCount += batch.length;
-                        errors.push(e.message);
+                        const error = e as Error;
+                        errors.push(error.message);
                     }
                 }
                 
@@ -1457,11 +1488,11 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
             if (settings.mode === 'mock') {
                 // For mock mode, run maintenance tasks
                 const stored = localStorage.getItem(ROBOTS_KEY);
-                const robots = safeParse(stored, []);
+                const robots = safeParse(stored, { fallback: [] as Robot[] });
                 
                 // Remove any potential duplicates by ID
                 const seenIds = new Set<string>();
-                const uniqueRobots = robots.filter((robot: any) => {
+                const uniqueRobots = robots.filter((robot: Robot) => {
                     if (seenIds.has(robot.id)) {
                         return false; // Duplicate, remove
                     }
@@ -1470,13 +1501,7 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                 });
                 
                 // Clean up any invalid robots
-                const validRobots = uniqueRobots.filter((robot: any) => 
-                    robot && 
-                    typeof robot === 'object' && 
-                    robot.id && 
-                    robot.name && 
-                    robot.code
-                );
+                const validRobots = uniqueRobots.filter((robot: Robot) => isValidRobot(robot));
                 
                 // Update the storage with cleaned data
                 trySaveToStorage(ROBOTS_KEY, JSON.stringify(validRobots));
@@ -1504,10 +1529,11 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                     message: "Database optimization commands issued successfully" 
                 };
             }
-        } catch (e: any) {
+        } catch (e: unknown) {
+            const error = e as Error;
             return { 
                 success: false, 
-                message: `Database optimization failed: ${e.message}` 
+                message: `Database optimization failed: ${error.message}` 
             };
         }
     },

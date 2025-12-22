@@ -99,6 +99,93 @@ export interface AISettings {
   twelveDataApiKey?: string; // For Real-time Forex/Gold data
 }
 
+// Database and API response types
+export interface DatabaseResponse<T> {
+  data: T | null;
+  error: string | null;
+}
+
+export interface AuthResponse {
+  data: {
+    session?: UserSession | null;
+    user?: User | null;
+  } | null;
+  error: string | null;
+}
+
+export interface RobotUpdate {
+  name?: string;
+  description?: string;
+  code?: string;
+  strategy_params?: StrategyParams;
+  backtest_settings?: BacktestSettings;
+  analysis_result?: StrategyAnalysis | null;
+  chat_history?: Message[];
+}
+
+export interface RobotBatchUpdate {
+  id: string;
+  updates: RobotUpdate;
+}
+
+export interface BatchUpdateResult {
+  success: number;
+  failed: number;
+  errors?: string[];
+}
+
+// Error types for better error handling
+export interface StorageError extends Error {
+  name: 'QuotaExceededError' | 'NS_ERROR_DOM_QUOTA_REACHED';
+  code?: number;
+}
+
+export interface SafeParseOptions<T> {
+  fallback: T;
+  schema?: (data: unknown) => T | null;
+}
+
+// Cache entry types
+export interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+// Supabase client wrapper types
+export interface SupabaseLikeClient {
+  auth: {
+    getSession(): Promise<AuthResponse>;
+    onAuthStateChange(callback: (event: string, session: UserSession | null) => void): {
+      data: {
+        subscription: { unsubscribe(): void };
+      };
+    };
+    signInWithPassword(params: { email: string }): Promise<AuthResponse>;
+    signUp(params: { email: string }): Promise<AuthResponse>;
+    signOut(): Promise<{ error: string | null }>;
+  };
+  from(table: string): SupabaseTableQuery;
+}
+
+export interface SupabaseTableQuery {
+  select(columns?: string): SupabaseQuery;
+  insert(data: any): SupabaseQuery;
+  update(data: any): SupabaseQuery;
+  delete(): SupabaseQuery;
+  eq(column: string, value: any): SupabaseQuery;
+  match(criteria: Record<string, any>): SupabaseQuery;
+  order(column: string, options?: { ascending?: boolean }): SupabaseQuery;
+  single(): Promise<DatabaseResponse<any>>;
+}
+
+export interface SupabaseQuery {
+  eq(column: string, value: any): SupabaseQuery;
+  match(criteria: Record<string, any>): SupabaseQuery;
+  order(column: string, options?: { ascending?: boolean }): SupabaseQuery;
+  select(columns?: string): SupabaseQuery;
+  single(): Promise<DatabaseResponse<any>>;
+}
+
 export type DBMode = 'mock' | 'supabase';
 
 export interface DBSettings {
