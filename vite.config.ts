@@ -35,30 +35,54 @@ export default defineConfig({
             if (id.includes('@supabase')) {
               return 'supabase-vendor';
             }
-            // AI services - split more granularly for edge optimization
+            // AI services - split more aggressively to reduce chunk sizes
             if (id.includes('@google/genai')) {
-              if (id.includes('generators') || id.includes('models')) {
+              // Core AI models and generators
+              if (id.includes('generators') || id.includes('models') || id.includes('generate')) {
                 return 'ai-generators';
               }
-              if (id.includes('embeddings') || id.includes('tokens')) {
+              // Text processing and embeddings
+              if (id.includes('embeddings') || id.includes('tokens') || id.includes('text')) {
                 return 'ai-processors';
               }
+              // AI client and configuration
+              if (id.includes('client') || id.includes('config') || id.includes('auth')) {
+                return 'ai-client';
+              }
+              // Chat and conversation handling
+              if (id.includes('chat') || id.includes('conversation') || id.includes('messages')) {
+                return 'ai-chat';
+              }
+              // Default AI vendor - should be smaller now
               return 'ai-vendor';
             }
-            // Chart libraries - split more granularly for better performance
+            // Chart libraries - split more aggressively to reduce chunk sizes
             if (id.includes('recharts')) {
+              // Core chart components
               if (id.includes('AreaChart') || id.includes('LineChart')) {
                 return 'chart-core';
               }
+              // Pie and bar charts
               if (id.includes('PieChart') || id.includes('BarChart')) {
                 return 'chart-misc';
               }
-              if (id.includes('ResponsiveContainer') || id.includes('Tooltip')) {
+              // Responsive components - usually larger
+              if (id.includes('ResponsiveContainer')) {
                 return 'chart-responsive';
               }
+              // Axes and grid components
               if (id.includes('CartesianGrid') || id.includes('XAxis') || id.includes('YAxis')) {
                 return 'chart-axes';
               }
+              // Tooltip and legend components
+              if (id.includes('Tooltip') || id.includes('Legend')) {
+                return 'chart-tooltips';
+              }
+              // Cells and styling
+              if (id.includes('Cell') || id.includes('Brush')) {
+                return 'chart-styling';
+              }
+              // Default recharts vendor - should be smaller now
               return 'chart-vendor';
             }
             // Security utilities - bundled together

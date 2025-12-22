@@ -2,6 +2,24 @@ import React, { useState, useMemo } from 'react';
 import { useTranslation } from '../services/i18n';
 import { PageMeta, enhancedStructuredData } from '../utils/pageMeta';
 
+// FAQ data interfaces
+interface FAQQuestion {
+  q: string;
+  a: string;
+}
+
+interface FAQCategory {
+  title: string;
+  icon: string;
+  questions: FAQQuestion[];
+}
+
+interface FAQCategories {
+  [key: string]: FAQCategory;
+}
+
+
+
 const FAQComponent: React.FC = () => {
   const { language } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
@@ -201,10 +219,10 @@ const FAQComponent: React.FC = () => {
   const filteredCategories = useMemo(() => {
     if (!searchTerm.trim()) return currentContent.categories;
     
-    const filtered: any = {};
+    const filtered: FAQCategories = {};
     Object.entries(currentContent.categories).forEach(([key, category]) => {
       const matchingQuestions = category.questions.filter(
-        (q: any) => 
+        (q: FAQQuestion) => 
           q.q.toLowerCase().includes(searchTerm.toLowerCase()) ||
           q.a.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -218,8 +236,8 @@ const FAQComponent: React.FC = () => {
   }, [currentContent.categories, searchTerm]);
 
   // Generate FAQ structured data
-  const allQuestions = Object.values(filteredCategories).flatMap((category: any) =>
-    category.questions.map((q: any) => ({
+  const allQuestions = Object.values(filteredCategories).flatMap((category: FAQCategory) =>
+    category.questions.map((q: FAQQuestion) => ({
       question: q.q,
       answer: q.a
     }))
@@ -329,7 +347,7 @@ const FAQComponent: React.FC = () => {
 
                 {expandedCategory === categoryKey && (
                   <div className="mt-4 space-y-4">
-                    {category.questions.map((question: any, index: number) => (
+                    {category.questions.map((question: FAQQuestion, index: number) => (
                       <div 
                         key={index}
                         className="bg-dark-surface border border-dark-border rounded-lg overflow-hidden"

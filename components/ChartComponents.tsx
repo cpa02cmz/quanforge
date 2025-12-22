@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from 'react';
+import { memo, useState, useEffect, useMemo } from 'react';
 
 // Chart data interfaces
 interface ChartDataPoint {
@@ -7,20 +7,24 @@ interface ChartDataPoint {
   [key: string]: unknown;
 }
 
-interface StrategyAnalysis {
-  risk: number;
-  profit: number;
-  confidence: number;
+// Flexible strategy analysis interface that matches both ChartComponents and StrategyAnalysis types
+interface StrategyAnalysisData {
+  riskScore?: number;
+  profitability?: number;
+  description?: string;
+  risk?: number;
+  profit?: number;
+  confidence?: number;
   [key: string]: unknown;
 }
 
 interface ChartComponentsProps {
-  data?: ChartDataPoint[];
+  data?: ChartDataPoint[] | { date: string; balance: number }[];
   type?: 'pie' | 'area';
   width?: number;
   height?: number;
   riskData?: ChartDataPoint[];
-  analysis?: StrategyAnalysis;
+  analysis?: StrategyAnalysisData;
   totalReturn?: number;
   t?: (key: string, params?: Record<string, string>) => string;
 }
@@ -37,6 +41,7 @@ interface RechartsComponents {
   XAxis: any;
   YAxis: any;
   CartesianGrid: any;
+  Legend: any;
 }
 
 // Memoized chart components for performance
@@ -49,6 +54,32 @@ export const ChartComponents = memo<ChartComponentsProps>(({
   const [Recharts, setRecharts] = useState<RechartsComponents | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Transform data to ensure compatibility with different input structures
+  const transformedData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    
+    // Check if data is from SimulationResult.equityCurve (date, balance)
+    if (data.some(item => 'date' in item && 'balance' in item)) {
+      return (data as { date: string; balance: number }[]).map(item => ({
+        name: item.date,
+        value: item.balance,
+        ...item
+      }));
+    }
+    
+    // Check if data is already in ChartDataPoint format or has name/value
+    if (data.some(item => 'name' in item && 'value' in item)) {
+      return data as ChartDataPoint[];
+    }
+    
+    // Default transformation for other structures
+    return data.map((item, index) => ({
+      name: `Item ${index + 1}`,
+      value: typeof item === 'number' ? item : 0,
+      ...item
+    }));
+  }, [data]);
 
   useEffect(() => {
     const loadRecharts = async () => {
@@ -66,6 +97,7 @@ export const ChartComponents = memo<ChartComponentsProps>(({
           XAxis: recharts.XAxis,
           YAxis: recharts.YAxis,
           CartesianGrid: recharts.CartesianGrid,
+          Legend: recharts.Legend,
         });
       } catch {
         // Failed to load Recharts silently
@@ -100,7 +132,7 @@ export const ChartComponents = memo<ChartComponentsProps>(({
     );
   }
 
-  if (type === 'pie' && data.length > 0) {
+  if (type === 'pie' && transformedData.length > 0) {
     const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
     
     return (
@@ -108,7 +140,7 @@ export const ChartComponents = memo<ChartComponentsProps>(({
         <Recharts.ResponsiveContainer width={width} height={height}>
           <Recharts.PieChart>
             <Recharts.Pie
-              data={data}
+              data={transformedData}
               cx="50%"
               cy="50%"
               labelLine={false}
@@ -117,7 +149,7 @@ export const ChartComponents = memo<ChartComponentsProps>(({
               fill="#8884d8"
               dataKey="value"
             >
-              {data.map((_, index) => (
+              {transformedData.map((_, index) => (
                 <Recharts.Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Recharts.Pie>
@@ -128,11 +160,11 @@ export const ChartComponents = memo<ChartComponentsProps>(({
     );
   }
 
-  if (type === 'area' && data.length > 0) {
+  if (type === 'area' && transformedData.length > 0) {
     return (
       <div className="w-full h-full">
         <Recharts.ResponsiveContainer width={width} height={height}>
-          <Recharts.AreaChart data={data}>
+          <Recharts.AreaChart data={transformedData}>
             <Recharts.CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <Recharts.XAxis dataKey="name" stroke="#9ca3af" />
             <Recharts.YAxis stroke="#9ca3af" />
