@@ -4,6 +4,8 @@
  * with type safety, validation, and environment-specific values
  */
 
+import { getUrlConfig } from '../utils/urls';
+
 // TypeScript interfaces for configuration
 export interface SecurityConfig {
   maxPayloadSize: number;
@@ -457,12 +459,10 @@ class ConfigurationService {
     // Security configuration
     const securityConfig: SecurityConfig = {
       maxPayloadSize: this.getEnvNumber('MAX_PAYLOAD_SIZE', 5 * 1024 * 1024),
-      allowedOrigins: this.getEnvArray('ALLOWED_ORIGINS', [
-        'https://quanforge.ai',
-        'https://www.quanforge.ai',
-        'http://localhost:3000',
-        'http://localhost:5173'
-      ]),
+      allowedOrigins: this.getEnvArray('ALLOWED_ORIGINS', (() => {
+        const urlConfig = getUrlConfig();
+        return urlConfig.getAllowedOrigins();
+      })()),
       endpoint: this.getEnvString('SECURITY_ENDPOINT', ''),
       rateLimiting: {
         windowMs: this.getEnvNumber('RATE_LIMIT_WINDOW_MS', 60000),

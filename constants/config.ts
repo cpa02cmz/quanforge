@@ -3,6 +3,8 @@
  * Centralizes all hardcoded values for better maintainability and flexibility
  */
 
+import { getUrlConfig } from '../utils/urls';
+
 // ========== TIME CONSTANTS ==========
 export const TIME_CONSTANTS = {
   // Millisecond conversions
@@ -356,7 +358,10 @@ export const getEnvironmentConfig = () => ({
   
   // API endpoints
   API_BASE_URL: (typeof process !== 'undefined' && process?.env?.['API_BASE_URL']) || '/api',
-  WEBSOCKET_URL: (typeof process !== 'undefined' && process?.env?.['WEBSOCKET_URL']) || 'ws://localhost:3001',
+  WEBSOCKET_URL: (typeof process !== 'undefined' && process?.env?.['WEBSOCKET_URL']) || (() => {
+    const urlConfig = getUrlConfig();
+    return urlConfig.WEBSOCKET_URL;
+  })(),
   
   // Feature flags
   FEATURES: {

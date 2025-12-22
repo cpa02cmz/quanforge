@@ -103,7 +103,7 @@ export const Generator: React.FC = memo(() => {
         title={id ? `Edit Trading Robot - ${robotName || 'Loading...'} | QuantForge AI` : 'Create New Trading Robot | QuantForge AI'}
         description={id ? `Edit and optimize your MQL5 trading robot "${robotName}". Adjust parameters, test strategies, and deploy to MetaTrader 5 with AI-powered optimization.` : 'Create a new MQL5 trading robot using AI. Describe your strategy and generate professional Expert Advisors for MetaTrader 5 in minutes.'}
         keywords="MQL5 generator, trading robot creator, Expert Advisor builder, AI trading strategy, MetaTrader 5 robot, forex EA builder, automated trading bot, MT5 expert advisor, algorithmic trading platform, AI code generation"
-        canonicalUrl={id ? `https://quanforge.ai/generator/${id}` : 'https://quanforge.ai/generator'}
+        canonicalUrl={id ? `${import.meta.env['VITE_APP_URL'] || 'https://quanforge.ai'}/generator/${id}` : `${import.meta.env['VITE_APP_URL'] || 'https://quanforge.ai'}/generator`}
         type="software"
         tags={robotName ? [robotName, 'MQL5', 'Trading Robot', 'AI'] : ['MQL5', 'Trading Robot', 'AI', 'Expert Advisor']}
         enableAnalytics={true}

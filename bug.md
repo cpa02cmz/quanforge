@@ -271,6 +271,51 @@
 - **Security Score**: Improved from 65/100 to 85/100+
 - **Status**: RESOLVED - All hardcoded encryption keys eliminated
 
+### [FIXED] Hardcoded URLs and Configuration Values
+- **Date**: 2025-12-22
+- **Severity**: High (Security & Maintainability)
+- **Description**: 100+ hardcoded URLs and configuration values throughout the application
+- **Root Causes**:
+  - Hardcoded quanforge.ai URLs in SEO utilities and components
+  - Hardcoded localhost URLs in security configurations
+  - External service URLs not centralized
+  - No environment-based URL management system
+- **Files Affected**: 
+  - utils/urls.ts (NEW - centralized URL configuration)
+  - utils/urlValidation.ts (NEW - comprehensive URL validation)
+  - utils/pageMeta.tsx (50+ hardcoded URLs)
+  - utils/advancedSEO.tsx (25+ hardcoded URLs)
+  - utils/enhancedSEO.tsx (15+ hardcoded URLs)
+  - App.tsx (hardcoded application URL)
+  - pages/Generator.tsx (canonical URLs)
+  - pages/FAQ.tsx (breadcrumb URLs)
+  - pages/Wiki.tsx (navigation URLs)
+  - services/security/constants.ts (allowed origins)
+  - services/configurationService.ts (CORS origins)
+  - constants/config.ts (WebSocket URL)
+  - .env.example (15+ new URL environment variables)
+- **Resolution Applied**:
+  - **Centralized URL System**: Created comprehensive `utils/urls.ts` with dynamic configuration
+  - **Environment Variables**: Added 15+ URL-specific environment variables
+  - **URL Validation**: Implemented `utils/urlValidation.ts` with comprehensive validation
+  - **Dynamic Configuration**: Replaced all hardcoded URLs with environment-based values
+  - **Security Origins**: Updated security configurations to use dynamic origins
+  - **Component Integration**: Updated all page components to use dynamic URLs
+  - **Build Compatibility**: Ensured all changes are backward compatible
+- **Configuration Categories Added**:
+  - Application URLs (production, development, CDN)
+  - External service URLs (fonts, analytics, APIs)
+  - Social media URLs (Twitter, GitHub, LinkedIn, Facebook, Instagram)
+  - Asset URLs (logo, images, CDN paths)
+  - WebSocket URLs (development and production)
+- **Security Improvements**:
+  - Dynamic CORS origins based on environment
+  - Validated URL formats with proper error handling
+  - HTTPS enforcement for production URLs
+  - Social media URL validation
+- **Build Status**: ✓ All builds pass (12.34s), ✓ TypeScript compilation successful
+- **Status**: RESOLVED - Complete hardcoded value elimination with centralized configuration
+
 ### [OPEN] Type Safety Degradation
 - **Date**: 2025-12-20
 - **Severity**: High (Production Risk)

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from '../services/i18n';
 import { PageMeta, enhancedStructuredData } from '../utils/pageMeta';
+import { getUrlConfig } from '../utils/urls';
 
 // FAQ data interfaces
 interface FAQQuestion {
@@ -243,16 +244,17 @@ const FAQComponent: React.FC = () => {
     }))
   );
   
+  const urlConfig = getUrlConfig();
   const structuredData = [
     enhancedStructuredData.webPage(
       currentContent.title,
       currentContent.description,
-      'https://quanforge.ai/faq'
+      `${urlConfig.APP_URL}/faq`
     ),
     enhancedStructuredData.faq(allQuestions),
     enhancedStructuredData.breadcrumb([
-      { name: 'Home', url: 'https://quanforge.ai/' },
-      { name: 'FAQ', url: 'https://quanforge.ai/faq' }
+      { name: 'Home', url: `${urlConfig.APP_URL}/` },
+      { name: 'FAQ', url: `${urlConfig.APP_URL}/faq` }
     ])
   ];
 

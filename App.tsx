@@ -11,6 +11,7 @@ const performanceMonitor = performanceManager;
 import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seoUnified';
 import { configureSecurity } from './utils/envValidation';
+import { getUrlConfig } from './utils/urls';
 
 // Dynamic import utilities are available via constants/appExports.ts
 
@@ -165,7 +166,7 @@ export default function App() {
               structuredDataTemplates.webPage(
                 'QuantForge AI - Advanced MQL5 Trading Robot Generator',
                 'Generate professional MQL5 trading robots and Expert Advisors using AI. Powered by Google Gemini 3.0/2.5.',
-                'https://quanforge.ai'
+                getUrlConfig().APP_URL
               )
             ]}
           />

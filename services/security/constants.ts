@@ -3,6 +3,8 @@
  * Centralized configuration for all security modules
  */
 
+import { getUrlConfig } from '../../utils/urls';
+
 export interface SecurityConfig {
   maxPayloadSize: number;
   allowedOrigins: string[];
@@ -39,12 +41,10 @@ export interface ValidationResult {
 
 export const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
   maxPayloadSize: 5 * 1024 * 1024, // 5MB for security
-  allowedOrigins: [
-    'https://quanforge.ai',
-    'https://www.quanforge.ai',
-    'http://localhost:3000',
-    'http://localhost:5173' // Vite dev server
-  ],
+  allowedOrigins: (() => {
+    const urlConfig = getUrlConfig();
+    return urlConfig.getAllowedOrigins();
+  })(),
   rateLimiting: {
     windowMs: 60000, // 1 minute
     maxRequests: 100,
