@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Robot } from '../types';
 import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
+import { createScopedLogger } from '../services/Logger';
 
 interface VirtualScrollListProps {
   robots: Robot[];
@@ -45,10 +46,11 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
        5000 // 5 second TTL for this filter result
      );
      
-     const duration = performance.now() - startTime;
-     if (duration > 16) { // More than one frame at 60fps
-       console.warn(`VirtualScrollList filter took ${duration.toFixed(2)}ms for ${robots.length} items`);
-     }
+const duration = performance.now() - startTime;
+      if (duration > 16) { // More than one frame at 60fps
+        const logger = createScopedLogger('VirtualScrollList');
+        logger.warn(`VirtualScrollList filter took ${duration.toFixed(2)}ms for ${robots.length} items`);
+      }
      
      return result;
    }, [robots, searchTerm, filterType]);

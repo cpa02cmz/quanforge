@@ -84,4 +84,25 @@ graph TD
 ### Known Issues & Solutions
 - **Browser Crypto**: Replace Node.js `crypto` with browser-compatible alternatives
 - **Vercel Schema**: Use minimal, schema-compliant `vercel.json` configuration
+- **API Route Schema**: API route config exports must avoid unsupported properties like `regions`
 - **Build Validation**: Always run build and typecheck before deployment
+
+### Critical Technical Debt (2025-12-20 Analysis)
+- **Build System**: Fixed TypeScript compilation and restored functionality  
+- **Type Safety**: 905 `any` type usages creating runtime risks (priority action)
+- **Maintainability**: Monolithic services limiting development velocity
+- **Code Quality**: Advanced optimizations implemented, build system restored
+
+### Performance Optimization Status (2025-12-21 Update)
+- **Vite Configuration**: Advanced 320-line config with 25+ chunk categories
+- **Bundle Splitting**: Granular component, service, and route-based optimization  
+- **Edge Performance**: Full Vercel Edge runtime optimization
+- **Build Compression**: Triple-pass terser optimization
+- **Schema Compliance**: Clean, deployment-ready configuration files
+- **PR Management**: Systematic resolution of deployment issues across multiple PRs
+
+### Code Quality Standards
+- **Type Safety**: Minimize `any` usage, implement strict TypeScript
+- **Modularity**: Service files should be <500 lines, well-decoupled
+- **Consistency**: Unified error handling, naming conventions, patterns
+- **Testing**: >80% test coverage for critical paths

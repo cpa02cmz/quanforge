@@ -1,5 +1,3 @@
-import { writeFileSync } from 'fs';
-
 interface SitemapEntry {
   url: string;
   lastmod?: string;
@@ -357,14 +355,21 @@ ${xmlEntries.join('\n')}
       .replace(/'/g, '&#39;');
   }
 
-  // Save sitemap to file
+  // Save sitemap to file (server-side only)
   saveToFile(): void {
+    if (typeof window !== 'undefined') {
+      throw new Error('saveToFile() is not available in browser environment. Use generateSitemap() instead.');
+    }
+    
     const sitemap = this.generateSitemap();
     
     try {
-      writeFileSync(this.options.outputPath, sitemap, 'utf8');
-      console.log(`✅ Sitemap generated successfully: ${this.options.outputPath}`);
-      console.log(`📊 Total URLs: ${this.entries.length}`);
+      // Dynamic import for server-side only
+      import('fs').then(fs => {
+        fs.writeFileSync(this.options.outputPath, sitemap, 'utf8');
+        console.log(`✅ Sitemap generated successfully: ${this.options.outputPath}`);
+        console.log(`📊 Total URLs: ${this.entries.length}`);
+      });
     } catch (error) {
       console.error('❌ Error saving sitemap:', error);
       throw error;

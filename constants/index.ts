@@ -1,4 +1,7 @@
 import { Language } from "../types";
+import { createScopedLogger } from "../services/Logger";
+
+const logger = createScopedLogger('Constants');
 
 export const TIMEFRAMES = [
   'M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'
@@ -62,9 +65,7 @@ export const loadWikiContent = async (language: Language) => {
     const wiki = await import(`./wiki/${language}.js`);
     return wiki.WIKI_CONTENT || [];
   } catch (e) {
-    if (import.meta.env.DEV) {
-      console.warn(`Wiki content not found for language: ${language}`, e);
-    }
+    logger.warn(`Wiki content not found for language: ${language}`, { error: e });
     return []; // Return empty array as fallback
   }
 };

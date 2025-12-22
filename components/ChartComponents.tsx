@@ -1,17 +1,81 @@
 import React, { memo, useState, useEffect } from 'react';
 
+// Recharts component types
+interface PieChartProps {
+  data?: Array<{ name: string; value: number }>;
+  children?: React.ReactNode;
+}
+
+interface PieProps {
+  data?: Array<{ name: string; value: number }>;
+  dataKey?: string;
+  nameKey?: string;
+  cx?: string | number;
+  cy?: string | number;
+  innerRadius?: number;
+  outerRadius?: number;
+  fill?: string;
+  children?: React.ReactNode;
+}
+
+interface CellProps {
+  fill?: string;
+  children?: React.ReactNode;
+}
+
+interface ResponsiveContainerProps {
+  width?: string | number;
+  height?: string | number;
+  children: React.ReactNode;
+}
+
+interface TooltipProps {
+  content?: React.ComponentType<any>;
+  children?: React.ReactNode;
+}
+
+interface AreaChartProps {
+  data?: Array<Record<string, any>>;
+  children?: React.ReactNode;
+}
+
+interface AreaProps {
+  type?: string;
+  dataKey?: string;
+  stroke?: string;
+  fill?: string;
+  fillOpacity?: number;
+  children?: React.ReactNode;
+}
+
+interface XAxisProps {
+  dataKey?: string;
+  tick?: React.ComponentType<any>;
+  children?: React.ReactNode;
+}
+
+interface YAxisProps {
+  tick?: React.ComponentType<any>;
+  children?: React.ReactNode;
+}
+
+interface CartesianGridProps {
+  strokeDasharray?: string;
+  children?: React.ReactNode;
+}
+
 // Dynamic import for Recharts to optimize bundle size
 interface RechartsComponents {
-  PieChart: any;
-  Pie: any;
-  Cell: any;
-  ResponsiveContainer: any;
-  Tooltip: any;
-  AreaChart: any;
-  Area: any;
-  XAxis: any;
-  YAxis: any;
-  CartesianGrid: any;
+  PieChart: React.ComponentType<PieChartProps>;
+  Pie: React.ComponentType<PieProps>;
+  Cell: React.ComponentType<CellProps>;
+  ResponsiveContainer: React.ComponentType<ResponsiveContainerProps>;
+  Tooltip: React.ComponentType<TooltipProps>;
+  AreaChart: React.ComponentType<AreaChartProps>;
+  Area: React.ComponentType<AreaProps>;
+  XAxis: React.ComponentType<XAxisProps>;
+  YAxis: React.ComponentType<YAxisProps>;
+  CartesianGrid: React.ComponentType<CartesianGridProps>;
 }
 
 interface ChartComponentsProps {
