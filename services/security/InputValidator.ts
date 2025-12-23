@@ -105,7 +105,7 @@ export class InputValidator {
 
   private validateMQL5Code(code: string): { isValid: boolean; errors: string[]; sanitizedCode: string } {
     const errors: string[] = [];
-    let sanitizedCode = code;
+    const sanitizedCode = code;
 
     // Check for dangerous functions
     const dangerousFunctions = [

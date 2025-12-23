@@ -304,7 +304,7 @@ class PerformanceMonitor {
     custom: Record<string, PerformanceMetric[]>;
   } {
     // Get navigation metrics from cache or create empty array
-    let navigationMetrics: PerformanceMetrics[] = [];
+    const navigationMetrics: PerformanceMetrics[] = [];
     
     return {
       webVitals: [...this.webVitals],

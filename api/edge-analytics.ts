@@ -691,6 +691,6 @@ setInterval(() => {
   });
   
   if (staleConnections.length > 0) {
-    
+    console.log(`Cleaned up ${staleConnections.length} stale connections`);
   }
 }, 10000); // Check every 10 seconds

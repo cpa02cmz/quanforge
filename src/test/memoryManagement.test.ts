@@ -2,19 +2,11 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 
 // Create a mock memoryMonitor for testing
-<<<<<<< HEAD
-const mockCaches: Map<string, any> = new Map();
-
-const memoryMonitor = {
-  reset: () => {
-    mockCaches.clear();
-=======
 const caches: any[] = [];
 
 const memoryMonitor = {
-reset: () => {
+  reset: () => {
     caches.length = 0;
->>>>>>> 27fb63ce7f83c0eb1993ebdc246ee8a92b72b23b
   },
   getMemoryReport: () => ({
     timestamp: Date.now(),
@@ -23,26 +15,11 @@ reset: () => {
       total: 100 * 1024 * 1024,
       limit: 2048 * 1024 * 1024
     },
-<<<<<<< HEAD
-    caches: Array.from(mockCaches.entries()).map(([name, cache]) => ({
-      name,
-      size: cache.size || cache.size?.() || 0,
-      maxSize: cache.maxSize,
-      hitRate: cache.hitRate || (cache.hits && cache.misses ? cache.hits / (cache.hits + cache.misses) : 0)
-    })),
-=======
     caches: [...caches],
->>>>>>> 27fb63ce7f83c0eb1993ebdc246ee8a92b72b23b
     recommendations: [],
     health: 'good'
   }),
   registerCache: (name: string, cache: any) => {
-<<<<<<< HEAD
-    mockCaches.set(name, { ...cache });
-  },
-  unregisterCache: (name: string) => {
-    mockCaches.delete(name);
-=======
     const cacheData: any = { name };
     
     // Handle functions by calling them for the value
@@ -71,44 +48,10 @@ reset: () => {
     if (index >= 0) {
       caches.splice(index, 1);
     }
->>>>>>> 27fb63ce7f83c0eb1993ebdc246ee8a92b72b23b
   },
   trackMemoryUsage: () => ({}),
   getRecommendations: () => [],
   trackGarbageCollection: () => {},
-<<<<<<< HEAD
-  getCacheMetrics: () => {
-    return Array.from(mockCaches.entries()).map(([name, cache]) => ({
-      name,
-      size: typeof cache.size === 'function' ? cache.size() : (cache.size || 0),
-      maxSize: cache.maxSize,
-      hitRate: cache.hitRate || (cache.hits && cache.misses ? cache.hits / (cache.hits + cache.misses) : 0)
-    }));
-  },
-  updateCacheMetrics: (name: string, metrics: any) => {
-    const cache = mockCaches.get(name);
-    if (cache) {
-      mockCaches.set(name, { ...cache, ...metrics });
-    }
-  },
-  forceCleanupAll: () => {
-    let cleanedItems = 0;
-    mockCaches.forEach((cache) => {
-      if (cache.clear) {
-        cache.clear();
-        cleanedItems++;
-      }
-    });
-    
-    // Dispatch cleanup event for tests that listen for it
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('memory-cleanup', {
-        detail: { action: 'cleanup-all', cleanedItems }
-      }));
-    }
-    
-    return { cleanedItems, freedMemory: 0 };
-=======
   getCacheMetrics: () => [...caches],
   updateCacheMetrics: (name: string, metrics: any) => {
     const cache = caches.find(c => c.name === name);
@@ -116,12 +59,11 @@ reset: () => {
       Object.assign(cache, metrics);
     }
   },
-forceCleanupAll: () => {
+  forceCleanupAll: () => {
     return {
       cleanedItems: 0,
       freedMemory: 0
     };
->>>>>>> 27fb63ce7f83c0eb1993ebdc246ee8a92b72b23b
   }
 };
 

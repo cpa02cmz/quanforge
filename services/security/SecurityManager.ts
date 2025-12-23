@@ -50,7 +50,7 @@ class SecurityManager {
   // ===== INPUT VALIDATION & SANITIZATION =====
   
   sanitizeAndValidate(data: any, type: 'robot' | 'strategy' | 'backtest' | 'user'): ValidationResult {
-    let result = this.inputValidator.sanitizeAndValidate(data, type);
+    const result = this.inputValidator.sanitizeAndValidate(data, type);
     
     // Apply additional threat detection
     const xssResult = this.threatDetector.preventXSS(result.sanitizedData);

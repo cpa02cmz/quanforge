@@ -82,7 +82,7 @@ export class InputValidationService {
    */
   sanitizeAndValidate(data: any, type: 'robot' | 'strategy' | 'backtest' | 'user'): ValidationResult {
     const errors: string[] = [];
-    let sanitizedData = data;
+    const sanitizedData = data;
     let riskScore = 0;
 
     try {

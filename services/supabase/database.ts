@@ -220,7 +220,7 @@ export const mockDB = {
           const robots = getStoredRobots();
           const dataArray = Array.isArray(data) ? data : [data];
           
-          let updatedRobots = [...robots];
+          const updatedRobots = [...robots];
           
           for (const item of dataArray) {
             const existingIndex = updatedRobots.findIndex(r => r.id === item.id);
