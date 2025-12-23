@@ -91,12 +91,14 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Health check failed:', error);
+    // Health check failed - error details will be returned in response
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     return NextResponse.json({
       status: 'unhealthy',
       timestamp: Date.now(),
       error: 'Internal server error',
+      details: errorMessage, // Include error details for debugging
       performance: {
         responseTime: performance.now() - startTime,
         cacheHit: false

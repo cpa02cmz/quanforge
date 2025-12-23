@@ -130,11 +130,13 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Edge metrics collection failed:', error);
+    // Edge metrics collection failed - error details returned in response
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     return NextResponse.json({
       success: false,
       error: 'Failed to collect edge metrics',
+      details: errorMessage, // Include error details for debugging
       timestamp: Date.now(),
       generationTime: performance.now() - startTime
     }, { 
@@ -190,7 +192,8 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Edge metrics action failed:', error);
+    // Edge metrics action failed - error details returned in response
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     return NextResponse.json({
       success: false,

@@ -94,11 +94,13 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Edge optimization failed:', error);
+    // Edge optimization failed - error details returned in response
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     return NextResponse.json({
       success: false,
       error: 'Internal server error',
+      details: errorMessage, // Include error details for debugging
       performance: {
         responseTime: performance.now() - startTime,
         cacheHit: false
@@ -288,11 +290,13 @@ export async function POST(request: NextRequest) {
     }, { status: 400 });
     
   } catch (error) {
-    console.error('Edge optimization POST failed:', error);
+    // Edge optimization POST failed - error details returned in response
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     return NextResponse.json({
       success: false,
-      error: 'Internal server error'
+      error: 'Internal server error',
+      details: errorMessage // Include error details for debugging
     }, { status: 500 });
   }
 }

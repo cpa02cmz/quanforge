@@ -199,13 +199,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('symbol_api_error', duration);
     
-    console.error('Symbol API GET error:', error);
+    // Symbol API GET error - error details returned in response
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to fetch symbol data',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        details: errorMessage, // Include error details for debugging
       },
       { 
         status: 500,
@@ -299,13 +300,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('symbol_api_subscribe_error', duration);
     
-    console.error('Symbol API POST error:', error);
+    // Symbol API POST error - error details returned in response
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to create subscription',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        details: errorMessage, // Include error details for debugging
       },
       { 
         status: 500,

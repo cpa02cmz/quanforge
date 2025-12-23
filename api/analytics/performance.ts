@@ -65,12 +65,14 @@ export async function GET(request: NextRequest) {
       }
     });
     
-  } catch (error) {
-    console.error('Analytics API failed:', error);
+} catch (error) {
+    // Error handling without console logging for production
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     return NextResponse.json({
       success: false,
       error: 'Internal server error',
+      details: errorMessage, // Include error details for debugging
       timestamp: Date.now()
     }, { status: 500 });
   }
@@ -137,7 +139,7 @@ async function getAnalyticsSummary(region: string, timeRange: string) {
   };
 }
 
-async function getPerformanceAnalytics(region: string, timeRange: string) {
+async function getPerformanceAnalytics(_region: string, _timeRange: string) {
   const dbReport = databasePerformanceMonitor.getPerformanceReport();
   const edgeMetrics = vercelEdgeOptimizer.getEdgeMetrics();
   
@@ -186,7 +188,7 @@ async function getDatabaseAnalytics(region: string, timeRange: string) {
   };
 }
 
-async function getCacheAnalytics(region: string, timeRange: string) {
+async function getCacheAnalytics(_region: string, _timeRange: string) {
   const stats = edgeCacheStrategy.getStats();
   const tagIndex = edgeCacheStrategy.getTagIndex();
   
@@ -211,7 +213,7 @@ async function getCacheAnalytics(region: string, timeRange: string) {
   };
 }
 
-async function getEdgeAnalytics(region: string, timeRange: string) {
+async function getEdgeAnalytics(_region: string, _timeRange: string) {
   const metrics = vercelEdgeOptimizer.getEdgeMetrics();
   const config = vercelEdgeOptimizer.getConfig();
   
