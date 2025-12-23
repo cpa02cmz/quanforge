@@ -761,7 +761,7 @@ if (result.data && !result.error) {
 
       // Rate limiting check (if user ID available)
       if (robot.user_id) {
-        const rateLimit = securityManager.checkRateLimit(robot.user_id);
+        const rateLimit = securityManager.checkEdgeRateLimit(robot.user_id, 'unknown');
         if (!rateLimit.allowed) {
           const duration = performance.now() - startTime;
           performanceMonitor.record('saveRobot', duration);
