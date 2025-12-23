@@ -1,5 +1,11 @@
+import { useContext } from 'react';
+import { ToastContext } from '../components/Toast';
 import { ToastContextType } from '../types/toast';
-import { useToast as useToastHook } from '../components/Toast';
 
-// Re-export the useToast hook from the Toast component for backward compatibility
-export const useToast = (): ToastContextType => useToastHook();
+export const useToast = (): ToastContextType => {
+  const context = useContext(ToastContext);
+  if (!context) {
+    throw new Error('useToast must be used within a ToastProvider');
+  }
+  return context;
+};

@@ -6,7 +6,7 @@ interface CodeEditorProps {
   code: string;
   readOnly?: boolean;
   filename?: string;
-  onChange?: (_newCode: string) => void;
+  onChange?: (newCode: string) => void;
   onRefine?: () => void;
   onExplain?: () => void; // New Prop
 }

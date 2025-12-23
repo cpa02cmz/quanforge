@@ -7,8 +7,8 @@ import { performanceManager } from '../../utils/performanceConsolidated';
 import { edgeCacheStrategy } from '../../services/edgeCacheStrategy';
 import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
 
-// Type definitions
-interface DatabaseMetrics {
+// Type definitions (exported for potential external use)
+export interface DatabaseMetrics {
   queryTime: number;
   cacheHitRate: number;
   connectionPoolUtilization: number;
@@ -18,7 +18,7 @@ interface DatabaseMetrics {
   throughput: number;
 }
 
-interface PerformanceAlert {
+export interface PerformanceAlert {
   type: 'slow_query' | 'high_error_rate' | 'connection_exhaustion' | 'cache_miss';
   severity: 'low' | 'medium' | 'high' | 'critical';
   message: string;
@@ -26,7 +26,7 @@ interface PerformanceAlert {
   metadata: Record<string, unknown>;
 }
 
-interface CacheStats {
+export interface CacheStats {
   hitRate: number;
   entries: number;
   size: number;
@@ -34,7 +34,7 @@ interface CacheStats {
   misses: number;
 }
 
-interface EdgeMetrics {
+export interface EdgeMetrics {
   region: string;
   responseTime: number;
   cacheHitRate: number;
@@ -42,7 +42,7 @@ interface EdgeMetrics {
   bandwidthSaved: number;
 }
 
-interface ConnectionStats {
+export interface ConnectionStats {
   totalConnections: number;
   activeConnections: number;
   idleConnections: number;
@@ -51,7 +51,7 @@ interface ConnectionStats {
   waitingRequests: number;
 }
 
-interface AlertTrend {
+export interface AlertTrend {
   timestamp: number;
   count: number;
 }
@@ -121,7 +121,7 @@ export default async function handler(req: Request) {
         'X-Edge-Region': region
       }
     });
-  } catch (error) {
+  } catch (_error) {
     
     
     return new Response(JSON.stringify({
@@ -421,7 +421,7 @@ function getOverallStatus(dbMetrics: any, cacheStats: any, alerts: any[]): strin
   return 'healthy';
 }
 
-function calculateTrend(_currentValue: number): { direction: 'up' | 'down' | 'stable'; percentage: number } {
+function calculateTrend(__currentValue: number): { direction: 'up' | 'down' | 'stable'; percentage: number } {
   // This would typically compare with historical data
   // For now, return a simulated trend
   const change = (Math.random() - 0.5) * 0.2; // -10% to +10%
@@ -541,19 +541,19 @@ function calculateAlertTrends(alerts: any[]): any[] {
   }));
 }
 
-function calculateResolutionTrends(alerts: any[]): any[] {
+function calculateResolutionTrends(_alerts: any[]): any[] {
   // This would track alert resolution times
   // For now, return empty array
   return [];
 }
 
-function generateTrendData(timePoints: number[], min: number, max: number): number[] {
-  return timePoints.map(() => {
+function generateTrendData(_timePoints: number[], min: number, max: number): number[] {
+  return _timePoints.map(() => {
     return Math.round((Math.random() * (max - min) + min) * 100) / 100;
   });
 }
 
-function generateTrendInsights(timePoints: number[]): string[] {
+function generateTrendInsights(_timePoints: number[]): string[] {
   return [
     'Query times show improvement during off-peak hours',
     'Cache hit rates correlate with traffic patterns',

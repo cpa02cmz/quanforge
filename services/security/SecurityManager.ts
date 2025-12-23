@@ -202,9 +202,7 @@ class SecurityManager {
 
   setupEdgeWAF(): void {
     // Initialize WAF patterns and monitoring
-    if (typeof window !== 'undefined') {
-      console.log('Edge WAF initialized');
-    }
+    // Edge WAF initialized silently
   }
 
   // ===== ORIGIN VALIDATION =====

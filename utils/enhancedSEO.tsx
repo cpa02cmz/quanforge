@@ -724,10 +724,7 @@ export const EnhancedSEOAnalytics: React.FC<SEOAnalyticsProps> = ({
       });
     }
 
-    // Log for debugging (remove in production)
-    if (process.env['NODE_ENV'] === 'development') {
-      console.log('Analytics Event:', eventName, data);
-    }
+    // Analytics event tracked
   };
 
   return null; // This component doesn't render anything

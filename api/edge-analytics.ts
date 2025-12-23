@@ -195,7 +195,7 @@ export default async function handler(req: Request): Promise<Response> {
             'Content-Type': 'application/json',
           }
         });
-      } catch (error) {
+      } catch (_error) {
         
         return new Response(JSON.stringify({
           success: false,
@@ -232,7 +232,7 @@ export default async function handler(req: Request): Promise<Response> {
             'Content-Type': 'application/json',
           }
         });
-      } catch (error) {
+      } catch (_error) {
         
         return new Response(JSON.stringify({
           success: false,
@@ -325,7 +325,7 @@ export default async function handler(req: Request): Promise<Response> {
             'Access-Control-Allow-Headers': 'Cache-Control',
           }
         });
-      } catch (error) {
+      } catch (_error) {
         
         return new Response(JSON.stringify({
           success: false,
@@ -364,7 +364,7 @@ export default async function handler(req: Request): Promise<Response> {
             'Content-Type': 'application/json',
           }
         });
-      } catch (error) {
+      } catch (_error) {
         
         return new Response(JSON.stringify({
           success: false,
@@ -404,7 +404,7 @@ export default async function handler(req: Request): Promise<Response> {
             'Content-Type': 'application/json',
           }
         });
-      } catch (error) {
+      } catch (_error) {
         
         return new Response(JSON.stringify({
           success: false,
@@ -430,9 +430,9 @@ export default async function handler(req: Request): Promise<Response> {
       }
     });
 
-  } catch (error) {
-    
-    return new Response(JSON.stringify({
+} catch (_error) {
+        
+        return new Response(JSON.stringify({
       success: false,
       error: 'Internal Server Error',
       message: 'An error occurred while processing your request'
@@ -485,7 +485,7 @@ function broadcastToStreams(message: any): void {
       if (now - connection.lastPing > 30000) { // 30 seconds timeout
         try {
           connection.controller.close();
-        } catch (e) {
+        } catch (_e) {
           // Ignore close errors
         }
         streamingConnections.delete(clientId);
@@ -494,7 +494,7 @@ function broadcastToStreams(message: any): void {
 
       // Send message
       connection.controller.enqueue(`data: ${JSON.stringify(message)}\n\n`);
-    } catch (error) {
+    } catch (_error) {
       
       streamingConnections.delete(clientId);
     }
@@ -682,7 +682,7 @@ setInterval(() => {
     if (connection) {
       try {
         connection.controller.close();
-      } catch (e) {
+      } catch (_e) {
         // Ignore close errors
       }
       streamingConnections.delete(clientId);
@@ -690,6 +690,6 @@ setInterval(() => {
   });
   
   if (staleConnections.length > 0) {
-    
+    // TODO: Implement stale connection cleanup
   }
 }, 10000); // Check every 10 seconds

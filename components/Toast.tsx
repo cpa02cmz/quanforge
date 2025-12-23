@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useState, useCallback } from 'react';
 import { getDefaultDuration } from '../constants/toast';
 
 export type ToastType = 'success' | 'error' | 'info';
@@ -12,29 +12,23 @@ interface Toast {
 
 interface ToastContextType {
   toasts: Toast[];
-  showToast: (message: string, type?: ToastType, duration?: number) => void;
-  hideToast: (id: string) => void;
+  showToast: (_message: string, _type?: ToastType, _duration?: number) => void;
+  hideToast: (_id: string) => void;
 }
 
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
+export const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-export const useToast = () => {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToast must be used within a ToastProvider');
-  }
-  return context;
-};
+// useToast hook is now exported from hooks/useToast.ts for better separation of concerns
 
 
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = useCallback((message: string, type: ToastType = 'info', duration?: number) => {
+  const showToast = useCallback((_message: string, _type: ToastType = 'info', _duration?: number) => {
     const id = Date.now().toString();
-    const toastDuration = duration || getDefaultDuration(type);
-    setToasts((prev) => [...prev, { id, message, type, duration: toastDuration }]);
+    const toastDuration = _duration || getDefaultDuration(_type);
+    setToasts((prev) => [...prev, { id, message: _message, type: _type, duration: toastDuration }]);
 
     // Auto dismiss
     setTimeout(() => {
@@ -42,8 +36,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, toastDuration);
   }, []);
 
-  const hideToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+  const hideToast = useCallback((_id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== _id));
   }, []);
 
   return (

@@ -93,11 +93,11 @@ class RealTimeMonitoring {
       // Set up periodic reporting
       this.setupPeriodicReporting();
       
-      this.isInitialized = true;
-      console.log('[RealTimeMonitoring] Performance monitoring initialized');
-    } catch (error) {
-      handleError(error as Error, 'initialize', 'RealTimeMonitoring');
-    }
+this.isInitialized = true;
+      // Performance monitoring initialized
+     } catch (error) {
+       handleError(error as Error, 'initialize', 'RealTimeMonitoring');
+     }
   }
 
   /**

@@ -98,16 +98,16 @@ class DisasterRecoveryService {
   private async initializeRecoveryService(): Promise<void> {
     try {
       // Load recovery history
-      await this.loadRecoveryHistory();
-      
-      // Set up monitoring for disaster scenarios
-      this.setupDisasterMonitoring();
-      
-      console.log('Disaster Recovery Service initialized successfully');
-    } catch (error) {
-      handleError(error as Error, 'initializeRecoveryService', 'DisasterRecoveryService');
-      throw error;
-    }
+await this.loadRecoveryHistory();
+       
+       // Set up monitoring for disaster scenarios
+       this.setupDisasterMonitoring();
+       
+       // Disaster Recovery Service initialized
+     } catch (error) {
+       handleError(error as Error, 'initializeRecoveryService', 'DisasterRecoveryService');
+       throw error;
+     }
   }
 
   /**
@@ -117,12 +117,12 @@ class DisasterRecoveryService {
     // Monitor for database connection failures
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () => {
-        console.log('Connection restored - checking data integrity');
+        // Connection restored - checking data integrity
         this.checkDataIntegrity();
       });
 
       window.addEventListener('offline', () => {
-        console.warn('Connection lost - prepare for potential recovery scenario');
+        // Connection lost - prepare for potential recovery scenario
       });
     }
   }
@@ -153,7 +153,7 @@ class DisasterRecoveryService {
       const recoveryPlan = await this.createRecoveryPlan(targetBackupId, options);
       this.activeRecoveryPlan = recoveryPlan;
 
-      console.log(`Starting disaster recovery from backup: ${targetBackupId}`);
+      // Starting disaster recovery from backup
 
       // Execute recovery steps
       const result = await this.executeRecoveryPlan(recoveryPlan, options);
@@ -162,12 +162,12 @@ class DisasterRecoveryService {
       this.recoveryHistory.push(recoveryPlan);
       await this.saveRecoveryHistory();
 
-      console.log(`Disaster recovery ${result.success ? 'completed' : 'failed'}: ${result.planId}`);
+      // Disaster recovery completed
 
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown recovery error';
-      console.error('Disaster recovery failed:', errorMessage);
+      // Disaster recovery failed
       
       // Attempt rollback if configured
       if (options.rollbackOnError && this.activeRecoveryPlan) {
@@ -218,7 +218,7 @@ class DisasterRecoveryService {
       const validation = await this.validateBackup(bestBackup);
       
       if (!validation.valid) {
-        console.warn(`Best backup ${bestBackup.id} failed validation: ${validation.reason}`);
+        // Best backup failed validation, trying alternatives
         // Try next backup
         for (let i = 1; i < sortedBackups.length; i++) {
           const nextBackup = sortedBackups[i];
@@ -232,7 +232,6 @@ class DisasterRecoveryService {
 
       return bestBackup.id;
     } catch (error) {
-      console.error('Failed to select backup:', error);
       return null;
     }
   }
@@ -525,7 +524,7 @@ class DisasterRecoveryService {
         
         try {
           step.status = 'in_progress';
-          console.log(`Executing recovery step: ${step.name}`);
+          // Executing recovery step
 
           const stepResult = await this.executeRecoveryStep(step, plan.backupId, options);
           

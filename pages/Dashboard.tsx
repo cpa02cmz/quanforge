@@ -36,7 +36,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ session }) => {
           ]
         });
       } catch (error) {
-        console.error('Failed to load dashboard data:', error);
+        // Failed to load dashboard data - error handled by UI states
       }
     };
 

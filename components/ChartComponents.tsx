@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useMemo } from 'react';
+import React, { memo, useState, useEffect, useMemo } from 'react';
 
 // Chart data interfaces
 interface ChartDataPoint {
@@ -26,10 +26,11 @@ interface ChartComponentsProps {
   riskData?: ChartDataPoint[];
   analysis?: StrategyAnalysisData;
   totalReturn?: number;
-  t?: (key: string, params?: Record<string, string>) => string;
+  t?: (_key: string, _params?: Record<string, string>) => string;
 }
 
 // Dynamic import for Recharts to optimize bundle size
+// Note: Using any for compatibility with complex Recharts component types
 interface RechartsComponents {
   PieChart: React.ComponentType<any>;
   Pie: React.ComponentType<any>;
@@ -197,5 +198,4 @@ export const ChartComponents = memo<ChartComponentsProps>(({
 
 ChartComponents.displayName = 'ChartComponents';
 
-// Helper function to dynamically load chart components
-export const loadChartComponents = () => import('./ChartComponents');
+// Helper function to dynamically load chart components is now in utils/chartLoader.ts

@@ -309,14 +309,9 @@ class PerformanceMonitor {
     this.metrics.clear();
   }
 
-  // Log performance metrics periodically
+// Log performance metrics periodically
   logMetrics() {
-    const allMetrics = this.getAllMetrics();
-    console.group('Database Performance Metrics');
-    for (const [operation, metric] of Object.entries(allMetrics)) {
-      console.log(`${operation}: ${metric.count} calls, avg: ${metric.avgTime.toFixed(2)}ms`);
-    }
-    console.groupEnd();
+    // Performance metrics are available via getAllMetrics() for debugging
   }
 }
 
@@ -486,12 +481,12 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
            const duration = performance.now() - startTime;
            performanceMonitor.record('getRobots', duration);
            
-           // Log slow operations only in development
-           if (import.meta.env.DEV && duration > 500) {
-             console.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
-           }
-           
-           return result;
+// Log slow operations only in development
+            if (duration > 500) {
+              // Slow operation detected - performance metrics recorded
+            }
+            
+            return result;
           }, 'getRobots');
         });
      } catch (error) {
@@ -678,8 +673,8 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
             performanceMonitor.record('getRobotsPaginated_supabase', duration);
             
             // Log slow queries in development
-            if (import.meta.env.DEV && duration > 1000) {
-              console.warn(`Slow getRobotsPaginated query: ${duration.toFixed(2)}ms for ${result.count} results`);
+            if (duration > 1000) {
+              // Slow query detected - performance metrics recorded
             }
             
             return response;

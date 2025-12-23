@@ -462,10 +462,7 @@ class PerformanceOptimizer {
       const memoryUsage = this.getCurrentMemoryUsage();
       
       if (memoryUsage > this.config.memoryThreshold) {
-        if (import.meta.env.DEV) {
-          console.log(`🔄 Triggering automatic memory optimization: ${memoryUsage}MB > ${this.config.memoryThreshold}MB`);
-        }
-        
+        // Memory optimization triggered
         try {
           await this.optimizeMemory();
         } catch (error) {
@@ -486,9 +483,7 @@ class PerformanceOptimizer {
     const profile = this.profiles.get(profileName);
     if (profile) {
       this.config = { ...profile.config };
-      if (import.meta.env.DEV) {
-        console.log(`✅ Switched to performance profile: ${profile.name}`);
-      }
+      // Performance profile switched
     } else {
       throw new Error(`Performance profile '${profileName}' not found`);
     }

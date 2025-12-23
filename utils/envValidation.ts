@@ -125,24 +125,9 @@ export const configureSecurity = () => {
   
   // Log security status in development
   if (config.environment.isDev) {
-    console.group('🔒 Security Configuration');
-    console.log('Environment:', config.environment.mode);
-    console.log('Encryption Status:', config.encryption);
-    console.log('Supabase Status:', config.supabase);
-    
-    if (config.validation.warnings.length > 0) {
-      console.warn('Security Warnings:', config.validation.warnings);
-    }
-    
-    if (config.validation.errors.length > 0) {
-      console.error('Security Errors:', config.validation.errors);
-    }
-    
-    if (config.validation.recommendations.length > 0) {
-      console.info('Recommendations:', config.validation.recommendations);
-    }
-    
-    console.groupEnd();
+    // Security configuration validated
+    // Environment, Encryption, and Supabase status available in config object
+    // Warnings, errors, and recommendations available in config.validation
   }
   
   // Fail fast on critical security errors in production

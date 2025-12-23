@@ -1,11 +1,11 @@
 import React, { useState, useEffect, memo, useCallback } from 'react';
 import DOMPurify from 'dompurify';
 import { StrategyParams } from '../types';
-import { useToast } from './Toast';
+import { useToast } from '../hooks/useToast';
 
 interface StrategyConfigProps {
   params: StrategyParams;
-  onChange: (params: StrategyParams) => void;
+  onChange: (_params: StrategyParams) => void;
   onApply?: () => void;
   isApplying?: boolean;
   onReset?: () => void;
@@ -220,7 +220,7 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({
                   showToast('Parameters imported successfully', 'success');
                   setShowManualImport(false);
                   setManualImportText('');
-                } catch (error) {
+                } catch (_error) {
                   showToast('Invalid JSON format', 'error');
                 }
               }}

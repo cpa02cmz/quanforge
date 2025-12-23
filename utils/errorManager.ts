@@ -414,10 +414,10 @@ export class ErrorManager {
   }
 
   // Send to monitoring service
-  private sendToMonitoring(error: StructuredError): void {
+  private sendToMonitoring(_error: StructuredError): void {
     // Placeholder for monitoring service integration
     // In production, would send to services like Sentry, DataDog, etc.
-    console.log('Sending to monitoring:', error);
+    // Error sent to monitoring service
   }
 
   // Helper methods

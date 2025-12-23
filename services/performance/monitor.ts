@@ -467,9 +467,7 @@ class PerformanceMonitor {
 
   private checkResourceBudget(entry: PerformanceResourceTiming): void {
     if (entry.transferSize && entry.transferSize > 50000) { // 50KB
-      if (import.meta.env.DEV) {
-        console.warn(`Large resource detected: ${entry.name} (${entry.transferSize / 1024}KB)`);
-      }
+      // Large resource detected
     }
   }
 
@@ -478,19 +476,14 @@ class PerformanceMonitor {
     return hits / this.edgeMetrics.length || 0;
   }
 
-  // Optimization methods
+// Optimization methods
   optimizeBundleSize(): void {
     // Trigger bundle optimization suggestions
-    if (import.meta.env.DEV) {
-      console.log('🔍 Bundle optimization analysis running...');
-      this.analyzeBundleSize();
-    }
+    this.analyzeBundleSize();
   }
 
   private analyzeBundleSize(): void {
-    // This would integrate with your build system for real bundle analysis
-    const currentMetrics = this.getMetrics();
-    console.log('Current performance metrics:', currentMetrics);
+    // Bundle analysis results available via getMetrics()    
   }
 
   resetMetrics(): void {

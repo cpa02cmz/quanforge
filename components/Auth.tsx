@@ -1,7 +1,7 @@
 
 import React, { useState, memo } from 'react';
 import { supabase } from '../services/supabase';
-import { useToast } from './Toast';
+import { useToast } from '../hooks/useToast';
 import { useTranslation } from '../services/i18n';
 
 export const Auth: React.FC = memo(() => {

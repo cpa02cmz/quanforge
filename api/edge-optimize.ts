@@ -71,7 +71,7 @@ export default async function handler(req: Request) {
           'X-Response-Time': `${Date.now() - startTime}ms`,
         });
       }
-    } catch (error) {
+    } catch (_error) {
       // If in-progress request fails, continue with normal processing
       requestCache.delete(cacheKey);
     }
@@ -114,7 +114,7 @@ export default async function handler(req: Request) {
         });
         
         // Cache the response in Vercel Edge
-        const cache = caches.default;
+        const cache = await caches.open('edge-cache');
         const cacheKey = new Request(req.url, req);
         await cache.put(cacheKey, response.clone());
         
@@ -154,7 +154,7 @@ export default async function handler(req: Request) {
       headers 
     });
 
-  } catch (error) {
+  } catch (_error) {
     // Keep console.error for edge function debugging (acceptable in edge functions)
     return new Response(JSON.stringify({
       error: 'Internal Server Error',
@@ -196,7 +196,7 @@ function createCacheKey(req: Request, url: URL): string {
  */
 function checkRateLimit(clientIP: string): boolean {
   const now = Date.now();
-  const windowStart = now - CACHE_CONFIG.RATE_LIMIT_WINDOW;
+  const _windowStart = now - CACHE_CONFIG.RATE_LIMIT_WINDOW;
   
   // Clean up expired entries
   for (const [ip, data] of rateLimitCache.entries()) {
@@ -261,8 +261,8 @@ async function refreshInBackground(cacheKey: string, req: Request): Promise<void
       if (response.ok) {
         storeInResponseCache(cacheKey, response, CACHE_CONFIG.DEFAULT_TTL);
       }
-    } catch (error) {
-      
+    } catch (_error) {
+      // TODO: Handle fetch error appropriately
     }
   }, 0);
 }
@@ -374,11 +374,11 @@ async function processRequest(req: Request): Promise<Response> {
       
       // Cache the response in Vercel Edge
       try {
-        const cache = caches.default;
+        const cache = await caches.open('edge-cache');
         const cacheKey = new Request(req.url, req);
         await cache.put(cacheKey, response.clone());
-      } catch (cacheError) {
-        
+      } catch (_cacheError) {
+        // TODO: Handle cache error appropriately
       }
       
       return response;
@@ -447,7 +447,7 @@ async function processRequest(req: Request): Promise<Response> {
       headers 
     });
 
-  } catch (error) {
+  } catch (_error) {
     return new Response(JSON.stringify({
       error: 'Internal Server Error',
       message: 'An error occurred while processing your request',

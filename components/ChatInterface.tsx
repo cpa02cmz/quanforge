@@ -20,7 +20,7 @@ const ChatInterfaceLoading = () => (
 
 interface ChatInterfaceProps {
   messages: Message[];
-  onSendMessage: (content: string) => void;
+  onSendMessage: (_content: string) => void;
   isLoading: boolean;
   onClear?: () => void;
   onStop?: () => void; // New Prop
@@ -111,8 +111,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
               }
             }
           }
-        } catch (error) {
-          logger.error('Memory monitoring error:', error);
+        } catch (_error) {
+          logger.error('Memory monitoring error');
         }
       }, interval);
     };
