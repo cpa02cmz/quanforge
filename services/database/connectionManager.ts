@@ -418,6 +418,7 @@ class ConnectionManager {
 // Export singleton instance
 export const connectionManager = ConnectionManager.getInstance();
 
-// Export legacy compatibility functions
+// Export interface and legacy compatibility functions
+export type { ConnectionManagerInterface };
 export const edgeConnectionPool = connectionManager;
 export default connectionManager;

@@ -1,5 +1,6 @@
 import { createScopedLogger } from '../utils/logger';
 import { securityManager } from './securityManager';
+import { CACHE_SIZING_CONFIG, TIME_CONSTANTS } from '../constants/config';
 
 const logger = createScopedLogger('OptimizedCache');
 
@@ -58,13 +59,13 @@ export class OptimizedCache {
   private samplingRate = 0.1; // Sample 10% of operations for metrics
 
   constructor(name: string, options: { maxSize?: number; defaultTTL?: number } = {}) {
-    this.maxSize = options.maxSize || 10 * 1024 * 1024; // 10MB default
-    this.defaultTTL = options.defaultTTL || 300000; // 5 minutes default
+    this.maxSize = options.maxSize || CACHE_SIZING_CONFIG.DEFAULT_CACHE.MAX_SIZE;
+    this.defaultTTL = options.defaultTTL || CACHE_SIZING_CONFIG.DEFAULT_CACHE.DEFAULT_TTL;
 
     // Cleanup expired entries every 5 minutes
     this.cleanupInterval = setInterval(() => {
       this.cleanup();
-    }, 300000);
+    }, TIME_CONSTANTS.CACHE_DEFAULT_TTL);
   }
 
   /**
@@ -369,9 +370,18 @@ class CacheFactory {
 }
 
 // Export singleton instances for common use cases
-export const robotCache = CacheFactory.getInstance('robots', { maxSize: 50 * 1024 * 1024, defaultTTL: 600000 });
-export const marketDataCache = CacheFactory.getInstance('marketData', { maxSize: 20 * 1024 * 1024, defaultTTL: 30000 });
-export const analysisCache = CacheFactory.getInstance('analysis', { maxSize: 30 * 1024 * 1024, defaultTTL: 900000 });
+export const robotCache = CacheFactory.getInstance('robots', { 
+  maxSize: CACHE_SIZING_CONFIG.ROBOT_CACHE.MAX_SIZE, 
+  defaultTTL: CACHE_SIZING_CONFIG.ROBOT_CACHE.DEFAULT_TTL 
+});
+export const marketDataCache = CacheFactory.getInstance('marketData', { 
+  maxSize: CACHE_SIZING_CONFIG.MARKET_DATA_CACHE.MAX_SIZE, 
+  defaultTTL: CACHE_SIZING_CONFIG.MARKET_DATA_CACHE.DEFAULT_TTL 
+});
+export const analysisCache = CacheFactory.getInstance('analysis', { 
+  maxSize: CACHE_SIZING_CONFIG.ANALYSIS_CACHE.MAX_SIZE, 
+  defaultTTL: CACHE_SIZING_CONFIG.ANALYSIS_CACHE.DEFAULT_TTL 
+});
 
 export { CacheFactory };
 export default OptimizedCache;

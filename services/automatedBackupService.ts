@@ -375,7 +375,8 @@ class AutomatedBackupService {
    */
   private async getSupabaseBackupData(type: 'full' | 'incremental' | 'differential', parentBackupId?: string): Promise<any> {
     if (type === 'full') {
-      const { data, error } = await (await supabase.from('robots')).select('*');
+      const supabaseClient = await supabase;
+      const { data, error } = await supabaseClient.from('robots').select('*');
         
       if (error) throw error;
       
@@ -393,7 +394,8 @@ class AutomatedBackupService {
       const lastBackup = this.getLastBackupByType(parentBackupId || '');
       const cutoffTime = lastBackup ? new Date(lastBackup.timestamp).toISOString() : new Date(0).toISOString();
       
-      const { data, error } = await (await supabase.from('robots')).select('*');
+      const supabaseClient = await supabase;
+      const { data, error } = await supabaseClient.from('robots').select('*');
       if (error) throw error;
       
       // Manually filter by updated_at and order (since gte/order aren't available)
@@ -925,7 +927,8 @@ if (fullBackups.length > 0) {
         return { success: true };
       } else {
         // Restore to Supabase
-        const { error } = await (await supabase.from('robots')).upsert(robots);
+        const supabaseClient = await supabase;
+        const { error } = await supabaseClient.from('robots').upsert(robots);
           
         if (error) {
           return { success: false, error: error.message };

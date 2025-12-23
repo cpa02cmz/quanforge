@@ -161,31 +161,64 @@ export default defineConfig({
                 }
                 return 'ai-generation';
               }
-              // AI vendor SDKs - split by provider
+              // AI vendor SDKs - split by provider with enhanced granularity for Google AI
               if (id.includes('google') || id.includes('gemini')) {
                 if (id.includes('vertex') || id.includes('cloud')) {
                   return 'ai-google-cloud';
                 }
-                // Google AI core SDK components
+                // Google AI core SDK components - split more aggressively
                 if (id.includes('generators') || id.includes('generateText') || id.includes('generateContent')) {
+                  // Split text generation from other generation types
+                  if (id.includes('text') || id.includes('Text')) {
+                    return 'ai-google-text-generators';
+                  }
+                  if (id.includes('chat') || id.includes('Chat')) {
+                    return 'ai-google-chat-generators';
+                  }
                   return 'ai-google-generators';
                 }
-                // Google AI models and configuration
+                // Google AI models and configuration - split by model type
                 if (id.includes('models') || id.includes('Model') || id.includes('config')) {
+                  if (id.includes('gemini') || id.includes('Gemini')) {
+                    return 'ai-google-gemini-models';
+                  }
+                  if (id.includes('embedding') || id.includes('Embed')) {
+                    return 'ai-google-embedding-models';
+                  }
                   return 'ai-google-models';
                 }
-                // Google AI transport and networking
+                // Google AI transport, networking and API clients
                 if (id.includes('transport') || id.includes('http') || id.includes('request')) {
+                  if (id.includes('client') || id.includes('Client')) {
+                    return 'ai-google-client';
+                  }
                   return 'ai-google-transport';
+                }
+                // Google AI streaming and real-time responses
+                if (id.includes('stream') || id.includes('Stream') || id.includes('realtime')) {
+                  return 'ai-google-streaming';
                 }
                 // Google AI authentication and credentials
                 if (id.includes('auth') || id.includes('credentials') || id.includes('google-auth')) {
                   return 'ai-google-auth';
                 }
-                // Google AI error handling
+                // Google AI error handling and validation
                 if (id.includes('error') || id.includes('errors') || id.includes('exception')) {
                   return 'ai-google-errors';
                 }
+                // Google AI content processing and parsing
+                if (id.includes('content') || id.includes('Content') || id.includes('parse')) {
+                  return 'ai-google-content';
+                }
+                // Google AI tokenization and text processing
+                if (id.includes('token') || id.includes('Token') || id.includes('text')) {
+                  return 'ai-google-text-processing';
+                }
+                // Google AI utility functions and helpers
+                if (id.includes('util') || id.includes('helper') || id.includes('common')) {
+                  return 'ai-google-utils';
+                }
+                // Default Google AI chunk - should be much smaller now
                 return 'ai-google-gemini';
               }
               if (id.includes('openai') || id.includes('gpt') || id.includes('chatgpt')) {
@@ -375,6 +408,30 @@ export default defineConfig({
             // Browser and DOM utilities
             if (id.includes('dom') || id.includes('browser') || id.includes('window')) {
               return 'vendor-browser';
+            }
+            // Event handling and promises
+            if (id.includes('event') || id.includes('promise') || id.includes('async')) {
+              return 'vendor-events';
+            }
+            // Date and time utilities
+            if (id.includes('date') || id.includes('time') || id.includes('moment') || id.includes('dayjs')) {
+              return 'vendor-datetime';
+            }
+            // String manipulation utilities
+            if (id.includes('string') || id.includes('str') || id.includes('text') || id.includes('regex')) {
+              return 'vendor-strings';
+            }
+            // HTTP and networking utilities
+            if (id.includes('http') || id.includes('fetch') || id.includes('axios') || id.includes('xhr')) {
+              return 'vendor-http';
+            }
+            // File system and blob utilities
+            if (id.includes('file') || id.includes('blob') || id.includes('stream') || id.includes('buffer')) {
+              return 'vendor-files';
+            }
+            // Validation and schema utilities
+            if (id.includes('validate') || id.includes('schema') || id.includes('yup') || id.includes('zod')) {
+              return 'vendor-validation';
             }
             // Default miscellaneous vendor - much smaller now
             return 'vendor-misc';

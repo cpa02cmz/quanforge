@@ -121,7 +121,7 @@ class BackupVerificationSystem {
       // Set up performance monitoring
       this.setupPerformanceMonitoring();
       
-      console.log('Backup Verification System initialized successfully');
+      // Backup verification system initialized - logging removed for production
     } catch (error) {
       handleError(error as Error, 'initializeVerificationSystem', 'BackupVerificationSystem');
       throw error;
@@ -144,7 +144,7 @@ class BackupVerificationSystem {
       }
     }, VERIFICATION_CONFIG.scheduleInterval);
 
-    console.log(`Verification scheduler started with ${VERIFICATION_CONFIG.scheduleInterval / (60 * 60 * 1000)} hour interval`);
+    // Verification scheduler started - logging removed for production
   }
 
   /**
@@ -152,7 +152,7 @@ class BackupVerificationSystem {
    */
   private async performScheduledVerification(): Promise<VerificationReport | null> {
     if (this.isVerificationRunning) {
-      console.log('Verification already in progress, skipping scheduled verification');
+      // Verification already in progress - logging removed for production
       return null;
     }
 
@@ -163,7 +163,7 @@ class BackupVerificationSystem {
       const backupsToVerify = await this.getBackupsRequiringVerification();
       
       if (backupsToVerify.length === 0) {
-        console.log('No backups requiring verification');
+        // No backups requiring verification - logging removed for production
         return null;
       }
 
@@ -177,7 +177,8 @@ class BackupVerificationSystem {
       return verificationReport;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Verification failed';
-      console.error('Scheduled verification failed:', errorMessage);
+      // Error logging replaced with proper error handling
+      handleError(new Error(`Scheduled verification failed: ${errorMessage}`), 'scheduleVerification', 'backupVerificationSystem');
       
       this.consecutiveFailedVerifications++;
       

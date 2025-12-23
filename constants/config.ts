@@ -501,6 +501,68 @@ export const getEnvironmentConfig = () => ({
   },
 });
 
+// ========== EDGE CACHE ENHANCEMENT CONFIGURATION ==========
+export const EDGE_CACHE_CONFIG = {
+  // Memory and size constraints for edge deployment
+  MAX_SIZE: 10 * 1024 * 1024, // 10MB for edge constraints
+  MAX_ENTRIES: 1000, // Reduced for edge memory
+  COMPRESSION_THRESHOLD: 1024, // 1KB
+  CLEANUP_INTERVAL: 30 * 1000, // 30 seconds
+  DEFAULT_TTL: 5 * 60 * 1000, // 5 minutes
+  
+  // Cache strategy TTL values
+  STRATEGIES: {
+    API_ROBOTS: 5 * 60 * 1000, // 5 minutes
+    API_GENERATE: 2 * 60 * 1000, // 2 minutes  
+    API_MARKET_DATA: 30 * 1000, // 30 seconds
+    STATIC_ASSETS: 24 * 60 * 60 * 1000, // 24 hours
+    PAGE_DASHBOARD: 10 * 60 * 1000, // 10 minutes
+    PAGE_GENERATOR: 5 * 60 * 1000, // 5 minutes
+  },
+  
+  // Optimization thresholds
+  ACCESS_TIMES_RETENTION: 100,
+  COMPRESSION_ENABLED: true,
+  METRICS_ENABLED: true,
+  REGION_SPECIFIC_DEFAULT: true,
+};
+
+// ========== CACHE SIZING CONFIGURATION ==========
+export const CACHE_SIZING_CONFIG = {
+  ROBOT_CACHE: {
+    MAX_SIZE: 50 * 1024 * 1024, // 50MB
+    DEFAULT_TTL: 600000, // 10 minutes
+  },
+  MARKET_DATA_CACHE: {
+    MAX_SIZE: 20 * 1024 * 1024, // 20MB
+    DEFAULT_TTL: 30000, // 30 seconds
+  },
+  ANALYSIS_CACHE: {
+    MAX_SIZE: 30 * 1024 * 1024, // 30MB
+    DEFAULT_TTL: 900000, // 15 minutes
+  },
+  DEFAULT_CACHE: {
+    MAX_SIZE: 10 * 1024 * 1024, // 10MB
+    DEFAULT_TTL: 300000, // 5 minutes
+    MAX_ENTRIES: 1000,
+  }
+};
+
+// ========== BACKEND OPTIMIZATION CONFIGURATION ==========
+export const BACKEND_OPTIMIZATION_CONFIG = {
+  // Performance thresholds
+  DATABASE_QUERY_TIME_THRESHOLD: 1000, // 1 second
+  COLD_START_COUNT_THRESHOLD: 10,
+  DATABASE_ERROR_RATE_THRESHOLD: 0.1, // 10%
+  
+  // Cache TTL values
+  ROBOTS_LIST_TTL: 300000, // 5 minutes
+  STRATEGIES_LIST_TTL: 600000, // 10 minutes
+  
+  // Monitoring intervals
+  OPTIMIZATION_CHECK_INTERVAL: 2000, // 2 seconds
+};
+
 // Type-safe configuration getter
 export const getConfig = <T>(section: string, key: string): T => {
   const configMap: Record<string, any> = {

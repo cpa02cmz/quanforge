@@ -12,6 +12,7 @@ import { vercelEdgeOptimizer } from './vercelEdgeOptimizer';
 import { edgeCacheManager } from './edgeCacheManager';
 import { databasePerformanceMonitor } from './databasePerformanceMonitor';
 import { robotCache } from './advancedCache';
+import { BACKEND_OPTIMIZATION_CONFIG } from '../constants/config';
 
 interface OptimizationConfig {
   enableDatabaseOptimization: boolean;
@@ -387,8 +388,8 @@ class BackendOptimizationManager {
     // Warm up common queries
     if (this.config.enableQueryOptimization) {
       const commonQueries = [
-        { key: 'robots_list', loader: () => Promise.resolve([]), ttl: 300000 },
-        { key: 'strategies_list', loader: () => Promise.resolve([]), ttl: 600000 },
+        { key: 'robots_list', loader: () => Promise.resolve([]), ttl: BACKEND_OPTIMIZATION_CONFIG.ROBOTS_LIST_TTL },
+        { key: 'strategies_list', loader: () => Promise.resolve([]), ttl: BACKEND_OPTIMIZATION_CONFIG.STRATEGIES_LIST_TTL },
       ];
       
       // Skip query cache preload since queryCache is not defined
@@ -730,7 +731,7 @@ class BackendOptimizationManager {
       
       // Determine priority based on severity
       let priority: 'high' | 'medium' | 'low' = 'medium';
-      if (metrics.database.queryTime > 1000 || metrics.edge.coldStartCount > 10 || metrics.database.errorRate > 0.1) {
+      if (metrics.database.queryTime > BACKEND_OPTIMIZATION_CONFIG.DATABASE_QUERY_TIME_THRESHOLD || metrics.edge.coldStartCount > BACKEND_OPTIMIZATION_CONFIG.COLD_START_COUNT_THRESHOLD || metrics.database.errorRate > BACKEND_OPTIMIZATION_CONFIG.DATABASE_ERROR_RATE_THRESHOLD) {
         priority = 'high';
       } else if (cacheStats.hitRate < 50 || metrics.database.queryTime > 500) {
         priority = 'medium';
@@ -913,7 +914,7 @@ if (typeof window !== 'undefined') {
     backendOptimizationManager.initialize().catch(error => {
       console.error('Failed to initialize optimization manager:', error);
     });
-  }, 2000);
+  }, BACKEND_OPTIMIZATION_CONFIG.OPTIMIZATION_CHECK_INTERVAL);
 }
 
 export { BackendOptimizationManager };
