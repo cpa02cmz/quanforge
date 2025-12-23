@@ -4,6 +4,8 @@
  * Provides unified edge deployment monitoring, analytics, and performance tracking
  */
 
+import { EventMetadata } from '../types/common';
+
 interface EdgeMonitorConfig {
   enableRealTimeMonitoring: boolean;
   enableHealthChecks: boolean;
@@ -23,6 +25,8 @@ interface EdgeMonitorConfig {
   endpoint: string | undefined;
 }
 
+import { EventMetadata, PerformanceMetrics } from '../types/common';
+
 interface HealthCheckResult {
   endpoint: string;
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -30,7 +34,7 @@ interface HealthCheckResult {
   timestamp: number;
   region: string;
   error?: string;
-  metadata?: Record<string, any>;
+  metadata?: EventMetadata;
 }
 
 interface EdgeMetrics {
@@ -51,15 +55,17 @@ interface EdgeMetrics {
   userInteractions: number;
 }
 
+interface UserBehaviorEvent {
+  type: string;
+  target: string;
+  timestamp: number;
+  metadata?: EventMetadata;
+}
+
 interface UserBehaviorData {
   sessionId: string;
   userId?: string;
-  events: Array<{
-    type: string;
-    target: string;
-    timestamp: number;
-    metadata?: any;
-  }>;
+  events: UserBehaviorEvent[];
   pageViews: number;
   timeOnPage: number;
   bounceRate: number;
@@ -89,7 +95,7 @@ interface Alert {
   timestamp: number;
   region: string;
   resolved: boolean;
-  metadata?: Record<string, any>;
+  metadata?: EventMetadata;
 }
 
 class EdgeAnalyticsMonitoring {
