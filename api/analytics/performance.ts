@@ -10,11 +10,11 @@ import { enhancedConnectionPool } from '../../services/enhancedSupabasePool';
 import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
 
 export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type') || 'summary';
-    const region = request.headers.get('x-vercel-id')?.split('-')[1] || 'unknown';
-    const timeRange = searchParams.get('timeRange') || '1h'; // 1h, 24h, 7d, 30d
+   try {
+     const { searchParams } = new URL(request.url);
+     const type = searchParams.get('type') || 'summary';
+     const region = request.headers.get('x-vercel-id')?.split('-')[1] || 'unknown';
+     const timeRange = searchParams.get('timeRange') || '1h'; // 1h, 24h, 7d, 30d
     
     let data;
     
@@ -137,35 +137,35 @@ async function getAnalyticsSummary(region: string, timeRange: string) {
   };
 }
 
-async function getPerformanceAnalytics(region: string, timeRange: string) {
-  const dbReport = databasePerformanceMonitor.getPerformanceReport();
-  const edgeMetrics = vercelEdgeOptimizer.getEdgeMetrics();
-  
-  return {
-    database: {
-      metrics: dbReport.summary,
-      slowQueries: dbReport.topSlowQueries.slice(0, 10),
-      recommendations: dbReport.recommendations
-    },
-    edge: {
-      metrics: edgeMetrics,
-      regions: edgeMetrics.reduce((acc, metric) => {
-        acc[metric.region] = {
-          responseTime: metric.responseTime,
-          cacheHitRate: metric.cacheHitRate,
-          requestsServed: metric.requestsServed,
-          bandwidthSaved: metric.bandwidthSaved
-        };
-        return acc;
-      }, {} as Record<string, any>)
-    },
-    trends: {
-      queryTime: calculateTrend(dbReport.summary.queryTime),
-      errorRate: calculateTrend(dbReport.summary.errorRate),
-      cacheHitRate: calculateTrend(dbReport.summary.cacheHitRate)
-    }
-  };
-}
+async function getPerformanceAnalytics(_region: string, _timeRange: string) {
+   const dbReport = databasePerformanceMonitor.getPerformanceReport();
+   const edgeMetrics = vercelEdgeOptimizer.getEdgeMetrics();
+   
+   return {
+     database: {
+       metrics: dbReport.summary,
+       slowQueries: dbReport.topSlowQueries.slice(0, 10),
+       recommendations: dbReport.recommendations
+     },
+     edge: {
+       metrics: edgeMetrics,
+       regions: edgeMetrics.reduce((acc, metric) => {
+         acc[metric.region] = {
+           responseTime: metric.responseTime,
+           cacheHitRate: metric.cacheHitRate,
+           requestsServed: metric.requestsServed,
+           bandwidthSaved: metric.bandwidthSaved
+         };
+         return acc;
+       }, {} as Record<string, { responseTime: number; cacheHitRate: number; requestsServed: number; bandwidthSaved: number }>)
+     },
+     trends: {
+       queryTime: calculateTrend(dbReport.summary.queryTime),
+       errorRate: calculateTrend(dbReport.summary.errorRate),
+       cacheHitRate: calculateTrend(dbReport.summary.cacheHitRate)
+      }
+    };
+  }
 
 async function getDatabaseAnalytics(region: string, timeRange: string) {
   const metrics = databasePerformanceMonitor.getMetrics();
@@ -485,10 +485,15 @@ function generateTrendData(timePoints: number[], min: number, max: number): numb
 }
 
 function generateTrendInsights(timePoints: number[]): string[] {
-  return [
-    'Query times show improvement during off-peak hours',
-    'Cache hit rates correlate with traffic patterns',
-    'Error rates remain stable within acceptable thresholds',
-    'Edge performance varies by geographic region'
-  ];
-}
+   return [
+     'Query times show improvement during off-peak hours',
+     'Cache hit rates correlate with traffic patterns',
+     'Error rates remain stable within acceptable thresholds',
+     'Edge performance varies by geographic region'
+   ];
+ }
+
+export const config = {
+  runtime: 'edge',
+  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
+};
