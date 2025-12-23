@@ -129,11 +129,11 @@ export const useGeneratorLogic = (id?: string) => {
   // Message buffer for memory management
   const { addMessage, getMessages } = useMessageBuffer(50);
 
-   // Enhanced validation using ValidationService
-   const validateStrategyParams = useCallback((params: StrategyParams): string[] => {
-     const errors = ValidationService.validateStrategyParams(params);
-     return errors.map(error => error.message);
-   }, []);
+// Enhanced validation using ValidationService
+    const validateStrategyParams = useCallback((params: StrategyParams): string[] => {
+      const result = ValidationService.validateStrategyParams(params);
+      return result.isValid ? [] : result.errors.map((error: any) => error.message);
+    }, []);
 
    // Reset State Helper
    const resetState = useCallback(() => {
@@ -273,9 +273,9 @@ const stopGeneration = () => {
   // Handlers
   const handleSendMessage = async (content: string) => {
     // Validate input
-    const validationErrors = ValidationService.validateChatMessage(content);
-    if (!ValidationService.isValid(validationErrors)) {
-      showToast(ValidationService.formatErrors(validationErrors), 'error');
+    const validationResult = ValidationService.validateChatMessage(content);
+    if (!validationResult.isValid) {
+      showToast(ValidationService.formatErrors(validationResult.errors), 'error');
       return;
     }
 
@@ -433,26 +433,11 @@ const stopGeneration = () => {
 
   const handleSave = async () => {
       // Validate robot name
-      const nameErrors = ValidationService.validateRobotName(state.robotName);
-      if (!ValidationService.isValid(nameErrors)) {
-        showToast(ValidationService.formatErrors(nameErrors), 'error');
+      const nameValidation = ValidationService.validateRobot({ name: state.robotName });
+      if (!nameValidation.isValid) {
+        showToast(ValidationService.formatErrors(nameValidation.errors), 'error');
         return;
-      }
-
-      // Validate strategy parameters
-      const strategyErrors = ValidationService.validateStrategyParams(state.strategyParams);
-      if (!ValidationService.isValid(strategyErrors)) {
-        showToast(ValidationService.formatErrors(strategyErrors), 'error');
-        return;
-      }
-
-      // Validate backtest settings
-      const backtestErrors = ValidationService.validateBacktestSettings(state.backtestSettings);
-      if (!ValidationService.isValid(backtestErrors)) {
-        showToast(ValidationService.formatErrors(backtestErrors), 'error');
-        return;
-      }
-
+}
       dispatch({ type: 'SET_SAVING', payload: true });
       const robotData = {
           name: ValidationService.sanitizeInput(state.robotName),

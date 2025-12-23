@@ -1,5 +1,5 @@
 import { StrategyParams, CustomInput, AISettings, Message } from '../types';
-import { securityManager } from '../services/securityManager';
+import { securityManager } from '../services/security/SecurityManager';
 
 export interface ValidationResult {
   isValid: boolean;
@@ -17,11 +17,16 @@ export class UnifiedValidator {
     let riskScore = 0;
 
     try {
-      // First run security validation
-      const securityResult = securityManager.sanitizeAndValidate(data, 'robot');
-      if (!securityResult.isValid) {
-        errors.push(...securityResult.errors);
-        riskScore += securityResult.riskScore || 0;
+      // First run security validation - convert string data for security check
+      let securityValid = true;
+      if (typeof data === 'string') {
+        const securityResult = securityManager.sanitizeAndValidate(JSON.parse(data || '{}'), 'robot');
+        securityValid = securityResult.isValid;
+        if (!securityValid) {
+          errors.push('Security validation failed - potential injection detected');
+          errors.push(...securityResult.errors);
+        }
+        riskScore = Math.max(riskScore, securityResult.riskScore || 0);
       }
 
       // Basic structure validation
@@ -75,11 +80,11 @@ export class UnifiedValidator {
       }
 
       return {
-        isValid: errors.length === 0,
+        isValid: errors.length === 0 && securityValid,
         errors,
         warnings,
         riskScore: Math.min(riskScore, 100),
-        sanitizedData: securityResult.sanitizedData || data
+        sanitizedData: data
       };
 
     } catch (error) {

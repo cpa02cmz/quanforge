@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { SEOHead, structuredDataTemplates } from './seo';
-import { SEOAnalytics } from './seoAnalytics';
+import { SEOHead, structuredDataTemplates, SEOAnalytics } from './seoUnified';
 
 interface EnhancedSEOProps {
   title?: string;
