@@ -93,7 +93,7 @@ export class OptimizedCache {
       this.accessOrder.set(key, ++this.accessCounter);
 
       // Validate cached data for security
-      const validation = securityManager.sanitizeAndValidate(entry.data, 'robot');
+      const validation = securityManager.sanitizeAndValidateData(entry.data, 'robot');
       if (!validation.isValid) {
         logger.warn(`Invalid cached data detected for key: ${key}`, validation.errors);
         this.delete(key);
@@ -127,7 +127,7 @@ export class OptimizedCache {
       const priority = options.priority || 'normal';
       
       // Validate data before caching
-      const validation = securityManager.sanitizeAndValidate(data, 'robot');
+      const validation = securityManager.sanitizeAndValidateData(data, 'robot');
       if (!validation.isValid) {
         logger.warn(`Attempted to cache invalid data for key: ${key}`, validation.errors);
         return;
@@ -266,7 +266,7 @@ export class OptimizedCache {
   /**
    * Estimate memory usage of data
    */
-  private estimateSize(data: any): number {
+  private estimateSize(data: unknown): number {
     try {
       return JSON.stringify(data).length * 2; // Rough estimate (UTF-16)
     } catch {
@@ -299,11 +299,11 @@ export class OptimizedCache {
   /**
    * Simple compression using LZ-string if available
    */
-  private async compress(data: any): Promise<any> {
+  private async compress<T>(data: T): Promise<T> {
     try {
       // Use dynamic import for better tree-shaking
       const lzModule = await import('lz-string');
-      return lzModule.default.compress(JSON.stringify(data));
+      return lzModule.default.compress(JSON.stringify(data)) as T;
     } catch {
       return data; // Fallback to uncompressed
     }
@@ -312,10 +312,10 @@ export class OptimizedCache {
   /**
    * Simple decompression
    */
-  private async decompress(data: any): Promise<any> {
+  private async decompress<T>(data: T): Promise<T> {
     try {
       const lzModule = await import('lz-string');
-      return JSON.parse(lzModule.default.decompress(data));
+      return JSON.parse(lzModule.default.decompress(data as string)) as T;
     } catch {
       return data; // Fallback to original data
     }

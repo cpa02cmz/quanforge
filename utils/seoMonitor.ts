@@ -265,10 +265,7 @@ class SEOMonitor {
       lastChecked: new Date().toISOString()
     };
 
-    // Log results in development
-    if (process.env['NODE_ENV'] === 'development') {
-      console.log('SEO Audit Results:', this.metrics);
-    }
+    // SEO audit results available in this.metrics
   }
 
   private analyzePage(): PageSEOData {

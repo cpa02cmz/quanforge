@@ -164,14 +164,11 @@ export async function GET(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('market_data_api_error', duration);
     
-    // Market Data API GET error - error details returned in response
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to fetch market data',
-        details: errorMessage, // Include error details for debugging
+        message: error instanceof Error ? error.message : 'Unknown error',
       },
       { 
         status: 500,
@@ -273,14 +270,11 @@ export async function POST(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('market_data_api_subscribe_error', duration);
     
-    // Market Data API POST error - error details returned in response
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to create subscription',
-        details: errorMessage, // Include error details for debugging
+        message: error instanceof Error ? error.message : 'Unknown error',
       },
       { 
         status: 500,

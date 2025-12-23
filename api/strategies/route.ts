@@ -219,14 +219,13 @@ export async function GET(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('strategies_api_error', duration);
     
-    // Strategies API GET error - error details returned in response
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
     
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to fetch strategies',
-        details: errorMessage, // Include error details for debugging
+        message: error instanceof Error ? error.message : 'Unknown error',
       },
       { 
         status: 500,
@@ -313,14 +312,13 @@ export async function POST(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('strategies_api_create_error', duration);
     
-    // Strategies API POST error - error details returned in response
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
     
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to create strategy',
-        details: errorMessage, // Include error details for debugging
+        message: error instanceof Error ? error.message : 'Unknown error',
       },
       { 
         status: 500,

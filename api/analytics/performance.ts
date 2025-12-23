@@ -65,14 +65,10 @@ export async function GET(request: NextRequest) {
       }
     });
     
-} catch (error) {
-    // Error handling without console logging for production
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
+  } catch (error) {
     return NextResponse.json({
       success: false,
       error: 'Internal server error',
-      details: errorMessage, // Include error details for debugging
       timestamp: Date.now()
     }, { status: 500 });
   }
@@ -169,7 +165,7 @@ async function getPerformanceAnalytics(_region: string, _timeRange: string) {
   };
 }
 
-async function getDatabaseAnalytics(region: string, timeRange: string) {
+async function getDatabaseAnalytics(_region: string, timeRange: string) {
   const metrics = databasePerformanceMonitor.getMetrics();
   const alerts = databasePerformanceMonitor.getAlerts();
   const connectionStats = enhancedConnectionPool.getDetailedStats();
@@ -246,7 +242,7 @@ async function getEdgeAnalytics(_region: string, _timeRange: string) {
   };
 }
 
-async function getConnectionAnalytics(region: string, timeRange: string) {
+async function getConnectionAnalytics(_region: string, _timeRange: string) {
   const stats = await enhancedConnectionPool.getDetailedStats();
   
   return {
@@ -274,7 +270,7 @@ async function getConnectionAnalytics(region: string, timeRange: string) {
   };
 }
 
-async function getAlertsAnalytics(region: string, timeRange: string) {
+async function getAlertsAnalytics(_region: string, timeRange: string) {
   const alerts = databasePerformanceMonitor.getAlerts();
   const filteredAlerts = alerts.filter(alert => 
     Date.now() - alert.timestamp < getTimeRangeMs(timeRange)
@@ -304,7 +300,7 @@ async function getAlertsAnalytics(region: string, timeRange: string) {
   };
 }
 
-async function getTrendsAnalytics(region: string, timeRange: string) {
+async function getTrendsAnalytics(_region: string, timeRange: string) {
   // This would typically query a time-series database
   // For now, return simulated trend data
   const timePoints = getTimePoints(timeRange);
@@ -354,7 +350,7 @@ function getOverallStatus(dbMetrics: any, cacheStats: any, alerts: any[]): strin
   return 'healthy';
 }
 
-function calculateTrend(currentValue: number): { direction: 'up' | 'down' | 'stable'; percentage: number } {
+function calculateTrend(_currentValue: number): { direction: 'up' | 'down' | 'stable'; percentage: number } {
   // This would typically compare with historical data
   // For now, return a simulated trend
   const change = (Math.random() - 0.5) * 0.2; // -10% to +10%
@@ -474,7 +470,7 @@ function calculateAlertTrends(alerts: any[]): any[] {
   }));
 }
 
-function calculateResolutionTrends(alerts: any[]): any[] {
+function calculateResolutionTrends(_alerts: any[]): any[] {
   // This would track alert resolution times
   // For now, return empty array
   return [];
@@ -486,7 +482,7 @@ function generateTrendData(timePoints: number[], min: number, max: number): numb
   });
 }
 
-function generateTrendInsights(timePoints: number[]): string[] {
+function generateTrendInsights(_timePoints: number[]): string[] {
   return [
     'Query times show improvement during off-peak hours',
     'Cache hit rates correlate with traffic patterns',

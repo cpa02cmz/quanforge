@@ -222,14 +222,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('strategy_api_error', duration);
     
-    // Strategy API GET error - error details returned in response
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
     
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to fetch strategy',
-        details: errorMessage, // Include error details for debugging
+        message: error instanceof Error ? error.message : 'Unknown error',
       },
       { 
         status: 500,
@@ -327,14 +326,13 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('strategy_api_update_error', duration);
     
-    // Strategy API PUT error - error details returned in response
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
     
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to update strategy',
-        details: errorMessage, // Include error details for debugging
+        message: error instanceof Error ? error.message : 'Unknown error',
       },
       { 
         status: 500,
@@ -415,14 +413,13 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('strategy_api_delete_error', duration);
     
-    // Strategy API DELETE error - error details returned in response
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
     
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to delete strategy',
-        details: errorMessage, // Include error details for debugging
+        message: error instanceof Error ? error.message : 'Unknown error',
       },
       { 
         status: 500,
