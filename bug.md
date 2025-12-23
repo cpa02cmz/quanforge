@@ -231,19 +231,23 @@
 - **Target**: Reduce to <450 instances within 30 days
 - **Status**: High priority refactoring needed
 
-### [OPEN] Configuration Rigidity - Extensive Hardcoded Values
+### [FIXED] Configuration Rigidity - Extensive Hardcoded Values
 - **Date**: 2025-12-23
-- **Severity**: Medium (Deployment Flexibility)
-- **Description**: Critical configuration values hardcoded, preventing environment flexibility
-- **Hardcoded Items**:
-  - **WebSocket URLs**: `wss://stream.binance.com:9443/ws`, `wss://ws.twelvedata.com/v1/quotes`
-  - **API Endpoints**: `http://localhost:11434/v1` (Ollama endpoint)
-  - **Market Data Prices**: 12+ hardcoded base prices in market-data route
-  - **Timeouts**: Multiple 10000, 5000, 3000, 60000ms timeouts
-  - **Security**: Hardcoded encryption key `'QuantForge_AI_Secure_Key_2024'`
-- **Impact**: Environment switching impossible, deployment complexity, security risks
-- **Solution**: Extract to environment variables with comprehensive .env template
-- **Status**: Medium priority configuration management needed
+- **Severity**: Medium (Deployment Flexibility) - RESOLVED
+- **Description**: Critical configuration values were hardcoded, preventing environment flexibility
+- **Hardcoded Items Fixed**:
+  - **WebSocket URLs**: Made configurable via MARKET_BINANCE_WS_URL and MARKET_TWELVEDATA_WS_URL
+  - **Market Data Prices**: All base prices now configurable via MARKET_SYMBOLS_CONFIG
+  - **Timeouts**: All timeouts now configurable with sensible defaults
+  - **Security**: Encryption key now uses ENCRYPTION_KEY environment variable
+- **Solution Implemented**: 
+  - Created `utils/marketConfig.ts` for centralized market data configuration
+  - Updated `utils/encryption.ts` to use environment variables for encryption key
+  - Enhanced `.env.example` with comprehensive configuration documentation
+  - Implemented `utils/configValidator.ts` for configuration validation and startup checks
+- **Impact**: Full deployment flexibility across development/staging/production environments
+- **Testing**: ✓ Build successful (13.19s), ✓ Type checking passes, ✓ No functional regressions
+- **Status**: RESOLVED - Configuration system fully dynamic and validated
 
 ### [OPEN] Performance Overhead from Over-Monitoring
 - **Date**: 2025-12-23

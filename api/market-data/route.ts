@@ -4,9 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { advancedCache } from '../../services/advancedCache';
+import { robotCache } from '../../services/advancedCache';
 import { performanceMonitorEnhanced } from '../../services/performanceMonitorEnhanced';
 import { securityManager } from '../../services/securityManager';
+import { getMarketDataConfig } from '../../utils/marketConfig';
 
 export const config = {
   runtime: 'edge',
@@ -15,31 +16,35 @@ export const config = {
   cache: 'max-age=5, s-maxage=30, stale-while-revalidate=5',
 };
 
-// Mock market data (in production, this would come from a real market data provider)
-const SYMBOLS = [
-  'EURUSD', 'GBPUSD', 'USDJPY', 'USDCHF', 'AUDUSD', 'USDCAD',
-  'EURGBP', 'EURJPY', 'GBPJPY', 'EURCHF', 'AUDJPY', 'CADJPY'
-];
+// Load market data configuration
+const marketConfig = getMarketDataConfig();
+const SYMBOLS = Object.keys(marketConfig.symbols);
 
 const generateMarketData = (symbol: string) => {
-  const basePrice = {
-    'EURUSD': 1.0850,
-    'GBPUSD': 1.2750,
-    'USDJPY': 157.50,
-    'USDCHF': 0.9050,
-    'AUDUSD': 0.6650,
-    'USDCAD': 1.3650,
-    'EURGBP': 0.8510,
-    'EURJPY': 171.00,
-    'GBPJPY': 200.50,
-    'EURCHF': 0.9820,
-    'AUDJPY': 104.80,
-    'CADJPY': 115.40,
-  }[symbol] || 1.0000;
+  const symbolConfig = marketConfig.symbols[symbol];
+  if (!symbolConfig) {
+    console.warn(`Unknown symbol: ${symbol}, using fallback`);
+    return {
+      symbol,
+      timestamp: Date.now(),
+      bid: 1.0000,
+      ask: 1.0001,
+      mid: 1.0000,
+      spread: 0.0001,
+      change: 0.0000,
+      changePercent: 0.000,
+      volume: 100000,
+      high: 1.0010,
+      low: 0.9990,
+      open: 1.0000,
+    };
+  }
 
-  const variation = (Math.random() - 0.5) * 0.002; // ±0.2% variation
+  const { basePrice, pipValue } = symbolConfig;
+
+  const variation = (Math.random() - 0.5) * marketConfig.limits.maxVariation; // Use configured variation
   const price = basePrice * (1 + variation);
-  const spread = basePrice * 0.0001; // 1 pip spread
+  const spread = pipValue * (1 + Math.random()); // 1-2 pips spread
   
   return {
     symbol,
@@ -91,7 +96,7 @@ export async function GET(request: NextRequest) {
 
     // Check cache first (very short cache for real-time data)
     const cacheKey = `market_data_${sanitizedSymbols.join('_')}_${timeframe}_${limit}`;
-    const cached = await advancedCache.get(cacheKey);
+    const cached = await robotCache.get(cacheKey);
     
     if (cached) {
       const duration = performance.now() - startTime;
@@ -138,11 +143,10 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    // Cache for very short time (5 seconds) for real-time data
-    await advancedCache.set(cacheKey, response, {
-      ttl: 5 * 1000, // 5 seconds
+    // Cache for configurable time using market config
+    await robotCache.set(cacheKey, response, {
+      ttl: marketConfig.timeouts.cacheTTL,
       tags: ['market_data', 'realtime'],
-      priority: 'high',
     });
 
     const duration = performance.now() - startTime;
@@ -244,10 +248,9 @@ export async function POST(request: NextRequest) {
     };
 
     // Cache subscription
-    await advancedCache.set(`subscription_${subscriptionId}`, subscription, {
-      ttl: 24 * 60 * 60 * 1000, // 24 hours
+    await robotCache.set(`subscription_${subscriptionId}`, subscription, {
+      ttl: marketConfig.timeouts.subscriptionTTL,
       tags: ['subscription', 'market_data'],
-      priority: 'medium',
     });
 
     const response = {
