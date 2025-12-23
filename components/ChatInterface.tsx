@@ -89,7 +89,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
         
         try {
           if (typeof window !== 'undefined' && 'memory' in performance) {
-            const memoryUsage = (performance as any).memory;
+            const memoryUsage = (performance as Performance & { memory?: { usedJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
             if (memoryUsage) {
               const usedMB = Math.round(memoryUsage.usedJSHeapSize / 1024 / 1024);
               const limitMB = Math.round(memoryUsage.jsHeapSizeLimit / 1024 / 1024);
@@ -253,7 +253,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   }, [listRegex, parseInlineStyles]);
 
   // Get strategies based on current language
-  const [suggestedStrategies, setSuggestedStrategies] = useState<any[]>([]);
+  const [suggestedStrategies, setSuggestedStrategies] = useState<Array<{name: string; description: string; template?: string}>>([]);
 
   useEffect(() => {
     loadSuggestedStrategies(language).then(strategies => {
