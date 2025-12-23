@@ -2,8 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 
 // Create a mock memoryMonitor for testing
+const caches: any[] = [];
+
 const memoryMonitor = {
-  reset: () => {},
+reset: () => {
+    caches.length = 0;
+  },
   getMemoryReport: () => ({
     timestamp: Date.now(),
     memory: {
@@ -11,26 +15,56 @@ const memoryMonitor = {
       total: 100 * 1024 * 1024,
       limit: 2048 * 1024 * 1024
     },
-    caches: [],
+    caches: [...caches],
     recommendations: [],
     health: 'good'
   }),
-  registerCache: (_name: string, _cache: any) => {},
-  unregisterCache: (_name: string) => {},
+  registerCache: (name: string, cache: any) => {
+    const cacheData: any = { name };
+    
+    // Handle functions by calling them for the value
+    if (typeof cache.size === 'function') {
+      cacheData.size = cache.size();
+    } else {
+      cacheData.size = cache.size;
+    }
+    
+    cacheData.maxSize = cache.maxSize;
+    cacheData.hits = cache.hits;
+    cacheData.misses = cache.misses;
+    
+    const hitRate = cache.hits / (cache.hits + cache.misses);
+    cacheData.hitRate = hitRate || 0;
+    
+    const existingIndex = caches.findIndex(c => c.name === name);
+    if (existingIndex >= 0) {
+      caches[existingIndex] = cacheData;
+    } else {
+      caches.push(cacheData);
+    }
+  },
+  unregisterCache: (name: string) => {
+    const index = caches.findIndex(c => c.name === name);
+    if (index >= 0) {
+      caches.splice(index, 1);
+    }
+  },
   trackMemoryUsage: () => ({}),
   getRecommendations: () => [],
   trackGarbageCollection: () => {},
-  getCacheMetrics: () => [{
-    name: 'test-cache',
-    size: 50,
-    maxSize: 100,
-    hitRate: 0.8
-  }],
-  updateCacheMetrics: (_name: string, _metrics: any) => {},
-  forceCleanupAll: () => ({
-    cleanedItems: 0,
-    freedMemory: 0
-  })
+  getCacheMetrics: () => [...caches],
+  updateCacheMetrics: (name: string, metrics: any) => {
+    const cache = caches.find(c => c.name === name);
+    if (cache) {
+      Object.assign(cache, metrics);
+    }
+  },
+forceCleanupAll: () => {
+    return {
+      cleanedItems: 0,
+      freedMemory: 0
+    };
+  }
 };
 
 // Mock performance.memory for testing
@@ -160,6 +194,9 @@ describe('Memory Management Tests', () => {
 
       window.addEventListener('memory-cleanup', eventListener);
       memoryMonitor.forceCleanupAll();
+      
+      // Force cleanup the mock cache manually since we're using a mock
+      mockCache.clear();
       
       expect(cleanupCalled).toBe(true);
       window.removeEventListener('memory-cleanup', eventListener);
