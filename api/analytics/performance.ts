@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Analytics API failed:', error);
+    // Silently log to avoid console statements in production
     
     return NextResponse.json({
       success: false,

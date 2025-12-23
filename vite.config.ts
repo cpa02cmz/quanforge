@@ -32,18 +32,34 @@ export default defineConfig({
               }
               return 'supabase-vendor';
             }
-            // AI services - lazy loaded for edge optimization
+            // AI services - split to reduce chunk size
             if (id.includes('@google/genai')) {
-              return 'ai-vendor';
+              // Main genai library
+              if (id.includes('genai') || id.includes('generative')) {
+                return 'ai-vendor';
+              }
+              // Protobuf and other utilities
+              if (id.includes('protobuf') || id.includes('google-protobuf')) {
+                return 'ai-protobuf';
+              }
+              // Other AI-related modules
+              return 'ai-misc';
             }
-            // Chart libraries - split more granularly
+            // Chart libraries - split more granularly to reduce chunk size
             if (id.includes('recharts')) {
-              if (id.includes('AreaChart') || id.includes('LineChart')) {
+              // Core chart components
+              if (id.includes('AreaChart') || id.includes('LineChart') || id.includes('XAxis') || id.includes('YAxis') || id.includes('CartesianGrid')) {
                 return 'chart-core';
               }
-              if (id.includes('PieChart') || id.includes('BarChart')) {
+              // Statistical charts
+              if (id.includes('PieChart') || id.includes('BarChart') || id.includes('ScatterChart') || id.includes('RadarChart')) {
                 return 'chart-misc';
               }
+              // Composed components and utilities
+              if (id.includes('ComposedChart') || id.includes('ResponsiveContainer') || id.includes('Tooltip') || id.includes('Legend')) {
+                return 'chart-composed';
+              }
+              // Main recharts bundle - should be smaller now
               return 'chart-vendor';
             }
             // Security utilities - bundled together

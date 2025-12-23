@@ -324,7 +324,7 @@ class FrontendPerformanceOptimizer {
       () => import('../components/ChartComponents'),
       () => import('../components/BacktestPanel'),
       () => import('../components/MarketTicker'),
-      () => import('../services/advancedAPICache'),
+      // Note: advancedAPICache is statically imported in App.tsx
     ];
 
     // Load modules with low priority when idle
