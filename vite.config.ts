@@ -60,8 +60,29 @@ export default defineConfig({
               // Default react catch-all
               return 'react-misc';
             }
-            // Supabase - isolated for better connection pooling
+            // Supabase - split more aggressively for better connection pooling
             if (id.includes('@supabase')) {
+              // Supabase auth - isolated for authentication flows
+              if (id.includes('auth') || id.includes('Auth') || id.includes('gotrue')) {
+                return 'supabase-auth';
+              }
+              // Supabase real-time - isolated for WebSocket connections
+              if (id.includes('realtime') || id.includes('Realtime') || id.includes('websocket') || id.includes('ws')) {
+                return 'supabase-realtime';
+              }
+              // Supabase storage - isolated for file operations
+              if (id.includes('storage') || id.includes('Storage') || id.includes('upload') || id.includes('file')) {
+                return 'supabase-storage';
+              }
+              // Supabase database - core client
+              if (id.includes('postgrest') || id.includes('database') || id.includes('db')) {
+                return 'supabase-database';
+              }
+              // Supabase functions - isolated for edge functions
+              if (id.includes('functions') || id.includes('edge') || id.includes('invoke')) {
+                return 'supabase-functions';
+              }
+              // Default supabase vendor - much smaller now
               return 'supabase-vendor';
             }
             // AI services - split more aggressively to reduce chunk sizes
@@ -130,7 +151,54 @@ export default defineConfig({
               if (id.includes('error') || id.includes('retry') || id.includes('circuit')) {
                 return 'ai-error-handling';
               }
-              // Default AI vendor - should be smaller now
+              // AI content generation and processing
+              if (id.includes('generate') || id.includes('completion') || id.includes('model')) {
+                if (id.includes('text') || id.includes('content')) {
+                  return 'ai-text-generation';
+                }
+                if (id.includes('code') || id.includes('compile')) {
+                  return 'ai-code-generation';
+                }
+                return 'ai-generation';
+              }
+              // AI vendor SDKs - split by provider
+              if (id.includes('google') || id.includes('gemini')) {
+                if (id.includes('vertex') || id.includes('cloud')) {
+                  return 'ai-google-cloud';
+                }
+                // Google AI core SDK components
+                if (id.includes('generators') || id.includes('generateText') || id.includes('generateContent')) {
+                  return 'ai-google-generators';
+                }
+                // Google AI models and configuration
+                if (id.includes('models') || id.includes('Model') || id.includes('config')) {
+                  return 'ai-google-models';
+                }
+                // Google AI transport and networking
+                if (id.includes('transport') || id.includes('http') || id.includes('request')) {
+                  return 'ai-google-transport';
+                }
+                // Google AI authentication and credentials
+                if (id.includes('auth') || id.includes('credentials') || id.includes('google-auth')) {
+                  return 'ai-google-auth';
+                }
+                // Google AI error handling
+                if (id.includes('error') || id.includes('errors') || id.includes('exception')) {
+                  return 'ai-google-errors';
+                }
+                return 'ai-google-gemini';
+              }
+              if (id.includes('openai') || id.includes('gpt') || id.includes('chatgpt')) {
+                return 'ai-openai';
+              }
+              if (id.includes('anthropic') || id.includes('claude')) {
+                return 'ai-anthropic';
+              }
+              // AI validation and parsing
+              if (id.includes('validate') || id.includes('parse') || id.includes('extract')) {
+                return 'ai-validation';
+              }
+              // Default AI vendor - much smaller now
               return 'ai-vendor';
             }
             // Chart libraries - split more aggressively to reduce chunk sizes
@@ -204,7 +272,54 @@ export default defineConfig({
               if (id.includes('animation') || id.includes('Transition')) {
                 return 'chart-animation';
               }
-              // Default recharts vendor - should be smaller now
+              // Core recharts chart types - split by function
+              if (id.includes('LineChart') || id.includes('Line') || id.includes('AreaChart')) {
+                return 'chart-line';
+              }
+              if (id.includes('ScatterChart') || id.includes('ComposedChart') || id.includes('RadarChart')) {
+                return 'chart-advanced';
+              }
+              // Recharts data processing and transformation
+              if (id.includes('Data') || id.includes('model') || id.includes('scale')) {
+                return 'chart-data';
+              }
+              // Recharts core engine - split further
+              if (id.includes('recharts/es6') || id.includes('recharts/umd')) {
+                // Recharts Cartesian components
+                if (id.includes('Cartesian') || id.includes('Chart')) {
+                  return 'chart-cartesian-components';
+                }
+                // Recharts primitives and utilities
+                if (id.includes('util') || id.includes('pureFn') || id.includes('Surface')) {
+                  return 'chart-primitives';
+                }
+                // Recharts context and providers
+                if (id.includes('context') || id.includes('Context') || id.includes('Provider')) {
+                  return 'chart-context';
+                }
+                // Recharts hooks and reactive components
+                if (id.includes('hooks') || id.includes('useRef') || id.includes('useState')) {
+                  return 'chart-hooks';
+                }
+                // Recharts event handlers
+                if (id.includes('event') || id.includes('handler') || id.includes('listener')) {
+                  return 'chart-events';
+                }
+                // Recharts SVG rendering components
+                if (id.includes('svg') || id.includes('render') || id.includes('draw')) {
+                  return 'chart-rendering';
+                }
+                return 'chart-core-engine';
+              }
+              // Recharts cartesian system (X/Y coordinate system)
+              if (id.includes('cartesian') || id.includes('PolarRadiusAxis') || id.includes('PolarAngleAxis')) {
+                return 'chart-cartesian';
+              }
+              // Recharts polygon and shape components
+              if (id.includes('Polygon') || id.includes('Sector') || id.includes('Cross')) {
+                return 'chart-polygon';
+              }
+              // Default recharts vendor - much smaller now
               return 'chart-vendor';
             }
             // Security utilities - bundled together
@@ -236,7 +351,32 @@ export default defineConfig({
             if (id.includes('lodash') || id.includes('underscore')) {
               return 'vendor-utils';
             }
-            // Default miscellaneous vendor
+            // Miscellaneous vendor libraries - split more aggressively
+            // Third-party component libraries
+            if (id.includes('react-icons') || id.includes('@heroicons') || id.includes('lucide-react')) {
+              return 'vendor-icons';
+            }
+            // Date and time libraries
+            if (id.includes('date-fns') || id.includes('moment') || id.includes('dayjs')) {
+              return 'vendor-datetime';
+            }
+            // String manipulation utilities
+            if (id.includes('string') || id.includes('text') || id.includes('format')) {
+              return 'vendor-strings';
+            }
+            // Array and object manipulation utilities
+            if (id.includes('array') || id.includes('object') || id.includes('collection')) {
+              return 'vendor-collections';
+            }
+            // Math and calculation libraries
+            if (id.includes('math') || id.includes('calculation') || id.includes('statistics')) {
+              return 'vendor-math';
+            }
+            // Browser and DOM utilities
+            if (id.includes('dom') || id.includes('browser') || id.includes('window')) {
+              return 'vendor-browser';
+            }
+            // Default miscellaneous vendor - much smaller now
             return 'vendor-misc';
           }
           

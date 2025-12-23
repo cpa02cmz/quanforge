@@ -208,3 +208,113 @@ export interface StreamOptions {
   autoReconnect?: boolean;
   maxRetries?: number;
 }
+
+// ============= Supabase Service Types =============
+
+// Import Robot interface dynamically to avoid circular imports
+// This type will be compatible with the Robot from analytics.ts
+export interface RobotInterface {
+  id?: string;
+  name: string;
+  strategy_type?: string;
+  strategy_code?: string;
+  code?: string;
+  description?: string;
+  parameters?: Record<string, unknown>;
+  timeframe?: string;
+  symbol?: string;
+  riskPercent?: number;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AppError extends Error {
+  name: string;
+  message: string;
+  code?: string | number;
+  stack?: string;
+}
+
+export interface StorageItem<T = unknown> {
+  data: T;
+  timestamp: number;
+  version?: string;
+}
+
+export interface ParseResult<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+export interface RobotData {
+  id?: string;
+  name: string;
+  code: string;
+  strategy_type?: string;
+  strategy_code?: string;
+  description?: string;
+  parameters?: Record<string, unknown>;
+  timeframe?: string;
+  symbol?: string;
+  riskPercent?: number;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface RobotUpdate {
+  name?: string;
+  code?: string;
+  strategy_type?: string;
+  strategy_code?: string;
+  description?: string;
+  parameters?: Record<string, unknown>;
+  timeframe?: string;
+  symbol?: string;
+  riskPercent?: number;
+  updated_at?: string;
+}
+
+export interface DatabaseResponse<T> {
+  data?: T;
+  error?: AppError;
+  status: number;
+}
+
+export interface BatchUpdateItem {
+  id: string;
+  updates: RobotUpdate;
+}
+
+export interface BatchUpdateResult {
+  success: number;
+  failed: number;
+  errors?: string[];
+}
+
+export interface UserSession {
+  id: string;
+  email?: string;
+  created_at: string;
+  access_token?: string;
+  refresh_token?: string;
+  expires_at?: number;
+}
+
+export interface AuthResponse {
+  data: {
+    session: UserSession | null;
+    user?: UserSession;
+  };
+  error?: AppError;
+}
+
+export type SafeParseResult<T> = T | null;
+
+// Additional types for supabase service optimization
+export type RobotArray = RobotInterface[];
+export type RobotPartial = Partial<RobotInterface>;
+export type ErrorType = Error | { message: string; code?: string | number };
+export type StorageErrorType = Error & { code?: number | string; name?: string };
