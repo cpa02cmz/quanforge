@@ -122,7 +122,7 @@ export default async function handler(req: Request) {
       }
     });
   } catch (error) {
-    console.error('Analytics API failed:', error);
+    
     
     return new Response(JSON.stringify({
       success: false,

@@ -31,17 +31,17 @@ interface ChartComponentsProps {
 
 // Dynamic import for Recharts to optimize bundle size
 interface RechartsComponents {
-  PieChart: any;
-  Pie: any;
-  Cell: any;
-  ResponsiveContainer: any;
-  Tooltip: any;
-  AreaChart: any;
-  Area: any;
-  XAxis: any;
-  YAxis: any;
-  CartesianGrid: any;
-  Legend: any;
+  PieChart: React.ComponentType<any>;
+  Pie: React.ComponentType<any>;
+  Cell: React.ComponentType<any>;
+  ResponsiveContainer: React.ComponentType<any>;
+  Tooltip: React.ComponentType<any>;
+  AreaChart: React.ComponentType<any>;
+  Area: React.ComponentType<any>;
+  XAxis: React.ComponentType<any>;
+  YAxis: React.ComponentType<any>;
+  CartesianGrid: React.ComponentType<any>;
+  Legend: React.ComponentType<any>;
 }
 
 // Memoized chart components for performance

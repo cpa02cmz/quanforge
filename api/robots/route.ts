@@ -4,11 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { mockDb, dbUtils } from '../../services/supabase';
+import { mockDb } from '../../services/supabase';
 import { securityManager } from '../../services/securityManager';
 import { advancedCache } from '../../services/advancedCache';
 import { performanceMonitorEnhanced } from '../../services/performanceMonitorEnhanced';
-import { Robot } from '../../types';
 
 export const config = {
   runtime: 'edge',
@@ -122,7 +121,7 @@ export async function GET(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('robots_api_error', duration);
     
-    console.error('Robots API GET error:', error);
+    
     
     return NextResponse.json(
       {
@@ -208,7 +207,7 @@ export async function POST(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('robots_api_create_error', duration);
     
-    console.error('Robots API POST error:', error);
+    
     
     return NextResponse.json(
       {
@@ -296,7 +295,7 @@ export async function PUT(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('robots_api_batch_update_error', duration);
     
-    console.error('Robots API PUT error:', error);
+    
     
     return NextResponse.json(
       {
@@ -398,7 +397,7 @@ export async function DELETE(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('robots_api_delete_error', duration);
     
-    console.error('Robots API DELETE error:', error);
+    
     
     return NextResponse.json(
       {

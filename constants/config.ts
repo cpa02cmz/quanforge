@@ -122,7 +122,7 @@ export const TRADING_CONSTANTS = {
   TIMEFRAMES: ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'],
   
   // Symbol validation
-  SYMBOL_REGEX: /^[A-Z]{3,6}[\/]?[A-Z]{3,6}$/,
+  SYMBOL_REGEX: /^[A-Z]{3,6}\/?[A-Z]{3,6}$/,
 };
 
 // ========== API CONFIGURATION ==========
