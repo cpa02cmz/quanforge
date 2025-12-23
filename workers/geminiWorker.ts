@@ -1,7 +1,40 @@
 // Web Worker for Gemini AI service to offload heavy processing from main thread
 
-import { MQL5_SYSTEM_PROMPT } from "../constants";
-import { StrategyParams, StrategyAnalysis, Message } from "../types";
+// Define constants inline to avoid import issues in worker context
+const MQL5_SYSTEM_PROMPT = `
+You are an expert MQL5 (MetaTrader 5) programmer and quantitative trading strategist.
+Your task is to generate complete, functional MQL5 trading robot code based on user requirements.
+`;
+
+// Define types inline to avoid import issues in worker context
+interface StrategyParams {
+  symbol: string;
+  timeframe: string;
+  riskPercent: number;
+  stopLoss: number;
+  takeProfit: number;
+  magicNumber: number;
+  customInputs: Array<{
+    type: 'string' | 'number' | 'boolean';
+    name: string;
+    value: string | number | boolean;
+  }>;
+}
+
+interface StrategyAnalysis {
+  riskScore: number;
+  profitability: number;
+  description: string;
+  recommendations?: string[];
+}
+
+interface Message {
+  id: string;
+  role: 'user' | 'model' | 'system';
+  content: string;
+  timestamp: number;
+  thinking?: string | null;
+}
 
 // Worker message types
 interface WorkerMessage {
