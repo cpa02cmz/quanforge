@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Robot } from '../types';
-import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
+import { frontendPerformanceOptimizer } from '../utils/performanceConsolidated';
 
 interface VirtualScrollListProps {
   robots: Robot[];
   searchTerm: string;
   filterType: string;
   processingId: string | null;
-  onDuplicate: (id: string) => void;
-  onDelete: (id: string, name: string) => void;
+  onDuplicate: (_id: string) => void;
+  onDelete: (_id: string, name: string) => void;
   t: (key: string, params?: Record<string, any>) => string;
 }
 
@@ -31,24 +31,18 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
    const filteredRobots = useMemo(() => {
      const startTime = performance.now();
      
-     const result = frontendPerformanceOptimizer.memoizeComponent(
-       `filtered_robots_${searchTerm}_${filterType}_${robots.length}`,
-       () => {
-         return robots.filter(robot => {
-           const robotName = robot.name.toLowerCase();
-           const searchTermLower = searchTerm.toLowerCase();
-           const matchesSearch = searchTerm === '' || robotName.includes(searchTermLower);
-           const matchesType = filterType === 'All' || (robot.strategy_type || 'Custom') === filterType;
-           return matchesSearch && matchesType;
-         });
-       },
-       5000 // 5 second TTL for this filter result
-     );
+     const result = robots.filter(robot => {
+       const robotName = robot.name.toLowerCase();
+       const searchTermLower = searchTerm.toLowerCase();
+       const matchesSearch = searchTerm === '' || robotName.includes(searchTermLower);
+       const matchesType = filterType === 'All' || (robot.strategy_type || 'Custom') === filterType;
+       return matchesSearch && matchesType;
+     });
      
-     const duration = performance.now() - startTime;
-     if (duration > 16) { // More than one frame at 60fps
-       console.warn(`VirtualScrollList filter took ${duration.toFixed(2)}ms for ${robots.length} items`);
-     }
+const duration = performance.now() - startTime;
+      if (duration > 16) { // More than one frame at 60fps
+        frontendPerformanceOptimizer.recordMetric('virtual_scroll_filter_duration', duration);
+      }
      
      return result;
    }, [robots, searchTerm, filterType]);
@@ -124,7 +118,7 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
            contain: 'layout style paint' // CSS containment for better performance
          }}
        >
-         {visibleRobots.map((robot, index) => {
+         {visibleRobots.map((robot: Robot, index: number) => {
            const actualIndex = visibleRange.startIndex + index;
            const top = actualIndex * itemHeight;
            
@@ -161,8 +155,8 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
 interface RobotCardProps {
   robot: Robot;
   processingId: string | null;
-  onDuplicate: (id: string) => void;
-  onDelete: (id: string, name: string) => void;
+  onDuplicate: (_id: string) => void;
+  onDelete: (_id: string, name: string) => void;
   t: (key: string, params?: Record<string, any>) => string;
 }
 

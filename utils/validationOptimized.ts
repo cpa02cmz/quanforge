@@ -1,31 +1,22 @@
-// Optimized validation service with modular architecture for better tree shaking
-export type { ValidationError } from './validationTypes';
-export { 
-  validateRequired, 
-  validateRange, 
-  validateRegex, 
-  validateInSet, 
-  collectErrors, 
-  isValid, 
-  formatErrors 
-} from './validationHelpers';
-export { validateStrategyParams } from './strategyValidation';
-export { 
-  validateChatMessage, 
-  sanitizeInput, 
-  validateApiKey, 
-  validateSymbol 
-} from './inputValidation';
+/**
+ * Legacy Validation Optimized - DEPRECATED
+ * This module has been consolidated into utils/validationCore.ts
+ * Please import from validationCore.ts instead
+ */
 
-// Re-export legacy ValidationService class for backward compatibility
-import { validateStrategyParams as _validateStrategyParams } from './strategyValidation';
-import { validateChatMessage as _validateChatMessage, sanitizeInput as _sanitizeInput } from './inputValidation';
-import { isValid as _isValid, formatErrors as _formatErrors } from './validationHelpers';
+import { UnifiedValidationService } from './validationCore';
 
-export class ValidationService {
-  static validateStrategyParams = _validateStrategyParams;
-  static validateChatMessage = _validateChatMessage;
-  static sanitizeInput = _sanitizeInput;
-  static isValid = _isValid;
-  static formatErrors = _formatErrors;
-}
+// Re-export main functionality with available methods
+export const validateApiKey = UnifiedValidationService.validateApiKey;
+export const sanitizeInput = UnifiedValidationService.sanitizeInput;
+export const validateChatMessage = UnifiedValidationService.validateChatMessage;
+export const validateSymbol = UnifiedValidationService.validateSymbol;
+export const validateStrategyParams = UnifiedValidationService.validateStrategyParams;
+
+// Export core validation utilities
+export const validateRequired = UnifiedValidationService.validateRequired;
+export const validateRange = UnifiedValidationService.validateRange;
+export const validateRegex = UnifiedValidationService.validateRegex;
+export const validateInSet = UnifiedValidationService.validateInSet;
+export const isValid = UnifiedValidationService.isValid;
+export const formatErrors = UnifiedValidationService.formatErrors;
