@@ -1,10 +1,5 @@
 // Consolidated Cache Manager - Unifies all cache strategies
-import { createScopedLogger } from "../utils/logger";
-import { securityManager } from "./securityManager";
-import { CACHE_CONFIG, TIME_CONSTANTS } from "../constants/config";
-import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
-
-const logger = createScopedLogger('consolidated-cache');
+import { decompressFromUTF16, compressToUTF16 } from 'lz-string';
 
 // Core interfaces
 interface CacheEntry<T = any> {
@@ -207,7 +202,7 @@ export class ConsolidatedCacheManager {
     let data: any = entry.data;
     if (entry.compressed) {
       try {
-        const decompressed = await decompress(entry.data);
+        const decompressed = decompressFromUTF16(entry.data);
         data = JSON.parse(decompressed);
       } catch (error) {
         console.warn('Failed to decompress cached data:', error);
@@ -262,7 +257,7 @@ export class ConsolidatedCacheManager {
         strategy?.compression !== false) {
       try {
         const jsonString = JSON.stringify(data);
-        const compressedData = compress(jsonString);
+        const compressedData = compressToUTF16(jsonString);
         const compressedSize = compressedData.length * 2;
 
         // Only use compression if it reduces size
