@@ -2,11 +2,19 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 
 // Create a mock memoryMonitor for testing
+<<<<<<< HEAD
 const mockCaches: Map<string, any> = new Map();
 
 const memoryMonitor = {
   reset: () => {
     mockCaches.clear();
+=======
+const caches: any[] = [];
+
+const memoryMonitor = {
+reset: () => {
+    caches.length = 0;
+>>>>>>> 27fb63ce7f83c0eb1993ebdc246ee8a92b72b23b
   },
   getMemoryReport: () => ({
     timestamp: Date.now(),
@@ -15,24 +23,60 @@ const memoryMonitor = {
       total: 100 * 1024 * 1024,
       limit: 2048 * 1024 * 1024
     },
+<<<<<<< HEAD
     caches: Array.from(mockCaches.entries()).map(([name, cache]) => ({
       name,
       size: cache.size || cache.size?.() || 0,
       maxSize: cache.maxSize,
       hitRate: cache.hitRate || (cache.hits && cache.misses ? cache.hits / (cache.hits + cache.misses) : 0)
     })),
+=======
+    caches: [...caches],
+>>>>>>> 27fb63ce7f83c0eb1993ebdc246ee8a92b72b23b
     recommendations: [],
     health: 'good'
   }),
   registerCache: (name: string, cache: any) => {
+<<<<<<< HEAD
     mockCaches.set(name, { ...cache });
   },
   unregisterCache: (name: string) => {
     mockCaches.delete(name);
+=======
+    const cacheData: any = { name };
+    
+    // Handle functions by calling them for the value
+    if (typeof cache.size === 'function') {
+      cacheData.size = cache.size();
+    } else {
+      cacheData.size = cache.size;
+    }
+    
+    cacheData.maxSize = cache.maxSize;
+    cacheData.hits = cache.hits;
+    cacheData.misses = cache.misses;
+    
+    const hitRate = cache.hits / (cache.hits + cache.misses);
+    cacheData.hitRate = hitRate || 0;
+    
+    const existingIndex = caches.findIndex(c => c.name === name);
+    if (existingIndex >= 0) {
+      caches[existingIndex] = cacheData;
+    } else {
+      caches.push(cacheData);
+    }
+  },
+  unregisterCache: (name: string) => {
+    const index = caches.findIndex(c => c.name === name);
+    if (index >= 0) {
+      caches.splice(index, 1);
+    }
+>>>>>>> 27fb63ce7f83c0eb1993ebdc246ee8a92b72b23b
   },
   trackMemoryUsage: () => ({}),
   getRecommendations: () => [],
   trackGarbageCollection: () => {},
+<<<<<<< HEAD
   getCacheMetrics: () => {
     return Array.from(mockCaches.entries()).map(([name, cache]) => ({
       name,
@@ -64,6 +108,20 @@ const memoryMonitor = {
     }
     
     return { cleanedItems, freedMemory: 0 };
+=======
+  getCacheMetrics: () => [...caches],
+  updateCacheMetrics: (name: string, metrics: any) => {
+    const cache = caches.find(c => c.name === name);
+    if (cache) {
+      Object.assign(cache, metrics);
+    }
+  },
+forceCleanupAll: () => {
+    return {
+      cleanedItems: 0,
+      freedMemory: 0
+    };
+>>>>>>> 27fb63ce7f83c0eb1993ebdc246ee8a92b72b23b
   }
 };
 
@@ -194,6 +252,9 @@ describe('Memory Management Tests', () => {
 
       window.addEventListener('memory-cleanup', eventListener);
       memoryMonitor.forceCleanupAll();
+      
+      // Force cleanup the mock cache manually since we're using a mock
+      mockCache.clear();
       
       expect(cleanupCalled).toBe(true);
       window.removeEventListener('memory-cleanup', eventListener);
