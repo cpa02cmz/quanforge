@@ -5,6 +5,7 @@
  */
 
 import { EventMetadata } from '../types/common';
+import { EDGE_MONITORING_CONFIG } from '../constants/config';
 
 interface EdgeMonitorConfig {
   enableRealTimeMonitoring: boolean;
@@ -108,7 +109,7 @@ class EdgeAnalyticsMonitoring {
     enableUserBehaviorTracking: true,
     sampleRate: 0.1,
     alertThresholds: {
-      responseTime: 1000,
+      responseTime: EDGE_MONITORING_CONFIG.ALERTS.RESPONSE_TIME_THRESHOLD,
       errorRate: 0.05,
       memoryUsage: 80,
       cpuUsage: 80,
@@ -149,7 +150,7 @@ class EdgeAnalyticsMonitoring {
         this.performHealthChecks();
       }
       this.checkAlerts();
-    }, 30000); // Every 30 seconds
+    }, EDGE_MONITORING_CONFIG.METRICS.COLLECTION_INTERVAL); // Use config interval
   }
 
   stopMonitoring(): void {
@@ -184,8 +185,8 @@ class EdgeAnalyticsMonitoring {
     };
 
     this.metrics.push(metric);
-    if (this.metrics.length > 1000) {
-      this.metrics = this.metrics.slice(-1000);
+    if (this.metrics.length > EDGE_MONITORING_CONFIG.METRICS.MAX_IN_MEMORY) {
+      this.metrics = this.metrics.slice(-EDGE_MONITORING_CONFIG.METRICS.MAX_IN_MEMORY);
     }
 
     if (Math.random() < this.config.sampleRate && this.config.endpoint) {
@@ -207,9 +208,9 @@ class EdgeAnalyticsMonitoring {
       const checks = this.healthChecks.get(region)!;
       checks.push(result);
       
-      // Keep only last 100 checks per region
-      if (checks.length > 100) {
-        checks.splice(0, checks.length - 100);
+      // Keep only last N checks per region
+      if (checks.length > EDGE_MONITORING_CONFIG.HEALTH_CHECKS.MAX_PER_REGION) {
+        checks.splice(0, checks.length - EDGE_MONITORING_CONFIG.HEALTH_CHECKS.MAX_PER_REGION);
       }
     });
   }
@@ -303,8 +304,8 @@ class EdgeAnalyticsMonitoring {
 
   private addAlert(alert: Alert): void {
     this.alerts.push(alert);
-    if (this.alerts.length > 100) {
-      this.alerts = this.alerts.slice(-100);
+    if (this.alerts.length > EDGE_MONITORING_CONFIG.ALERTS.MAX_RETAINED) {
+      this.alerts = this.alerts.slice(-EDGE_MONITORING_CONFIG.ALERTS.MAX_RETAINED);
     }
 
     this.sendNotification(alert);

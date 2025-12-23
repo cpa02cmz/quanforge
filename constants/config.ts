@@ -528,6 +528,83 @@ export const getConfig = <T>(section: string, key: string): T => {
   throw new Error(`Configuration key '${key}' not found in section '${section}'`);
 };
 
+// ========== DATABASE CONFIGURATION ==========
+export const DATABASE_CONFIG = {
+  RETRY: {
+    DELAYS: {
+      BASE: 1000,
+      MAX: 5000,
+      BACKOFF_MULTIPLIER: 2,
+    },
+    MAX_ATTEMPTS: 3,
+    NON_RETRYABLE_ERRORS: [
+      'PGRST116', // Not found
+      'PGRST301', // Permission denied
+      '42501',    // Insufficient privilege
+      '23505',    // Unique violation
+      '23503',    // Foreign key violation
+    ],
+    NON_RETRYABLE_STATUS_CODES: [400, 401, 403, 404, 422],
+    EDGE_SPECIFIC_ERRORS: [
+      'EDGE_FUNCTION_TIMEOUT',
+      'EDGE_MEMORY_LIMIT',
+      'EDGE_RATE_LIMIT'
+    ],
+  },
+  CIRCUIT_BREAKER: {
+    FAILURE_THRESHOLD: 3,
+    RESET_TIMEOUT: TIME_CONSTANTS.MINUTE * 0.5, // 30 seconds
+    MONITORING_PERIOD: 10000, // 10 seconds
+    SUCCESS_THRESHOLD: 3, // Need 3 successes to close
+  },
+  POOL: {
+    ACQUIRE_TIMEOUT: 5000,
+    IDLE_TIMEOUT: TIME_CONSTANTS.MINUTE * 0.5, // 30 seconds
+    HEALTH_CHECK_INTERVAL: 10000,
+    RETRY_DELAY: 1000,
+    MAX_SIZE: 100,
+    MAX_RESPONSE_TIME_SAMPLES: 100,
+  }
+};
+
+// ========== CIRCUIT BREAKER CONFIGURATION ==========
+export const CIRCUIT_BREAKER_CONFIG = {
+  DEFAULT_FAILURE_THRESHOLD: 3,
+  DEFAULT_RESET_TIMEOUT: TIME_CONSTANTS.MINUTE * 0.5, // 30 seconds
+  DEFAULT_MONITORING_PERIOD: 10000, // 10 seconds
+  SUCCESS_THRESHOLD: 3,
+};
+
+// ========== EDGE MONITORING CONFIGURATION ==========
+export const EDGE_MONITORING_CONFIG = {
+  METRICS: {
+    COLLECTION_INTERVAL: TIME_CONSTANTS.CLEANUP_SHORT_INTERVAL, // 30 seconds
+    MAX_IN_MEMORY: 1000,
+    PERFORMANCE_SUMMARY_LIMIT: 10,
+    MAX_CACHE_METRICS: 1000,
+    ACCESS_TIMES_RETENTION: 100,
+  },
+  HEALTH_CHECKS: {
+    MAX_PER_REGION: 100,
+    MAX_RESPONSE_TIME: 1000, // 1 second
+  },
+  ALERTS: {
+    MAX_RETAINED: 100,
+    RESPONSE_TIME_THRESHOLD: 1000, // 1 second
+    ERROR_RATE_THRESHOLD: 0.05, // 5%
+    MEMORY_USAGE_THRESHOLD: 80, // 80%
+  }
+};
+
+// ========== AI CACHE CONFIGURATION ENHANCEMENTS ==========
+export const AI_CACHE_ENHANCED = {
+  HASH_SUBSTRING_LENGTH: 1000,
+  DEFAULT_ESTIMATE_SIZE: 1000,
+  SEMANTIC_THRESHOLD: 0.85,
+  PROMOTION_THRESHOLD: 3,
+  PROMOTION_SIZE_LIMIT: 5000,
+};
+
 // Default export with all configuration
 export const APP_CONFIG = {
   TIME_CONSTANTS,
@@ -544,6 +621,10 @@ export const APP_CONFIG = {
   BUILD_CONFIG,
   AI_CONFIG,
   DEV_SERVER_CONFIG,
+  DATABASE_CONFIG,
+  CIRCUIT_BREAKER_CONFIG,
+  EDGE_MONITORING_CONFIG,
+  AI_CACHE_ENHANCED,
   getEnvironmentConfig,
   getConfig,
 };

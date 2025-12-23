@@ -1,9 +1,10 @@
-/**
- * Consolidated Cache Manager for QuantForge AI
- * Merges the best features from all cache implementations into a single, optimized system
- */
+// Consolidated Cache Manager - Unifies all cache strategies
+import { createScopedLogger } from "../utils/logger";
+import { securityManager } from "./securityManager";
+import { CACHE_CONFIG, TIME_CONSTANTS } from "../constants/config";
+import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
 
-import { compress, decompress } from 'lz-string';
+const logger = createScopedLogger('consolidated-cache');
 
 // Core interfaces
 interface CacheEntry<T = any> {
