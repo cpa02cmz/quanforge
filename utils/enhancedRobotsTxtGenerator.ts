@@ -1,3 +1,5 @@
+import { writeFileSync } from 'fs';
+
 interface RobotsTxtConfig {
   baseUrl: string;
   sitemaps: string[];
@@ -79,32 +81,10 @@ class EnhancedRobotsTxtGenerator {
     return robots;
   }
 
-  async save(outputPath: string = './public/robots.txt'): Promise<void> {
+  save(outputPath: string = './public/robots.txt'): void {
     const robotsTxt = this.generate();
-    try {
-      if (typeof window === 'undefined' && typeof process !== 'undefined' && require('fs')) {
-        // Server-side environment
-        const fs = require('fs');
-        fs.writeFileSync(outputPath, robotsTxt, 'utf8');
-        console.log(`Enhanced robots.txt generated at ${outputPath}`);
-      } else {
-        // Browser environment - provide fallback behavior
-        console.warn('File system operations not available in browser environment');
-        if (typeof window !== 'undefined') {
-          // Offer download to user in browser
-          const blob = new Blob([robotsTxt], { type: 'text/plain' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'robots.txt';
-          a.click();
-          URL.revokeObjectURL(url);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to save robots.txt:', error);
-      throw new Error(`Failed to save robots.txt: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    writeFileSync(outputPath, robotsTxt);
+    console.log(`Enhanced robots.txt generated at ${outputPath}`);
   }
 }
 

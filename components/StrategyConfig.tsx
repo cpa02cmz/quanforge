@@ -39,7 +39,7 @@ const sanitizeInput = (input: string): string => {
     });
   };
 
-  const handleChange = useCallback((field: keyof StrategyParams, value: string | number | boolean | CustomInput[]) => {
+  const handleChange = useCallback((field: keyof StrategyParams, value: any) => {
      if (typeof value === 'string') {
        value = sanitizeInput(value);
      }

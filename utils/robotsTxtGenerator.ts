@@ -220,20 +220,13 @@ class EnhancedRobotsTxtGenerator {
     return content;
   }
 
-  // Save robots.txt to file (server-side only)
+  // Save robots.txt to file
   saveToFile(outputPath: string = './public/robots.txt'): void {
-    if (typeof window !== 'undefined') {
-      throw new Error('saveToFile() is not available in browser environment. Use generate() instead.');
-    }
-    
     const content = this.generate();
     
     try {
-      // Dynamic import for server-side only
-      import('fs').then(fs => {
-        fs.writeFileSync(outputPath, content, 'utf8');
-        console.log(`✅ Robots.txt generated successfully: ${outputPath}`);
-      });
+      require('fs').writeFileSync(outputPath, content, 'utf8');
+      console.log(`✅ Robots.txt generated successfully: ${outputPath}`);
     } catch (error) {
       console.error('❌ Error saving robots.txt:', error);
       throw error;
