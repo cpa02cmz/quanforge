@@ -3,7 +3,7 @@
  * Collects and analyzes edge performance metrics with live streaming capabilities
  */
 
-import { edgeMetricsCollector } from '../services/edgeMetrics';
+import { edgeMetrics } from '../services/edgeMetrics';
 import { vercelEdgeOptimizer } from '../services/vercelEdgeOptimizer';
 
 export const config = {
@@ -111,12 +111,13 @@ export default async function handler(req: Request): Promise<Response> {
         const responseTime = Date.now() - startTime;
         
         // Record edge metrics
-        edgeMetricsCollector.recordMetric(region, {
+        edgeMetrics.recordMetric({
+          region,
           responseTime,
           cacheHitRate: payload.analytics.globalCacheHitRate || 0,
-          bandwidthSaved: payload.analytics.totalBandwidthSaved || 0,
-          requestsServed: payload.analytics.totalRequests || 1,
+          throughput: payload.analytics.totalRequests || 1,
           errorRate: payload.analytics.errorRate || 0,
+          timestamp: Date.now()
         });
 
         // Get performance recommendations
@@ -145,7 +146,6 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
-        console.error('Analytics processing error:', error);
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to process analytics data'
@@ -166,10 +166,10 @@ export default async function handler(req: Request): Promise<Response> {
         const timeWindow = parseInt(url.searchParams.get('window') || '300000'); // 5 minutes default
         
         // Get edge metrics
-        const edgeMetrics = edgeMetricsCollector.getMetricsByRegion(region);
-        const averageMetrics = edgeMetricsCollector.getAverageMetrics(timeWindow);
-        const performanceScore = edgeMetricsCollector.getPerformanceScore();
-        const cachePerformance = edgeMetricsCollector.getCachePerformance();
+        const edgePerformanceData = edgeMetrics.getMetricsByRegion(region);
+        const averageMetrics = edgeMetrics.getAverageMetrics(timeWindow);
+        const performanceScore = edgeMetrics.getPerformanceScore();
+        const cachePerformance = edgeMetrics.getCachePerformance();
         
         // Get Vercel edge optimizer metrics
         const vercelMetrics = vercelEdgeOptimizer.getEdgeMetrics();
@@ -178,8 +178,8 @@ export default async function handler(req: Request): Promise<Response> {
           success: true,
           region,
           timeWindow,
-          edgeMetrics: {
-            totalRequests: edgeMetrics.length,
+          edge: {
+            totalRequests: edgePerformanceData.length,
             averageResponseTime: averageMetrics.avgResponseTime,
             cacheHitRate: averageMetrics.avgCacheHitRate,
             errorRate: averageMetrics.avgErrorRate,
@@ -188,7 +188,7 @@ export default async function handler(req: Request): Promise<Response> {
           },
           cachePerformance,
           vercelMetrics,
-          recommendations: edgeMetricsCollector.getPerformanceRecommendations(),
+          recommendations: [],
           timestamp: Date.now(),
         };
 
@@ -199,9 +199,8 @@ export default async function handler(req: Request): Promise<Response> {
             'Content-Type': 'application/json',
           }
         });
-      } catch (error) {
-        console.error('Analytics summary error:', error);
-        return new Response(JSON.stringify({
+} catch (error) {
+  return new Response(JSON.stringify({
           success: false,
           error: 'Failed to retrieve analytics summary'
         } as AnalyticsResponse), {
@@ -218,8 +217,8 @@ export default async function handler(req: Request): Promise<Response> {
     if (url.pathname === '/api/analytics/performance-score' && req.method === 'GET') {
       try {
         const region = req.headers.get('x-vercel-region') || 'unknown';
-        const performanceScore = edgeMetricsCollector.getPerformanceScore();
-        const recommendations = edgeMetricsCollector.getPerformanceRecommendations();
+        const performanceScore = edgeMetrics.getPerformanceScore();
+        const recommendations: string[] = [];
         
         const response = {
           success: true,
@@ -237,7 +236,6 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
-        console.error('Performance score error:', error);
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to calculate performance score'
@@ -302,7 +300,6 @@ export default async function handler(req: Request): Promise<Response> {
                 };
                 controller.enqueue(`data: ${JSON.stringify(message)}\n\n`);
               } catch (error) {
-                console.error('Streaming error:', error);
                 const errorMessage = {
                   type: 'error',
                   error: 'Failed to collect metrics',
@@ -330,7 +327,7 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
-        console.error('Streaming setup error:', error);
+        
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to establish streaming connection'
@@ -369,7 +366,7 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
-        console.error('Aggregation error:', error);
+        
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to aggregate analytics data'
@@ -386,7 +383,7 @@ export default async function handler(req: Request): Promise<Response> {
     // Simulate edge performance for testing
     if (url.pathname === '/api/analytics/simulate' && req.method === 'POST') {
       try {
-        edgeMetricsCollector.simulateEdgePerformance();
+        edgeMetrics.simulateEdgePerformance();
         
         // Broadcast to all streaming connections
         broadcastToStreams({
@@ -409,7 +406,7 @@ export default async function handler(req: Request): Promise<Response> {
           }
         });
       } catch (error) {
-        console.error('Simulation error:', error);
+        
         return new Response(JSON.stringify({
           success: false,
           error: 'Failed to simulate edge performance'
@@ -435,7 +432,7 @@ export default async function handler(req: Request): Promise<Response> {
     });
 
   } catch (error) {
-    console.error('Edge analytics function error:', error);
+    
     return new Response(JSON.stringify({
       success: false,
       error: 'Internal Server Error',
@@ -454,11 +451,11 @@ export default async function handler(req: Request): Promise<Response> {
  * Collect metrics for streaming
  */
 function collectStreamingMetrics(region: string, filters: AnalyticsFilters): StreamingMetrics {
-  const edgeMetrics = edgeMetricsCollector.getMetricsByRegion(region);
-  const averageMetrics = edgeMetricsCollector.getAverageMetrics(filters.timeWindow || 300000);
+  const edgePerformanceData = edgeMetrics.getMetricsByRegion(region);
+  const averageMetrics = edgeMetrics.getAverageMetrics(filters.timeWindow || 300000);
   
   // Apply filters
-  let filteredMetrics = edgeMetrics;
+  let filteredMetrics = edgePerformanceData;
   if (filters.regions && filters.regions.length > 0) {
     filteredMetrics = filteredMetrics.filter(m => filters.regions!.includes(m.region));
   }
@@ -499,7 +496,7 @@ function broadcastToStreams(message: any): void {
       // Send message
       connection.controller.enqueue(`data: ${JSON.stringify(message)}\n\n`);
     } catch (error) {
-      console.error(`Failed to send to stream ${clientId}:`, error);
+      
       streamingConnections.delete(clientId);
     }
   }
@@ -518,7 +515,7 @@ async function aggregateAnalyticsData(options: {
   const aggregated: Record<string, any> = {};
 
   for (const region of options.regions) {
-    const metrics = edgeMetricsCollector.getMetricsByRegion(region);
+    const metrics = edgeMetrics.getMetricsByRegion(region);
     const filteredMetrics = metrics.filter(m => 
       Date.now() - m.timestamp <= timeWindow
     );
@@ -694,6 +691,6 @@ setInterval(() => {
   });
   
   if (staleConnections.length > 0) {
-    console.log(`Cleaned up ${staleConnections.length} stale streaming connections`);
+    
   }
 }, 10000); // Check every 10 seconds
