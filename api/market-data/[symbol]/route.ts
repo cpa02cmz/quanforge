@@ -199,7 +199,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('symbol_api_error', duration);
     
-    console.error('Symbol API GET error:', error);
+    
     
     return NextResponse.json(
       {
@@ -299,7 +299,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('symbol_api_subscribe_error', duration);
     
-    console.error('Symbol API POST error:', error);
+    
     
     return NextResponse.json(
       {

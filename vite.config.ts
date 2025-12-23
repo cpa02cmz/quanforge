@@ -1,13 +1,17 @@
 import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { getBuildConfig } from './constants/config';
+
+// Get dynamic build configuration
+const buildConfig = getBuildConfig();
 
 export default defineConfig({
   plugins: [react()],
   build: {
     manifest: true,
     outDir: 'dist',
-    sourcemap: process.env['NODE_ENV'] !== 'production' ? 'hidden' : false,
+    sourcemap: buildConfig.SOURCE_MAP_DEV,
     target: 'esnext',
     rollupOptions: {
       input: {
@@ -17,40 +21,222 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
-            // React ecosystem - optimized for edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
-              return 'react-vendor';
+            // React ecosystem - split more granularly for better caching
+            if (id.includes('react')) {
+              // React core library
+              if (id.includes('react/index') || id.includes('react/umd/react')) {
+                return 'react-core';
+              }
+              // React DOM
+              if (id.includes('react-dom') || id.includes('ReactDOM')) {
+                return 'react-dom';
+              }
+              // React Router - split further
+              if (id.includes('react-router')) {
+                if (id.includes('dom') || id.includes('BrowserRouter')) {
+                  return 'react-router-dom';
+                }
+                if (id.includes('memory') || id.includes('MemoryRouter')) {
+                  return 'react-router-memory';
+                }
+                return 'react-router';
+              }
+              // React dev tools
+              if (id.includes('react-devtools')) {
+                return 'react-devtools';
+              }
+              // React hooks API
+              if (id.includes('react/dist/react-jsx-dev') || id.includes('react/jsx-runtime')) {
+                return 'react-jsx';
+              }
+              // React reconciliation and scheduler
+              if (id.includes('scheduler') || id.includes('reconciler')) {
+                return 'react-scheduler';
+              }
+              // React is utility
+              if (id.includes('react-is')) {
+                return 'react-is';
+              }
+              // Default react catch-all
+              return 'react-misc';
             }
             // Supabase - isolated for better connection pooling
             if (id.includes('@supabase')) {
-              // Separate realtime and storage for better caching
-              if (id.includes('@supabase/realtime-js')) {
-                return 'supabase-realtime';
-              }
-              if (id.includes('@supabase/storage-js')) {
-                return 'supabase-storage';
-              }
               return 'supabase-vendor';
             }
-            // AI services - lazy loaded for edge optimization
+            // AI services - split more aggressively to reduce chunk sizes
             if (id.includes('@google/genai')) {
+              // Core AI models and generators - split further
+              if (id.includes('generators') || id.includes('generate')) {
+                if (id.includes('text') || id.includes('Text')) {
+                  return 'ai-text-generation';
+                }
+                if (id.includes('chat') || id.includes('Chat')) {
+                  return 'ai-chat-generation';
+                }
+                return 'ai-generators';
+              }
+              // AI models - split further
+              if (id.includes('models') || id.includes('Model')) {
+                if (id.includes('gemini') || id.includes('Gemini')) {
+                  return 'ai-gemini-models';
+                }
+                if (id.includes('embedding') || id.includes('Embedding')) {
+                  return 'ai-embedding-models';
+                }
+                return 'ai-models';
+              }
+              // Text processing and embeddings - split further
+              if (id.includes('embeddings')) {
+                return 'ai-embeddings';
+              }
+              if (id.includes('tokens') || id.includes('Token')) {
+                return 'ai-tokenization';
+              }
+              if (id.includes('text') || id.includes('Text')) {
+                return 'ai-text-processing';
+              }
+              if (id.includes('embeddings') || id.includes('tokens') || id.includes('text')) {
+                return 'ai-processors';
+              }
+              // AI client and configuration - split further
+              if (id.includes('client')) {
+                return 'ai-client-core';
+              }
+              if (id.includes('config') || id.includes('Config')) {
+                return 'ai-config';
+              }
+              if (id.includes('auth') || id.includes('Auth')) {
+                return 'ai-auth';
+              }
+              if (id.includes('client') || id.includes('config') || id.includes('auth')) {
+                return 'ai-client';
+              }
+              // Chat and conversation handling - split further
+              if (id.includes('chat') || id.includes('conversation') || id.includes('messages')) {
+                if (id.includes('history') || id.includes('History')) {
+                  return 'ai-chat-history';
+                }
+                if (id.includes('streaming') || id.includes('Stream')) {
+                  return 'ai-chat-streaming';
+                }
+                return 'ai-chat';
+              }
+              // AI request/response handling
+              if (id.includes('request') || id.includes('Response') || id.includes('http')) {
+                return 'ai-api-handlers';
+              }
+              // AI error handling and retry logic
+              if (id.includes('error') || id.includes('retry') || id.includes('circuit')) {
+                return 'ai-error-handling';
+              }
+              // Default AI vendor - should be smaller now
               return 'ai-vendor';
             }
-            // Chart libraries - split more granularly
+            // Chart libraries - split more aggressively to reduce chunk sizes
             if (id.includes('recharts')) {
+              // Core chart components - split further
               if (id.includes('AreaChart') || id.includes('LineChart')) {
+                if (id.includes('chart') && id.includes('Area')) {
+                  return 'chart-area';
+                }
+                if (id.includes('chart') && id.includes('Line')) {
+                  return 'chart-line';
+                }
                 return 'chart-core';
+              }
+              // Pie and bar charts - split further
+              if (id.includes('PieChart')) {
+                return 'chart-pie';
+              }
+              if (id.includes('BarChart')) {
+                return 'chart-bar';
               }
               if (id.includes('PieChart') || id.includes('BarChart')) {
                 return 'chart-misc';
               }
+              // Responsive components - usually larger
+              if (id.includes('ResponsiveContainer')) {
+                return 'chart-responsive';
+              }
+              // Axes and grid components - split further
+              if (id.includes('CartesianGrid')) {
+                return 'chart-grid';
+              }
+              if (id.includes('XAxis')) {
+                return 'chart-xaxis';
+              }
+              if (id.includes('YAxis')) {
+                return 'chart-yaxis';
+              }
+              if (id.includes('CartesianGrid') || id.includes('XAxis') || id.includes('YAxis')) {
+                return 'chart-axes';
+              }
+              // Tooltip and legend components - split further
+              if (id.includes('Tooltip')) {
+                return 'chart-tooltip';
+              }
+              if (id.includes('Legend')) {
+                return 'chart-legend';
+              }
+              if (id.includes('Tooltip') || id.includes('Legend')) {
+                return 'chart-tooltips';
+              }
+              // Cells and styling - split further
+              if (id.includes('Cell')) {
+                return 'chart-cells';
+              }
+              if (id.includes('Brush')) {
+                return 'chart-brush';
+              }
+              if (id.includes('Cell') || id.includes('Brush')) {
+                return 'chart-styling';
+              }
+              // Recharts shape components
+              if (id.includes('shapes') || id.includes('Shape') || id.includes('Rectangle')) {
+                return 'chart-shapes';
+              }
+              // Recharts scale and math utilities
+              if (id.includes('scale') || id.includes('utils') || id.includes('math')) {
+                return 'chart-utils';
+              }
+              // Recharts animation components
+              if (id.includes('animation') || id.includes('Transition')) {
+                return 'chart-animation';
+              }
+              // Default recharts vendor - should be smaller now
               return 'chart-vendor';
             }
             // Security utilities - bundled together
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'security-vendor';
             }
-            // All other vendor libraries
+// All other vendor libraries - split more aggressively
+            if (id.includes('lodash')) {
+              return 'vendor-lodash';
+            }
+            if (id.includes('moment') || id.includes('date-fns') || id.includes('dayjs')) {
+              return 'vendor-date';
+            }
+            if (id.includes('axios') || id.includes('fetch') || id.includes('request')) {
+              return 'vendor-http';
+            }
+            if (id.includes('zod') || id.includes('yup') || id.includes('joi')) {
+              return 'vendor-validation';
+            }
+            if (id.includes('classnames') || id.includes('clsx') || id.includes('cva')) {
+              return 'vendor-classes';
+            }
+            if (id.includes('uuid') || id.includes('nanoid')) {
+              return 'vendor-uuid';
+            }
+            if (id.includes('crypto-js') || id.includes('bcrypt') || id.includes('hash')) {
+              return 'vendor-crypto';
+            }
+            if (id.includes('lodash') || id.includes('underscore')) {
+              return 'vendor-utils';
+            }
+            // Default miscellaneous vendor
             return 'vendor-misc';
           }
           
@@ -186,10 +372,10 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: process.env['NODE_ENV'] === 'production',
+        drop_console: buildConfig.DROP_CONSOLE,
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'],
-        passes: 3, // Triple pass for better compression
+        passes: buildConfig.TERSER_COMPRESSION_PASSES, // Dynamic configuration for optimal compression
         sequences: true,
         properties: true,
         dead_code: true,
@@ -222,12 +408,12 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 100, // More aggressive optimization for edge performance
+    chunkSizeWarningLimit: buildConfig.CHUNK_SIZE_WARNING_LIMIT, // Dynamic configuration for edge performance
     reportCompressedSize: true,
-    cssCodeSplit: true,
-    cssMinify: true, // Add CSS minification
+    cssCodeSplit: buildConfig.CSS_CODE_SPLIT,
+    cssMinify: buildConfig.CSS_MINIFY, // Dynamic configuration
     // Enhanced edge optimization
-    assetsInlineLimit: 256, // Optimized for edge performance
+    assetsInlineLimit: buildConfig.ASSETS_INLINE_LIMIT, // Dynamic configuration for edge performance
     modulePreload: {
       polyfill: false
     },

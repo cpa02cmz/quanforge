@@ -1,20 +1,19 @@
-
 import { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './services/supabase';
 import { ToastProvider } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { UserSession } from './types';
-import { performanceMonitor } from './utils/performance';
+import { performanceManager } from './utils/performanceConsolidated';
+
+// Create alias for backward compatibility
+const performanceMonitor = performanceManager;
 import { logger } from './utils/logger';
-import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
-  import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
-  import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
-  import { frontendOptimizer } from './services/frontendOptimizer';
-  import { edgeAnalytics } from './services/edgeAnalytics';
-  import { edgeMonitoring } from './services/edgeMonitoring';
-  import { advancedAPICache } from './services/advancedAPICache';
-  import { frontendPerformanceOptimizer } from './services/frontendPerformanceOptimizer';
+import { SEOHead, structuredDataTemplates } from './utils/seoUnified';
+import { configureSecurity } from './utils/envValidation';
+import { getUrlConfig } from './utils/urls';
+
+// Dynamic import utilities are available via constants/appExports.ts
 
 // Enhanced lazy loading with route-based code splitting and preloading
 const Auth = lazy(() => 
@@ -45,39 +44,43 @@ const Layout = lazy(() =>
   import('./components/Layout').then(module => ({ default: module.Layout }))
 );
 
-// Dynamic import utilities for services and heavy components
-export const loadGeminiService = () => import('./services/gemini');
-export const loadSEOUtils = () => import('./utils/seoEnhanced');
-export const loadChartComponents = () => import('./components/ChartComponents');
-export const loadCodeEditor = () => import('./components/CodeEditor');
-export const loadBacktestPanel = () => import('./components/BacktestPanel');
+// Dynamic import utilities moved to constants/appExports.ts
 
 // Enhanced preloading strategy with route-based optimization
-   const preloadCriticalRoutes = () => {
-     // Preload Dashboard components (most likely route after login)
-     import('./pages/Dashboard').catch(err => logger.warn('Dashboard preload failed:', err));
-     // Preload Generator components (second most likely)
-     setTimeout(() => import('./pages/Generator').catch(err => logger.warn('Generator preload failed:', err)), 1000);
-     // Preload Layout (essential for navigation)
-     setTimeout(() => import('./components/Layout').catch(err => logger.warn('Layout preload failed:', err)), 500);
-     // Preload static pages in background
-     setTimeout(() => import('./pages/Wiki').catch(err => logger.warn('Wiki preload failed:', err)), 2000);
-   };
+const preloadCriticalRoutes = () => {
+  // Preload Dashboard components (most likely route after login)
+  import('./pages/Dashboard').catch(err => logger.warn('Dashboard preload failed:', err));
+  // Preload Generator components (second most likely)
+  setTimeout(() => import('./pages/Generator').catch(err => logger.warn('Generator preload failed:', err)), 1000);
+  // Preload Layout (essential for navigation)
+  setTimeout(() => import('./components/Layout').catch(err => logger.warn('Layout preload failed:', err)), 500);
+  // Preload static pages in background
+  setTimeout(() => import('./pages/Wiki').catch(err => logger.warn('Wiki preload failed:', err)), 2000);
+};
 
-
+// Initialize security configuration
+const initializeSecurity = () => {
+  try {
+    configureSecurity();
+  } catch (error) {
+    logger.error('Security initialization failed:', error);
+  }
+};
 
 export default function App() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
+  useEffect(() => {
     const startTime = performance.now();
     
     // Critical path: Auth initialization first
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       performanceMonitor.recordMetric('auth_init', performance.now() - startTime);
-      databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, true);
+      
+      // Initialize security configuration first
+      initializeSecurity();
       
       // Preload critical routes after successful auth
       if (session) {
@@ -89,7 +92,6 @@ useEffect(() => {
     }).catch((err) => {
       logger.warn("Auth initialization failed:", err);
       performanceMonitor.recordMetric('auth_error', 1);
-      databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, false);
       
       // Still initialize non-critical services even on auth error
       initializeNonCriticalServices();
@@ -121,41 +123,17 @@ useEffect(() => {
      // Use setTimeout to defer non-critical initialization
      const initializeServices = async () => {
        try {
-         // Initialize Vercel Edge Optimizer (non-blocking)
-         setTimeout(() => {
-           vercelEdgeOptimizer.optimizeBundleForEdge();
-           vercelEdgeOptimizer.enableEdgeSSR();
-           vercelEdgeOptimizer.setupEdgeErrorHandling();
-         }, 100);
-         
-         // Initialize Frontend Optimizer (non-blocking)
-         setTimeout(() => {
-           frontendOptimizer.warmUp().catch(err => logger.warn('Frontend optimizer warmup failed:', err));
-         }, 200);
-         
-         // Initialize Advanced Frontend Performance Optimizer (non-blocking)
-         setTimeout(() => {
-           frontendPerformanceOptimizer.warmUp().catch(err => logger.warn('Frontend performance optimizer warmup failed:', err));
-         }, 250);
-         
-         // Initialize Edge Analytics (non-blocking)
-         setTimeout(() => {
-           edgeAnalytics.trackCustomEvent('app_initialization', {
-             timestamp: Date.now(),
-             userAgent: navigator.userAgent,
-             region: 'unknown' // Will be detected by edge analytics
-           });
-           
-           const monitoringStatus = edgeMonitoring.getMonitoringStatus();
-           logger.info('Edge monitoring status:', monitoringStatus);
-         }, 300);
-         
          // Initialize Advanced API Cache (non-blocking)
-         setTimeout(() => {
-           advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
-             logger.warn('API cache prefetch failed:', err)
-           );
-         }, 400);
+         setTimeout(async () => {
+           try {
+             const { advancedAPICache } = await import('./services/advancedAPICache');
+             advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
+               logger.warn('API cache prefetch failed:', err)
+             );
+           } catch (err) {
+             logger.warn('API cache initialization failed:', err);
+           }
+         }, 100);
        } catch (error) {
          logger.warn('Non-critical service initialization failed:', error);
        }
@@ -188,7 +166,7 @@ useEffect(() => {
               structuredDataTemplates.webPage(
                 'QuantForge AI - Advanced MQL5 Trading Robot Generator',
                 'Generate professional MQL5 trading robots and Expert Advisors using AI. Powered by Google Gemini 3.0/2.5.',
-                'https://quanforge.ai'
+                getUrlConfig().APP_URL
               )
             ]}
           />
