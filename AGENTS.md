@@ -273,6 +273,41 @@ When multiple PRs have interdependent fixes with deployment failures:
 - Platform-specific deployment issues may require different approaches for Vercel vs Cloudflare Workers
 - PR #144 restored proven deployment configuration pattern from PR #143
 
+## Hardcoded Value Extraction & Configuration Enhancement (2025-12-23)
+
+### Task Completed: Find Hardcoded and Change with Dynamic
+**Issue**: Critical hardcoded values in services limiting deployment flexibility and security
+**Root Causes**: 
+- Hardcoded WebSocket URLs in `services/marketData.ts` preventing environment-specific deployments
+- Hardcoded reconnection parameters limiting operational flexibility  
+- Market data service not utilizing existing comprehensive configuration system
+- Missing centralized configuration validation at application startup
+**Resolution Applied**:
+- **WebSocket URL Extraction**: Replaced hardcoded `'wss://stream.binance.com:9443/ws'` and `'wss://ws.twelvedata.com/v1/quotes'` with dynamic configuration from `getMarketDataConfig()`
+- **Reconnection Parameters**: Replaced hardcoded `maxReconnectAttempts = 10` and `baseReconnectDelay = 1000` with configurable values from the centralized market configuration
+- **Configuration Integration**: Updated `services/marketData.ts` to properly utilize existing `utils/marketConfig.ts` system
+- **Startup Validation**: Added `performStartupValidation()` call in `App.tsx` to ensure comprehensive configuration validation at application startup
+- **Documentation Enhancement**: Updated `.env.example` with missing security and API endpoint configuration variables
+**Files Modified**:
+- `services/marketData.ts`: Extracted all hardcoded WebSocket URLs and reconnection parameters
+- `App.tsx`: Added centralized configuration validation at startup
+- `.env.example`: Added security endpoint, rate limiting, encryption, and API endpoint configurations
+**Testing Results**:
+- **Build**: ✓ Successful build in 11.62s with no errors
+- **TypeCheck**: ✓ All TypeScript compilation passes without issues  
+- **Compatibility**: ✓ Full backward compatibility maintained with sensible defaults
+- **Validation**: ✓ Configuration validation system properly validates all new environment variables
+**Impact**: 
+- **Security**: Eliminated hardcoded endpoints that could expose system internals
+- **Flexibility**: All market data WebSocket endpoints now configurable for different deployment environments
+- **Reliability**: Centralized configuration validation ensures proper setup before application startup
+- **Maintainability**: Single source of truth configuration system utilized consistently across services
+**Key Insights**: 
+- Existing comprehensive configuration system was already available but not being utilized consistently
+- Centralized startup validation prevents configuration-related runtime errors
+- Backward compatibility achieved through sensible defaults in configuration utilities
+- Market data service now fully supports environment-specific deployments (dev/staging/production)
+
 ## Latest PR Resolution (2025-12-21) - PR #136
 
 ### PR #136 - Vercel Deployment Schema Validation Error Resolution  

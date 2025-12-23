@@ -1,5 +1,6 @@
 
 import { settingsManager } from './settingsManager';
+import { getMarketDataConfig } from '../utils/marketConfig';
 
 type PriceUpdateCallback = (data: MarketData) => void;
 
@@ -22,14 +23,17 @@ class MarketDataService {
   private binanceSubscriptions: Set<string> = new Set();
   private binanceReconnectAttempts: number = 0;
   private binanceReconnectTimer: NodeJS.Timeout | null = null;
-  private readonly maxReconnectAttempts = 10;
-  private readonly baseReconnectDelay = 1000; // 1 second
   
   // Twelve Data WebSocket
   private twelveDataWs: WebSocket | null = null;
   private twelveDataSubscriptions: Set<string> = new Set();
   private twelveDataReconnectAttempts: number = 0;
   private twelveDataReconnectTimer: NodeJS.Timeout | null = null;
+
+  // Get configuration from centralized config
+  private get config() {
+    return getMarketDataConfig();
+  }
 
   constructor() {
     // Listen for setting changes to reconnect Twelve Data if API key changes
@@ -51,7 +55,7 @@ class MarketDataService {
           this.binanceReconnectTimer = null;
       }
 
-      this.binanceWs = new WebSocket('wss://stream.binance.com:9443/ws');
+      this.binanceWs = new WebSocket(this.config.websockets.binanceUrl);
       
       this.binanceWs.onopen = () => {
           // Binance WS connected
@@ -78,13 +82,13 @@ class MarketDataService {
   }
 
   private scheduleBinanceReconnect() {
-      if (this.binanceReconnectAttempts >= this.maxReconnectAttempts) {
+      if (this.binanceReconnectAttempts >= this.config.websockets.maxReconnectAttempts) {
           return;
       }
 
       // Exponential backoff with jitter
       const delay = Math.min(
-          this.baseReconnectDelay * Math.pow(2, this.binanceReconnectAttempts) + Math.random() * 1000,
+          this.config.websockets.reconnectInterval * Math.pow(2, this.binanceReconnectAttempts) + Math.random() * 1000,
           30000 // Max 30 seconds
       );
 
@@ -154,7 +158,7 @@ class MarketDataService {
           this.twelveDataReconnectTimer = null;
       }
 
-      this.twelveDataWs = new WebSocket(`wss://ws.twelvedata.com/v1/quotes?apikey=${apiKey}`);
+      this.twelveDataWs = new WebSocket(`${this.config.websockets.twelveDataUrl}?apikey=${apiKey}`);
 
       this.twelveDataWs.onopen = () => {
           // Twelve Data WS connected
@@ -170,9 +174,9 @@ class MarketDataService {
               }
               if (data.event === 'error') {
                   // Handle authentication errors
-                  if (data.message?.includes('apikey')) {
-                      this.twelveDataReconnectAttempts = this.maxReconnectAttempts;
-                  }
+if (data.message?.includes('apikey')) {
+                       this.twelveDataReconnectAttempts = this.config.websockets.maxReconnectAttempts;
+                   }
               }
           } catch (error) {
               // Failed to parse WebSocket message
@@ -182,9 +186,9 @@ class MarketDataService {
       this.twelveDataWs.onclose = (_event) => {
           // Twelve Data WS connection closed
           // Only reconnect if we still have subscribers needing it and haven't exceeded max attempts
-           if (this.twelveDataSubscriptions.size > 0 && this.twelveDataReconnectAttempts < this.maxReconnectAttempts) {
-               this.scheduleTwelveDataReconnect();
-           }
+if (this.twelveDataSubscriptions.size > 0 && this.twelveDataReconnectAttempts < this.config.websockets.maxReconnectAttempts) {
+                this.scheduleTwelveDataReconnect();
+            }
       };
 
       this.twelveDataWs.onerror = (_err) => {
@@ -193,13 +197,13 @@ class MarketDataService {
   }
 
   private scheduleTwelveDataReconnect() {
-      if (this.twelveDataReconnectAttempts >= this.maxReconnectAttempts) {
+      if (this.twelveDataReconnectAttempts >= this.config.websockets.maxReconnectAttempts) {
           return;
       }
 
       // Exponential backoff with jitter
       const delay = Math.min(
-          this.baseReconnectDelay * Math.pow(2, this.twelveDataReconnectAttempts) + Math.random() * 1000,
+          this.config.websockets.reconnectInterval * Math.pow(2, this.twelveDataReconnectAttempts) + Math.random() * 1000,
           30000 // Max 30 seconds
       );
 

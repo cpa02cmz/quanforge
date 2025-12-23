@@ -12,6 +12,7 @@ import { logger } from './utils/logger';
 import { SEOHead, structuredDataTemplates } from './utils/seoUnified';
 import { configureSecurity } from './utils/envValidation';
 import { getUrlConfig } from './utils/urls';
+import { performStartupValidation } from './utils/configValidator';
 
 // Dynamic import utilities are available via constants/appExports.ts
 
@@ -67,12 +68,29 @@ const initializeSecurity = () => {
   }
 };
 
+// Initialize application configuration
+const initializeConfiguration = () => {
+  try {
+    performStartupValidation();
+  } catch (error) {
+    logger.error('Configuration validation failed:', error);
+    // In development, we might want to continue with warnings
+    // In production, this should be a critical failure
+    if (import.meta.env.PROD) {
+      throw error;
+    }
+  }
+};
+
 export default function App() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const startTime = performance.now();
+    
+    // Critical path: Configuration validation first (before any other initialization)
+    initializeConfiguration();
     
     // Critical path: Auth initialization first
     supabase.auth.getSession().then(({ data: { session } }) => {

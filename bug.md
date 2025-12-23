@@ -240,14 +240,38 @@
   - **Market Data Prices**: All base prices now configurable via MARKET_SYMBOLS_CONFIG
   - **Timeouts**: All timeouts now configurable with sensible defaults
   - **Security**: Encryption key now uses ENCRYPTION_KEY environment variable
+  - **Reconnection Parameters**: maxReconnectAttempts and baseReconnectDelay now configurable
 - **Solution Implemented**: 
   - Created `utils/marketConfig.ts` for centralized market data configuration
   - Updated `utils/encryption.ts` to use environment variables for encryption key
   - Enhanced `.env.example` with comprehensive configuration documentation
   - Implemented `utils/configValidator.ts` for configuration validation and startup checks
+  - **NEW**: Updated `services/marketData.ts` to utilize existing configuration system
+  - **NEW**: Added startup configuration validation in `App.tsx`
+  - **NEW**: Added security endpoint and API endpoint configuration variables
 - **Impact**: Full deployment flexibility across development/staging/production environments
-- **Testing**: ✓ Build successful (13.19s), ✓ Type checking passes, ✓ No functional regressions
-- **Status**: RESOLVED - Configuration system fully dynamic and validated
+- **Testing**: ✓ Build successful (11.62s), ✓ Type checking passes, ✓ No functional regressions, ✓ Configuration validation working
+- **Status**: RESOLVED - Configuration system fully dynamic and validated with startup checks
+
+### [FIXED] Service Configuration Inconsistency - Market Data Service
+- **Date**: 2025-12-23
+- **Severity**: Medium (Maintenance Risk) - RESOLVED
+- **Description**: Market data service had hardcoded values while comprehensive configuration system was already available
+- **Issues Fixed**:
+  - **services/marketData.ts** used hardcoded WebSocket URLs and reconnection parameters
+  - Duplicate configuration logic existed instead of reusing centralized system
+  - No configuration validation at startup for critical market data service
+- **Solution Applied**:
+  - Integrated `services/marketData.ts` with existing `utils/marketConfig.ts` system
+  - Extracted all hardcoded values to use environment variables with sensible defaults
+  - Added startup configuration validation to catch configuration errors early
+  - Enhanced `.env.example` with missing security and API endpoint configurations
+- **Testing Results**:
+  - **Build**: ✓ Successful build in 11.62s with zero errors
+  - **TypeCheck**: ✓ All TypeScript compilation passes without issues
+  - **Compatibility**: ✓ Full backward compatibility maintained
+  - **Configuration**: ✓ All environment variables properly validated at startup
+- **Status**: RESOLVED - Market data service now uses centralized configuration system with validation
 
 ### [OPEN] Performance Overhead from Over-Monitoring
 - **Date**: 2025-12-23
