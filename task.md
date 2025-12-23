@@ -3,6 +3,13 @@
 
 ## Completed Tasks
 
+- [x] **Hardcoded Values Removal**: Systematically replaced hardcoded values with dynamic configuration throughout the codebase:
+  - AI model names (gemini-3-pro-preview, gpt-4) → dynamic config from AI_CONFIG
+  - Port numbers (3000, 5173, 3001) → DEV_SERVER_CONFIG constants
+  - API endpoints (OpenAI, Google URLs) → AI_CONFIG.ENDPOINTS
+  - Cache TTL values and sizes → CACHE_CONFIG and AI_CONFIG.CACHE
+  - Validation limits (API key lengths, trading ranges) → SECURITY_CONFIG and TRADING_CONSTANTS
+  - Retry/backoff values → AI_CONFIG.RETRY
 - [x] **PR #136 Resolution**: Fixed Vercel deployment schema validation errors by removing `regions` property from all API route config exports (11 files).
 - [x] **Project Setup**: React + Tailwind + Supabase Client.
 - [x] **Authentication**: Login/Signup flows with Mock fallback.

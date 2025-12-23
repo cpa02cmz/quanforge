@@ -3,6 +3,8 @@
  * Complementary module to validationCore.ts for type definitions and helper utilities
  */
 
+import { VALIDATION_CONFIG, SECURITY_CONFIG, TRADING_CONSTANTS } from '../constants/config';
+
 export interface ValidationResult {
   isValid: boolean;
   errors: ValidationError[] | string[];
@@ -19,7 +21,7 @@ export const validateEmail = (email: string): ValidationResult => {
   
   if (!email) {
     errors.push('Email is required');
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  } else if (!VALIDATION_CONFIG.PATTERNS.EMAIL.test(email)) {
     errors.push('Invalid email format');
   }
 
@@ -34,10 +36,10 @@ export const validateApiKey = (apiKey: string): ValidationResult => {
   
   if (!apiKey) {
     errors.push('API key is required');
-  } else if (apiKey.length < 10) {
-    errors.push('API key must be at least 10 characters');
-  } else if (apiKey.length > 2000) {
-    errors.push('API key cannot exceed 2000 characters');
+  } else if (apiKey.length < SECURITY_CONFIG.MIN_API_KEY_LENGTH) {
+    errors.push(`API key must be at least ${SECURITY_CONFIG.MIN_API_KEY_LENGTH} characters`);
+  } else if (apiKey.length > SECURITY_CONFIG.MAX_API_KEY_LENGTH) {
+    errors.push(`API key cannot exceed ${SECURITY_CONFIG.MAX_API_KEY_LENGTH} characters`);
   }
 
   return {
@@ -62,8 +64,8 @@ export const validateStrategyParams = (params: any): ValidationResult => {
     errors.push('Timeframe is required');
   }
 
-  if (typeof params.riskPercent !== 'number' || params.riskPercent <= 0) {
-    errors.push('Risk percent must be a positive number');
+  if (typeof params.riskPercent !== 'number' || params.riskPercent < TRADING_CONSTANTS.MIN_RISK_PERCENT || params.riskPercent > TRADING_CONSTANTS.MAX_RISK_PERCENT) {
+    errors.push(`Risk percent must be between ${TRADING_CONSTANTS.MIN_RISK_PERCENT} and ${TRADING_CONSTANTS.MAX_RISK_PERCENT}`);
   }
 
   return {

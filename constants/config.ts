@@ -47,6 +47,10 @@ export const CACHE_CONFIG = {
   // Edge-specific cache TTL
   EDGE_CACHE_TTL: 3 * 60 * 1000, // 3 minutes
   STATIC_CACHE_TTL: 24 * 60 * 60 * 1000, // 24 hours
+  
+  // Cleanup intervals for advanced cache
+  ADVANCED_CACHE_CLEANUP_INTERVAL: TIME_CONSTANTS.CLEANUP_DEFAULT_INTERVAL, // 1 minute
+  ADVANCED_CACHE_COMPRESSION_THRESHOLD: 512, // 0.5KB
 };
 
 // ========== RATE LIMITING CONFIGURATION ==========
@@ -252,6 +256,95 @@ export const ERROR_CONFIG = {
   CIRCUIT_BREAKER_TIMEOUT: 60 * TIME_CONSTANTS.SECOND,
 };
 
+// ========== AI/ML CONFIGURATION ==========
+export const AI_CONFIG = {
+  // Default model configurations
+  DEFAULT_MODELS: {
+    GOOGLE: 'gemini-3-pro-preview',
+    OPENAI: 'gpt-4',
+    OPENAI_COMPATIBLE: 'gpt-4',
+    CLAUDE: 'claude-3-sonnet-20240229',
+  },
+  
+  // Fallback models in order of preference
+  FALLBACK_MODELS: {
+    GOOGLE: ['gemini-3-pro-preview', 'gemini-2-pro', 'gemini-1-pro'],
+    OPENAI: ['gpt-4', 'gpt-3.5-turbo'],
+    OPENAI_COMPATIBLE: ['gpt-4', 'gpt-3.5-turbo', 'llama-2'],
+  },
+  
+  // Model-specific configurations
+  MODEL_CONFIGS: {
+    'gemini-3-pro-preview': {
+      maxTokens: 8192,
+      temperature: 0.7,
+      topP: 0.8,
+      topK: 40,
+    },
+    'gpt-4': {
+      maxTokens: 4096,
+      temperature: 0.7,
+      topP: 1,
+    },
+    'gpt-3.5-turbo': {
+      maxTokens: 4096,
+      temperature: 0.7,
+      topP: 1,
+    },
+  },
+  
+  // Token limits for different providers
+  TOKEN_LIMITS: {
+    GOOGLE: 8192,
+    OPENAI: 8192,
+    CLAUDE: 100000,
+    // Default fallback
+    DEFAULT: 4000,
+  },
+  
+  // Cache configuration specific to AI services
+  CACHE: {
+    STRATEGY_ANALYSIS_TTL: TIME_CONSTANTS.HOUR * 2, // 2 hours
+    MQL5_GENERATION_TTL: TIME_CONSTANTS.MINUTE * 30, // 30 minutes
+    SEMANTIC_CACHE_TTL: TIME_CONSTANTS.MINUTE * 15, // 15 minutes
+    MAX_CACHE_SIZE: 500,
+    MAX_ANALYSIS_CACHE_SIZE: 200,
+    MAX_MQL5_CACHE_SIZE: 300,
+  },
+  
+  // Rate limiting for AI APIs
+  RATE_LIMITS: {
+    GOOGLE: {
+      REQUESTS_PER_MINUTE: 60,
+      TOKENS_PER_MINUTE: 32000,
+    },
+    OPENAI: {
+      REQUESTS_PER_MINUTE: 500,
+      TOKENS_PER_MINUTE: 160000,
+    },
+    CLAUDE: {
+      REQUESTS_PER_MINUTE: 50,
+      TOKENS_PER_MINUTE: 40000,
+    },
+  },
+  
+  // Retry configuration
+  RETRY: {
+    MAX_ATTEMPTS: 3,
+    INITIAL_DELAY: 1000, // 1 second
+    MAX_DELAY: 10000, // 10 seconds
+    BACKOFF_MULTIPLIER: 2,
+  },
+  
+  // Provider-specific endpoints
+  ENDPOINTS: {
+    OPENAI: 'https://api.openai.com/v1',
+    OPENROUTER: 'https://openrouter.ai/api/v1',
+    DEEPSEEK: 'https://api.deepseek.com/v1',
+    LOCAL_LLM: 'http://localhost:8000/v1',
+  },
+};
+
 // ========== MONITORING CONFIGURATION ==========
 export const MONITORING_CONFIG = {
   // Metrics collection
@@ -266,6 +359,27 @@ export const MONITORING_CONFIG = {
   // Alerts
   ALERT_COOLDOWN: TIME_CONSTANTS.MINUTE * 5, // 5 minutes
   MAX_ALERTS_PER_HOUR: 20,
+};
+
+// ========== DEVELOPMENT SERVER CONFIGURATION ==========
+export const DEV_SERVER_CONFIG = {
+  // Default development ports
+  HTTP_PORT: 3000,
+  VITE_PORT: 5173,
+  WEBSOCKET_PORT: 3001,
+  
+  // Port range for automatic port allocation
+  PORT_RANGE_START: 3000,
+  PORT_RANGE_END: 3100,
+  
+  // Host configuration
+  DEFAULT_HOST: '0.0.0.0',
+  LOCALHOST: 'localhost',
+  
+  // Development URLs
+  getDevUrl: (port?: number) => `http://${DEV_SERVER_CONFIG.DEFAULT_HOST}:${port || DEV_SERVER_CONFIG.HTTP_PORT}`,
+  getViteUrl: (port?: number) => `http://${DEV_SERVER_CONFIG.DEFAULT_HOST}:${port || DEV_SERVER_CONFIG.VITE_PORT}`,
+  getWebSocketUrl: (port?: number) => `ws://${DEV_SERVER_CONFIG.DEFAULT_HOST}:${port || DEV_SERVER_CONFIG.WEBSOCKET_PORT}`,
 };
 
 // ========== BUILD CONFIGURATION ==========
@@ -363,6 +477,14 @@ export const getEnvironmentConfig = () => ({
     return urlConfig.WEBSOCKET_URL;
   })(),
   
+  // AI Service endpoints
+  AI_ENDPOINTS: {
+    OPENAI: (typeof process !== 'undefined' && process?.env?.['OPENAI_ENDPOINT']) || AI_CONFIG.ENDPOINTS.OPENAI,
+    OPENROUTER: (typeof process !== 'undefined' && process?.env?.['OPENROUTER_ENDPOINT']) || AI_CONFIG.ENDPOINTS.OPENROUTER,
+    DEEPSEEK: (typeof process !== 'undefined' && process?.env?.['DEEPSEEK_ENDPOINT']) || AI_CONFIG.ENDPOINTS.DEEPSEEK,
+    LOCAL_LLM: (typeof process !== 'undefined' && process?.env?.['LOCAL_LLM_ENDPOINT']) || AI_CONFIG.ENDPOINTS.LOCAL_LLM,
+  },
+  
   // Feature flags
   FEATURES: {
     EDGE_CACHING: (typeof process !== 'undefined' && process?.env?.['ENABLE_EDGE_CACHING']) !== 'false',
@@ -394,6 +516,8 @@ export const getConfig = <T>(section: string, key: string): T => {
     ERROR_CONFIG,
     MONITORING_CONFIG,
     BUILD_CONFIG,
+    AI_CONFIG,
+    DEV_SERVER_CONFIG,
   };
   
   const sectionConfig = configMap[section];
@@ -418,6 +542,8 @@ export const APP_CONFIG = {
   ERROR_CONFIG,
   MONITORING_CONFIG,
   BUILD_CONFIG,
+  AI_CONFIG,
+  DEV_SERVER_CONFIG,
   getEnvironmentConfig,
   getConfig,
 };

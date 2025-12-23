@@ -635,8 +635,8 @@ export default defineConfig({
   },
   // Edge optimization for Vercel deployment
   server: {
-    port: 3000,
-    host: '0.0.0.0',
+    port: parseInt(process.env['DEV_PORT'] || '3000'),
+    host: process.env['DEV_HOST'] || '0.0.0.0',
     headers: {
       'X-Edge-Optimized': 'true',
       'Cache-Control': 'public, max-age=31536000, immutable',

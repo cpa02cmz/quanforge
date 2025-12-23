@@ -7,7 +7,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
-import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
+import { SEOHead, structuredDataTemplates } from './utils/seoUnified';
   import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
   import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
   import { frontendOptimizer } from './services/frontendOptimizer';
@@ -104,8 +104,6 @@ useEffect(() => {
 
     return () => {
       subscription.unsubscribe();
-      // Cleanup performance monitor on app unmount
-      performanceMonitor.cleanup();
     };
   }, []);
 
