@@ -104,6 +104,68 @@
 5. **Monitor Status**: Use `gh pr checks` to track deployment status and identify specific failures
 6. **Cross-PR Propagation**: Critical fixes must be cherry-picked to all affected PR branches
 7. **Documentation**: Update AGENTS.md, bug.md, and task.md with resolution details for future reference
+
+### New Analysis-Based Guidelines (2025-12-23)
+
+#### Codebase Quality Assessment
+1. **Service Count Monitoring**: Maintain ~50 services maximum; flag when >60 services exist
+2. **Bundle Size Limits**: Monitor chunk sizes; flag any chunk >100KB requiring optimization
+3. **Type Safety Tracking**: Track implicit `any` usage; goal of <50 instances across codebase
+4. **Configuration Management**: Ensure all rate limits and timeouts are configurable via environment
+5. **Error Pattern Consistency**: Verify unified error handling patterns across all layers
+
+#### Architecture Decision Making
+1. **Service Boundaries**: One clear responsibility per service file (<500 lines preferred)
+2. **Performance Budgets**: Establish and enforce bundle size and performance budgets
+3. **Dependency Management**: Avoid circular dependencies between service modules
+4. **Component Decoupling**: UI components should access services through interface layers
+5. **Security Configuration**: Centralize security thresholds and rate limiting settings
+
+#### Technical Debt Management
+1. **Modularity Score**: Target >70/100 modularity through service consolidation
+2. **Consistency Score**: Target >75/100 through unified coding standards
+3. **Flexibility Score**: Target >80/10 through configuration-driven design
+4. **Regular Audits**: Perform comprehensive analysis quarterly to track progress
+5. **Refactoring Priority**: Address lowest scoring categories first with actionable improvements
+
+## Comprehensive Codebase Analysis Insights (2025-12-23)
+
+### Quality Assessment Results
+**Overall Score: 78/100** - Strong foundation with targeted technical debt
+
+**Critical Findings:**
+- **Service Complexity**: 86 service files indicate over-granularity and potential circular dependencies
+- **Performance Concerns**: Large vendor chunks (chart-vendor: 356KB, ai-vendor: 214KB) impact load times
+- **Configuration Debt**: Hardcoded rate limits (100 requests/minute) scattered across modules
+- **Consistency Gaps**: Mixed error handling patterns and naming conventions
+
+**Strengths to Preserve:**
+- **Security**: Comprehensive WAF implementation with 9 attack pattern categories
+- **Build System**: Functional with 12.74s build time and zero TypeScript errors
+- **Edge Optimization**: Vercel runtime ready with multi-region support
+- **Database Architecture**: Advanced Supabase connection pooling strategies
+
+### Technical Debt Resolution Strategy
+
+#### Immediate Actions (Week 1)
+1. **Service Consolidation**: Merge related services to reduce from 86 to ~50 files
+2. **Bundle Optimization**: Implement dynamic imports for large vendor libraries
+3. **Configuration Extraction**: Centralize hardcoded values in environment-based config
+4. **Error Standardization**: Implement consistent error handling patterns
+
+#### Success Metrics
+- **Service Count**: 86 → ~50 (42% reduction)
+- **Bundle Chunks**: All <100KB through dynamic loading
+- **Type Safety**: Zero implicit any types in production
+- **Performance**: <2s initial load time on 3G networks
+- **Consistency Score**: Improve from 65/100 to >75/100
+
+### Architecture Guidelines Moving Forward
+- **Single Responsibility**: One clear concern per service module
+- **Configuration First**: All thresholds and limits environment-configurable
+- **Performance Budgets**: Enforce bundle size and performance constraints
+- **Unified Patterns**: Consistent error handling, naming, and code organization
+- **Dependency Management**: Clear interfaces and circular dependency avoidance
 ### When Optimizing Features
 1. **Measure First**: Use bundle analysis before and after changes
 2. **User Impact**: Prioritize visible improvements over internal optimizations
