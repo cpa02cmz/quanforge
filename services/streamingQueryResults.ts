@@ -29,8 +29,20 @@ interface StreamOptions<T> {
   onProgress?: (progress: { loaded: number; total: number; percentage: number }) => void;
   onError?: (error: Error, batchNumber: number) => void;
   onComplete?: (metrics: StreamMetrics) => void;
-  transform?: (record: any) => T;
-  filter?: (record: any) => boolean;
+  transform?: (record: Record<string, unknown>) => T;
+  filter?: (record: Record<string, unknown>) => boolean;
+}
+
+interface QueryOptions {
+  select?: string;
+  order?: { column: string; ascending?: boolean };
+  filter?: { column: string; operator: string; value: unknown };
+  limit?: number;
+  offset?: number;
+}
+
+interface BatchOptions extends QueryOptions {
+  offset: number;
 }
 
 class StreamingQueryResults {
@@ -61,15 +73,10 @@ class StreamingQueryResults {
   /**
    * Stream query results in batches
    */
-  async streamQuery<T = any>(
+  async streamQuery<T = unknown>(
     client: SupabaseClient,
     table: string,
-    options: {
-      select?: string;
-      order?: { column: string; ascending?: boolean };
-      filter?: { column: string; operator: string; value: any };
-      limit?: number;
-    } = {},
+    options: QueryOptions = {},
     streamOptions: StreamOptions<T> = {}
   ): Promise<T[]> {
     const startTime = Date.now();
@@ -145,13 +152,13 @@ class StreamingQueryResults {
   /**
    * Stream with parallel processing for better performance
    */
-  async streamParallel<T = any>(
+  async streamParallel<T = unknown>(
     client: SupabaseClient,
     table: string,
     options: {
       select?: string;
       order?: { column: string; ascending?: boolean };
-      filter?: { column: string; operator: string; value: any };
+      filter?: { column: string; operator: string; value: unknown };
       limit?: number;
     } = {},
     streamOptions: StreamOptions<T> = {}
@@ -216,12 +223,15 @@ class StreamingQueryResults {
     // Sort results if order is specified
     if (options.order) {
       results.sort((a, b) => {
-        const aVal = (a as any)[options.order!.column];
-        const bVal = (b as any)[options.order!.column];
-        const direction = options.order!.ascending !== false ? 1 : -1;
-        
-        if (aVal < bVal) return -1 * direction;
-        if (aVal > bVal) return 1 * direction;
+const aVal = (a as Record<string, unknown>)[options.order!.column];
+        const bVal = (b as Record<string, unknown>)[options.order!.column];
+
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+          if (aVal < bVal) return options.order!.ascending ? -1 : 1;
+          if (aVal > bVal) return options.order!.ascending ? 1 : -1;
+        } else if (typeof aVal === 'string' && typeof bVal === 'string') {
+          return options.order!.ascending ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        }
         return 0;
       });
     }
@@ -244,7 +254,7 @@ class StreamingQueryResults {
     options: {
       select?: string;
       order?: { column: string; ascending?: boolean };
-      filter?: { column: string; operator: string; value: any };
+      filter?: { column: string; operator: string; value: unknown };
       offset: number;
       limit: number;
     },
@@ -286,7 +296,7 @@ class StreamingQueryResults {
     options: {
       select?: string;
       order?: { column: string; ascending?: boolean };
-      filter?: { column: string; operator: string; value: any };
+      filter?: { column: string; operator: string; value: unknown };
       offset: number;
       limit: number;
     },
@@ -316,17 +326,17 @@ class StreamingQueryResults {
   /**
    * Process batch with transformations and filters
    */
-  private processBatch<T>(batch: any[], options: StreamOptions<T>): T[] {
+  private processBatch<T>(batch: unknown[], options: StreamOptions<T>): T[] {
     let processed = batch;
 
     // Apply filter
     if (options.filter) {
-      processed = processed.filter(options.filter);
+      processed = processed.filter((record) => options.filter!(record as Record<string, unknown>));
     }
 
     // Apply transform
     if (options.transform) {
-      processed = processed.map(options.transform);
+      processed = processed.map((record) => options.transform!(record as Record<string, unknown>));
     }
 
     return processed as T[];
@@ -452,13 +462,13 @@ export type { StreamConfig, StreamMetrics, StreamOptions };
 /**
  * Convenience function for streaming queries
  */
-export async function streamQuery<T = any>(
+export async function streamQuery<T = unknown>(
   client: SupabaseClient,
   table: string,
   options: {
     select?: string;
     order?: { column: string; ascending?: boolean };
-    filter?: { column: string; operator: string; value: any };
+    filter?: { column: string; operator: string; value: unknown };
     limit?: number;
     batchSize?: number;
     parallel?: boolean;
@@ -479,13 +489,15 @@ export async function streamQuery<T = any>(
 /**
  * React hook for streaming queries
  */
-export function useStreamingQuery<T = any>(
+import { useState, useCallback } from 'react';
+
+export function useStreamingQuery<T = unknown>(
   client: SupabaseClient,
   table: string,
   options: {
     select?: string;
     order?: { column: string; ascending?: boolean };
-    filter?: { column: string; operator: string; value: any };
+    filter?: { column: string; operator: string; value: unknown };
     limit?: number;
     batchSize?: number;
     parallel?: boolean;
@@ -520,6 +532,3 @@ export function useStreamingQuery<T = any>(
 
   return { data, loading, error, progress, execute };
 }
-
-// Import React hooks
-import { useState, useCallback } from 'react';

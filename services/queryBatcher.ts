@@ -8,7 +8,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 interface BatchQuery {
   id: string;
   query: string;
-  params?: any[];
+  params?: unknown[];
   table?: string;
   operation: 'select' | 'insert' | 'update' | 'delete';
   priority: 'high' | 'medium' | 'low';
@@ -17,9 +17,41 @@ interface BatchQuery {
 
 interface BatchResult {
   id: string;
-  data?: any;
-  error?: any;
+  data?: unknown;
+  error?: unknown;
   executionTime: number;
+}
+
+interface QueryFilter {
+  column: string;
+  operator: string;
+  value: unknown;
+}
+
+interface CombinedQuery {
+  table: string;
+  originalQueries: BatchQuery[];
+  combinedFilters?: QueryFilter[];
+  selectColumns?: string;
+}
+
+interface UpdateData extends Record<string, unknown> {}
+interface FilterCondition extends Record<string, unknown> {}
+
+interface BatcherStats {
+  totalBatches: number;
+  totalQueries: number;
+  avgBatchSize: number;
+  avgExecutionTime: number;
+  cacheHitRate: number;
+  retryRate: number;
+}
+
+interface QueueStatus {
+  queueLength: number;
+  pendingResults: number;
+  hasHighPriority: boolean;
+  oldestQuery: number;
 }
 
 interface BatchConfig {
@@ -36,7 +68,7 @@ class QueryBatcher {
   private batchQueue: BatchQuery[] = [];
   private pendingResults: Map<string, {
     resolve: (result: BatchResult) => void;
-    reject: (error: any) => void;
+    reject: (error: unknown) => void;
     startTime: number;
   }> = new Map();
   private config: BatchConfig = {
@@ -71,9 +103,9 @@ class QueryBatcher {
   /**
    * Add a query to the batch queue
    */
-  async addQuery<T = any>(
+  async addQuery<T = unknown>(
     query: string,
-    params: any[] = [],
+    params: unknown[] = [],
     operation: BatchQuery['operation'] = 'select',
     priority: BatchQuery['priority'] = 'medium',
     table?: string
@@ -294,7 +326,7 @@ class QueryBatcher {
         // Apply combined filters
         if (combined.combinedFilters) {
           for (const filter of combined.combinedFilters) {
-            queryBuilder = queryBuilder.filter(filter.column, filter.operator, filter.value);
+            queryBuilder = (queryBuilder as any).eq(filter.column, filter.value);
           }
         }
 
@@ -303,7 +335,7 @@ class QueryBatcher {
           queryBuilder = queryBuilder.select(combined.selectColumns);
         }
 
-        const { data, error } = await queryBuilder;
+        const { data, error } = await (queryBuilder as any);
 
         const executionTime = performance.now() - startTime;
 
@@ -346,7 +378,7 @@ class QueryBatcher {
   private combineSelectQueries(queries: BatchQuery[]): Array<{
     table: string;
     originalQueries: BatchQuery[];
-    combinedFilters?: Array<{ column: string; operator: string; value: any }>;
+    combinedFilters?: QueryFilter[];
     selectColumns?: string;
   }> {
     const groups = new Map<string, BatchQuery[]>();
@@ -363,7 +395,7 @@ class QueryBatcher {
     const combined: Array<{
       table: string;
       originalQueries: BatchQuery[];
-      combinedFilters?: Array<{ column: string; operator: string; value: any }>;
+      combinedFilters?: QueryFilter[];
       selectColumns?: string;
     }> = [];
 
@@ -393,8 +425,8 @@ class QueryBatcher {
   /**
    * Extract filters from queries
    */
-  private extractFilters(queries: BatchQuery[]): Array<{ column: string; operator: string; value: any }> {
-    const filters: Array<{ column: string; operator: string; value: any }> = [];
+  private extractFilters(queries: BatchQuery[]): QueryFilter[] {
+    const filters: QueryFilter[] = [];
     
     // This is a simplified implementation
     // In practice, you'd parse the SQL queries more carefully
@@ -411,7 +443,7 @@ class QueryBatcher {
   /**
    * Filter data for specific query
    */
-  private filterDataForQuery(data: any[], query: BatchQuery): any[] {
+  private filterDataForQuery(data: unknown[], query: BatchQuery): unknown[] {
     // Simple implementation - in practice, this would be more sophisticated
     return data;
   }
@@ -467,12 +499,12 @@ class QueryBatcher {
       const startTime = performance.now();
       
       try {
-        const [updateData, filterCondition] = query.params || [{}, {}];
+        const [updateData, filterCondition] = query.params || [{}, {}] as [UpdateData, FilterCondition];
         let queryBuilder = client.from(query.table!).update(updateData);
 
         // Apply filter conditions
-        for (const [column, value] of Object.entries(filterCondition)) {
-          queryBuilder = queryBuilder.eq(column, value);
+        for (const [column, value] of Object.entries(filterCondition || {})) {
+          queryBuilder = queryBuilder.eq(column, value as any);
         }
 
         const { data, error } = await queryBuilder;
@@ -515,7 +547,7 @@ class QueryBatcher {
 
         // Apply filter conditions
         if (query.params && query.params.length > 0) {
-          const filterCondition = query.params[0];
+          const filterCondition = query.params[0] as FilterCondition;
           for (const [column, value] of Object.entries(filterCondition)) {
             queryBuilder = queryBuilder.eq(column, value);
           }
@@ -547,7 +579,7 @@ class QueryBatcher {
   /**
    * Handle batch execution errors
    */
-  private async handleBatchError(batch: BatchQuery[], error: any): Promise<void> {
+  private async handleBatchError(batch: BatchQuery[], error: unknown): Promise<void> {
     // Retry logic for failed batches
     for (const query of batch) {
       const pending = this.pendingResults.get(query.id);
@@ -661,10 +693,10 @@ class QueryBatcher {
 export const queryBatcher = QueryBatcher.getInstance();
 
 // Utility functions for common use cases
-export const batchSelect = <T = any>(
+export const batchSelect = <T = unknown>(
   table: string,
   columns: string = '*',
-  filters: Record<string, any> = {},
+  filters: Record<string, unknown> = {},
   priority: BatchQuery['priority'] = 'medium'
 ): Promise<T[]> => {
   const whereClause = Object.keys(filters).length > 0 ? 
@@ -676,7 +708,7 @@ export const batchSelect = <T = any>(
   return queryBatcher.addQuery<T[]>(query, params, 'select', priority, table);
 };
 
-export const batchInsert = <T = any>(
+export const batchInsert = <T = unknown>(
   table: string,
   data: Partial<T>,
   priority: BatchQuery['priority'] = 'medium'
@@ -687,10 +719,10 @@ export const batchInsert = <T = any>(
   return queryBatcher.addQuery<T>(query, params, 'insert', priority, table);
 };
 
-export const batchUpdate = <T = any>(
+export const batchUpdate = <T = unknown>(
   table: string,
   data: Partial<T>,
-  filters: Record<string, any>,
+  filters: Record<string, unknown>,
   priority: BatchQuery['priority'] = 'medium'
 ): Promise<T[]> => {
   const query = `update ${table}`;
@@ -701,7 +733,7 @@ export const batchUpdate = <T = any>(
 
 export const batchDelete = (
   table: string,
-  filters: Record<string, any>,
+  filters: Record<string, unknown>,
   priority: BatchQuery['priority'] = 'medium'
 ): Promise<void> => {
   const query = `delete from ${table}`;

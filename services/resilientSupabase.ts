@@ -24,6 +24,82 @@ interface ResilienceMetrics {
   retryAttempts: number;
 }
 
+interface ResilienceOptions {
+  skipRetry?: boolean;
+  skipCircuitBreaker?: boolean;
+  customRetryConfig?: Partial<RetryConfig>;
+}
+
+interface AuthCredentials {
+  email: string;
+  password: string;
+  options?: {
+    data?: Record<string, unknown>;
+    emailRedirectTo?: string;
+    captchaToken?: string;
+  };
+}
+
+interface QueryFilter {
+  eq: (column: string, value: unknown) => QueryOperation;
+  select?: (columns?: string) => QueryOperation;
+  order?: (column: string, options?: { ascending?: boolean }) => QueryOperation;
+  limit?: (count: number) => QueryOperation;
+  single?: () => QueryOperation;
+  maybeSingle?: () => QueryOperation;
+}
+
+interface QueryOperation {
+  data?: unknown;
+  error?: { message: string; details?: string; hint?: string; code?: string };
+  then<TResult1 = unknown, TResult2 = never>(
+    onfulfilled?: ((value: unknown) => TResult1 | PromiseLike<TResult1>) | null,
+    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null
+  ): Promise<TResult1 | TResult2>;
+  catch<TResult = never>(
+    onrejected?: ((reason: unknown) => TResult | PromiseLike<TResult>) | null
+  ): Promise<unknown | TResult>;
+}
+
+interface AuthOperation {
+  data: { user: unknown } | null;
+  error: { message: string } | null;
+}
+
+interface MockSupabaseTable {
+  select: (columns?: string) => QueryFilter;
+  insert: (data: Record<string, unknown>) => QueryFilter;
+  update: (data: Record<string, unknown>) => QueryFilter;
+  delete: () => QueryFilter;
+  eq: (column: string, value: unknown) => QueryFilter;
+  order: (column: string, options?: { ascending?: boolean }) => QueryFilter;
+  limit: (count: number) => QueryFilter;
+  single: () => QueryOperation;
+  maybeSingle: () => QueryOperation;
+}
+
+interface MockSupabaseAuth {
+  signInWithPassword: (credentials: AuthCredentials) => Promise<AuthOperation>;
+  signUp: (credentials: AuthCredentials) => Promise<AuthOperation>;
+  signOut: () => Promise<{ error: unknown | null }>;
+  onAuthStateChange: (callback: (event: string, session: unknown) => void) => () => void;
+  getCurrentUser: () => Promise<{ data: { user: unknown } | null; error: unknown | null }>;
+}
+
+interface HealthCheckResult {
+  healthy: boolean;
+  details: {
+    responseTime?: number;
+    successRate?: number;
+    averageResponseTime?: number;
+    openCircuitBreakers?: number;
+    totalCircuitBreakers?: number;
+    error?: unknown;
+    metrics?: ResilienceMetrics;
+    circuitBreakers?: Array<{ operation: string; state: CircuitState; failureCount: number }>;
+  };
+}
+
 enum CircuitState {
   CLOSED = 'CLOSED',
   OPEN = 'OPEN',
@@ -183,12 +259,12 @@ class ResilientSupabaseClient {
     customRetryConfig?: Partial<RetryConfig>
   ): Promise<T> {
     const config = { ...this.retryConfig, ...customRetryConfig };
-    let lastError: any;
+    let lastError: unknown;
 
     for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
       try {
         return await operation();
-      } catch (error: any) {
+      } catch (error: unknown) {
         lastError = error;
 
         // Don't retry on certain errors
@@ -220,7 +296,7 @@ class ResilientSupabaseClient {
   }
 
   // Determine if error should not be retried
-  private shouldNotRetry(error: any): boolean {
+  private shouldNotRetry(error: unknown): boolean {
     const nonRetryableErrors = [
       'PGRST116', // Not found
       'PGRST301', // Permission denied
@@ -238,11 +314,12 @@ class ResilientSupabaseClient {
       'EDGE_RATE_LIMIT'
     ];
 
+    const errorRecord = error as Record<string, unknown>;
     return (
-      nonRetryableErrors.some(code => error?.code === code) ||
-      nonRetryableStatusCodes.some(status => error?.status === status) ||
-      edgeSpecificErrors.some(code => error?.code === code) ||
-      error?.message?.includes('circuit breaker is OPEN')
+      nonRetryableErrors.some(code => errorRecord?.code === code) ||
+      nonRetryableStatusCodes.some(status => errorRecord?.status === status) ||
+      edgeSpecificErrors.some(code => errorRecord?.code === code) ||
+      typeof errorRecord?.message === 'string' && errorRecord.message.includes('circuit breaker is OPEN')
     );
   }
 
@@ -277,7 +354,7 @@ class ResilientSupabaseClient {
                   `${table}_select_order_limit_range`,
                   async () => this.client.from(table).select(columns).order(column, options).limit(limit).range(from, to)
                 ),
-              eq: (col: string, value: any) => 
+              eq: (col: string, value: unknown) => 
                 this.executeWithResilience(
                   `${table}_select_order_limit_eq`,
                   async () => this.client.from(table).select(columns).order(column, options).limit(limit).eq(col, value)
@@ -293,7 +370,7 @@ class ResilientSupabaseClient {
                   async () => this.client.from(table).select(columns).order(column, options).limit(limit).single()
                 ),
             }),
-            eq: (col: string, value: any) => ({
+            eq: (col: string, value: unknown) => ({
               single: () => 
                 this.executeWithResilience(
                   `${table}_select_order_eq_single`,
@@ -317,7 +394,7 @@ class ResilientSupabaseClient {
                 `${table}_select_limit_range`,
                 async () => this.client.from(table).select(columns).limit(limit).range(from, to)
               ),
-            eq: (col: string, value: any) => 
+            eq: (col: string, value: unknown) => 
               this.executeWithResilience(
                 `${table}_select_limit_eq`,
                 async () => this.client.from(table).select(columns).limit(limit).eq(col, value)
@@ -333,7 +410,7 @@ class ResilientSupabaseClient {
                 async () => this.client.from(table).select(columns).limit(limit).single()
               ),
           }),
-          eq: (col: string, value: any) => ({
+          eq: (col: string, value: unknown) => ({
             single: () => 
               this.executeWithResilience(
                 `${table}_select_eq_single`,
@@ -351,22 +428,22 @@ class ResilientSupabaseClient {
               async () => this.client.from(table).select(columns).single()
             ),
         }),
-        insert: (data: any) => ({
+        insert: (data: Record<string, unknown>) => ({
           select: (columns?: string) => 
             this.executeWithResilience(
               `${table}_insert_select`,
               async () => this.client.from(table).insert(data).select(columns)
             ),
         }),
-        update: (data: any) => ({
-          match: (criteria: any) => ({
+        update: (data: Record<string, unknown>) => ({
+          match: (criteria: Record<string, unknown>) => ({
             select: (columns?: string) => 
               this.executeWithResilience(
                 `${table}_update_match_select`,
                 async () => this.client.from(table).update(data).match(criteria).select(columns)
               ),
           }),
-          eq: (col: string, value: any) => ({
+          eq: (col: string, value: unknown) => ({
             select: (columns?: string) => 
               this.executeWithResilience(
                 `${table}_update_eq_select`,
@@ -375,12 +452,12 @@ class ResilientSupabaseClient {
           }),
         }),
         delete: () => ({
-          match: (criteria: any) => 
+          match: (criteria: Record<string, unknown>) => 
             this.executeWithResilience(
               `${table}_delete_match`,
               async () => this.client.from(table).delete().match(criteria)
             ),
-          eq: (col: string, value: any) => 
+          eq: (col: string, value: unknown) => 
             this.executeWithResilience(
               `${table}_delete_eq`,
               async () => this.client.from(table).delete().eq(col, value)
@@ -397,13 +474,13 @@ class ResilientSupabaseClient {
           'auth_getSession',
           () => this.client.auth.getSession()
         ),
-      signInWithPassword: (credentials: any) => 
+      signInWithPassword: (credentials: AuthCredentials) => 
         this.executeWithResilience(
           'auth_signInWithPassword',
           () => this.client.auth.signInWithPassword(credentials),
           { skipRetry: true } // Don't retry auth failures
         ),
-      signUp: (credentials: any) => 
+      signUp: (credentials: AuthCredentials) => 
         this.executeWithResilience(
           'auth_signUp',
           () => this.client.auth.signUp(credentials),
@@ -414,13 +491,13 @@ class ResilientSupabaseClient {
           'auth_signOut',
           () => this.client.auth.signOut()
         ),
-      onAuthStateChange: (callback: any) => 
+      onAuthStateChange: (callback: (event: string, session: unknown) => void) => 
         this.client.auth.onAuthStateChange(callback),
     };
   }
 
    // RPC operations with resilience
-   async rpc(fnName: string, params?: any) {
+   async rpc(fnName: string, params?: Record<string, unknown>) {
      return this.executeWithResilience(
        `rpc_${fnName}`,
        async () => {
@@ -466,7 +543,7 @@ class ResilientSupabaseClient {
   }
 
    // Health check
-   async healthCheck(): Promise<{ healthy: boolean; details: any }> {
+   async healthCheck(): Promise<HealthCheckResult> {
      try {
        const startTime = Date.now();
        await this.executeWithResilience(
