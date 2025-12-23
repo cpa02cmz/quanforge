@@ -7,7 +7,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
-import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
+import { SEOHead, structuredDataTemplates } from './utils/seoUnified';
   import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
   import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
   import { frontendOptimizer } from './services/frontendOptimizer';
@@ -44,13 +44,6 @@ const StaticPages = lazy(() =>
 const Layout = lazy(() => 
   import('./components/Layout').then(module => ({ default: module.Layout }))
 );
-
-// Dynamic import utilities for services and heavy components
-export const loadGeminiService = () => import('./services/gemini');
-export const loadSEOUtils = () => import('./utils/seoEnhanced');
-export const loadChartComponents = () => import('./components/ChartComponents');
-export const loadCodeEditor = () => import('./components/CodeEditor');
-export const loadBacktestPanel = () => import('./components/BacktestPanel');
 
 // Enhanced preloading strategy with route-based optimization
    const preloadCriticalRoutes = () => {
@@ -111,8 +104,6 @@ useEffect(() => {
 
     return () => {
       subscription.unsubscribe();
-      // Cleanup performance monitor on app unmount
-      performanceMonitor.cleanup();
     };
   }, []);
 

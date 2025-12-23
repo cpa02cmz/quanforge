@@ -4,9 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { advancedCache } from '../../../services/advancedCache';
+import { robotCache } from '../../../services/advancedCache';
 import { performanceMonitorEnhanced } from '../../../services/performanceMonitorEnhanced';
 import { securityManager } from '../../../services/securityManager';
+import { getMarketDataConfig } from '../../../utils/marketConfig';
 
 export const config = {
   runtime: 'edge',
@@ -16,30 +17,18 @@ interface RouteContext {
   params: Promise<{ symbol: string }>;
 }
 
-// Available symbols and their base prices
-const SYMBOLS = {
-  'EURUSD': { basePrice: 1.0850, pipValue: 0.0001 },
-  'GBPUSD': { basePrice: 1.2750, pipValue: 0.0001 },
-  'USDJPY': { basePrice: 157.50, pipValue: 0.01 },
-  'USDCHF': { basePrice: 0.9050, pipValue: 0.0001 },
-  'AUDUSD': { basePrice: 0.6650, pipValue: 0.0001 },
-  'USDCAD': { basePrice: 1.3650, pipValue: 0.0001 },
-  'EURGBP': { basePrice: 0.8510, pipValue: 0.0001 },
-  'EURJPY': { basePrice: 171.00, pipValue: 0.01 },
-  'GBPJPY': { basePrice: 200.50, pipValue: 0.01 },
-  'EURCHF': { basePrice: 0.9820, pipValue: 0.0001 },
-  'AUDJPY': { basePrice: 104.80, pipValue: 0.01 },
-  'CADJPY': { basePrice: 115.40, pipValue: 0.01 },
-};
+// Load market data configuration
+const marketConfig = getMarketDataConfig();
+const SYMBOLS = marketConfig.symbols;
 
 const generateSymbolData = (symbol: string, timeframe: string = '1m') => {
-  const symbolConfig = SYMBOLS[symbol as keyof typeof SYMBOLS];
+  const symbolConfig = SYMBOLS[symbol];
   if (!symbolConfig) {
     throw new Error(`Unknown symbol: ${symbol}`);
   }
 
   const { basePrice, pipValue } = symbolConfig;
-  const variation = (Math.random() - 0.5) * 0.002; // ±0.2% variation
+  const variation = (Math.random() - 0.5) * marketConfig.limits.maxVariation; // Use configured variation
   const price = basePrice * (1 + variation);
   const spread = pipValue * (1 + Math.random()); // 1-2 pips spread
   
@@ -53,8 +42,15 @@ const generateSymbolData = (symbol: string, timeframe: string = '1m') => {
     '1d': 0.0625,
   };
 
-  const periodCount = periods[timeframe as keyof typeof periods] || 60;
-  const historicalData = [];
+const periodCount = periods[timeframe as keyof typeof periods] || 60;
+  const historicalData: Array<{
+    timestamp: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+  }> = [];
 
   for (let i = periodCount; i >= 0; i--) {
     const timeOffset = i * 60000; // minutes in milliseconds
@@ -138,7 +134,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     // Check cache first (very short cache for real-time data)
     const cacheKey = `symbol_data_${sanitizedSymbol}_${timeframe}_${includeTechnical}`;
-    const cached = await advancedCache.get(cacheKey);
+    const cached = await robotCache.get(cacheKey);
     
     if (cached) {
       const duration = performance.now() - startTime;
@@ -158,28 +154,28 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const symbolData = generateSymbolData(sanitizedSymbol, timeframe);
 
     // Remove technical data if not requested
-    if (!includeTechnical) {
-      delete symbolData.technical;
+    const responseData: any = { ...symbolData };
+    if (!includeTechnical && 'technical' in responseData) {
+      delete responseData.technical;
     }
 
     const response = {
       success: true,
-      data: symbolData,
+      data: responseData,
       meta: {
         symbol: sanitizedSymbol,
         timeframe,
         includeTechnical,
         timestamp: Date.now(),
         dataSource: 'mock',
-        region: process.env.VERCEL_REGION || 'unknown',
+        region: process.env?.VERCEL_REGION || 'unknown',
       },
     };
 
-    // Cache for very short time (3 seconds) for real-time data
-    await advancedCache.set(cacheKey, response, {
-      ttl: 3 * 1000, // 3 seconds
+    // Cache for configurable time using market config
+    await robotCache.set(cacheKey, response, {
+      ttl: marketConfig.timeouts.cacheTTL,
       tags: ['symbol_data', sanitizedSymbol],
-      priority: 'high',
     });
 
     const duration = performance.now() - startTime;
@@ -199,7 +195,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('symbol_api_error', duration);
     
-    console.error('Symbol API GET error:', error);
+    
     
     return NextResponse.json(
       {
@@ -271,10 +267,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     };
 
     // Cache subscription
-    await advancedCache.set(`subscription_${subscriptionId}`, subscription, {
-      ttl: 24 * 60 * 60 * 1000, // 24 hours
+    await robotCache.set(`subscription_${subscriptionId}`, subscription, {
+      ttl: marketConfig.timeouts.subscriptionTTL,
       tags: ['subscription', 'symbol', sanitizedSymbol],
-      priority: 'medium',
     });
 
     const response = {
@@ -299,7 +294,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('symbol_api_subscribe_error', duration);
     
-    console.error('Symbol API POST error:', error);
+    
     
     return NextResponse.json(
       {

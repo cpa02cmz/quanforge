@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { SEOHead, structuredDataTemplates } from './seo';
-import { SEOAnalytics } from './seoAnalytics';
+import { SEOHead, structuredDataTemplates, SEOAnalytics } from './seoUnified';
 
 interface EnhancedSEOProps {
   title?: string;
@@ -725,10 +724,7 @@ export const EnhancedSEOAnalytics: React.FC<SEOAnalyticsProps> = ({
       });
     }
 
-    // Log for debugging (remove in production)
-    if (process.env['NODE_ENV'] === 'development') {
-      console.log('Analytics Event:', eventName, data);
-    }
+    // Analytics event tracked
   };
 
   return null; // This component doesn't render anything
