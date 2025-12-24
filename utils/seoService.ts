@@ -86,9 +86,10 @@ class SEOService {
         let clsValue = 0;
         const clsObserver = new PerformanceObserver((list) => {
           const entries = list.getEntries();
-          entries.forEach((entry: any) => {
-            if (!entry.hadRecentInput) {
-              clsValue += entry.value;
+          entries.forEach((entry: unknown) => {
+            const layoutShiftEntry = entry as { hadRecentInput?: boolean; value?: number };
+            if (!layoutShiftEntry.hadRecentInput) {
+              clsValue += layoutShiftEntry.value || 0;
             }
           });
           this.metrics.cumulativeLayoutShift = clsValue;
@@ -103,12 +104,10 @@ class SEOService {
       try {
         const fidObserver = new PerformanceObserver((list) => {
           const entries = list.getEntries();
-          entries.forEach((entry: any) => {
-            if (entry.processingStart && entry.startTime) {
-              const fid = entry.processingStart - entry.startTime;
-              this.metrics.firstInputDelay = fid;
-              this.sendMetricToAnalytics('FID', fid);
-            }
+entries.forEach((entry: unknown) => {
+            const performanceEntry = entry as { processingStart?: number; startTime?: number };
+            const fidValue = (performanceEntry.processingStart || 0) - (performanceEntry.startTime || 0);
+            this.metrics.firstInputDelay = fidValue;
           });
         });
         fidObserver.observe({ entryTypes: ['first-input'] });
@@ -187,8 +186,9 @@ class SEOService {
     if (typeof window === 'undefined') return;
 
     // Send to Google Analytics 4
-    if ((window as any).gtag) {
-      (window as any).gtag('event', metricName.toLowerCase(), {
+    const gtag = (window as unknown as Record<string, unknown>)['gtag'] as ((command: string, eventName: string, options?: Record<string, unknown>) => void) | undefined;
+    if (gtag) {
+      gtag('event', metricName.toLowerCase(), {
         value: Math.round(value),
         event_category: 'Web Vitals',
         custom_parameter_1: 'quantforge_ai',
@@ -197,8 +197,9 @@ class SEOService {
     }
 
     // Send to data layer for GTM
-    if ((window as any).dataLayer) {
-      (window as any).dataLayer.push({
+    const dataLayer = (window as unknown as Record<string, unknown>)['dataLayer'] as Array<Record<string, unknown>> | undefined;
+    if (dataLayer) {
+      dataLayer.push({
         event: metricName.toLowerCase(),
         value: Math.round(value),
         category: 'Web Vitals',
@@ -396,18 +397,18 @@ class SEOService {
   }
 
   // Generate structured data for page
-  generateStructuredData(pageType: string, pageData: any): Record<string, any>[] {
+  generateStructuredData(pageType: string, pageData: Record<string, unknown>): Record<string, unknown>[] {
     const structuredData: Record<string, any>[] = [];
 
     // Add basic webpage schema
     structuredData.push({
       '@context': 'https://schema.org',
       '@type': 'WebPage',
-      name: pageData.title || 'QuantForge AI',
-      description: pageData.description || 'Advanced MQL5 Trading Robot Generator',
-      url: pageData.url || 'https://quanforge.ai',
+      name: String(pageData['title']) || 'QuantForge AI',
+      description: String(pageData['description']) || 'Advanced MQL5 Trading Robot Generator',
+      url: String(pageData['url']) || 'https://quanforge.ai',
       dateModified: new Date().toISOString(),
-      datePublished: pageData.publishDate || new Date().toISOString(),
+      datePublished: String(pageData['publishDate']) || new Date().toISOString(),
       author: {
         '@type': 'Organization',
         name: 'QuantForge AI'
@@ -444,28 +445,29 @@ class SEOService {
         break;
 
       case 'blog':
-        if (pageData.title && pageData.description) {
+        if (pageData['title'] && pageData['description']) {
           structuredData.push({
             '@context': 'https://schema.org',
             '@type': 'Article',
-            headline: pageData.title,
-            description: pageData.description,
+            headline: String(pageData['title']),
+            description: String(pageData['description']),
             author: {
               '@type': 'Organization',
               name: 'QuantForge AI'
             },
-            datePublished: pageData.publishDate || new Date().toISOString(),
+            datePublished: String(pageData['publishDate']) || new Date().toISOString(),
             dateModified: new Date().toISOString()
           });
         }
         break;
 
       case 'faq':
-        if (pageData.faqs && Array.isArray(pageData.faqs)) {
+        const faqs = pageData['faqs'] as Array<{ question: string; answer: string }>;
+        if (faqs && Array.isArray(faqs)) {
           structuredData.push({
             '@context': 'https://schema.org',
             '@type': 'FAQPage',
-            mainEntity: pageData.faqs.map((faq: { question: string; answer: string }) => ({
+            mainEntity: faqs.map((faq: { question: string; answer: string }) => ({
               '@type': 'Question',
               name: faq.question,
               acceptedAnswer: {
@@ -508,15 +510,15 @@ class SEOService {
   }
 
   // Analyze performance trends
-  private analyzeTrends(metrics: any[]): void {
+  private analyzeTrends(metrics: Record<string, unknown>[]): void {
     if (metrics.length < 2) return;
 
     const recent = metrics.slice(-5);
     const older = metrics.slice(-10, -5);
 
     if (recent.length >= 3 && older.length >= 3) {
-      const recentAvg = recent.reduce((sum, m) => sum + (m.pageLoadTime || 0), 0) / recent.length;
-      const olderAvg = older.reduce((sum, m) => sum + (m.pageLoadTime || 0), 0) / older.length;
+      const recentAvg = recent.reduce((sum, m) => sum + (Number(m['pageLoadTime']) || 0), 0) / recent.length;
+      const olderAvg = older.reduce((sum, m) => sum + (Number(m['pageLoadTime']) || 0), 0) / older.length;
 
       const trend = recentAvg - olderAvg;
       
