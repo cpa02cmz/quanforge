@@ -18,8 +18,8 @@ export interface BatchQuery<T> {
   query: () => Promise<T>;
   priority: 'high' | 'normal' | 'low';
   timeout: number;
-  resolve: (value: T) => void;
-  reject: (reason: any) => void;
+  resolve: (_value: T) => void;
+  reject: (_reason: any) => void;
 }
 
 export interface QueryMetrics {

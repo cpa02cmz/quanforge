@@ -1,5 +1,54 @@
 import { performance } from 'perf_hooks';
 
+// Type definitions for better type safety
+interface PerformanceMemory {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
+}
+
+interface ExtendedPerformance extends Performance {
+  memory?: PerformanceMemory;
+}
+
+interface PerformanceEntryWithName {
+  name: string;
+  startTime: number;
+}
+
+interface LayoutShiftEntry {
+  hadRecentInput: boolean;
+  value: number;
+}
+
+interface FirstInputEntry {
+  processingStart: number;
+  startTime: number;
+}
+
+interface WebVitalsResult {
+  navigation: PerformanceNavigationTiming | null;
+  paint: {
+    firstPaint: PerformanceEntryWithName | null;
+    firstContentfulPaint: PerformanceEntryWithName | null;
+  };
+  coreWebVitals: {
+    lcp: number;
+    cls: number;
+    fid: number;
+  };
+  resourcesCount: number;
+  domContentLoaded: boolean;
+}
+
+interface DecoratorTarget {
+  constructor: { name: string };
+}
+
+interface LogMetadata {
+  [key: string]: unknown;
+}
+
 interface PerformanceMetrics {
   operation: string;
   startTime: number;
@@ -75,8 +124,9 @@ class PerformanceMonitor {
   }
 
   private getMemoryUsage(): number {
-    if (typeof performance !== 'undefined' && (performance as any).memory) {
-      return (performance as any).memory.usedJSHeapSize || 0;
+    const perf = performance as unknown as ExtendedPerformance;
+    if (typeof performance !== 'undefined' && perf.memory) {
+      return perf.memory.usedJSHeapSize || 0;
     }
     return 0;
   }
@@ -180,10 +230,11 @@ class PerformanceMonitor {
   }
 
 // Web performance API integration
-    getWebVitals(): any {
+    getWebVitals(): WebVitalsResult | null {
       if (typeof performance !== 'undefined' && 'getEntriesByType' in performance) {
-        // Use any type to avoid strict typing issues with performance entries
-        const performanceAPI: any = performance;
+        const performanceAPI = performance as unknown as Performance & {
+          getEntriesByType<T>(type: string): T[];
+        };
         const navigationEntries = performanceAPI.getEntriesByType?.('navigation') || [];
         const paintEntries = performanceAPI.getEntriesByType?.('paint') || [];
         const resourceEntries = performanceAPI.getEntriesByType?.('resource') || [];
@@ -194,34 +245,35 @@ class PerformanceMonitor {
         let fidValue = 0;
         
         // LCP (Largest Contentful Paint)
-        const lcpEntries = performanceAPI.getEntriesByType?.('largest-contentful-paint') || [];
+        const lcpEntries = performanceAPI.getEntriesByType<PerformanceEntry>('largest-contentful-paint') || [];
         if (lcpEntries.length > 0) {
           const lcpEntry = lcpEntries[lcpEntries.length - 1];
-          lcpValue = lcpEntry.startTime;
+          lcpValue = lcpEntry?.startTime || 0;
         }
         
         // Calculate CLS (Cumulative Layout Shift)
-        const layoutShiftEntries = performanceAPI.getEntriesByType?.('layout-shift') || [];
+        const layoutShiftEntries = performanceAPI.getEntriesByType<PerformanceEntry>('layout-shift') || [];
         let clsSessionWindow = 0;
         for (const entry of layoutShiftEntries) {
-          if (!entry.hadRecentInput) {
-            clsSessionWindow += entry.value;
+          const layoutEntry = entry as unknown as LayoutShiftEntry;
+          if (!layoutEntry.hadRecentInput) {
+            clsSessionWindow += layoutEntry.value;
           }
         }
         clsValue = clsSessionWindow;
         
         // Calculate FID (First Input Delay) - only available after user interaction
-        const fidEntries = performanceAPI.getEntriesByType?.('first-input') || [];
+        const fidEntries = performanceAPI.getEntriesByType<PerformanceEntry>('first-input') || [];
         if (fidEntries.length > 0) {
-          const fidEntry = fidEntries[0];
+          const fidEntry = fidEntries[0] as unknown as FirstInputEntry;
           fidValue = fidEntry.processingStart - fidEntry.startTime;
         }
         
         return {
-          navigation: navigationEntries.length > 0 ? navigationEntries[0] : null,
+          navigation: navigationEntries.length > 0 ? (navigationEntries[0] as PerformanceNavigationTiming) : null,
           paint: {
-            firstPaint: Array.isArray(paintEntries) ? paintEntries.find((entry: any) => entry.name === 'first-paint') : null,
-            firstContentfulPaint: Array.isArray(paintEntries) ? paintEntries.find((entry: any) => entry.name === 'first-contentful-paint') : null,
+            firstPaint: Array.isArray(paintEntries) ? (paintEntries.find((entry) => entry.name === 'first-paint') as PerformanceEntryWithName || null) : null,
+            firstContentfulPaint: Array.isArray(paintEntries) ? (paintEntries.find((entry) => entry.name === 'first-contentful-paint') as PerformanceEntryWithName || null) : null,
           },
           coreWebVitals: {
             lcp: lcpValue,
@@ -268,11 +320,11 @@ export const performanceMonitor = new PerformanceMonitor();
 
 // Decorator for automatic performance monitoring
 export function measurePerformance(operationName?: string) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (target: DecoratorTarget, propertyName: string, descriptor: PropertyDescriptor) {
     const method = descriptor.value;
     const operation = operationName || `${target.constructor.name}.${propertyName}`;
 
-    descriptor.value = function (...args: any[]) {
+    descriptor.value = function (...args: unknown[]) {
       const endTimer = performanceMonitor.startTimer(operation, {
         className: target.constructor.name,
         methodName: propertyName,
@@ -285,11 +337,11 @@ export function measurePerformance(operationName?: string) {
         if (result && typeof result.then === 'function') {
           // Handle async methods
           return result
-            .then((value: any) => {
+            .then((value: unknown) => {
               endTimer();
               return value;
             })
-            .catch((error: any) => {
+            .catch((error: unknown) => {
               endTimer();
               throw error;
             });
@@ -312,7 +364,7 @@ export function measurePerformance(operationName?: string) {
 export function measureAsync<T>(
   operation: string,
   fn: () => Promise<T>,
-  metadata?: Record<string, any>
+  metadata?: LogMetadata
 ): Promise<T> {
   const endTimer = performanceMonitor.startTimer(operation, metadata);
   
@@ -331,7 +383,7 @@ export function measureAsync<T>(
 export function measure<T>(
   operation: string,
   fn: () => T,
-  metadata?: Record<string, any>
+  metadata?: LogMetadata
 ): T {
   const endTimer = performanceMonitor.startTimer(operation, metadata);
   try {
@@ -349,7 +401,7 @@ interface LogEntry {
   timestamp: number;
   level: 'debug' | 'info' | 'warn' | 'error';
   message: string;
-  context: Record<string, any>;
+  context: LogMetadata;
   operation?: string;
   userId?: string;
   sessionId?: string;
@@ -412,19 +464,19 @@ class Logger {
     }
   }
 
-  debug(message: string, context: Record<string, any> = {}): void {
+  debug(message: string, context: LogMetadata = {}): void {
     this.log('debug', message, context);
   }
 
-  info(message: string, context: Record<string, any> = {}): void {
+  info(message: string, context: LogMetadata = {}): void {
     this.log('info', message, context);
   }
 
-  warn(message: string, context: Record<string, any> = {}): void {
+  warn(message: string, context: LogMetadata = {}): void {
     this.log('warn', message, context);
   }
 
-  error(message: string, context: Record<string, any> = {}): void {
+  error(message: string, context: LogMetadata = {}): void {
     this.log('error', message, context);
   }
 
@@ -524,19 +576,19 @@ class MonitoringService {
     return this.logger;
   }
 
-  log(level: 'debug' | 'info' | 'warn' | 'error', message: string, context: Record<string, any> = {}): void {
+  log(level: 'debug' | 'info' | 'warn' | 'error', message: string, context: LogMetadata = {}): void {
     this.logger.log(level, message, context);
   }
 
-  info(message: string, context: Record<string, any> = {}): void {
+  info(message: string, context: LogMetadata = {}): void {
     this.logger.info(message, context);
   }
 
-  warn(message: string, context: Record<string, any> = {}): void {
+  warn(message: string, context: LogMetadata = {}): void {
     this.logger.warn(message, context);
   }
 
-  error(message: string, context: Record<string, any> = {}): void {
+  error(message: string, context: LogMetadata = {}): void {
     this.logger.error(message, context);
   }
 

@@ -11,8 +11,7 @@ import { performanceMonitorEnhanced } from '../../services/performanceMonitorEnh
 export const config = {
   runtime: 'edge',
   maxDuration: 15,
-  memory: 512,
-  cache: 'max-age=300, s-maxage=900, stale-while-revalidate=300',
+  memory: 512
 };
 
 // Strategy templates (in production, these would come from a database)
@@ -219,7 +218,7 @@ export async function GET(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('strategies_api_error', duration);
     
-    console.error('Strategies API GET error:', error);
+    
     
     return NextResponse.json(
       {
@@ -312,7 +311,7 @@ export async function POST(request: NextRequest) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('strategies_api_create_error', duration);
     
-    console.error('Strategies API POST error:', error);
+    
     
     return NextResponse.json(
       {

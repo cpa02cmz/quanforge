@@ -16,6 +16,7 @@ export interface StrategyAnalysis {
   riskScore: number;
   profitability: number;
   description: string;
+  [key: string]: unknown;
 }
 
 export enum MessageRole {
@@ -117,6 +118,59 @@ export interface WikiSection {
   title: string;
   icon: string;
   articles: WikiArticle[];
+}
+
+// Enhanced Security Types
+export interface SanitizationResult<T = Record<string, unknown>> {
+  isValid: boolean;
+  errors: string[];
+  sanitizedData?: T;
+  riskScore: number;
+}
+
+// Specific sanitization result types for different data types
+export type RobotSanitizationResult = SanitizationResult<Partial<Robot>>;
+export type StrategySanitizationResult = SanitizationResult<Partial<StrategyParams>>;
+export type BacktestSanitizationResult = SanitizationResult<Partial<BacktestSettings>>;
+export type UserSanitizationResult = SanitizationResult<Record<string, unknown>>;
+
+export interface XSSDetectionResult {
+  hasXSS: boolean;
+  sanitizedData: Record<string, unknown>;
+}
+
+export interface SQLInjectionDetectionResult {
+  hasSQLInjection: boolean;
+  sanitizedData: Record<string, unknown>;
+}
+
+export interface CSPViolation {
+  violatedDirective: string;
+  effectiveDirective: string;
+  originalPolicy: string;
+  disposition: 'report' | 'enforce';
+  blockedURI?: string;
+  sourceFile?: string;
+  lineNumber?: number;
+  columnNumber?: number;
+  statusCode?: number;
+  referrer?: string;
+  sample?: string;
+}
+
+export interface SecurityAlert {
+  type: 'XSS' | 'SQL_INJECTION' | 'CSP_VIOLATION' | 'PROTOTYPE_POLLUTION' | 'BOT_DETECTION' | 'CSP Violation' | 'Edge Anomaly Detected';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  timestamp: number;
+  source: string;
+  details: Record<string, unknown>;
+}
+
+export interface EdgeBotDetectionResult {
+  isBot: boolean;
+  confidence: number;
+  reasons: string[];
+  botType?: string;
 }
 
 // Type guards for runtime type checking

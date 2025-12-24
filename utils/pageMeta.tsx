@@ -1,5 +1,6 @@
 import React from 'react';
-import { SEOHead, structuredDataTemplates } from './seoEnhanced';
+import { SEOHead, structuredDataTemplates } from './seoUnified';
+import { getUrlConfig } from './urls';
 
 interface PageMetaProps {
   title?: string;
@@ -32,11 +33,14 @@ export const PageMeta: React.FC<PageMetaProps> = ({
   noIndex = false,
   alternateUrls = []
 }) => {
+  // Get dynamic URL configuration
+  const urlConfig = getUrlConfig();
+  
   // Default alternate URLs for internationalization
   const defaultAlternateUrls = [
-    { hrefLang: 'en', url: canonicalUrl || 'https://quanforge.ai' },
-    { hrefLang: 'x-default', url: canonicalUrl || 'https://quanforge.ai' },
-    { hrefLang: 'id', url: `${canonicalUrl || 'https://quanforge.ai'}?lang=id` }
+    { hrefLang: 'en', url: canonicalUrl || urlConfig.APP_URL_CANONICAL },
+    { hrefLang: 'x-default', url: canonicalUrl || urlConfig.APP_URL_CANONICAL },
+    { hrefLang: 'id', url: `${canonicalUrl || urlConfig.APP_URL_CANONICAL}?lang=id` }
   ];
 
   const allAlternateUrls = [...defaultAlternateUrls, ...alternateUrls];
@@ -664,6 +668,38 @@ export const enhancedStructuredData = {
       "description": "Algorithmic trading and AI technology"
     }
   })
+};
+
+// Dynamic structured data generator with environment-based URLs
+export const getDynamicStructuredData = (urlConfig = getUrlConfig()) => {
+  const socialUrls = urlConfig.getSocialUrls();
+  
+  return {
+    ...structuredDataTemplates,
+    
+    // Enhanced organization schema with dynamic URLs
+    organization: {
+      "@context": urlConfig.SCHEMA_ORG,
+      "@type": "Organization",
+      "name": "QuantForge AI",
+      "description": "Advanced MQL5 Trading Robot Generator powered by AI",
+      "url": urlConfig.APP_URL,
+      "logo": {
+        "@type": "ImageObject",
+        "url": `${urlConfig.APP_URL}${urlConfig.LOGO_URL}`,
+        "width": 512,
+        "height": 512
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "availableLanguage": ["English", "Indonesian"],
+        "email": "support@quanforge.ai",
+        "hoursAvailable": "24/7"
+      },
+      "sameAs": Object.values(socialUrls),
+    },
+  };
 };
 
 export default PageMeta;

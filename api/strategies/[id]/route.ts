@@ -222,7 +222,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('strategy_api_error', duration);
     
-    console.error('Strategy API GET error:', error);
+    
     
     return NextResponse.json(
       {
@@ -326,7 +326,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('strategy_api_update_error', duration);
     
-    console.error('Strategy API PUT error:', error);
+    
     
     return NextResponse.json(
       {
@@ -413,7 +413,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('strategy_api_delete_error', duration);
     
-    console.error('Strategy API DELETE error:', error);
+    
     
     return NextResponse.json(
       {

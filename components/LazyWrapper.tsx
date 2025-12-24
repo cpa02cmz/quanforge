@@ -1,0 +1,1 @@
+export { LazyErrorBoundary as default } from '../utils/lazyWrapper';

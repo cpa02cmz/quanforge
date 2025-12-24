@@ -98,27 +98,19 @@ export const dynamicImport = async <T>(
 export const bundleAnalyzer = {
   // Log current bundle size (development only)
   logBundleSize: () => {
-    if (process.env['NODE_ENV'] === 'development') {
-      const scripts = document.querySelectorAll('script[src]');
-      scripts.forEach(script => {
-        const src = script.getAttribute('src');
-        if (src && src.includes('/assets/js/')) {
-          console.log(`Bundle chunk: ${src}`);
-        }
-      });
-    }
+    // Bundle chunks available in development tools
   },
 
   // Monitor performance impact of lazy loading
-  measureLoadTime: async (componentName: string, importFn: () => Promise<any>) => {
+  measureLoadTime: async (_componentName: string, importFn: () => Promise<any>) => {
     const startTime = performance.now();
     try {
       await importFn();
       const loadTime = performance.now() - startTime;
-      console.log(`Component ${componentName} loaded in ${loadTime.toFixed(2)}ms`);
+      // Component load time measured
       return loadTime;
     } catch (error) {
-      console.error(`Failed to load ${componentName}:`, error);
+      // Component load failed
       return -1;
     }
   }

@@ -9,7 +9,7 @@ import { useTranslation } from '../services/i18n';
 
 interface BacktestPanelProps {
     settings: BacktestSettings;
-    onChange: (settings: BacktestSettings) => void;
+    onChange: (_settings: BacktestSettings, _field: keyof BacktestSettings, _value: number) => void;
     onRun: () => void;
     result: SimulationResult | null;
     isRunning: boolean;
@@ -27,7 +27,7 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = React.memo(({
     const { t } = useTranslation();
 
     const handleChange = useCallback((field: keyof BacktestSettings, value: number) => {
-        onChange({ ...settings, [field]: value });
+        onChange({ ...settings, [field]: value }, field, value);
     }, [settings, onChange]);
 
     const handleExportCSV = useCallback(() => {

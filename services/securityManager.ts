@@ -1,4 +1,4 @@
-import { Robot, StrategyParams, BacktestSettings } from '../types';
+import { Robot, StrategyParams, BacktestSettings, SanitizationResult, RobotSanitizationResult, StrategySanitizationResult, BacktestSanitizationResult, UserSanitizationResult, XSSDetectionResult, SQLInjectionDetectionResult, CSPViolation, SecurityAlert, EdgeBotDetectionResult } from '../types';
 import DOMPurify from 'dompurify';
 
 interface SecurityConfig {
@@ -29,12 +29,10 @@ interface SecurityConfig {
   };
 }
 
-interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-  sanitizedData?: any;
-  riskScore: number;
-}
+type ValidationDataType = 'robot' | 'strategy' | 'backtest' | 'user';
+type InputType = 'search' | 'record' | 'robot' | 'strategy' | 'backtest' | 'user' | 'text' | 'code' | 'symbol' | 'url' | 'token' | 'html';
+
+
 
 class SecurityManager {
   private static instance: SecurityManager;
@@ -84,9 +82,9 @@ class SecurityManager {
   }
 
   // Input sanitization and validation
-  sanitizeAndValidate(data: any, type: 'robot' | 'strategy' | 'backtest' | 'user'): ValidationResult {
+  sanitizeAndValidate(data: Record<string, unknown>, type: ValidationDataType): SanitizationResult {
     const errors: string[] = [];
-    let sanitizedData = data;
+    let sanitizedData: Record<string, unknown> = data;
     let riskScore = 0;
 
     try {
@@ -108,28 +106,28 @@ class SecurityManager {
         case 'robot':
           const robotResult = this.validateRobotData(data);
           errors.push(...robotResult.errors);
-          sanitizedData = robotResult.sanitizedData;
+          sanitizedData = robotResult.sanitizedData || {};
           riskScore += robotResult.riskScore;
           break;
 
         case 'strategy':
           const strategyResult = this.validateStrategyData(data);
           errors.push(...strategyResult.errors);
-          sanitizedData = strategyResult.sanitizedData;
+          sanitizedData = strategyResult.sanitizedData || {};
           riskScore += strategyResult.riskScore;
           break;
 
         case 'backtest':
           const backtestResult = this.validateBacktestData(data);
           errors.push(...backtestResult.errors);
-          sanitizedData = backtestResult.sanitizedData;
+          sanitizedData = backtestResult.sanitizedData || {};
           riskScore += backtestResult.riskScore;
           break;
 
         case 'user':
           const userResult = this.validateUserData(data);
           errors.push(...userResult.errors);
-          sanitizedData = userResult.sanitizedData;
+          sanitizedData = userResult.sanitizedData || {};
           riskScore += userResult.riskScore;
           break;
       }
@@ -163,7 +161,7 @@ class SecurityManager {
     };
   }
 
-private validateRobotData(data: any): ValidationResult {
+private validateRobotData(data: Record<string, unknown>): RobotSanitizationResult {
      const errors: string[] = [];
      let riskScore = 0;
      const sanitized: Partial<Robot> = {};
@@ -176,8 +174,8 @@ private validateRobotData(data: any): ValidationResult {
      }
 
      // Name validation
-     if (data.name) {
-       const sanitizedName = this.sanitizeString(data.name);
+     if (typeof data['name'] === 'string') {
+       const sanitizedName = this.sanitizeString(data['name']);
        if (sanitizedName.length < 3 || sanitizedName.length > 100) {
          errors.push('Robot name must be between 3 and 100 characters');
          riskScore += 10;
@@ -189,8 +187,8 @@ private validateRobotData(data: any): ValidationResult {
      }
 
     // Description validation
-    if (data.description) {
-      const sanitizedDescription = this.sanitizeString(data.description);
+    if (typeof data['description'] === 'string') {
+      const sanitizedDescription = this.sanitizeString(data['description']);
       if (sanitizedDescription.length > 1000) {
         errors.push('Description too long (max 1000 characters)');
         riskScore += 5;
@@ -199,8 +197,8 @@ private validateRobotData(data: any): ValidationResult {
     }
 
     // Code validation - critical for security
-    if (data.code) {
-      const codeValidation = this.validateMQL5Code(data.code);
+    if (typeof data['code'] === 'string') {
+      const codeValidation = this.validateMQL5Code(data['code']);
       if (!codeValidation.isValid) {
         errors.push(...codeValidation.errors);
         riskScore += 25;
@@ -212,13 +210,14 @@ private validateRobotData(data: any): ValidationResult {
     }
 
     // Strategy type validation
-    if (data.strategy_type) {
-      const validTypes = ['Trend', 'Scalping', 'Grid', 'Martingale', 'Custom'];
-      if (!validTypes.includes(data.strategy_type)) {
+    if (typeof data['strategy_type'] === 'string') {
+      const validTypes: Robot['strategy_type'][] = ['Trend', 'Scalping', 'Grid', 'Martingale', 'Custom'];
+      const strategyType = data['strategy_type'] as Robot['strategy_type'];
+      if (!validTypes.includes(strategyType)) {
         errors.push('Invalid strategy type');
         riskScore += 10;
       }
-      sanitized.strategy_type = data.strategy_type;
+      sanitized.strategy_type = strategyType;
     }
 
     return {
@@ -229,39 +228,40 @@ private validateRobotData(data: any): ValidationResult {
     };
   }
 
-  private validateStrategyData(data: any): ValidationResult {
+  private validateStrategyData(data: Record<string, unknown>): StrategySanitizationResult {
     const errors: string[] = [];
     let riskScore = 0;
     const sanitized: Partial<StrategyParams> = {};
 
-    // Timeframe validation
-    if (data.timeframe) {
-      const validTimeframes = ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'];
-      if (!validTimeframes.includes(data.timeframe)) {
-        errors.push('Invalid timeframe');
-        riskScore += 10;
-      }
-      sanitized.timeframe = data.timeframe;
-    }
+// Timeframe validation
+     if (typeof data['timeframe'] === 'string') {
+       const validTimeframes = ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'];
+       if (!validTimeframes.includes(data['timeframe'])) {
+         errors.push('Invalid timeframe');
+         riskScore += 10;
+       }
+       sanitized.timeframe = data['timeframe'];
+     }
 
-    // Symbol validation
-    if (data.symbol) {
-      const sanitizedSymbol = this.sanitizeSymbol(data.symbol);
-      if (!sanitizedSymbol) {
-        errors.push('Invalid symbol format');
-        riskScore += 10;
-      }
-      sanitized.symbol = sanitizedSymbol;
-    }
+     // Symbol validation
+     if (typeof data['symbol'] === 'string') {
+       const sanitizedSymbol = this.sanitizeSymbol(data['symbol']);
+       if (!sanitizedSymbol) {
+         errors.push('Invalid symbol format');
+         riskScore += 10;
+       }
+       sanitized.symbol = sanitizedSymbol;
+     }
 
-    // Risk percent validation
-    if (typeof data.riskPercent === 'number') {
-      if (data.riskPercent < 0.01 || data.riskPercent > 100) {
-        errors.push('Risk percent must be between 0.01 and 100');
-        riskScore += 10;
-      }
-      sanitized.riskPercent = Math.max(0.01, Math.min(100, data.riskPercent));
-    }
+     // Risk percent validation
+     if (typeof data['riskPercent'] === 'number') {
+       const riskPercent = data['riskPercent'];
+       if (riskPercent < 0.01 || riskPercent > 100) {
+         errors.push('Risk percent must be between 0.01 and 100');
+         riskScore += 10;
+       }
+       sanitized.riskPercent = Math.max(0.01, Math.min(100, riskPercent));
+     }
 
     return {
       isValid: errors.length === 0,
@@ -271,28 +271,30 @@ private validateRobotData(data: any): ValidationResult {
     };
   }
 
-  private validateBacktestData(data: any): ValidationResult {
+  private validateBacktestData(data: Record<string, unknown>): BacktestSanitizationResult {
     const errors: string[] = [];
     let riskScore = 0;
     const sanitized: Partial<BacktestSettings> = {};
 
-    // Initial deposit validation
-    if (typeof data.initialDeposit === 'number') {
-      if (data.initialDeposit < 100 || data.initialDeposit > 10000000) {
-        errors.push('Initial deposit must be between $100 and $10,000,000');
-        riskScore += 10;
-      }
-      sanitized.initialDeposit = Math.max(100, Math.min(10000000, data.initialDeposit));
-    }
+// Initial deposit validation
+     if (typeof data['initialDeposit'] === 'number') {
+       const initialDeposit = data['initialDeposit'];
+       if (initialDeposit < 100 || initialDeposit > 10000000) {
+         errors.push('Initial deposit must be between $100 and $10,000,000');
+         riskScore += 10;
+       }
+       sanitized.initialDeposit = Math.max(100, Math.min(10000000, initialDeposit));
+     }
 
-    // Days validation
-    if (typeof data.days === 'number') {
-      if (data.days < 1 || data.days > 365) {
-        errors.push('Backtest duration must be between 1 and 365 days');
-        riskScore += 10;
-      }
-      sanitized.days = Math.max(1, Math.min(365, data.days));
-    }
+     // Days validation
+     if (typeof data['days'] === 'number') {
+       const days = data['days'];
+       if (days < 1 || days > 365) {
+         errors.push('Backtest duration must be between 1 and 365 days');
+         riskScore += 10;
+       }
+       sanitized.days = Math.max(1, Math.min(365, days));
+     }
 
     return {
       isValid: errors.length === 0,
@@ -302,19 +304,19 @@ private validateRobotData(data: any): ValidationResult {
     };
   }
 
-  private validateUserData(data: any): ValidationResult {
+  private validateUserData(data: Record<string, unknown>): UserSanitizationResult {
     const errors: string[] = [];
     let riskScore = 0;
-    const sanitized: any = {};
+    const sanitized: Record<string, string> = {};
 
     // Email validation
-    if (data.email) {
+    if (typeof data['email'] === 'string') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(data.email)) {
+      if (!emailRegex.test(data['email'])) {
         errors.push('Invalid email format');
         riskScore += 15;
       }
-      sanitized.email = data.email.toLowerCase().trim();
+      sanitized['email'] = data['email'].toLowerCase().trim();
     }
 
     return {
@@ -505,7 +507,7 @@ private validateRobotData(data: any): ValidationResult {
       };
    }
 
-   private preventXSS(data: any): { hasXSS: boolean; sanitizedData: any } {
+   private preventXSS(data: Record<string, unknown>): XSSDetectionResult {
      let hasXSS = false;
      const sanitized = Array.isArray(data) ? [...data] : { ...data };
 
@@ -535,7 +537,7 @@ private validateRobotData(data: any): ValidationResult {
        /unescape\(/gi,
      ];
 
-    const sanitizeValue = (value: any): any => {
+    const sanitizeValue = (value: unknown): unknown => {
       if (typeof value === 'string') {
         let sanitized = value;
         for (const pattern of xssPatterns) {
@@ -548,18 +550,18 @@ private validateRobotData(data: any): ValidationResult {
       } else if (typeof value === 'object' && value !== null) {
         const sanitizedObj = Array.isArray(value) ? [] : {};
         for (const [key, val] of Object.entries(value)) {
-          (sanitizedObj as any)[key] = sanitizeValue(val);
+          (sanitizedObj as Record<string, unknown>)[key] = sanitizeValue(val);
         }
         return sanitizedObj;
       }
       return value;
     };
 
-    const sanitizedData = sanitizeValue(sanitized);
+    const sanitizedData = sanitizeValue(sanitized) as Record<string, unknown>;
     return { hasXSS, sanitizedData };
   }
 
-  private preventSQLInjection(data: any): { hasSQLInjection: boolean; sanitizedData: any } {
+  private preventSQLInjection(data: Record<string, unknown>): SQLInjectionDetectionResult {
     let hasSQLInjection = false;
     const sanitized = Array.isArray(data) ? [...data] : { ...data };
 
@@ -571,7 +573,7 @@ private validateRobotData(data: any): ValidationResult {
       /('.*'|".*")/g,
     ];
 
-    const sanitizeValue = (value: any): any => {
+    const sanitizeValue = (value: unknown): unknown => {
       if (typeof value === 'string') {
         let sanitized = value;
         for (const pattern of sqlPatterns) {
@@ -584,14 +586,14 @@ private validateRobotData(data: any): ValidationResult {
       } else if (typeof value === 'object' && value !== null) {
         const sanitizedObj = Array.isArray(value) ? [] : {};
         for (const [key, val] of Object.entries(value)) {
-          (sanitizedObj as any)[key] = sanitizeValue(val);
+          (sanitizedObj as Record<string, unknown>)[key] = sanitizeValue(val);
         }
         return sanitizedObj;
       }
       return value;
     };
 
-    const sanitizedData = sanitizeValue(sanitized);
+    const sanitizedData = sanitizeValue(sanitized) as Record<string, unknown>;
     return { hasSQLInjection, sanitizedData };
   }
 
@@ -992,7 +994,7 @@ private validateRobotData(data: any): ValidationResult {
     });
   }
 
-  private storeCSPViolation(violation: any): void {
+  private storeCSPViolation(violation: CSPViolation): void {
     const violations = JSON.parse(localStorage.getItem('csp_violations') || '[]');
     violations.push(violation);
     
@@ -1004,7 +1006,7 @@ private validateRobotData(data: any): ValidationResult {
     localStorage.setItem('csp_violations', JSON.stringify(violations));
   }
 
-  private isHighSeverityViolation(violation: any): boolean {
+  private isHighSeverityViolation(violation: CSPViolation): boolean {
     const highSeverityDirectives = [
       'script-src',
       'object-src',
@@ -1016,13 +1018,13 @@ private validateRobotData(data: any): ValidationResult {
     return highSeverityDirectives.includes(violation.effectiveDirective);
   }
 
-  private triggerSecurityAlert(type: string, data: any): void {
-    const alert = {
+  private triggerSecurityAlert(type: SecurityAlert['type'], data: Record<string, unknown>): void {
+    const alert: SecurityAlert = {
       type,
-      data,
-      timestamp: Date.now(),
       severity: 'high',
-      url: window.location.href
+      timestamp: Date.now(),
+      source: window.location.href,
+      details: data
     };
 
     console.error('🚨 Security Alert:', alert);
@@ -1033,7 +1035,7 @@ private validateRobotData(data: any): ValidationResult {
     }
   }
 
-  private async sendSecurityAlert(alert: any): Promise<void> {
+  private async sendSecurityAlert(alert: SecurityAlert): Promise<void> {
     try {
       await fetch(`${this.config.endpoint}/security-alerts`, {
         method: 'POST',
@@ -1120,13 +1122,13 @@ private validateRobotData(data: any): ValidationResult {
 
     // CSP Statistics
     const cspViolations = JSON.parse(localStorage.getItem('csp_violations') || '[]');
-    const highSeverityViolations = cspViolations.filter((v: any) => this.isHighSeverityViolation(v));
+    const highSeverityViolations = cspViolations.filter((v: CSPViolation) => this.isHighSeverityViolation(v));
     
-    const directiveCounts = cspViolations.reduce((acc: any, violation: any) => {
+    const directiveCounts = cspViolations.reduce((acc: Record<string, number>, violation: CSPViolation) => {
       const directive = violation.effectiveDirective;
       acc[directive] = (acc[directive] || 0) + 1;
       return acc;
-    }, {});
+    }, {} as Record<string, number>);
 
     const cspStats = {
       totalViolations: cspViolations.length,
@@ -1282,13 +1284,9 @@ private validateRobotData(data: any): ValidationResult {
   /**
    * Bot detection for edge functions
    */
-  detectEdgeBot(userAgent: string, _ip: string, requestPattern: any): { 
-    isBot: boolean; 
-    confidence: number; 
-    botType?: string;
-  } {
+  detectEdgeBot(userAgent: string, _ip: string, requestPattern: Record<string, unknown>): EdgeBotDetectionResult {
     if (!this.config.botDetection.enabled) {
-      return { isBot: false, confidence: 0 };
+      return { isBot: false, confidence: 0, reasons: [] };
     }
 
     let confidence = 0;
@@ -1304,27 +1302,35 @@ private validateRobotData(data: any): ValidationResult {
       }
     }
 
-    // Check request patterns
-    if (requestPattern.requestFrequency > 10) { // More than 10 requests per second
-      confidence += 40;
-      botType = botType || 'high-frequency';
-    }
+// Check request patterns
+     if (typeof requestPattern['requestFrequency'] === 'number' && requestPattern['requestFrequency'] > 10) { // More than 10 requests per second
+       confidence += 40;
+       botType = botType || 'high-frequency';
+     }
 
-    // Check for consistent timing (bot-like behavior)
-    if (requestPattern.consistentTiming) {
-      confidence += 20;
-      botType = botType || 'automated';
-    }
+     // Check for consistent timing (bot-like behavior)
+     if (requestPattern['consistentTiming']) {
+       confidence += 20;
+       botType = botType || 'automated';
+     }
 
-    // Check for missing headers (common with simple bots)
-    if (requestPattern.missingHeaders) {
-      confidence += 10;
-      botType = botType || 'simple-bot';
+     // Check for missing headers (common with simple bots)
+     if (requestPattern['missingHeaders']) {
+       confidence += 10;
+       botType = botType || 'simple-bot';
+     }
+
+    const reasons: string[] = [];
+    if (confidence > 50) {
+      if (botType === 'high-frequency') reasons.push('High request frequency detected');
+      if (botType === 'automated') reasons.push('Consistent timing pattern detected');
+      if (botType === 'simple-bot') reasons.push('Missing browser headers detected');
     }
 
     return {
       isBot: confidence > 50,
       confidence: Math.min(confidence, 100),
+      reasons,
       botType
     };
   }
@@ -1532,7 +1538,7 @@ private validateRobotData(data: any): ValidationResult {
   }
 
   // Prevent prototype pollution attacks
-  private isPrototypePollution(obj: any): boolean {
+  private isPrototypePollution(obj: Record<string, unknown>): boolean {
     if (!obj || typeof obj !== 'object') {
       return false;
     }
@@ -1546,20 +1552,20 @@ private validateRobotData(data: any): ValidationResult {
       }
     }
 
-    // Check nested objects
-    for (const key in obj) {
-      if (obj.hasOwnProperty(key) && typeof obj[key] === 'object') {
-        if (this.isPrototypePollution(obj[key])) {
-          return true;
-        }
-      }
-    }
+// Check nested objects
+     for (const key in obj) {
+       if (obj.hasOwnProperty(key) && typeof obj[key] === 'object' && obj[key] !== null) {
+         if (this.isPrototypePollution(obj[key] as Record<string, unknown>)) {
+           return true;
+         }
+       }
+     }
 
     return false;
   }
 
    // Safe JSON parsing with prototype pollution protection
-   safeJSONParse(jsonString: string): any {
+   safeJSONParse(jsonString: string): Record<string, unknown> | null {
      try {
        // First, parse the JSON
        const parsed = JSON.parse(jsonString);
@@ -1579,7 +1585,7 @@ private validateRobotData(data: any): ValidationResult {
    /**
     * Validate input based on type
     */
-   validateInput(input: any, type: 'search' | 'record' | 'robot' | 'strategy' | 'backtest' | 'user' | 'text' | 'code' | 'symbol' | 'url' | 'token' | 'html' = 'text'): boolean {
+   validateInput(input: unknown, type: InputType = 'text'): boolean {
      if (input === null || input === undefined) {
        return false;
      }
@@ -1590,16 +1596,17 @@ private validateRobotData(data: any): ValidationResult {
          const searchValidation = this.sanitizeAndValidate({ searchTerm: input }, 'strategy');
          return searchValidation.isValid && searchValidation.riskScore < 30;
          
-       case 'record':
-         const recordValidation = this.sanitizeAndValidate(input, 'robot');
-         return recordValidation.isValid && recordValidation.riskScore < 50;
-         
-       case 'robot':
-       case 'strategy':
-       case 'backtest':
-       case 'user':
-         const validation = this.sanitizeAndValidate(input, type);
-         return validation.isValid && validation.riskScore < 70;
+case 'record':
+          if (typeof input !== 'object' || !input) return false;
+          const recordValidation = this.sanitizeAndValidate(input as Record<string, unknown>, 'robot');
+          return recordValidation.isValid && recordValidation.riskScore < 50;
+          
+        case 'robot':
+        case 'strategy':
+        case 'backtest':
+        case 'user':
+          const validation = this.sanitizeAndValidate(input as Record<string, unknown>, type);
+          return validation.isValid && validation.riskScore < 70;
          
        default:
          // For other types, use basic sanitization

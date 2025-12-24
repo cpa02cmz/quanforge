@@ -127,19 +127,14 @@ export class MessageMemoryMonitor {
             const memoryUsageMB = stats.memoryUsageKB / 1024;
 
             if (memoryUsageMB > this.CRITICAL_THRESHOLD_MB) {
-                console.warn(`Critical message buffer memory usage: ${memoryUsageMB.toFixed(2)}MB`);
                 // Force aggressive cleanup
                 const recentMessages = buffer.getRecent(10); // Keep only 10 most recent
                 buffer.clear();
                 recentMessages.forEach(msg => buffer.add(msg));
             } else if (memoryUsageMB > this.WARNING_THRESHOLD_MB) {
-                console.warn(`High message buffer memory usage: ${memoryUsageMB.toFixed(2)}MB`);
                 // Trim older messages more aggressively
                 const cutoffTime = Date.now() - (4 * 60 * 60 * 1000); // 4 hours ago instead of 24
-                const removed = buffer.trimOlderThan(cutoffTime);
-                if (removed > 0) {
-                    console.log(`Trimmed ${removed} old messages to reduce memory usage`);
-                }
+                buffer.trimOlderThan(cutoffTime);
             }
         }, intervalMs);
     }
@@ -204,7 +199,7 @@ export const useMessageBuffer = (maxSize: number = 50) => {
             const recentMessages = bufferRef.current.getRecent(15);
             bufferRef.current.clear();
             recentMessages.forEach(msg => bufferRef.current.add(msg));
-            console.log('Manual memory cleanup performed');
+            // Manual memory cleanup performed
         }
     }, []);
 

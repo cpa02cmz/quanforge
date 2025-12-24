@@ -226,9 +226,8 @@ class EnhancedRobotsTxtGenerator {
     
     try {
       require('fs').writeFileSync(outputPath, content, 'utf8');
-      console.log(`✅ Robots.txt generated successfully: ${outputPath}`);
+      // Robots.txt generated successfully
     } catch (error) {
-      console.error('❌ Error saving robots.txt:', error);
       throw error;
     }
   }

@@ -873,7 +873,7 @@ class EnhancedSitemapGenerator {
     this.generateImageSitemap();
     this.generateVideoSitemap();
     this.generateNewsSitemap();
-    console.log('Enhanced sitemaps generated successfully!');
+    // Enhanced sitemaps generated
   }
 }
 

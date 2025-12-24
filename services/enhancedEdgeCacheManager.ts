@@ -3,6 +3,8 @@
  * Provides intelligent caching strategies and optimization for edge functions
  */
 
+import { EDGE_CACHE_CONFIG } from '../constants/config';
+
 interface CacheEntry {
   data: any;
   timestamp: number;
@@ -58,13 +60,13 @@ class EnhancedEdgeCacheManager {
 
   private constructor() {
     this.config = {
-      maxSize: 10 * 1024 * 1024, // 10MB for edge constraints
-      maxEntries: 1000, // Reduced for edge memory
-      defaultTTL: 5 * 60 * 1000, // 5 minutes
-      cleanupInterval: 30 * 1000, // 30 seconds
-      compressionThreshold: 1024, // 1KB
-      enableCompression: true,
-      enableMetrics: true
+      maxSize: EDGE_CACHE_CONFIG.MAX_SIZE,
+      maxEntries: EDGE_CACHE_CONFIG.MAX_ENTRIES,
+      defaultTTL: EDGE_CACHE_CONFIG.DEFAULT_TTL,
+      cleanupInterval: EDGE_CACHE_CONFIG.CLEANUP_INTERVAL,
+      compressionThreshold: EDGE_CACHE_CONFIG.COMPRESSION_THRESHOLD,
+      enableCompression: EDGE_CACHE_CONFIG.COMPRESSION_ENABLED,
+      enableMetrics: EDGE_CACHE_CONFIG.METRICS_ENABLED
     };
 
     this.metrics = {
@@ -98,35 +100,35 @@ class EnhancedEdgeCacheManager {
     // API strategies
     this.strategies.set('api:robots', {
       name: 'robots-api',
-      ttl: 5 * 60 * 1000, // 5 minutes
+      ttl: EDGE_CACHE_CONFIG.STRATEGIES.API_ROBOTS,
       tags: ['api', 'robots', 'data'],
       compression: true,
-      regionSpecific: true,
+      regionSpecific: EDGE_CACHE_CONFIG.REGION_SPECIFIC_DEFAULT,
       priority: 'high'
     });
 
     this.strategies.set('api:generate', {
       name: 'generate-api',
-      ttl: 2 * 60 * 1000, // 2 minutes
+      ttl: EDGE_CACHE_CONFIG.STRATEGIES.API_GENERATE,
       tags: ['api', 'generate', 'ai'],
       compression: true,
-      regionSpecific: true,
+      regionSpecific: EDGE_CACHE_CONFIG.REGION_SPECIFIC_DEFAULT,
       priority: 'medium'
     });
 
     this.strategies.set('api:market-data', {
       name: 'market-data-api',
-      ttl: 30 * 1000, // 30 seconds
+      ttl: EDGE_CACHE_CONFIG.STRATEGIES.API_MARKET_DATA,
       tags: ['api', 'market', 'realtime'],
       compression: false,
-      regionSpecific: true,
+      regionSpecific: EDGE_CACHE_CONFIG.REGION_SPECIFIC_DEFAULT,
       priority: 'high'
     });
 
     // Static asset strategies
     this.strategies.set('static:js', {
       name: 'javascript-assets',
-      ttl: 24 * 60 * 60 * 1000, // 24 hours
+      ttl: EDGE_CACHE_CONFIG.STRATEGIES.STATIC_ASSETS,
       tags: ['static', 'js', 'bundle'],
       compression: true,
       regionSpecific: false,
@@ -135,7 +137,7 @@ class EnhancedEdgeCacheManager {
 
     this.strategies.set('static:css', {
       name: 'css-assets',
-      ttl: 24 * 60 * 60 * 1000, // 24 hours
+      ttl: EDGE_CACHE_CONFIG.STRATEGIES.STATIC_ASSETS,
       tags: ['static', 'css', 'styles'],
       compression: true,
       regionSpecific: false,
@@ -145,19 +147,19 @@ class EnhancedEdgeCacheManager {
     // Page strategies
     this.strategies.set('page:dashboard', {
       name: 'dashboard-page',
-      ttl: 10 * 60 * 1000, // 10 minutes
+      ttl: EDGE_CACHE_CONFIG.STRATEGIES.PAGE_DASHBOARD,
       tags: ['page', 'dashboard', 'dynamic'],
       compression: true,
-      regionSpecific: true,
+      regionSpecific: EDGE_CACHE_CONFIG.REGION_SPECIFIC_DEFAULT,
       priority: 'medium'
     });
 
     this.strategies.set('page:generator', {
       name: 'generator-page',
-      ttl: 5 * 60 * 1000, // 5 minutes
+      ttl: EDGE_CACHE_CONFIG.STRATEGIES.PAGE_GENERATOR,
       tags: ['page', 'generator', 'interactive'],
       compression: true,
-      regionSpecific: true,
+      regionSpecific: EDGE_CACHE_CONFIG.REGION_SPECIFIC_DEFAULT,
       priority: 'medium'
     });
   }

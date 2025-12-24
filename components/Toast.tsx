@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useState, useCallback } from 'react';
+import { getDefaultDuration } from '../constants/toast';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -6,41 +7,41 @@ interface Toast {
   id: string;
   message: string;
   type: ToastType;
+  duration?: number;
 }
 
 interface ToastContextType {
-  showToast: (message: string, type?: ToastType) => void;
+  toasts: Toast[];
+  showToast: (_message: string, _type?: ToastType, _duration?: number) => void;
+  hideToast: (_id: string) => void;
 }
 
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
+export const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-export const useToast = () => {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToast must be used within a ToastProvider');
-  }
-  return context;
-};
+// useToast hook is now exported from hooks/useToast.ts for better separation of concerns
+
+
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = useCallback((message: string, type: ToastType = 'info') => {
+  const showToast = useCallback((_message: string, _type: ToastType = 'info', _duration?: number) => {
     const id = Date.now().toString();
-    setToasts((prev) => [...prev, { id, message, type }]);
+    const toastDuration = _duration || getDefaultDuration(_type);
+    setToasts((prev) => [...prev, { id, message: _message, type: _type, duration: toastDuration }]);
 
     // Auto dismiss
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3000);
+    }, toastDuration);
   }, []);
 
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+  const hideToast = useCallback((_id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== _id));
+  }, []);
 
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={{ toasts, showToast, hideToast }}>
       {children}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none">
         {toasts.map((toast) => (
@@ -52,7 +53,6 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               ${toast.type === 'success' ? 'border-brand-500/50 bg-brand-900/10' : ''}
               ${toast.type === 'error' ? 'border-red-500/50 bg-red-900/10' : ''}
               ${toast.type === 'info' ? 'border-blue-500/50 bg-blue-900/10' : ''}
-              animate-fade-in-up
             `}
             role="alert"
           >
@@ -75,7 +75,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             </div>
             <div className="text-sm font-medium">{toast.message}</div>
             <button
-              onClick={() => removeToast(toast.id)}
+              onClick={() => hideToast(toast.id)}
               className="ml-auto -mx-1.5 -my-1.5 rounded-lg p-1.5 text-gray-400 hover:text-white focus:ring-2 focus:ring-gray-300"
             >
               <span className="sr-only">Close</span>

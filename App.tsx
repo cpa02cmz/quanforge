@@ -7,7 +7,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
-import { SEOHead, structuredDataTemplates } from './utils/seoEnhanced';
+import { SEOHead, structuredDataTemplates } from './utils/seoUnified';
   import { vercelEdgeOptimizer } from './services/vercelEdgeOptimizer';
   import { databasePerformanceMonitor } from './services/databasePerformanceMonitor';
   import { frontendOptimizer } from './services/frontendOptimizer';
@@ -45,24 +45,7 @@ const Layout = lazy(() =>
   import('./components/Layout').then(module => ({ default: module.Layout }))
 );
 
-// Dynamic import utilities for services and heavy components
-export const loadGeminiService = () => import('./services/gemini');
-export const loadSEOUtils = () => import('./utils/seoEnhanced');
-export const loadChartComponents = () => import('./components/ChartComponents');
-export const loadCodeEditor = () => import('./components/CodeEditor');
-export const loadBacktestPanel = () => import('./components/BacktestPanel');
 
-// Enhanced preloading strategy with route-based optimization
-   const preloadCriticalRoutes = () => {
-     // Preload Dashboard components (most likely route after login)
-     import('./pages/Dashboard').catch(err => logger.warn('Dashboard preload failed:', err));
-     // Preload Generator components (second most likely)
-     setTimeout(() => import('./pages/Generator').catch(err => logger.warn('Generator preload failed:', err)), 1000);
-     // Preload Layout (essential for navigation)
-     setTimeout(() => import('./components/Layout').catch(err => logger.warn('Layout preload failed:', err)), 500);
-     // Preload static pages in background
-     setTimeout(() => import('./pages/Wiki').catch(err => logger.warn('Wiki preload failed:', err)), 2000);
-   };
 
 
 
@@ -70,11 +53,24 @@ export default function App() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
+  // Enhanced preloading strategy with route-based optimization
+  const preloadCriticalRoutes = useCallback(() => {
+    // Preload Dashboard components (most likely route after login)
+    import('./pages/Dashboard').catch((err: Error) => logger.warn('Dashboard preload failed:', err));
+    // Preload Generator components (second most likely)
+    setTimeout(() => import('./pages/Generator').catch((err: Error) => logger.warn('Generator preload failed:', err)), 1000);
+    // Preload Layout (essential for navigation)
+    setTimeout(() => import('./components/Layout').catch((err: Error) => logger.warn('Layout preload failed:', err)), 500);
+    // Preload static pages in background
+    setTimeout(() => import('./pages/Wiki').catch((err: Error) => logger.warn('Wiki preload failed:', err)), 2000);
+  }, []);
+
+  useEffect(() => {
     const startTime = performance.now();
     
     // Critical path: Auth initialization first
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Note: Type casting as any needed due to potential module conflicts with supabase auth types
+    (supabase.auth as any).getSession?.().then(({ data: { session } }: any) => {
       setSession(session);
       performanceMonitor.recordMetric('auth_init', performance.now() - startTime);
       databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, true);
@@ -86,7 +82,7 @@ useEffect(() => {
       
       // Initialize non-critical services after auth is complete
       initializeNonCriticalServices();
-    }).catch((err) => {
+    }).catch((err: Error) => {
       logger.warn("Auth initialization failed:", err);
       performanceMonitor.recordMetric('auth_error', 1);
       databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, false);
@@ -99,7 +95,7 @@ useEffect(() => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = (supabase.auth as any).onAuthStateChange?.((_event: string, session: UserSession | null) => {
       setSession(session);
       performanceMonitor.recordMetric('auth_state_change', 1);
       
@@ -107,12 +103,10 @@ useEffect(() => {
       if (session) {
         preloadCriticalRoutes();
       }
-    });
+    }) || { data: { subscription: { unsubscribe: () => {} } } };
 
     return () => {
       subscription.unsubscribe();
-      // Cleanup performance monitor on app unmount
-      performanceMonitor.cleanup();
     };
   }, []);
 

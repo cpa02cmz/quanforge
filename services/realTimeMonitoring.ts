@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+import { handleErrorCompat as handleError } from '../utils/errorManager';
+=======
 import { handleError } from '../utils/errorHandler';
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 import { consolidatedCache } from './consolidatedCacheManager';
 
 interface CoreWebVitals {
@@ -89,11 +93,11 @@ class RealTimeMonitoring {
       // Set up periodic reporting
       this.setupPeriodicReporting();
       
-      this.isInitialized = true;
-      console.log('[RealTimeMonitoring] Performance monitoring initialized');
-    } catch (error) {
-      handleError(error as Error, 'initialize', 'RealTimeMonitoring');
-    }
+this.isInitialized = true;
+      // Performance monitoring initialized
+     } catch (error) {
+       handleError(error as Error, 'initialize', 'RealTimeMonitoring');
+     }
   }
 
   /**

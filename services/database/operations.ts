@@ -1,6 +1,10 @@
 import { Robot } from '../../types';
 import { getClient, STORAGE_KEYS, safeParse, trySaveToStorage, generateUUID } from './client';
+<<<<<<< HEAD
+import { handleErrorCompat as handleError } from '../../utils/errorManager';
+=======
 import { handleError } from '../../utils/errorHandler';
+>>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 
 // Robot operations
 export const getRobots = async (userId: string): Promise<Robot[]> => {
