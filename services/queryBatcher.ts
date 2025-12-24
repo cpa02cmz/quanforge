@@ -4,21 +4,22 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
+import type { SafeArray, ErrorType } from '../types/common';
 
 interface BatchQuery {
   id: string;
   query: string;
-  params?: any[];
+  params?: SafeArray;
   table?: string;
   operation: 'select' | 'insert' | 'update' | 'delete';
   priority: 'high' | 'medium' | 'low';
   timestamp: number;
 }
 
-interface BatchResult {
+interface BatchResult<T = unknown> {
   id: string;
-  data?: any;
-  error?: any;
+  data?: T;
+  error?: ErrorType;
   executionTime: number;
 }
 

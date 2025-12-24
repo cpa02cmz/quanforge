@@ -318,3 +318,181 @@ export type RobotArray = RobotInterface[];
 export type RobotPartial = Partial<RobotInterface>;
 export type ErrorType = Error | { message: string; code?: string | number };
 export type StorageErrorType = Error & { code?: number | string; name?: string };
+
+// ============= Utility Types for Type Safety =============
+
+// Safe generic types to replace 'any'
+export type SafeAny = unknown;
+export type SafeObject = Record<string, unknown>;
+export type SafeArray<T = unknown> = Array<T>;
+export type SafeFunction<T extends unknown[] = unknown[], R = unknown> = (...args: T) => R;
+
+// Async utility types
+export type SafeAsyncFunction<T extends unknown[] = unknown[], R = unknown> = (...args: T) => Promise<R>;
+export type AsyncResult<T, E = Error> = Promise<{
+  success: true;
+  data: T;
+} | {
+  success: false;
+  error: E;
+}>;
+
+// Event and callback types
+export type SafeEventHandler<T = unknown> = (event: T) => void;
+export type SafeCallback<T = unknown, R = unknown> = (data: T) => R;
+
+// Configuration and settings types
+export type SafeConfig<T = string | number | boolean> = Record<string, T>;
+export type SafeSettings<T = unknown> = Partial<T>;
+
+// Request and response utilities
+export type SafeRequestBody = SafeObject;
+export type SafeRequestParams = SafeObject;
+export type SafeHeaders = Record<string, string>;
+
+// Database utility types
+export type SafeQueryResult<T = unknown> = T | null;
+export type SafeBatchResult<T = unknown> = Array<{
+  success: boolean;
+  data?: T;
+  error?: string;
+}>;
+
+// Performance and metrics types
+export type SafeMetrics = Record<string, number | string>;
+export type SafePerformanceData = {
+  timestamp: number;
+  duration: number;
+  metadata?: SafeObject;
+};
+
+// Cache and storage utilities
+export type SafeCacheKey = string;
+export type SafeCacheValue<T = unknown> = T | null;
+export type SafeCacheEntry<T = unknown> = {
+  value: T;
+  timestamp: number;
+  ttl?: number;
+};
+
+// Security and validation utilities
+export type SafeInput = string | number | boolean | SafeObject;
+export type SafeValidationResult = {
+  isValid: boolean;
+  errors: string[];
+  sanitizedData?: SafeInput;
+};
+
+// Component and UI utilities
+export type SafeProps<T = SafeObject> = T;
+export type SafeState<T = unknown> = T | null;
+export type SafeRef<T = unknown> = { current: T | null };
+
+// Service and API utilities
+export type SafeServiceConfig = SafeObject;
+export type SafeServiceResponse<T = unknown> = {
+  success: boolean;
+  data?: T;
+  error?: string | AppError;
+  timestamp: number;
+};
+
+// AI and model utilities
+export type SafeAIRequest = SafeObject;
+export type SafeAIResponse = {
+  content: string;
+  metadata?: SafeObject;
+  success: boolean;
+};
+export type SafeAIModelConfig = SafeObject;
+
+// WebSocket and streaming utilities
+export type SafeWebSocketMessage<T = unknown> = {
+  type: string;
+  data: T;
+  timestamp: number;
+};
+export type SafeStreamData<T = unknown> = {
+  data: T;
+  timestamp: number;
+  id?: string;
+};
+
+// File and I/O utilities
+export type SafeFileData = {
+  name: string;
+  content: string | ArrayBuffer;
+  type?: string;
+  size?: number;
+};
+export type SafeUploadResult = {
+  success: boolean;
+  url?: string;
+  error?: string;
+};
+
+// Worker and threading utilities
+export type SafeWorkerTask<T = unknown> = {
+  id: string;
+  type: string;
+  payload: T;
+};
+export type SafeWorkerResult<T = unknown> = {
+  id: string;
+  success: boolean;
+  data?: T;
+  error?: string;
+};
+
+// Testing and debugging utilities
+export type SafeMockResponse<T = unknown> = {
+  data: T;
+  status: number;
+  headers?: SafeHeaders;
+};
+
+// Environment and config utilities
+export type SafeEnvConfig = Record<string, string | undefined>;
+export type SafeFeatureFlags = Record<string, boolean>;
+
+// Type guards and helpers
+export const isUnknownObject = (value: unknown): value is Record<string, unknown> => {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+};
+
+export const isUnknownArray = (value: unknown): value is unknown[] => {
+  return Array.isArray(value);
+};
+
+export const isString = (value: unknown): value is string => {
+  return typeof value === 'string';
+};
+
+export const isNumber = (value: unknown): value is number => {
+  return typeof value === 'number' && !isNaN(value);
+};
+
+export const isBoolean = (value: unknown): value is boolean => {
+  return typeof value === 'boolean';
+};
+
+// Safe type conversion utilities
+export const toSafeObject = (value: unknown): SafeObject => {
+  return isUnknownObject(value) ? value : {};
+};
+
+export const toSafeArray = <T = unknown>(value: unknown): SafeArray<T> => {
+  return isUnknownArray(value) ? value as SafeArray<T> : [];
+};
+
+export const toSafeString = (value: unknown): string => {
+  return isString(value) ? value : String(value || '');
+};
+
+export const toSafeNumber = (value: unknown): number => {
+  return isNumber(value) ? value : 0;
+};
+
+export const toSafeBoolean = (value: unknown): boolean => {
+  return isBoolean(value) ? value : Boolean(value);
+};

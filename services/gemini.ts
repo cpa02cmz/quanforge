@@ -384,22 +384,24 @@ const requestDeduplicator = new RequestDeduplicator();
 async function withRetry<T>(fn: () => Promise<T>, retries = AI_CONFIG.RETRY.MAX_ATTEMPTS, delay = AI_CONFIG.RETRY.INITIAL_DELAY, maxDelay = AI_CONFIG.RETRY.MAX_DELAY): Promise<T> {
     try {
         return await fn();
-    } catch (error: any) {
-        if (error.name === 'AbortError') throw error; // Do not retry if aborted by user
+} catch (error: unknown) {
+        const errorObj = error as Error & { status?: number; name?: string };
+        
+        if (errorObj.name === 'AbortError') throw error; // Do not retry if aborted by user
 
         if (retries === 0) throw error;
         
-        const isRateLimit = error.status === 429 || (error.message && error.message.includes('429'));
-        const isServerErr = error.status >= 500;
-        const isNetworkErr = error.message?.includes('fetch failed') || 
-                             error.message?.includes('network') || 
-                             error.message?.includes('timeout') ||
-                             error.message?.includes('ETIMEDOUT') ||
-                             error.message?.includes('ECONNRESET');
+        const isRateLimit = (errorObj.status && errorObj.status === 429) || (errorObj.message && errorObj.message.includes('429'));
+        const isServerErr = (errorObj.status && errorObj.status >= 500);
+        const isNetworkErr = errorObj.message?.includes('fetch failed') || 
+                             errorObj.message?.includes('network') || 
+                             errorObj.message?.includes('timeout') ||
+                             errorObj.message?.includes('ETIMEDOUT') ||
+                             errorObj.message?.includes('ECONNRESET');
 
         // Only retry on Rate Limits, Server Errors, or Network Issues
         if (isRateLimit || isServerErr || isNetworkErr) {
-            console.warn(`API Error (${error.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
+            console.warn(`API Error (${errorObj.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
             // Add jitter to prevent thundering herd
             const jitter = Math.random() * 0.1 * delay;
             const nextDelay = Math.min(delay * 1.5 + jitter, maxDelay); // Use 1.5 multiplier instead of 2 for gentler backoff
@@ -894,11 +896,12 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
      
      return response;
 
-   } catch (error: any) {
-     if (error.name === 'AbortError') throw error;
-     handleError(error, 'generateMQL5Code', 'gemini');
-     return { content: `Error generating response: ${error.message || error}` };
-   }
+} catch (error: unknown) {
+      const errorObj = error as Error & { name?: string };
+      if (errorObj.name === 'AbortError') throw error;
+      handleError(errorObj, 'generateMQL5Code', 'gemini');
+      return { content: `Error generating response: ${errorObj.message || error}` };
+    }
  };
 
 /**

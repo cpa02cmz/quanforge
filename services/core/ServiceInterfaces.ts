@@ -3,6 +3,16 @@
  * Type-safe contracts for all services in the dependency injection system
  */
 
+import type { 
+  RobotInterface, 
+  RobotUpdate, 
+  DatabaseResponse, 
+  BatchUpdateResult,
+  ServiceResponse,
+  QueryResult,
+  QueryOptions
+} from '../../types/common';
+
 export interface IService {
   readonly name: string;
   readonly version: string;
@@ -13,18 +23,20 @@ export interface IService {
 }
 
 export interface DatabaseService extends IService {
-  getConnection(): Promise<any>;
-  executeQuery<T>(query: string, params?: any[]): Promise<T[]>;
-  saveRobot(robot: any): Promise<string>;
-  getRobot(id: string): Promise<any>;
-  getAllRobots(): Promise<any[]>;
-  updateRobot(id: string, updates: any): Promise<boolean>;
+  getConnection(): Promise<unknown>;
+  executeQuery<T>(query: string, params?: unknown[]): Promise<T[]>;
+  saveRobot(robot: Partial<RobotInterface>): Promise<string>;
+  getRobot(id: string): Promise<RobotInterface | null>;
+  getAllRobots(): Promise<RobotInterface[]>;
+  updateRobot(id: string, updates: Partial<RobotInterface>): Promise<boolean>;
   deleteRobot(id: string): Promise<boolean>;
-  searchRobots(term: string, filter?: string): Promise<any[]>;
+  searchRobots(term: string, filter?: string): Promise<RobotInterface[]>;
   getStats(): Promise<{ count: number; storageType: string }>;
   exportDatabase(): Promise<string>;
   importDatabase(json: string, merge?: boolean): Promise<{ success: boolean; count: number; error?: string }>;
   optimizeDatabase(): Promise<{ success: boolean; message: string }>;
+  getRobotsPaginated(options?: QueryOptions): Promise<QueryResult<RobotInterface>>;
+  batchUpdate(updates: Array<{ id: string; updates: Partial<RobotInterface> }>): Promise<BatchUpdateResult>;
 }
 
 export interface CacheService extends IService {
@@ -38,34 +50,34 @@ export interface CacheService extends IService {
 }
 
 export interface AIService extends IService {
-  generateCode(prompt: string, context?: any): Promise<{ content: string; thinking?: string }>;
-  analyzeCode(code: string): Promise<any>;
-  testConnection(settings: any): Promise<{ success: boolean; message: string }>;
+  generateCode(prompt: string, context?: Record<string, unknown>): Promise<{ content: string; thinking?: string }>;
+  analyzeCode(code: string): Promise<Record<string, unknown>>;
+  testConnection(settings: Record<string, unknown>): Promise<{ success: boolean; message: string }>;
   rateLimitCheck(userId: string): Promise<boolean>;
-  isValidStrategyParams(params: any): boolean;
-  explainCode(code: string): Promise<any>;
-  refineCode(code: string): Promise<any>;
+  isValidStrategyParams(params: Record<string, unknown>): boolean;
+  explainCode(code: string): Promise<Record<string, unknown>>;
+  refineCode(code: string): Promise<Record<string, unknown>>;
 }
 
 export interface AnalyticsService extends IService {
-  trackEvent(event: string, data: any): Promise<void>;
+  trackEvent(event: string, data: Record<string, unknown>): Promise<void>;
   trackPerformance(operation: string, duration: number): Promise<void>;
   trackError(error: Error, context?: string): Promise<void>;
-  getMetrics(): Promise<{ events: number; errors: number; performance: any }>;
+  getMetrics(): Promise<{ events: number; errors: number; performance: Record<string, unknown> }>;
 }
 
 export interface SecurityService extends IService {
-  validateInput(input: any, validation?: string[]): Promise<{ valid: boolean; errors?: string[] }>;
+  validateInput(input: unknown, validation?: string[]): Promise<{ valid: boolean; errors?: string[] }>;
   sanitizeInput(input: string): string;
-  generateSecureToken(payload: any, expiresIn?: number): string;
-  verifyToken(token: string): any;
+  generateSecureToken(payload: Record<string, unknown>, expiresIn?: number): string;
+  verifyToken(token: string): Record<string, unknown> | null;
   rateLimitCheck(key: string, limit: number, window: number): Promise<{ allowed: boolean; remaining: number; resetTime: number }>;
-  detectThreat(request: any): Promise<{ threat: boolean; type?: string; confidence?: number }>;
+  detectThreat(request: Record<string, unknown>): Promise<{ threat: boolean; type?: string; confidence?: number }>;
 }
 
 export interface ConnectionPoolService extends IService {
-  getConnection(): Promise<any>;
-  releaseConnection(connection: any): Promise<void>;
+  getConnection(): Promise<unknown>;
+  releaseConnection(connection: unknown): Promise<void>;
   getPoolStats(): Promise<{ active: number; idle: number; total: number }>;
   closeAll(): Promise<void>;
 }
@@ -73,6 +85,6 @@ export interface ConnectionPoolService extends IService {
 export interface PerformanceMonitorService extends IService {
   startTimer(operation: string): () => number;
   trackMetric(name: string, value: number): void;
-  trackError(error: Error, context?: any): void;
-  getMetrics(): Record<string, any>;
+  trackError(error: Error, context?: Record<string, unknown>): void;
+  getMetrics(): Record<string, unknown>;
 }

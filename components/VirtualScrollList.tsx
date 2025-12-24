@@ -9,7 +9,7 @@ interface VirtualScrollListProps {
   processingId: string | null;
   onDuplicate: (_id: string) => void;
   onDelete: (_id: string, name: string) => void;
-  t: (key: string, params?: Record<string, any>) => string;
+  t: (key: string, params?: Record<string, unknown>) => string;
 }
 
 export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
@@ -157,7 +157,7 @@ interface RobotCardProps {
   processingId: string | null;
   onDuplicate: (_id: string) => void;
   onDelete: (_id: string, name: string) => void;
-  t: (key: string, params?: Record<string, any>) => string;
+  t: (key: string, params?: Record<string, unknown>) => string;
 }
 
 const RobotCard: React.FC<RobotCardProps> = React.memo(({

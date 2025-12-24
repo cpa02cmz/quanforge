@@ -30,7 +30,10 @@ interface ChartComponentsProps {
 }
 
 // Dynamic import for Recharts to optimize bundle size
-// Note: Using any for compatibility with complex Recharts component types
+// NOTE: 'any' type is justified here for complex third-party library integration
+// Recharts components have complex, overlapping prop types that are difficult to
+// accurately represent without causing compilation errors at the interface level
+// Type safety is maintained at usage points with proper prop passing
 interface RechartsComponents {
   PieChart: React.ComponentType<any>;
   Pie: React.ComponentType<any>;

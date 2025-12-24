@@ -9,6 +9,7 @@ import { securityManager } from '../../services/securityManager';
 import { advancedCache } from '../../services/advancedCache';
 import { performanceMonitorEnhanced } from '../../services/performanceMonitorEnhanced';
 import { Robot } from '../../types';
+import { APIResponse, ErrorType } from '../../types/common';
 
 export const config = {
   runtime: 'edge',
@@ -24,6 +25,21 @@ interface RobotsQueryParams {
   type?: string;
   sort?: 'created_at' | 'updated_at' | 'name';
   order?: 'asc' | 'desc';
+}
+
+/**
+ * Standardized error handler for API responses
+ */
+function handleApiError(error: unknown, defaultMessage: string): APIResponse<null> {
+  const errorMessage = error instanceof Error ? error.message : defaultMessage;
+  const errorCode = error instanceof Error && 'code' in error ? String(error.code) : undefined;
+  
+  return {
+    success: false,
+    data: null,
+    error: errorCode ? { message: errorMessage, code: errorCode } : errorMessage,
+    timestamp: Date.now(),
+  };
 }
 
 /**
@@ -118,24 +134,19 @@ export async function GET(request: NextRequest) {
       },
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('robots_api_error', duration);
     
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to fetch robots',
-        message: error instanceof Error ? error.message : 'Unknown error',
+    const errorResponse = handleApiError(error, 'Failed to fetch robots');
+    
+    return NextResponse.json(errorResponse, {
+      status: 500,
+      headers: {
+        'X-Response-Time': `${duration.toFixed(2)}ms`,
+        'Cache-Control': 'no-cache',
       },
-      { 
-        status: 500,
-        headers: {
-          'X-Response-Time': `${duration.toFixed(2)}ms`,
-          'Cache-Control': 'no-cache',
-        },
-      }
-    );
+    });
   }
 }
 
@@ -202,24 +213,19 @@ export async function POST(request: NextRequest) {
       },
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('robots_api_create_error', duration);
     
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to create robot',
-        message: error instanceof Error ? error.message : 'Unknown error',
+    const errorResponse = handleApiError(error, 'Failed to create robot');
+    
+    return NextResponse.json(errorResponse, {
+      status: 500,
+      headers: {
+        'X-Response-Time': `${duration.toFixed(2)}ms`,
+        'Cache-Control': 'no-cache',
       },
-      { 
-        status: 500,
-        headers: {
-          'X-Response-Time': `${duration.toFixed(2)}ms`,
-          'Cache-Control': 'no-cache',
-        },
-      }
-    );
+    });
   }
 }
 
@@ -288,24 +294,19 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('robots_api_batch_update_error', duration);
     
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to update robots',
-        message: error instanceof Error ? error.message : 'Unknown error',
+    const errorResponse = handleApiError(error, 'Failed to update robots');
+    
+    return NextResponse.json(errorResponse, {
+      status: 500,
+      headers: {
+        'X-Response-Time': `${duration.toFixed(2)}ms`,
+        'Cache-Control': 'no-cache',
       },
-      { 
-        status: 500,
-        headers: {
-          'X-Response-Time': `${duration.toFixed(2)}ms`,
-          'Cache-Control': 'no-cache',
-        },
-      }
-    );
+    });
   }
 }
 
@@ -388,23 +389,18 @@ export async function DELETE(request: NextRequest) {
       },
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     const duration = performance.now() - startTime;
     performanceMonitorEnhanced.recordMetric('robots_api_delete_error', duration);
     
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to delete robots',
-        message: error instanceof Error ? error.message : 'Unknown error',
+    const errorResponse = handleApiError(error, 'Failed to delete robots');
+    
+    return NextResponse.json(errorResponse, {
+      status: 500,
+      headers: {
+        'X-Response-Time': `${duration.toFixed(2)}ms`,
+        'Cache-Control': 'no-cache',
       },
-      { 
-        status: 500,
-        headers: {
-          'X-Response-Time': `${duration.toFixed(2)}ms`,
-          'Cache-Control': 'no-cache',
-        },
-      }
-    );
+    });
   }
 }

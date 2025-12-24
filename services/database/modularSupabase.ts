@@ -5,6 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { Robot, UserSession } from '../../types';
+import type { AppError, APIResponse } from '../../types/common';
 import { handleError } from '../../utils/errorHandler';
 import { settingsManager } from '../settingsManager';
 import { securityManager } from '../securityManager';
@@ -19,7 +20,7 @@ const STORAGE_KEY = 'mock_session';
 const ROBOTS_KEY = 'mock_robots';
 
 // Helper for safe JSON parsing
-const safeParse = (data: string | null, fallback: any) => {
+const safeParse = <T = unknown>(data: string | null, fallback: T): T => {
   if (!data) return fallback;
   try {
     return securityManager.safeJSONParse(data) || fallback;
@@ -28,16 +29,59 @@ const safeParse = (data: string | null, fallback: any) => {
   }
 };
 
+// Helper for creating AppError objects
+const createAppError = (message: string, code?: string | number): AppError => {
+  const error = new Error(message) as AppError;
+  error.name = 'SupabaseError';
+  error.code = code;
+  return error;
+};
+
+// Helper to convert old format to APIResponse format
+const toApiResult = <T>(
+  data: T | null, 
+  error: AppError | null
+): APIResponse<T> => {
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
+      status: typeof error.code === 'number' ? error.code : undefined,
+      timestamp: Date.now(),
+    };
+  }
+  
+  return {
+    success: true,
+    data: data as T,
+    timestamp: Date.now(),
+  };
+};
+
+// Helper for success responses
+const createSuccessResponse = <T>(data: T): APIResponse<T> => ({
+  success: true,
+  data,
+  timestamp: Date.now(),
+});
+
+// Helper for error responses
+const createErrorResponse = <T = null>(message: string, code?: number | string): APIResponse<T> => ({
+  success: false,
+  error: message,
+  status: typeof code === 'number' ? code : undefined,
+  timestamp: Date.now(),
+});
+
 // Helper for safe localStorage operations
 const trySaveToStorage = (key: string, value: string) => {
   try {
     localStorage.setItem(key, value);
-  } catch (e: any) {
-    if (
-      e.name === 'QuotaExceededError' || 
-      e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-      e.code === 22 ||
-      e.code === 1014
+  } catch (e: unknown) {
+    if ((e as Error).name === 'QuotaExceededError' || 
+      (e as Error).name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+      (e as { code?: number }).code === 22 ||
+      (e as { code?: number }).code === 1014
     ) {
       throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
     }
@@ -47,21 +91,21 @@ const trySaveToStorage = (key: string, value: string) => {
 
 export interface ModularSupabaseService {
   // Authentication methods
-  getSession(): Promise<{ data: { session: UserSession | null }; error: any }>;
+  getSession(): Promise<APIResponse<{ session: UserSession | null }>>;
   onAuthStateChange(callback: (event: string, session: UserSession | null) => void): { data: { subscription: { unsubscribe: () => void } } };
-  signOut(): Promise<{ error: any }>;
+  signOut(): Promise<APIResponse<null>>;
   
   // Robot operations
-  getRobots(): Promise<{ data: Robot[] | null; error: any }>;
-  getRobotById(id: string): Promise<{ data: Robot | null; error: any }>;
-  getRobotsByIds(ids: string[]): Promise<{ data: Robot[] | null; error: any }>;
-  saveRobot(robot: Partial<Robot>): Promise<{ data: Robot[] | null; error: any }>;
-  updateRobot(id: string, updates: Partial<Robot>): Promise<{ data: Robot[] | null; error: any }>;
-  deleteRobot(id: string): Promise<{ data: any; error: any }>;
-  batchUpdateRobots(updates: Array<{ id: string; data: Partial<Robot> }>): Promise<{ success: number; failed: number; errors?: string[] }>;
+  getRobots(): Promise<APIResponse<Robot[]>>;
+  getRobotById(id: string): Promise<APIResponse<Robot>>;
+  getRobotsByIds(ids: string[]): Promise<APIResponse<Robot[]>>;
+  saveRobot(robot: Partial<Robot>): Promise<APIResponse<Robot[]>>;
+  updateRobot(id: string, updates: Partial<Robot>): Promise<APIResponse<Robot[]>>;
+  deleteRobot(id: string): Promise<APIResponse<boolean>>;
+  batchUpdateRobots(updates: Array<{ id: string; data: Partial<Robot> }>): Promise<APIResponse<{ successful: number; failed: number; errors?: string[] }>>;
   
   // Analytics and performance
-  getPerformanceMetrics(): Record<string, any>;
+  getPerformanceMetrics(): Record<string, unknown>;
   resetPerformanceMetrics(): void;
   logPerformanceMetrics(): void;
   optimizeDatabase(): Promise<{ success: boolean; message: string }>;
@@ -81,16 +125,25 @@ class ModularSupabase implements ModularSupabaseService {
   ) {}
 
   // Authentication methods
-  async getSession(): Promise<{ data: { session: UserSession | null }; error: any }> {
+  async getSession(): Promise<APIResponse<{ session: UserSession | null }>> {
     const endTimer = this.analytics.startPerformanceTimer();
     try {
       const result = await this.connMgr.getSession();
       this.analytics.recordOperation('getSession', endTimer());
-      return result;
-    } catch (error) {
+      if (result.error) {
+        return createErrorResponse(
+          result.error.message,
+          result.error.code
+        );
+      }
+      return createSuccessResponse(result.data);
+    } catch (error: unknown) {
       this.analytics.recordOperation('getSession', endTimer(), error);
       handleError(error as Error, 'getSession', 'modularSupabase');
-      throw error;
+      return createErrorResponse(
+        error instanceof Error ? error.message : 'Session retrieval failed',
+        error instanceof Error && 'code' in error ? String(error.code) : undefined
+      );
     }
   }
 
@@ -98,7 +151,7 @@ class ModularSupabase implements ModularSupabaseService {
     return this.connMgr.onAuthStateChange(callback);
   }
 
-  async signOut(): Promise<{ error: any }> {
+  async signOut(): Promise<{ error: AppError | null }> {
     const endTimer = this.analytics.startPerformanceTimer();
     try {
       const result = await this.connMgr.signOut();
@@ -114,7 +167,7 @@ class ModularSupabase implements ModularSupabaseService {
   }
 
   // Robot operations with caching and retry logic
-  async getRobots(): Promise<{ data: Robot[] | null; error: any }> {
+  async getRobots(): Promise<{ data: Robot[] | null; error: AppError | null }> {
     const endTimer = this.analytics.startPerformanceTimer();
     try {
       const settings = settingsManager.getDBSettings();
@@ -149,7 +202,7 @@ class ModularSupabase implements ModularSupabaseService {
     }
   }
 
-  async getRobotById(id: string): Promise<{ data: Robot | null; error: any }> {
+  async getRobotById(id: string): Promise<{ data: Robot | null; error: AppError | null }> {
     const endTimer = this.analytics.startPerformanceTimer();
     try {
       const settings = settingsManager.getDBSettings();
@@ -184,7 +237,7 @@ class ModularSupabase implements ModularSupabaseService {
     }
   }
 
-  async getRobotsByIds(ids: string[]): Promise<{ data: Robot[] | null; error: any }> {
+  async getRobotsByIds(ids: string[]): Promise<{ data: Robot[] | null; error: AppError | null }> {
     const endTimer = this.analytics.startPerformanceTimer();
     try {
       const settings = settingsManager.getDBSettings();
@@ -216,7 +269,7 @@ class ModularSupabase implements ModularSupabaseService {
     }
   }
 
-  async saveRobot(robot: Partial<Robot>): Promise<{ data: Robot[] | null; error: any }> {
+  async saveRobot(robot: Partial<Robot>): Promise<{ data: Robot[] | null; error: AppError | null }> {
     const endTimer = this.analytics.startPerformanceTimer();
     try {
       const settings = settingsManager.getDBSettings();
@@ -225,7 +278,7 @@ class ModularSupabase implements ModularSupabaseService {
       if (!robot || typeof robot !== 'object') {
         const duration = endTimer();
         this.analytics.recordOperation('saveRobot', duration);
-        return { data: null, error: 'Invalid robot data structure' };
+        return { data: null, error: createAppError('Invalid robot data structure', 'INVALID_DATA') };
       }
 
       // Rate limiting check
@@ -234,7 +287,7 @@ class ModularSupabase implements ModularSupabaseService {
         if (!allowed) {
           const duration = endTimer();
           this.analytics.recordOperation('saveRobot', duration);
-          return { data: null, error: 'Rate limit exceeded' };
+          return { data: null, error: createAppError('Rate limit exceeded', 'RATE_LIMIT_EXCEEDED') };
         }
       }
 
@@ -264,7 +317,7 @@ class ModularSupabase implements ModularSupabaseService {
     }
   }
 
-  async updateRobot(id: string, updates: Partial<Robot>): Promise<{ data: Robot[] | null; error: any }> {
+  async updateRobot(id: string, updates: Partial<Robot>): Promise<{ data: Robot[] | null; error: AppError | null }> {
     const endTimer = this.analytics.startPerformanceTimer();
     try {
       const settings = settingsManager.getDBSettings();
@@ -293,7 +346,7 @@ class ModularSupabase implements ModularSupabaseService {
     }
   }
 
-  async deleteRobot(id: string): Promise<{ data: any; error: any }> {
+  async deleteRobot(id: string): Promise<{ data: true | null; error: AppError | null }> {
     const endTimer = this.analytics.startPerformanceTimer();
     try {
       const settings = settingsManager.getDBSettings();
@@ -407,14 +460,14 @@ class ModularSupabase implements ModularSupabaseService {
   }
 
   // Mock implementation methods (moved from original supabase.ts)
-  private async getMockRobots(endTimer: () => number): Promise<{ data: Robot[] | null; error: any }> {
+  private async getMockRobots(endTimer: () => number): Promise<{ data: Robot[] | null; error: AppError | null }> {
     const stored = localStorage.getItem(ROBOTS_KEY);
     const robots = safeParse(stored, []);
     this.analytics.recordOperation('getRobots-mock', endTimer());
     return { data: robots, error: null };
   }
 
-  private async getMockRobotById(id: string, endTimer: () => number): Promise<{ data: Robot | null; error: any }> {
+  private async getMockRobotById(id: string, endTimer: () => number): Promise<{ data: Robot | null; error: AppError | null }> {
     const stored = localStorage.getItem(ROBOTS_KEY);
     const robots = safeParse(stored, []);
     const robot = robots.find((r: Robot) => r.id === id);
@@ -422,7 +475,7 @@ class ModularSupabase implements ModularSupabaseService {
     return { data: robot || null, error: null };
   }
 
-  private async getMockRobotsByIds(ids: string[], endTimer: () => number): Promise<{ data: Robot[] | null; error: any }> {
+  private async getMockRobotsByIds(ids: string[], endTimer: () => number): Promise<{ data: Robot[] | null; error: AppError | null }> {
     const stored = localStorage.getItem(ROBOTS_KEY);
     const robots = safeParse(stored, []);
     const filteredRobots = robots.filter((robot: Robot) => ids.includes(robot.id));
@@ -430,10 +483,10 @@ class ModularSupabase implements ModularSupabaseService {
     return { data: filteredRobots, error: null };
   }
 
-  private async saveMockRobot(robot: Partial<Robot>, endTimer: () => number): Promise<{ data: Robot[] | null; error: any }> {
+  private async saveMockRobot(robot: Partial<Robot>, endTimer: () => number): Promise<{ data: Robot[] | null; error: AppError | null }> {
     try {
       const stored = localStorage.getItem(ROBOTS_KEY);
-      const robots = safeParse(stored, []);
+      const robots = safeParse<Robot[]>(stored, []);
       
       const newRobot = { ...robot, id: robot.id || this.generateUUID(), created_at: new Date().toISOString() } as Robot;
       robots.unshift(newRobot);
@@ -448,14 +501,14 @@ class ModularSupabase implements ModularSupabaseService {
     }
   }
 
-  private async updateMockRobot(id: string, updates: Partial<Robot>, endTimer: () => number): Promise<{ data: Robot[] | null; error: any }> {
+  private async updateMockRobot(id: string, updates: Partial<Robot>, endTimer: () => number): Promise<{ data: Robot[] | null; error: AppError | null }> {
     try {
       const stored = localStorage.getItem(ROBOTS_KEY);
-      const robots = safeParse(stored, []);
+      const robots = safeParse<Robot[]>(stored, []);
       
       const index = robots.findIndex((r: Robot) => r.id === id);
       if (index === -1) {
-        return { data: null, error: 'Robot not found' };
+        return { data: null, error: createAppError('Robot not found', 'NOT_FOUND') };
       }
       
       robots[index] = { ...robots[index], ...updates, updated_at: new Date().toISOString() };
@@ -470,20 +523,20 @@ class ModularSupabase implements ModularSupabaseService {
     }
   }
 
-  private async deleteMockRobot(id: string, endTimer: () => number): Promise<{ data: any; error: any }> {
+  private async deleteMockRobot(id: string, endTimer: () => number): Promise<{ data: true | null; error: AppError | null }> {
     try {
       const stored = localStorage.getItem(ROBOTS_KEY);
-      const robots = safeParse(stored, []);
+      const robots = safeParse<Robot[]>(stored, []);
       
       const filteredRobots = robots.filter((r: Robot) => r.id !== id);
       
       trySaveToStorage(ROBOTS_KEY, JSON.stringify(filteredRobots));
       this.analytics.recordOperation('deleteRobot-mock', endTimer());
       
-      return { data: { success: true }, error: null };
-    } catch (e: any) {
+      return { data: true, error: null };
+    } catch (e: unknown) {
       this.analytics.recordOperation('deleteRobot-mock', endTimer(), e);
-      return { data: null, error: e.message };
+      return { data: null, error: createAppError((e as Error).message || 'Unknown error') };
     }
   }
 
@@ -519,7 +572,7 @@ class ModularSupabase implements ModularSupabaseService {
   private async optimizeMockDatabase(): Promise<{ success: boolean; message: string }> {
     try {
       const stored = localStorage.getItem(ROBOTS_KEY);
-      const robots = safeParse(stored, []);
+      const robots = safeParse<Robot[]>(stored, []);
       
       // Remove duplicates and invalid robots
       const seenIds = new Set<string>();

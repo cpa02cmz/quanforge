@@ -80,11 +80,12 @@ export class AICore {
         model: settings.modelName || AI_CONFIG.DEFAULT_MODELS.GOOGLE
       };
 
-    } catch (error: any) {
-      if (error.name === 'AbortError') throw error;
+    } catch (error: unknown) {
+      const errorObj = error as Error & { name?: string };
+      if (errorObj.name === 'AbortError') throw error;
       
-      logger.error('MQL5 generation failed:', error);
-      throw new Error(`AI generation failed: ${error.message}`);
+      logger.error('MQL5 generation failed:', errorObj);
+      throw new Error(`AI generation failed: ${errorObj.message}`);
     }
   }
 
@@ -141,14 +142,15 @@ export class AICore {
         model: settings.modelName || AI_CONFIG.DEFAULT_MODELS.GOOGLE
       };
 
-    } catch (error: any) {
-      if (error.name === 'AbortError') throw error;
+    } catch (error: unknown) {
+      const errorObj = error as Error & { name?: string };
+      if (errorObj.name === 'AbortError') throw error;
       
-      logger.error('Strategy analysis failed:', error);
+      logger.error('Strategy analysis failed:', errorObj);
       return {
         riskScore: 0,
         profitability: 0,
-        description: `Analysis failed: ${error.message}`,
+        description: `Analysis failed: ${errorObj.message}`,
         cached: false,
         model: settings.modelName || AI_CONFIG.DEFAULT_MODELS.GOOGLE
       };

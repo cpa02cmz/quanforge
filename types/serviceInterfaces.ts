@@ -5,6 +5,8 @@
  * ensuring clean separation of concerns and dependency injection compatibility.
  */
 
+import { APIResponse } from './common';
+
 // ===== BASE SERVICE INTERFACES =====
 
 export interface IService {
@@ -35,7 +37,7 @@ export interface DatabaseConfig {
 
 export interface IDatabaseCore extends IService, IConfigurable<DatabaseConfig> {
   getClient(): Promise<any>;
-  executeQuery<T>(query: string, params?: any[]): Promise<{ data: T[]; error: any }>;
+  executeQuery<T>(query: string, params?: any[]): Promise<APIResponse<T[]>>;
   checkConnection(): Promise<{ success: boolean; message: string; mode: string }>;
 }
 

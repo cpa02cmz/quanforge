@@ -5,9 +5,24 @@
  */
 
 import { IDatabaseCore, DatabaseConfig } from '../../types/serviceInterfaces';
+import { APIResponse } from '../../types/common';
 import { settingsManager } from '../settingsManager';
 import { edgeConnectionPool } from '../edgeSupabasePool';
 import { handleError } from '../../utils/errorHandler';
+
+// Helper functions for standardized API responses
+const createSuccessResponse = <T>(data: T): APIResponse<T> => ({
+  success: true,
+  data,
+  timestamp: Date.now(),
+});
+
+const createErrorResponse = <T>(message: string, status?: number): APIResponse<T> => ({
+  success: false,
+  error: message,
+  status,
+  timestamp: Date.now(),
+});
 
 export class DatabaseCore implements IDatabaseCore {
   private config!: DatabaseConfig;
@@ -82,7 +97,7 @@ export class DatabaseCore implements IDatabaseCore {
     }
   }
 
-  async executeQuery<T>(query: string, params?: any[]): Promise<{ data: T[]; error: any }> {
+  async executeQuery<T>(query: string, params?: any[]): Promise<APIResponse<T[]>> {
     const startTime = performance.now();
     
     try {
@@ -102,11 +117,23 @@ export class DatabaseCore implements IDatabaseCore {
         console.warn(`Slow query detected: ${query} took ${duration.toFixed(2)}ms`);
       }
 
-      return result;
-    } catch (error) {
+      // Convert result to APIResponse format
+      if (result.error) {
+        return createErrorResponse(
+          result.error.message || 'Query execution failed',
+          result.error.code || 500
+        );
+      }
+
+      return createSuccessResponse(result.data || []);
+    } catch (error: unknown) {
       const duration = performance.now() - startTime;
       console.error(`Query failed after ${duration.toFixed(2)}ms:`, error);
-      throw handleError(error, 'DatabaseQuery', 'DatabaseCore');
+      
+      return createErrorResponse(
+        error instanceof Error ? error.message : 'Query execution failed',
+        500
+      );
     }
   }
 
@@ -207,9 +234,9 @@ export class DatabaseCore implements IDatabaseCore {
     };
   }
 
-  private async executeMockQuery<T>(query: string, params?: any[]): Promise<{ data: T[]; error: any }> {
+  private async executeMockQuery<T>(query: string, params?: any[]): Promise<APIResponse<T[]>> {
     // Basic mock query implementation
     console.log('Mock query executed:', query, params);
-    return { data: [], error: null };
+    return createSuccessResponse([]);
   }
 }

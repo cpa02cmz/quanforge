@@ -13,6 +13,7 @@ import { edgeCacheManager } from './edgeCacheManager';
 import { databasePerformanceMonitor } from './databasePerformanceMonitor';
 import { robotCache } from './advancedCache';
 import { BACKEND_OPTIMIZATION_CONFIG } from '../constants/config';
+import { APIResponse } from '../types/common';
 
 interface OptimizationConfig {
   enableDatabaseOptimization: boolean;
