@@ -4,6 +4,7 @@ import { StrategyParams, StrategyAnalysis, AISettings } from "../../types";
 import { getActiveKey } from "../../utils/apiKeyUtils";
 import { createScopedLogger } from "../../utils/logger";
 import { AI_CONFIG } from "../../constants/config";
+import { importGoogleGenAI, importAIGenerationTypes } from "./aiImports";
 
 const logger = createScopedLogger('ai-core');
 
@@ -49,8 +50,8 @@ export class AICore {
       const enhancedPrompt = this.constructPrompt(prompt, config);
       const { settings } = config;
 
-      // Dynamic import Google GenAI SDK - only import the main class
-      const { GoogleGenAI } = await import("@google/genai");
+      // Ultra-granular dynamic import for better bundle splitting
+      const GoogleGenAI = await importGoogleGenAI();
 
       if (config.signal?.aborted) {
         throw new DOMException("Aborted", "AbortError");
@@ -99,8 +100,9 @@ export class AICore {
         throw new DOMException("Aborted", "AbortError");
       }
 
-      // Dynamic import Google GenAI SDK - only import what's needed
-      const { GoogleGenAI, Type } = await import("@google/genai");
+      // Ultra-granular dynamic import for better bundle splitting
+      const GoogleGenAI = await importGoogleGenAI();
+      const Type = await importAIGenerationTypes();
 
       const ai = new GoogleGenAI({ apiKey: this.apiKey });
       const prompt = this.constructAnalysisPrompt(code);

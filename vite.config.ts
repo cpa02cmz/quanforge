@@ -35,29 +35,73 @@ export default defineConfig({
               return 'react-core';
             }
             
-            // AI SDK - usage-based splitting to fix 214KB chunk
+            // AI SDK - force maximum possible splitting to minimize chunk sizes
             if (id.includes('@google/genai')) {
-              // Split by actual usage patterns
-              if (id.includes('generators') || id.includes('generateContent') || id.includes('generateText')) {
-                return 'ai-generators';
-              }
-              if (id.includes('models') || id.includes('Model') || id.includes('gemini')) {
-                return 'ai-models';
-              }
-              if (id.includes('client') || id.includes('GoogleGenAI')) {
+              // Ultra-aggressive detection - split by ANY unique pattern
+              const idStr = id.toLowerCase();
+              
+              // Split by every identifiable component
+              if (idStr.includes('client') || idStr.includes('googlegenai')) {
                 return 'ai-client';
               }
-              if (id.includes('transport') || id.includes('http') || id.includes('request')) {
+              if (idStr.includes('generate') || idStr.includes('content')) {
+                return 'ai-generators';
+              }
+              if (idStr.includes('model') || idStr.includes('gemini')) {
+                return 'ai-models';
+              }
+              if (idStr.includes('type') || idStr.includes('schema')) {
+                return 'ai-types';
+              }
+              if (idStr.includes('transport') || idStr.includes('http') || idStr.includes('request')) {
                 return 'ai-transport';
               }
-              if (id.includes('auth') || id.includes('credentials')) {
-                return 'ai-auth';
-              }
-              if (id.includes('stream') || id.includes('Stream')) {
+              if (idStr.includes('stream') || idStr.includes('sse')) {
                 return 'ai-streaming';
               }
-              // Minimal core SDK
-              return 'ai-sdk-core';
+              if (idStr.includes('auth') || idStr.includes('credential')) {
+                return 'ai-auth';
+              }
+              if (idStr.includes('error') || idStr.includes('exception')) {
+                return 'ai-errors';
+              }
+              if (idStr.includes('util') || idStr.includes('helper')) {
+                return 'ai-utils';
+              }
+              if (idStr.includes('vision') || idStr.includes('image')) {
+                return 'ai-vision';
+              }
+              if (idStr.includes('chat') || idStr.includes('conversation')) {
+                return 'ai-chat';
+              }
+              
+              // Split by individual file names - most aggressive approach
+              const segments = id.split('/');
+              const lastSegment = segments[segments.length - 1];
+              
+              if (lastSegment && lastSegment.includes('.')) {
+                const baseName = lastSegment.replace(/\.(js|mjs|ts|tsx)$/, '');
+                if (baseName && baseName !== 'index' && baseName !== 'genai') {
+                  return `ai-${baseName}`;
+                }
+              }
+              
+              // Split by any non-genai path segment
+              for (let i = segments.length - 2; i >= 0; i--) {
+                const segment = segments[i];
+                if (segment && 
+                    !segment.includes('@google') && 
+                    !segment.includes('genai') && 
+                    !segment.includes('node_modules') &&
+                    segment.length > 1) {
+                  return `ai-${segment.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
+                }
+              }
+              
+              // Last resort - create multiple smaller chunks
+              const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+              const chunkSuffix = hash % 5; // Create 5 different chunks
+              return `ai-part-${chunkSuffix}`;
             }
             
             // Charts - simplified usage-based splitting to fix 208KB chunk
@@ -108,7 +152,7 @@ export default defineConfig({
               return 'security-vendor';
             }
             
-            // Common vendor libraries - simplified categorization
+            // Enhanced vendor library splitting for better granulation
             if (id.includes('date-fns') || id.includes('moment') || id.includes('dayjs')) {
               return 'vendor-datetime';
             }
@@ -136,8 +180,41 @@ export default defineConfig({
             if (id.includes('validation') || id.includes('zod') || id.includes('yup')) {
               return 'vendor-validation';
             }
+            // Aggressively split vendor-misc (138KB) into smaller chunks
+            if (id.includes('react') && !id.includes('react-dom') && !id.includes('react-router')) {
+              if (id.includes('jsx') || id.includes('createElement')) {
+                return 'vendor-react-jsx';
+              }
+              return 'vendor-react-core';
+            }
+            if (id.includes('dom') || id.includes('html') || id.includes('window')) {
+              return 'vendor-dom';
+            }
+            if (id.includes('url') || id.includes('path') || id.includes('query')) {
+              return 'vendor-url';
+            }
+            if (id.includes('buffer') || id.includes('stream') || id.includes('binary')) {
+              return 'vendor-binary';
+            }
+            if (id.includes('crypto') || id.includes('hash') || id.includes('encryption')) {
+              return 'vendor-crypto';
+            }
+            if (id.includes('json') || id.includes('parse') || id.includes('stringify')) {
+              return 'vendor-json';
+            }
+            if (id.includes('async') || id.includes('promise') || id.includes('callback')) {
+              return 'vendor-async';
+            }
+            // Split remaining misc by library name
+            const libMatch = id.match(/node_modules\/([^\/]+)/);
+            if (libMatch && libMatch[1]) {
+              const libName = libMatch[1];
+              if (libName !== '@google' && libName !== 'react' && libName !== 'recharts') {
+                return `vendor-${libName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
+              }
+            }
             
-            // Default miscellaneous vendor
+            // Final fallback for misc
             return 'vendor-misc';
           }
           
@@ -159,32 +236,61 @@ export default defineConfig({
             return 'services-misc';
           }
           
-          // Component chunking with edge optimization
+          // Enhanced component chunking for optimal distribution
           if (id.includes('components/')) {
-            // Heavy components isolated
+            // Heavy components isolated with better granularization
             if (id.includes('ChatInterface')) {
               return 'component-chat';
             }
             if (id.includes('CodeEditor')) {
               return 'component-editor';
             }
-            if (id.includes('Backtest') || id.includes('Simulation')) {
+            if (id.includes('BacktestPanel')) {
               return 'component-backtest';
             }
-            if (id.includes('Chart') || id.includes('Analysis')) {
+            if (id.includes('ChartComponents') || id.includes('Chart')) {
               return 'component-charts';
             }
             if (id.includes('StrategyConfig')) {
               return 'component-config';
             }
-            if (id.includes('Market') || id.includes('Ticker')) {
+            if (id.includes('MarketTicker')) {
               return 'component-trading';
             }
-            // UI components consolidated
-            if (id.includes('Modal') || id.includes('Dialog') || id.includes('Toast') || id.includes('ErrorBoundary') || id.includes('LoadingState')) {
-              return 'component-ui';
+            // Split UI components into smaller chunks
+            if (id.includes('Modal') || id.includes('Dialog')) {
+              return 'component-modals';
             }
-            // Core components
+            if (id.includes('Toast') || id.includes('Notification')) {
+              return 'component-notifications';
+            }
+            if (id.includes('ErrorBoundary') || id.includes('Error')) {
+              return 'component-error-handling';
+            }
+            if (id.includes('LoadingState') || id.includes('Loading') || id.includes('Spinner')) {
+              return 'component-loading';
+            }
+            // Auth components
+            if (id.includes('Auth') || id.includes('Login') || id.includes('Signup')) {
+              return 'component-auth';
+            }
+            // Form and input components
+            if (id.includes('Input') || id.includes('Form') || id.includes('Field') || id.includes('NumericInput')) {
+              return 'component-forms';
+            }
+            // Layout components
+            if (id.includes('Layout') || id.includes('Sidebar') || id.includes('Header') || id.includes('Footer')) {
+              return 'component-layout';
+            }
+            // List and table components
+            if (id.includes('List') || id.includes('Table') || id.includes('Grid') || id.includes('VirtualScroll')) {
+              return 'component-lists';
+            }
+            // Button and action components
+            if (id.includes('Button') || id.includes('Action') || id.includes('Link')) {
+              return 'component-actions';
+            }
+            // Core components fallback
             return 'components-core';
           }
           
@@ -345,7 +451,7 @@ export default defineConfig({
       'react-dom',
       'react-router-dom',
       '@supabase/supabase-js',
-      '@google/genai',
+      // Remove @google/genai from pre-bundling to force dynamic splitting
       'recharts',
       'dompurify',
       'lz-string'
@@ -374,7 +480,14 @@ export default defineConfig({
       'node:net',
       'node:tls',
       'node:zlib',
-      // Heavy dependencies for dynamic loading
+      // Force dynamic loading for heavy dependencies
+      '@google/genai', // Completely exclude from pre-bundling
+      '@google/genai/dist/generators',
+      '@google/genai/dist/models',
+      '@google/genai/dist/clients',
+      '@google/genai/dist/transport',
+      '@google/genai/dist/auth',
+      '@google/genai/dist/streaming',
       '@supabase/realtime-js',
       '@supabase/storage-js',
       'recharts/es6',
@@ -382,7 +495,7 @@ export default defineConfig({
       'recharts/es6/chart/AreaChart',
       'recharts/es6/chart/LineChart',
       'recharts/es6/chart/BarChart',
-      '@google/genai/dist/generators',
+      'recharts/es6/chart/PieChart',
       'dompurify/dist/purify.cjs',
       // Additional heavy modules
       '@testing-library/jest-dom',
