@@ -20,8 +20,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { Robot, UserSession } from '../types';
 import { modularSupabase } from './database/modularSupabase';
 import { checkSupabaseHealth } from './supabase/index';
-import { mockDB } from './supabase/database';
 import { mockAuth } from './supabase/auth';
+import { mockDB as mockDb, getRobots as getDbRobots } from './supabase/database';
 
 // Client proxy for backward compatibility
 export const supabase = {
@@ -32,39 +32,19 @@ export const supabase = {
             mockAuth;
     },
     // Proxy other properties through the modular system
-    from: (table: string) => {
+from: (_table: string) => {
         // This would delegate to the actual Supabase client via the modular system
         // For now, provide a mock implementation for compatibility
         return {
-            select: (columns: string) => ({
-                order: (column: string, options: any) => ({
-                    limit: (limit: number) => Promise.resolve({ data: [], error: null }),
+            select: (_columns: string) => ({
+                order: (_column: string, _options: any) => ({
+                    limit: (_limit: number) => Promise.resolve({ data: [], error: null }),
                 }),
-                count: (option: string) => ({
-                    head: (option: boolean) => Promise.resolve({ count: 0, error: null }),
+                eq: (_column: string, _value: any) => ({
+                    limit: (_limit: number) => Promise.resolve({ data: [], error: null }),
                 }),
-            }),
-            insert: (data: any) => Promise.resolve({ data, error: null }),
-            update: (data: any) => ({
-                eq: (column: string, value: any) => Promise.resolve({ data, error: null }),
-            }),
-            delete: () => ({
-                eq: (column: string, value: any) => Promise.resolve({ error: null }),
             }),
         };
-    }
-} as SupabaseClient;
-
-// Database operations using modular system
-export const mockDb = {
-    async getRobots() {
-        try {
-            const result = await modularSupabase.getRobots();
-            return result.success && result.data ? result.data : [];
-        } catch (error) {
-            console.error('getRobots error:', error);
-            return [];
-        }
     },
 
     async saveRobot(robot: Partial<Robot>) {
@@ -73,7 +53,7 @@ export const mockDb = {
             if (result.success && result.data) {
                 return result.data[0]; // Return the first saved robot
             }
-            throw new Error(result.error || 'Failed to save robot');
+            throw new Error(typeof result.error === 'string' ? result.error : result.error?.message || 'Failed to save robot');
         } catch (error) {
             console.error('saveRobot error:', error);
             throw error;
@@ -86,7 +66,7 @@ export const mockDb = {
             if (result.success && result.data) {
                 return result.data[0]; // Return the updated robot
             }
-            throw new Error(result.error || 'Failed to update robot');
+            throw new Error(typeof result.error === 'string' ? result.error : result.error?.message || 'Failed to update robot');
         } catch (error) {
             console.error('updateRobot error:', error);
             throw error;
@@ -143,7 +123,7 @@ export const dbUtils = {
             return {
                 success: healthResult.status === 'healthy',
                 message: healthResult.message,
-                mode: healthResult.mode || 'modular'
+                mode: healthResult.status === 'mock_mode' ? 'mock' : 'modular'
             };
         } catch (error) {
             return {
@@ -158,7 +138,7 @@ export const dbUtils = {
         try {
             const metrics = modularSupabase.getPerformanceMetrics();
             return {
-                count: (metrics.totalRobots as number) || 0,
+                count: (metrics['totalRobots'] as number) || 0,
                 storageType: 'Modular Database System'
             };
         } catch (error) {
@@ -170,7 +150,7 @@ export const dbUtils = {
         try {
             const result = await modularSupabase.getRobots();
             if (!result.success || !result.data) {
-                throw new Error(result.error || 'Failed to fetch robots for export');
+                throw new Error(typeof result.error === 'string' ? result.error : result.error?.message || 'Failed to fetch robots for export');
             }
             
             const exportObj = {
@@ -187,7 +167,7 @@ export const dbUtils = {
         }
     },
 
-    async importDatabase(jsonString: string, merge: boolean = true): Promise<{ success: boolean; count: number; error?: string }> {
+    async importDatabase(jsonString: string, _merge: boolean = true): Promise<{ success: boolean; count: number; error?: string }> {
         try {
             const parsed = JSON.parse(jsonString);
             if (!parsed.robots || !Array.isArray(parsed.robots)) {
@@ -211,14 +191,13 @@ export const dbUtils = {
             if (result.success) {
                 return { 
                     success: true, 
-                    count: robots.length,
-                    message: `Successfully imported ${robots.length} robots`
+                    count: robots.length
                 };
             } else {
                 return { 
                     success: false, 
                     count: 0, 
-                    error: result.error || 'Import failed' 
+                    error: typeof result.error === 'string' ? result.error : result.error?.message || 'Import failed' 
                 };
             }
         } catch (error) {
@@ -228,25 +207,98 @@ export const dbUtils = {
                 error: error instanceof Error ? error.message : 'Import failed' 
             };
         }
+    },
+
+    async migrateMockToSupabase(): Promise<{ success: boolean; count: number; error?: string }> {
+        try {
+            // Get all robots from current storage (could be mock or Supabase)
+            const result = await modularSupabase.getRobots();
+            if (!result.success || !result.data) {
+                throw new Error(typeof result.error === 'string' ? result.error : result.error?.message || 'Failed to fetch robots for migration');
+            }
+
+            const robots = result.data;
+            if (robots.length === 0) {
+                return { success: true, count: 0 };
+            }
+
+            // For simplicity, we're ensuring all robots are properly saved
+            // This effectively "migrates" them by ensuring they're in the current active backend
+            let successCount = 0;
+            let errorCount = 0;
+            const errors: string[] = [];
+
+            for (const robot of robots) {
+                try {
+                    const saveResult = await modularSupabase.saveRobot(robot);
+                    if (saveResult.success) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                        errors.push(`Failed to migrate robot ${robot.id}: ${saveResult.error}`);
+                    }
+                } catch (error) {
+                    errorCount++;
+                    errors.push(`Error migrating robot ${robot.id}: ${(error as Error).message}`);
+                }
+            }
+
+            if (errorCount > 0) {
+                return {
+                    success: false,
+                    count: successCount,
+                    error: `Partial success: ${successCount} migrated, ${errorCount} failed. Errors: ${errors.join(', ')}`
+                };
+            }
+
+            return {
+                success: true,
+                count: successCount
+            };
+        } catch (error) {
+            return {
+                success: false,
+                count: 0,
+                error: error instanceof Error ? error.message : 'Migration failed'
+            };
+        }
     }
 };
 
 // Additional utility functions for backward compatibility
 export const getRobotsPaginated = async (page: number = 1, pageSize: number = 10) => {
-    const robots = await mockDb.getRobots();
+const result = await getDbRobots();
+    
+    // Handle different possible return types from database
+    let robots: Robot[] = [];
+    if (Array.isArray(result.data)) {
+        robots = result.data as Robot[];
+    } else if (result.data && typeof result.data === 'object' && 'then' in result.data) {
+        // This looks like a promise that wasn't awaited
+        robots = await (result.data as Promise<Robot[]>);
+    }
+    
     const start = (page - 1) * pageSize;
     const end = start + pageSize;
     return {
         robots: robots.slice(start, end),
         total: robots.length,
         page,
-        pageSize,
-        totalPages: Math.ceil(robots.length / pageSize)
+        pageSize
     };
 };
 
 export const searchRobots = async (searchTerm: string) => {
-    const robots = await mockDb.getRobots();
+    const result = await getDbRobots();
+    
+    // Handle different possible return types from database
+    let robots: Robot[] = [];
+    if (Array.isArray(result.data)) {
+        robots = result.data as Robot[];
+    } else if (result.data && typeof result.data === 'object' && 'then' in result.data) {
+        robots = await (result.data as Promise<Robot[]>);
+    }
+    
     const term = searchTerm.toLowerCase();
     return robots.filter((robot: Robot) => 
         robot.name?.toLowerCase().includes(term) ||
@@ -254,6 +306,9 @@ export const searchRobots = async (searchTerm: string) => {
         robot.code?.toLowerCase().includes(term)
     );
 };
+
+// Export mockDb for backward compatibility
+export { mockDb };
 
 // Performance monitoring utilities
 export const performanceMonitor = {

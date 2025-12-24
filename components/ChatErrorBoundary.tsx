@@ -20,7 +20,7 @@ class ChatErrorBoundary extends React.Component<ChatErrorBoundaryProps, ChatErro
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ChatInterface Error:', error, errorInfo);
     
     // Log specific chat errors for debugging
@@ -37,7 +37,7 @@ class ChatErrorBoundary extends React.Component<ChatErrorBoundaryProps, ChatErro
     this.setState({ hasError: false, error: undefined });
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       const FallbackComponent = this.props.fallback || ChatErrorFallback;
       return <FallbackComponent error={this.state.error} reset={this.resetError} />;

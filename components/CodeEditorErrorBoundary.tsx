@@ -20,7 +20,7 @@ class CodeEditorErrorBoundary extends React.Component<CodeEditorErrorBoundaryPro
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('CodeEditor Error:', error, errorInfo);
     
     // Log specific code editor errors for debugging
@@ -41,7 +41,7 @@ class CodeEditorErrorBoundary extends React.Component<CodeEditorErrorBoundaryPro
     this.setState({ hasError: false, error: undefined });
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       const FallbackComponent = this.props.fallback || CodeEditorErrorFallback;
       return <FallbackComponent error={this.state.error} reset={this.resetError} />;

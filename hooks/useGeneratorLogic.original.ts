@@ -160,7 +160,7 @@ const stopGeneration = () => {
           const loadRobot = async () => {
               try {
                   // Load robots data
-                  const { data: robots } = await mockDb.getRobots();
+                  const robots = await mockDb.getRobots();
                   if (controller.signal.aborted) return;
                   
                   const found = robots.find((r: Robot) => r.id === id);
@@ -443,10 +443,10 @@ const stopGeneration = () => {
           name: ValidationService.sanitizeInput(state.robotName),
           code: state.code,
           description: state.analysis?.description || 'Generated Strategy',
-          strategy_type: (state.analysis?.riskScore || 0) > 7 ? 'Scalping' : 'Trend',
+          strategy_type: ((state.analysis?.riskScore || 0) > 7 ? 'Scalping' : 'Trend') as Robot['strategy_type'],
           strategy_params: state.strategyParams, 
           backtest_settings: state.backtestSettings,
-          analysis_result: state.analysis, 
+          analysis_result: state.analysis || undefined, 
           chat_history: state.messages, 
           updated_at: new Date().toISOString()
       };
@@ -455,9 +455,9 @@ const stopGeneration = () => {
         if (id) {
             await mockDb.updateRobot(id, robotData);
         } else {
-            const { data } = await mockDb.saveRobot(robotData);
-            if (data && data[0] && data[0].id) {
-                navigate(`/generator/${data[0].id}`, { replace: true });
+            const savedRobot = await mockDb.saveRobot(robotData);
+            if (savedRobot && savedRobot.id) {
+                navigate(`/generator/${savedRobot.id}`, { replace: true });
             }
         }
         showToast('Robot saved successfully!', 'success');

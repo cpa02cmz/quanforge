@@ -5,7 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { Robot, UserSession } from '../../types';
-import type { AppError, APIResponse } from '../../types/common';
+import type { APIResponse } from '../../types/common';
 import { handleError } from '../../utils/errorHandler';
 import { settingsManager } from '../settingsManager';
 import { securityManager } from '../securityManager';
@@ -16,7 +16,6 @@ import { retryLogic, RetryLogicInterface } from './retryLogic';
 import { analyticsCollector, AnalyticsCollectorInterface } from './analyticsCollector';
 
 // Mock session storage constants
-const STORAGE_KEY = 'mock_session';
 const ROBOTS_KEY = 'mock_robots';
 
 // Helper for safe JSON parsing
@@ -29,34 +28,9 @@ const safeParse = <T = unknown>(data: string | null, fallback: T): T => {
   }
 };
 
-// Helper for creating AppError objects
-const createAppError = (message: string, code?: string | number): AppError => {
-  const error = new Error(message) as AppError;
-  error.name = 'SupabaseError';
-  error.code = code;
-  return error;
-};
 
-// Helper to convert old format to APIResponse format
-const toApiResult = <T>(
-  data: T | null, 
-  error: AppError | null
-): APIResponse<T> => {
-  if (error) {
-    return {
-      success: false,
-      error: error.message,
-      status: typeof error.code === 'number' ? error.code : undefined,
-      timestamp: Date.now(),
-    };
-  }
-  
-  return {
-    success: true,
-    data: data as T,
-    timestamp: Date.now(),
-  };
-};
+
+
 
 // Helper for success responses
 const createSuccessResponse = <T>(data: T): APIResponse<T> => ({
@@ -151,36 +125,42 @@ class ModularSupabase implements ModularSupabaseService {
     return this.connMgr.onAuthStateChange(callback);
   }
 
-  async signOut(): Promise<{ error: AppError | null }> {
+  async signOut(): Promise<APIResponse<null>> {
     const endTimer = this.analytics.startPerformanceTimer();
     try {
       const result = await this.connMgr.signOut();
       // Clear all caches on sign out
       await this.cache.clear();
       this.analytics.recordOperation('signOut', endTimer());
-      return result;
-    } catch (error) {
+      if (result.error) {
+        return createErrorResponse(result.error.message, result.error.code);
+      }
+      return createSuccessResponse(null);
+    } catch (error: unknown) {
       this.analytics.recordOperation('signOut', endTimer(), error);
       handleError(error as Error, 'signOut', 'modularSupabase');
-      throw error;
+      return createErrorResponse(
+        error instanceof Error ? error.message : 'Sign out failed',
+        error instanceof Error && 'code' in error ? String(error.code) : undefined
+      );
     }
   }
 
   // Robot operations with caching and retry logic
-  async getRobots(): Promise<{ data: Robot[] | null; error: AppError | null }> {
+  async getRobots(): Promise<APIResponse<Robot[]>> {
     const endTimer = this.analytics.startPerformanceTimer();
     try {
       const settings = settingsManager.getDBSettings();
       
       if (settings?.mode === 'mock') {
-        return this.getMockRobots(endTimer);
+        return await this.getMockRobots(endTimer);
       }
 
       // Try cache first
       const cached = await this.cache.getCachedRobotsList();
       if (cached) {
         this.analytics.recordOperation('getRobots-cache', endTimer());
-        return { data: cached, error: null };
+        return createSuccessResponse(cached);
       }
 
       // Fetch from database with retry
@@ -194,28 +174,34 @@ class ModularSupabase implements ModularSupabaseService {
       }
 
       this.analytics.recordOperation('getRobots', endTimer());
-      return result;
-    } catch (error) {
+      if (result.error) {
+        return createErrorResponse(result.error.message, result.error.code);
+      }
+      return createSuccessResponse(result.data || []);
+    } catch (error: unknown) {
       this.analytics.recordOperation('getRobots', endTimer(), error);
       handleError(error as Error, 'getRobots', 'modularSupabase');
-      throw error;
+      return createErrorResponse(
+        error instanceof Error ? error.message : 'Failed to get robots',
+        error instanceof Error && 'code' in error ? String(error.code) : undefined
+      );
     }
   }
 
-  async getRobotById(id: string): Promise<{ data: Robot | null; error: AppError | null }> {
+  async getRobotById(id: string): Promise<APIResponse<Robot>> {
     const endTimer = this.analytics.startPerformanceTimer();
     try {
       const settings = settingsManager.getDBSettings();
       
       if (settings?.mode === 'mock') {
-        return this.getMockRobotById(id, endTimer);
+        return await this.getMockRobotById(id, endTimer);
       }
 
       // Try cache first
       const cached = await this.cache.getCachedRobot(id);
       if (cached) {
         this.analytics.recordOperation('getRobotById-cache', endTimer());
-        return { data: cached, error: null };
+        return createSuccessResponse(cached);
       }
 
       // Fetch from database with retry
@@ -229,21 +215,30 @@ class ModularSupabase implements ModularSupabaseService {
       }
 
       this.analytics.recordOperation('getRobotById', endTimer());
-      return result;
-    } catch (error) {
+      if (result.error) {
+        return createErrorResponse(result.error.message, result.error.code);
+      }
+      if (!result.data) {
+        return createErrorResponse('Robot not found', 404);
+      }
+      return createSuccessResponse(result.data);
+    } catch (error: unknown) {
       this.analytics.recordOperation('getRobotById', endTimer(), error);
       handleError(error as Error, 'getRobotById', 'modularSupabase');
-      throw error;
+      return createErrorResponse(
+        error instanceof Error ? error.message : 'Failed to get robot',
+        error instanceof Error && 'code' in error ? String(error.code) : undefined
+      );
     }
   }
 
-  async getRobotsByIds(ids: string[]): Promise<{ data: Robot[] | null; error: AppError | null }> {
+  async getRobotsByIds(ids: string[]): Promise<APIResponse<Robot[]>> {
     const endTimer = this.analytics.startPerformanceTimer();
     try {
       const settings = settingsManager.getDBSettings();
       
       if (settings?.mode === 'mock') {
-        return this.getMockRobotsByIds(ids, endTimer);
+        return await this.getMockRobotsByIds(ids, endTimer);
       }
 
       // For now, implement as multiple single calls - could be optimized
@@ -252,24 +247,30 @@ class ModularSupabase implements ModularSupabaseService {
 
       for (const id of ids) {
         const result = await this.getRobotById(id);
-        if (result.data) {
+        if (result.success && result.data) {
           robots.push(result.data);
         }
-        if (result.error && !error) {
+        if (!result.success && !error) {
           error = result.error;
         }
       }
 
       this.analytics.recordOperation('getRobotsByIds', endTimer());
-      return { data: robots, error };
-    } catch (error) {
+      if (error) {
+        return createErrorResponse(error);
+      }
+      return createSuccessResponse(robots);
+    } catch (error: unknown) {
       this.analytics.recordOperation('getRobotsByIds', endTimer(), error);
       handleError(error as Error, 'getRobotsByIds', 'modularSupabase');
-      throw error;
+      return createErrorResponse(
+        error instanceof Error ? error.message : 'Failed to get robots by IDs',
+        error instanceof Error && 'code' in error ? String(error.code) : undefined
+      );
     }
   }
 
-  async saveRobot(robot: Partial<Robot>): Promise<{ data: Robot[] | null; error: AppError | null }> {
+  async saveRobot(robot: Partial<Robot>): Promise<APIResponse<Robot[]>> {
     const endTimer = this.analytics.startPerformanceTimer();
     try {
       const settings = settingsManager.getDBSettings();
@@ -278,7 +279,7 @@ class ModularSupabase implements ModularSupabaseService {
       if (!robot || typeof robot !== 'object') {
         const duration = endTimer();
         this.analytics.recordOperation('saveRobot', duration);
-        return { data: null, error: createAppError('Invalid robot data structure', 'INVALID_DATA') };
+        return createErrorResponse('Invalid robot data structure', 'INVALID_DATA');
       }
 
       // Rate limiting check
@@ -287,14 +288,14 @@ class ModularSupabase implements ModularSupabaseService {
         if (!allowed) {
           const duration = endTimer();
           this.analytics.recordOperation('saveRobot', duration);
-          return { data: null, error: createAppError('Rate limit exceeded', 'RATE_LIMIT_EXCEEDED') };
+          return createErrorResponse('Rate limit exceeded', 'RATE_LIMIT_EXCEEDED');
         }
       }
 
       const sanitizedRobot = robot;
 
       if (settings?.mode === 'mock') {
-        return this.saveMockRobot(sanitizedRobot, endTimer);
+        return await this.saveMockRobot(sanitizedRobot, endTimer);
       }
 
       // Save to database with retry
@@ -309,21 +310,27 @@ class ModularSupabase implements ModularSupabaseService {
       }
 
       this.analytics.recordOperation('saveRobot', endTimer());
-      return result;
-    } catch (error) {
+      if (result.error) {
+        return createErrorResponse(result.error.message, result.error.code);
+      }
+      return createSuccessResponse(result.data || []);
+    } catch (error: unknown) {
       this.analytics.recordOperation('saveRobot', endTimer(), error);
       handleError(error as Error, 'saveRobot', 'modularSupabase');
-      throw error;
+      return createErrorResponse(
+        error instanceof Error ? error.message : 'Failed to save robot',
+        error instanceof Error && 'code' in error ? String(error.code) : undefined
+      );
     }
   }
 
-  async updateRobot(id: string, updates: Partial<Robot>): Promise<{ data: Robot[] | null; error: AppError | null }> {
+  async updateRobot(id: string, updates: Partial<Robot>): Promise<APIResponse<Robot[]>> {
     const endTimer = this.analytics.startPerformanceTimer();
     try {
       const settings = settingsManager.getDBSettings();
       
       if (settings?.mode === 'mock') {
-        return this.updateMockRobot(id, updates, endTimer);
+        return await this.updateMockRobot(id, updates, endTimer);
       }
 
       // Update in database with retry
@@ -338,21 +345,27 @@ class ModularSupabase implements ModularSupabaseService {
       }
 
       this.analytics.recordOperation('updateRobot', endTimer());
-      return result;
-    } catch (error) {
+      if (result.error) {
+        return createErrorResponse(result.error.message, result.error.code);
+      }
+      return createSuccessResponse(result.data || []);
+    } catch (error: unknown) {
       this.analytics.recordOperation('updateRobot', endTimer(), error);
       handleError(error as Error, 'updateRobot', 'modularSupabase');
-      throw error;
+      return createErrorResponse(
+        error instanceof Error ? error.message : 'Failed to update robot',
+        error instanceof Error && 'code' in error ? String(error.code) : undefined
+      );
     }
   }
 
-  async deleteRobot(id: string): Promise<{ data: true | null; error: AppError | null }> {
+  async deleteRobot(id: string): Promise<APIResponse<boolean>> {
     const endTimer = this.analytics.startPerformanceTimer();
     try {
       const settings = settingsManager.getDBSettings();
       
       if (settings?.mode === 'mock') {
-        return this.deleteMockRobot(id, endTimer);
+        return await this.deleteMockRobot(id, endTimer);
       }
 
       // Delete from database with retry
@@ -367,21 +380,27 @@ class ModularSupabase implements ModularSupabaseService {
       }
 
       this.analytics.recordOperation('deleteRobot', endTimer());
-      return result;
-    } catch (error) {
+      if (result.error) {
+        return createErrorResponse(result.error.message, result.error.code);
+      }
+      return createSuccessResponse(Boolean(result.data));
+    } catch (error: unknown) {
       this.analytics.recordOperation('deleteRobot', endTimer(), error);
       handleError(error as Error, 'deleteRobot', 'modularSupabase');
-      throw error;
+      return createErrorResponse(
+        error instanceof Error ? error.message : 'Failed to delete robot',
+        error instanceof Error && 'code' in error ? String(error.code) : undefined
+      );
     }
   }
 
-  async batchUpdateRobots(updates: Array<{ id: string; data: Partial<Robot> }>): Promise<{ success: number; failed: number; errors?: string[] }> {
+  async batchUpdateRobots(updates: Array<{ id: string; data: Partial<Robot> }>): Promise<APIResponse<{ successful: number; failed: number; errors?: string[] }>> {
     const endTimer = this.analytics.startPerformanceTimer();
     try {
       const settings = settingsManager.getDBSettings();
       
       if (settings?.mode === 'mock') {
-        return this.batchUpdateMockRobots(updates, endTimer);
+        return await this.batchUpdateMockRobots(updates, endTimer);
       }
 
       // Batch update with retry
@@ -394,11 +413,18 @@ class ModularSupabase implements ModularSupabaseService {
       await this.cache.invalidateRobotCaches();
 
       this.analytics.recordOperation('batchUpdateRobots', endTimer());
-      return result;
-    } catch (error) {
+      return createSuccessResponse({
+        successful: result.success,
+        failed: result.failed,
+        errors: result.errors
+      });
+    } catch (error: unknown) {
       this.analytics.recordOperation('batchUpdateRobots', endTimer(), error);
       handleError(error as Error, 'batchUpdateRobots', 'modularSupabase');
-      throw error;
+      return createErrorResponse(
+        error instanceof Error ? error.message : 'Failed to batch update robots',
+        error instanceof Error && 'code' in error ? String(error.code) : undefined
+      );
     }
   }
 
@@ -460,70 +486,101 @@ class ModularSupabase implements ModularSupabaseService {
   }
 
   // Mock implementation methods (moved from original supabase.ts)
-  private async getMockRobots(endTimer: () => number): Promise<{ data: Robot[] | null; error: AppError | null }> {
+  private async getMockRobots(endTimer: () => number): Promise<APIResponse<Robot[]>> {
     const stored = localStorage.getItem(ROBOTS_KEY);
     const robots = safeParse(stored, []);
     this.analytics.recordOperation('getRobots-mock', endTimer());
-    return { data: robots, error: null };
+    return createSuccessResponse(robots);
   }
 
-  private async getMockRobotById(id: string, endTimer: () => number): Promise<{ data: Robot | null; error: AppError | null }> {
+  private async getMockRobotById(id: string, endTimer: () => number): Promise<APIResponse<Robot>> {
     const stored = localStorage.getItem(ROBOTS_KEY);
     const robots = safeParse(stored, []);
     const robot = robots.find((r: Robot) => r.id === id);
     this.analytics.recordOperation('getRobotById-mock', endTimer());
-    return { data: robot || null, error: null };
+    if (!robot) {
+      return createErrorResponse('Robot not found', 404);
+    }
+    return createSuccessResponse(robot);
   }
 
-  private async getMockRobotsByIds(ids: string[], endTimer: () => number): Promise<{ data: Robot[] | null; error: AppError | null }> {
+  private async getMockRobotsByIds(ids: string[], endTimer: () => number): Promise<APIResponse<Robot[]>> {
     const stored = localStorage.getItem(ROBOTS_KEY);
     const robots = safeParse(stored, []);
     const filteredRobots = robots.filter((robot: Robot) => ids.includes(robot.id));
     this.analytics.recordOperation('getRobotsByIds-mock', endTimer());
-    return { data: filteredRobots, error: null };
+    return createSuccessResponse(filteredRobots);
   }
 
-  private async saveMockRobot(robot: Partial<Robot>, endTimer: () => number): Promise<{ data: Robot[] | null; error: AppError | null }> {
+  private async saveMockRobot(robot: Partial<Robot>, endTimer: () => number): Promise<APIResponse<Robot[]>> {
     try {
       const stored = localStorage.getItem(ROBOTS_KEY);
       const robots = safeParse<Robot[]>(stored, []);
       
-      const newRobot = { ...robot, id: robot.id || this.generateUUID(), created_at: new Date().toISOString() } as Robot;
+      const newRobot: Robot = { 
+        ...robot, 
+        id: robot.id || this.generateUUID(), 
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as Robot;
       robots.unshift(newRobot);
       
       trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
       this.analytics.recordOperation('saveRobot-mock', endTimer());
       
-      return { data: [newRobot], error: null };
-    } catch (e: any) {
+      return createSuccessResponse([newRobot]);
+    } catch (e: unknown) {
       this.analytics.recordOperation('saveRobot-mock', endTimer(), e);
-      return { data: null, error: e.message };
+      return createErrorResponse(
+        e instanceof Error ? e.message : 'Failed to save robot',
+        e instanceof Error && 'code' in e ? String(e.code) : undefined
+      );
     }
   }
 
-  private async updateMockRobot(id: string, updates: Partial<Robot>, endTimer: () => number): Promise<{ data: Robot[] | null; error: AppError | null }> {
+  private async updateMockRobot(id: string, updates: Partial<Robot>, endTimer: () => number): Promise<APIResponse<Robot[]>> {
     try {
       const stored = localStorage.getItem(ROBOTS_KEY);
       const robots = safeParse<Robot[]>(stored, []);
       
-      const index = robots.findIndex((r: Robot) => r.id === id);
+const index = robots.findIndex((r: Robot) => r.id === id);
       if (index === -1) {
-        return { data: null, error: createAppError('Robot not found', 'NOT_FOUND') };
+        return createErrorResponse('Robot not found', 'NOT_FOUND');
       }
       
-      robots[index] = { ...robots[index], ...updates, updated_at: new Date().toISOString() };
+      const existingRobot = robots[index];
+      if (!existingRobot) {
+        return createErrorResponse('Robot not found', 'NOT_FOUND');
+      }
+      
+      const updatedRobot: Robot = { 
+        ...existingRobot, 
+        ...updates, 
+        id: existingRobot.id, // Ensure id is preserved
+        user_id: existingRobot.user_id, // Ensure user_id is preserved
+        name: updates.name || existingRobot.name, // Ensure name is preserved
+        description: updates.description || existingRobot.description, // Ensure description is preserved
+        code: updates.code || existingRobot.code, // Ensure code is preserved
+        strategy_type: updates.strategy_type || existingRobot.strategy_type, // Ensure strategy_type is preserved
+        created_at: existingRobot.created_at, // Ensure created_at is preserved
+        updated_at: new Date().toISOString() 
+      };
+      robots[index] = updatedRobot;
       
       trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
       this.analytics.recordOperation('updateRobot-mock', endTimer());
       
-      return { data: [robots[index]], error: null };
-    } catch (e: any) {
+      return createSuccessResponse([updatedRobot]);
+    } catch (e: unknown) {
       this.analytics.recordOperation('updateRobot-mock', endTimer(), e);
-      return { data: null, error: e.message };
+      return createErrorResponse(
+        e instanceof Error ? e.message : 'Failed to update robot',
+        e instanceof Error && 'code' in e ? String(e.code) : undefined
+      );
     }
   }
 
-  private async deleteMockRobot(id: string, endTimer: () => number): Promise<{ data: true | null; error: AppError | null }> {
+  private async deleteMockRobot(id: string, endTimer: () => number): Promise<APIResponse<boolean>> {
     try {
       const stored = localStorage.getItem(ROBOTS_KEY);
       const robots = safeParse<Robot[]>(stored, []);
@@ -533,14 +590,17 @@ class ModularSupabase implements ModularSupabaseService {
       trySaveToStorage(ROBOTS_KEY, JSON.stringify(filteredRobots));
       this.analytics.recordOperation('deleteRobot-mock', endTimer());
       
-      return { data: true, error: null };
+      return createSuccessResponse(true);
     } catch (e: unknown) {
       this.analytics.recordOperation('deleteRobot-mock', endTimer(), e);
-      return { data: null, error: createAppError((e as Error).message || 'Unknown error') };
+      return createErrorResponse(
+        (e as Error).message || 'Unknown error',
+        (e as any).code
+      );
     }
   }
 
-  private async batchUpdateMockRobots(updates: Array<{ id: string; data: Partial<Robot> }>, endTimer: () => number): Promise<{ success: number; failed: number; errors?: string[] }> {
+  private async batchUpdateMockRobots(updates: Array<{ id: string; data: Partial<Robot> }>, endTimer: () => number): Promise<APIResponse<{ successful: number; failed: number; errors?: string[] }>> {
     let successCount = 0;
     let failedCount = 0;
     const errors: string[] = [];
@@ -548,7 +608,7 @@ class ModularSupabase implements ModularSupabaseService {
     for (const { id, data } of updates) {
       try {
         const result = await this.updateMockRobot(id, data, () => 0);
-        if (result.error) {
+        if (!result.success) {
           failedCount++;
           errors.push(`Failed to update robot ${id}: ${result.error}`);
         } else {
@@ -562,11 +622,11 @@ class ModularSupabase implements ModularSupabaseService {
 
     this.analytics.recordOperation('batchUpdateRobots-mock', endTimer());
     
-    return {
-      success: successCount,
+    return createSuccessResponse({
+      successful: successCount,
       failed: failedCount,
       errors: errors.length > 0 ? errors : undefined
-    };
+    });
   }
 
   private async optimizeMockDatabase(): Promise<{ success: boolean; message: string }> {
