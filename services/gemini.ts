@@ -721,9 +721,9 @@ const getEffectiveSystemPrompt = (settings: AISettings): string => {
 // Dynamic loader for GoogleGenAI to reduce initial bundle size
 const getGoogleGenAI = async () => {
   if (!GoogleGenAI) {
-    const module = await import("@google/genai");
-    GoogleGenAI = module.GoogleGenAI;
-    Type = module.Type;
+    const { GoogleGenAI: GAI, Type: T } = await import("@google/genai");
+    GoogleGenAI = GAI;
+    Type = T;
   }
   return GoogleGenAI;
 };

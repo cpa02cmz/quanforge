@@ -49,9 +49,8 @@ export class AICore {
       const enhancedPrompt = this.constructPrompt(prompt, config);
       const { settings } = config;
 
-      // Dynamic import Google GenAI SDK
-      const genaiModule = await import(/* webpackChunkName: "google-ai-sdk" */ "@google/genai");
-      const GoogleGenAI = genaiModule.GoogleGenAI;
+      // Dynamic import Google GenAI SDK - only import the main class
+      const { GoogleGenAI } = await import("@google/genai");
 
       if (config.signal?.aborted) {
         throw new DOMException("Aborted", "AbortError");
@@ -100,10 +99,8 @@ export class AICore {
         throw new DOMException("Aborted", "AbortError");
       }
 
-      // Dynamic import Google GenAI SDK
-      const genaiModule = await import(/* webpackChunkName: "google-ai-sdk" */ "@google/genai");
-      const GoogleGenAI = genaiModule.GoogleGenAI;
-      const Type = genaiModule.Type;
+      // Dynamic import Google GenAI SDK - only import what's needed
+      const { GoogleGenAI, Type } = await import("@google/genai");
 
       const ai = new GoogleGenAI({ apiKey: this.apiKey });
       const prompt = this.constructAnalysisPrompt(code);

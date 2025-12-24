@@ -89,20 +89,55 @@ export const ChartComponents = memo<ChartComponentsProps>(({
     const loadRecharts = async () => {
       try {
         setLoading(true);
-        const recharts = await import('recharts');
-        setRecharts({
-          PieChart: recharts.PieChart,
-          Pie: recharts.Pie,
-          Cell: recharts.Cell,
-          ResponsiveContainer: recharts.ResponsiveContainer,
-          Tooltip: recharts.Tooltip,
-          AreaChart: recharts.AreaChart,
-          Area: recharts.Area,
-          XAxis: recharts.XAxis,
-          YAxis: recharts.YAxis,
-          CartesianGrid: recharts.CartesianGrid,
-          Legend: recharts.Legend,
-        });
+        
+        // Load chart components based on type to optimize bundle size
+        if (type === 'pie') {
+          const { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } = await import('recharts');
+          setRecharts({
+            PieChart,
+            Pie,
+            Cell,
+            ResponsiveContainer,
+            Tooltip,
+            AreaChart: null as any,
+            Area: null as any,
+            XAxis: null as any,
+            YAxis: null as any,
+            CartesianGrid: null as any,
+            Legend,
+          });
+        } else if (type === 'area') {
+          const { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } = await import('recharts');
+          setRecharts({
+            PieChart: null as any,
+            Pie: null as any,
+            Cell: null as any,
+            ResponsiveContainer,
+            Tooltip,
+            AreaChart,
+            Area,
+            XAxis,
+            YAxis,
+            CartesianGrid,
+            Legend: null as any,
+          });
+        } else {
+          // Load minimal components for fallback
+          const { ResponsiveContainer, Tooltip } = await import('recharts');
+          setRecharts({
+            PieChart: null as any,
+            Pie: null as any,
+            Cell: null as any,
+            ResponsiveContainer,
+            Tooltip,
+            AreaChart: null as any,
+            Area: null as any,
+            XAxis: null as any,
+            YAxis: null as any,
+            CartesianGrid: null as any,
+            Legend: null as any,
+          });
+        }
       } catch {
         // Failed to load Recharts silently
         setError('Failed to load chart components');
@@ -112,7 +147,7 @@ export const ChartComponents = memo<ChartComponentsProps>(({
     };
 
     loadRecharts();
-  }, []);
+  }, [type]);
 
   if (loading) {
     return (
