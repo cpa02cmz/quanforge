@@ -248,6 +248,5 @@ export async function POST(request: NextRequest) {
 export const config = {
   runtime: 'edge',
   maxDuration: 30,
-  memory: 512,
-  cache: 'max-age=300, s-maxage=900'
+  memory: 512
 };

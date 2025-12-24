@@ -13,8 +13,7 @@ import { Robot } from '../../types';
 export const config = {
   runtime: 'edge',
   maxDuration: 15,
-  memory: 512,
-  cache: 'max-age=300, s-maxage=900, stale-while-revalidate=300',
+  memory: 512
 };
 
 interface RobotsQueryParams {
