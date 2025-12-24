@@ -6,6 +6,8 @@ import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
 import { useTranslation } from '../services/i18n';
 import { AdvancedSEO } from '../utils/advancedSEO';
 import { performanceMonitor, frontendPerformanceOptimizer } from '../utils/performanceConsolidated';
+import ChatErrorBoundary from '../components/ChatErrorBoundary';
+import CodeEditorErrorBoundary from '../components/CodeEditorErrorBoundary';
 
 // Lazy load heavy components to reduce initial bundle size
 const ChatInterface = lazy(() => import('../components/ChatInterface').then(module => ({ default: module.ChatInterface })));
@@ -187,13 +189,15 @@ export const Generator: React.FC = memo(() => {
 
         <div className="flex-1 overflow-hidden relative bg-dark-surface">
             {activeSidebarTab === 'chat' ? (
-                 <ChatInterface 
-                    messages={messages} 
-                    onSendMessage={handleSendMessage} 
-                    isLoading={isLoading} 
-                    onClear={clearChat}
-                    onStop={stopGeneration}
-                />
+                <ChatErrorBoundary>
+                    <ChatInterface 
+                        messages={messages} 
+                        onSendMessage={handleSendMessage} 
+                        isLoading={isLoading} 
+                        onClear={clearChat}
+                        onStop={stopGeneration}
+                    />
+                </ChatErrorBoundary>
             ) : (
                 <StrategyConfig 
                     params={strategyParams} 
@@ -237,13 +241,15 @@ export const Generator: React.FC = memo(() => {
               </div>
             }>
               {activeMainTab === 'editor' && (
-                  <CodeEditor 
-                      code={code} 
-                      filename={robotName} 
-                      onChange={setCode}
-                      onRefine={handleRefineCode}
-                      onExplain={handleExplainCode} // Wired up here
-                  />
+                  <CodeEditorErrorBoundary>
+                      <CodeEditor 
+                          code={code} 
+                          filename={robotName} 
+                          onChange={setCode}
+                          onRefine={handleRefineCode}
+                          onExplain={handleExplainCode} // Wired up here
+                      />
+                  </CodeEditorErrorBoundary>
               )}
 
               {activeMainTab === 'simulation' && (

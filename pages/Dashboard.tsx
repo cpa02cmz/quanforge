@@ -1,47 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { UserSession } from '../types';
-
-interface ActivityItem {
-  type: string;
-  message: string;
-  time: string;
-}
+import { useDashboardStats } from '../hooks/useDashboardStats';
 
 interface DashboardProps {
   session: UserSession;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ session }) => {
-  const [stats, setStats] = useState({
-    totalRobots: 0,
-    activeRobots: 0,
-    totalStrategies: 0,
-    recentActivity: [] as ActivityItem[]
-  });
-
-  useEffect(() => {
-    // Initialize dashboard data
-    const loadDashboardData = async () => {
-      try {
-        // This would normally fetch from API
-        setStats({
-          totalRobots: 12,
-          activeRobots: 8,
-          totalStrategies: 25,
-          recentActivity: [
-            { type: 'robot_created', message: 'Created new EA: GoldenCross Strategy', time: '2 hours ago' },
-            { type: 'backtest', message: 'Backtest completed: RSI Strategy', time: '5 hours ago' },
-            { type: 'deployment', message: 'Deployed to production', time: '1 day ago' }
-          ]
-        });
-      } catch (error) {
-        // Failed to load dashboard data - error handled by UI states
-      }
-    };
-
-    loadDashboardData();
-  }, []);
+  const {
+    totalRobots,
+    activeRobots,
+    totalStrategies,
+    recentActivity,
+    loading,
+    error,
+    refresh,
+    isEmpty
+  } = useDashboardStats({ refreshInterval: 30000 });
 
   const quickActions = [
     { 
@@ -86,51 +62,129 @@ export const Dashboard: React.FC<DashboardProps> = ({ session }) => {
         </p>
       </div>
 
+      {/* Empty State for New Users */}
+      {!loading && !error && isEmpty && (
+        <div className="bg-dark-surface rounded-lg border border-gray-700 p-12 mb-8 text-center">
+          <div className="text-6xl mb-6">🤖</div>
+          <h2 className="text-2xl font-bold text-white mb-4">Welcome to QuantForge AI</h2>
+          <p className="text-gray-400 mb-8 max-w-2xl mx-auto">
+            Start your journey into algorithmic trading by creating your first AI-powered trading robot. 
+            Describe your strategy in plain English and let our AI generate professional MQL5 code.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            <Link
+              to="/generator"
+              className="inline-flex items-center px-6 py-3 bg-brand-600 text-white rounded-md hover:bg-brand-700 transition-colors font-medium"
+            >
+              <span className="mr-2">🚀</span>
+              Create Your First Robot
+            </Link>
+            <Link
+              to="/wiki"
+              className="inline-flex items-center px-6 py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors font-medium"
+            >
+              <span className="mr-2">📚</span>
+              Learn More
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+            <div className="text-center">
+              <div className="text-3xl mb-3">💬</div>
+              <h3 className="font-semibold text-white mb-2">Natural Language</h3>
+              <p className="text-sm text-gray-400">Describe your strategy in plain English</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl mb-3">🤖</div>
+              <h3 className="font-semibold text-white mb-2">AI-Powered</h3>
+              <p className="text-sm text-gray-400">Advanced AI generates professional MQL5 code</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl mb-3">📈</div>
+              <h3 className="font-semibold text-white mb-2">Trade Ready</h3>
+              <p className="text-sm text-gray-400">Deploy directly to MetaTrader 5</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Dashboard Content (Hidden when empty) */}
+      {!isEmpty && (
+        <>
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center h-64 mb-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500"></div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
+          <div className="flex items-center justify-between">
+            <div className="text-red-800">
+              <h3 className="font-semibold">Error loading dashboard data</h3>
+              <p className="text-sm">{error}</p>
+            </div>
+            <button
+              onClick={refresh}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-dark-surface rounded-lg p-6 border border-gray-700">
-          <div className="flex items justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-400">Total Robots</p>
-              <p className="text-2xl font-semibold text-white">{stats.totalRobots}</p>
+      {!loading && !error && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-dark-surface rounded-lg p-6 border border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-400">Total Robots</p>
+                <p className="text-2xl font-semibold text-white">{totalRobots}</p>
+              </div>
+              <div className="text-3xl">🤖</div>
             </div>
-            <div className="text-3xl">🤖</div>
+          </div>
+
+          <div className="bg-dark-surface rounded-lg p-6 border border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-400">Active Robots</p>
+                <p className="text-2xl font-semibold text-green-400">{activeRobots}</p>
+              </div>
+              <div className="text-3xl">✅</div>
+            </div>
+          </div>
+
+          <div className="bg-dark-surface rounded-lg p-6 border border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-400">Total Strategies</p>
+                <p className="text-2xl font-semibold text-white">{totalStrategies}</p>
+              </div>
+              <div className="text-3xl">📊</div>
+            </div>
+          </div>
+
+          <div className="bg-dark-surface rounded-lg p-6 border border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-400">Success Rate</p>
+                <p className="text-2xl font-semibold text-brand-400">
+                  {totalRobots > 0 ? Math.round((activeRobots / totalRobots) * 100) : 0}%
+                </p>
+              </div>
+              <div className="text-3xl">📈</div>
+            </div>
           </div>
         </div>
+      )}
 
-        <div className="bg-dark-surface rounded-lg p-6 border border-gray-700">
-          <div className="flex items justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-400">Active Robots</p>
-              <p className="text-2xl font-semibold text-green-400">{stats.activeRobots}</p>
-            </div>
-            <div className="text-3xl">✅</div>
-          </div>
-        </div>
-
-        <div className="bg-dark-surface rounded-lg p-6 border border-gray-700">
-          <div className="flex items justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-400">Total Strategies</p>
-              <p className="text-2xl font-semibold text-white">{stats.totalStrategies}</p>
-            </div>
-            <div className="text-3xl">📊</div>
-          </div>
-        </div>
-
-        <div className="bg-dark-surface rounded-lg p-6 border border-gray-700">
-          <div className="flex items justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-400">Success Rate</p>
-              <p className="text-2xl font-semibold text-brand-400">87%</p>
-            </div>
-            <div className="text-3xl">📈</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="mb-8">
+      {/* Quick Actions (Hidden when empty) */}
+      {!isEmpty && (
+        <div className="mb-8">
         <h2 className="text-xl font-semibold text-white mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {quickActions.map((action) => (
@@ -145,31 +199,58 @@ export const Dashboard: React.FC<DashboardProps> = ({ session }) => {
             </Link>
           ))}
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Recent Activity */}
-      <div>
-        <h2 className="text-xl font-semibold text-white mb-4">Recent Activity</h2>
-        <div className="bg-dark-surface rounded-lg border border-gray-700">
-          {stats.recentActivity.length > 0 ? (
-            <div className="divide-y divide-gray-700">
-              {stats.recentActivity.map((activity, index) => (
-                <div key={index} className="p-4 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
-                    <p className="text-white">{activity.message}</p>
+      {!loading && !error && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-white">Recent Activity</h2>
+            <button
+              onClick={refresh}
+              className="text-sm text-gray-400 hover:text-white transition-colors"
+            >
+              Refresh
+            </button>
+          </div>
+          <div className="bg-dark-surface rounded-lg border border-gray-700">
+            {recentActivity.length > 0 ? (
+              <div className="divide-y divide-gray-700">
+                {recentActivity.map((activity, index) => (
+                  <div key={index} className="p-4 flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
+                      <p className="text-white">{activity.message}</p>
+                    </div>
+                    <p className="text-sm text-gray-400">{activity.time}</p>
                   </div>
-                  <p className="text-sm text-gray-400">{activity.time}</p>
+                ))}
+              </div>
+            ) : isEmpty ? (
+              <div className="p-8 text-center text-gray-400">
+                <div className="mb-4">
+                  <div className="text-4xl mb-2">🤖</div>
+                  <p className="font-semibold mb-1">No robots yet</p>
+                  <p className="text-sm">Create your first trading robot to get started</p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-8 text-center text-gray-400">
-              No recent activity to display
-            </div>
-          )}
+                <Link
+                  to="/generator"
+                  className="inline-flex items-center px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700 transition-colors text-sm"
+                >
+                  Create Robot
+                </Link>
+              </div>
+            ) : (
+              <div className="p-8 text-center text-gray-400">
+                No recent activity to display
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
+        </>
+      )}
     </div>
   );
 };
