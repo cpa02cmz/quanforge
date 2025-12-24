@@ -112,19 +112,19 @@ export class Logger {
 }
 
 // Factory function for scoped loggers
-export function createScopedLogger(scope: string): {
-  debug: (message: string, metadata?: Record<string, unknown>) => void;
-  info: (message: string, metadata?: Record<string, unknown>) => void;
-  warn: (message: string, metadata?: Record<string, unknown>) => void;
+export function createScopedLogger(_scope: string): {
+  debug: (_message: string, _metadata?: Record<string, unknown>) => void;
+  info: (_message: string, _metadata?: Record<string, unknown>) => void;
+  warn: (_message: string, _metadata?: Record<string, unknown>) => void;
   error: (message: string, metadata?: Record<string, unknown>) => void;
 } {
   const logger = Logger.getInstance();
   
   return {
-    debug: (message: string, metadata?: Record<string, unknown>) => logger.debug(message, scope, metadata),
-    info: (message: string, metadata?: Record<string, unknown>) => logger.info(message, scope, metadata),
-    warn: (message: string, metadata?: Record<string, unknown>) => logger.warn(message, scope, metadata),
-    error: (message: string, metadata?: Record<string, unknown>) => logger.error(message, scope, metadata),
+    debug: (_message: string, _metadata?: Record<string, unknown>) => logger.debug(_message, _scope, _metadata),
+    info: (_message: string, _metadata?: Record<string, unknown>) => logger.info(_message, _scope, _metadata),
+    warn: (_message: string, _metadata?: Record<string, unknown>) => logger.warn(_message, _scope, _metadata),
+    error: (message: string, metadata?: Record<string, unknown>) => logger.error(message, _scope, metadata),
   };
 }
 
