@@ -5,8 +5,9 @@ import { StrategyConfig } from '../components/StrategyConfig';
 import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
 import { useTranslation } from '../services/i18n';
 import { AdvancedSEO } from '../utils/advancedSEO';
-import { performanceMonitor } from '../utils/performance';
-import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
+import { performanceMonitor, frontendPerformanceOptimizer } from '../utils/performanceConsolidated';
+import ChatErrorBoundary from '../components/ChatErrorBoundary';
+import CodeEditorErrorBoundary from '../components/CodeEditorErrorBoundary';
 
 // Lazy load heavy components to reduce initial bundle size
 const ChatInterface = lazy(() => import('../components/ChatInterface').then(module => ({ default: module.ChatInterface })));
@@ -22,8 +23,8 @@ export const Generator: React.FC = memo(() => {
    useEffect(() => {
      return () => {
        performanceMonitor.cleanup();
-       // Reset frontend performance optimizer on unmount
-       frontendPerformanceOptimizer.reset();
+       // Record cleanup in frontend performance optimizer on unmount
+       frontendPerformanceOptimizer.recordMetric('generator_cleanup', Date.now());
      };
    }, []);
   
@@ -104,7 +105,7 @@ export const Generator: React.FC = memo(() => {
         title={id ? `Edit Trading Robot - ${robotName || 'Loading...'} | QuantForge AI` : 'Create New Trading Robot | QuantForge AI'}
         description={id ? `Edit and optimize your MQL5 trading robot "${robotName}". Adjust parameters, test strategies, and deploy to MetaTrader 5 with AI-powered optimization.` : 'Create a new MQL5 trading robot using AI. Describe your strategy and generate professional Expert Advisors for MetaTrader 5 in minutes.'}
         keywords="MQL5 generator, trading robot creator, Expert Advisor builder, AI trading strategy, MetaTrader 5 robot, forex EA builder, automated trading bot, MT5 expert advisor, algorithmic trading platform, AI code generation"
-        canonicalUrl={id ? `https://quanforge.ai/generator/${id}` : 'https://quanforge.ai/generator'}
+        canonicalUrl={id ? `${import.meta.env['VITE_APP_URL'] || 'https://quanforge.ai'}/generator/${id}` : `${import.meta.env['VITE_APP_URL'] || 'https://quanforge.ai'}/generator`}
         type="software"
         tags={robotName ? [robotName, 'MQL5', 'Trading Robot', 'AI'] : ['MQL5', 'Trading Robot', 'AI', 'Expert Advisor']}
         enableAnalytics={true}
@@ -188,13 +189,15 @@ export const Generator: React.FC = memo(() => {
 
         <div className="flex-1 overflow-hidden relative bg-dark-surface">
             {activeSidebarTab === 'chat' ? (
-                 <ChatInterface 
-                    messages={messages} 
-                    onSendMessage={handleSendMessage} 
-                    isLoading={isLoading} 
-                    onClear={clearChat}
-                    onStop={stopGeneration}
-                />
+                <ChatErrorBoundary>
+                    <ChatInterface 
+                        messages={messages} 
+                        onSendMessage={handleSendMessage} 
+                        isLoading={isLoading} 
+                        onClear={clearChat}
+                        onStop={stopGeneration}
+                    />
+                </ChatErrorBoundary>
             ) : (
                 <StrategyConfig 
                     params={strategyParams} 
@@ -238,13 +241,15 @@ export const Generator: React.FC = memo(() => {
               </div>
             }>
               {activeMainTab === 'editor' && (
-                  <CodeEditor 
-                      code={code} 
-                      filename={robotName} 
-                      onChange={setCode}
-                      onRefine={handleRefineCode}
-                      onExplain={handleExplainCode} // Wired up here
-                  />
+                  <CodeEditorErrorBoundary>
+                      <CodeEditor 
+                          code={code} 
+                          filename={robotName} 
+                          onChange={setCode}
+                          onRefine={handleRefineCode}
+                          onExplain={handleExplainCode} // Wired up here
+                      />
+                  </CodeEditorErrorBoundary>
               )}
 
               {activeMainTab === 'simulation' && (

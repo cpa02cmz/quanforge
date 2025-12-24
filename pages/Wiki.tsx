@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { WIKI_CONTENT } from '../constants';
 import { useTranslation } from '../services/i18n';
-import { SEOHead, structuredDataTemplates } from '../utils/seo';
+import { SEOHead, structuredDataTemplates } from '../utils/seoUnified';
+import { WikiSection } from '../types';
 
 export const Wiki: React.FC = () => {
   const { language } = useTranslation();
@@ -51,7 +52,7 @@ export const Wiki: React.FC = () => {
       };
     }
     return null;
-  }).filter(Boolean);
+  }).filter((section): section is WikiSection => section !== null);
 
   const activeSection = content.find(s => s.id === activeSectionId);
 
@@ -176,7 +177,7 @@ structuredData={[
             </div>
         </div>
         <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
-            {filteredSections.map((section: any) => (
+            {filteredSections.map((section: WikiSection) => (
                 <button
                     key={section.id}
                     onClick={() => {

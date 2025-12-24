@@ -16,6 +16,7 @@ export interface StrategyAnalysis {
   riskScore: number;
   profitability: number;
   description: string;
+  [key: string]: unknown;
 }
 
 export enum MessageRole {
