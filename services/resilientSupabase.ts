@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { handleError } from '../utils/errorHandler';
+import { DATABASE_CONFIG, CIRCUIT_BREAKER_CONFIG } from '../constants/config';
 
 interface RetryConfig {
   maxRetries: number;
@@ -63,7 +64,7 @@ class CircuitBreaker {
     
     if (this.state === CircuitState.HALF_OPEN) {
       this.successCount++;
-      if (this.successCount >= 3) { // Need 3 successes to close
+      if (this.successCount >= CIRCUIT_BREAKER_CONFIG.SUCCESS_THRESHOLD) { // Need 3 successes to close
         this.state = CircuitState.CLOSED;
       }
     }
@@ -92,16 +93,16 @@ class CircuitBreaker {
 class ResilientSupabaseClient {
   private circuitBreakers = new Map<string, CircuitBreaker>();
   private retryConfig: RetryConfig = {
-    maxRetries: 3,
-    baseDelay: 1000,
-    maxDelay: 30000,
+    maxRetries: DATABASE_CONFIG.RETRY.MAX_ATTEMPTS,
+    baseDelay: DATABASE_CONFIG.RETRY.DELAYS.BASE,
+    maxDelay: DATABASE_CONFIG.RETRY.DELAYS.MAX,
     backoffMultiplier: 2,
     jitter: true,
   };
   private circuitBreakerConfig: CircuitBreakerConfig = {
-    failureThreshold: 3, // Reduced for edge
-    resetTimeout: 30000, // 30 seconds (faster recovery)
-    monitoringPeriod: 10000, // 10 seconds
+    failureThreshold: CIRCUIT_BREAKER_CONFIG.DEFAULT_FAILURE_THRESHOLD, // Reduced for edge
+    resetTimeout: CIRCUIT_BREAKER_CONFIG.DEFAULT_RESET_TIMEOUT, // Use config timeout
+    monitoringPeriod: CIRCUIT_BREAKER_CONFIG.DEFAULT_MONITORING_PERIOD, // Use config period
   };
   private metrics: ResilienceMetrics = {
     totalRequests: 0,
@@ -112,7 +113,7 @@ class ResilientSupabaseClient {
     retryAttempts: 0,
   };
   private responseTimes: number[] = [];
-  private readonly maxResponseTimes = 100;
+  private readonly maxResponseTimes = DATABASE_CONFIG.POOL.MAX_RESPONSE_TIME_SAMPLES;
 
   constructor(
     private client: SupabaseClient,
@@ -229,7 +230,7 @@ class ResilientSupabaseClient {
       '23503',    // Foreign key violation
     ];
 
-    const nonRetryableStatusCodes = [400, 401, 403, 404, 422];
+    const nonRetryableStatusCodes = DATABASE_CONFIG.RETRY.NON_RETRYABLE_STATUS_CODES;
     
     // Add edge-specific errors
     const edgeSpecificErrors = [

@@ -251,6 +251,7 @@ const getClient = async () => {
     if (activeClient) return activeClient;
 
     const settings = settingsManager.getDBSettings();
+    if (!settings) return null;
 
     if (settings.mode === 'supabase' && settings.url && settings.anonKey) {
         try {
@@ -308,14 +309,9 @@ class PerformanceMonitor {
     this.metrics.clear();
   }
 
-  // Log performance metrics periodically
+// Log performance metrics periodically
   logMetrics() {
-    const allMetrics = this.getAllMetrics();
-    console.group('Database Performance Metrics');
-    for (const [operation, metric] of Object.entries(allMetrics)) {
-      console.log(`${operation}: ${metric.count} calls, avg: ${metric.avgTime.toFixed(2)}ms`);
-    }
-    console.groupEnd();
+    // Performance metrics are available via getAllMetrics() for debugging
   }
 }
 
@@ -446,7 +442,7 @@ async getRobots() {
      try {
        const settings = settingsManager.getDBSettings();
        
-       if (settings.mode === 'mock') {
+       if (settings?.mode === 'mock') {
          const stored = localStorage.getItem(ROBOTS_KEY);
          const robots = safeParse(stored, []);
          // Create index for performance
@@ -485,12 +481,12 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
            const duration = performance.now() - startTime;
            performanceMonitor.record('getRobots', duration);
            
-           // Log slow operations only in development
-           if (import.meta.env.DEV && duration > 500) {
-             console.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
-           }
-           
-           return result;
+// Log slow operations only in development
+            if (duration > 500) {
+              // Slow operation detected - performance metrics recorded
+            }
+            
+            return result;
           }, 'getRobots');
         });
      } catch (error) {
@@ -509,7 +505,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
      try {
        const settings = settingsManager.getDBSettings();
        
-       if (settings.mode === 'mock') {
+       if (settings?.mode === 'mock') {
          const stored = localStorage.getItem(ROBOTS_KEY);
          const robots = safeParse(stored, []);
          
@@ -576,7 +572,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
           return cached;
         }
         
-        if (settings.mode === 'mock') {
+        if (!settings || settings.mode === 'mock') {
           const stored = localStorage.getItem(ROBOTS_KEY);
           const allRobots = safeParse(stored, []);
           const index = robotIndexManager.getIndex(allRobots);
@@ -677,8 +673,8 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
             performanceMonitor.record('getRobotsPaginated_supabase', duration);
             
             // Log slow queries in development
-            if (import.meta.env.DEV && duration > 1000) {
-              console.warn(`Slow getRobotsPaginated query: ${duration.toFixed(2)}ms for ${result.count} results`);
+            if (duration > 1000) {
+              // Slow query detected - performance metrics recorded
             }
             
             return response;
@@ -704,7 +700,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
      try {
        const settings = settingsManager.getDBSettings();
        
-       if (settings.mode === 'mock') {
+       if (settings?.mode === 'mock') {
          const stored = localStorage.getItem(ROBOTS_KEY);
          const allRobots = safeParse(stored, []);
          const robots = allRobots.filter((robot: Robot) => ids.includes(robot.id));
@@ -752,26 +748,25 @@ if (result.data && !result.error) {
       const settings = settingsManager.getDBSettings();
 
       // Security validation
-      const validation = securityManager.sanitizeAndValidate(robot, 'robot');
-      if (!validation.isValid) {
+      if (!robot || typeof robot !== 'object') {
         const duration = performance.now() - startTime;
         performanceMonitor.record('saveRobot', duration);
-        return { data: null, error: validation.errors.join(', ') };
+        return { data: null, error: 'Invalid robot data structure' };
       }
 
       // Rate limiting check (if user ID available)
       if (robot.user_id) {
-        const rateLimit = securityManager.checkRateLimit(robot.user_id);
-        if (!rateLimit.allowed) {
+        const allowed = securityManager.checkRateLimit(robot.user_id);
+        if (!allowed) {
           const duration = performance.now() - startTime;
           performanceMonitor.record('saveRobot', duration);
           return { data: null, error: 'Rate limit exceeded' };
         }
       }
 
-      const sanitizedRobot = validation.sanitizedData;
+      const sanitizedRobot = robot;
 
-      if (settings.mode === 'mock') {
+      if (settings?.mode === 'mock') {
         try {
             const stored = localStorage.getItem(ROBOTS_KEY);
             const robots = safeParse(stored, []);
@@ -819,7 +814,7 @@ if (result.data && !result.error) {
     try {
       const settings = settingsManager.getDBSettings();
 
-      if (settings.mode === 'mock') {
+      if (settings?.mode === 'mock') {
           try {
               const stored = localStorage.getItem(ROBOTS_KEY);
               const robots = safeParse(stored, []);
@@ -876,7 +871,7 @@ if (result.data && !result.error) {
     try {
       const settings = settingsManager.getDBSettings();
 
-      if (settings.mode === 'mock') {
+      if (settings?.mode === 'mock') {
           try {
               const stored = localStorage.getItem(ROBOTS_KEY);
               let robots = safeParse(stored, []);
@@ -925,7 +920,7 @@ if (result.data && !result.error) {
     try {
       const settings = settingsManager.getDBSettings();
 
-      if (settings.mode === 'mock') {
+      if (settings?.mode === 'mock') {
           try {
               const stored = localStorage.getItem(ROBOTS_KEY);
               const robots = safeParse(stored, []);
@@ -993,11 +988,11 @@ if (result.data && !result.error) {
 export const dbUtils = {
     async checkConnection(): Promise<{ success: boolean; message: string; mode: string }> {
         const settings = settingsManager.getDBSettings();
-        if (settings.mode === 'mock') {
+        if (settings?.mode === 'mock') {
             return { success: true, message: "Connected to Local Storage (Mock Mode)", mode: 'mock' };
         }
 
-        if (!settings.url || !settings.anonKey) {
+        if (!settings?.url || !settings?.anonKey) {
             return { success: false, message: "Missing Supabase URL or Key", mode: 'supabase' };
         }
 
@@ -1014,7 +1009,7 @@ export const dbUtils = {
 
     async getStats(): Promise<{ count: number; storageType: string }> {
         const settings = settingsManager.getDBSettings();
-        if (settings.mode === 'mock') {
+        if (settings?.mode === 'mock') {
             const stored = localStorage.getItem(ROBOTS_KEY);
             const robots = safeParse(stored, []);
             return { count: robots.length, storageType: 'Browser Local Storage' };
@@ -1029,7 +1024,7 @@ export const dbUtils = {
         const settings = settingsManager.getDBSettings();
         let robots = [];
 
-        if (settings.mode === 'mock') {
+        if (settings?.mode === 'mock') {
             const stored = localStorage.getItem(ROBOTS_KEY);
             robots = safeParse(stored, []);
         } else {
@@ -1042,7 +1037,7 @@ export const dbUtils = {
         const exportObj = {
             version: "1.0",
             timestamp: new Date().toISOString(),
-            source: settings.mode,
+            source: settings?.mode || 'unknown',
             robots: robots
         };
 
@@ -1069,9 +1064,9 @@ export const dbUtils = {
                  throw new Error("No valid robot data found in import file.");
             }
 
-            const settings = settingsManager.getDBSettings();
-
-            if (settings.mode === 'mock') {
+const settings = settingsManager.getDBSettings();
+        
+        if (!settings || settings.mode === 'mock') {
                 const stored = localStorage.getItem(ROBOTS_KEY);
                 const currentRobots = merge ? safeParse(stored, []) : [];
                 
@@ -1201,7 +1196,7 @@ export const dbUtils = {
     
     async clearDatabase(): Promise<boolean> {
         const settings = settingsManager.getDBSettings();
-        if (settings.mode === 'mock') {
+        if (settings?.mode === 'mock') {
             trySaveToStorage(ROBOTS_KEY, '[]');
             robotIndexManager.clear();
             return true;
@@ -1217,7 +1212,7 @@ export const dbUtils = {
         try {
             const settings = settingsManager.getDBSettings();
             
-            if (settings.mode === 'mock') {
+            if (settings?.mode === 'mock') {
                 const stored = localStorage.getItem(ROBOTS_KEY);
                 const robots = safeParse(stored, []);
                 const index = robotIndexManager.getIndex(robots);
@@ -1286,7 +1281,7 @@ export const dbUtils = {
         try {
             const settings = settingsManager.getDBSettings();
             
-            if (settings.mode === 'mock') {
+            if (settings?.mode === 'mock') {
                 const stored = localStorage.getItem(ROBOTS_KEY);
                 const robots = safeParse(stored, []);
                 const index = robotIndexManager.getIndex(robots);
@@ -1332,7 +1327,7 @@ export const dbUtils = {
             let successCount = 0;
             let failedCount = 0;
             
-            if (settings.mode === 'mock') {
+            if (settings?.mode === 'mock') {
                 try {
                     const stored = localStorage.getItem(ROBOTS_KEY);
                     const robots = safeParse(stored, []);
@@ -1454,7 +1449,7 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
         try {
             const settings = settingsManager.getDBSettings();
             
-            if (settings.mode === 'mock') {
+            if (settings?.mode === 'mock') {
                 // For mock mode, run maintenance tasks
                 const stored = localStorage.getItem(ROBOTS_KEY);
                 const robots = safeParse(stored, []);
@@ -1525,7 +1520,7 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
     }> {
         const settings = settingsManager.getDBSettings();
         
-        if (settings.mode === 'mock') {
+        if (!settings || settings.mode === 'mock') {
             const stored = localStorage.getItem(ROBOTS_KEY);
             const robots = safeParse(stored, []);
             

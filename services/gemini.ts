@@ -27,6 +27,7 @@ import { apiDeduplicator } from "./apiDeduplicator";
 import { createScopedLogger } from "../utils/logger";
 import { aiWorkerManager } from "./aiWorkerManager";
 import { getAIRateLimiter } from "../utils/enhancedRateLimit";
+import { AI_CONFIG, DEV_SERVER_CONFIG, TRADING_CONSTANTS } from "../constants/config";
 
 const logger = createScopedLogger('gemini');
 
@@ -88,7 +89,7 @@ class EnhancedCache<T> {
     return entry.data;
   }
   
-  set(key: string, data: T, ttl: number = 300000): void { // Default 5 minutes TTL
+  set(key: string, data: T, ttl: number = AI_CONFIG.CACHE.SEMANTIC_CACHE_TTL): void { // Dynamic TTL from config
     // Remove oldest entries if we're at max size
     if (this.cache.size >= this.maxSize) {
       const firstKey = this.cache.keys().next().value;
@@ -209,19 +210,19 @@ const validateStrategyParams = (params: StrategyParams): StrategyParams => {
   const validated = { ...params };
   
   if (validated.stopLoss !== undefined) {
-    validated.stopLoss = Math.max(1, Math.min(1000, Number(validated.stopLoss) || 50));
+    validated.stopLoss = Math.max(TRADING_CONSTANTS.MIN_STOP_LOSS_PIPS, Math.min(TRADING_CONSTANTS.MAX_STOP_LOSS_PIPS, Number(validated.stopLoss) || TRADING_CONSTANTS.DEFAULT_RISK_PERCENT * 25));
   }
   
   if (validated.takeProfit !== undefined) {
-    validated.takeProfit = Math.max(1, Math.min(1000, Number(validated.takeProfit) || 100));
+    validated.takeProfit = Math.max(TRADING_CONSTANTS.MIN_TAKE_PROFIT_PIPS, Math.min(TRADING_CONSTANTS.MAX_TAKE_PROFIT_PIPS, Number(validated.takeProfit) || TRADING_CONSTANTS.DEFAULT_RISK_PERCENT * 50));
   }
   
   if (validated.riskPercent !== undefined) {
-    validated.riskPercent = Math.max(0.1, Math.min(100, Number(validated.riskPercent) || 2));
+    validated.riskPercent = Math.max(TRADING_CONSTANTS.MIN_RISK_PERCENT, Math.min(TRADING_CONSTANTS.MAX_RISK_PERCENT, Number(validated.riskPercent) || TRADING_CONSTANTS.DEFAULT_RISK_PERCENT));
   }
   
   if (validated.magicNumber !== undefined) {
-    validated.magicNumber = Math.max(1000, Math.min(999999, Number(validated.magicNumber) || 12345));
+    validated.magicNumber = Math.max(TRADING_CONSTANTS.MIN_MAGIC_NUMBER, Math.min(TRADING_CONSTANTS.MAX_MAGIC_NUMBER, Number(validated.magicNumber) || 12345));
   }
   
   return validated;
@@ -242,20 +243,20 @@ export const isValidStrategyParams = (params: any): boolean => {
   }
   
   // Validate numeric ranges
-  if (params.riskPercent < 0.1 || params.riskPercent > 100) {
+  if (params.riskPercent < TRADING_CONSTANTS.MIN_RISK_PERCENT || params.riskPercent > TRADING_CONSTANTS.MAX_RISK_PERCENT) {
     return false;
   }
   
-  if (params.stopLoss < 1 || params.stopLoss > 1000) {
+  if (params.stopLoss < TRADING_CONSTANTS.MIN_STOP_LOSS_PIPS || params.stopLoss > TRADING_CONSTANTS.MAX_STOP_LOSS_PIPS) {
     return false;
   }
   
-  if (params.takeProfit < 1 || params.takeProfit > 1000) {
+  if (params.takeProfit < TRADING_CONSTANTS.MIN_TAKE_PROFIT_PIPS || params.takeProfit > TRADING_CONSTANTS.MAX_TAKE_PROFIT_PIPS) {
     return false;
   }
   
   // Validate symbol format
-  if (!/^[A-Z]{6}$|^[A-Z]{3}\/[A-Z]{3}$|^[A-Z]{6}$/.test(params.symbol)) {
+  if (!TRADING_CONSTANTS.SYMBOL_REGEX.test(params.symbol)) {
     return false;
   }
   
@@ -269,7 +270,7 @@ class LRUCache<T> {
   private readonly ttl: number;
   private readonly maxSize: number;
 
-  constructor(ttl: number = 5 * 60 * 1000, maxSize: number = 100) { // 5 min TTL, max 100 items
+  constructor(ttl: number = AI_CONFIG.CACHE.STRATEGY_ANALYSIS_TTL, maxSize: number = AI_CONFIG.CACHE.MAX_CACHE_SIZE) { // Dynamic TTL and size
     this.ttl = ttl;
     this.maxSize = maxSize;
   }
@@ -307,10 +308,10 @@ class LRUCache<T> {
 }
 
 const analysisCache = new LRUCache<StrategyAnalysis>();
-const enhancedAnalysisCache = new EnhancedCache<StrategyAnalysis>(200); // Larger cache size for better performance
+const enhancedAnalysisCache = new EnhancedCache<StrategyAnalysis>(AI_CONFIG.CACHE.MAX_ANALYSIS_CACHE_SIZE); // Dynamic cache size
 
 // Semantic cache for generateMQL5Code responses
-const mql5ResponseCache = new EnhancedCache<{ thinking?: string, content: string }>(300); // Cache for MQL5 generation responses
+const mql5ResponseCache = new EnhancedCache<{ thinking?: string, content: string }>(AI_CONFIG.CACHE.MAX_MQL5_CACHE_SIZE); // Dynamic cache size
 
 // Create semantic cache key for similar prompts
 const createSemanticCacheKey = (prompt: string, currentCode?: string, strategyParams?: StrategyParams, settings?: AISettings): string => {
@@ -380,25 +381,27 @@ const requestDeduplicator = new RequestDeduplicator();
  * Utility: Retry an async operation with exponential backoff.
  * Useful for handling API rate limits (429) or transient network errors.
  */
-async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, maxDelay = 10000): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, retries = AI_CONFIG.RETRY.MAX_ATTEMPTS, delay = AI_CONFIG.RETRY.INITIAL_DELAY, maxDelay = AI_CONFIG.RETRY.MAX_DELAY): Promise<T> {
     try {
         return await fn();
-    } catch (error: any) {
-        if (error.name === 'AbortError') throw error; // Do not retry if aborted by user
+} catch (error: unknown) {
+        const errorObj = error as Error & { status?: number; name?: string };
+        
+        if (errorObj.name === 'AbortError') throw error; // Do not retry if aborted by user
 
         if (retries === 0) throw error;
         
-        const isRateLimit = error.status === 429 || (error.message && error.message.includes('429'));
-        const isServerErr = error.status >= 500;
-        const isNetworkErr = error.message?.includes('fetch failed') || 
-                             error.message?.includes('network') || 
-                             error.message?.includes('timeout') ||
-                             error.message?.includes('ETIMEDOUT') ||
-                             error.message?.includes('ECONNRESET');
+        const isRateLimit = (errorObj.status && errorObj.status === 429) || (errorObj.message && errorObj.message.includes('429'));
+        const isServerErr = (errorObj.status && errorObj.status >= 500);
+        const isNetworkErr = errorObj.message?.includes('fetch failed') || 
+                             errorObj.message?.includes('network') || 
+                             errorObj.message?.includes('timeout') ||
+                             errorObj.message?.includes('ETIMEDOUT') ||
+                             errorObj.message?.includes('ECONNRESET');
 
         // Only retry on Rate Limits, Server Errors, or Network Issues
         if (isRateLimit || isServerErr || isNetworkErr) {
-            console.warn(`API Error (${error.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
+            console.warn(`API Error (${errorObj.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
             // Add jitter to prevent thundering herd
             const jitter = Math.random() * 0.1 * delay;
             const nextDelay = Math.min(delay * 1.5 + jitter, maxDelay); // Use 1.5 multiplier instead of 2 for gentler backoff
@@ -727,7 +730,7 @@ const getGoogleGenAI = async () => {
 
 const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?: AbortSignal, temperature?: number) => {
     return withRetry(async () => {
-        const activeKey = getActiveKey(settings.apiKey);
+const activeKey = getActiveKey(settings.apiKey);
         if (!activeKey) throw new Error("Google API Key missing in settings.");
         
         const GoogleGenAIClass = await getGoogleGenAI();
@@ -746,7 +749,7 @@ const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?
         }
 
         const response = await ai!.models.generateContent({
-          model: settings.modelName || 'gemini-3-pro-preview',
+          model: settings.modelName || AI_CONFIG.DEFAULT_MODELS.GOOGLE,
           contents: fullPrompt,
           config
         });
@@ -762,18 +765,18 @@ const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?
  */
 const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, signal?: AbortSignal, temperature?: number, jsonMode: boolean = false) => {
     return withRetry(async () => {
-        const activeKey = getActiveKey(settings.apiKey);
+const activeKey = getActiveKey(settings.apiKey);
 
-        if (!activeKey && !settings.baseUrl?.includes('localhost')) {
+        if (!activeKey && !settings.baseUrl?.includes(DEV_SERVER_CONFIG.LOCALHOST)) {
              console.warn("API Key is empty for OpenAI Provider");
         }
 
-        const baseUrl = settings.baseUrl ? settings.baseUrl.replace(/\/$/, '') : 'https://api.openai.com/v1';
+        const baseUrl = settings.baseUrl ? settings.baseUrl.replace(/\/$/, '') : AI_CONFIG.ENDPOINTS.OPENAI;
         const url = `${baseUrl}/chat/completions`;
         const systemInstruction = getEffectiveSystemPrompt(settings);
 
 const payload = {
-            model: settings.modelName || 'gpt-4',
+            model: settings.modelName || AI_CONFIG.DEFAULT_MODELS.OPENAI_COMPATIBLE,
             messages: [
                 { role: "system", content: systemInstruction },
                 { role: "user", content: fullPrompt }
@@ -827,7 +830,13 @@ const extractThinking = (rawText: string): { thinking?: string, content: string 
 };
 
 export const generateMQL5Code = async (prompt: string, currentCode?: string, strategyParams?: StrategyParams, history: Message[] = [], signal?: AbortSignal) => {
-   const settings = settingsManager.getSettings();
+   const settings = settingsManager.getSettings() || {
+     provider: 'google',
+     apiKey: '',
+     modelName: 'gemini-pro',
+     baseUrl: '',
+     language: 'en'
+   };
 
    try {
      // Security: Validate and sanitize inputs
@@ -887,19 +896,26 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
      
      return response;
 
-   } catch (error: any) {
-     if (error.name === 'AbortError') throw error;
-     handleError(error, 'generateMQL5Code', 'gemini');
-     return { content: `Error generating response: ${error.message || error}` };
-   }
+} catch (error: unknown) {
+      const errorObj = error as Error & { name?: string };
+      if (errorObj.name === 'AbortError') throw error;
+      handleError(errorObj, 'generateMQL5Code', 'gemini');
+      return { content: `Error generating response: ${errorObj.message || error}` };
+    }
  };
 
 /**
  * Self-Refining Agent: Analyzes current code and improves it.
  */
 export const refineCode = async (currentCode: string, signal?: AbortSignal) => {
-    const settings = settingsManager.getSettings();
-    const activeKey = getActiveKey(settings.apiKey);
+    const settings = settingsManager.getSettings() || {
+     provider: 'google',
+     apiKey: '',
+     modelName: 'gemini-pro',
+     baseUrl: '',
+     language: 'en'
+   };
+ const activeKey = getActiveKey(settings.apiKey);
     
     if (!activeKey && settings.provider === 'google') throw new Error("API Key missing");
 
@@ -943,7 +959,13 @@ Output ONLY the improved code in a markdown block. Do not output conversational 
  * Explain Code Feature
  */
 export const explainCode = async (currentCode: string, signal?: AbortSignal) => {
-    const settings = settingsManager.getSettings();
+    const settings = settingsManager.getSettings() || {
+     provider: 'google',
+     apiKey: '',
+     modelName: 'gemini-pro',
+     baseUrl: '',
+     language: 'en'
+   };
     const prompt = `
 You are an expert MQL5 educator. 
 Explain the logic of the following trading robot in simple, clear terms suitable for a trader.
@@ -1017,13 +1039,19 @@ const extractJson = (text: string): any => {
 };
 
 export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promise<StrategyAnalysis> => {
-      // Early return for empty or invalid code
+       const settings = settingsManager.getSettings() || {
+         provider: 'google',
+         apiKey: '',
+         modelName: 'gemini-pro',
+         baseUrl: '',
+         language: 'en'
+       };
+       // Early return for empty or invalid code
       if (!code || code.trim().length === 0) {
         return { riskScore: 0, profitability: 0, description: "No code provided for analysis." };
       }
       
-      const settings = settingsManager.getSettings();
-      const activeKey = getActiveKey(settings.apiKey);
+ const activeKey = getActiveKey(settings.apiKey);
       
       // Create a more efficient cache key using a proper hash function
       const codeHash = createHash(code.substring(0, 5000));
