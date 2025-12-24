@@ -21,6 +21,7 @@ export default defineConfig({
         manualChunks: (id) => {
           // Optimized chunking for better bundle sizes and edge performance
           if (id.includes('node_modules')) {
+<<<<<<< HEAD
             // React ecosystem - simplified for better caching
             if (id.includes('react-dom') || id.includes('ReactDOM')) {
               return 'react-dom';
@@ -215,6 +216,109 @@ export default defineConfig({
             }
             
             // Final fallback for misc
+=======
+            // React ecosystem - granular splitting for better performance
+            if (id.includes('react')) {
+              if (id.includes('react-dom')) {
+                return 'react-dom';
+              }
+              if (id.includes('react-router') || id.includes('react-router-dom')) {
+                return 'react-router';
+              }
+              return 'react-core';
+            }
+            // React additional libraries
+            if (id.includes('react-is')) {
+              return 'react-utils';
+            }
+            
+            // Supabase - isolated for better connection pooling
+            if (id.includes('@supabase')) {
+              // Separate realtime and storage for better caching
+              if (id.includes('@supabase/realtime-js')) {
+                return 'supabase-realtime';
+              }
+              if (id.includes('@supabase/storage-js')) {
+                return 'supabase-storage';
+              }
+              return 'supabase-vendor';
+            }
+            
+            // AI services - ultra granular splitting for better optimization
+            if (id.includes('@google/genai')) {
+              if (id.includes('generators')) {
+                return 'ai-generators';
+              }
+              if (id.includes('models')) {
+                return 'ai-models';
+              }
+              if (id.includes('chat') || id.includes('generation') || id.includes('content')) {
+                return 'ai-generation';
+              }
+              if (id.includes('vertex') || id.includes('platform')) {
+                return 'ai-platform';
+              }
+              if (id.includes('proto') || id.includes('grpc')) {
+                return 'ai-proto';
+              }
+              return 'ai-core';
+            }
+            
+            // Chart libraries - ultra granular splitting
+            if (id.includes('recharts')) {
+              if (id.includes('chart') && (id.includes('AreaChart') || id.includes('LineChart') || id.includes('ComposedChart'))) {
+                return 'chart-line';
+              }
+              if (id.includes('chart') && (id.includes('PieChart') || id.includes('BarChart') || id.includes('RadarChart'))) {
+                return 'chart-categorical';
+              }
+              if (id.includes('shape') || id.includes('Area') || id.includes('Line') || id.includes('Bar')) {
+                return 'chart-shapes';
+              }
+              if (id.includes('cartesian') || id.includes('XAxis') || id.includes('YAxis') || id.includes('Grid')) {
+                return 'chart-axes';
+              }
+              if (id.includes('ResponsiveContainer') || id.includes('Tooltip') || id.includes('Legend')) {
+                return 'chart-containers';
+              }
+              return 'chart-core';
+            }
+            
+            // Security utilities - split individually
+            if (id.includes('dompurify')) {
+              return 'security-dompurify';
+            }
+            if (id.includes('lz-string')) {
+              return 'security-compression';
+            }
+            
+            // Build and development tools
+            if (id.includes('vite') || id.includes('@vitejs')) {
+              return 'build-vendor';
+            }
+            
+            // TypeScript and type-related
+            if (id.includes('typescript') || id.includes('@types')) {
+              return 'types-vendor';
+            }
+            
+            // Testing libraries (should be separate)
+            if (id.includes('@testing-library') || id.includes('vitest') || id.includes('jsdom')) {
+              return 'testing-vendor';
+            }
+            
+            // ESLint and linting
+            if (id.includes('eslint') || id.includes('@typescript-eslint')) {
+              return 'lint-vendor';
+            }
+            
+            // Terser (minification)
+            if (id.includes('terser')) {
+              return 'minify-vendor';
+            }
+            
+            // All other vendor libraries
+>>>>>>> a50d27a (Optimize Bundle Splitting - Enhanced Performance v1.7)
             return 'vendor-misc';
           }
           
@@ -430,7 +534,6 @@ export default defineConfig({
     dynamicImportVarsOptions: {
       warnOnError: false
     },
-    
   },
   resolve: {
     alias: {
@@ -450,21 +553,24 @@ export default defineConfig({
       'react',
       'react-dom',
       'react-router-dom',
+<<<<<<< HEAD
       '@supabase/supabase-js',
       // Remove @google/genai from pre-bundling to force dynamic splitting
       'recharts',
       'dompurify',
       'lz-string'
+=======
+      '@supabase/supabase-js'
+>>>>>>> a50d27a (Optimize Bundle Splitting - Enhanced Performance v1.7)
     ],
     exclude: [
-      // Exclude edge-specific modules from pre-bundling
+      // Edge-specific modules
       'node:fs',
       'node:path',
       'node:crypto',
       'node:fs/promises',
       'node:worker_threads',
       'node:child_process',
-      // Add missing edge-specific exclusions
       'node:buffer',
       'node:stream',
       'node:util',
@@ -480,6 +586,7 @@ export default defineConfig({
       'node:net',
       'node:tls',
       'node:zlib',
+<<<<<<< HEAD
       // Force dynamic loading for heavy dependencies
       '@google/genai', // Completely exclude from pre-bundling
       '@google/genai/dist/generators',
@@ -488,23 +595,42 @@ export default defineConfig({
       '@google/genai/dist/transport',
       '@google/genai/dist/auth',
       '@google/genai/dist/streaming',
+=======
+      
+      // Heavy dependencies for dynamic loading
+      '@google/genai',
+>>>>>>> a50d27a (Optimize Bundle Splitting - Enhanced Performance v1.7)
       '@supabase/realtime-js',
       '@supabase/storage-js',
+      'recharts',
       'recharts/es6',
       'recharts/es6/components/ResponsiveContainer',
       'recharts/es6/chart/AreaChart',
       'recharts/es6/chart/LineChart',
       'recharts/es6/chart/BarChart',
       'recharts/es6/chart/PieChart',
+<<<<<<< HEAD
+=======
+      'dompurify',
+>>>>>>> a50d27a (Optimize Bundle Splitting - Enhanced Performance v1.7)
       'dompurify/dist/purify.cjs',
-      // Additional heavy modules
+      'lz-string',
+      
+      // Testing and development dependencies
       '@testing-library/jest-dom',
       '@testing-library/react',
       '@testing-library/user-event',
       'jsdom',
       'vitest',
       '@vitest/coverage-v8',
-      '@vitest/ui'
+      '@vitest/ui',
+      'eslint',
+      'eslint-plugin-react',
+      'eslint-plugin-react-hooks',
+      'eslint-plugin-react-refresh',
+      '@typescript-eslint/eslint-plugin',
+      '@typescript-eslint/parser',
+      'terser'
     ]
   },
   // Edge optimization for Vercel deployment

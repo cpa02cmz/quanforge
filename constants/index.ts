@@ -55,18 +55,13 @@ export const loadTranslations = async (language: Language) => {
   return translations.TRANSLATIONS;
 };
 
-// Lazy load wiki content
+// Lazy load wiki content - simplified to avoid missing directory issues
 export const loadWikiContent = async (language: Language) => {
-  // Check if wiki directory exists, otherwise return empty content
-  try {
-    const wiki = await import(`./wiki/${language}.js`);
-    return wiki.WIKI_CONTENT || [];
-  } catch (e) {
-    if (import.meta.env.DEV) {
-      console.warn(`Wiki content not found for language: ${language}`, e);
-    }
-    return []; // Return empty array as fallback
+  // Wiki directory not implemented yet, return empty content
+  if (import.meta.env.DEV) {
+    console.warn(`Wiki content not implemented for language: ${language}`);
   }
+  return []; // Return empty array as fallback
 };
 
 // Load suggested strategies
