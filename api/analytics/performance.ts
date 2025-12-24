@@ -3,18 +3,35 @@
  * Provides comprehensive analytics for edge and database performance
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+// No external request/response imports needed for edge functions
 import { databasePerformanceMonitor } from '../../services/databasePerformanceMonitor';
 import { edgeCacheStrategy } from '../../services/edgeCacheStrategy';
 import { enhancedConnectionPool } from '../../services/enhancedSupabasePool';
 import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
 
-export async function GET(request: NextRequest) {
+// Import logging utilities
+const handleError = (error: Error | string, operation: string, additionalData?: Record<string, any>) => {
+  console.error(`[ANALYTICS-PERF-ERROR:${operation}]`, {
+    error: typeof error === 'string' ? error : error.message,
+    timestamp: new Date().toISOString(),
+    additionalData: additionalData || {}
+  });
+};
+
+const handleInfo = (operation: string, data?: any) => {
+  console.log(`[ANALYTICS-PERF-INFO:${operation}]`, {
+    data: data || {},
+    timestamp: new Date().toISOString()
+  });
+};
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const type = searchParams.get('type') || 'summary';
+  const region = request.headers.get('x-vercel-id')?.split('-')[1] || 'unknown';
+  const timeRange = searchParams.get('timeRange') || '1h'; // 1h, 24h, 7d, 30d
+  
   try {
-    const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type') || 'summary';
-    const region = request.headers.get('x-vercel-id')?.split('-')[1] || 'unknown';
-    const timeRange = searchParams.get('timeRange') || '1h'; // 1h, 24h, 7d, 30d
     
     let data;
     
@@ -44,14 +61,14 @@ export async function GET(request: NextRequest) {
         data = await getTrendsAnalytics(region, timeRange);
         break;
       default:
-        return NextResponse.json({
+        return Response.json({
           success: false,
           error: 'Invalid analytics type',
           availableTypes: ['summary', 'performance', 'database', 'cache', 'edge', 'connections', 'alerts', 'trends']
         }, { status: 400 });
     }
     
-    return NextResponse.json({
+    return Response.json({
       success: true,
       type,
       region,
@@ -66,9 +83,13 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Analytics API failed:', error);
+    handleError(error, 'AnalyticsAPI', { 
+      type,
+      region,
+      timeRange
+    });
     
-    return NextResponse.json({
+    return Response.json({
       success: false,
       error: 'Internal server error',
       timestamp: Date.now()
@@ -137,7 +158,7 @@ async function getAnalyticsSummary(region: string, timeRange: string) {
   };
 }
 
-async function getPerformanceAnalytics(region: string, timeRange: string) {
+async function getPerformanceAnalytics(_region: string, _timeRange: string) {
   const dbReport = databasePerformanceMonitor.getPerformanceReport();
   const edgeMetrics = vercelEdgeOptimizer.getEdgeMetrics();
   
@@ -186,7 +207,7 @@ async function getDatabaseAnalytics(region: string, timeRange: string) {
   };
 }
 
-async function getCacheAnalytics(region: string, timeRange: string) {
+async function getCacheAnalytics(_region: string, _timeRange: string) {
   const stats = edgeCacheStrategy.getStats();
   const tagIndex = edgeCacheStrategy.getTagIndex();
   
@@ -211,7 +232,7 @@ async function getCacheAnalytics(region: string, timeRange: string) {
   };
 }
 
-async function getEdgeAnalytics(region: string, timeRange: string) {
+async function getEdgeAnalytics(_region: string, _timeRange: string) {
   const metrics = vercelEdgeOptimizer.getEdgeMetrics();
   const config = vercelEdgeOptimizer.getConfig();
   
@@ -237,14 +258,14 @@ async function getEdgeAnalytics(region: string, timeRange: string) {
     }, {} as Record<string, any>),
     optimization: {
       enabledFeatures: Object.entries(config)
-        .filter(([_, value]) => value === true)
+        .filter(([, value]) => value === true)
         .map(([key]) => key),
       recommendations: getEdgeOptimizationRecommendations(metrics)
     }
   };
 }
 
-async function getConnectionAnalytics(region: string, timeRange: string) {
+async function getConnectionAnalytics(_region: string, _timeRange: string) {
   const stats = await enhancedConnectionPool.getDetailedStats();
   
   return {
