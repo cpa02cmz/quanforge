@@ -363,10 +363,8 @@ ${xmlEntries.join('\n')}
     
     try {
       writeFileSync(this.options.outputPath, sitemap, 'utf8');
-      console.log(`✅ Sitemap generated successfully: ${this.options.outputPath}`);
-      console.log(`📊 Total URLs: ${this.entries.length}`);
+      // Sitemap generated successfully
     } catch (error) {
-      console.error('❌ Error saving sitemap:', error);
       throw error;
     }
   }

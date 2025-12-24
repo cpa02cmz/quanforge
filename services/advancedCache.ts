@@ -27,6 +27,7 @@ interface CacheStats {
 }
 
 import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
+import { CACHE_CONFIG } from '../constants/config';
 
 export class AdvancedCache {
   private cache = new Map<string, CacheEntry<any>>();
@@ -37,11 +38,11 @@ export class AdvancedCache {
     compressions: 0,
   };
   private config: CacheConfig = {
-    maxSize: 10 * 1024 * 1024, // 10MB (reduced for edge)
-    maxEntries: 500, // Reduced entries
-    defaultTTL: 180000, // 3 minutes (shorter for edge)
-    cleanupInterval: 30000, // 30 seconds
-    compressionThreshold: 512, // 0.5KB (more aggressive)
+    maxSize: CACHE_CONFIG.MAX_CACHE_MEMORY_SIZE,
+    maxEntries: CACHE_CONFIG.MAX_ADVANCED_CACHE_SIZE,
+    defaultTTL: CACHE_CONFIG.EDGE_CACHE_TTL,
+    cleanupInterval: CACHE_CONFIG.ADVANCED_CACHE_CLEANUP_INTERVAL,
+    compressionThreshold: CACHE_CONFIG.ADVANCED_CACHE_COMPRESSION_THRESHOLD,
   };
   private cleanupTimer: NodeJS.Timeout | null = null;
 
@@ -195,7 +196,7 @@ export class AdvancedCache {
         const data = await loader();
         this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
       } catch (error) {
-         if (process.env.NODE_ENV === 'development') {
+         if (process.env['NODE_ENV'] === 'development') {
            console.warn(`Failed to preload cache entry: ${key}`, error);
          }
       }
@@ -333,7 +334,7 @@ this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
     });
     
      // Use logger instead of console.log for production safety
-     if (process.env.NODE_ENV === 'development') {
+     if (process.env['NODE_ENV'] === 'development') {
        console.log(`Invalidated ${deletedCount} cache entries for region: ${region}`);
      }
     return deletedCount;

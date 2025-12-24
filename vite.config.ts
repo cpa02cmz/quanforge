@@ -1,13 +1,17 @@
 import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { getBuildConfig } from './constants/config';
+
+// Get dynamic build configuration
+const buildConfig = getBuildConfig();
 
 export default defineConfig({
   plugins: [react()],
   build: {
     manifest: true,
     outDir: 'dist',
-    sourcemap: process.env['NODE_ENV'] !== 'production' ? 'hidden' : false,
+    sourcemap: buildConfig.SOURCE_MAP_DEV,
     target: 'esnext',
     rollupOptions: {
       input: {
@@ -15,42 +19,125 @@ export default defineConfig({
       },
       output: {
         manualChunks: (id) => {
-          // Enhanced chunking for better Vercel edge performance
+          // Optimized chunking for better bundle sizes and edge performance
           if (id.includes('node_modules')) {
-            // React ecosystem - optimized for edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
-              return 'react-vendor';
+            // React ecosystem - simplified for better caching
+            if (id.includes('react-dom') || id.includes('ReactDOM')) {
+              return 'react-dom';
             }
-            // Supabase - isolated for better connection pooling
-            if (id.includes('@supabase')) {
-              // Separate realtime and storage for better caching
-              if (id.includes('@supabase/realtime-js')) {
-                return 'supabase-realtime';
-              }
-              if (id.includes('@supabase/storage-js')) {
-                return 'supabase-storage';
-              }
-              return 'supabase-vendor';
+            if (id.includes('react-router')) {
+              return 'react-router';
             }
-            // AI services - lazy loaded for edge optimization
+            if (id.includes('react')) {
+              if (id.includes('react/jsx-runtime') || id.includes('react-jsx')) {
+                return 'react-jsx';
+              }
+              return 'react-core';
+            }
+            
+            // AI SDK - usage-based splitting to fix 214KB chunk
             if (id.includes('@google/genai')) {
-              return 'ai-vendor';
+              // Split by actual usage patterns
+              if (id.includes('generators') || id.includes('generateContent') || id.includes('generateText')) {
+                return 'ai-generators';
+              }
+              if (id.includes('models') || id.includes('Model') || id.includes('gemini')) {
+                return 'ai-models';
+              }
+              if (id.includes('client') || id.includes('GoogleGenAI')) {
+                return 'ai-client';
+              }
+              if (id.includes('transport') || id.includes('http') || id.includes('request')) {
+                return 'ai-transport';
+              }
+              if (id.includes('auth') || id.includes('credentials')) {
+                return 'ai-auth';
+              }
+              if (id.includes('stream') || id.includes('Stream')) {
+                return 'ai-streaming';
+              }
+              // Minimal core SDK
+              return 'ai-sdk-core';
             }
-            // Chart libraries - split more granularly
+            
+            // Charts - simplified usage-based splitting to fix 208KB chunk
             if (id.includes('recharts')) {
-              if (id.includes('AreaChart') || id.includes('LineChart')) {
+              // Split by actual chart types used in the app
+              if (id.includes('PieChart') || id.includes('Pie')) {
+                return 'chart-pie';
+              }
+              if (id.includes('AreaChart') || id.includes('Area')) {
+                return 'chart-area';
+              }
+              if (id.includes('LineChart') || id.includes('Line')) {
+                return 'chart-line';
+              }
+              if (id.includes('BarChart') || id.includes('Bar')) {
+                return 'chart-bar';
+              }
+              // Core components that are shared
+              if (id.includes('ResponsiveContainer') || id.includes('Tooltip') || id.includes('Legend')) {
                 return 'chart-core';
               }
-              if (id.includes('PieChart') || id.includes('BarChart')) {
-                return 'chart-misc';
+              if (id.includes('XAxis') || id.includes('YAxis') || id.includes('CartesianGrid')) {
+                return 'chart-axes';
               }
+              // Default recharts vendor - should be much smaller now
               return 'chart-vendor';
             }
-            // Security utilities - bundled together
+            
+            // Supabase - simplified splitting
+            if (id.includes('@supabase')) {
+              if (id.includes('auth') || id.includes('gotrue')) {
+                return 'supabase-auth';
+              }
+              if (id.includes('realtime') || id.includes('websocket')) {
+                return 'supabase-realtime';
+              }
+              if (id.includes('storage')) {
+                return 'supabase-storage';
+              }
+              if (id.includes('postgrest') || id.includes('database')) {
+                return 'supabase-database';
+              }
+              return 'supabase-core';
+            }
+            
+            // Security utilities
             if (id.includes('dompurify') || id.includes('lz-string')) {
               return 'security-vendor';
             }
-            // All other vendor libraries
+            
+            // Common vendor libraries - simplified categorization
+            if (id.includes('date-fns') || id.includes('moment') || id.includes('dayjs')) {
+              return 'vendor-datetime';
+            }
+            if (id.includes('axios') || id.includes('fetch')) {
+              return 'vendor-http';
+            }
+            if (id.includes('lodash') || id.includes('underscore')) {
+              return 'vendor-utils';
+            }
+            if (id.includes('classnames') || id.includes('clsx')) {
+              return 'vendor-classes';
+            }
+            if (id.includes('string') || id.includes('text')) {
+              return 'vendor-strings';
+            }
+            if (id.includes('math') || id.includes('calculation')) {
+              return 'vendor-math';
+            }
+            if (id.includes('event') || id.includes('promise')) {
+              return 'vendor-events';
+            }
+            if (id.includes('collection') || id.includes('array')) {
+              return 'vendor-collections';
+            }
+            if (id.includes('validation') || id.includes('zod') || id.includes('yup')) {
+              return 'vendor-validation';
+            }
+            
+            // Default miscellaneous vendor
             return 'vendor-misc';
           }
           
@@ -186,10 +273,10 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: process.env['NODE_ENV'] === 'production',
+        drop_console: buildConfig.DROP_CONSOLE,
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'],
-        passes: 3, // Triple pass for better compression
+        passes: buildConfig.TERSER_COMPRESSION_PASSES, // Dynamic configuration for optimal compression
         sequences: true,
         properties: true,
         dead_code: true,
@@ -222,12 +309,12 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 100, // More aggressive optimization for edge performance
+    chunkSizeWarningLimit: buildConfig.CHUNK_SIZE_WARNING_LIMIT, // Dynamic configuration for edge performance
     reportCompressedSize: true,
-    cssCodeSplit: true,
-    cssMinify: true, // Add CSS minification
+    cssCodeSplit: buildConfig.CSS_CODE_SPLIT,
+    cssMinify: buildConfig.CSS_MINIFY, // Dynamic configuration
     // Enhanced edge optimization
-    assetsInlineLimit: 256, // Optimized for edge performance
+    assetsInlineLimit: buildConfig.ASSETS_INLINE_LIMIT, // Dynamic configuration for edge performance
     modulePreload: {
       polyfill: false
     },
@@ -309,8 +396,8 @@ export default defineConfig({
   },
   // Edge optimization for Vercel deployment
   server: {
-    port: 3000,
-    host: '0.0.0.0',
+    port: parseInt(process.env['DEV_PORT'] || '3000'),
+    host: process.env['DEV_HOST'] || '0.0.0.0',
     headers: {
       'X-Edge-Optimized': 'true',
       'Cache-Control': 'public, max-age=31536000, immutable',

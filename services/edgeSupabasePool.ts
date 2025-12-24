@@ -40,7 +40,7 @@ class EdgeSupabasePool {
   async getClient(connectionId: string = 'default'): Promise<SupabaseClient> {
     const settings = settingsManager.getDBSettings();
     
-    if (settings.mode !== 'supabase' || !settings.url || !settings.anonKey) {
+    if (!settings || settings.mode !== 'supabase' || !settings.url || !settings.anonKey) {
       throw new Error('Supabase not configured');
     }
 

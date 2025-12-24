@@ -115,7 +115,7 @@ class AdvancedSupabasePool {
   /**
    * Acquire a connection from the pool
    */
-  async acquireConnection(poolId: string = 'default', preferReadReplica: boolean = false): Promise<SupabaseClient> {
+  async acquireConnection(poolId: string = 'default', _preferReadReplica: boolean = false): Promise<SupabaseClient> {
     const config = this.configs.get(poolId);
     if (!config) {
       throw new Error(`Pool '${poolId}' not initialized`);
@@ -236,7 +236,7 @@ class AdvancedSupabasePool {
 
       const result = await Promise.race([healthPromise, timeoutPromise]);
       return !result.error;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }
@@ -391,7 +391,7 @@ class AdvancedSupabasePool {
     let totalRequests = 0;
     const regionDistribution: Record<string, number> = {};
 
-    for (const [poolId, pool] of this.pools) {
+    for (const [_poolId, pool] of this.pools) {
       for (const connection of pool) {
         totalConnections++;
         
@@ -571,8 +571,8 @@ export { AdvancedSupabasePool, type PooledConnection, type PoolMetrics };
 
 // Convenience wrapper for common operations
 export const withSupabaseClient = async <T>(
-  operation: (client: SupabaseClient) => Promise<T>,
+  _operation: (client: SupabaseClient) => Promise<T>,
   poolId: string = 'default'
 ): Promise<T> => {
-  return advancedSupabasePool.execute(poolId, operation);
+  return advancedSupabasePool.execute(poolId, _operation);
 };
