@@ -7,6 +7,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from '../settingsManager';
 import { handleErrorCompat as handleError } from '../../utils/errorManager';
+import type { ConnectionManagerInterface } from './simpleConnectionManager';
 
 // Dynamic client creation function (replaced dynamicSupabaseLoader)
 const createDynamicSupabaseClient = async (
@@ -127,8 +128,8 @@ class ConnectionManager {
   private async getDefaultConfig(): Promise<ConnectionConfig> {
     const settings = settingsManager.getDBSettings();
     return {
-      url: settings.url || process.env['VITE_SUPABASE_URL'] || '',
-      anonKey: settings.anonKey || process.env['VITE_SUPABASE_ANON_KEY'] || '',
+      url: settings?.url || process.env['VITE_SUPABASE_URL'] || '',
+      anonKey: settings?.anonKey || process.env['VITE_SUPABASE_ANON_KEY'] || '',
       region: process.env['VITE_SUPABASE_REGION'] || 'us-east-1',
       maxConnections: parseInt(process.env['VITE_DB_MAX_CONNECTIONS'] || '50'),
       minConnections: parseInt(process.env['VITE_DB_MIN_CONNECTIONS'] || '10'),

@@ -4,12 +4,37 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { UserSession } from '../../types';
+import { UserSession, Robot } from '../../types';
 import { connectionManager } from '../database/connectionManager';
 import { settingsManager } from '../settingsManager';
 import { mockAuth, addAuthListener, removeAuthListener } from './auth';
 import { mockDB, getRobotsPaginated, searchRobots, getRobots, saveRobot, updateRobot, deleteRobot, duplicateRobot } from './database';
+
+// Re-export the auth methods that are compatible with existing interface
+const enhancedAuth = {
+  ...mockAuth,
+  signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
+    // For compatibility, use existing auth logic with password support
+    return mockAuth.signInWithPassword({ email, password });
+  },
+  signUp: async ({ email, password }: { email: string; password: string }) => {
+    // For compatibility, use existing auth logic with password support
+    return mockAuth.signUp({ email, password });
+  }
+};
 import { handleErrorCompat as handleError } from '../../utils/errorManager';
+
+// Define the enhanced supabase interface to include convenience methods
+interface EnhancedSupabaseClient {
+  auth: any;
+  from: (table: string) => any;
+  getRobots: () => Promise<any>;
+  updateRobot: (id: string, updates: any) => Promise<any>;
+  saveRobot: (robot: any) => Promise<any>;
+  channel: (name: string) => any;
+  storage: any;
+  functions: any;
+}
 
 // Determine if we're in mock mode
 const isMockMode = settingsManager.getDBSettings().mode !== 'supabase';
@@ -18,9 +43,22 @@ const isMockMode = settingsManager.getDBSettings().mode !== 'supabase';
  * Main Supabase Client Interface
  * Provides consistent API regardless of backend mode
  */
-export const supabase = {
+export const supabase: EnhancedSupabaseClient = {
   // Authentication
-  auth: mockAuth,
+  auth: {
+    ...mockAuth,
+    signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
+      // Password is ignored in mock mode, but interface is preserved
+      return mockAuth.signInWithPassword({ email, password });
+    },
+    signUp: async ({ email, password }: { email: string; password: string }) => {
+      // Password is ignored in mock mode, but interface is preserved
+      return mockAuth.signUp({ email, password });
+    },
+    signOut: mockAuth.signOut,
+    getSession: mockAuth.getSession,
+    onAuthStateChange: mockAuth.onAuthStateChange,
+  },
   
   // Database operations
   from: (table: string) => {
@@ -31,6 +69,20 @@ export const supabase = {
     // TODO: Implement real Supabase client operations
     // For now, delegate to mock implementation
     return mockDB.from(table);
+  },
+
+  // Convenience methods for backward compatibility
+  getRobots: async () => {
+    const result = await mockDB.from('robots').select();
+    return result;
+  },
+  updateRobot: async (id: string, updates: any) => {
+    const result = await mockDB.from('robots').update({ id, ...updates });
+    return result;
+  },
+  saveRobot: async (robot: any) => {
+    const result = await mockDB.from('robots').insert(robot);
+    return result;
   },
   
   // Real-time subscriptions (mock implementation)

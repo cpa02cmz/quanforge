@@ -67,6 +67,8 @@ export interface ModularSupabaseService {
   // Authentication methods
   getSession(): Promise<APIResponse<{ session: UserSession | null }>>;
   onAuthStateChange(callback: (event: string, session: UserSession | null) => void): { data: { subscription: { unsubscribe: () => void } } };
+  signInWithPassword: ({ email, password }: { email: string; password: string }) => Promise<{ data: { session: UserSession; user: UserSession['user'] }; error: any }>;
+  signUp: ({ email, password }: { email: string; password: string }) => Promise<{ data: { session: UserSession; user: UserSession['user'] }; error: any }>;
   signOut(): Promise<APIResponse<null>>;
   
   // Robot operations
@@ -123,6 +125,88 @@ class ModularSupabase implements ModularSupabaseService {
 
   onAuthStateChange(callback: (event: string, session: UserSession | null) => void): { data: { subscription: { unsubscribe: () => void } } } {
     return this.connMgr.onAuthStateChange(callback);
+  }
+
+  async signInWithPassword({ email, password }: { email: string; password: string }): Promise<{ data: { session: UserSession | null; user: UserSession['user'] | null }; error: any }> {
+    const endTimer = this.analytics.startPerformanceTimer();
+    try {
+      const settings = settingsManager.getDBSettings();
+      
+      if (settings?.mode === 'mock') {
+        // Mock auth implementation
+        const session: UserSession = {
+          user: {
+            id: this.generateUUID(),
+            email: email,
+          },
+          access_token: this.generateUUID(),
+          refresh_token: this.generateUUID(),
+          expires_in: 3600,
+          token_type: 'bearer'
+        };
+        
+        // Store mock session
+        localStorage.setItem('mock_session', JSON.stringify(session));
+        
+        this.analytics.recordOperation('signInWithPassword-mock', endTimer());
+        return { data: { session, user: session.user }, error: null };
+      }
+
+      // Real Supabase auth (not implemented in current modular system)
+      const client = await this.connMgr.getClient();
+      const result = await client.auth.signInWithPassword({ email, password });
+      
+      this.analytics.recordOperation('signInWithPassword', endTimer());
+      return result as any;
+    } catch (error: unknown) {
+      this.analytics.recordOperation('signInWithPassword', endTimer(), error);
+      handleError(error as Error, 'signInWithPassword', 'modularSupabase');
+      return { 
+        data: { session: null, user: null }, 
+        error: error instanceof Error ? error.message : 'Sign in failed' 
+      };
+    }
+  }
+
+  async signUp({ email, password }: { email: string; password: string }): Promise<{ data: { session: UserSession | null; user: UserSession['user'] | null }; error: any }> {
+    const endTimer = this.analytics.startPerformanceTimer();
+    try {
+      const settings = settingsManager.getDBSettings();
+      
+      if (settings?.mode === 'mock') {
+        // Mock auth implementation - same as signIn for demo
+        const session: UserSession = {
+          user: {
+            id: this.generateUUID(),
+            email: email,
+          },
+          access_token: this.generateUUID(),
+          refresh_token: this.generateUUID(),
+          expires_in: 3600,
+          token_type: 'bearer'
+        };
+        
+        // Store mock session
+        localStorage.setItem('mock_session', JSON.stringify(session));
+        
+        this.analytics.recordOperation('signUp-mock', endTimer());
+        return { data: { session, user: session.user }, error: null };
+      }
+
+      // Real Supabase auth (not implemented in current modular system)
+      const client = await this.connMgr.getClient();
+      const result = await client.auth.signUp({ email, password });
+      
+      this.analytics.recordOperation('signUp', endTimer());
+      return result as any;
+    } catch (error: unknown) {
+      this.analytics.recordOperation('signUp', endTimer(), error);
+      handleError(error as Error, 'signUp', 'modularSupabase');
+      return { 
+        data: { session: null, user: null }, 
+        error: error instanceof Error ? error.message : 'Sign up failed' 
+      };
+    }
   }
 
   async signOut(): Promise<APIResponse<null>> {

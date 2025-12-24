@@ -6,7 +6,7 @@
 import { handleErrorCompat as handleError } from '../../utils/errorManager';
 import { globalCache } from '../unifiedCacheManager';
 import { Robot } from '../../types';
-import { STORAGE_KEYS, safeParse, trySaveToStorage, generateUUID, isValidRobot } from './storage';
+import { STORAGE_KEYS, safeParse, trySaveToStorage, generateUUID } from './storage';
 
 // Database configurations
 export const DB_CONFIG = {
@@ -55,7 +55,7 @@ export const mockDB = {
           globalCache.set(cacheKey, robots, DB_CONFIG.CACHE_TTL, ['robots']);
           return { data: robots, error: null };
         } catch (error) {
-          handleError(error, 'database.operation');
+          handleError(error instanceof Error ? error : String(error), 'database.operation');
           return { data: null, error };
         }
       },
@@ -81,7 +81,7 @@ export const mockDB = {
 
           return { data: insertedRobots, error: null };
         } catch (error) {
-          handleError(error, 'database.operation');
+          handleError(error instanceof Error ? error : String(error), 'database.operation');
           return { data: null, error };
         }
       },
@@ -98,7 +98,7 @@ export const mockDB = {
           
           return { data: updatedRobot || null, error: null };
         } catch (error) {
-          handleError(error, 'database.operation');
+          handleError(error instanceof Error ? error : String(error), 'database.operation');
           return { data: null, error };
         }
       },
@@ -118,10 +118,10 @@ export const mockDB = {
             globalCache.set(cacheKey, filtered, DB_CONFIG.CACHE_TTL, ['robots', 'search']);
             
             return { data: filtered, error: null };
-          } catch (error) {
-            handleError(error, 'database.operation');
-            return { data: null, error };
-          }
+} catch (error) {
+          handleError(error instanceof Error ? error : String(error), 'database.operation');
+          return { data: null, error };
+        }
         },
 
         delete: async () => {
@@ -131,10 +131,10 @@ export const mockDB = {
             
             saveStoredRobots(filtered);
             return { data: null, error: null };
-          } catch (error) {
-            handleError(error, 'database.operation');
-            return { data: null, error };
-          }
+} catch (error) {
+          handleError(error instanceof Error ? error : String(error), 'database.operation');
+          return { data: null, error };
+        }
         }
       }),
 
@@ -149,10 +149,10 @@ export const mockDB = {
             );
             
             return { data: filtered, error: null };
-          } catch (error) {
-            handleError(error, 'database.operation');
-            return { data: null, error };
-          }
+} catch (error) {
+          handleError(error instanceof Error ? error : String(error), 'database.operation');
+          return { data: null, error };
+        }
         }
       }),
 
@@ -175,7 +175,7 @@ export const mockDB = {
               
               return { data: sorted, error: null };
 } catch (error) {
-          handleError(error, 'database.select');
+          handleError(error instanceof Error ? error : String(error), 'database.operation');
           return { data: null, error };
         }
           }
@@ -192,10 +192,10 @@ export const mockDB = {
             globalCache.set(cacheKey, paginated, DB_CONFIG.CACHE_TTL, ['robots', 'paginated']);
             
             return { data: paginated, error: null };
-          } catch (error) {
-            handleError(error, 'database.operation');
-            return { data: null, error };
-          }
+} catch (error) {
+          handleError(error instanceof Error ? error : String(error), 'database.operation');
+          return { data: null, error };
+        }
         }
       }),
 
@@ -208,10 +208,10 @@ export const mockDB = {
             );
             
             return { data: filtered, error: null };
-          } catch (error) {
-            handleError(error, 'database.operation');
-            return { data: null, error };
-          }
+} catch (error) {
+          handleError(error instanceof Error ? error : String(error), 'database.operation');
+          return { data: null, error };
+        }
         }
       }),
 
@@ -225,7 +225,7 @@ export const mockDB = {
           for (const item of dataArray) {
             const existingIndex = updatedRobots.findIndex(r => r.id === item.id);
             if (existingIndex >= 0) {
-              updatedRobots[existingIndex] = { ...updatedRobots[existingIndex], ...item, updated_at: new Date().toISOString() };
+              updatedRobots[existingIndex] = { ...updatedRobots[existingIndex], ...item, updated_at: new Date().toISOString() } as Robot;
             } else {
               updatedRobots.push({ ...item, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as Robot);
             }
@@ -234,7 +234,7 @@ export const mockDB = {
           saveStoredRobots(updatedRobots);
           return { data: dataArray, error: null };
         } catch (error) {
-          handleError(error, 'database.operation');
+          handleError(error instanceof Error ? error : String(error), 'database.operation');
           return { data: null, error };
         }
       }
@@ -268,8 +268,8 @@ export const getRobotsPaginated = async (page: number = 1, pageSize: number = 10
     globalCache.set(cacheKey, result, DB_CONFIG.CACHE_TTL, ['robots', 'paginated']);
     return result;
   } catch (error) {
-    handleError(error, 'database.operation');
-    return { data: [], count: 0, page, pageSize, totalPages: 0 };
+    handleError(error instanceof Error ? error : String(error), 'database.operation');
+    return { data: null, error };
   }
 };
 
@@ -285,7 +285,7 @@ export const searchRobots = async (searchTerm: string) => {
     
     return { data: filtered, error: null };
   } catch (error) {
-    handleError(error, 'database.search');
+    handleError(error instanceof Error ? error : String(error), 'database.search');
     return { data: [], error };
   }
 };
@@ -316,6 +316,9 @@ export const duplicateRobot = async (id: string) => {
   }
   
   const original = robot[0];
+  if (!original) {
+    return { data: null, error: { message: 'Robot not found' } };
+  }
   const duplicate = {
     ...original,
     id: generateUUID(),

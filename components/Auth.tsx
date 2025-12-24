@@ -18,12 +18,12 @@ export const Auth: React.FC = memo(() => {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        const result = await supabase.auth.signInWithPassword({ email, password });
+        if (result.error) throw result.error;
         showToast(t('auth_toast_signin'), 'success');
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
+        const result = await supabase.auth.signUp({ email, password });
+        if (result.error) throw result.error;
         else showToast(t('auth_toast_check_email'), 'success');
       }
     } catch (error: unknown) {

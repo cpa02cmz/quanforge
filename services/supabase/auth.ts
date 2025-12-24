@@ -53,7 +53,7 @@ export const mockAuth = {
     };
   },
   
-  signInWithPassword: async ({ email }: { email: string }) => {
+  signInWithPassword: async ({ email, password }: { email: string; password?: string }) => {
     const session: UserSession = {
       user: {
         id: generateUUID(),
@@ -69,8 +69,8 @@ export const mockAuth = {
     return { data: { session, user: session.user }, error: null };
   },
   
-  signUp: async ({ email }: { email: string }) => {
-    return mockAuth.signInWithPassword({ email });
+  signUp: async ({ email, password }: { email: string; password?: string }) => {
+    return mockAuth.signInWithPassword({ email, password });
   },
   
   signOut: async () => {

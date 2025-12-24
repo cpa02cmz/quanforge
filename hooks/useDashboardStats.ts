@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { mockDb } from '../services/supabase';
+import { supabase } from '../services/supabase';
 import { Robot } from '../types';
 import { createScopedLogger } from '../utils/logger';
 
@@ -85,17 +85,18 @@ export const useDashboardStats = (options: UseDashboardStatsOptions = {}) => {
     
     try {
       // Fetch robots from data source
-      const robots = await mockDb.getRobots();
+      const result = await supabase.getRobots();
+      const robots = result.data || [];
       
       // Calculate statistics
       const totalRobots = robots.length;
-      const activeRobots = robots.filter(robot => 
+      const activeRobots = robots.filter((robot: Robot) => 
         robot.code && robot.code.trim().length > 0
       ).length;
       
       // Count unique strategy types
       const strategyTypes = new Set(
-        robots.map(robot => robot.strategy_type).filter(Boolean)
+        robots.map((robot: Robot) => robot.strategy_type).filter(Boolean)
       );
       const totalStrategies = strategyTypes.size;
 
