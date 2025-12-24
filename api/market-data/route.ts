@@ -11,8 +11,7 @@ import { securityManager } from '../../services/securityManager';
 export const config = {
   runtime: 'edge',
   maxDuration: 15,
-  memory: 512,
-  cache: 'max-age=5, s-maxage=30, stale-while-revalidate=5',
+  memory: 512
 };
 
 // Mock market data (in production, this would come from a real market data provider)
