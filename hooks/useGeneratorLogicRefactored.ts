@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Message, MessageRole, Robot } from '../types';
-import { mockDb } from '../services/supabase';
+import { supabase } from '../services/supabase';
 import { useToast } from './useToast';
 import { createScopedLogger } from '../utils/logger';
 import { useMessageBuffer } from '../utils/messageBuffer';
@@ -128,7 +128,8 @@ export const useGeneratorLogic = (id?: string) => {
       const loadRobot = async () => {
           try {
               // Load robots data
-              const robots = await mockDb.getRobots();
+              const result = await supabase.getRobots();
+               const robots = result.success && result.data ? result.data : [];
               if (controller.signal.aborted) return;
               
               const found = robots.find((r: Robot) => r.id === id);
@@ -204,9 +205,9 @@ export const useGeneratorLogic = (id?: string) => {
 
     try {
       if (id) {
-          await mockDb.updateRobot(id, robotData);
+          await supabase.updateRobot(id, robotData);
       } else {
-          const result = await mockDb.saveRobot(robotData);
+          const result = await supabase.saveRobot(robotData);
           if (result && result.id) {
               navigate(`/generator/${result.id}`, { replace: true });
           }

@@ -4,9 +4,9 @@
  */
 
 import { Robot } from '../../types';
-import { consolidatedCache } from '../consolidatedCacheManager';
+import { LRUCache } from './cache';
 import { handleError } from '../../utils/errorHandler';
-import { DATABASE_CONFIG, TIME_CONSTANTS } from '../../constants/config';
+import { TIME_CONSTANTS } from '../../constants/config';
 
 export interface CacheLayerInterface {
   get<T>(key: string): Promise<T | null>;
@@ -25,31 +25,32 @@ export interface CacheLayerInterface {
 }
 
 export class CacheLayer implements CacheLayerInterface {
-  private cache = consolidatedCache;
+  private cache = new LRUCache<any>(TIME_CONSTANTS.CACHE_MEDIUM_TTL, 1000);
   private defaultTtl = TIME_CONSTANTS.CACHE_MEDIUM_TTL; // 15 minutes
 
   async get<T>(key: string): Promise<T | null> {
     try {
-      return await this.cache.get<T>(key);
+      return this.cache.get(key) || null;
     } catch (error) {
       handleError(error as Error, 'cache.get', 'cacheLayer');
       return null;
     }
   }
 
-  async set<T>(key: string, value: T, ttl?: number, tags?: string[]): Promise<void> {
+  async set<T>(key: string, value: T, _ttl?: number, _tags?: string[]): Promise<void> {
     try {
-      const effectiveTtl = ttl || this.defaultTtl;
-      await this.cache.set(key, value, 'database', tags);
+      this.cache.set(key, value);
+      // Tags functionality not implemented in simple LRU cache
     } catch (error) {
       handleError(error as Error, 'cache.set', 'cacheLayer');
       // Don't throw - cache failures shouldn't break the main flow
     }
   }
 
-  async invalidateByTags(tags: string[]): Promise<void> {
+  async invalidateByTags(_tags: string[]): Promise<void> {
     try {
-      await this.cache.invalidateByTags(tags);
+      // Tags functionality not implemented in simple LRU cache - clear all for now
+      this.cache.clear();
     } catch (error) {
       handleError(error as Error, 'cache.invalidateByTags', 'cacheLayer');
       // Don't throw - cache failures shouldn't break the main flow

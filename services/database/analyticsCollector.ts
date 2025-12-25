@@ -3,7 +3,7 @@
  * Handles performance monitoring, metrics collection, and analytics for database operations
  */
 
-import { handleError } from '../../utils/errorHandler';
+// import { handleError } from '../../utils/errorHandler';
 import { TIME_CONSTANTS } from '../../constants/config';
 
 interface OperationMetrics {
@@ -74,7 +74,7 @@ export class AnalyticsCollector implements AnalyticsCollectorInterface {
       
       // Keep only last minute of operations for rate calculation
       const oneMinuteAgo = Date.now() - TIME_CONSTANTS.MINUTE;
-      while (timestamps.length > 0 && timestamps[0] < oneMinuteAgo) {
+      while (timestamps.length > 0 && timestamps[0] && timestamps[0] < oneMinuteAgo) {
         timestamps.shift();
       }
 
@@ -234,15 +234,12 @@ export class AnalyticsCollector implements AnalyticsCollectorInterface {
   }
 
   // Advanced analytics methods
-  getPerformanceTrends(operation: string, windowMinutes: number = 60): { trend: 'improving' | 'degrading' | 'stable'; change: number } {
+  getPerformanceTrends(operation: string, _windowMinutes: number = 60): { trend: 'improving' | 'degrading' | 'stable'; change: number } {
     const metrics = this.operations.get(operation);
     if (!metrics || metrics.count < 10) {
       return { trend: 'stable', change: 0 };
     }
 
-    const now = Date.now();
-    const windowStart = now - (windowMinutes * TIME_CONSTANTS.MINUTE);
-    
     // This is a simplified trend calculation
     // In a real implementation, we'd store more granular timestamp data
     const recentAvg = metrics.averageDuration;

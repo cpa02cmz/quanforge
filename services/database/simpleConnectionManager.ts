@@ -6,7 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { UserSession } from '../../types';
 import { handleError } from '../../utils/errorHandler';
-import * as existingConnectionManager from './connectionManager';
+import { getClient as getSupabaseClient } from './client';
 
 export interface ConnectionManagerInterface {
   getClient(): Promise<SupabaseClient>;
@@ -18,12 +18,10 @@ export interface ConnectionManagerInterface {
 }
 
 export class SimpleConnectionManager implements ConnectionManagerInterface {
-  private existing = existingConnectionManager;
 
   async getClient(): Promise<SupabaseClient> {
     try {
-      const result = await this.existing.getClient();
-      return result.client;
+      return getSupabaseClient();
     } catch (error) {
       handleError(error as Error, 'getClient', 'simpleConnectionManager');
       throw error;
@@ -42,7 +40,7 @@ export class SimpleConnectionManager implements ConnectionManagerInterface {
     }
   }
 
-  onAuthStateChange(callback: (event: string, session: UserSession | null) => void): { data: { subscription: { unsubscribe: () => void } } } {
+  onAuthStateChange(_callback: (event: string, session: UserSession | null) => void): { data: { subscription: { unsubscribe: () => void } } } {
     // Mock implementation for now
     return {
       data: {

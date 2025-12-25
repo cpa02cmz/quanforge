@@ -28,7 +28,13 @@ export const supabase = {
     // Use modular client when available, otherwise provide a mock
     get auth() {
         return modularSupabase.onAuthStateChange ? 
-            { onAuthStateChange: modularSupabase.onAuthStateChange, signOut: modularSupabase.signOut } : 
+            { 
+                onAuthStateChange: modularSupabase.onAuthStateChange, 
+                signOut: modularSupabase.signOut,
+                signInWithPassword: modularSupabase.signInWithPassword,
+                signUp: modularSupabase.signUp,
+                getSession: modularSupabase.getSession
+            } : 
             mockAuth;
     },
     // Proxy other properties through the modular system
@@ -110,6 +116,19 @@ from: (_table: string) => {
             return await this.saveRobot(newRobot);
         } catch (error) {
             console.error('duplicateRobot error:', error);
+            throw error;
+        }
+    },
+
+    async getRobots() {
+        try {
+            const result = await modularSupabase.getRobots();
+            if (result.success && result.data) {
+                return result;
+            }
+            throw new Error(typeof result.error === 'string' ? result.error : result.error?.message || 'Failed to get robots');
+        } catch (error) {
+            console.error('getRobots error:', error);
             throw error;
         }
     }

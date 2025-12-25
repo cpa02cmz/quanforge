@@ -150,7 +150,7 @@ export class RetryLogic implements RetryLogicInterface {
 
   // Reset all circuit breakers (useful for testing or recovery)
   resetAllCircuitBreakers(): void {
-    for (const [name, breaker] of this.circuitBreakers.entries()) {
+    for (const [_name, breaker] of this.circuitBreakers.entries()) {
       breaker.reset();
     }
   }

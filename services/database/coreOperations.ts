@@ -4,9 +4,9 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { Robot, UserSession } from '../../types';
+import { Robot } from '../../types';
 import { handleError } from '../../utils/errorHandler';
-import { DATABASE_CONFIG } from '../../constants/config';
+// import { DATABASE_CONFIG } from '../../constants/config';
 
 // Performance monitoring
 const performanceMonitor = {
@@ -42,15 +42,7 @@ const performanceMonitor = {
   }
 };
 
-// Helper for robot validation
-const isValidRobot = (r: any): boolean => {
-  return (
-    typeof r === 'object' &&
-    r !== null &&
-    typeof r.name === 'string' &&
-    typeof r.code === 'string'
-  );
-};
+// Robot validation helper removed - can be re-added if needed
 
 // Helper for robust UUID generation
 const generateUUID = (): string => {

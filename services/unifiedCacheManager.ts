@@ -56,6 +56,7 @@ export class UnifiedCacheManager {
   private cleanupTimer: number | null = null;
   private accessTimes: number[] = [];
   private storageKey = 'quantforge-unified-cache';
+  private strategies = new Map<string, any>();
 
   constructor(options: CacheOptions = {}) {
     this.options = {

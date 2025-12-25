@@ -2,7 +2,7 @@
 import { useReducer, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Message, MessageRole, Robot, StrategyParams, StrategyAnalysis, BacktestSettings, SimulationResult } from '../types';
-import { mockDb } from '../services/supabase';
+import { supabase } from '../services/supabase';
 import { useToast } from './useToast';
 import { DEFAULT_STRATEGY_PARAMS } from '../constants';
 import { runMonteCarloSimulation } from '../services/simulation';
@@ -160,7 +160,8 @@ const stopGeneration = () => {
           const loadRobot = async () => {
               try {
                   // Load robots data
-                  const robots = await mockDb.getRobots();
+                  const result = await supabase.getRobots();
+                   const robots = result.success && result.data ? result.data : [];
                   if (controller.signal.aborted) return;
                   
                   const found = robots.find((r: Robot) => r.id === id);
@@ -453,9 +454,9 @@ const stopGeneration = () => {
 
       try {
         if (id) {
-            await mockDb.updateRobot(id, robotData);
+            await supabase.updateRobot(id, robotData);
         } else {
-            const savedRobot = await mockDb.saveRobot(robotData);
+            const savedRobot = await supabase.saveRobot(robotData);
             if (savedRobot && savedRobot.id) {
                 navigate(`/generator/${savedRobot.id}`, { replace: true });
             }

@@ -22,7 +22,8 @@ const ROBOTS_KEY = 'mock_robots';
 const safeParse = <T = unknown>(data: string | null, fallback: T): T => {
   if (!data) return fallback;
   try {
-    return securityManager.safeJSONParse(data) || fallback;
+    const parsed = securityManager.safeJSONParse(data);
+    return (parsed as T) || fallback;
   } catch (e) {
     return fallback;
   }
@@ -67,8 +68,8 @@ export interface ModularSupabaseService {
   // Authentication methods
   getSession(): Promise<APIResponse<{ session: UserSession | null }>>;
   onAuthStateChange(callback: (event: string, session: UserSession | null) => void): { data: { subscription: { unsubscribe: () => void } } };
-  signInWithPassword: ({ email, password }: { email: string; password: string }) => Promise<{ data: { session: UserSession; user: UserSession['user'] }; error: any }>;
-  signUp: ({ email, password }: { email: string; password: string }) => Promise<{ data: { session: UserSession; user: UserSession['user'] }; error: any }>;
+  signInWithPassword: ({ email, password }: { email: string; password: string }) => Promise<{ data: { session: UserSession | null; user: UserSession['user'] | null }; error: any }>;
+  signUp: ({ email, password }: { email: string; password: string }) => Promise<{ data: { session: UserSession | null; user: UserSession['user'] | null }; error: any }>;
   signOut(): Promise<APIResponse<null>>;
   
   // Robot operations
