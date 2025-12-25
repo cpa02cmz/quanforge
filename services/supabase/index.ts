@@ -4,7 +4,6 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { UserSession, Robot } from '../../types';
 import { settingsManager } from '../settingsManager';
 import { mockAuth, addAuthListener, removeAuthListener } from './auth';
 import { mockDB, getRobotsPaginated, searchRobots, getRobots, saveRobot, updateRobot, deleteRobot, duplicateRobot } from './database';
