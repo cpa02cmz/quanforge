@@ -113,3 +113,36 @@ graph TD
 - **Modularity**: Service files should be <500 lines, well-decoupled
 - **Consistency**: Unified error handling, naming conventions, patterns
 - **Testing**: >80% test coverage for critical paths
+
+### Architectural Improvements (2026-01-07)
+
+#### Module Extraction from Monolithic Services
+
+**Problem**: `services/supabase.ts` was 1583 lines, violating Single Responsibility Principle
+**Solution**: Extracted three focused modules:
+
+1. **services/performanceMonitoring.ts**
+   - `PerformanceMonitor` class: Tracks operation metrics (count, total time, average time)
+   - `EdgePerformanceTracker` class: Advanced edge metrics with percentiles
+   - Exports: `performanceMonitor`, `edgePerformanceTracker` instances
+   - Lines: 82
+
+2. **services/robotIndexManager.ts**
+   - `RobotIndexManager` class: Efficient robot indexing and filtering
+   - Creates indexes by ID, name, type, and date
+   - Rebuilds index only when data changes (change detection via data version hash)
+   - Lines: 49
+
+3. **services/mockImplementation.ts**
+   - `mockAuth`: Mock authentication with localStorage persistence
+   - `mockClient`: Mock database client for development/testing
+   - Helper functions: `safeParse`, `trySaveToStorage`, `generateUUID`, `getMockSession`
+   - Lines: 113
+
+**Impact**:
+- Original `supabase.ts`: 1583 lines → After extraction: 827 lines (47% reduction)
+- Better separation of concerns: Auth, Performance, Indexing isolated from core adapter
+- Improved maintainability: Each module <150 lines, focused responsibility
+- Easier testing: Individual modules can be tested independently
+
+**Architectural Pattern**: Adapter Pattern (Core) + Single Responsibility (Extracted Modules)
