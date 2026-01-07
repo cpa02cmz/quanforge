@@ -8,41 +8,10 @@ import { useToast } from './Toast';
 import { NumericInput } from './NumericInput';
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
+import { FormField } from './FormField';
+import { CustomInputRow } from './CustomInputRow';
 
 const logger = createScopedLogger('StrategyConfig');
-
-interface FormFieldProps {
-  label: string;
-  error?: string;
-  hint?: string;
-  required?: boolean;
-  children: React.ReactNode;
-  htmlFor: string;
-}
-
-const FormField: React.FC<FormFieldProps> = ({ label, error, hint, required, children, htmlFor }) => (
-  <div>
-    <label
-      htmlFor={htmlFor}
-      className="block text-xs text-gray-400 mb-1"
-    >
-      {label}
-      {required && <span className="text-red-400 ml-0.5" aria-label="required">*</span>}
-    </label>
-    {children}
-    {hint && !error && (
-      <p className="mt-1 text-xs text-gray-500" id={`${htmlFor}-hint`}>{hint}</p>
-    )}
-    {error && (
-      <p className="mt-1 text-xs text-red-400 flex items-center gap-1" role="alert" aria-live="polite">
-        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-        </svg>
-        {error}
-      </p>
-    )}
-  </div>
-);
 
 interface StrategyConfigProps {
   params: StrategyParams;
@@ -330,7 +299,6 @@ const sanitizeInput = (input: string): string => {
                   }`}
                   placeholder="BTCUSDT"
                   aria-invalid={!!errors.symbol}
-                  aria-describedby={errors.symbol ? 'config-symbol-error' : 'config-symbol-hint'}
                 />
               </FormField>
               <FormField
@@ -348,6 +316,41 @@ const sanitizeInput = (input: string): string => {
                     <option key={tf} value={tf}>{tf}</option>
                   ))}
                 </select>
+              </FormField>
+              <FormField
+                label={t('config_risk')}
+                error={errors.riskPercent}
+                hint="Percentage of account balance to risk per trade (1-100)"
+                required
+                htmlFor="config-risk"
+              >
+                <NumericInput
+                  id="config-risk"
+                  value={params.riskPercent}
+                  onChange={(val) => handleChangeWithValidation('riskPercent', val)}
+                  step="0.1"
+                  className={`w-full bg-dark-surface border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 outline-none transition-colors ${
+                    errors.riskPercent ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
+                  }`}
+                  aria-invalid={!!errors.riskPercent}
+                />
+              </FormField>
+              <FormField
+                label={t('config_magic')}
+                error={errors.magicNumber}
+                hint="Unique identifier for Expert Advisor"
+                required
+                htmlFor="config-magic"
+              >
+                <NumericInput
+                  id="config-magic"
+                  value={params.magicNumber}
+                  onChange={(val) => handleChangeWithValidation('magicNumber', val)}
+                  className={`w-full bg-dark-surface border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 outline-none transition-colors ${
+                    errors.magicNumber ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
+                  }`}
+                  aria-invalid={!!errors.magicNumber}
+                />
               </FormField>
               <FormField
                 label={t('config_risk')}
@@ -411,7 +414,6 @@ const sanitizeInput = (input: string): string => {
                     errors.stopLoss ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
                   }`}
                   aria-invalid={!!errors.stopLoss}
-                  aria-describedby={errors.stopLoss ? undefined : 'config-sl-hint'}
                 />
               </FormField>
               <FormField
@@ -429,7 +431,6 @@ const sanitizeInput = (input: string): string => {
                     errors.takeProfit ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
                   }`}
                   aria-invalid={!!errors.takeProfit}
-                  aria-describedby={errors.takeProfit ? undefined : 'config-tp-hint'}
                 />
               </FormField>
             </div>
@@ -452,49 +453,26 @@ const sanitizeInput = (input: string): string => {
            </div>
            
            <div className="space-y-3">
-             {params.customInputs.map((input) => (
-               <div key={input.id} className="grid grid-cols-12 gap-2 items-center">
-                 <div className="col-span-5">
-                   <input
-                     type="text"
-                     value={input.name}
-                     onChange={(e) => handleInputChange(input.id, 'name', e.target.value)}
-                     className="w-full bg-dark-surface border border-dark-border rounded px-2 py-1 text-xs text-white focus:ring-1 focus:ring-brand-500 outline-none"
-                     placeholder="Variable name"
-                   />
-                 </div>
-                 <div className="col-span-3">
-                   <select
-                     value={input.type}
-                     onChange={(e) => handleInputTypeChange(input.id, e.target.value as any)}
-                     className="w-full bg-dark-surface border border-dark-border rounded px-2 py-1 text-xs text-white focus:ring-1 focus:ring-brand-500 outline-none"
-                   >
-                     <option value="int">int</option>
-                     <option value="double">double</option>
-                     <option value="bool">bool</option>
-                     <option value="string">string</option>
-                   </select>
-                 </div>
-                 <div className="col-span-3">
-                   <input
-                     type="text"
-                     value={input.value}
-                     onChange={(e) => handleInputChange(input.id, 'value', e.target.value)}
-                     className="w-full bg-dark-surface border border-dark-border rounded px-2 py-1 text-xs text-white focus:ring-1 focus:ring-brand-500 outline-none"
-                     placeholder="Value"
-                   />
-                 </div>
-                 <div className="col-span-1 flex justify-center">
-                   <button
-                     onClick={() => removeInput(input.id)}
-                     className="text-gray-500 hover:text-red-400"
-                   >
-                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                   </button>
-                 </div>
-               </div>
-             ))}
-           </div>
+              {params.customInputs.map((input, index) => (
+                <CustomInputRow
+                  key={input.id}
+                  input={input}
+                  inputTypes={[
+                    { value: 'int', label: 'int' },
+                    { value: 'double', label: 'double' },
+                    { value: 'bool', label: 'bool' },
+                    { value: 'string', label: 'string' }
+                  ]}
+                  onNameChange={(id, value) => handleInputChange(id, 'name', value)}
+                  onTypeChange={handleInputTypeChange}
+                  onValueChange={(id, value) => handleInputChange(id, 'value', value)}
+                  onDelete={removeInput}
+                  index={index}
+                  isFirst={index === 0}
+                  isLast={index === params.customInputs.length - 1}
+                />
+              ))}
+            </div>
          </div>
 
           {/* Apply Button */}
