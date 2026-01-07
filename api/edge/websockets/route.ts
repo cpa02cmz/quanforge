@@ -14,7 +14,6 @@ declare global {
 
 export const config = {
   runtime: 'edge',
-  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
 };
 
 // WebSocket connection store (in production, use Redis or similar)

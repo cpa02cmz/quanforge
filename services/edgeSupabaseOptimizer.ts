@@ -324,25 +324,139 @@ export class EdgeSupabaseOptimizer {
   }
 
   /**
-   * Execute Supabase query (placeholder - implement based on actual query pattern)
+   * Execute Supabase query with proper query builder pattern
    */
   private async executeSupabaseQuery(client: any, query: string, params: any[]): Promise<any> {
-    // This is a placeholder implementation
-    // In reality, this would parse the query and execute it using the Supabase client
-    // For now, we'll simulate a basic query execution
-    
-    if (query.includes('robots')) {
-      const result = await client.from('robots').select('*');
-      return result.data;
+    try {
+      // Parse and execute optimized queries based on table and operation
+      if (query.includes('robots')) {
+        let builder = client.from('robots').select('*');
+        
+        // Apply filters from params
+        if (params?.user_id) builder = builder.eq('user_id', params.user_id);
+        if (params?.strategy_type) builder = builder.eq('strategy_type', params.strategy_type);
+        if (params?.id) builder = builder.eq('id', params.id);
+        if (params?.limit) builder = builder.limit(params.limit);
+        if (params?.offset) builder = builder.range(params.offset, params.offset + (params.limit || 20) - 1);
+        
+        // Apply search filters
+        if (params?.search) {
+          builder = builder.or(`name.ilike.%${params.search}%,description.ilike.%${params.search}%`);
+        }
+        
+        // Apply ordering
+        if (params?.order) {
+          const [column, direction] = params.order.split('.');
+          builder = builder.order(column, { ascending: direction === 'asc' });
+        } else {
+          builder = builder.order('created_at', { ascending: false });
+        }
+        
+        const result = await builder;
+        return result.data;
+      }
+      
+      if (query.includes('strategies')) {
+        let builder = client.from('strategies').select('*');
+        
+        // Apply filters
+        if (params?.category) builder = builder.eq('category', params.category);
+        if (params?.difficulty) builder = builder.eq('difficulty', params.difficulty);
+        if (params?.id) builder = builder.eq('id', params.id);
+        if (params?.limit) builder = builder.limit(params.limit);
+        
+        // Apply search
+        if (params?.search) {
+          builder = builder.or(`name.ilike.%${params.search}%,description.ilike.%${params.search}%`);
+        }
+        
+        // Apply ordering
+        builder = builder.order('created_at', { ascending: false });
+        
+        const result = await builder;
+        return result.data;
+      }
+      
+      if (query.includes('analytics') || query.includes('metrics')) {
+        // Handle analytics queries
+        if (params?.table === 'robots') {
+          const { count, error } = await client
+            .from('robots')
+            .select('*', { count: 'exact', head: true });
+          
+          if (error) throw error;
+          
+          // Get strategy type distribution
+          const { data: strategyData } = await client
+            .from('robots')
+            .select('strategy_type');
+          
+          const distribution = strategyData?.reduce((acc: any, item: any) => {
+            const type = item.strategy_type || 'Custom';
+            acc[type] = (acc[type] || 0) + 1;
+            return acc;
+          }, {});
+          
+          return {
+            total: count,
+            distribution,
+            timestamp: Date.now()
+          };
+        }
+      }
+      
+      // Handle insert operations
+      if (query.includes('INSERT') || query.includes('insert')) {
+        const table = query.includes('robots') ? 'robots' : 'strategies';
+        const data = params?.data || params;
+        
+        const result = await client
+          .from(table)
+          .insert(data)
+          .select();
+        
+        return result.data;
+      }
+      
+      // Handle update operations
+      if (query.includes('UPDATE') || query.includes('update')) {
+        const table = query.includes('robots') ? 'robots' : 'strategies';
+        const { id, ...updateData } = params || {};
+        
+        if (!id) throw new Error('ID required for update operations');
+        
+        const result = await client
+          .from(table)
+          .update({ ...updateData, updated_at: new Date().toISOString() })
+          .eq('id', id)
+          .select();
+        
+        return result.data;
+      }
+      
+      // Handle delete operations
+      if (query.includes('DELETE') || query.includes('delete')) {
+        const table = query.includes('robots') ? 'robots' : 'strategies';
+        const { id } = params || {};
+        
+        if (!id) throw new Error('ID required for delete operations');
+        
+        const result = await client
+          .from(table)
+          .delete()
+          .eq('id', id);
+        
+        return result;
+      }
+      
+      // Default case - return empty result
+      console.warn(`Unsupported query pattern: ${query}`);
+      return null;
+      
+    } catch (error) {
+      console.error('Supabase query execution failed:', error);
+      throw error;
     }
-    
-    if (query.includes('strategies')) {
-      const result = await client.from('strategies').select('*');
-      return result.data;
-    }
-    
-    // Default case
-    throw new Error(`Unsupported query: ${query}`);
   }
 
   /**

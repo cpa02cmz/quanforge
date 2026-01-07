@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action') || 'metrics';
     const detailed = searchParams.get('detailed') === 'true';
 
-    let response: any = {
+    const response: any = {
       success: true,
       region,
       timestamp: Date.now(),
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
     const { action, params } = body;
     const region = request.headers.get('x-vercel-region') || 'unknown';
 
-    let response: any = {
+    const response: any = {
       success: true,
       action,
       region,
@@ -247,7 +247,6 @@ export async function POST(request: NextRequest) {
 // Edge function configuration for optimal performance
 export const config = {
   runtime: 'edge',
-  regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'],
   maxDuration: 30,
   memory: 512,
   cache: 'max-age=300, s-maxage=900'
