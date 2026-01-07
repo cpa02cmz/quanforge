@@ -687,6 +687,6 @@ setInterval(() => {
   });
   
   if (staleConnections.length > 0) {
-    console.log(`Cleaned up ${staleConnections.length} stale streaming connections`);
+    logger.log(`Cleaned up ${staleConnections.length} stale streaming connections`);
   }
 }, 10000); // Check every 10 seconds

@@ -6,6 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { enhancedConnectionPool } from '../../../services/enhancedSupabasePool';
 import { edgeCacheManager } from '../../../services/edgeCacheManager';
+import { logger, createScopedLogger } from '../../../utils/logger';
+
+const warmupLogger = createScopedLogger('EdgeWarmup');
 
 interface WarmupRequest {
   functions?: string[];
@@ -40,7 +43,7 @@ export async function POST(request: NextRequest) {
     const currentRegion = request.headers.get('x-vercel-region') || 'unknown';
     const targetRegions = regions.length > 0 ? regions : [currentRegion];
     
-    console.log(`Starting edge warmup for regions: ${targetRegions.join(', ')}`);
+    warmupLogger.log(`Starting edge warmup for regions: ${targetRegions.join(', ')}`);
 
     const results: WarmupResult['results'] = {
       connections: [],
@@ -159,7 +162,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Log warmup results
-    console.log(`Edge warmup completed: ${summary.successfulOperations}/${summary.totalOperations} successful in ${totalDuration.toFixed(2)}ms`);
+    warmupLogger.log(`Edge warmup completed: ${summary.successfulOperations}/${summary.totalOperations} successful in ${totalDuration.toFixed(2)}ms`);
 
     return NextResponse.json(result, {
       headers: {
@@ -260,7 +263,7 @@ async function warmEdgeFunction(functionName: string, region: string): Promise<v
     await new Promise(resolve => setTimeout(resolve, 100));
   } catch (error) {
     // Don't fail the entire warmup if one function fails
-    console.warn(`Failed to warm up function ${functionName} in region ${region}:`, error);
+    warmupLogger.warn(`Failed to warm up function ${functionName} in region ${region}:`, error);
     throw error;
   }
 }
@@ -304,7 +307,7 @@ async function generateWarmupRecommendations(): Promise<string[]> {
     }
     
   } catch (error) {
-    console.warn('Failed to generate warmup recommendations:', error);
+    warmupLogger.warn('Failed to generate warmup recommendations:', error);
   }
   
   return recommendations;

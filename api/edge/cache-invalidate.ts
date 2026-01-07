@@ -6,6 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { edgeCacheManager } from '../../../services/edgeCacheManager';
 import { enhancedConnectionPool } from '../../../services/enhancedSupabasePool';
+import { logger, createScopedLogger } from '../../../utils/logger';
+
+const cacheLogger = createScopedLogger('CacheInvalidation');
 
 interface InvalidationRequest {
   keys?: string[];
@@ -52,7 +55,7 @@ export async function POST(request: NextRequest) {
     const currentRegion = request.headers.get('x-vercel-region') || 'unknown';
     const targetRegions = regions.length > 0 ? regions : [currentRegion];
     
-    console.log(`Starting cache invalidation: ${keys.length} keys, ${patterns.length} patterns, ${tags.length} tags`);
+    cacheLogger.log(`Starting cache invalidation: ${keys.length} keys, ${patterns.length} patterns, ${tags.length} tags`);
 
     const invalidated = {
       keys: [] as string[],
@@ -76,9 +79,9 @@ export async function POST(request: NextRequest) {
               await edgeCacheManager.invalidate(relatedKey, { regions: targetRegions });
               cascadeInvalidations.push(relatedKey);
             }
-          }
+            }
         } catch (error) {
-          console.warn(`Failed to invalidate key ${key}:`, error);
+          cacheLogger.warn(`Failed to invalidate key ${key}:`, error);
         }
       }
     }
@@ -95,9 +98,9 @@ export async function POST(request: NextRequest) {
           // Add pattern-matched keys to cascade invalidations
           if (cascade) {
             cascadeInvalidations.push(...invalidatedPatternKeys);
-          }
+            }
         } catch (error) {
-          console.warn(`Failed to invalidate pattern ${pattern}:`, error);
+          cacheLogger.warn(`Failed to invalidate pattern ${pattern}:`, error);
         }
       }
     }
@@ -109,7 +112,7 @@ export async function POST(request: NextRequest) {
           await edgeCacheManager.invalidateByTag(tag, { regions: targetRegions });
           invalidated.tags.push(tag);
         } catch (error) {
-          console.warn(`Failed to invalidate tag ${tag}:`, error);
+          cacheLogger.warn(`Failed to invalidate tag ${tag}:`, error);
         }
       }
     }
@@ -119,9 +122,9 @@ export async function POST(request: NextRequest) {
       try {
         // Clear connection pool cache
         await enhancedConnectionPool.clearCache();
-        console.log('Cleared database connection cache');
+        cacheLogger.log('Cleared database connection cache');
       } catch (error) {
-        console.warn('Failed to clear database cache:', error);
+        cacheLogger.warn('Failed to clear database cache:', error);
       }
     }
 
@@ -144,7 +147,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Log invalidation results
-    console.log(`Cache invalidation completed: ${totalInvalidated} items invalidated in ${duration.toFixed(2)}ms`);
+    cacheLogger.log(`Cache invalidation completed: ${totalInvalidated} items invalidated in ${duration.toFixed(2)}ms`);
 
     return NextResponse.json(result, {
       headers: {
@@ -252,7 +255,7 @@ async function findRelatedKeys(key: string): Promise<string[]> {
     return [...new Set(relatedKeys)];
     
   } catch (error) {
-    console.warn('Failed to find related keys:', error);
+    cacheLogger.warn('Failed to find related keys:', error);
     return [];
   }
 }

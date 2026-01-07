@@ -1,4 +1,6 @@
 // Edge function for optimizing API requests
+import { logger } from '../utils/logger';
+
 export const config = {
   runtime: 'edge',
   prefersStatic: true
@@ -262,7 +264,7 @@ async function refreshInBackground(cacheKey: string, req: Request): Promise<void
         storeInResponseCache(cacheKey, response, CACHE_CONFIG.DEFAULT_TTL);
       }
     } catch (error) {
-      console.debug('Background refresh failed:', error);
+      logger.debug('Background refresh failed:', error);
     }
   }, 0);
 }
@@ -378,7 +380,7 @@ async function processRequest(req: Request): Promise<Response> {
         const cacheKey = new Request(req.url, req);
         await cache.put(cacheKey, response.clone());
       } catch (cacheError) {
-        console.debug('Edge cache storage failed:', cacheError);
+        logger.debug('Edge cache storage failed:', cacheError);
       }
       
       return response;

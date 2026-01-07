@@ -5,6 +5,7 @@
 
 import { edgeSupabase } from '../../services/edgeSupabaseClient';
 import { vercelEdgeOptimizer } from '../../services/vercelEdgeOptimizer';
+import { perfLogger } from '../../utils/logger';
 
 interface EdgeResponse<T = any> {
   data?: T;
@@ -90,9 +91,7 @@ export default async function edgeHandler(request: Request): Promise<Response> {
     response.region = region;
 
     // Log performance metrics
-    if (process.env.NODE_ENV === 'production') {
-      console.log(`Edge function ${path} executed in ${responseTime}ms from ${region}`);
-    }
+    perfLogger.log(`${path} executed in ${responseTime}ms from ${region}`);
 
     return new Response(JSON.stringify(response), {
       status: response.error ? 500 : 200,
