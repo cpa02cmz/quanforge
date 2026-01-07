@@ -49,12 +49,11 @@ class AIWorkerManager {
         // Create worker from the enhanced Gemini worker file
         try {
           this.worker = new Worker(
-            new URL('../workers/geminiWorker.ts', import.meta.url),
+            new URL('/workers/geminiWorker.ts', import.meta.url),
             { type: 'module' }
           );
         } catch (error) {
           logger.error('Failed to create Gemini worker with import.meta.url, trying fallback:', error);
-          // Fallback for environments where import.meta.url might not work as expected
           this.worker = new Worker('/workers/geminiWorker.js', { type: 'module' });
         }
 

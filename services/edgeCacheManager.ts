@@ -3,7 +3,7 @@
  * Advanced multi-layer caching with edge-specific optimizations
  */
 
-import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
+import { EdgeCacheCompression } from './edgeCacheCompression';
 
 interface EdgeCacheEntry<T> {
   data: T;
@@ -70,11 +70,15 @@ export class EdgeCacheManager<T = any> {
   private dbName = 'edgeCacheManager';
   private storeName = 'edgeCache';
   private currentRegion = process.env.VERCEL_REGION || 'unknown';
+  private compression: EdgeCacheCompression;
 
   constructor(config?: Partial<EdgeCacheConfig>) {
     if (config) {
       this.config = { ...this.config, ...config };
     }
+    this.compression = new EdgeCacheCompression({
+      compressionThreshold: this.config.compressionThreshold,
+    });
     this.initPersistentCache();
     this.startCleanup();
     this.initializeRegionalStats();
@@ -129,7 +133,7 @@ export class EdgeCacheManager<T = any> {
       this.updateAccess(memoryEntry);
       this.stats.memoryHits++;
       this.updateRegionalStats(region, 'memory');
-      return memoryEntry.compressed ? this.decompressData(memoryEntry.data) : memoryEntry.data;
+      return memoryEntry.compressed ? this.compression.decompress(memoryEntry.data) : memoryEntry.data;
     }
 
     // 2. Check edge cache hierarchy with stale-while-revalidate
@@ -154,7 +158,7 @@ export class EdgeCacheManager<T = any> {
           }
           
           this.updateRegionalStats(region, 'edge');
-          return edgeEntry.compressed ? this.decompressData(edgeEntry.data) : edgeEntry.data;
+          return edgeEntry.compressed ? this.compression.decompress(edgeEntry.data) : edgeEntry.data;
         }
       }
     }
@@ -168,7 +172,7 @@ export class EdgeCacheManager<T = any> {
       this.updateAccess(persistentEntry);
       this.stats.persistentHits++;
       this.updateRegionalStats(region, 'persistent');
-      return persistentEntry.compressed ? this.decompressData(persistentEntry.data) : persistentEntry.data;
+      return persistentEntry.compressed ? this.compression.decompress(persistentEntry.data) : persistentEntry.data;
     }
 
     this.stats.misses++;
@@ -392,9 +396,9 @@ export class EdgeCacheManager<T = any> {
     const region = options?.region || this.currentRegion;
     const varyKey = this.getVaryKey(key, options?.vary);
     const ttl = options?.ttl || this.config.defaultTTL;
-    const shouldCompress = this.shouldCompress(data);
-    const processedData = shouldCompress ? this.compressData(data) : data;
-    const size = this.estimateSize(data);
+    const shouldCompress = this.compression.shouldCompress(data);
+    const processedData = shouldCompress ? this.compression.compress(data) : data;
+    const size = this.compression.estimateSize(data);
 
     const entry: EdgeCacheEntry<T> = {
       data: processedData,
@@ -809,37 +813,6 @@ export class EdgeCacheManager<T = any> {
     } catch (error) {
       console.error(`Failed to fetch data for warmup key ${key}:`, error);
       return null;
-    }
-  }
-
-  private estimateSize(data: T): number {
-    if (data === null || data === undefined) return 0;
-    return JSON.stringify(data).length * 2; // Rough estimate in bytes
-  }
-
-  private shouldCompress(data: T): boolean {
-    return this.estimateSize(data) > this.config.compressionThreshold;
-  }
-
-  private compressData(data: T): T {
-    try {
-      const jsonString = JSON.stringify(data);
-      const compressed = compressToUTF16(jsonString);
-      return compressed as unknown as T;
-    } catch (error) {
-      console.warn('Failed to compress data:', error);
-      return data;
-    }
-  }
-
-  private decompressData(data: T): T {
-    try {
-      if (typeof data !== 'string') return data;
-      const decompressed = decompressFromUTF16(data as string);
-      return JSON.parse(decompressed);
-    } catch (error) {
-      console.warn('Failed to decompress data:', error);
-      return data;
     }
   }
 

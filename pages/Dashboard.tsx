@@ -21,7 +21,57 @@ const debounce = <T extends (...args: any[]) => any>(func: T, delay: number): T 
 
 const logger = createScopedLogger('Dashboard');
 
-// RobotCard component for better memoization
+const getStrategyIcon = (strategyType: string) => {
+  const type = strategyType?.toLowerCase() || 'custom';
+  switch (type) {
+    case 'scalping':
+      return (
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+      );
+    case 'trend':
+      return (
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+        </svg>
+      );
+    default:
+      return (
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+        </svg>
+      );
+  }
+};
+
+const getStrategyConfig = (strategyType: string) => {
+  const type = strategyType?.toLowerCase() || 'custom';
+  switch (type) {
+    case 'scalping':
+      return {
+        bgClass: 'bg-purple-900/30',
+        textClass: 'text-purple-300',
+        borderClass: 'border-purple-800',
+        ariaLabel: 'Scalping strategy'
+      };
+    case 'trend':
+      return {
+        bgClass: 'bg-green-900/30',
+        textClass: 'text-green-300',
+        borderClass: 'border-green-800',
+        ariaLabel: 'Trend following strategy'
+      };
+    default:
+      return {
+        bgClass: 'bg-blue-900/30',
+        textClass: 'text-blue-300',
+        borderClass: 'border-blue-800',
+        ariaLabel: 'Custom strategy'
+      };
+  }
+};
+
 interface RobotCardProps {
   robot: Robot;
   processingId: string | null;
@@ -71,11 +121,15 @@ const RobotCard: React.FC<RobotCardProps> = memo(({
       </p>
       
       <div className="pt-4 border-t border-dark-border flex items-center justify-between mt-auto">
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border
-          ${robot.strategy_type === 'Scalping' ? 'bg-purple-900/30 text-purple-300 border-purple-800' : 
-            robot.strategy_type === 'Trend' ? 'bg-green-900/30 text-green-300 border-green-800' :
-            'bg-blue-900/30 text-blue-300 border-blue-800'}
-        `}>
+        <span 
+          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border
+            ${getStrategyConfig(robot.strategy_type).bgClass} 
+            ${getStrategyConfig(robot.strategy_type).textClass} 
+            ${getStrategyConfig(robot.strategy_type).borderClass}
+          `}
+          aria-label={getStrategyConfig(robot.strategy_type).ariaLabel}
+        >
+          {getStrategyIcon(robot.strategy_type)}
           {robot.strategy_type || 'Custom'}
         </span>
         

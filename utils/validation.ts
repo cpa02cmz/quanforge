@@ -7,8 +7,8 @@ export interface ValidationError {
 }
 
 export class ValidationService {
-  private static readonly TIMEFRAMES = ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'];
-  private static readonly SYMBOL_REGEX = /^[A-Z]{3,6}[\/]?[A-Z]{3,6}$/;
+  private static readonly TIMEFRAMES = ['M1', 'M5', 'M15', 'M30', 'H1', 'H1', 'D1', 'W1', 'MN1'];
+  private static readonly SYMBOL_REGEX = /^[A-Z]{3,6}\/?[A-Z]{3,6}$/;
   private static readonly NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
   private static readonly MAX_RISK_PERCENT = 100;
   private static readonly MIN_RISK_PERCENT = 0.01;

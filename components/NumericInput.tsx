@@ -1,13 +1,14 @@
 import React, { useState, useEffect, memo } from 'react';
 
-// Helper component to handle decimal inputs comfortably
-// It keeps a local string state so users can type "1." without it being parsed to "1" immediately
 export const NumericInput: React.FC<{
     value: number;
     onChange: (val: number) => void;
     className?: string;
     step?: string;
-}> = memo(({ value, onChange, className }) => {
+    id?: string;
+    'aria-invalid'?: boolean;
+    'aria-describedby'?: string;
+}> = memo(({ value, onChange, className, id, 'aria-invalid': ariaInvalid, 'aria-describedby': ariaDescribedby }) => {
     const [localValue, setLocalValue] = useState(value.toString());
 
     // Sync local state if external value changes significantly (e.g. reset or load)
@@ -49,13 +50,16 @@ export const NumericInput: React.FC<{
     };
 
     return (
-        <input 
-            type="text" 
+        <input
+            type="text"
             value={localValue}
             onChange={handleLocalChange}
             onBlur={handleBlur}
             className={className}
             inputMode="decimal"
+            id={id}
+            aria-invalid={ariaInvalid}
+            aria-describedby={ariaDescribedby}
         />
     );
 });

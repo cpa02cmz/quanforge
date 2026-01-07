@@ -49,7 +49,7 @@ class CSRFProtection {
   private initializeToken(): void {
     const existingToken = this.getTokenFromCookie();
     
-    if (existingToken && this.validateToken(existingToken)) {
+    if (existingToken && this.isValidTokenFormat(existingToken)) {
       this.currentToken = {
         token: existingToken,
         expires: Date.now() + this.config.tokenExpiry,
@@ -132,11 +132,11 @@ class CSRFProtection {
   /**
    * Validate CSRF token format and expiry
    */
-  private validateToken(token: string): boolean {
+  private isValidTokenFormat(token: string): boolean {
     if (!token || token.length !== this.config.tokenLength * 2) {
       return false;
     }
-    
+
     // Check if token contains only hex characters
     return /^[a-f0-9]+$/i.test(token);
   }

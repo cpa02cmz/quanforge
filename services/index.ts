@@ -25,3 +25,13 @@ export * from './readReplicaManager';
 export * from './queryBatcher';
 export * from './edgeKVStorage';
 export * from './realTimeUXScoring';
+
+// Integration Hardening System
+export { IntegrationType, ErrorCategory, CircuitBreakerState, getConfig, classifyError, createStandardizedError } from './integrationResilience';
+export { withIntegrationResilience, createIntegrationOperation, getIntegrationHealth, getAllIntegrationHealth, getCircuitBreakerStatus, getAllCircuitBreakerStatuses, resetCircuitBreaker, enterDegradedMode, exitDegradedMode, isDegraded, getDegradedIntegrations } from './integrationWrapper';
+export { circuitBreakerMonitor } from './circuitBreakerMonitor';
+export { fallbackManager, databaseFallbacks, aiServiceFallbacks, marketDataFallbacks, degradedModeManager } from './fallbackStrategies';
+export { integrationHealthMonitor, integrationMetrics } from './integrationHealthMonitor';
+export { aiService } from './resilientAIService';
+export { resilientDb, resilientDbUtils } from './resilientDbService';
+export { resilientMarketService } from './resilientMarketService';

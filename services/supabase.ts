@@ -7,6 +7,7 @@ import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
+import { TIMEOUTS } from '../constants';
 
 // Enhanced connection retry configuration with exponential backoff
 const RETRY_CONFIG = {
@@ -621,7 +622,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
           };
           
           // Cache the result with smart TTL based on data size
-          const ttl = Math.min(300000, Math.max(60000, totalCount * 100)); // 1-5 minutes based on result size
+          const ttl = Math.min(TIMEOUTS.CACHE_TTL, Math.max(60000, totalCount * 100)); // 1-5 minutes based on result size
           await consolidatedCache.set(cacheKey, response, ttl, ['robots', 'paginated']);
           
           const duration = performance.now() - startTime;
@@ -670,7 +671,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
             };
             
             // Smart caching with adaptive TTL
-            const ttl = Math.min(300000, Math.max(60000, (result.count || 0) * 50));
+            const ttl = Math.min(TIMEOUTS.CACHE_TTL, Math.max(60000, (result.count || 0) * 50));
             await consolidatedCache.set(cacheKey, response, ttl, ['robots', 'paginated']);
             
             const duration = performance.now() - startTime;

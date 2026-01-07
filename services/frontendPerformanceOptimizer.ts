@@ -131,8 +131,6 @@ class FrontendPerformanceOptimizer {
       '/api/robots',
       '/api/strategies',
       'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
-      '/api/edge/health',
-      '/api/edge/metrics',
     ];
 
     criticalResources.forEach((resource) => {
@@ -320,11 +318,11 @@ class FrontendPerformanceOptimizer {
    */
   private preloadNonCriticalModules(): void {
     // Lazy load non-critical features
+    // Note: advancedAPICache is statically imported in App.tsx, so not included here
     const nonCriticalModules = [
       () => import('../components/ChartComponents'),
       () => import('../components/BacktestPanel'),
       () => import('../components/MarketTicker'),
-      () => import('../services/advancedAPICache'),
     ];
 
     // Load modules with low priority when idle
@@ -515,9 +513,6 @@ class FrontendPerformanceOptimizer {
       new Promise((resolve) => setTimeout(resolve, 2000)).then(() => {
         this.optimizeMemoryUsage();
       }),
-      // Warm up critical API endpoints
-      fetch('/api/edge/health').catch(() => {}),
-      fetch('/api/edge/metrics').catch(() => {}),
     ];
 
     await Promise.allSettled(warmUpTasks);

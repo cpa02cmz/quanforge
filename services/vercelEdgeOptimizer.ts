@@ -3,6 +3,8 @@
  * Provides edge-specific optimizations for better performance
  */
 
+import { TIMEOUTS } from '../constants';
+
 interface EdgeConfig {
   enableEdgeRuntime: boolean;
   enableEdgeCaching: boolean;
@@ -373,10 +375,10 @@ const entries = list.getEntries();
   private setupAPICaching(): void {
     // Cache API responses based on endpoint patterns
     const cacheStrategies: Record<string, { ttl: number; vary: string[] }> = {
-      '/api/robots': { ttl: 300000, vary: ['Authorization'] }, // 5 minutes
-      '/api/strategies': { ttl: 600000, vary: ['Authorization'] }, // 10 minutes
-      '/api/analytics': { ttl: 180000, vary: ['Authorization'] }, // 3 minutes
-      '/api/health': { ttl: 30000, vary: [] }, // 30 seconds
+      '/api/robots': { ttl: TIMEOUTS.CACHE_TTL, vary: ['Authorization'] }, // 5 minutes
+      '/api/strategies': { ttl: TIMEOUTS.CACHE_TTL * 2, vary: ['Authorization'] }, // 10 minutes
+      '/api/analytics': { ttl: TIMEOUTS.CACHE_TTL * 0.6, vary: ['Authorization'] }, // 3 minutes
+      '/api/health': { ttl: TIMEOUTS.HEALTH_CHECK, vary: [] }, // 30 seconds
     };
 
     // Apply caching headers to fetch requests
@@ -468,7 +470,7 @@ const entries = list.getEntries();
       forceRefresh?: boolean;
     } = {}
   ): Promise<T> {
-    const { ttl = 300000, key, forceRefresh = false } = cacheOptions;
+    const { ttl = TIMEOUTS.CACHE_TTL, key, forceRefresh = false } = cacheOptions;
     const cacheKey = key || url;
 
     // Check cache first
@@ -564,13 +566,13 @@ const entries = list.getEntries();
     
     // Determine TTL based on table type
     const ttlMap: Record<string, number> = {
-      robots: 300000, // 5 minutes
-      strategies: 600000, // 10 minutes
-      analytics: 180000, // 3 minutes
-      health: 30000, // 30 seconds
+      robots: TIMEOUTS.CACHE_TTL, // 5 minutes
+      strategies: TIMEOUTS.CACHE_TTL * 2, // 10 minutes
+      analytics: TIMEOUTS.CACHE_TTL * 0.6, // 3 minutes
+      health: TIMEOUTS.HEALTH_CHECK, // 30 seconds
     };
 
-    const ttl = ttlMap[table] || 300000;
+    const ttl = ttlMap[table] || TIMEOUTS.CACHE_TTL;
 
     return {
       optimizedQuery,

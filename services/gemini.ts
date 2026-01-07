@@ -18,7 +18,7 @@ type GenAIType = {
 
 let GoogleGenAI: GoogleGenAIConstructor | null = null;
 let Type: GenAIType | null = null;
-import { MQL5_SYSTEM_PROMPT } from "../constants";
+import { MQL5_SYSTEM_PROMPT, TIMEOUTS } from "../constants";
 import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
 import { settingsManager } from "./settingsManager";
 import { getActiveKey } from "../utils/apiKeyUtils";
@@ -88,7 +88,7 @@ class EnhancedCache<T> {
     return entry.data;
   }
   
-  set(key: string, data: T, ttl: number = 300000): void { // Default 5 minutes TTL
+  set(key: string, data: T, ttl: number = TIMEOUTS.CACHE_TTL): void { // Default 5 minutes TTL
     // Remove oldest entries if we're at max size
     if (this.cache.size >= this.maxSize) {
       const firstKey = this.cache.keys().next().value;
