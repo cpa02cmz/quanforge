@@ -104,9 +104,31 @@
     - [x] Batch Database Migration.
     - [x] File Import Size Validation.
     - [x] Stable Market Simulation (Mean Reversion).
-- [x] **Documentation**:
-    - [x] Coding Standards (`coding_standard.md`).
-    - [x] Feature List (`fitur.md`).
+ - [x] **Documentation**:
+     - [x] Coding Standards (`coding_standard.md`)
+     - [x] Feature List (`fitur.md`)
+     - [x] Critical Documentation Fix (2026-01-07):
+       - Removed misleading `docs/API_DOCUMENTATION.md` that documented non-existent REST API endpoints
+       - Created accurate `docs/SERVICE_ARCHITECTURE.md` documenting client-side service layer architecture
+       - Documents actual service pattern (no server-side APIs, pure client-side SPA)
+     - [x] README Enhancement (2026-01-07):
+       - Added comprehensive Supabase setup guide with step-by-step instructions
+       - Included database schema SQL for robots table setup
+       - Added authentication configuration instructions
+       - Added mock mode documentation for development
+     - [x] Troubleshooting Guide (2026-01-07):
+       - Added comprehensive troubleshooting section to README.md
+       - Covers build errors, Supabase connection issues, AI generation failures
+       - Includes environment variable issues, performance problems
+       - Provides deployment troubleshooting for Vercel
+       - Added getting help resources and debugging tips
+     - [x] User Guide (2026-01-07):
+       - Created comprehensive `docs/QUICK_START.md` user guide
+       - Step-by-step instructions for creating first trading strategy
+       - Includes AI prompt examples for different strategy types
+       - Complete workflow from prompt to MetaTrader 5 deployment
+       - Risk management best practices and common mistakes to avoid
+       - Safety warnings and getting help resources
 - [x] **Bug Fixes**:
     - [x] **Critical Build Fix**: Resolved browser crypto compatibility issue in `enhancedRateLimit.ts`
     - [x] **Cross-Platform Compatibility**: Replaced Node.js crypto with browser-compatible hash function
