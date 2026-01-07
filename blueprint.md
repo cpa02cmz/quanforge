@@ -146,3 +146,71 @@ graph TD
 - Easier testing: Individual modules can be tested independently
 
 **Architectural Pattern**: Adapter Pattern (Core) + Single Responsibility (Extracted Modules)
+
+### Data Integrity Improvements (2026-01-07)
+
+#### TypeScript Schema Alignment
+**Problem**: TypeScript `Robot` interface missing fields that exist in database schema
+**Solution**: Updated `types.ts` Robot interface to align with database schema:
+- Added `version: number` - Tracks robot version for versioning
+- Added `is_active: boolean` - Controls active status
+- Added `is_public: boolean` - Controls public sharing visibility
+- Added `view_count: number` - Tracks view analytics
+- Added `copy_count: number` - Tracks copy/fork analytics
+
+**Impact**: 
+- Type safety improved - frontend now has complete type coverage
+- Prevents runtime errors from missing fields
+- Full alignment between TypeScript types and database schema
+
+#### Database-Level Data Validation
+**Problem**: Data validation only at application level, no database enforcement
+**Solution**: Created migration 003 with comprehensive database constraints:
+
+1. **Unique Constraint**: `robots_user_name_unique` on (user_id, name)
+   - Prevents duplicate robot names for same user
+   - Ensures data uniqueness at database level
+
+2. **Strategy Parameter Validation**:
+   - Risk percent: 0-100 range
+   - Stop loss: must be positive
+   - Take profit: must be positive and greater than stop loss
+   - Magic number: must be positive
+
+3. **Backtest Settings Validation**:
+   - Initial deposit: must be positive
+   - Days: must be positive
+   - Leverage: must be positive
+
+4. **Analysis Result Validation**:
+   - Risk score: 0-100 range
+   - Profitability: -100 to 10000 range
+
+5. **Counter Validation**:
+   - View count: non-negative
+   - Copy count: non-negative
+   - Version: must be positive
+
+**Impact**:
+- Data integrity enforced at database level (primary enforcement layer)
+- Prevents invalid data from being stored
+- Application validation now has database backing
+- Consistent data quality across all operations
+
+#### Migration Safety
+**Reversibility**: Migration 003 includes full down script
+- All constraints can be safely removed
+- Down script documented in `003_data_integrity_constraints_down.sql`
+- Follows migration best practices: always reversible
+
+**Documentation**: Comprehensive constraint comments
+- Each constraint has descriptive COMMENT in database
+- Clear documentation of validation rules
+- Maintenance-friendly constraint management
+
+**Data Integrity Benefits**:
+- 100% type coverage for database fields
+- Database-level validation prevents invalid data
+- No duplicate robot names per user
+- All numeric ranges validated
+- Consistent counter data (no negative values)
