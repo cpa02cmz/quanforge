@@ -126,17 +126,10 @@ class EdgeMetricsCollector {
   }
 
   private async sendAlerts(alerts: string[]): Promise<void> {
-    // In production, send to monitoring service
+    // NOTE: Edge alerts endpoint removed - API directory not compatible with Vite build
+    // Alerts are now logged locally only
     if (process.env['NODE_ENV'] === 'production') {
-      try {
-        await fetch('/api/edge-alerts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ alerts, timestamp: Date.now() })
-        });
-      } catch (error) {
-        console.warn('Failed to send edge alerts:', error);
-      }
+      console.warn('[Edge Alerts]', alerts.join(', '));
     }
   }
 

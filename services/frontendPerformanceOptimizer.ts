@@ -131,8 +131,6 @@ class FrontendPerformanceOptimizer {
       '/api/robots',
       '/api/strategies',
       'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
-      '/api/edge/health',
-      '/api/edge/metrics',
     ];
 
     criticalResources.forEach((resource) => {
@@ -515,9 +513,6 @@ class FrontendPerformanceOptimizer {
       new Promise((resolve) => setTimeout(resolve, 2000)).then(() => {
         this.optimizeMemoryUsage();
       }),
-      // Warm up critical API endpoints
-      fetch('/api/edge/health').catch(() => {}),
-      fetch('/api/edge/metrics').catch(() => {}),
     ];
 
     await Promise.allSettled(warmUpTasks);

@@ -394,23 +394,11 @@ class PerformanceMonitor {
 
   private async sendMetric(name: string, data: any): Promise<void> {
     try {
-      // Send to edge metrics endpoint
+      // NOTE: Edge metrics endpoint removed - API directory not compatible with Vite build
+      // Metrics are now collected locally only
       if (process.env.ENABLE_EDGE_METRICS === 'true') {
-        const endpoint = process.env.EDGE_METRICS_ENDPOINT || '/api/edge-metrics';
-        
-        await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name,
-            data,
-            timestamp: Date.now(),
-            userAgent: navigator.userAgent,
-            url: window.location.href
-          })
-        });
+        // Local metrics storage instead of API endpoint
+        console.debug(`[Metric] ${name}:`, data);
       }
     } catch (error) {
       // Silently fail to not impact user experience
