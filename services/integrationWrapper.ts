@@ -20,10 +20,10 @@ import { createScopedLogger } from '../utils/logger';
 
 const logger = createScopedLogger('integration-wrapper');
 
-export interface IntegrationWrapperOptions {
+export interface IntegrationWrapperOptions<T> {
   integrationType: IntegrationType;
   integrationName: string;
-  operation: string;
+  operation: () => Promise<T>;
   operationName?: string;
   fallbacks?: FallbackStrategy<any>[];
   disableCircuitBreaker?: boolean;
@@ -49,7 +49,7 @@ export interface IntegrationResult<T> {
 export class IntegrationWrapper {
   private static async withRetry<T>(
     operation: () => Promise<T>,
-    options: IntegrationWrapperOptions
+    options: IntegrationWrapperOptions<T>
   ): Promise<{ result?: T; attempts: number; lastError?: any }> {
     const config = getConfig(options.integrationName);
     const retryPolicy = { ...config.retryPolicy, ...options.customRetryPolicy };
@@ -102,7 +102,7 @@ export class IntegrationWrapper {
 
   private static async withCircuitBreaker<T>(
     operation: () => Promise<T>,
-    options: IntegrationWrapperOptions
+    options: IntegrationWrapperOptions<T>
   ): Promise<T> {
     if (options.disableCircuitBreaker) {
       return operation();
@@ -119,23 +119,24 @@ export class IntegrationWrapper {
 
   private static async withTimeout<T>(
     operation: () => Promise<T>,
-    options: IntegrationWrapperOptions
+    options: IntegrationWrapperOptions<T>
   ): Promise<T> {
     const config = getConfig(options.integrationName);
     const timeout = options.customTimeout || config.timeouts.overall;
+    const operationName = options.operationName || 'integration-operation';
 
     return wrapWithTimeout(
-      operation,
+      operation(),
       timeout,
-      options.operationName || options.operation
+      operationName
     );
   }
 
   static async execute<T>(
-    options: IntegrationWrapperOptions
+    options: IntegrationWrapperOptions<T>
   ): Promise<IntegrationResult<T>> {
     const startTime = Date.now();
-    const opName = options.operationName || options.operation;
+    const opName = options.operationName || 'integration-operation';
     let attempts = 0;
     let retried = false;
     let circuitBreakerTripped = false;
@@ -169,7 +170,7 @@ export class IntegrationWrapper {
       const totalTime = Date.now() - startTime;
       integrationMetrics.recordOperation(
         options.integrationName,
-        options.operation,
+        opName,
         totalTime,
         true
       );
@@ -194,7 +195,7 @@ export class IntegrationWrapper {
 
       integrationMetrics.recordOperation(
         options.integrationName,
-        options.operation,
+        opName,
         totalTime,
         false
       );
@@ -230,7 +231,7 @@ export class IntegrationWrapper {
   }
 
   private static async executeOperation<T>(
-    options: IntegrationWrapperOptions
+    options: IntegrationWrapperOptions<T>
   ): Promise<T> {
     const operation = async () => {
       return await options.operation();
@@ -340,7 +341,7 @@ export const createIntegrationOperation = <T>(
   integrationType: IntegrationType,
   integrationName: string,
   operation: () => Promise<T>,
-  options?: Partial<IntegrationWrapperOptions>
+  options?: Partial<IntegrationWrapperOptions<T>>
 ): () => Promise<IntegrationResult<T>> => {
   return () => IntegrationWrapper.execute<T>({
     integrationType,
@@ -355,7 +356,7 @@ export const withIntegrationResilience = async <T>(
   integrationType: IntegrationType,
   integrationName: string,
   operation: () => Promise<T>,
-  options?: Partial<IntegrationWrapperOptions>
+  options?: Partial<IntegrationWrapperOptions<T>>
 ): Promise<IntegrationResult<T>> => {
   return IntegrationWrapper.execute<T>({
     integrationType,
