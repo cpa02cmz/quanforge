@@ -147,6 +147,26 @@ graph TD
 
 **Architectural Pattern**: Adapter Pattern (Core) + Single Responsibility (Extracted Modules)
 
+### Compression Utilities Extraction (2026-01-07)
+
+**Problem**: Compression logic (compressData, decompressData, shouldCompress, estimateSize) mixed with cache management in edgeCacheManager.ts, violating Single Responsibility Principle
+
+**Solution**: Extracted to focused module:
+1. **services/edgeCacheCompression.ts** (45 lines)
+   - `CompressionConfig` interface: Configuration for compression threshold
+   - `EdgeCacheCompression` class: Compression utilities with public methods
+   - `compress<T>(data: T): T` - Compress data using lz-string
+   - `decompress<T>(data: T): T` - Decompress data using lz-string
+   - `shouldCompress<T>(data: T): boolean` - Check if compression is beneficial
+   - `estimateSize<T>(data: T): number` - Estimate data size for compression decision
+
+**Impact**:
+- Original `edgeCacheManager.ts`: 1209 lines → After extraction: 1182 lines (27 lines reduction)
+- Better separation of concerns: Compression logic isolated from cache management
+- Improved maintainability: Compression module can be tested and modified independently
+- Reusable design: EdgeCacheCompression class can be used by other cache managers
+- Clear interface: Public API with focused, self-documenting methods
+
 ### Data Integrity Improvements (2026-01-07)
 
 #### TypeScript Schema Alignment
