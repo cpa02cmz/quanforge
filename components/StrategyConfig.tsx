@@ -69,7 +69,7 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
           return 'Invalid symbol format (e.g., BTCUSDT)';
         }
         break;
-      case 'riskPercent':
+      case 'riskPercent': {
         const risk = parseFloat(value);
         if (isNaN(risk) || risk <= 0) {
           return 'Risk percent must be greater than 0';
@@ -78,13 +78,15 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
           return 'Risk percent cannot exceed 100%';
         }
         break;
-      case 'stopLoss':
+      }
+      case 'stopLoss': {
         const sl = parseFloat(value);
         if (isNaN(sl) || sl <= 0) {
           return 'Stop loss must be positive';
         }
         break;
-      case 'takeProfit':
+      }
+      case 'takeProfit': {
         const tp = parseFloat(value);
         if (isNaN(tp) || tp <= 0) {
           return 'Take profit must be positive';
@@ -94,7 +96,8 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
           return 'Take profit must be greater than stop loss';
         }
         break;
-      case 'magicNumber':
+      }
+      case 'magicNumber': {
         const magic = parseInt(value);
         if (isNaN(magic) || magic <= 0) {
           return 'Magic number must be a positive integer';
@@ -103,6 +106,7 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
           return 'Magic number exceeds maximum value';
         }
         break;
+      }
     }
     return undefined;
   };
