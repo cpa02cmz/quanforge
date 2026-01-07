@@ -11,6 +11,39 @@ import { createScopedLogger } from '../utils/logger';
 
 const logger = createScopedLogger('StrategyConfig');
 
+interface FormFieldProps {
+  label: string;
+  error?: string;
+  hint?: string;
+  required?: boolean;
+  children: React.ReactNode;
+  htmlFor: string;
+}
+
+const FormField: React.FC<FormFieldProps> = ({ label, error, hint, required, children, htmlFor }) => (
+  <div>
+    <label
+      htmlFor={htmlFor}
+      className="block text-xs text-gray-400 mb-1"
+    >
+      {label}
+      {required && <span className="text-red-400 ml-0.5" aria-label="required">*</span>}
+    </label>
+    {children}
+    {hint && !error && (
+      <p className="mt-1 text-xs text-gray-500" id={`${htmlFor}-hint`}>{hint}</p>
+    )}
+    {error && (
+      <p className="mt-1 text-xs text-red-400 flex items-center gap-1" role="alert" aria-live="polite">
+        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+        </svg>
+        {error}
+      </p>
+    )}
+  </div>
+);
+
 interface StrategyConfigProps {
   params: StrategyParams;
   onChange: (params: StrategyParams) => void;
@@ -24,6 +57,79 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
   const { t } = useTranslation();
   const [showManualImport, setShowManualImport] = useState(false);
   const [manualImportText, setManualImportText] = useState('');
+  const [errors, setErrors] = useState<Partial<Record<keyof StrategyParams, string>>>({});
+
+  const validateField = (field: keyof StrategyParams, value: any): string | undefined => {
+    switch (field) {
+      case 'symbol':
+        if (!value || typeof value !== 'string' || value.trim().length === 0) {
+          return 'Symbol is required';
+        }
+        if (!/^[A-Z]{3,6}[A-Z]?[A-Z]?$/.test(value.trim().toUpperCase())) {
+          return 'Invalid symbol format (e.g., BTCUSDT)';
+        }
+        break;
+      case 'riskPercent':
+        const risk = parseFloat(value);
+        if (isNaN(risk) || risk <= 0) {
+          return 'Risk percent must be greater than 0';
+        }
+        if (risk > 100) {
+          return 'Risk percent cannot exceed 100%';
+        }
+        break;
+      case 'stopLoss':
+        const sl = parseFloat(value);
+        if (isNaN(sl) || sl <= 0) {
+          return 'Stop loss must be positive';
+        }
+        break;
+      case 'takeProfit':
+        const tp = parseFloat(value);
+        if (isNaN(tp) || tp <= 0) {
+          return 'Take profit must be positive';
+        }
+        const slValue = typeof params.stopLoss === 'number' ? params.stopLoss : parseFloat(params.stopLoss || '0');
+        if (slValue > 0 && tp <= slValue) {
+          return 'Take profit must be greater than stop loss';
+        }
+        break;
+      case 'magicNumber':
+        const magic = parseInt(value);
+        if (isNaN(magic) || magic <= 0) {
+          return 'Magic number must be a positive integer';
+        }
+        if (magic > 2147483647) {
+          return 'Magic number exceeds maximum value';
+        }
+        break;
+    }
+    return undefined;
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof StrategyParams, string>> = {};
+    const fields: (keyof StrategyParams)[] = ['symbol', 'riskPercent', 'stopLoss', 'takeProfit', 'magicNumber'];
+    
+    fields.forEach(field => {
+      const error = validateField(field, params[field]);
+      if (error) {
+        newErrors[field] = error;
+      }
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChangeWithValidation = useCallback((field: keyof StrategyParams, value: any) => {
+    const error = validateField(field, value);
+    setErrors(prev => ({
+      ...prev,
+      [field]: error || undefined
+    }));
+    handleChange(field, value);
+  }, [params, onChange]);
 
   // Default to BTCUSDT if empty or generic
   useEffect(() => {
@@ -196,80 +302,134 @@ const sanitizeInput = (input: string): string => {
 
        {/* Main Config Form */}
        <div className="flex-1 overflow-y-auto p-4 space-y-6">
-         {/* General Settings */}
-         <div className="bg-dark-bg rounded-xl border border-dark-border p-4">
-           <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-             <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>
-             {t('config_general')}
-           </h3>
-           <div className="grid grid-cols-2 gap-4">
-             <div>
-               <label className="block text-xs text-gray-400 mb-1">{t('config_symbol')}</label>
-               <input
-                 type="text"
-                 value={params.symbol}
-                 onChange={(e) => handleChange('symbol', e.target.value)}
-                 className="w-full bg-dark-surface border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none"
-                 placeholder="BTCUSDT"
-               />
-             </div>
-             <div>
-               <label className="block text-xs text-gray-400 mb-1">{t('config_timeframe')}</label>
-               <select
-                 value={params.timeframe}
-                 onChange={(e) => handleChange('timeframe', e.target.value)}
-                 className="w-full bg-dark-surface border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none"
-               >
-                 {TIMEFRAMES.map(tf => (
-                   <option key={tf} value={tf}>{tf}</option>
-                 ))}
-               </select>
-             </div>
-             <div>
-               <label className="block text-xs text-gray-400 mb-1">{t('config_risk')}</label>
-               <NumericInput
-                 value={params.riskPercent}
-                 onChange={(val) => handleChange('riskPercent', val)}
-                 step="0.1"
-                 className="w-full bg-dark-surface border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none"
-               />
-             </div>
-             <div>
-               <label className="block text-xs text-gray-400 mb-1">{t('config_magic')}</label>
-               <NumericInput
-                 value={params.magicNumber}
-                 onChange={(val) => handleChange('magicNumber', val)}
-                 className="w-full bg-dark-surface border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none"
-               />
-             </div>
-           </div>
-         </div>
+          {/* General Settings */}
+          <div className="bg-dark-bg rounded-xl border border-dark-border p-4">
+            <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6H2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>
+              {t('config_general')}
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                label={t('config_symbol')}
+                error={errors.symbol}
+                hint="Trading pair symbol (e.g., BTCUSDT, EURUSD)"
+                required
+                htmlFor="config-symbol"
+              >
+                <input
+                  id="config-symbol"
+                  type="text"
+                  value={params.symbol}
+                  onChange={(e) => handleChangeWithValidation('symbol', e.target.value)}
+                  className={`w-full bg-dark-surface border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 outline-none transition-colors ${
+                    errors.symbol ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
+                  }`}
+                  placeholder="BTCUSDT"
+                  aria-invalid={!!errors.symbol}
+                  aria-describedby={errors.symbol ? 'config-symbol-error' : 'config-symbol-hint'}
+                />
+              </FormField>
+              <FormField
+                label={t('config_timeframe')}
+                htmlFor="config-timeframe"
+                required
+              >
+                <select
+                  id="config-timeframe"
+                  value={params.timeframe}
+                  onChange={(e) => handleChange('timeframe', e.target.value)}
+                  className="w-full bg-dark-surface border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none"
+                >
+                  {TIMEFRAMES.map(tf => (
+                    <option key={tf} value={tf}>{tf}</option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField
+                label={t('config_risk')}
+                error={errors.riskPercent}
+                hint="Percentage of account balance to risk per trade (1-100)"
+                required
+                htmlFor="config-risk"
+              >
+                <NumericInput
+                  id="config-risk"
+                  value={params.riskPercent}
+                  onChange={(val) => handleChangeWithValidation('riskPercent', val)}
+                  step="0.1"
+                  className={`w-full bg-dark-surface border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 outline-none transition-colors ${
+                    errors.riskPercent ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
+                  }`}
+                  aria-invalid={!!errors.riskPercent}
+                  aria-describedby={errors.riskPercent ? undefined : 'config-risk-hint'}
+                />
+              </FormField>
+              <FormField
+                label={t('config_magic')}
+                error={errors.magicNumber}
+                hint="Unique identifier for the Expert Advisor"
+                required
+                htmlFor="config-magic"
+              >
+                <NumericInput
+                  id="config-magic"
+                  value={params.magicNumber}
+                  onChange={(val) => handleChangeWithValidation('magicNumber', val)}
+                  className={`w-full bg-dark-surface border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 outline-none transition-colors ${
+                    errors.magicNumber ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
+                  }`}
+                  aria-invalid={!!errors.magicNumber}
+                  aria-describedby={errors.magicNumber ? undefined : 'config-magic-hint'}
+                />
+              </FormField>
+            </div>
+          </div>
 
-         {/* Trade Logic Settings */}
-         <div className="bg-dark-bg rounded-xl border border-dark-border p-4">
-           <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-             <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-             {t('config_logic')}
-           </h3>
-           <div className="grid grid-cols-2 gap-4">
-             <div>
-               <label className="block text-xs text-gray-400 mb-1">{t('config_sl')}</label>
-               <NumericInput
-                 value={params.stopLoss}
-                 onChange={(val) => handleChange('stopLoss', val)}
-                 className="w-full bg-dark-surface border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none"
-               />
-             </div>
-             <div>
-               <label className="block text-xs text-gray-400 mb-1">{t('config_tp')}</label>
-               <NumericInput
-                 value={params.takeProfit}
-                 onChange={(val) => handleChange('takeProfit', val)}
-                 className="w-full bg-dark-surface border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none"
-               />
-             </div>
-           </div>
-         </div>
+          {/* Trade Logic Settings */}
+          <div className="bg-dark-bg rounded-xl border border-dark-border p-4">
+            <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              {t('config_logic')}
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                label={t('config_sl')}
+                error={errors.stopLoss}
+                hint="Distance in pips to close losing trade"
+                required
+                htmlFor="config-sl"
+              >
+                <NumericInput
+                  id="config-sl"
+                  value={params.stopLoss}
+                  onChange={(val) => handleChangeWithValidation('stopLoss', val)}
+                  className={`w-full bg-dark-surface border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 outline-none transition-colors ${
+                    errors.stopLoss ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
+                  }`}
+                  aria-invalid={!!errors.stopLoss}
+                  aria-describedby={errors.stopLoss ? undefined : 'config-sl-hint'}
+                />
+              </FormField>
+              <FormField
+                label={t('config_tp')}
+                error={errors.takeProfit}
+                hint="Distance in pips to close profitable trade"
+                required
+                htmlFor="config-tp"
+              >
+                <NumericInput
+                  id="config-tp"
+                  value={params.takeProfit}
+                  onChange={(val) => handleChangeWithValidation('takeProfit', val)}
+                  className={`w-full bg-dark-surface border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 outline-none transition-colors ${
+                    errors.takeProfit ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
+                  }`}
+                  aria-invalid={!!errors.takeProfit}
+                  aria-describedby={errors.takeProfit ? undefined : 'config-tp-hint'}
+                />
+              </FormField>
+            </div>
+          </div>
 
          {/* Custom Inputs */}
          <div className="bg-dark-bg rounded-xl border border-dark-border p-4">
@@ -333,14 +493,20 @@ const sanitizeInput = (input: string): string => {
            </div>
          </div>
 
-         {/* Apply Button */}
-         {onApply && (
-           <div className="pt-4">
-             <button
-               onClick={onApply}
-               disabled={isApplying}
-               className="w-full py-3 bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 disabled:opacity-50 text-white font-medium rounded-lg transition-all flex items-center justify-center gap-2"
-             >
+          {/* Apply Button */}
+          {onApply && (
+            <div className="pt-4">
+              <button
+                onClick={() => {
+                  if (validateForm()) {
+                    onApply();
+                  } else {
+                    showToast('Please fix validation errors', 'error');
+                  }
+                }}
+                disabled={isApplying}
+                className="w-full py-3 bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 disabled:opacity-50 text-white font-medium rounded-lg transition-all flex items-center justify-center gap-2"
+              >
                {isApplying ? (
                  <>
                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">

@@ -318,9 +318,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
             {t('chat_title')}
           </h2>
           {messages.length > 0 && onClear && (
-            <button 
+            <button
                 onClick={onClear}
-                className="text-xs text-gray-500 hover:text-red-400 transition-colors flex items-center gap-1"
+                className="text-xs text-gray-500 hover:text-red-400 transition-colors flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1 py-0.5"
                 title="Clear Chat History"
             >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -352,7 +352,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
                             key={strategy.label}
                             onClick={() => handleSuggestionClick(strategy.prompt)}
                             disabled={isLoading}
-                            className="text-left px-4 py-3 bg-dark-bg border border-dark-border hover:border-brand-500/50 hover:bg-dark-border/50 rounded-xl transition-all text-sm group"
+                            className="text-left px-4 py-3 bg-dark-bg border border-dark-border hover:border-brand-500/50 hover:bg-dark-border/50 rounded-xl transition-all text-sm group focus:outline-none focus:ring-2 focus:ring-brand-500"
                         >
                             <span className="block font-medium text-gray-200 group-hover:text-brand-400 transition-colors mb-1">
                                 {strategy.label}
@@ -376,9 +376,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
             </div>
             {onStop && (
-                <button 
+                <button
                     onClick={onStop}
-                    className="p-2 rounded-full bg-dark-bg border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+                    className="p-2 rounded-full bg-dark-bg border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
                     title={t('chat_stop')}
                 >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" /></svg>
@@ -407,7 +407,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="absolute right-2 top-2 p-1.5 bg-brand-600 rounded-lg text-white hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-brand-600/20"
+            className="absolute right-2 top-2 p-1.5 bg-brand-600 rounded-lg text-white hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-brand-600/20 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-dark-bg"
             aria-label="Send message"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
