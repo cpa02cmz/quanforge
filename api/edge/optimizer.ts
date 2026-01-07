@@ -373,7 +373,7 @@ async function checkDatabaseHealth(): Promise<{ status: string; latency?: number
       status: result.error ? 'unhealthy' : 'healthy',
       latency,
     };
-  } catch (error) {
+  } catch (_error) {
     return { status: 'unhealthy' };
   }
 }
@@ -389,7 +389,7 @@ async function optimizeBundle(): Promise<{ optimized: boolean; size?: number }> 
     return {
       optimized: true,
     };
-  } catch (error) {
+  } catch (_error) {
     return { optimized: false };
   }
 }
@@ -405,7 +405,7 @@ async function optimizeCache(): Promise<{ optimized: boolean; entries?: number }
     return {
       optimized: true,
     };
-  } catch (error) {
+  } catch (_error) {
     return { optimized: false };
   }
 }
@@ -441,7 +441,7 @@ async function optimizeEdge(region: string): Promise<{ optimized: boolean; regio
       optimized: true,
       region,
     };
-  } catch (error) {
+  } catch (_error) {
     return { optimized: false, region };
   }
 }

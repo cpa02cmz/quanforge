@@ -19,13 +19,6 @@ const streamingConnections = new Map<string, {
   filters: AnalyticsFilters;
 }>();
 
-// Analytics data buffer for streaming
-const analyticsBuffer = new Map<string, {
-  data: any[];
-  maxSize: number;
-  ttl: number;
-}>();
-
 interface AnalyticsFilters {
   regions?: string[];
   metrics?: string[];

@@ -71,7 +71,7 @@ export default async function handler(req: Request) {
           'X-Response-Time': `${Date.now() - startTime}ms`,
         });
       }
-    } catch (error) {
+    } catch (_error) {
       // If in-progress request fails, continue with normal processing
       requestCache.delete(cacheKey);
     }
@@ -154,7 +154,7 @@ export default async function handler(req: Request) {
       headers 
     });
 
-  } catch (error) {
+  } catch (_error) {
     // Keep console.error for edge function debugging (acceptable in edge functions)
     return new Response(JSON.stringify({
       error: 'Internal Server Error',

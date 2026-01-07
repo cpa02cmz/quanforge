@@ -1,6 +1,7 @@
 import React, { memo, useState, useEffect } from 'react';
 
 // Dynamic import for Recharts to optimize bundle size
+// Using 'any' is acceptable for dynamically imported third-party libraries
 interface RechartsComponents {
   PieChart: any;
   Pie: any;
