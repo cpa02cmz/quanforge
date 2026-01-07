@@ -365,8 +365,8 @@ Key metrics to monitor:
 
 ## Related Documentation
 
-- [blueprint.md](./blueprint.md) - System architecture
-- [task.md](./task.md) - Implementation tasks
+- [blueprint.md](./docs/blueprint.md) - System architecture
+- [task.md](./docs/task.md) - Implementation tasks
 - [AGENTS.md](./AGENTS.md) - Agent guidelines
 
 ---

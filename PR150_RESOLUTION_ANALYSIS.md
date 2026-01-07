@@ -229,8 +229,8 @@ If Cloudflare Workers deployment investigation is pursued:
 ## Related Documentation
 
 - [AGENTS.md](./AGENTS.md) - Agent guidelines and established patterns
-- [blueprint.md](./blueprint.md) - System architecture
-- [task.md](./task.md) - Implementation tasks
+- [blueprint.md](./docs/blueprint.md) - System architecture
+- [task.md](./docs/task.md) - Implementation tasks
 - [INTEGRATION_HARDENING.md](./INTEGRATION_HARDENING.md) - Integration hardening system documentation
 
 ## Framework Impact
