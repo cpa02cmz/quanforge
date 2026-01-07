@@ -183,6 +183,43 @@
 - [ ] **Documentation**: Create bug tracking and maintenance procedures
 - [ ] **Platform Monitoring**: Monitor Vercel/Cloudflare deployment platforms for stability issues
 
+### Code Quality & Refactoring Tasks (2026-01-07)
+
+## [REFACTOR] Extract Compression Utilities from edgeCacheManager
+- **Location**: services/edgeCacheManager.ts (lines 815-844)
+- **Issue**: Compression logic (compressData, decompressData, shouldCompress, estimateSize) mixed with cache management, violating Single Responsibility Principle
+- **Suggestion**: Extract to services/edgeCacheCompression.ts module with focused compression utilities class
+- **Priority**: High
+- **Effort**: Small
+
+## [REFACTOR] Replace `any` Types in gemini.ts
+- **Location**: services/gemini.ts (lines 231, 348, 386, 740, 890, 935, 971, 992, 1124)
+- **Issue**: 10+ instances of `any` type reducing type safety and causing runtime risks in critical AI service
+- **Suggestion**: Create proper type definitions for StrategyParams, Error, Config, and JSON extraction to eliminate all `any` types
+- **Priority**: High
+- **Effort**: Medium
+
+## [REFACTOR] Remove Console Statements from Core Services
+- **Location**: Multiple services (gemini.ts, securityManager.ts, edgeCacheManager.ts)
+- **Issue**: 20+ console statements scattered throughout codebase, violating logging best practices and potentially exposing sensitive information
+- **Suggestion**: Replace console statements with logger instances (existing utils/logger.ts) for consistent, structured logging
+- **Priority**: Medium
+- **Effort**: Medium
+
+## [REFACTOR] Break Down securityManager.ts (1611 lines)
+- **Location**: services/securityManager.ts (1611 lines total)
+- **Issue**: Monolithic service handling multiple responsibilities (auth, encryption, rate limiting, validation) - difficult to maintain and test
+- **Suggestion**: Extract focused modules: authService.ts, encryptionService.ts, rateLimitService.ts, validationService.ts
+- **Priority**: Medium
+- **Effort**: Large
+
+## [REFACTOR] Extract SEO Utilities into Focused Modules
+- **Location**: utils/comprehensiveSEO.tsx (1515 lines), seoEnhanced.tsx (1390 lines), enhancedSEO.tsx (1317 lines)
+- **Issue**: Three large utility files with overlapping SEO functionality creating maintenance burden and potential duplication
+- **Suggestion**: Consolidate into focused modules: seoMetadata.ts, seoSitemap.ts, seoAnalyzer.ts, seoValidator.ts
+- **Priority**: Low
+- **Effort**: Large
+
 ### Data Architecture Improvements (2026-01-07) - COMPLETED
 - [x] **TypeScript Schema Alignment**: Updated Robot interface to include all database fields (version, is_active, is_public, view_count, copy_count) for complete type safety
 - [x] **Database-Level Validation**: Created migration 003 with comprehensive CHECK constraints for trading parameters, backtest settings, and analysis results
