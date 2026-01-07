@@ -320,11 +320,11 @@ class FrontendPerformanceOptimizer {
    */
   private preloadNonCriticalModules(): void {
     // Lazy load non-critical features
+    // Note: advancedAPICache is statically imported in App.tsx, so not included here
     const nonCriticalModules = [
       () => import('../components/ChartComponents'),
       () => import('../components/BacktestPanel'),
       () => import('../components/MarketTicker'),
-      () => import('../services/advancedAPICache'),
     ];
 
     // Load modules with low priority when idle
