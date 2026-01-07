@@ -73,6 +73,16 @@ graph TD
 *   **API Keys**: Accessed via `process.env`.
 *   **Input Sanitization**: Filenames are sanitized before download.
 *   **Prompt Engineering**: System prompts prevents the AI from generating harmful or non-MQL5 content.
+*   **Security Headers (2026-01-07)**: Comprehensive HTTP security headers configured in vercel.json
+    - HSTS: `max-age=31536000; includeSubDomains; preload`
+    - CSP: Strict Content-Security-Policy with restricted sources
+    - X-Frame-Options: DENY
+    - X-Content-Type-Options: nosniff
+    - X-XSS-Protection: 1; mode=block
+    - Permissions-Policy: Restricted device access
+    - Cross-Origin Policies: require-corp, same-origin
+*   **Dependency Management**: All dependencies updated to latest stable versions, 0 vulnerabilities
+*   **Attack Surface Reduction**: Removed 5 unused dependencies and incompatible Next.js middleware
 
 ## 6. Deployment Considerations
 
