@@ -3,6 +3,34 @@
 
 ## Completed Tasks
 
+- [x] **UI/UX Improvements (2026-01-07)**: Comprehensive accessibility and usability enhancements
+  - **Component Extraction** (ui-001): Created reusable FormField component with accessibility features
+    - FormField.tsx with ARIA labels, error announcements, screen reader support
+    - Includes: FormField, InputWrapper, FormHelperText, FormLabel components
+    - Integrated with StrategyConfig.tsx for consistent form UI
+  - **Keyboard Navigation** (ui-002): Fixed keyboard navigation for StrategyConfig custom inputs
+    - Created CustomInputRow.tsx with enhanced keyboard navigation
+    - Added arrow key navigation between custom input rows (Up/Down arrows)
+    - Implemented keyboard shortcuts (Delete/Backspace) to remove inputs
+    - Enhanced focus management and ARIA labels for each input
+  - **Focus Indicators** (ui-003): Added consistent focus indicators across all interactive elements
+    - Added global focus-visible styles in index.html (2px solid #22c55e)
+    - Implemented focus box-shadow for better visibility
+    - Removed outline for mouse users, kept for keyboard users
+    - Applied to all: a, button, input, select, textarea, [tabindex]
+  - **Mobile Menu** (ui-004): Enhanced mobile menu with body scroll lock and better touch targets
+    - Added body scroll lock when mobile menu is open (prevents background scrolling)
+    - Improved touch targets (min 44x44px for accessibility compliance)
+    - Added proper ARIA attributes (aria-expanded, aria-controls, role="presentation")
+    - Enhanced backdrop with proper accessibility roles
+    - Improved mobile menu transitions and focus states
+  - **Form Validation** (ui-005): Improved form validation ARIA announcements with screen reader support
+    - Created utils/announcer.ts for screen reader announcements
+    - Added aria-live="assertive" for validation errors (immediate announcements)
+    - Added sr-only CSS utility for screen reader-only content
+    - Enhanced FormField component with proper error announcements
+  - **Build Status**: ✅ TypeScript compilation passes (zero errors), ✅ Production build succeeds (12.09s)
+
 - [x] **Console Statement Cleanup (2026-01-07)**: Replaced non-error console statements with logger utility
   - Replaced 16 console statements across 5 API edge files (warmup.ts, optimizer.ts, cache-invalidate.ts, edge-optimize.ts, edge-analytics.ts)
   - Used scoped logger instances for better module identification (warmupLogger, cacheLogger, perfLogger)
