@@ -15,6 +15,11 @@ describe('RobotIndexManager', () => {
       updated_at: '2024-01-01T00:00:00Z',
       code: '// test code 1',
       chat_history: [],
+      version: 1,
+      is_active: true,
+      is_public: false,
+      view_count: 0,
+      copy_count: 0,
     },
     {
       id: 'robot-2',
@@ -26,6 +31,11 @@ describe('RobotIndexManager', () => {
       updated_at: '2024-01-02T00:00:00Z',
       code: '// test code 2',
       chat_history: [],
+      version: 1,
+      is_active: true,
+      is_public: false,
+      view_count: 0,
+      copy_count: 0,
     },
     {
       id: 'robot-3',
@@ -37,6 +47,11 @@ describe('RobotIndexManager', () => {
       updated_at: '2024-01-03T00:00:00Z',
       code: '// test code 3',
       chat_history: [],
+      version: 1,
+      is_active: true,
+      is_public: false,
+      view_count: 0,
+      copy_count: 0,
     },
     {
       id: 'robot-4',
@@ -48,6 +63,11 @@ describe('RobotIndexManager', () => {
       updated_at: '2024-01-04T00:00:00Z',
       code: '// test code 4',
       chat_history: [],
+      version: 1,
+      is_active: true,
+      is_public: false,
+      view_count: 0,
+      copy_count: 0,
     },
   ];
 
@@ -104,6 +124,11 @@ describe('RobotIndexManager', () => {
           updated_at: '2024-01-01T00:00:00Z',
           code: '// code',
           chat_history: [],
+          version: 1,
+          is_active: true,
+          is_public: false,
+          view_count: 0,
+          copy_count: 0,
         },
       ];
 
@@ -161,6 +186,11 @@ describe('RobotIndexManager', () => {
         updated_at: '2024-01-05T00:00:00Z',
         code: '// new code',
         chat_history: [],
+        version: 1,
+        is_active: true,
+        is_public: false,
+        view_count: 0,
+        copy_count: 0,
       });
 
       const index = manager.getIndex(newRobots);
@@ -203,6 +233,11 @@ describe('RobotIndexManager', () => {
           updated_at: '2024-01-01T00:00:00Z',
           code: '// code a',
           chat_history: [],
+          version: 1,
+          is_active: true,
+          is_public: false,
+          view_count: 0,
+          copy_count: 0,
         },
         {
           id: 'robot-b',
@@ -214,6 +249,11 @@ describe('RobotIndexManager', () => {
           updated_at: '2024-01-02T00:00:00Z',
           code: '// code b',
           chat_history: [],
+          version: 1,
+          is_active: true,
+          is_public: false,
+          view_count: 0,
+          copy_count: 0,
         },
       ];
 
@@ -234,6 +274,11 @@ describe('RobotIndexManager', () => {
           updated_at: '2024-01-01T00:00:00Z',
           code: '// code',
           chat_history: [],
+          version: 1,
+          is_active: true,
+          is_public: false,
+          view_count: 0,
+          copy_count: 0,
         },
       ];
 
@@ -266,6 +311,11 @@ describe('robotIndexManager singleton', () => {
         updated_at: '2024-01-01T00:00:00Z',
         code: '// code',
         chat_history: [],
+        version: 1,
+        is_active: true,
+        is_public: false,
+        view_count: 0,
+        copy_count: 0,
       },
     ];
 
