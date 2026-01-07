@@ -284,13 +284,6 @@
   - Build passes successfully (12.62s), typecheck passes without errors
   - Next: Test the extracted module independently
 
-## [REFACTOR] Extract Compression Utilities from edgeCacheManager
-- **Location**: services/edgeCacheManager.ts (lines 815-844)
-- **Issue**: Compression logic (compressData, decompressData, shouldCompress, estimateSize) mixed with cache management, violating Single Responsibility Principle
-- **Suggestion**: Extract to services/edgeCacheCompression.ts module with focused compression utilities class
-- **Priority**: High
-- **Effort**: Small
-
 ## [REFACTOR] Replace `any` Types in gemini.ts
 - **Location**: services/gemini.ts (lines 231, 348, 386, 740, 890, 935, 971, 992, 1124)
 - **Issue**: 10+ instances of `any` type reducing type safety and causing runtime risks in critical AI service
@@ -317,6 +310,27 @@
 - **Issue**: Three large utility files with overlapping SEO functionality creating maintenance burden and potential duplication
 - **Suggestion**: Consolidate into focused modules: seoMetadata.ts, seoSitemap.ts, seoAnalyzer.ts, seoValidator.ts
 - **Priority**: Low
+- **Effort**: Large
+
+## [REFACTOR] Create localStorage Abstraction Layer
+- **Location**: 125 occurrences across services/ and components/ directories
+- **Issue**: Direct localStorage access throughout codebase couples code to browser storage, makes testing difficult, and lacks unified error handling
+- **Suggestion**: Create storage abstraction interface (IStorage) with localStorage and mock implementations; migrate all direct access to use abstraction
+- **Priority**: High
+- **Effort**: Medium
+
+## [REFACTOR] Extract LRUCache from gemini.ts to Reusable Utility
+- **Location**: services/gemini.ts (lines 267-300+)
+- **Issue**: LRUCache class defined inside gemini.ts service, violating DRY principle and preventing reuse across other services
+- **Suggestion**: Extract to utils/cache.ts with proper exports (LRUCache, LRUConfig interface); update gemini.ts to import from utils/cache.ts
+- **Priority**: Low
+- **Effort**: Small
+
+## [REFACTOR] Break Down StrategyConfig Component (517 lines)
+- **Location**: components/StrategyConfig.tsx
+- **Issue**: Large component mixing form management, validation, UI rendering, and custom input handling; difficult to maintain and test
+- **Suggestion**: Extract custom hooks (useStrategyConfig, useCustomInputs, useFormValidation) and sub-components (TimeframeSelector, RiskManagement, CustomInputsEditor)
+- **Priority**: Medium
 - **Effort**: Large
 
 ### Data Architecture Improvements (2026-01-07) - COMPLETED
