@@ -1,6 +1,7 @@
 import { Robot } from '../../types';
 import { getClient, STORAGE_KEYS, safeParse, trySaveToStorage, generateUUID } from './client';
 import { handleError } from '../../utils/errorHandler';
+import { storage } from '../../utils/storage';
 
 // Robot operations
 export const getRobots = async (userId: string): Promise<Robot[]> => {
@@ -16,8 +17,8 @@ export const getRobots = async (userId: string): Promise<Robot[]> => {
         return data || [];
     } catch (error) {
         handleError(error, 'getRobots');
-        // Fallback to localStorage
-        const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
+        // Fallback to storage
+        const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
         return robots.filter((r: Robot) => r.user_id === userId);
     }
 };
@@ -35,8 +36,8 @@ export const getRobot = async (id: string): Promise<Robot | null> => {
         return data;
     } catch (error) {
         handleError(error, 'getRobot');
-        // Fallback to localStorage
-        const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
+        // Fallback to storage
+        const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
         return robots.find((r: Robot) => r.id === id) || null;
     }
 };
@@ -54,8 +55,8 @@ export const saveRobot = async (robot: Robot): Promise<Robot> => {
         return data;
     } catch (error) {
         handleError(error, 'saveRobot');
-        // Fallback to localStorage
-        const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
+        // Fallback to storage
+        const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
         const existingIndex = robots.findIndex((r: Robot) => r.id === robot.id);
         
         if (existingIndex >= 0) {
@@ -64,7 +65,7 @@ export const saveRobot = async (robot: Robot): Promise<Robot> => {
             robots.push(robot);
         }
         
-        trySaveToStorage(STORAGE_KEYS.ROBOTS, JSON.stringify(robots));
+        trySaveToStorage(STORAGE_KEYS.ROBOTS, robots);
         return robot;
     }
 };
@@ -80,10 +81,10 @@ export const deleteRobot = async (id: string): Promise<void> => {
         if (error) throw error;
     } catch (error) {
         handleError(error, 'deleteRobot');
-        // Fallback to localStorage
-        const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
+        // Fallback to storage
+        const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
         const filteredRobots = robots.filter((r: Robot) => r.id !== id);
-        trySaveToStorage(STORAGE_KEYS.ROBOTS, JSON.stringify(filteredRobots));
+        trySaveToStorage(STORAGE_KEYS.ROBOTS, filteredRobots);
     }
 };
 
@@ -115,8 +116,8 @@ export const batchUpdateRobots = async (robots: Robot[]): Promise<Robot[]> => {
         return data || [];
     } catch (error) {
         handleError(error, 'batchUpdateRobots');
-        // Fallback to localStorage
-        const existingRobots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
+        // Fallback to storage
+        const existingRobots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
         const updatedRobots = [...existingRobots];
         
         robots.forEach(robot => {
@@ -128,7 +129,7 @@ export const batchUpdateRobots = async (robots: Robot[]): Promise<Robot[]> => {
             }
         });
         
-        trySaveToStorage(STORAGE_KEYS.ROBOTS, JSON.stringify(updatedRobots));
+        trySaveToStorage(STORAGE_KEYS.ROBOTS, updatedRobots);
         return robots;
     }
 };
@@ -145,8 +146,8 @@ export const getRobotsByIds = async (ids: string[]): Promise<Robot[]> => {
         return data || [];
     } catch (error) {
         handleError(error, 'getRobotsByIds');
-        // Fallback to localStorage
-        const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
+        // Fallback to storage
+        const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
         return robots.filter((r: Robot) => ids.includes(r.id));
     }
 };
@@ -189,8 +190,8 @@ export const getRobotsPaginated = async (
         };
     } catch (error) {
         handleError(error, 'getRobotsPaginated');
-        // Fallback to localStorage
-        const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
+        // Fallback to storage
+        const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
         const userRobots = robots.filter((r: Robot) => r.user_id === userId);
         const total = userRobots.length;
         const totalPages = Math.ceil(total / limit);

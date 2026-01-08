@@ -3,6 +3,8 @@
  * Provides sophisticated caching strategies for API calls to improve performance
  */
 
+import { storage } from '../utils/storage';
+
 // Import required types for compatibility
 type HeadersInit = string[][] | Record<string, string> | Headers;
 type BodyInit = Blob | ArrayBuffer | Uint8Array | DataView | FormData | URLSearchParams | ReadableStream | string;
@@ -81,29 +83,23 @@ class AdvancedAPICache {
    };
   
    private saveToStorage(): void {
-     if (typeof localStorage !== 'undefined') {
-       try {
-         localStorage.setItem(this.storageKey, JSON.stringify(Array.from(this.cache.entries())));
-       } catch (e) {
-         // Storage might be full or unavailable, handle gracefully
-         console.error('Failed to save cache to storage:', e);
-       }
-     }
-   }
+      try {
+        storage.set(this.storageKey, Array.from(this.cache.entries()));
+      } catch (e) {
+        console.error('Failed to save cache to storage:', e);
+      }
+    }
   
    private loadFromStorage(): void {
-     if (typeof localStorage !== 'undefined') {
-       try {
-         const stored = localStorage.getItem(this.storageKey);
-         if (stored) {
-           const data = JSON.parse(stored);
-           this.cache = new Map(data);
-         }
-       } catch (e) {
-         console.error('Failed to load cache from storage:', e);
-       }
-     }
-   }
+      try {
+        const stored = storage.get<[string, CacheEntry][]>(this.storageKey);
+        if (stored) {
+          this.cache = new Map(stored);
+        }
+      } catch (e) {
+        console.error('Failed to load cache from storage:', e);
+      }
+    }
   
 private generateKey(url: string, options?: RequestInit): string {
      // Create a unique key based on URL and request options
@@ -228,12 +224,10 @@ private generateKey(url: string, options?: RequestInit): string {
     this.saveToStorage();
   }
   
-  async clear(): Promise<void> {
-    this.cache.clear();
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(this.storageKey);
+   async clear(): Promise<void> {
+      this.cache.clear();
+      storage.remove(this.storageKey);
     }
-  }
   
   size(): number {
     return this.cache.size;

@@ -6,8 +6,8 @@ interface LoadingStateProps {
   className?: string;
 }
 
-export const LoadingState: React.FC<LoadingStateProps> = memo(({ 
-  message = 'Loading...', 
+export const LoadingState: React.FC<LoadingStateProps> = memo(({
+  message = 'Loading...',
   size = 'md',
   className = ''
 }) => {
@@ -18,28 +18,48 @@ export const LoadingState: React.FC<LoadingStateProps> = memo(({
   };
 
   return (
-    <div className={`flex flex-col items-center justify-center p-8 ${className}`}>
-      <div className={`animate-spin rounded-full border-b-2 border-brand-500 ${sizeClasses[size]}`}></div>
+    <div
+      className={`flex flex-col items-center justify-center p-8 ${className}`}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div
+        className={`animate-spin rounded-full border-b-2 border-brand-500 ${sizeClasses[size]}`}
+        aria-hidden="true"
+      ></div>
       {message && (
-        <p className="mt-4 text-gray-400 text-sm">{message}</p>
+        <p className="mt-4 text-gray-400 text-sm" aria-live="polite">{message}</p>
       )}
-</div>
+    </div>
   );
 });
 
 interface CardSkeletonProps {
   count?: number;
   className?: string;
+  'aria-label'?: string;
 }
 
-export const CardSkeletonLoader: React.FC<CardSkeletonProps> = memo(({ 
+export const CardSkeletonLoader: React.FC<CardSkeletonProps> = memo(({
   count = 3,
-  className = ''
+  className = '',
+  'aria-label': ariaLabel = 'Loading content'
 }) => {
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ${className}`}>
+    <div
+      className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ${className}`}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label={ariaLabel}
+    >
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="bg-dark-surface border border-dark-border rounded-xl p-6 animate-pulse">
+        <div
+          key={i}
+          className="bg-dark-surface border border-dark-border rounded-xl p-6 animate-pulse"
+          aria-hidden="true"
+        >
           <div className="flex justify-between items-start mb-4">
             <div className="w-10 h-10 bg-dark-bg rounded-lg"></div>
             <div className="w-20 h-4 bg-dark-bg rounded"></div>

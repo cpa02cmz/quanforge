@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from '../settingsManager';
+import { storage } from '../../utils/storage';
 
 // Connection retry configuration
 export const RETRY_CONFIG = {
@@ -20,28 +21,39 @@ export const STORAGE_KEYS = {
   ROBOTS: 'mock_robots',
 };
 
-// Helper for safe JSON parsing
-export const safeParse = (data: string | null, fallback: any) => {
+// Helper for safe JSON parsing (handles both strings and already-parsed data)
+export const safeParse = (data: string | any | null, fallback: any) => {
     if (!data) return fallback;
-    try {
-        const parsed = JSON.parse(data);
-        // Security: Prevent prototype pollution
-        if (parsed && typeof parsed === 'object' && ('__proto__' in parsed || 'constructor' in parsed)) {
-             return fallback;
+    
+    let parsed: any;
+    
+    // If already an object/array, use directly (storage.get() pre-parses)
+    if (typeof data === 'object') {
+        parsed = data;
+    } else {
+        // Otherwise parse as JSON string
+        try {
+            parsed = JSON.parse(data);
+        } catch (e) {
+            console.error("Failed to parse data from storage:", e);
+            return fallback;
         }
-        return parsed;
-    } catch (e) {
-        console.error("Failed to parse data from storage:", e);
+    }
+    
+    // Security: Prevent prototype pollution
+    if (parsed && typeof parsed === 'object' && ('__proto__' in parsed || 'constructor' in parsed)) {
         return fallback;
     }
+    return parsed;
 };
 
 // Helper: Try save to storage with Quota handling
-export const trySaveToStorage = (key: string, value: string) => {
+export const trySaveToStorage = (key: string, value: any) => {
     try {
-        localStorage.setItem(key, value);
+        storage.set(key, value);
     } catch (e: any) {
         if (
+            e.name === 'StorageQuotaError' || 
             e.name === 'QuotaExceededError' || 
             e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
             e.code === 22 ||
@@ -119,7 +131,7 @@ const createMockClient = () => {
     
     const mockAuth = {
         getSession: async () => {
-            const session = safeParse(localStorage.getItem(STORAGE_KEYS.SESSION), null);
+            const session = safeParse(storage.get(STORAGE_KEYS.SESSION) || null, null);
             return { data: { session }, error: null };
         },
         onAuthStateChange: (callback: (event: string, session: any) => void) => {
@@ -156,7 +168,7 @@ const createMockClient = () => {
             return { data: { user: { email }, session }, error: null };
         },
         signOut: async () => {
-            localStorage.removeItem(STORAGE_KEYS.SESSION);
+            storage.remove(STORAGE_KEYS.SESSION);
             authListeners.forEach(cb => cb('SIGNED_OUT', null));
             return { error: null };
         }
