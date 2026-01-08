@@ -27,31 +27,46 @@ import { apiDeduplicator } from "./apiDeduplicator";
 import { createScopedLogger } from "../utils/logger";
 import { aiWorkerManager } from "./aiWorkerManager";
 import { getAIRateLimiter } from "../utils/enhancedRateLimit";
+import { getLocalStorage, getSessionStorage } from "../utils/storage";
 
 const logger = createScopedLogger('gemini');
+
+// Storage instances for session management
+const authStorage = getLocalStorage();
+const sessionStorageInstance = getSessionStorage();
+
+interface SessionData {
+  user?: {
+    id?: string;
+  };
+}
+
+interface MockSession {
+  user?: {
+    id?: string;
+  };
+}
 
 // Helper function to get current user ID for rate limiting
 const getCurrentUserId = (): string | null => {
   try {
     // Try to get user from Supabase session first
-    const sessionData = localStorage.getItem('supabase.auth.token');
+    const sessionData = authStorage.get<SessionData>('supabase.auth.token');
     if (sessionData) {
-      const session = JSON.parse(sessionData);
-      return session?.user?.id || null;
+      return sessionData?.user?.id || null;
     }
-    
+
     // Fallback to mock session
-    const mockSession = localStorage.getItem('mock_session');
+    const mockSession = authStorage.get<MockSession>('mock_session');
     if (mockSession) {
-      const session = JSON.parse(mockSession);
-      return session?.user?.id || null;
+      return mockSession?.user?.id || null;
     }
-    
+
     // Generate anonymous session ID if none exists
-    let anonymousId = sessionStorage.getItem('anonymous_session_id');
+    let anonymousId = sessionStorageInstance.get<string>('anonymous_session_id');
     if (!anonymousId) {
       anonymousId = `anon_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-      sessionStorage.setItem('anonymous_session_id', anonymousId);
+      sessionStorageInstance.set('anonymous_session_id', anonymousId);
     }
     return anonymousId;
   } catch (error) {

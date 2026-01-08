@@ -1,29 +1,26 @@
 import { UserSession } from '../types';
 import { securityManager } from './securityManager';
+import { getLocalStorage, StorageQuotaError } from '../utils/storage';
 
 const STORAGE_KEY = 'mock_session';
 const ROBOTS_KEY = 'mock_robots';
+const storage = getLocalStorage({ prefix: 'mock_' });
 
-const safeParse = (data: string | null, fallback: any) => {
+const safeParse = <T>(data: T | null, fallback: any) => {
     if (!data) return fallback;
     try {
-        return securityManager.safeJSONParse(data) || fallback;
+        return data || fallback;
     } catch (e) {
         console.error("Failed to parse data from storage:", e);
         return fallback;
     }
 };
 
-const trySaveToStorage = (key: string, value: string) => {
+const trySaveToStorage = (key: string, value: any) => {
     try {
-        localStorage.setItem(key, value);
+        storage.set(key, value);
     } catch (e: any) {
-        if (
-            e.name === 'QuotaExceededError' || 
-            e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-            e.code === 22 ||
-            e.code === 1014
-        ) {
+        if (e instanceof StorageQuotaError) {
             throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
         }
         throw e;
@@ -41,7 +38,7 @@ const generateUUID = (): string => {
 };
 
 const getMockSession = () => {
-  return safeParse(localStorage.getItem(STORAGE_KEY), null);
+  return safeParse(storage.get(STORAGE_KEY), null);
 };
 
 const authListeners: Array<(event: string, session: UserSession | null) => void> = [];
@@ -69,7 +66,7 @@ export const mockAuth = {
       access_token: 'mock-token-' + Date.now(),
       expires_in: 3600
     };
-    trySaveToStorage(STORAGE_KEY, JSON.stringify(session));
+    trySaveToStorage(STORAGE_KEY, session);
     authListeners.forEach(cb => cb('SIGNED_IN', session));
     return { data: { session }, error: null };
   },
@@ -79,12 +76,12 @@ export const mockAuth = {
       access_token: 'mock-token-' + Date.now(),
       expires_in: 3600
     };
-    trySaveToStorage(STORAGE_KEY, JSON.stringify(session));
+    trySaveToStorage(STORAGE_KEY, session);
     authListeners.forEach(cb => cb('SIGNED_IN', session));
     return { data: { user: { email }, session }, error: null };
   },
   signOut: async () => {
-    localStorage.removeItem(STORAGE_KEY);
+    storage.remove(STORAGE_KEY);
     authListeners.forEach(cb => cb('SIGNED_OUT', null));
     return { error: null };
   }
