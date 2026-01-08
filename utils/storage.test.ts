@@ -8,7 +8,7 @@ import {
   StorageQuotaError,
   StorageNotAvailableError,
   type IStorage,
-} from '../storage';
+} from './storage';
 
 describe('IStorage Interface', () => {
   it('should have all required methods', () => {

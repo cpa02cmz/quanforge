@@ -60,8 +60,8 @@ export class ValidationService {
     /RegOpenKey\s*\(|RegCreateKey\s*\(|RegSetValue\s*\(|RegGetValue\s*\(/i,
     
     // Dangerous imports
-    /#import\s+["\']?(?!user32\.dll|kernel32\.dll|gdi32\.dll|msvcrt\.dll)[^"\']*["\']?/i,
-    /Import\s+["\']?(?!user32\.dll|kernel32\.dll|gdi32\.dll|msvcrt\.dll)[^"\']*["\']?/i,
+    /#import\s+["']?(?!user32\.dll|kernel32\.dll|gdi32\.dll|msvcrt\.dll)[^"']*["']?/i,
+    /Import\s+["']?(?!user32\.dll|kernel32\.dll|gdi32\.dll|msvcrt\.dll)[^"']*["']?/i,
     
     // Resource operations
     /ResourceCreate\s*\(|ResourceSave\s*\(|ResourceRead\s*\(/i,
@@ -90,7 +90,7 @@ export class ValidationService {
     
     // Array operations that could lead to memory issues
     /ArrayCopy\s*\(|ArrayFill\s*\(|ArraySort\s*\(/i,
-    
+
     // Time functions that could be used for timing attacks
     /GetTickCount\s*\(|TimeCurrent\s*\(|TimeLocal\s*\(/i,
     
@@ -100,7 +100,7 @@ export class ValidationService {
   
   private static readonly OBFUSCATION_PATTERNS = [
     /0x[0-9a-fA-F]+/g,  // Hex encoded content
-    /[A-Za-z0-9+\/]{20,}={0,2}/g,  // Potential base64
+    /[A-Za-z0-9+/]{20,}={0,2}/g,  // Potential base64
     /\\u[0-9a-fA-F]{4}/g,  // Unicode escapes
     /\\x[0-9a-fA-F]{2}/g,  // Hex escapes
   ];

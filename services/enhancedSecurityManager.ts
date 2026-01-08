@@ -88,11 +88,11 @@ export class EnhancedSecurityManager {
     
     // Path traversal
     pathTraversal: [
-      /\.\.[\/\\]/g,
-      /%2e%2e[\/\\]/i,
+      /\.\.[/\\]/g,
+      /%2e%2e[/\\]/i,
       /\.\.%2f/i,
       /\.\.%5c/i,
-      /%252e%252e[\/\\]/i,
+      /%252e%252e[/\\]/i,
       /\/etc\/passwd/i,
       /\/windows\/system32/i,
       /\\windows\\system32/i
@@ -151,15 +151,16 @@ export class EnhancedSecurityManager {
     nullByte: [
       /\\x00/gi,
       /%00/gi,
+      // eslint-disable-next-line no-control-regex -- Intentionally checking for null byte
       /\x00/gi
     ],
-    
+
     // Unicode attacks
     unicode: [
       /%u[0-9a-fA-F]{4}/gi,
       /\\u[0-9a-fA-F]{4}/gi,
-      /\%E2\%80\%AE/gi, // Right-to-left override
-      /\%E2\%80\%8B/gi  // Zero-width space
+      /%E2\%80\%AE/gi, // Right-to-left override
+      /%E2\%80\%8B/gi  // Zero-width space
     ]
   };
 

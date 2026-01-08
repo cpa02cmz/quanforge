@@ -26,7 +26,7 @@ export interface ValidationRule {
 
 export class UnifiedValidationService {
   private static readonly TIMEFRAMES = ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'];
-  private static readonly SYMBOL_REGEX = /^[A-Z]{3,6}[\/]?[A-Z]{3,6}$/;
+  private static readonly SYMBOL_REGEX = /^[A-Z]{3,6}\/?[A-Z]{3,6}$/;
   private static readonly NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
   private static readonly MAX_RISK_PERCENT = 100;
   private static readonly MIN_RISK_PERCENT = 0.01;
@@ -293,17 +293,20 @@ export class UnifiedValidationService {
 
     // Provider-specific validation
     switch (provider) {
-      case 'google':
+      case 'google': {
         const googleLengthError = this.validateLength(apiKey, 'apiKey', 30, 50);
         if (googleLengthError) errors.push(googleLengthError);
         break;
-      case 'openai':
+      }
+      case 'openai': {
         const openaiLengthError = this.validateLength(apiKey, 'apiKey', 40, 60);
         if (openaiLengthError) errors.push(openaiLengthError);
         break;
-      default:
+      }
+      default: {
         const defaultLengthError = this.validateLength(apiKey, 'apiKey', 10, 100);
         if (defaultLengthError) errors.push(defaultLengthError);
+      }
     }
 
     return {

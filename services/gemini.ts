@@ -149,6 +149,7 @@ const sanitizePrompt = (prompt: string): string => {
     .trim();
   
   // Enhanced validation with character checks
+  // eslint-disable-next-line no-control-regex -- Intentionally checking for control characters
   const hasInvalidChars = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(sanitized);
   if (hasInvalidChars) {
     throw new Error('Invalid characters detected in prompt');
