@@ -14,7 +14,7 @@ export const runMonteCarloSimulation = (
     if (!settings || settings.initialDeposit <= 0 || settings.days <= 0) {
         return {
             equityCurve: [],
-            finalBalance: settings.initialDeposit || 0,
+            finalBalance: Math.max(0, settings?.initialDeposit || 0),
             totalReturn: 0,
             maxDrawdown: 0,
             winRate: 0
