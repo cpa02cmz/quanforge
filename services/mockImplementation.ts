@@ -9,7 +9,7 @@ const storage = getLocalStorage({ prefix: 'mock_' });
 const safeParse = <T>(data: T | null, fallback: any) => {
     if (!data) return fallback;
     try {
-        return data || fallback;
+        return securityManager.safeJSONParse(data as string) || fallback;
     } catch (e) {
         console.error("Failed to parse data from storage:", e);
         return fallback;
@@ -100,4 +100,4 @@ export const mockClient = {
   })
 };
 
-export { STORAGE_KEY, ROBOTS_KEY, safeParse, trySaveToStorage, generateUUID, getMockSession };
+export { STORAGE_KEY, ROBOTS_KEY, safeParse, trySaveToStorage, generateUUID, getMockSession, storage };

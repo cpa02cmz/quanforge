@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mockAuth, mockClient, generateUUID, safeParse, trySaveToStorage, getMockSession, STORAGE_KEY, ROBOTS_KEY } from './mockImplementation';
+import { mockAuth, mockClient, generateUUID, safeParse, trySaveToStorage, getMockSession, STORAGE_KEY, ROBOTS_KEY, storage } from './mockImplementation';
 import { securityManager } from './securityManager';
 
 describe('mockImplementation - Helper Functions', () => {
@@ -109,7 +109,7 @@ describe('mockImplementation - Helper Functions', () => {
       const value = 'test-value';
       
       expect(() => trySaveToStorage(key, value)).not.toThrow();
-      expect(localStorage.getItem(key)).toBe(value);
+      expect(storage.get(key)).toBe(value);
     });
 
     test('should throw error for storage quota exceeded', () => {
@@ -195,7 +195,7 @@ describe('mockImplementation - Helper Functions', () => {
       const value = 'Special chars: ñ, é, 中文, 日本語, 🚀';
       
       expect(() => trySaveToStorage(key, value)).not.toThrow();
-      expect(localStorage.getItem(key)).toBe(value);
+      expect(storage.get(key)).toBe(value);
     });
   });
 
@@ -212,7 +212,7 @@ describe('mockImplementation - Helper Functions', () => {
         access_token: 'test-token',
         expires_in: 3600
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mockSession));
+      storage.set(STORAGE_KEY, mockSession);
       
       const session = getMockSession();
       expect(session).toBeNull();
@@ -222,7 +222,7 @@ describe('mockImplementation - Helper Functions', () => {
 
     test('should handle corrupted session data', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      localStorage.setItem(STORAGE_KEY, '{ invalid json');
+      storage.set(STORAGE_KEY, '{ invalid json');
       
       const session = getMockSession();
       expect(session).toBeNull();
@@ -232,7 +232,7 @@ describe('mockImplementation - Helper Functions', () => {
 
     test('should use safeParse for data retrieval', () => {
       const spy = vi.spyOn(securityManager, 'safeJSONParse').mockReturnValueOnce({ user: { id: 'test-id' } });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: { id: 'test-id' } }));
+      storage.set(STORAGE_KEY, { user: { id: 'test-id' } });
       
       const session = getMockSession();
       expect(spy).toHaveBeenCalled();
@@ -343,10 +343,10 @@ describe('mockAuth', () => {
       const email = 'test@example.com';
       await mockAuth.signInWithPassword({ email });
       
-      const storedData = localStorage.getItem(STORAGE_KEY);
+      const storedData = storage.get(STORAGE_KEY);
       expect(storedData).not.toBeNull();
       
-      const session = JSON.parse(storedData!);
+      const session = storedData!;
       expect(session.user.email).toBe(email);
     });
 
@@ -384,10 +384,10 @@ describe('mockAuth', () => {
       const email = 'newuser@example.com';
       await mockAuth.signUp({ email });
       
-      const storedData = localStorage.getItem(STORAGE_KEY);
+      const storedData = storage.get(STORAGE_KEY);
       expect(storedData).not.toBeNull();
       
-      const session = JSON.parse(storedData!);
+      const session = storedData!;
       expect(session.user.email).toBe(email);
     });
 
@@ -414,11 +414,11 @@ describe('mockAuth', () => {
       const email = 'test@example.com';
       await mockAuth.signInWithPassword({ email });
       
-      expect(localStorage.getItem(STORAGE_KEY)).not.toBeNull();
+      expect(storage.get(STORAGE_KEY)).not.toBeUndefined();
       
       await mockAuth.signOut();
       
-      expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+      expect(storage.get(STORAGE_KEY)).toBeUndefined();
     });
 
     test('should trigger auth listeners on sign out', async () => {
