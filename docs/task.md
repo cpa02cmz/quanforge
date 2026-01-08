@@ -4,32 +4,94 @@
 ## Completed Tasks
 
 - [x] **UI/UX Improvements (2026-01-07)**: Comprehensive accessibility and usability enhancements
-  - **Component Extraction** (ui-001): Created reusable FormField component with accessibility features
-    - FormField.tsx with ARIA labels, error announcements, screen reader support
-    - Includes: FormField, InputWrapper, FormHelperText, FormLabel components
-    - Integrated with StrategyConfig.tsx for consistent form UI
-  - **Keyboard Navigation** (ui-002): Fixed keyboard navigation for StrategyConfig custom inputs
-    - Created CustomInputRow.tsx with enhanced keyboard navigation
-    - Added arrow key navigation between custom input rows (Up/Down arrows)
-    - Implemented keyboard shortcuts (Delete/Backspace) to remove inputs
-    - Enhanced focus management and ARIA labels for each input
-  - **Focus Indicators** (ui-003): Added consistent focus indicators across all interactive elements
-    - Added global focus-visible styles in index.html (2px solid #22c55e)
-    - Implemented focus box-shadow for better visibility
-    - Removed outline for mouse users, kept for keyboard users
-    - Applied to all: a, button, input, select, textarea, [tabindex]
-  - **Mobile Menu** (ui-004): Enhanced mobile menu with body scroll lock and better touch targets
-    - Added body scroll lock when mobile menu is open (prevents background scrolling)
-    - Improved touch targets (min 44x44px for accessibility compliance)
-    - Added proper ARIA attributes (aria-expanded, aria-controls, role="presentation")
-    - Enhanced backdrop with proper accessibility roles
-    - Improved mobile menu transitions and focus states
-  - **Form Validation** (ui-005): Improved form validation ARIA announcements with screen reader support
-    - Created utils/announcer.ts for screen reader announcements
-    - Added aria-live="assertive" for validation errors (immediate announcements)
-    - Added sr-only CSS utility for screen reader-only content
-    - Enhanced FormField component with proper error announcements
-  - **Build Status**: ✅ TypeScript compilation passes (zero errors), ✅ Production build succeeds (12.09s)
+   - **Component Extraction** (ui-001): Created reusable FormField component with accessibility features
+     - FormField.tsx with ARIA labels, error announcements, screen reader support
+     - Includes: FormField, InputWrapper, FormHelperText, FormLabel components
+     - Integrated with StrategyConfig.tsx for consistent form UI
+   - **Keyboard Navigation** (ui-002): Fixed keyboard navigation for StrategyConfig custom inputs
+     - Created CustomInputRow.tsx with enhanced keyboard navigation
+     - Added arrow key navigation between custom input rows (Up/Down arrows)
+     - Implemented keyboard shortcuts (Delete/Backspace) to remove inputs
+     - Enhanced focus management and ARIA labels for each input
+   - **Focus Indicators** (ui-003): Added consistent focus indicators across all interactive elements
+     - Added global focus-visible styles in index.html (2px solid #22c55e)
+     - Implemented focus box-shadow for better visibility
+     - Removed outline for mouse users, kept for keyboard users
+     - Applied to all: a, button, input, select, textarea, [tabindex]
+   - **Mobile Menu** (ui-004): Enhanced mobile menu with body scroll lock and better touch targets
+     - Added body scroll lock when mobile menu is open (prevents background scrolling)
+     - Improved touch targets (min 44x44px for accessibility compliance)
+     - Added proper ARIA attributes (aria-expanded, aria-controls, role="presentation")
+     - Enhanced backdrop with proper accessibility roles
+     - Improved mobile menu transitions and focus states
+   - **Form Validation** (ui-005): Improved form validation ARIA announcements with screen reader support
+     - Created utils/announcer.ts for screen reader announcements
+     - Added aria-live="assertive" for validation errors (immediate announcements)
+     - Added sr-only CSS utility for screen reader-only content
+     - Enhanced FormField component with proper error announcements
+   - **Build Status**: ✅ TypeScript compilation passes (zero errors), ✅ Production build succeeds (12.09s)
+
+- [x] **Chart Accessibility Improvements (2026-01-08)**: Comprehensive ARIA support for chart components
+   - **ARIA Labels & Descriptions** (ui-006): Added semantic ARIA to all charts
+     - Equity curve charts now have role="img" with descriptive aria-label
+     - Pie charts have comprehensive aria-label with risk factor details
+     - Added aria-describedby for extended descriptions
+     - Screen readers now announce chart content dynamically
+   - **Accessible Data Tables** (ui-007): Screen reader alternatives for visual charts
+     - Created AccessibleDataTable component for equity curve data
+     - Created AccessiblePieTable component for risk profile data
+     - Tables show first 100 data points with full summary information
+     - Includes captions, headings, and proper scope attributes
+   - **Dynamic Announcements** (ui-008): aria-live regions for chart updates
+     - Added role="region" with aria-live="polite" for data updates
+     - aria-atomic="true" ensures complete announcements
+     - Changes to chart data announced to screen readers automatically
+   - **Semantic Structure** (ui-009): Proper HTML semantics for chart containers
+     - Charts wrapped in semantic containers with appropriate roles
+     - Decorative elements marked with aria-hidden
+     - Proper heading hierarchy for chart titles
+     - Summary attributes for table context
+   - **Build Status**: ✅ TypeScript compilation passes (zero errors), ✅ Production build succeeds (11.57s)
+
+- [x] **Toast Component Accessibility (2026-01-08)**: Enhanced notification accessibility
+   - **ARIA Live Regions** (ui-010): Proper announcement priority for toasts
+     - Error toasts use aria-live="assertive" (immediate interruption)
+     - Info/success toasts use aria-live="polite" (queued announcements)
+     - Toast container has role="region" with aria-live="polite"
+   - **Keyboard Focus Management** (ui-011): Focus handling for keyboard users
+     - Toasts receive focus when shown
+     - Escape key closes toast (handleKeyDown callback)
+     - Refs tracked for programmatic focus management
+     - Close button has proper aria-label
+   - **Accessibility Labels** (ui-012): Context-aware toast descriptions
+     - getToastLabel function provides type-specific labels
+     - aria-label describes notification type to screen readers
+     - Decorative icons marked with aria-hidden
+     - Semantic structure maintained throughout
+   - **Touch Target Compliance** (ui-013): Accessible button sizing
+     - Close button has min-w-[32px] min-h-[32px] for WCAG compliance
+     - All interactive elements meet 44x44px target size
+     - Proper focus-visible styles for keyboard navigation
+   - **Build Status**: ✅ TypeScript compilation passes (zero errors), ✅ Production build succeeds (11.57s)
+
+- [x] **Loading State Accessibility (2026-01-08)**: Announce loading states to assistive technologies
+   - **Role="status"** (ui-014): Semantic loading state declaration
+     - LoadingState component now has role="status"
+     - CardSkeletonLoader has role="status"
+     - Screen readers recognize and announce loading states
+   - **aria-live="polite"** (ui-015): Dynamic content announcements
+     - Loading messages announced when they change
+     - Loading spinner decorated with aria-hidden
+     - Only content changes trigger announcements
+   - **aria-busy="true"** (ui-016): Loading state indicator
+     - Indicates content is being loaded to assistive technologies
+     - Automatically updates when loading completes
+     - Provides clear loading context to users
+   - **aria-label Support** (ui-017): Customizable loading descriptions
+     - CardSkeletonLoader accepts optional aria-label prop
+     - Default: "Loading content" for skeleton loaders
+     - Allows context-specific loading messages
+   - **Build Status**: ✅ TypeScript compilation passes (zero errors), ✅ Production build succeeds (11.57s)
 
  - [x] **Console Statement Cleanup (2026-01-07)**: Replaced non-error console statements with logger utility
    - Replaced 16 console statements across 5 API edge files (warmup.ts, optimizer.ts, cache-invalidate.ts, edge-optimize.ts, edge-analytics.ts)
