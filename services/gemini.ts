@@ -28,6 +28,7 @@ import { createScopedLogger } from "../utils/logger";
 import { aiWorkerManager } from "./aiWorkerManager";
 import { getAIRateLimiter } from "../utils/enhancedRateLimit";
 import { getLocalStorage, getSessionStorage } from "../utils/storage";
+import { LRUCache } from "../utils/cache";
 
 const logger = createScopedLogger('gemini');
 
@@ -278,49 +279,6 @@ export const isValidStrategyParams = (params: any): boolean => {
   return true;
 };
 
-// Advanced cache for strategy analysis to avoid repeated API calls
-// Uses LRU eviction to prevent memory bloat
-class LRUCache<T> {
-  private cache = new Map<string, { result: T, timestamp: number }>();
-  private readonly ttl: number;
-  private readonly maxSize: number;
-
-  constructor(ttl: number = 5 * 60 * 1000, maxSize: number = 100) { // 5 min TTL, max 100 items
-    this.ttl = ttl;
-    this.maxSize = maxSize;
-  }
-
-  get(key: string): T | undefined {
-    const item = this.cache.get(key);
-    if (!item) return undefined;
-
-    if (Date.now() - item.timestamp > this.ttl) {
-      this.cache.delete(key);
-      return undefined;
-    }
-
-    // Move to end (most recently used)
-    this.cache.delete(key);
-    this.cache.set(key, item);
-    return item.result;
-  }
-
-  set(key: string, value: T): void {
-    // Evict oldest if at max size
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      if (firstKey) {
-        this.cache.delete(firstKey);
-      }
-    }
-    
-    this.cache.set(key, { result: value, timestamp: Date.now() });
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-}
 
 const analysisCache = new LRUCache<StrategyAnalysis>();
 const enhancedAnalysisCache = new EnhancedCache<StrategyAnalysis>(200); // Larger cache size for better performance

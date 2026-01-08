@@ -529,12 +529,15 @@
 - **Priority**: High
 - **Effort**: Medium
 
-## [REFACTOR] Extract LRUCache from gemini.ts to Reusable Utility
-- **Location**: services/gemini.ts (lines 267-300+)
-- **Issue**: LRUCache class defined inside gemini.ts service, violating DRY principle and preventing reuse across other services
-- **Suggestion**: Extract to utils/cache.ts with proper exports (LRUCache, LRUConfig interface); update gemini.ts to import from utils/cache.ts
-- **Priority**: Low
-- **Effort**: Small
+- [x] **Extract LRUCache to Reusable Utility (2026-01-08)**: Eliminated duplicate LRUCache implementation
+   - Created utils/cache.ts with comprehensive LRUCache class (94 lines)
+   - Extracted LRUCache from services/gemini.ts (removed 40 lines of duplicate code)
+   - Updated gemini.ts to import from utils/cache.ts
+   - Features: TTL support, LRU eviction, automatic cleanup, cache statistics
+   - Methods: get, set, delete, clear, has, size, cleanup, getStats
+   - Build verification: ✅ TypeScript compilation passes, ✅ 250/250 tests passing, ✅ Build successful (11.52s)
+   - Note: services/supabase.ts still contains duplicate LRUCache (lines 147-202) - future cleanup needed
+
 
 ## [REFACTOR] Break Down StrategyConfig Component (517 lines)
 - **Location**: components/StrategyConfig.tsx
