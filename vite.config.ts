@@ -1,9 +1,21 @@
 import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    ...(process.env['ANALYZE'] === 'true' ? [
+      visualizer({
+        open: false,
+        gzipSize: true,
+        brotliSize: true,
+        filename: 'dist/bundle-stats.html',
+        template: 'treemap'
+      })
+    ] : [])
+  ],
   build: {
     manifest: true,
     outDir: 'dist',
@@ -17,9 +29,13 @@ export default defineConfig({
         manualChunks: (id) => {
           // Enhanced chunking for better Vercel edge performance
           if (id.includes('node_modules')) {
+            // React Router - separate for better caching (updates independently) - check first
+            if (id.includes('react-router')) {
+              return 'react-router';
+            }
             // React ecosystem - optimized for edge caching
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-is')) {
-              return 'react-vendor';
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-is')) {
+              return 'react-core';
             }
             // Supabase - isolated for better connection pooling
             if (id.includes('@supabase')) {

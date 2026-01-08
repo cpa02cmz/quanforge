@@ -417,8 +417,8 @@ export const combineStructuredData = (...schemas: Record<string, any>[]) => {
 export const validateStructuredData = (schema: Record<string, any>): boolean => {
   try {
     JSON.stringify(schema);
-    return schema.hasOwnProperty('@context') && 
-           schema.hasOwnProperty('@type') && 
+    return Object.prototype.hasOwnProperty.call(schema, '@context') &&
+           Object.prototype.hasOwnProperty.call(schema, '@type') &&
            schema['@context'] === 'https://schema.org';
   } catch (error) {
     console.error('Invalid structured data:', error);

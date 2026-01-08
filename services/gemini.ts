@@ -27,31 +27,47 @@ import { apiDeduplicator } from "./apiDeduplicator";
 import { createScopedLogger } from "../utils/logger";
 import { aiWorkerManager } from "./aiWorkerManager";
 import { getAIRateLimiter } from "../utils/enhancedRateLimit";
+import { getLocalStorage, getSessionStorage } from "../utils/storage";
+import { LRUCache } from "../utils/cache";
 
 const logger = createScopedLogger('gemini');
+
+// Storage instances for session management
+const authStorage = getLocalStorage();
+const sessionStorageInstance = getSessionStorage();
+
+interface SessionData {
+  user?: {
+    id?: string;
+  };
+}
+
+interface MockSession {
+  user?: {
+    id?: string;
+  };
+}
 
 // Helper function to get current user ID for rate limiting
 const getCurrentUserId = (): string | null => {
   try {
     // Try to get user from Supabase session first
-    const sessionData = localStorage.getItem('supabase.auth.token');
+    const sessionData = authStorage.get<SessionData>('supabase.auth.token');
     if (sessionData) {
-      const session = JSON.parse(sessionData);
-      return session?.user?.id || null;
+      return sessionData?.user?.id || null;
     }
-    
+
     // Fallback to mock session
-    const mockSession = localStorage.getItem('mock_session');
+    const mockSession = authStorage.get<MockSession>('mock_session');
     if (mockSession) {
-      const session = JSON.parse(mockSession);
-      return session?.user?.id || null;
+      return mockSession?.user?.id || null;
     }
-    
+
     // Generate anonymous session ID if none exists
-    let anonymousId = sessionStorage.getItem('anonymous_session_id');
+    let anonymousId = sessionStorageInstance.get<string>('anonymous_session_id');
     if (!anonymousId) {
       anonymousId = `anon_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-      sessionStorage.setItem('anonymous_session_id', anonymousId);
+      sessionStorageInstance.set('anonymous_session_id', anonymousId);
     }
     return anonymousId;
   } catch (error) {
@@ -149,6 +165,7 @@ const sanitizePrompt = (prompt: string): string => {
     .trim();
   
   // Enhanced validation with character checks
+  // eslint-disable-next-line no-control-regex -- Intentionally checking for control characters
   const hasInvalidChars = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(sanitized);
   if (hasInvalidChars) {
     throw new Error('Invalid characters detected in prompt');
@@ -262,49 +279,6 @@ export const isValidStrategyParams = (params: any): boolean => {
   return true;
 };
 
-// Advanced cache for strategy analysis to avoid repeated API calls
-// Uses LRU eviction to prevent memory bloat
-class LRUCache<T> {
-  private cache = new Map<string, { result: T, timestamp: number }>();
-  private readonly ttl: number;
-  private readonly maxSize: number;
-
-  constructor(ttl: number = 5 * 60 * 1000, maxSize: number = 100) { // 5 min TTL, max 100 items
-    this.ttl = ttl;
-    this.maxSize = maxSize;
-  }
-
-  get(key: string): T | undefined {
-    const item = this.cache.get(key);
-    if (!item) return undefined;
-
-    if (Date.now() - item.timestamp > this.ttl) {
-      this.cache.delete(key);
-      return undefined;
-    }
-
-    // Move to end (most recently used)
-    this.cache.delete(key);
-    this.cache.set(key, item);
-    return item.result;
-  }
-
-  set(key: string, value: T): void {
-    // Evict oldest if at max size
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      if (firstKey) {
-        this.cache.delete(firstKey);
-      }
-    }
-    
-    this.cache.set(key, { result: value, timestamp: Date.now() });
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-}
 
 const analysisCache = new LRUCache<StrategyAnalysis>();
 const enhancedAnalysisCache = new EnhancedCache<StrategyAnalysis>(200); // Larger cache size for better performance

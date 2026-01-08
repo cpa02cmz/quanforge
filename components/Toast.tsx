@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -22,14 +22,44 @@ export const useToast = () => {
   return context;
 };
 
+const getToastAriaLive = (type: ToastType): 'assertive' | 'polite' => {
+  return type === 'error' ? 'assertive' : 'polite';
+};
+
+const getToastLabel = (type: ToastType): string => {
+  switch (type) {
+    case 'success':
+      return 'Success notification';
+    case 'error':
+      return 'Error notification';
+    case 'info':
+      return 'Information notification';
+    default:
+      return 'Notification';
+  }
+};
+
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  const setToastRef = useCallback((id: string) => (el: HTMLDivElement | null) => {
+    if (el) {
+      toastRefs.current.set(id, el);
+    } else {
+      toastRefs.current.delete(id);
+    }
+  }, []);
 
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
     const id = Date.now().toString();
     setToasts((prev) => [...prev, { id, message, type }]);
 
-    // Auto dismiss
+    const toastElement = toastRefs.current.get(id);
+    if (toastElement) {
+      toastElement.focus();
+    }
+
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 3000);
@@ -39,13 +69,28 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, id: string) => {
+    if (e.key === 'Escape') {
+      removeToast(id);
+    }
+  }, []);
+
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none">
+      <div 
+        className="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"
+        role="region"
+        aria-label="Toast notifications"
+        aria-live="polite"
+        aria-atomic="false"
+      >
         {toasts.map((toast) => (
           <div
             key={toast.id}
+            ref={setToastRef(toast.id)}
+            tabIndex={-1}
+            onKeyDown={(e) => handleKeyDown(e, toast.id)}
             className={`
               pointer-events-auto flex items-center w-full max-w-xs p-4 space-x-3 
               text-gray-100 bg-dark-surface border rounded-lg shadow-lg transform transition-all duration-300 ease-in-out
@@ -55,8 +100,11 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               animate-fade-in-up
             `}
             role="alert"
+            aria-live={getToastAriaLive(toast.type)}
+            aria-atomic="true"
+            aria-label={getToastLabel(toast.type)}
           >
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0" aria-hidden="true">
               {toast.type === 'success' && (
                 <svg className="w-5 h-5 text-brand-500" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -76,10 +124,11 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             <div className="text-sm font-medium">{toast.message}</div>
             <button
               onClick={() => removeToast(toast.id)}
-              className="ml-auto -mx-1.5 -my-1.5 rounded-lg p-1.5 text-gray-400 hover:text-white focus:ring-2 focus:ring-gray-300"
+              className="ml-auto -mx-1.5 -my-1.5 rounded-lg p-1.5 text-gray-400 hover:text-white focus:ring-2 focus:ring-gray-300 focus:outline-none min-w-[32px] min-h-[32px] flex items-center justify-center transition-colors"
+              aria-label="Close notification"
+              type="button"
             >
-              <span className="sr-only">Close</span>
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </button>

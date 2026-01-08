@@ -1,10 +1,11 @@
 /**
  * Advanced Frontend Performance Optimizer Service
- * Provides comprehensive performance optimizations for the frontend
+ * Provides comprehensive performance optimizations for frontend
  */
 
 import { performanceMonitor } from '../utils/performance';
 import { logger } from '../utils/logger';
+import { storage } from '../utils/storage';
 
 interface PerformanceOptimizerConfig {
   enableResourcePrefetching: boolean;
@@ -266,13 +267,13 @@ class FrontendPerformanceOptimizer {
   /**
    * Setup resource caching with advanced strategies
    */
-  private setupResourceCaching(): void {
-    // Implement advanced caching strategies
-    window.addEventListener('beforeunload', () => {
-      // Store performance metrics before page unload
-      localStorage.setItem('perf_metrics_cache', JSON.stringify(this.metrics));
-    });
-  }
+   private setupResourceCaching(): void {
+     // Implement advanced caching strategies
+     window.addEventListener('beforeunload', () => {
+       // Store performance metrics before page unload
+       storage.set('perf_metrics_cache', this.metrics);
+     });
+   }
 
   /**
    * Setup memory optimization

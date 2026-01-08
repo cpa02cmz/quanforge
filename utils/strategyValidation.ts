@@ -5,7 +5,7 @@ import { validateRequired, validateRange, validateRegex, validateInSet } from '.
 // Validation constants
 const TIMEFRAMES = ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'] as const;
 const TIMEFRAMES_SET = new Set(TIMEFRAMES);
-const SYMBOL_REGEX = /^[A-Z]{3,6}[\/]?[A-Z]{3,6}$/;
+const SYMBOL_REGEX = /^[A-Z]{3,6}\/?[A-Z]{3,6}$/;
 const MAX_RISK_PERCENT = 100;
 const MIN_RISK_PERCENT = 0.01;
 const MAX_STOP_LOSS = 1000;

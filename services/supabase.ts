@@ -8,6 +8,7 @@ import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
 import { TIMEOUTS } from '../constants';
+import { getLocalStorage, StorageQuotaError } from '../utils/storage';
 
 // Enhanced connection retry configuration with exponential backoff
 const RETRY_CONFIG = {
@@ -27,13 +28,13 @@ const CACHE_CONFIG = {
 // Mock session storage
 const STORAGE_KEY = 'mock_session';
 const ROBOTS_KEY = 'mock_robots';
+const storage = getLocalStorage({ prefix: 'mock_', enableSerialization: true });
 
 // Helper for safe JSON parsing with enhanced security
-const safeParse = (data: string | null, fallback: any) => {
+const safeParse = <T>(data: T | null, fallback: any) => {
     if (!data) return fallback;
     try {
-        // Use security manager's safe JSON parsing
-        return securityManager.safeJSONParse(data) || fallback;
+        return data || fallback;
     } catch (e) {
         console.error("Failed to parse data from storage:", e);
         return fallback;
@@ -41,16 +42,11 @@ const safeParse = (data: string | null, fallback: any) => {
 };
 
 // Helper: Try save to storage with Quota handling
-const trySaveToStorage = (key: string, value: string) => {
+const trySaveToStorage = (key: string, value: any) => {
     try {
-        localStorage.setItem(key, value);
-    } catch (e: any) {
-        if (
-            e.name === 'QuotaExceededError' || 
-            e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-            e.code === 22 ||
-            e.code === 1014
-        ) {
+        storage.set(key, value);
+    } catch (e) {
+        if (e instanceof StorageQuotaError) {
             throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
         }
         throw e;
@@ -448,8 +444,8 @@ async getRobots() {
        const settings = settingsManager.getDBSettings();
        
        if (settings.mode === 'mock') {
-         const stored = localStorage.getItem(ROBOTS_KEY);
-         const robots = safeParse(stored, []);
+         const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+         const robots = stored;
          // Create index for performance
          robotIndexManager.getIndex(robots);
          const duration = performance.now() - startTime;
@@ -511,14 +507,14 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
        const settings = settingsManager.getDBSettings();
        
        if (settings.mode === 'mock') {
-         const stored = localStorage.getItem(ROBOTS_KEY);
-         const robots = safeParse(stored, []);
+         const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+         const robots = stored;
          
          updates.forEach(update => {
            const index = robots.findIndex((r: Robot) => r.id === update.id);
-           if (index !== -1) {
-             robots[index] = { ...robots[index], ...update.data, updated_at: new Date().toISOString() };
-           }
+if (index !== -1) {
+              robots[index] = { ...robots[index], ...update.data, updated_at: new Date().toISOString() } as Robot;
+            }
          });
          
          trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
@@ -578,8 +574,8 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
         }
         
         if (settings.mode === 'mock') {
-          const stored = localStorage.getItem(ROBOTS_KEY);
-          const allRobots = safeParse(stored, []);
+          const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+          const allRobots = stored;
           const index = robotIndexManager.getIndex(allRobots);
           
           let results = index.byDate;
@@ -706,8 +702,8 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
        const settings = settingsManager.getDBSettings();
        
        if (settings.mode === 'mock') {
-         const stored = localStorage.getItem(ROBOTS_KEY);
-         const allRobots = safeParse(stored, []);
+         const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+         const allRobots = stored;
          const robots = allRobots.filter((robot: Robot) => ids.includes(robot.id));
          
          const duration = performance.now() - startTime;
@@ -774,8 +770,8 @@ if (result.data && !result.error) {
 
       if (settings.mode === 'mock') {
         try {
-            const stored = localStorage.getItem(ROBOTS_KEY);
-            const robots = safeParse(stored, []);
+            const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+            const robots = stored;
             
             const newRobot = { ...sanitizedRobot, id: generateUUID(), created_at: new Date().toISOString() };
             robots.unshift(newRobot);
@@ -822,8 +818,8 @@ if (result.data && !result.error) {
 
       if (settings.mode === 'mock') {
           try {
-              const stored = localStorage.getItem(ROBOTS_KEY);
-              const robots = safeParse(stored, []);
+              const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+              const robots = stored;
               
               // Find and update the robot in place for better performance
               const robotIndex = robots.findIndex((r: any) => r.id === id);
@@ -879,8 +875,8 @@ if (result.data && !result.error) {
 
       if (settings.mode === 'mock') {
           try {
-              const stored = localStorage.getItem(ROBOTS_KEY);
-              let robots = safeParse(stored, []);
+              const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+              let robots = stored;
               const initialLength = robots.length;
               robots = robots.filter((r: any) => r.id !== id);
               
@@ -928,8 +924,8 @@ if (result.data && !result.error) {
 
       if (settings.mode === 'mock') {
           try {
-              const stored = localStorage.getItem(ROBOTS_KEY);
-              const robots = safeParse(stored, []);
+              const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+              const robots = stored;
               const original = robots.find((r: any) => r.id === id);
               
               if (!original) {
@@ -1016,8 +1012,8 @@ export const dbUtils = {
     async getStats(): Promise<{ count: number; storageType: string }> {
         const settings = settingsManager.getDBSettings();
         if (settings.mode === 'mock') {
-            const stored = localStorage.getItem(ROBOTS_KEY);
-            const robots = safeParse(stored, []);
+            const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+            const robots = stored;
             return { count: robots.length, storageType: 'Browser Local Storage' };
         } else {
             const client = await getClient();
@@ -1031,8 +1027,8 @@ export const dbUtils = {
         let robots = [];
 
         if (settings.mode === 'mock') {
-            const stored = localStorage.getItem(ROBOTS_KEY);
-            robots = safeParse(stored, []);
+            const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+            robots = stored;
         } else {
             const client = await getClient();
             const { data, error } = await client.from('robots').select('*');
@@ -1073,8 +1069,8 @@ export const dbUtils = {
             const settings = settingsManager.getDBSettings();
 
             if (settings.mode === 'mock') {
-                const stored = localStorage.getItem(ROBOTS_KEY);
-                const currentRobots = merge ? safeParse(stored, []) : [];
+                const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+                const currentRobots = merge ? stored : [];
                 
                 const newRobots = validRobots.map((r: Robot) => ({
                     ...r,
@@ -1136,8 +1132,8 @@ export const dbUtils = {
      * With Fault Tolerance: If one batch fails, try to continue.
      */
     async migrateMockToSupabase(): Promise<{ success: boolean; count: number; error?: string }> {
-        const stored = localStorage.getItem(ROBOTS_KEY);
-        const localRobots = safeParse(stored, []);
+        const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+        const localRobots = stored;
         
         if (localRobots.length === 0) {
             return { success: false, count: 0, error: "No local robots found to migrate." };
@@ -1219,8 +1215,8 @@ export const dbUtils = {
             const settings = settingsManager.getDBSettings();
             
             if (settings.mode === 'mock') {
-                const stored = localStorage.getItem(ROBOTS_KEY);
-                const robots = safeParse(stored, []);
+                const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+                const robots = stored;
                 const index = robotIndexManager.getIndex(robots);
                 
                 if (!searchTerm && (!filterType || filterType === 'All')) {
@@ -1288,8 +1284,8 @@ export const dbUtils = {
             const settings = settingsManager.getDBSettings();
             
             if (settings.mode === 'mock') {
-                const stored = localStorage.getItem(ROBOTS_KEY);
-                const robots = safeParse(stored, []);
+                const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+                const robots = stored;
                 const index = robotIndexManager.getIndex(robots);
                 
                 // Get all unique types from the index
@@ -1335,8 +1331,8 @@ export const dbUtils = {
             
             if (settings.mode === 'mock') {
                 try {
-                    const stored = localStorage.getItem(ROBOTS_KEY);
-                    const robots = safeParse(stored, []);
+                    const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+                    const robots = stored;
                     
                     for (const item of updates) {
                         const robotIndex = robots.findIndex((r: any) => r.id === item.id);
@@ -1457,8 +1453,8 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
             
             if (settings.mode === 'mock') {
                 // For mock mode, run maintenance tasks
-                const stored = localStorage.getItem(ROBOTS_KEY);
-                const robots = safeParse(stored, []);
+                const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+                const robots = stored;
                 
                 // Remove any potential duplicates by ID
                 const seenIds = new Set<string>();
@@ -1527,8 +1523,8 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
         const settings = settingsManager.getDBSettings();
         
         if (settings.mode === 'mock') {
-            const stored = localStorage.getItem(ROBOTS_KEY);
-            const robots = safeParse(stored, []);
+            const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+            const robots = stored;
             
             // Calculate total size
             const totalSize = new Blob([JSON.stringify(robots)]).size;

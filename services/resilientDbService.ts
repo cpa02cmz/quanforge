@@ -3,6 +3,7 @@ import { withIntegrationResilience, enterDegradedMode, exitDegradedMode, isDegra
 import { IntegrationType } from './integrationResilience';
 import { databaseFallbacks } from './fallbackStrategies';
 import { createScopedLogger } from '../utils/logger';
+import { storage } from '../utils/storage';
 
 const logger = createScopedLogger('resilient-db-service');
 
@@ -16,8 +17,8 @@ export const resilientDb = {
         operationName: 'get_robots',
         fallbacks: [
           databaseFallbacks.cacheFirst('robots_list', (key: string) => {
-            const cached = localStorage.getItem(key);
-            return cached ? JSON.parse(cached) : null;
+            const cached = storage.get(key);
+            return cached !== undefined ? cached : null;
           }),
           databaseFallbacks.mockData([])
         ]

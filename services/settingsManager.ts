@@ -1,9 +1,11 @@
 
 import { AISettings, DBSettings } from "../types";
 import { encryptApiKey, decryptApiKey, validateApiKey } from "../utils/encryption";
+import { getLocalStorage } from "../utils/storage";
 
 const AI_SETTINGS_KEY = 'quantforge_ai_settings';
 const DB_SETTINGS_KEY = 'quantforge_db_settings';
+const storage = getLocalStorage({ prefix: 'quantforge_' });
 
 // Safe Environment Variable Access
 export const getEnv = (key: string): string => {
@@ -54,10 +56,10 @@ export const DEFAULT_DB_SETTINGS: DBSettings = {
 export const settingsManager = {
     getSettings(): AISettings {
         try {
-            const stored = localStorage.getItem(AI_SETTINGS_KEY);
+            const stored = storage.get<AISettings>(AI_SETTINGS_KEY);
             if (!stored) return DEFAULT_AI_SETTINGS;
             
-            const parsed = JSON.parse(stored);
+            const parsed = stored;
             
             // Decrypt API key if it's encrypted
             if (parsed.apiKey) {
@@ -88,7 +90,7 @@ export const settingsManager = {
                 apiKey: encryptApiKey(settings.apiKey)
             };
             
-            localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settingsToSave));
+            storage.set(AI_SETTINGS_KEY, settingsToSave);
             window.dispatchEvent(new Event('ai-settings-changed'));
         } catch (e) {
             console.error("Failed to save AI settings", e);
@@ -96,7 +98,7 @@ export const settingsManager = {
     },
 
     resetSettings() {
-        localStorage.removeItem(AI_SETTINGS_KEY);
+        storage.remove(AI_SETTINGS_KEY);
         return DEFAULT_AI_SETTINGS;
     },
 
@@ -104,9 +106,9 @@ export const settingsManager = {
 
     getDBSettings(): DBSettings {
         try {
-            const stored = localStorage.getItem(DB_SETTINGS_KEY);
+            const stored = storage.get<DBSettings>(DB_SETTINGS_KEY);
             if (!stored) return DEFAULT_DB_SETTINGS;
-            const parsed = JSON.parse(stored);
+            const parsed = stored;
             return { ...DEFAULT_DB_SETTINGS, ...parsed };
         } catch (e) {
             console.error("Failed to load DB settings", e);
@@ -116,7 +118,7 @@ export const settingsManager = {
 
     saveDBSettings(settings: DBSettings) {
         try {
-            localStorage.setItem(DB_SETTINGS_KEY, JSON.stringify(settings));
+            storage.set(DB_SETTINGS_KEY, settings);
             // Dispatch event to notify Supabase service to re-init
             window.dispatchEvent(new Event('db-settings-changed'));
         } catch (e) {

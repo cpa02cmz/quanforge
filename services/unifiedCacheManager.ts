@@ -1,5 +1,6 @@
 // Unified cache interface with enhanced edge optimization
 import { compress, decompress } from 'lz-string';
+import { getLocalStorage } from '../utils/storage';
 
 interface CacheEntry<T = any> {
   data: T;
@@ -51,11 +52,13 @@ interface CacheStrategy {
 // Enhanced Unified Cache Manager for edge optimization
 export class UnifiedCacheManager {
   private cache = new Map<string, CacheEntry>();
+  private strategies = new Map<string, CacheStrategy>();
   private metrics: CacheMetrics;
   private options: Required<CacheOptions>;
   private cleanupTimer: number | null = null;
   private accessTimes: number[] = [];
   private storageKey = 'quantforge-unified-cache';
+  private storage = getLocalStorage({ enableSerialization: true });
 
   constructor(options: CacheOptions = {}) {
     this.options = {
@@ -495,52 +498,45 @@ export class UnifiedCacheManager {
 
   // Save cache to localStorage
   private saveToStorage(): void {
-    if (typeof localStorage !== 'undefined') {
-      try {
-        const serializable = Array.from(this.cache.entries()).map(([key, entry]) => [
-          key,
-          {
-            ...entry,
-            data: entry.compressed ? entry.data : JSON.stringify(entry.data)
-          }
-        ]);
-        localStorage.setItem(this.storageKey, JSON.stringify(serializable));
-      } catch (error) {
-        console.error('Failed to save cache to storage:', error);
-      }
+    try {
+      const serializable = Array.from(this.cache.entries()).map(([key, entry]) => [
+        key,
+        {
+          ...entry,
+          data: entry.compressed ? entry.data : JSON.stringify(entry.data)
+        }
+      ]);
+      this.storage.set(this.storageKey, serializable);
+    } catch (error) {
+      console.error('Failed to save cache to storage:', error);
     }
   }
 
   // Load cache from localStorage
   private loadFromStorage(): void {
-    if (typeof localStorage !== 'undefined') {
-      try {
-        const stored = localStorage.getItem(this.storageKey);
-        if (stored) {
-          const data = JSON.parse(stored);
-          this.cache = new Map(data.map(([key, entry]: [string, any]) => [
-            key,
-            {
-              ...entry,
-              data: entry.compressed ? entry.data : JSON.parse(entry.data)
-            }
-          ]));
-          this.updateMemoryUsage();
-        }
-      } catch (error) {
-        console.error('Failed to load cache from storage:', error);
+    try {
+      const stored = this.storage.get<Array<[string, any]>>(this.storageKey);
+      if (stored) {
+        this.cache = new Map(stored.map(([key, entry]: [string, any]) => [
+          key,
+          {
+            ...entry,
+            data: entry.compressed ? entry.data : JSON.parse(entry.data)
+          }
+        ]));
+        this.updateMemoryUsage();
       }
+    } catch (error) {
+      console.error('Failed to load cache from storage:', error);
     }
   }
 
   // Remove cache from localStorage
   private removeFromStorage(): void {
-    if (typeof localStorage !== 'undefined') {
-      try {
-        localStorage.removeItem(this.storageKey);
-      } catch (error) {
-        console.error('Failed to remove cache from storage:', error);
-      }
+    try {
+      this.storage.remove(this.storageKey);
+    } catch (error) {
+      console.error('Failed to remove cache from storage:', error);
     }
   }
 
