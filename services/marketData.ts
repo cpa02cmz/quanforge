@@ -1,5 +1,8 @@
 
 import { settingsManager } from './settingsManager';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('MarketDataService');
 
 type PriceUpdateCallback = (data: MarketData) => void;
 
@@ -54,7 +57,7 @@ class MarketDataService {
       this.binanceWs = new WebSocket('wss://stream.binance.com:9443/ws');
       
       this.binanceWs.onopen = () => {
-          console.log("Binance WS Connected");
+          logger.log("Binance WS Connected");
           this.binanceReconnectAttempts = 0; // Reset on successful connection
           this.resubscribeBinance();
       };
@@ -68,18 +71,18 @@ class MarketDataService {
       };
 
       this.binanceWs.onclose = (event) => {
-          console.log(`Binance WS Closed. Code: ${event.code}, Reason: ${event.reason}`);
+          logger.log(`Binance WS Closed. Code: ${event.code}, Reason: ${event.reason}`);
           this.scheduleBinanceReconnect();
       };
       
       this.binanceWs.onerror = (err) => {
-          console.warn("Binance WS Error", err);
+          logger.warn("Binance WS Error", err);
       };
   }
 
   private scheduleBinanceReconnect() {
       if (this.binanceReconnectAttempts >= this.maxReconnectAttempts) {
-          console.error("Binance WS: Max reconnect attempts reached. Giving up.");
+          logger.error("Binance WS: Max reconnect attempts reached. Giving up.");
           return;
       }
 
@@ -89,7 +92,7 @@ class MarketDataService {
           30000 // Max 30 seconds
       );
 
-      console.log(`Binance WS: Reconnecting in ${Math.round(delay / 1000)}s... (Attempt ${this.binanceReconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+      logger.log(`Binance WS: Reconnecting in ${Math.round(delay / 1000)}s... (Attempt ${this.binanceReconnectAttempts + 1}/${this.maxReconnectAttempts})`);
       
       this.binanceReconnectTimer = setTimeout(() => {
           this.binanceReconnectAttempts++;
@@ -158,7 +161,7 @@ class MarketDataService {
       this.twelveDataWs = new WebSocket(`wss://ws.twelvedata.com/v1/quotes?apikey=${apiKey}`);
 
       this.twelveDataWs.onopen = () => {
-          console.log("Twelve Data WS Connected");
+          logger.log("Twelve Data WS Connected");
           this.twelveDataReconnectAttempts = 0; // Reset on successful connection
           this.resubscribeTwelveData();
       };
@@ -169,35 +172,35 @@ class MarketDataService {
               if (data.event === 'price') {
                  this.processTwelveDataMessage(data);
               }
-              if (data.event === 'error') {
-                  console.warn("Twelve Data Error:", data.message);
-                  // Handle authentication errors
-                  if (data.message?.includes('apikey')) {
-                      console.error("Twelve Data API key invalid. Stopping reconnection attempts.");
-                      this.twelveDataReconnectAttempts = this.maxReconnectAttempts;
-                  }
-              }
-          } catch (error) {
-              console.error("Twelve Data: Failed to parse message:", error);
-          }
-      };
-
-      this.twelveDataWs.onclose = (event) => {
-          console.log(`Twelve Data WS Closed. Code: ${event.code}, Reason: ${event.reason}`);
-          // Only reconnect if we still have subscribers needing it and haven't exceeded max attempts
-           if (this.twelveDataSubscriptions.size > 0 && this.twelveDataReconnectAttempts < this.maxReconnectAttempts) {
-               this.scheduleTwelveDataReconnect();
+               if (data.event === 'error') {
+                   logger.warn("Twelve Data Error:", data.message);
+                   // Handle authentication errors
+                   if (data.message?.includes('apikey')) {
+                       logger.error("Twelve Data API key invalid. Stopping reconnection attempts.");
+                       this.twelveDataReconnectAttempts = this.maxReconnectAttempts;
+                   }
+               }
+           } catch (error) {
+               logger.error("Twelve Data: Failed to parse message:", error);
            }
       };
 
+      this.twelveDataWs.onclose = (event) => {
+          logger.log(`Twelve Data WS Closed. Code: ${event.code}, Reason: ${event.reason}`);
+          // Only reconnect if we still have subscribers needing it and haven't exceeded max attempts
+           if (this.twelveDataSubscriptions.size > 0 && this.twelveDataReconnectAttempts < this.maxReconnectAttempts) {
+                this.scheduleTwelveDataReconnect();
+            }
+      };
+
       this.twelveDataWs.onerror = (err) => {
-          console.warn("Twelve Data WS Error", err);
+          logger.warn("Twelve Data WS Error", err);
       };
   }
 
   private scheduleTwelveDataReconnect() {
       if (this.twelveDataReconnectAttempts >= this.maxReconnectAttempts) {
-          console.error("Twelve Data WS: Max reconnect attempts reached. Giving up.");
+          logger.error("Twelve Data WS: Max reconnect attempts reached. Giving up.");
           return;
       }
 
@@ -207,7 +210,7 @@ class MarketDataService {
           30000 // Max 30 seconds
       );
 
-      console.log(`Twelve Data WS: Reconnecting in ${Math.round(delay / 1000)}s... (Attempt ${this.twelveDataReconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+      logger.log(`Twelve Data WS: Reconnecting in ${Math.round(delay / 1000)}s... (Attempt ${this.twelveDataReconnectAttempts + 1}/${this.maxReconnectAttempts})`);
       
       this.twelveDataReconnectTimer = setTimeout(() => {
           this.twelveDataReconnectAttempts++;
@@ -342,13 +345,13 @@ class MarketDataService {
            // Create a copy of the callbacks set to prevent issues if one callback unsubscribes during execution
            const callbacks = Array.from(subs);
            for (const cb of callbacks) {
-               try {
-                   cb(data);
-               } catch (error) {
-                   console.error("Error in market data callback:", error);
-                   // Remove the problematic callback
-                   subs.delete(cb);
-               }
+                try {
+                    cb(data);
+                } catch (error) {
+                    logger.error("Error in market data callback:", error);
+                    // Remove problematic callback
+                    subs.delete(cb);
+                }
            }
        }
    }

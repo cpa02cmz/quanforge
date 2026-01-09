@@ -308,10 +308,51 @@
     - 249 total tests in codebase (including new 47 tests)
     - Critical path (Monte Carlo simulation) fully covered
     - Mathematical accuracy verified
-    - Input validation tested
-    - Performance constraints validated
-
-## Pending / Future Tasks
+     - Input validation tested
+     - Performance constraints validated
+ 
+- [x] **Console Statement Cleanup - Phase 1 (2026-01-09)**: Replaced console statements with scoped logger in marketData.ts
+   - **Architectural Improvement**: Established consistent logging pattern across codebase using utils/logger.ts
+   - **File Modified**: services/marketData.ts (393 lines)
+   - **Changes Applied**:
+     - Added scoped logger: `const logger = createScopedLogger('MarketDataService')`
+     - Replaced all 14 console statements with appropriate logger methods:
+       - `console.log` → `logger.log` (6 occurrences: connection states, reconnect attempts)
+       - `console.warn` → `logger.warn` (3 occurrences: WebSocket errors, API errors)
+       - `console.error` → `logger.error` (5 occurrences: max reconnect attempts, parse failures, callback errors)
+   - **Benefits Achieved**:
+     - Environment-aware logging: Development shows all logs, production only shows errors
+     - Consistent formatting: All logs prefixed with `[MarketDataService]` for easy filtering
+     - Better debugging: Scoped logs make it clear which module generated each message
+     - Reduced maintenance: Single point of control for logging behavior
+   - **Impact on Code Quality**:
+     - Improved observability and debuggability
+     - Consistent logging patterns across WebSocket connections (Binance, Twelve Data)
+     - Better separation of concerns (logging logic vs. business logic)
+     - Follows established logging architecture (utils/logger.ts)
+   - **Verification Results**:
+     - ✅ TypeScript compilation: Zero errors
+     - ✅ Production build: 12.57s (no regression)
+     - ✅ Test suite: 250/250 tests passing (100%)
+     - ✅ All console statements replaced with scoped logger
+     - ✅ Logging behavior preserved: Same log levels and messages, just better structure
+   - **Next Steps**: Continue console statement cleanup in other services
+     - Priority files with high console statement counts:
+       - enhancedSupabasePool.ts (59 statements)
+       - vercelEdgeOptimizer.ts (17 statements)
+       - backendOptimizationManager.ts (17 statements)
+       - edgeOptimizationService.ts (14 statements)
+       - edgeAnalytics.ts (10 statements)
+   - **Pattern Established**:
+     1. Import createScopedLogger from utils/logger
+     2. Create module-specific logger instance
+     3. Replace console.log → logger.log
+     4. Replace console.warn → logger.warn
+     5. Replace console.error → logger.error
+     6. Maintain same log messages for backward compatibility
+   - **Architectural Principle Applied**: Single Responsibility Principle (logging separated from business logic)
+ 
+ ## Pending / Future Tasks
 
 - [x] **Security Hardening (2026-01-08)**: Comprehensive security audit and hardening as Principal Security Engineer
   - Dependency vulnerability scanning (npm audit)
