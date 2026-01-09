@@ -868,6 +868,71 @@
   - **Remaining**: 34 occurrences in 11 files (consolidatedCacheManager, aiResponseCache, securityManager, analyticsManager, vercelEdgeOptimizer, predictiveCacheStrategy, and 6 others)
   - **Estimated Effort**: Medium (systematic migration following established patterns)
 
+## [REFACTOR] Console Statement Cleanup - Complete Systematic Replacement
+- **Location**: 2201 console statements across 100+ files in services/ and components/
+- **Issue**: Direct console.log/warn/error usage makes debugging difficult, no environment-aware behavior, inconsistent logging patterns across codebase
+- **Suggestion**: Replace all console statements with scoped logger utility (utils/logger.ts) following established pattern
+  - Pattern: Import `createScopedLogger`, create logger instance, replace `console.log` → `logger.log`, `console.warn` → `logger.warn`, `console.error` → `logger.error`
+  - Prioritize high-traffic services: enhancedSupabasePool (59), supabase (10), securityManager (23), edgeCacheManager, gemini
+  - Preserve all console.error for production error logging, only replace console.log/warn
+- **Priority**: High
+- **Effort**: Medium
+- **Estimated Impact**: Improved debugging, production performance (only errors in prod), consistent logging patterns
+- **Verification Metric**: Count reduced from 2201 to ~0 (only console.error remaining)
+
+## [REFACTOR] Break Down securityManager.ts Monolith (1617 lines)
+- **Location**: services/securityManager.ts
+- **Issue**: Massive single class mixing input validation, XSS prevention, rate limiting, encryption, CSP monitoring, WAF, bot detection - violates Single Responsibility Principle
+- **Suggestion**: Extract focused modules following SOLID principles
+  - Create `services/inputValidator.ts` (XSS/SQL injection, prototype pollution, MQL5 dangerous patterns)
+  - Create `services/rateLimiter.ts` (rate limiting, edge rate limiting, burst handling)
+  - Create `services/cspMonitor.ts` (CSP violation tracking, reporting)
+  - Create `services/webApplicationFirewall.ts` (WAF, threat detection, bot detection)
+  - Keep `securityManager.ts` as orchestrator (coordinate services, export unified API)
+- **Priority**: High
+- **Effort**: Large
+- **Estimated Impact**: Each module <200 lines, testable independently, easier to maintain security rules
+
+## [REFACTOR] Complete Storage Abstraction Migration (34 remaining occurrences)
+- **Location**: 34 localStorage direct calls in 11 files (securityManager, consolidatedCacheManager, aiResponseCache, analyticsManager, vercelEdgeOptimizer, predictiveCacheStrategy, and 6 others)
+- **Issue**: Inconsistent storage patterns despite storage abstraction layer (utils/storage.ts) existing and being 85% migrated
+- **Suggestion**: Complete migration following established Phase 2 patterns
+  - Replace all `localStorage.getItem/setItem/removeItem` with `storage.get/set/remove`
+  - Use `getLocalStorage()` singleton for consistent instance
+  - Preserve quota error handling and JSON serialization (handled by abstraction layer)
+  - Target high-priority files: securityManager.ts (11 occurrences), consolidatedCacheManager.ts (4 occurrences)
+- **Priority**: High
+- **Effort**: Medium
+- **Estimated Impact**: 100% storage abstraction, consistent API, better testability, automatic quota management
+- **Verification Metric**: Migrated from 85/119 (71%) to 119/119 (100%)
+
+## [REFACTOR] Replace Error Handler `any` Types with Proper Error Handling
+- **Location**: Multiple files with 100+ catch blocks using `error: any` (supabase.ts has 10 occurrences)
+- **Issue**: Using `any` in catch clauses eliminates TypeScript type safety, can cause runtime errors, makes debugging difficult
+- **Suggestion**: Replace all `catch (error: any)` with `catch (error: unknown)` and add proper type guards
+  - Pattern: `catch (error: unknown)` → `if (error instanceof Error)` → access properties safely
+  - For HTTP errors: `error as Error & { status?: number; message?: string }`
+  - For API errors: `error as { message: string; code?: string; details?: any }`
+  - Create error type guard utilities in utils/errorHandlers.ts for common error types
+- **Priority**: Medium
+- **Effort**: Medium
+- **Estimated Impact**: Improved type safety, better error handling, fewer runtime errors
+- **Verification Metric**: Zero `catch (error: any)` patterns in codebase
+
+## [REFACTOR] Consolidate Duplicate Cache Managers (6+ similar files)
+- **Location**: Multiple cache managers with overlapping functionality (edgeCacheManager 1182 lines, unifiedCacheManager 677 lines, consolidatedCacheManager 791 lines, optimizedCache 600+ lines)
+- **Issue**: Code duplication, inconsistent caching strategies, multiple implementations solving same problem, difficult to maintain
+- **Suggestion**: Consolidate into single cache manager with strategy pattern
+  - Keep `consolidatedCacheManager.ts` as base implementation (most feature-rich)
+  - Create `services/cacheStrategies.ts` (LRU, FIFO, TTL, Edge, Predictive strategies)
+  - Migrate unique features from other cache managers into strategies
+  - Deprecate/duplicate functionality in edgeCacheManager, unifiedCacheManager, optimizedCache
+  - Update all components to use single `cacheManager` instance
+- **Priority**: Medium
+- **Effort**: Large
+- **Estimated Impact**: Reduced code duplication (1500+ lines), single source of truth, consistent caching behavior
+- **Verification Metric**: Single cache manager with pluggable strategies, other files deprecated
+
 ### Data Architecture Improvements (2026-01-07) - COMPLETED
 - [x] **TypeScript Schema Alignment**: Updated Robot interface to include all database fields (version, is_active, is_public, view_count, copy_count) for complete type safety
 - [x] **Database-Level Validation**: Created migration 003 with comprehensive CHECK constraints for trading parameters, backtest settings, and analysis results
