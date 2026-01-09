@@ -26,12 +26,12 @@ export const Auth: React.FC = memo(() => {
         if (error) throw error;
         else showToast(t('auth_toast_check_email'), 'success');
       }
-    } catch (error: any) {
-      // If we are in mock mode (no API URL), we simulate a successful login for demo purposes
-      if (!process.env['SUPABASE_URL'] && error.message.includes('Auth session missing')) {
-         // This block intentionally left empty as the real app needs Env vars.
+    } catch (error: unknown) {
+      const authError = error as Error & { message?: string };
+      if (!process.env['SUPABASE_URL'] && authError.message?.includes('Auth session missing')) {
+         return;
       }
-      showToast(error.message || 'Authentication failed', 'error');
+      showToast(authError.message || 'Authentication failed', 'error');
     } finally {
       setLoading(false);
     }
@@ -51,47 +51,55 @@ export const Auth: React.FC = memo(() => {
 
         <form onSubmit={handleAuth} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">{t('auth_email')}</label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">{t('auth_email')}</label>
             <input
+              id="email"
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
               placeholder="trader@example.com"
+              autoComplete="email"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">{t('auth_password')}</label>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">{t('auth_password')}</label>
             <input
+              id="password"
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
               placeholder="••••••••"
+              autoComplete="current-password"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
+            aria-busy={loading}
+            aria-live="polite"
             className="w-full bg-brand-600 hover:bg-brand-500 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center"
           >
             {loading ? (
-              <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             ) : (
               isLogin ? t('auth_btn_signin') : t('auth_btn_signup')
             )}
+            <span className="sr-only">{loading ? 'Authenticating' : isLogin ? 'Sign in' : 'Sign up'}</span>
           </button>
         </form>
 
         <div className="mt-6 text-center">
           <button
             onClick={() => setIsLogin(!isLogin)}
+            type="button"
             className="text-sm text-brand-400 hover:text-brand-300 hover:underline"
           >
             {isLogin ? t('auth_switch_signup') : t('auth_switch_signin')}
