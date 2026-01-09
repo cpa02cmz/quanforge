@@ -105,18 +105,19 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, o
             return;
         }
 
-        setIsTesting(true);
-        try {
-            // Dynamic import to avoid bundle issues
-            const { testAIConnection } = await import('../services/gemini');
-            await testAIConnection(settings);
-            showToast(t('settings_test_success'), 'success');
-        } catch (error: any) {
-            logger.error(error);
-            showToast(`Connection Failed: ${error.message}`, 'error');
-        } finally {
-            setIsTesting(false);
-        }
+         setIsTesting(true);
+         try {
+             // Dynamic import to avoid bundle issues
+             const { testAIConnection } = await import('../services/gemini');
+             await testAIConnection(settings);
+             showToast(t('settings_test_success'), 'success');
+         } catch (error: unknown) {
+             const connectionError = error as Error & { message?: string };
+             logger.error(connectionError);
+             showToast(`Connection Failed: ${connectionError.message || 'Unknown error'}`, 'error');
+         } finally {
+             setIsTesting(false);
+         }
     };
 
     if (!isOpen) return null;
