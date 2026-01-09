@@ -245,37 +245,40 @@ const validateStrategyParams = (params: StrategyParams): StrategyParams => {
 };
 
 // Enhanced input validation for strategy parameters (boolean check)
-export const isValidStrategyParams = (params: any): boolean => {
+export const isValidStrategyParams = (params: Partial<StrategyParams> | Record<string, unknown>): boolean => {
   if (!params || typeof params !== 'object') {
     return false;
   }
-  
+
+  // Type cast to access properties
+  const p = params as Partial<StrategyParams>;
+
   // Validate required fields
   const requiredFields = ['timeframe', 'symbol', 'riskPercent', 'stopLoss', 'takeProfit'];
   for (const field of requiredFields) {
-    if (!(field in params) || params[field] === null || params[field] === undefined) {
+    if (!(field in p) || p[field as keyof Partial<StrategyParams>] === null || p[field as keyof Partial<StrategyParams>] === undefined) {
       return false;
     }
   }
-  
+
   // Validate numeric ranges
-  if (params.riskPercent < 0.1 || params.riskPercent > 100) {
+  if (typeof p.riskPercent !== 'number' || p.riskPercent < 0.1 || p.riskPercent > 100) {
     return false;
   }
-  
-  if (params.stopLoss < 1 || params.stopLoss > 1000) {
+
+  if (typeof p.stopLoss !== 'number' || p.stopLoss < 1 || p.stopLoss > 1000) {
     return false;
   }
-  
-  if (params.takeProfit < 1 || params.takeProfit > 1000) {
+
+  if (typeof p.takeProfit !== 'number' || p.takeProfit < 1 || p.takeProfit > 1000) {
     return false;
   }
-  
+
   // Validate symbol format
-  if (!/^[A-Z]{6}$|^[A-Z]{3}\/[A-Z]{3}$|^[A-Z]{6}$/.test(params.symbol)) {
+  if (typeof p.symbol !== 'string' || !/^[A-Z]{6}$|^[A-Z]{3}\/[A-Z]{3}$|^[A-Z]{6}$/.test(p.symbol)) {
     return false;
   }
-  
+
   return true;
 };
 
@@ -319,7 +322,7 @@ const createSemanticCacheKey = (prompt: string, currentCode?: string, strategyPa
 
 // Request deduplication to prevent duplicate API calls
 class RequestDeduplicator {
-  private pendingRequests = new Map<string, Promise<any>>();
+  private pendingRequests = new Map<string, Promise<unknown>>();
 
   async deduplicate<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
     // If request is already in flight, return the existing promise
@@ -357,22 +360,23 @@ const requestDeduplicator = new RequestDeduplicator();
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, maxDelay = 10000): Promise<T> {
     try {
         return await fn();
-    } catch (error: any) {
-        if (error.name === 'AbortError') throw error; // Do not retry if aborted by user
+    } catch (error: unknown) {
+        if (error instanceof Error && error.name === 'AbortError') throw error; // Do not retry if aborted by user
 
         if (retries === 0) throw error;
-        
-        const isRateLimit = error.status === 429 || (error.message && error.message.includes('429'));
-        const isServerErr = error.status >= 500;
-        const isNetworkErr = error.message?.includes('fetch failed') || 
-                             error.message?.includes('network') || 
-                             error.message?.includes('timeout') ||
-                             error.message?.includes('ETIMEDOUT') ||
-                             error.message?.includes('ECONNRESET');
+
+        const err = error as Error & { status?: number };
+        const isRateLimit = err.status === 429 || (err.message && err.message.includes('429'));
+        const isServerErr = (err.status || 0) >= 500;
+        const isNetworkErr = err.message?.includes('fetch failed') ||
+                             err.message?.includes('network') ||
+                             err.message?.includes('timeout') ||
+                             err.message?.includes('ETIMEDOUT') ||
+                             err.message?.includes('ECONNRESET');
 
         // Only retry on Rate Limits, Server Errors, or Network Issues
         if (isRateLimit || isServerErr || isNetworkErr) {
-            console.warn(`API Error (${error.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
+            console.warn(`API Error (${err.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
             // Add jitter to prevent thundering herd
             const jitter = Math.random() * 0.1 * delay;
             const nextDelay = Math.min(delay * 1.5 + jitter, maxDelay); // Use 1.5 multiplier instead of 2 for gentler backoff
@@ -711,12 +715,12 @@ const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?
         
         if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
-        const config: any = {
+        const config = {
           systemInstruction: systemInstruction
         };
-        
+
         if (temperature !== undefined) {
-          config.temperature = temperature;
+          (config as { temperature?: number }).temperature = temperature;
         }
 
         const response = await ai!.models.generateContent({
@@ -859,14 +863,14 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
      // Cache the response with semantic key and longer TTL for similar prompts
      mql5ResponseCache.set(semanticKey, response, 900000); // 15 minutes TTL
      
-     return response;
+      return response;
 
-   } catch (error: any) {
-     if (error.name === 'AbortError') throw error;
-     handleError(error, 'generateMQL5Code', 'gemini');
-     return { content: `Error generating response: ${error.message || error}` };
-   }
- };
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') throw error;
+      handleError(error instanceof Error ? error : new Error(String(error)), 'generateMQL5Code', 'gemini');
+      return { content: `Error generating response: ${(error as Error)?.message || error}` };
+    }
+  };
 
 /**
  * Self-Refining Agent: Analyzes current code and improves it.
@@ -905,11 +909,11 @@ Output ONLY the improved code in a markdown block. Do not output conversational 
               rawResponse = await callGoogleGenAI(settings, prompt, signal, 0.2) || "";
          }
          
-         return extractThinking(rawResponse);
-} catch (e: any) {
-          if (e.name === 'AbortError') throw e; // Don't wrap abort errors
-          handleError(e, 'refineCode', 'gemini');
-          throw new Error("Refinement failed: " + e.message);
+           return extractThinking(rawResponse);
+    } catch (e: unknown) {
+          if (e instanceof Error && e.name === 'AbortError') throw e; // Don't wrap abort errors
+          handleError(e instanceof Error ? e : new Error(String(e)), 'refineCode', 'gemini');
+          throw new Error("Refinement failed: " + (e as Error)?.message);
       }
 };
 
@@ -941,9 +945,9 @@ Use Markdown formatting (bullet points, bold text) for readability. Do NOT inclu
         } else {
              rawResponse = await callGoogleGenAI(settings, prompt, signal, 0.4) || "";
         }
-        return extractThinking(rawResponse);
-    } catch (e: any) {
-        throw new Error("Explanation failed: " + e.message);
+         return extractThinking(rawResponse);
+    } catch (e: unknown) {
+        throw new Error("Explanation failed: " + (e as Error)?.message);
     }
 };
 
@@ -963,7 +967,21 @@ const stripJsonComments = (jsonString: string) => {
   return jsonString.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
 };
 
-const extractJson = (text: string): any => {
+// Type guard for StrategyAnalysis
+const isStrategyAnalysis = (obj: unknown): obj is StrategyAnalysis => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'riskScore' in obj &&
+    'profitability' in obj &&
+    'description' in obj &&
+    typeof (obj as StrategyAnalysis).riskScore === 'number' &&
+    typeof (obj as StrategyAnalysis).profitability === 'number' &&
+    typeof (obj as StrategyAnalysis).description === 'string'
+  );
+};
+
+const extractJson = (text: string): unknown => {
     let cleanText = text;
     cleanText = cleanText.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, '');
 
@@ -1068,38 +1086,35 @@ const response = await ai!.models.generateContent({
                  }
              });
 
-             const result = extractJson(textResponse);
-             
-             // Validate the result before caching
-             if (result && typeof result === 'object' && 
-                 typeof result.riskScore === 'number' && 
-                 typeof result.profitability === 'number' && 
-                 typeof result.description === 'string') {
-                  // Ensure values are within expected ranges
-                  result.riskScore = Math.min(10, Math.max(1, Number(result.riskScore) || 0));
-                  result.profitability = Math.min(10, Math.max(1, Number(result.profitability) || 0));
-                  
-                  // Cache the result in both caches
-                  analysisCache.set(cacheKey, result);
-                  enhancedAnalysisCache.set(cacheKey, result, 600000); // 10 minutes TTL for enhanced cache
-                  
-                  // Also cache by shorter code snippet for similar code detection
-                  const shortCodeHash = createHash(code.substring(0, 1000));
-                  const shortCacheKey = `short-${shortCodeHash}-${settings.provider}`;
-                  analysisCache.set(shortCacheKey, result);
-                  enhancedAnalysisCache.set(shortCacheKey, result, 600000);
-             } else {
+              const result = extractJson(textResponse);
+
+              // Validate result before caching using type guard
+              if (isStrategyAnalysis(result)) {
+                   // Ensure values are within expected ranges
+                   result.riskScore = Math.min(10, Math.max(1, Number(result.riskScore) || 0));
+                   result.profitability = Math.min(10, Math.max(1, Number(result.profitability) || 0));
+
+                   // Cache result in both caches
+                   analysisCache.set(cacheKey, result);
+                   enhancedAnalysisCache.set(cacheKey, result, 600000); // 10 minutes TTL for enhanced cache
+
+                   // Also cache by shorter code snippet for similar code detection
+                   const shortCodeHash = createHash(code.substring(0, 1000));
+                   const shortCacheKey = `short-${shortCodeHash}-${settings.provider}`;
+                   analysisCache.set(shortCacheKey, result);
+                   enhancedAnalysisCache.set(shortCacheKey, result, 600000);
+              } else {
                  // Return a default response if parsing fails
                  return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };
              }
              
              return result;
 
-         } catch (e: any) {
-             if (e.name === 'AbortError') throw e;
-             handleError(e, 'analyzeStrategy', 'gemini');
-             return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };
-         }
+          } catch (e: unknown) {
+              if (e instanceof Error && e.name === 'AbortError') throw e;
+              handleError(e instanceof Error ? e : new Error(String(e)), 'analyzeStrategy', 'gemini');
+              return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };
+          }
        });
 }
 

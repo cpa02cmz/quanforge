@@ -150,6 +150,50 @@ graph TD
 - **Consistency**: Unified error handling, naming conventions, patterns
 - **Testing**: >80% test coverage for critical paths
 
+### Type Safety Improvements (2026-01-09)
+- **API Configuration Types**: Added comprehensive interfaces for Google GenAI and OpenAI API configurations
+  - `GoogleGenAIConfig`: Type-safe configuration for Google AI API calls
+  - `GoogleGenAIResponseSchema`: Schema definition for structured responses
+  - `OpenAICompatibleConfig`: Configuration for OpenAI-compatible providers
+  - `APIResponse`: Unified response type for all providers
+
+- **Strategy Analysis Type Safety**: `ParsedStrategyAnalysis` type for flexible JSON parsing
+  - Returns `StrategyAnalysis | Record<string, unknown> | null` to handle parsing failures
+  - Type guard `isStrategyAnalysis()` for runtime validation
+  - Safe property access with proper type assertions
+
+- **Error Handling Type Safety**: All catch blocks use `unknown` instead of `any`
+  - TypeScript requirement: catch clauses only allow `any` or `unknown`
+  - Runtime type checks: `error instanceof Error && error.name === 'AbortError'`
+  - Proper error casting for property access: `error as Error & { status?: number }`
+
+- **Function Parameter Type Safety**: Eliminated `any` from all function signatures
+  - `isValidStrategyParams`: `Partial<StrategyParams> | Record<string, unknown>`
+  - `RequestDeduplicator`: `Promise<unknown>` instead of `Promise<any>`
+  - `extractJson`: Returns `unknown` with type guard for safe usage
+
+- **Key Architectural Pattern**: Type guards for safe runtime type checking
+  ```typescript
+  // Type guard example
+  const isStrategyAnalysis = (obj: unknown): obj is StrategyAnalysis => {
+    return (
+      obj !== null &&
+      typeof obj === 'object' &&
+      'riskScore' in obj &&
+      'profitability' in obj &&
+      'description' in obj &&
+      typeof (obj as StrategyAnalysis).riskScore === 'number'
+    );
+  };
+  ```
+
+### TypeScript Best Practices Applied
+1. **Catch Block Types**: Use `unknown` with `instanceof` checks instead of `any`
+2. **Type Guards**: Create type guard functions for runtime validation
+3. **Union Types**: Use `Partial<T> | Record<string, unknown>` for flexible input
+4. **Type Assertions**: Explicit assertions where type system cannot infer safely
+5. **External Libraries**: Allow library type inference when custom interfaces don't match exactly
+
 ### Architectural Improvements (2026-01-07)
 
 #### Module Extraction from Monolithic Services

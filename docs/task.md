@@ -481,12 +481,54 @@
   - Build passes successfully (12.62s), typecheck passes without errors
   - Next: Test the extracted module independently
 
-## [REFACTOR] Replace `any` Types in gemini.ts
-- **Location**: services/gemini.ts (lines 231, 348, 386, 740, 890, 935, 971, 992, 1124)
-- **Issue**: 10+ instances of `any` type reducing type safety and causing runtime risks in critical AI service
+## [REFACTOR] Replace `any` Types in gemini.ts - COMPLETED (2026-01-09)
+- **Location**: services/gemini.ts
+- **Issue**: 9 instances of `any` type reducing type safety and causing runtime risks in critical AI service
 - **Suggestion**: Create proper type definitions for StrategyParams, Error, Config, and JSON extraction to eliminate all `any` types
 - **Priority**: High
 - **Effort**: Medium
+- **Status**: ✅ COMPLETED
+- **Changes Applied**:
+  1. **Created type definitions** (types.ts):
+     - `GoogleGenAIConfig` interface for API configuration
+     - `GoogleGenAIResponseSchema` interface for response schema
+     - `OpenAICompatibleConfig` interface for OpenAI API
+     - `APIResponse` type for API responses
+     - `ParsedStrategyAnalysis` type for JSON parsing results
+
+  2. **Replaced function parameter types**:
+     - `isValidStrategyParams`: `params: any` → `params: Partial<StrategyParams> | Record<string, unknown>`
+     - Added proper type guards for runtime type validation
+     - Fixed property access with type assertions: `p[field as keyof Partial<StrategyParams>]`
+
+  3. **Replaced catch clause types** (5 instances):
+     - All catch blocks: `error: any` / `e: any` → `error: unknown` / `e: unknown`
+     - TypeScript only allows `any` or `unknown` in catch clauses (not `Error`)
+     - Added runtime type checks: `error instanceof Error && error.name === 'AbortError'`
+     - Proper error handling with type assertions where needed
+
+  4. **Replaced generic types**:
+     - `RequestDeduplicator`: `Promise<any>` → `Promise<unknown>`
+     - `extractJson`: return type `any` → `unknown`
+     - Added `isStrategyAnalysis` type guard for safe JSON parsing
+     - Removed unused imports: `ParsedStrategyAnalysis`, `GoogleGenAIConfig`
+
+  5. **Fixed type inference**:
+     - `callGoogleGenAI`: Removed strict `GoogleGenAIConfig` type annotation to allow library inference
+     - Used type assertions for temperature configuration: `(config as { temperature?: number }).temperature`
+
+- **Verification**:
+  - ✅ TypeScript compilation: 0 new errors (only pre-existing library import errors)
+  - ✅ Production build: 11.95s (no regressions)
+  - ✅ All `any` types eliminated from gemini.ts
+  - ✅ Type safety improved with proper interfaces and type guards
+  - ✅ Runtime safety maintained with instanceof checks
+
+- **Key Insights**:
+  - TypeScript catch clauses require `any` or `unknown` (not specific types like `Error`)
+  - Union types require explicit type guards before property access
+  - External libraries may have different interfaces than custom types - allow inference when uncertain
+  - Type guards (`isStrategyAnalysis`) improve safety while maintaining flexibility
 
 ## [REFACTOR] Remove Console Statements from Core Services
 - **Location**: Multiple services (gemini.ts, securityManager.ts, edgeCacheManager.ts)

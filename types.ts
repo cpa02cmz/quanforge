@@ -172,3 +172,44 @@ export const isUser = (obj: unknown): obj is User => {
     ('email' in obj ? typeof obj.email === 'string' : true)
   );
 };
+
+// API Configuration Types for Type Safety
+export interface GoogleGenAIConfig {
+  systemInstruction: string;
+  temperature?: number;
+  responseMimeType?: string;
+  responseSchema?: GoogleGenAIResponseSchema;
+}
+
+export interface GoogleGenAIResponseSchema {
+  type: string;
+  properties?: Record<string, {
+    type: string;
+    description?: string;
+  }>;
+}
+
+export interface OpenAICompatibleConfig {
+  model: string;
+  messages: Array<{
+    role: string;
+    content: string;
+  }>;
+  temperature?: number;
+  response_format?: {
+    type: string;
+  };
+}
+
+// Type for API response objects
+export type APIResponse = {
+  text?: string;
+  choices?: Array<{
+    message: {
+      content: string;
+    };
+  }>;
+};
+
+// Strategy analysis result with type safety
+export type ParsedStrategyAnalysis = StrategyAnalysis | Record<string, unknown> | null;
