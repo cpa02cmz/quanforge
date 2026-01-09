@@ -1455,7 +1455,7 @@ private validateRobotData(data: any): ValidationResult {
         return /^[A-Za-z0-9]{32,}$/.test(apiKey);
       
       case 'generic':
-      default:
+      default: {
         // Generic validation for common API key patterns
         const patterns = [
           /^[a-zA-Z0-9_-]{20,}$/,
@@ -1464,6 +1464,7 @@ private validateRobotData(data: any): ValidationResult {
           /^[\w-]{20,40}$/
         ];
         return patterns.some(pattern => pattern.test(apiKey)) && apiKey.length >= 20;
+      }
     }
   }
 
@@ -1588,27 +1589,28 @@ private validateRobotData(data: any): ValidationResult {
        return false;
      }
      
-     // Use existing validation methods based on type
-     switch (type) {
-       case 'search':
-         const searchValidation = this.sanitizeAndValidate({ searchTerm: input }, 'strategy');
-         return searchValidation.isValid && searchValidation.riskScore < 30;
-         
-       case 'record':
-         const recordValidation = this.sanitizeAndValidate(input, 'robot');
-         return recordValidation.isValid && recordValidation.riskScore < 50;
-         
-       case 'robot':
-       case 'strategy':
-       case 'backtest':
-       case 'user':
-         const validation = this.sanitizeAndValidate(input, type);
-         return validation.isValid && validation.riskScore < 70;
-         
-       default:
-         // For other types, use basic sanitization
-         const sanitized = this.sanitizeInput(String(input), type);
-         return sanitized.length > 0 && sanitized.length < 10000;
+      // Use existing validation methods based on type
+      switch (type) {
+        case 'search': {
+          const searchValidation = this.sanitizeAndValidate({ searchTerm: input }, 'strategy');
+          return searchValidation.isValid && searchValidation.riskScore < 30;
+        }
+        case 'record': {
+          const recordValidation = this.sanitizeAndValidate(input, 'robot');
+          return recordValidation.isValid && recordValidation.riskScore < 50;
+        }
+        case 'robot':
+        case 'strategy':
+        case 'backtest':
+        case 'user': {
+          const validation = this.sanitizeAndValidate(input, type);
+          return validation.isValid && validation.riskScore < 70;
+        }
+        default: {
+          // For other types, use basic sanitization
+          const sanitized = this.sanitizeInput(String(input), type);
+          return sanitized.length > 0 && sanitized.length < 10000;
+        }
      }
    }
  }
