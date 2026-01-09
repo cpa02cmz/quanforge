@@ -11,10 +11,10 @@ This guide will walk you through creating your first MQL5 trading strategy with 
 ## Step 1: Install and Run
 
 1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/your-repo/quanforge.git
-   cd quanforge
-   ```
+    ```bash
+    git clone https://github.com/cpa02cmz/quanforge.git
+    cd quanforge
+    ```
 
 2. **Install dependencies**:
    ```bash

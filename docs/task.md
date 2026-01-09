@@ -325,9 +325,18 @@
         - Development workflow for features, bug fixes, and refactoring
         - Questions, support, and issue reporting
         - Code of conduct for community guidelines
-        - Recognition and licensing information
-      - **Status**: ✅ COMPLETED - Contributing guide created, committed to agent branch
-- [x] **Bug Fixes**:
+         - Recognition and licensing information
+       - **Status**: ✅ COMPLETED - Contributing guide created, committed to agent branch
+      - [x] Critical Documentation Fix (2026-01-09):
+         - Fixed placeholder repository URLs in README.md and docs/QUICK_START.md
+         - Updated Vercel deploy button from placeholder to actual repository URL
+         - Fixed git clone commands in Getting Started and Troubleshooting sections
+         - Removed merge conflict marker from docs/blueprint.md
+         - All URLs now point to correct repository: https://github.com/cpa02cmz/quanforge
+         - Build verification: ✅ Production build succeeds (12.08s)
+         - **Impact**: Users can now successfully clone and deploy repository
+         - **Status**: ✅ COMPLETED - All critical URL fixes applied
+   - [x] **Bug Fixes**:
     - [x] **Critical Build Fix**: Resolved browser crypto compatibility issue in `enhancedRateLimit.ts`
     - [x] **Cross-Platform Compatibility**: Replaced Node.js crypto with browser-compatible hash function
     - [x] **Build System**: Restored full build functionality and deployment capability

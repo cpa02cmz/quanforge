@@ -1,7 +1,7 @@
 
 # QuantForge AI - MQL5 Generator
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fproject-name%2Frepo-name)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fcpa02cmz%2Fquanforge)
 
 QuantForge AI is a web-based platform that uses Google's Gemini 3.0/2.5 AI models to generate, analyze, and manage trading robots (Expert Advisors) for the MetaTrader 5 (MQL5) platform.
 
@@ -32,7 +32,7 @@ QuantForge AI is a web-based platform that uses Google's Gemini 3.0/2.5 AI model
 
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/your-repo/quanforge.git
+    git clone https://github.com/cpa02cmz/quanforge.git
     cd quanforge
     ```
 
@@ -482,14 +482,14 @@ npm run build
    - Use browser DevTools Network tab for API issues
 
 4. **Minimal Reproduction**:
-   - Create minimal reproduction case
-   - Check if issue persists in clean environment:
-     ```bash
-     git clone https://github.com/your-repo/quanforge.git
-     cd quanforge
-     npm install
-     npm run dev
-     ```
+    - Create minimal reproduction case
+    - Check if issue persists in clean environment:
+      ```bash
+      git clone https://github.com/cpa02cmz/quanforge.git
+      cd quanforge
+      npm install
+      npm run dev
+      ```
 
 ## Additional Resources
 
