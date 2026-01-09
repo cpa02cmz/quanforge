@@ -1,7 +1,15 @@
 // Export all services for easier imports
-export * from './supabase';
-// gemini functions loaded via dynamic import through aiServiceLoader for lazy loading
-// Removed static export to prevent immediate bundle loading
+
+// Core Services with Resilience (Recommended)
+export { aiService } from './resilientAIService';
+export { resilientDb as db, resilientDbUtils as dbUtils } from './resilientDbService';
+export { resilientMarketService as marketData } from './resilientMarketService';
+
+// Backward Compatibility (Legacy exports - use resilient versions above)
+export { supabase, mockDb } from './supabase';
+export { marketService, MarketData } from './marketData';
+
+// AI Functions (dynamic import via aiServiceLoader for lazy loading)
 export * from './aiServiceLoader';
 export * from './settingsManager';
 export * from './simulation';
@@ -16,7 +24,6 @@ export * from './databaseOptimizer';
 export * from './realtimeManager';
 export * from './edgeCacheManager';
 export * from './edgeSupabaseClient';
-export * from './marketData';
 export * from './edgeMonitoring';
 export * from './edgeRequestCoalescer';
 export * from './circuitBreaker';
@@ -33,6 +40,3 @@ export { withIntegrationResilience, createIntegrationOperation, getIntegrationHe
 export { circuitBreakerMonitor } from './circuitBreakerMonitor';
 export { fallbackManager, databaseFallbacks, aiServiceFallbacks, marketDataFallbacks, degradedModeManager } from './fallbackStrategies';
 export { integrationHealthMonitor, integrationMetrics } from './integrationHealthMonitor';
-export { aiService } from './resilientAIService';
-export { resilientDb, resilientDbUtils } from './resilientDbService';
-export { resilientMarketService } from './resilientMarketService';

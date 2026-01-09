@@ -148,5 +148,18 @@ export const resilientDbUtils = {
     );
 
     return result.data;
+  },
+
+  async migrateMockToSupabase() {
+    const result = await withIntegrationResilience(
+      IntegrationType.DATABASE,
+      'database',
+      async () => await originalDbUtils.migrateMockToSupabase(),
+      {
+        operationName: 'migrate_mock_to_supabase'
+      }
+    );
+
+    return result.data;
   }
 };

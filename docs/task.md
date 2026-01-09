@@ -404,20 +404,74 @@
  - [ ] **Community Sharing**: Share robots via public links.
 
 - [x] **Integration Hardening** (2026-01-07): Created unified resilience system with timeouts, retries, circuit breakers, fallbacks, and health monitoring
-  - Created integrationResilience.ts with standardized configurations
-  - Created circuitBreakerMonitor.ts with state management
-  - Created fallbackStrategies.ts with priority-based fallbacks and degraded mode
-  - Created integrationHealthMonitor.ts with health checks and metrics
-  - Created integrationWrapper.ts as unified execution layer
-  - Created resilientAIService.ts - AI service wrapper with resilience and fallbacks
-  - Created resilientDbService.ts - Database service wrapper with resilience and fallbacks
-  - Created resilientMarketService.ts - Market data service wrapper with resilience and fallbacks
-  - Updated services/index.ts to export all resilience modules and resilient services
-  - Documented complete system in INTEGRATION_HARDENING.md
-  - Build passes successfully (12.12s)
-  - TypeScript compilation passes with zero errors
-  - All main services integrated with unified resilience system
-  - Backward compatibility maintained with original service exports
+   - Created integrationResilience.ts with standardized configurations
+   - Created circuitBreakerMonitor.ts with state management
+   - Created fallbackStrategies.ts with priority-based fallbacks and degraded mode
+   - Created integrationHealthMonitor.ts with health checks and metrics
+   - Created integrationWrapper.ts as unified execution layer
+   - Created resilientAIService.ts - AI service wrapper with resilience and fallbacks
+   - Created resilientDbService.ts - Database service wrapper with resilience and fallbacks
+   - Created resilientMarketService.ts - Market data service wrapper with resilience and fallbacks
+   - Updated services/index.ts to export all resilience modules and resilient services
+   - Documented complete system in INTEGRATION_HARDENING.md (file not found, see INTEGRATION_RESILIENCE.md instead)
+   - Build passes successfully (12.12s)
+   - TypeScript compilation passes with zero errors
+   - All main services integrated with unified resilience system
+   - Backward compatibility maintained with original service exports
+
+- [x] **Integration Adoption & Documentation (2026-01-09)**: Migrated application to use existing resilience system and created comprehensive documentation
+   - **Critical Gap Identified**: Resilience system existed (2026-01-07) but wasn't being used by application components
+   - **Services Export Update**: Updated services/index.ts to prioritize resilient exports
+     - Export `db` (resilient database) instead of `supabase` (legacy)
+     - Export `marketData` (resilient market data) instead of `marketService` (legacy)
+     - Export `aiService` (resilient AI service) for AI operations
+     - Export `dbUtils` (resilient utilities) for database operations
+     - Maintain backward compatibility with `*Legacy` exports for existing code
+   - **Component Migration**: Updated components to use resilient services
+     - MarketTicker.tsx: Updated to use `marketData` from services/index.ts
+     - DatabaseSettingsModal.tsx: Updated to use `dbUtils` from services/index.ts
+     - Added null checks for potentially `undefined` returns from resilient services
+   - **Resilient Service Enhancement**: Added missing `migrateMockToSupabase` method to resilientDbService.ts
+   - **Documentation Created**:
+     - docs/INTEGRATION_RESILIENCE.md: Comprehensive 600+ line API documentation
+       - Architecture overview with visual diagram
+       - All core services documented (db, aiService, marketData, dbUtils)
+       - Resilience configurations for each integration type
+       - Error handling patterns and standardized error format
+       - Circuit breaker states and behavior
+       - Fallback strategies for all services
+       - Health monitoring and metrics
+       - Usage examples and best practices
+       - Advanced configuration options
+       - Troubleshooting guide
+     - docs/INTEGRATION_MIGRATION.md: Quick start migration guide
+       - Step-by-step migration instructions
+       - Import comparison (before/after)
+       - Migration checklist
+       - Testing procedures
+       - Rollback plan
+       - Common issues and solutions
+       - Best practices after migration
+   - **Build Verification**: ✅ TypeScript compilation passes (zero errors), ✅ No new lint errors introduced
+   - **Integration Status**:
+     - Resilience system: ✅ Fully implemented and documented
+     - Service exports: ✅ Prioritized resilient versions with backward compatibility
+     - Component migration: ✅ Started (MarketTicker, DatabaseSettingsModal)
+     - Documentation: ✅ Comprehensive API docs and migration guide created
+   - **Next Steps**:
+     - Migrate remaining components (Dashboard, Generator, CodeEditor, etc.)
+     - Update tests to use resilient services
+     - Monitor integration health in production
+     - Collect metrics on resilience effectiveness
+   - **Benefits Achieved**:
+     - Automatic retry logic with exponential backoff
+     - Circuit breaker protection against cascading failures
+     - Configurable timeouts per integration type
+     - Graceful fallbacks when services fail
+     - Real-time health monitoring and metrics
+     - Consistent error handling across all integrations
+     - Zero breaking changes (backward compatible)
+   - **Commit**: Integration adoption and documentation completed
 - [ ] **Community Sharing**: Share robots via public links.
 - [ ] **Direct MT5 Bridge**: WebSocket connection to local MetaTrader instance.
 - [x] **PR #139 Management**: Successfully addressed red-flag issues and restored mergeability

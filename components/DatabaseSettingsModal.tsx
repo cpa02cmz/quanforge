@@ -2,7 +2,7 @@
 import React, { useState, useEffect, memo } from 'react';
 import { DBSettings } from '../types';
 import { settingsManager, DEFAULT_DB_SETTINGS } from '../services/settingsManager';
-import { dbUtils } from '../services/supabase';
+import { dbUtils } from '../services';
 import { useToast } from './Toast';
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
@@ -32,7 +32,7 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
     const loadStats = async () => {
         try {
             const s = await dbUtils.getStats();
-            setStats(s);
+            if (s) setStats(s);
         } catch (e) {
             logger.error(e);
         }
@@ -49,15 +49,17 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
         setIsLoading(true);
         // Save temporary settings to test connection against input values
         settingsManager.saveDBSettings(settings);
-        
+
         const result = await dbUtils.checkConnection();
         setIsLoading(false);
-        
-        if (result.success) {
+
+        if (result && result.success) {
             showToast(result.message, 'success');
             loadStats();
-        } else {
+        } else if (result) {
             showToast(result.message, 'error');
+        } else {
+            showToast('Connection test failed', 'error');
         }
     };
 
@@ -67,15 +69,17 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
 
     const handleMigration = async () => {
         if (!window.confirm("This will upload all local robots to your Supabase account. Continue?")) return;
-        
+
         setIsMigrating(true);
         try {
             const res = await dbUtils.migrateMockToSupabase();
-            if (res.success) {
+            if (res && res.success) {
                 showToast(`Successfully migrated ${res.count} robots to Cloud.`, 'success');
                 loadStats();
-            } else {
+            } else if (res) {
                 showToast(`Migration failed: ${res.error}`, 'error');
+            } else {
+                showToast('Migration failed', 'error');
             }
         } catch (e: any) {
              showToast(`Migration error: ${e.message}`, 'error');

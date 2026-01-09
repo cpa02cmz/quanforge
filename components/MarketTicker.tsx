@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef, memo } from 'react';
-import { marketService, MarketData } from '../services/marketData';
+import { marketData as marketService, MarketData } from '../services';
 import { useTranslation } from '../services/i18n';
 
 interface MarketTickerProps {
