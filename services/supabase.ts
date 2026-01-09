@@ -19,11 +19,6 @@ const RETRY_CONFIG = {
   jitter: true, // Add jitter to prevent thundering herd
 };
 
-// Cache configuration
-const CACHE_CONFIG = {
-  ttl: 15 * 60 * 1000, // 15 minutes for better edge performance
-  maxSize: 200, // Max cached items
-};
 
 // Mock session storage
 const STORAGE_KEY = 'mock_session';
@@ -143,65 +138,6 @@ const mockClient = {
 
 let activeClient: SupabaseClient | any = null;
 
-// LRU Cache implementation for better performance and memory management
-class LRUCache<T> {
-  private cache = new Map<string, { data: T; timestamp: number }>();
-  private readonly ttl: number;
-  private readonly maxSize: number;
-
-  constructor(ttl: number, maxSize: number) {
-    this.ttl = ttl;
-    this.maxSize = maxSize;
-  }
-
-  get(key: string): T | null {
-    const item = this.cache.get(key);
-    if (!item) return null;
-
-    if (Date.now() - item.timestamp > this.ttl) {
-      this.cache.delete(key);
-      return null;
-    }
-
-    // Move to end (most recently used)
-    this.cache.delete(key);
-    this.cache.set(key, item);
-    return item.data;
-  }
-
-  set(key: string, data: T): void {
-    // Evict oldest if at max size
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      if (firstKey) {
-        this.cache.delete(firstKey);
-      }
-    }
-    
-    this.cache.set(key, { data, timestamp: Date.now() });
-  }
-
-  delete(key: string): boolean {
-    return this.cache.delete(key);
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-
-  has(key: string): boolean {
-    const item = this.cache.get(key);
-    if (!item) return false;
-    
-    if (Date.now() - item.timestamp > this.ttl) {
-      this.cache.delete(key);
-      return false;
-    }
-    return true;
-  }
-}
-
-const cache = new LRUCache<any>(CACHE_CONFIG.ttl, CACHE_CONFIG.maxSize);
 
 
 
@@ -853,9 +789,6 @@ if (result.data && !result.error) {
           .match({ id })
           .select();
         
-        // Invalidate cache after update
-        cache.delete('robots_list');
-        
         const duration = performance.now() - startTime;
         performanceMonitor.record('updateRobot', duration);
         
@@ -901,9 +834,6 @@ if (result.data && !result.error) {
       return withRetry(async () => {
         const client = await getClient();
         const result = await client.from('robots').delete().match({ id });
-        
-        // Invalidate cache after delete
-        cache.delete('robots_list');
         
         const duration = performance.now() - startTime;
         performanceMonitor.record('deleteRobot', duration);
@@ -1398,8 +1328,6 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                         errors.push(e.message);
                     }
                 }
-                
-                cache.delete('robots_list'); // Invalidate cache
                 
                 const duration = performance.now() - startTime;
                 performanceMonitor.record('batchUpdateRobots', duration);

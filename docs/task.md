@@ -649,14 +649,28 @@
 - **Priority**: High
 - **Effort**: Medium
 
-- [x] **Extract LRUCache to Reusable Utility (2026-01-08)**: Eliminated duplicate LRUCache implementation
-   - Created utils/cache.ts with comprehensive LRUCache class (94 lines)
-   - Extracted LRUCache from services/gemini.ts (removed 40 lines of duplicate code)
-   - Updated gemini.ts to import from utils/cache.ts
-   - Features: TTL support, LRU eviction, automatic cleanup, cache statistics
-   - Methods: get, set, delete, clear, has, size, cleanup, getStats
-   - Build verification: ✅ TypeScript compilation passes, ✅ 250/250 tests passing, ✅ Build successful (11.52s)
-   - Note: services/supabase.ts still contains duplicate LRUCache (lines 147-202) - future cleanup needed
+ - [x] **Extract LRUCache to Reusable Utility (2026-01-08)**: Eliminated duplicate LRUCache implementation
+    - Created utils/cache.ts with comprehensive LRUCache class (94 lines)
+    - Extracted LRUCache from services/gemini.ts (removed 40 lines of duplicate code)
+    - Updated gemini.ts to import from utils/cache.ts
+    - Features: TTL support, LRU eviction, automatic cleanup, cache statistics
+    - Methods: get, set, delete, clear, has, size, cleanup, getStats
+    - Build verification: ✅ TypeScript compilation passes, ✅ 250/250 tests passing, ✅ Build successful (11.52s)
+
+ - [x] **Remove Duplicate LRUCache from Supabase Service (2026-01-09)**: Completed cache consolidation cleanup
+    - Removed duplicate LRUCache class from services/supabase.ts (lines 147-202, 56 lines removed)
+    - Removed unused cache variable instantiation (line 204)
+    - Removed redundant CACHE_CONFIG constant (lines 22-26)
+    - Removed 3 redundant cache.delete('robots_list') calls (lines 857, 906, 1402)
+    - consolidatedCache already handles robot list caching with invalidateByTags(['robots', 'list'])
+    - Code reduction: 75 lines total (~4.7% reduction from 1583 to 1508 lines)
+    - Build verification: ✅ TypeScript compilation passes (zero errors), ✅ Production build (11.74s)
+    - Test verification: ✅ 363/363 tests passing (100%), 8 test files passing
+    - **Architectural Principles**:
+      - DRY (Don't Repeat Yourself): Single LRUCache implementation in utils/cache.ts
+      - Single Responsibility: supabase.ts focuses on database operations, not cache implementation
+      - Consistent Cache Strategy: All code uses consolidatedCacheManager for caching
+
 
 
 ## [REFACTOR] Break Down StrategyConfig Component (517 lines)
