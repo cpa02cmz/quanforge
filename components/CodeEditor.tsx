@@ -174,37 +174,40 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
         <div className="flex items-center space-x-3">
             <span className="text-xs text-gray-500 font-sans uppercase tracking-wider">{t('editor_source')}</span>
             {!readOnly && onChange && (
-                <button 
+                <button
                     onClick={() => setIsEditing(!isEditing)}
                     className={`text-xs px-2 py-0.5 rounded transition-colors border ${
-                        isEditing 
-                        ? 'bg-brand-500/20 text-brand-400 border-brand-500/50' 
+                        isEditing
+                        ? 'bg-brand-500/20 text-brand-400 border-brand-500/50'
                         : 'bg-dark-bg text-gray-400 border-dark-border hover:text-white'
                     }`}
+                    aria-label={isEditing ? t('editor_done') : t('editor_edit')}
                     title="Toggle Edit Mode"
                 >
                     {isEditing ? t('editor_done') : t('editor_edit')}
                 </button>
             )}
-            
+
             {!readOnly && onRefine && (
-                 <button 
+                 <button
                     onClick={onRefine}
                     className="flex items-center space-x-1 px-2 py-0.5 bg-purple-900/30 text-purple-300 border border-purple-800 rounded hover:bg-purple-900/50 transition-colors text-xs"
+                    aria-label={t('editor_refine')}
                     title="Auto-optimize logic using AI"
                 >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                     <span>{t('editor_refine')}</span>
                 </button>
             )}
 
             {!readOnly && onExplain && (
-                 <button 
+                 <button
                     onClick={onExplain}
                     className="flex items-center space-x-1 px-2 py-0.5 bg-blue-900/30 text-blue-300 border border-blue-800 rounded hover:bg-blue-900/50 transition-colors text-xs"
-                    title="Explain this code in the chat"
+                    aria-label={t('editor_explain')}
+                    title="Explain this code in chat"
                 >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
                     <span>{t('editor_explain')}</span>
                 </button>
             )}
@@ -213,49 +216,54 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
             <div className="flex items-center space-x-2">
               {/* Font size controls */}
               <div className="flex items-center space-x-1">
-                <button 
+                <button
                   onClick={() => setFontSize(prev => Math.max(prev - 1, 10))}
                   className="w-6 h-6 flex items-center justify-center bg-dark-bg text-gray-400 hover:text-white rounded text-xs"
+                  aria-label="Decrease font size"
                   title="Decrease font size"
                 >
                   -
                 </button>
                 <span className="text-xs w-8 text-center">{fontSize}px</span>
-                <button 
+                <button
                   onClick={() => setFontSize(prev => Math.min(prev + 1, 24))}
                   className="w-6 h-6 flex items-center justify-center bg-dark-bg text-gray-400 hover:text-white rounded text-xs"
+                  aria-label="Increase font size"
                   title="Increase font size"
                 >
                   +
                 </button>
               </div>
-              
+
               {/* Word wrap toggle */}
-              <button 
+              <button
                 onClick={() => setWordWrap(!wordWrap)}
                 className={`px-2 py-0.5 text-xs rounded border ${
-                  wordWrap 
-                    ? 'bg-brand-500/20 text-brand-400 border-brand-500/50' 
+                  wordWrap
+                    ? 'bg-brand-500/20 text-brand-400 border-brand-500/50'
                     : 'bg-dark-bg text-gray-400 border-dark-border hover:text-white'
                 }`}
+                aria-label={`Word wrap ${wordWrap ? 'enabled' : 'disabled'}`}
                 title="Toggle word wrap"
               >
                 W
               </button>
-              
-              <button 
+
+              <button
                 onClick={handleCopy}
                 className="flex items-center space-x-1 px-2 py-1 hover:bg-white/5 rounded text-xs transition-colors"
+                aria-label={copied ? t('editor_copied') : t('editor_copy')}
                 title="Copy code to clipboard"
               >
                 {copied ? <span className="text-green-500">{t('editor_copied')}</span> : <span>{t('editor_copy')}</span>}
               </button>
-              <button 
+              <button
                 onClick={handleDownload}
                 className="flex items-center space-x-1 px-2 py-1 bg-brand-600/20 text-brand-400 hover:bg-brand-600/30 rounded text-xs transition-colors border border-brand-600/30"
+                aria-label={t('editor_download')}
                 title="Download .mq5 file (Ctrl+S)"
               >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                 <span>{t('editor_download')}</span>
               </button>
             </div>
