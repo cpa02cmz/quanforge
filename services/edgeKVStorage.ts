@@ -4,7 +4,7 @@
  * Optimized for session management, caching, and real-time data
  */
 
-import { KV } from '@vercel/kv';
+import { createClient, type VercelKV } from '@vercel/kv';
 
 // Edge KV configuration
 const KV_CONFIG = {
@@ -27,7 +27,7 @@ const KV_CONFIG = {
 
 // Edge KV client with connection pooling
 class EdgeKVClient {
-  private client: KV;
+  private client: VercelKV;
   private cache: Map<string, { data: any; expiry: number }> = new Map();
   private metrics: {
     hits: number;
@@ -44,9 +44,9 @@ class EdgeKVClient {
   };
 
   constructor() {
-    this.client = new KV({
-      url: process.env.KV_REST_API_URL,
-      token: process.env.KV_REST_API_TOKEN,
+    this.client = createClient({
+      url: process['env']['KV_REST_API_URL'],
+      token: process['env']['KV_REST_API_TOKEN'],
     });
   }
 
