@@ -1,4 +1,4 @@
-import { generateMQL5Code as originalGenerateMQL5Code, refineCode as originalRefineCode, explainCode as originalExplainCode, testAIConnection as originalTestAIConnection, analyzeStrategy as originalAnalyzeStrategy } from './gemini';
+import { loadGeminiService } from './aiServiceLoader';
 import { withIntegrationResilience, enterDegradedMode, exitDegradedMode, isDegraded } from './integrationWrapper';
 import { IntegrationType } from './integrationResilience';
 import { aiServiceFallbacks } from './fallbackStrategies';
@@ -16,7 +16,10 @@ export const aiService = {
     const result = await withIntegrationResilience(
       IntegrationType.AI_SERVICE,
       'ai_service',
-      async () => await originalGenerateMQL5Code(prompt, currentCode, strategyParams, history, signal),
+      async () => {
+        const { generateMQL5Code } = await loadGeminiService();
+        return await generateMQL5Code(prompt, currentCode, strategyParams, history, signal);
+      },
       {
         operationName: 'generate_mql5_code',
         fallbacks: [
@@ -40,7 +43,10 @@ export const aiService = {
     const result = await withIntegrationResilience(
       IntegrationType.AI_SERVICE,
       'ai_service',
-      async () => await originalRefineCode(currentCode, signal),
+      async () => {
+        const { refineCode } = await loadGeminiService();
+        return await refineCode(currentCode, signal);
+      },
       {
         operationName: 'refine_code'
       }
@@ -53,7 +59,10 @@ export const aiService = {
     const result = await withIntegrationResilience(
       IntegrationType.AI_SERVICE,
       'ai_service',
-      async () => await originalExplainCode(currentCode, signal),
+      async () => {
+        const { explainCode } = await loadGeminiService();
+        return await explainCode(currentCode, signal);
+      },
       {
         operationName: 'explain_code'
       }
@@ -66,7 +75,10 @@ export const aiService = {
     const result = await withIntegrationResilience(
       IntegrationType.AI_SERVICE,
       'ai_service',
-      async () => await originalTestAIConnection(settings),
+      async () => {
+        const { testAIConnection } = await loadGeminiService();
+        return await testAIConnection(settings);
+      },
       {
         operationName: 'test_connection'
       }
@@ -79,7 +91,10 @@ export const aiService = {
     const result = await withIntegrationResilience(
       IntegrationType.AI_SERVICE,
       'ai_service',
-      async () => await originalAnalyzeStrategy(code, signal),
+      async () => {
+        const { analyzeStrategy } = await loadGeminiService();
+        return await analyzeStrategy(code, signal);
+      },
       {
         operationName: 'analyze_strategy'
       }

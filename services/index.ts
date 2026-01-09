@@ -1,6 +1,7 @@
 // Export all services for easier imports
 export * from './supabase';
-export * from './gemini';
+// gemini functions loaded via dynamic import through aiServiceLoader for lazy loading
+// Removed static export to prevent immediate bundle loading
 export * from './aiServiceLoader';
 export * from './settingsManager';
 export * from './simulation';

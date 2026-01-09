@@ -520,6 +520,17 @@
   - Updated build:analyze command to use Vite-compatible bundle analysis
   - Performance impact: Better chunk splitting for edge deployment caching
 
+### Performance Optimization (2026-01-09)
+- [x] **AI Vendor Lazy Loading**: Implemented dynamic imports for AI service to improve initial load performance
+  - Updated resilientAIService.ts to use dynamic imports via loadGeminiService()
+  - Removed static export of gemini functions from services/index.ts
+  - Benefit: ai-vendor chunk (246.96 kB) now loaded only when AI generation is triggered
+  - Initial load reduction: ai-vendor no longer in main entry imports
+  - User experience: Faster initial page load for users viewing dashboard/saved strategies
+  - Build verification: Typecheck passes (0 errors), build succeeds (12.36s)
+  - Manifest verification: ai-vendor in dynamicImports array, not in initial imports
+  - Pattern: Follows user-centric optimization principle - only load what's needed
+
 ### Performance Optimization (2026-01-07)
 - [x] **Bundle Analysis**: Profiled build and identified chart-vendor as largest chunk (356.36 kB)
 - [x] **Chart Component Optimization**: Changed ChartComponents.tsx from dynamic to static imports from 'recharts/es6' for optimal tree-shaking
