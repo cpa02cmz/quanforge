@@ -27,7 +27,7 @@ export const useTranslation = () => {
         });
     }, [language]);
 
-    const t = (key: string, params?: Record<string, string>) => {
+    const t = (key: string, params?: Record<string, string | number>) => {
         let text = translations[key] || key;
 
         if (params) {

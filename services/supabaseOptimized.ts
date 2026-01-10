@@ -41,8 +41,8 @@ class OptimizedSupabaseService {
 
   private async initializeClient() {
     try {
-      const supabaseUrl = process.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+      const supabaseUrl = process.env['VITE_SUPABASE_URL'];
+      const supabaseAnonKey = process.env['VITE_SUPABASE_ANON_KEY'];
 
       if (!supabaseUrl || !supabaseAnonKey) {
         logger.warn('Supabase credentials not found, using mock mode');

@@ -25,7 +25,7 @@ class CSRFProtection {
     tokenExpiry: 3600000, // 1 hour
     cookieName: 'csrf-token',
     headerName: 'X-CSRF-Token',
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env['NODE_ENV'] === 'production',
     sameSite: 'strict'
   };
   private tokens: Map<string, CSRFToken> = new Map();

@@ -195,9 +195,9 @@ export class AdvancedCache {
         const data = await loader();
         this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
       } catch (error) {
-         if (process.env.NODE_ENV === 'development') {
-           console.warn(`Failed to preload cache entry: ${key}`, error);
-         }
+         if (process.env['NODE_ENV'] === 'development') {
+            console.warn(`Failed to preload cache entry: ${key}`, error);
+          }
       }
     });
 
@@ -330,12 +330,11 @@ this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
       if (this.cache.delete(key)) {
         deletedCount++;
       }
-    });
-    
-     // Use logger instead of console.log for production safety
-     if (process.env.NODE_ENV === 'development') {
-       console.log(`Invalidated ${deletedCount} cache entries for region: ${region}`);
-     }
+     });
+
+    if (process.env['NODE_ENV'] === 'development') {
+      console.debug(`[EdgeCache] Invalidated ${deletedCount} entries for region: ${region}`);
+    }
     return deletedCount;
   }
 

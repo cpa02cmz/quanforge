@@ -69,7 +69,7 @@ export class EdgeCacheManager<T = any> {
   private cleanupTimer: number | null = null;
   private dbName = 'edgeCacheManager';
   private storeName = 'edgeCache';
-  private currentRegion = process.env.VERCEL_REGION || 'unknown';
+  private currentRegion = process.env['VERCEL_REGION'] || 'unknown';
   private compression: EdgeCacheCompression;
 
   constructor(config?: Partial<EdgeCacheConfig>) {
