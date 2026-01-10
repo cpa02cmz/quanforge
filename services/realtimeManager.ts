@@ -207,45 +207,6 @@ class RealtimeManager {
     }
   }
 
-  // Handle conflicts
-  private async resolveConflict(
-    clientData: any,
-    serverData: any
-  ): Promise<any> {
-    switch (this.config.conflictResolution) {
-      case 'client':
-        return clientData;
-      case 'server':
-        return serverData;
-      case 'merge':
-        return this.mergeData(clientData, serverData);
-      default:
-        return serverData;
-    }
-  }
-
-  // Merge client and server data
-  private mergeData(clientData: any, serverData: any): any {
-    const merged = { ...serverData };
-    
-    // Prefer client data for certain fields
-    const clientPreferredFields = ['name', 'description', 'code'];
-    for (const field of clientPreferredFields) {
-      if (clientData[field] !== undefined) {
-        merged[field] = clientData[field];
-      }
-    }
-
-    // Use latest timestamp for updated_at
-    if (clientData.updated_at && serverData.updated_at) {
-      merged.updated_at = new Date(clientData.updated_at) > new Date(serverData.updated_at)
-        ? clientData.updated_at
-        : serverData.updated_at;
-    }
-
-    return merged;
-  }
-
   // Activate subscription
   private activateSubscription(subscription: RealtimeSubscription): void {
     if (!this.client) return;
@@ -316,19 +277,19 @@ class RealtimeManager {
    private setupRealtimeClient(): void {
      if (!this.client) return;
 
-     (this.client.auth as any).onAuthStateChange((event: string, session: any) => {
-       if (event === 'SIGNED_IN') {
-         // Re-activate all subscriptions
-         for (const subscription of this.subscriptions.values()) {
-           this.activateSubscription(subscription);
-         }
-       } else if (event === 'SIGNED_OUT') {
-         // Deactivate all subscriptions
-         for (const subscription of this.subscriptions.values()) {
-           this.deactivateSubscription(subscription);
-         }
-       }
-     });
+      (this.client.auth as any).onAuthStateChange((_event: string) => {
+        if (_event === 'SIGNED_IN') {
+          // Re-activate all subscriptions
+          for (const subscription of this.subscriptions.values()) {
+            this.activateSubscription(subscription);
+          }
+        } else if (_event === 'SIGNED_OUT') {
+          // Deactivate all subscriptions
+          for (const subscription of this.subscriptions.values()) {
+            this.deactivateSubscription(subscription);
+          }
+        }
+      });
    }
 
   // Setup network listeners

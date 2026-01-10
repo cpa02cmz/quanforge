@@ -1,5 +1,5 @@
 import { loadGeminiService } from './aiServiceLoader';
-import { withIntegrationResilience, enterDegradedMode, exitDegradedMode, isDegraded } from './integrationWrapper';
+import { withIntegrationResilience, isDegraded } from './integrationWrapper';
 import { IntegrationType } from './integrationResilience';
 import { aiServiceFallbacks } from './fallbackStrategies';
 import { createScopedLogger } from '../utils/logger';

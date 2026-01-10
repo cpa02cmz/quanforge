@@ -1,11 +1,8 @@
-import { supabase as originalSupabase, mockDb as originalMockDb, dbUtils as originalDbUtils } from './supabase';
-import { withIntegrationResilience, enterDegradedMode, exitDegradedMode, isDegraded } from './integrationWrapper';
+import { mockDb as originalMockDb, dbUtils as originalDbUtils } from './supabase';
+import { withIntegrationResilience } from './integrationWrapper';
 import { IntegrationType } from './integrationResilience';
 import { databaseFallbacks } from './fallbackStrategies';
-import { createScopedLogger } from '../utils/logger';
 import { storage } from '../utils/storage';
-
-const logger = createScopedLogger('resilient-db-service');
 
 export const resilientDb = {
   async getRobots() {
