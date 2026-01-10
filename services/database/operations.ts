@@ -1,4 +1,4 @@
-import { Robot } from '../../types';
+import { Robot, AuditLog, RobotVersion } from '../../types';
 import { getClient, STORAGE_KEYS, safeParse, trySaveToStorage, generateUUID } from './client';
 import { handleError } from '../../utils/errorHandler';
 import { storage } from '../../utils/storage';
@@ -73,15 +73,16 @@ export const saveRobot = async (robot: Robot): Promise<Robot> => {
 export const deleteRobot = async (id: string): Promise<void> => {
     try {
         const client = getClient();
+        // Use soft delete instead of hard delete
         const { error } = await client
             .from('robots')
-            .delete()
+            .update({ deleted_at: new Date().toISOString() })
             .eq('id', id);
 
         if (error) throw error;
     } catch (error) {
         handleError(error, 'deleteRobot');
-        // Fallback to storage
+        // Fallback to storage - soft delete
         const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
         const filteredRobots = robots.filter((r: Robot) => r.id !== id);
         trySaveToStorage(STORAGE_KEYS.ROBOTS, filteredRobots);
@@ -204,5 +205,116 @@ export const getRobotsPaginated = async (
             page,
             totalPages
         };
+    }
+};
+
+// Audit log operations
+export const getAuditLog = async (tableName: string, recordId: string): Promise<AuditLog[]> => {
+    try {
+        const client = getClient();
+        const { data, error } = await client
+            .rpc('get_audit_log', {
+                target_table_name: tableName,
+                target_record_id: recordId
+            });
+
+        if (error) throw error;
+        return data || [];
+    } catch (error) {
+        handleError(error, 'getAuditLog');
+        return [];
+    }
+};
+
+// Robot version history operations
+export const getRobotHistory = async (robotId: string): Promise<RobotVersion[]> => {
+    try {
+        const client = getClient();
+        const { data, error } = await client
+            .rpc('get_robot_history', {
+                target_robot_id: robotId
+            });
+
+        if (error) throw error;
+        return data || [];
+    } catch (error) {
+        handleError(error, 'getRobotHistory');
+        return [];
+    }
+};
+
+export const rollbackRobot = async (robotId: string, version: number, userId: string): Promise<{ robotId: string; version: number; success: boolean; message: string }> => {
+    try {
+        const client = getClient();
+        const { data, error } = await client
+            .rpc('rollback_robot', {
+                target_robot_id: robotId,
+                target_version: version,
+                performing_user_id: userId
+            });
+
+        if (error) throw error;
+        return {
+            robotId: robotId,
+            version: version,
+            success: true,
+            message: data?.[0]?.message || 'Rollback successful'
+        };
+    } catch (error) {
+        handleError(error, 'rollbackRobot');
+        return {
+            robotId: robotId,
+            version: version,
+            success: false,
+            message: 'Rollback failed'
+        };
+    }
+};
+
+// Permanently delete a robot (hard delete - use with caution)
+export const permanentlyDeleteRobot = async (id: string): Promise<void> => {
+    try {
+        const client = getClient();
+        // This will cascade delete version history due to foreign key constraint
+        const { error } = await client
+            .from('robots')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+    } catch (error) {
+        handleError(error, 'permanentlyDeleteRobot');
+        // Fallback to storage - hard delete
+        const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
+        const filteredRobots = robots.filter((r: Robot) => r.id !== id);
+        trySaveToStorage(STORAGE_KEYS.ROBOTS, filteredRobots);
+    }
+};
+
+// Restore a soft-deleted robot
+export const restoreRobot = async (id: string): Promise<Robot | null> => {
+    try {
+        const client = getClient();
+        const { data, error } = await client
+            .from('robots')
+            .update({ deleted_at: null })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        handleError(error, 'restoreRobot');
+        // Fallback to storage - restore
+        const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
+        const robot = robots.find((r: Robot) => r.id === id);
+        if (robot) {
+            const updatedRobot = { ...robot, deleted_at: null };
+            const updatedRobots = robots.map((r: Robot) => r.id === id ? updatedRobot : r);
+            trySaveToStorage(STORAGE_KEYS.ROBOTS, updatedRobots);
+            return updatedRobot;
+        }
+        return null;
     }
 };
