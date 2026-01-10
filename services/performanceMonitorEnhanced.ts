@@ -113,28 +113,26 @@ class PerformanceMonitor {
       
       const recordMetric = (metric: any) => {
         const vital: CoreWebVital = {
-          id: metric.id,
-          name: metric.name,
-          value: metric.value,
-          rating: metric.rating,
-          delta: metric.delta,
+          id: metric.id || '',
+          name: metric.name || '',
+          value: metric.value || 0,
+          rating: metric.rating || 'needs-improvement',
+          delta: metric.delta || 0,
           navigationType: metric.navigationType || 'navigate'
         };
-        
+
         this.coreWebVitals.push(vital);
         this.sendMetric('core-web-vital', vital);
       };
 
-      webVitals.getCLS(recordMetric);
-      webVitals.getFID(recordMetric);
-      webVitals.getFCP(recordMetric);
-      webVitals.getLCP(recordMetric);
-      webVitals.getTTFB(recordMetric);
-      
-      // Also monitor INP if available
-      if (webVitals.getINP) {
-        webVitals.getINP(recordMetric);
-      }
+      // web-vitals v4+ uses 'on' functions instead of 'get' functions
+      webVitals.onCLS(recordMetric);
+      webVitals.onFCP(recordMetric);
+      webVitals.onLCP(recordMetric);
+      webVitals.onTTFB(recordMetric);
+
+      // FID was replaced by INP in web-vitals v3+
+      webVitals.onINP(recordMetric);
     } catch (error) {
       console.warn('Failed to load web-vitals:', error);
     }
@@ -396,7 +394,7 @@ class PerformanceMonitor {
     try {
       // NOTE: Edge metrics endpoint removed - API directory not compatible with Vite build
       // Metrics are now collected locally only
-      if (process.env.ENABLE_EDGE_METRICS === 'true') {
+      if (process.env['ENABLE_EDGE_METRICS'] === 'true') {
         // Local metrics storage instead of API endpoint
         console.debug(`[Metric] ${name}:`, data);
       }
@@ -445,7 +443,14 @@ class PerformanceMonitor {
     };
     edgeMetrics: EdgePerformanceMetrics;
   } {
-    const latestVitals = this.coreWebVitals[this.coreWebVitals.length - 1] || {};
+      const latestVitals = this.coreWebVitals[this.coreWebVitals.length - 1] || {
+        id: '',
+        name: '',
+        value: 0,
+        rating: 'needs-improvement',
+        delta: 0,
+        navigationType: 'navigate'
+      };
     
     const edgeMetrics = this.edgeMetrics;
     const totalRequests = edgeMetrics.length;

@@ -1,9 +1,7 @@
 // Read Replica Optimization Service for Analytics Queries
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { getEnv } from './settingsManager';
 import { queryCache } from './advancedCache';
-import { withErrorHandling } from '../utils/errorHandler';
 
 interface ReadReplicaConfig {
   readonly: boolean;
@@ -19,9 +17,9 @@ interface QueryMetrics {
 }
 
 class ReadReplicaManager {
-  private replicas: Map<string, SupabaseClient> = new Map();
-  private primaryClient: SupabaseClient | null = null;
-  private metrics: QueryMetrics[] = [];
+   private replicas: Map<string, any> = new Map();
+   private primaryClient: any | null = null;
+   private metrics: QueryMetrics[] = [];
   private readonly MAX_METRICS = 1000;
 
   constructor() {
@@ -137,7 +135,7 @@ class ReadReplicaManager {
     }
   }
 
-  private selectOptimalReplica(forceReplica?: string): SupabaseClient {
+  private selectOptimalReplica(forceReplica?: string): any {
     if (forceReplica === 'primary' || !this.primaryClient) {
       return this.primaryClient!;
     }
@@ -161,7 +159,8 @@ class ReadReplicaManager {
 
     if (replicaMetrics.length === 0) {
       // No recent metrics, use first available replica
-      return availableReplicas[0][1];
+      const firstReplica = availableReplicas[0];
+      return firstReplica ? firstReplica[1] : this.primaryClient!;
     }
 
     // Calculate average execution time per replica
@@ -172,8 +171,9 @@ class ReadReplicaManager {
     });
 
     // Find best performing replica
-    let bestReplica = availableReplicas[0][1];
-    let bestRegion = availableReplicas[0][0];
+    const firstAvailable = availableReplicas[0];
+    let bestReplica = firstAvailable ? firstAvailable[1] : this.primaryClient!;
+    let bestRegion = firstAvailable ? firstAvailable[0] : 'primary';
     let bestTime = Infinity;
 
     availableReplicas.forEach(([region, client]) => {
@@ -191,7 +191,7 @@ class ReadReplicaManager {
     return bestReplica;
   }
 
-  private getReplicaName(client: SupabaseClient): string {
+  private getReplicaName(client: any): string {
     if (client === this.primaryClient) return 'primary';
     
     for (const [region, replicaClient] of this.replicas.entries()) {

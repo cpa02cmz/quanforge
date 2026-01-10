@@ -1,5 +1,4 @@
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 
 interface EdgeClientConfig {
@@ -10,10 +9,10 @@ interface EdgeClientConfig {
 }
 
 interface ClientCache {
-  client: SupabaseClient;
-  lastUsed: number;
-  isHealthy: boolean;
-}
+   client: any;
+   lastUsed: number;
+   isHealthy: boolean;
+ }
 
 class EdgeSupabasePool {
   private static instance: EdgeSupabasePool;
@@ -37,7 +36,7 @@ class EdgeSupabasePool {
     return EdgeSupabasePool.instance;
   }
 
-  async getClient(connectionId: string = 'default'): Promise<SupabaseClient> {
+  async getClient(connectionId: string = 'default'): Promise<any> {
     const settings = settingsManager.getDBSettings();
     
     if (settings.mode !== 'supabase' || !settings.url || !settings.anonKey) {
@@ -73,7 +72,7 @@ class EdgeSupabasePool {
     return client;
   }
 
-  async getEdgeClient(connectionId: string = 'default', region?: string): Promise<SupabaseClient> {
+  async getEdgeClient(connectionId: string = 'default', region?: string): Promise<any> {
     const edgeConnectionId = region ? `edge_${region}_${connectionId}` : connectionId;
     return this.getClient(edgeConnectionId);
   }
@@ -85,7 +84,7 @@ class EdgeSupabasePool {
     return `${region}_${connectionId}`;
   }
 
-  private async quickHealthCheck(client: SupabaseClient): Promise<boolean> {
+  private async quickHealthCheck(client: any): Promise<boolean> {
     try {
       const timeoutPromise = new Promise<boolean>((_, reject) => 
         setTimeout(() => reject(new Error('Health check timeout')), this.config.connectionTimeout)

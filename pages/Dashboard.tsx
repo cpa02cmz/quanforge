@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
 import { Link } from 'react-router-dom';
-import { mockDb } from '../services/supabase';
+import { db } from '../services';
 import { Robot, UserSession } from '../types';
 import { useToast } from '../components/Toast';
 import { useTranslation } from '../services/i18n';
@@ -205,7 +205,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
 
   const loadRobots = async () => {
     try {
-      const { data, error } = await mockDb.getRobots();
+      const { data, error } = await db.getRobots();
       if (error) throw error;
       if (data) setRobots(data);
     } catch (err) {
@@ -223,7 +223,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
 
     setProcessingId(id);
     try {
-        const { error } = await mockDb.deleteRobot(id);
+        const { error } = await db.deleteRobot(id);
         if (error) throw error;
         // Optimistic update
         setRobots(prev => prev.filter(r => r.id !== id));
@@ -239,10 +239,10 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
   const handleDuplicate = useCallback(async (id: string) => {
       setProcessingId(id);
       try {
-          const { data, error } = await mockDb.duplicateRobot(id);
+          const { data, error } = await db.duplicateRobot(id);
           if (error) throw error;
           if (data && data[0]) {
-              // Add new robot to the list (top)
+              // Add new robot to list (top)
               setRobots(prev => [data[0], ...prev]);
               showToast(t('dash_toast_duplicate_success'), 'success');
           }

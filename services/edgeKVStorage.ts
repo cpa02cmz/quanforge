@@ -27,7 +27,7 @@ const KV_CONFIG = {
 
 // Edge KV client with connection pooling
 class EdgeKVClient {
-  private client: VercelKV;
+  public client: VercelKV;
   private cache: Map<string, { data: any; expiry: number }> = new Map();
   private metrics: {
     hits: number;
@@ -91,7 +91,7 @@ class EdgeKVClient {
   }
 
   // Generate cache key with namespace
-  private generateKey(namespace: string, key: string): string {
+  public generateKey(namespace: string, key: string): string {
     return `${namespace}:${key}`;
   }
 
@@ -111,7 +111,7 @@ class EdgeKVClient {
       const value = await this.client.get(fullKey);
       if (value !== null) {
         this.metrics.hits++;
-        const decompressed = this.decompress(value);
+        const decompressed = this.decompress(value as string);
         const parsed = JSON.parse(decompressed);
         
         // Cache in memory for faster access
@@ -212,7 +212,7 @@ class EdgeKVClient {
         const value = values[index];
         if (value !== null) {
           try {
-            const decompressed = this.decompress(value);
+            const decompressed = this.decompress(value as string);
             results[key] = JSON.parse(decompressed);
           } catch (e) {
             console.warn(`Failed to parse cached value for key ${key}:`, e);
@@ -250,7 +250,7 @@ class EdgeKVClient {
       }
       
       await Promise.all(operations);
-      this.metrics.sets += entries.length;
+      this.metrics.sets += Object.keys(entries).length;
       return true;
     } catch (error) {
       this.metrics.errors++;
@@ -408,12 +408,16 @@ export const edgeKVService = {
     async check(identifier: string, limit: number, window: number = KV_CONFIG.TTL.RATE_LIMIT): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
       const key = `rate:${identifier}`;
       const current = await edgeKVClient.increment('rate_limit', key, 1);
-      
+
+      if (current === null) {
+        return { allowed: false, remaining: 0, resetTime: Date.now() + (window * 1000) };
+      }
+
       if (current === 1) {
         // First request in window, set expiry
         await edgeKVClient.client.expire(edgeKVClient.generateKey('rate_limit', key), window);
       }
-      
+
       const allowed = current <= limit;
       const remaining = Math.max(0, limit - current);
       const resetTime = Date.now() + (window * 1000);
@@ -428,12 +432,12 @@ export const edgeKVService = {
 
   // Real-time subscriptions
   realtime: {
-    async subscribe(channel: string, userId: string) {
+    async subscribe(channel: string, _userId: string) {
       const key = `subscribers:${channel}`;
       return await edgeKVClient.increment('realtime', key, 1);
     },
-    
-    async unsubscribe(channel: string, userId: string) {
+
+    async unsubscribe(channel: string, _userId: string) {
       const key = `subscribers:${channel}`;
       return await edgeKVClient.increment('realtime', key, -1);
     },

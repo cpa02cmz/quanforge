@@ -81,6 +81,7 @@ export interface Robot {
   is_public: boolean;
   view_count: number;
   copy_count: number;
+  deleted_at: string | null;
 }
 
 export interface GenerationConfig {
@@ -152,6 +153,7 @@ export const isRobot = (obj: unknown): obj is Robot => {
     'strategy_type' in obj &&
     'created_at' in obj &&
     'updated_at' in obj &&
+    'deleted_at' in obj &&
     typeof obj.id === 'string' &&
     typeof obj.user_id === 'string' &&
     typeof obj.name === 'string' &&
@@ -159,7 +161,8 @@ export const isRobot = (obj: unknown): obj is Robot => {
     typeof obj.code === 'string' &&
     ['Trend', 'Scalping', 'Grid', 'Martingale', 'Custom'].includes(obj.strategy_type as string) &&
     typeof obj.created_at === 'string' &&
-    typeof obj.updated_at === 'string'
+    typeof obj.updated_at === 'string' &&
+    (obj.deleted_at === null || typeof obj.deleted_at === 'string')
   );
 };
 
@@ -213,3 +216,36 @@ export type APIResponse = {
 
 // Strategy analysis result with type safety
 export type ParsedStrategyAnalysis = StrategyAnalysis | Record<string, unknown> | null;
+
+// Audit log types
+export interface AuditLog {
+  id: string;
+  table_name: string;
+  record_id: string;
+  operation: 'INSERT' | 'UPDATE' | 'DELETE' | 'SOFT_DELETE';
+  old_data: Record<string, unknown> | null;
+  new_data: Record<string, unknown> | null;
+  changed_fields: string[];
+  user_id: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
+// Robot version types
+export interface RobotVersion {
+  id: string;
+  robot_id: string;
+  user_id: string;
+  version: number;
+  name: string;
+  description: string;
+  code: string;
+  strategy_type: 'Trend' | 'Scalping' | 'Grid' | 'Martingale' | 'Custom';
+  strategy_params: StrategyParams | null;
+  backtest_settings: BacktestSettings | null;
+  analysis_result: StrategyAnalysis | null;
+  created_at: string;
+  created_by: string | null;
+  change_description: string | null;
+}

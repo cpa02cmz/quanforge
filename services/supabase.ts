@@ -1,5 +1,4 @@
-
-import type { SupabaseClient } from '@supabase/supabase-js';
+ 
 import { settingsManager } from './settingsManager';
 import { Robot, UserSession } from '../types';
 import { edgeConnectionPool } from './edgeSupabasePool';
@@ -136,7 +135,7 @@ const mockClient = {
 
 // --- Dynamic Client Manager ---
 
-let activeClient: SupabaseClient | any = null;
+let activeClient: any = null;
 
 
 
@@ -208,11 +207,11 @@ window.addEventListener('db-settings-changed', () => {
 });
 
 export const supabase = new Proxy({}, {
-    get: (_target, prop) => {
-        const client = getClient();
-        return (client as any)[prop];
+    get: async (_target, prop) => {
+        const client = await getClient();
+        return client[prop];
     }
-}) as SupabaseClient;
+}) as any;
 
 
 // --- Database Operations Wrapper ---

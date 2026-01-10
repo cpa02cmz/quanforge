@@ -248,9 +248,11 @@ class RealUserMonitoring {
       const navigationEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
       if (navigationEntries.length > 0) {
         const nav = navigationEntries[0];
-        this.currentMetrics.performance.navigationStart = nav.navigationStart;
-        this.currentMetrics.performance.domContentLoaded = nav.domContentLoadedEventEnd - nav.navigationStart;
-        this.currentMetrics.performance.loadEventEnd = nav.loadEventEnd - nav.navigationStart;
+        if (nav) {
+          this.currentMetrics.performance.navigationStart = nav.activationStart || 0;
+          this.currentMetrics.performance.domContentLoaded = (nav.domContentLoadedEventEnd || 0) - (nav.activationStart || 0);
+          this.currentMetrics.performance.loadEventEnd = (nav.loadEventEnd || 0) - (nav.activationStart || 0);
+        }
       }
     }
   }
@@ -282,7 +284,9 @@ class RealUserMonitoring {
       const navigationEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
       if (navigationEntries.length > 0) {
         const nav = navigationEntries[0];
-        this.currentMetrics.vitals.TTFB = nav.responseStart - nav.requestStart;
+        if (nav) {
+          this.currentMetrics.vitals.TTFB = (nav.responseStart || 0) - (nav.requestStart || 0);
+        }
       }
     }
   }
@@ -491,9 +495,9 @@ class RealUserMonitoring {
       const value = vitals[metric as keyof WebVitals];
       if (value !== undefined) {
         totalMetrics++;
-        if (value <= good) {
+        if (good !== undefined && value <= good) {
           score += 100;
-        } else if (value <= poor) {
+        } else if (poor !== undefined && value <= poor) {
           score += 50;
         } else {
           score += 0;
