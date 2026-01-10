@@ -330,13 +330,46 @@
       - Better null/undefined handling for error.message
     - **Build Status**: ✅ No new lint errors introduced
 
- - [x] **Console Statement Cleanup (2026-01-07)**: Replaced non-error console statements with logger utility
-   - Replaced 16 console statements across 5 API edge files (warmup.ts, optimizer.ts, cache-invalidate.ts, edge-optimize.ts, edge-analytics.ts)
-   - Used scoped logger instances for better module identification (warmupLogger, cacheLogger, perfLogger)
-   - Reduced no-console lint warnings from 664 to 648 (2.4% reduction)
-   - Preserved all console.error statements for proper error logging
-   - Improved logging consistency and maintainability across API edge functions
-   - Build time: 12.44s, typecheck: ✅
+  - [x] **UI/UX Improvements (2026-01-10)**: Additional accessibility and usability enhancements as Senior UI/UX Engineer
+    - **ARIA Labeling for Dashboard Filter** (ui-038): Added proper aria-label to filter dropdown
+      - Added descriptive aria-label for screen reader users
+      - Includes current filter state in announcement
+      - Dashboard.tsx lines 359-367 updated
+    - **ARIA Loading Announcements for BacktestPanel** (ui-039): Enhanced button accessibility
+      - Added aria-live and aria-busy attributes to Run button
+      - Added descriptive aria-label for Export button with simulation results
+      - Added sr-only status text for screen readers
+      - Decorative SVG icons marked with aria-hidden
+    - **Mobile Tab Accessibility** (ui-040): Improved Generator mobile tabs
+      - Added role="tablist" and role="tab" attributes
+      - Added aria-selected for active tab tracking
+      - Added aria-controls for tab panel associations
+      - Added proper tabIndex management (0 for active, -1 for inactive)
+      - Added min-h-[44px] for WCAG touch target compliance
+      - Desktop tabs also updated with same pattern
+      - Added tab panel containers with role="tabpanel" and aria-labelledby
+      - Generator.tsx lines 122-250 updated
+    - **Keyboard Shortcuts Documentation** (ui-041): Added keyboard shortcuts help modal
+      - Created KeyboardShortcutsModal component (components/KeyboardShortcutsModal.tsx)
+      - Added keyboard shortcuts button to Layout navigation (help icon)
+      - Shows shortcuts: Ctrl/Cmd+S (save), Ctrl/Cmd+Enter (send chat), Escape (stop), Tab/Shift+Tab (navigate)
+      - Platform-aware (Mac uses Command key, Windows/Linux uses Ctrl)
+      - Proper ARIA labeling for all keyboard keys
+      - Modal with backdrop and proper focus management
+      - Added translation keys: kb_title, kb_save_strategy, kb_send_chat, kb_stop_generation, kb_next_field, kb_prev_field
+    - **Build Verification**: ✅ TypeScript compilation passes, ✅ Production build succeeds (11.74s)
+    - **Components Created**: KeyboardShortcutsModal.tsx (new component, 99 lines)
+    - **Components Modified**: Layout.tsx, Dashboard.tsx, BacktestPanel.tsx, Generator.tsx, en.ts translations
+    - **Translations Added**: 5 new keyboard shortcut translation keys
+    - **Accessibility Impact**: Enhanced screen reader support, improved keyboard navigation, WCAG 2.1 AA compliance
+
+  - [x] **Console Statement Cleanup (2026-01-07)**: Replaced non-error console statements with logger utility
+    - Replaced 16 console statements across 5 API edge files (warmup.ts, optimizer.ts, cache-invalidate.ts, edge-optimize.ts, edge-analytics.ts)
+    - Used scoped logger instances for better module identification (warmupLogger, cacheLogger, perfLogger)
+    - Reduced no-console lint warnings from 664 to 648 (2.4% reduction)
+    - Preserved all console.error statements for proper error logging
+    - Improved logging consistency and maintainability across API edge functions
+    - Build time: 12.44s, typecheck: ✅
 
  - [x] **Storage Abstraction Phase 2 Migration (2026-01-08)**: Continued storage abstraction layer migration for better data architecture
    - Migrated resilientAIService.ts (1 occurrence) - Fallback cache storage to storage abstraction

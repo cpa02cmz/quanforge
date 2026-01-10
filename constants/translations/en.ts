@@ -98,6 +98,14 @@ export const TRANSLATIONS_EN = {
     bt_export: 'Export CSV',
     bt_no_run: 'No Simulation Run',
     bt_final_bal: 'Final Balance',
+
+    // Keyboard Shortcuts
+    kb_title: 'Keyboard Shortcuts',
+    kb_save_strategy: 'Save strategy',
+    kb_send_chat: 'Send chat message',
+    kb_stop_generation: 'Stop AI generation',
+    kb_next_field: 'Next field',
+    kb_prev_field: 'Previous field',
     bt_total_ret: 'Total Return',
     bt_max_dd: 'Max Drawdown',
     bt_win_rate: 'Est. Win Rate',

@@ -356,10 +356,13 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
                   />
               </div>
               <div className="w-full md:w-48">
+                  <label htmlFor="robot-filter" className="sr-only">{t('dash_filter_label')}</label>
                   <select 
+                      id="robot-filter"
                       value={filterType}
                       onChange={(e) => setFilterType(e.target.value)}
                       className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:ring-1 focus:ring-brand-500 outline-none"
+                      aria-label={`Filter robots by strategy type: ${filterType}`}
                   >
                       {availableTypes.map(type => (
                           <option key={type} value={type}>{type}</option>
