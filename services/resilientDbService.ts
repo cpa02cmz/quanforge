@@ -5,6 +5,19 @@ import { databaseFallbacks } from './fallbackStrategies';
 import { storage } from '../utils/storage';
 
 export const resilientDb = {
+  async updateRobot(id: string, updates: any) {
+    const result = await withIntegrationResilience(
+      IntegrationType.DATABASE,
+      'database',
+      async () => await originalMockDb.updateRobot(id, updates),
+      {
+        operationName: 'update_robot'
+      }
+    );
+
+    return result.data;
+  },
+
   async getRobots() {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
