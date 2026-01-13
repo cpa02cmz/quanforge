@@ -7,7 +7,8 @@ export { resilientMarketService as marketData } from './resilientMarketService';
 
 // Backward Compatibility (Legacy exports - use resilient versions above)
 export { supabase, mockDb } from './supabase';
-export { marketService, MarketData } from './marketData';
+export { marketService } from './marketData';
+export type { MarketData } from './marketData';
 
 // AI Functions (dynamic import via aiServiceLoader for lazy loading)
 export * from './aiServiceLoader';

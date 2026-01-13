@@ -118,22 +118,28 @@ export const Generator: React.FC = memo(() => {
           </div>
         )}
       
-       {/* Mobile Tab Toggle */}
-       <div className="md:hidden flex bg-dark-surface border-b border-dark-border">
-           <button 
-             onClick={() => setMobileView('setup')}
-             className={`flex-1 py-3 text-sm font-medium ${mobileView === 'setup' ? 'text-brand-400 border-b-2 border-brand-500' : 'text-gray-500'}`}
-             aria-selected={mobileView === 'setup'}
-           >
-             {t('gen_mobile_setup')}
-           </button>
-           <button 
-             onClick={() => setMobileView('result')}
-             className={`flex-1 py-3 text-sm font-medium ${mobileView === 'result' ? 'text-brand-400 border-b-2 border-brand-500' : 'text-gray-500'}`}
-             aria-selected={mobileView === 'result'}
-           >
-             {t('gen_mobile_result')}
-           </button>
+        {/* Mobile Tab Toggle */}
+        <div className="md:hidden flex bg-dark-surface border-b border-dark-border" role="tablist" aria-label="Generator view options">
+            <button
+              onClick={() => setMobileView('setup')}
+              className={`flex-1 py-3 text-sm font-medium min-h-[44px] transition-colors ${mobileView === 'setup' ? 'text-brand-400 border-b-2 border-brand-500' : 'text-gray-500'}`}
+              role="tab"
+              aria-selected={mobileView === 'setup'}
+              aria-controls="setup-panel"
+              tabIndex={mobileView === 'setup' ? 0 : -1}
+            >
+              {t('gen_mobile_setup')}
+            </button>
+            <button
+              onClick={() => setMobileView('result')}
+              className={`flex-1 py-3 text-sm font-medium min-h-[44px] transition-colors ${mobileView === 'result' ? 'text-brand-400 border-b-2 border-brand-500' : 'text-gray-500'}`}
+              role="tab"
+              aria-selected={mobileView === 'result'}
+              aria-controls="result-panel"
+              tabIndex={mobileView === 'result' ? 0 : -1}
+            >
+              {t('gen_mobile_result')}
+            </button>
        </div>
 
        {/* Left Panel: Chat & Settings */}
@@ -209,25 +215,40 @@ export const Generator: React.FC = memo(() => {
 
        {/* Right Panel: Editor & Analysis & Simulation */}
        <div className={`${mobileView === 'result' ? 'flex' : 'hidden'} md:flex flex-1 flex-col h-full overflow-hidden min-w-0`}>
-        <div className="h-12 bg-dark-surface border-b border-dark-border flex items-center px-4 space-x-6 shrink-0">
-            <button 
+        <div className="h-12 bg-dark-surface border-b border-dark-border flex items-center px-4 space-x-6 shrink-0" role="tablist" aria-label="Generator main tabs">
+            <button
                 onClick={() => setActiveMainTab('editor')}
                 className={`h-full border-b-2 text-sm font-medium transition-colors ${activeMainTab === 'editor' ? 'border-brand-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+                role="tab"
+                aria-selected={activeMainTab === 'editor'}
+                aria-controls="editor-panel"
+                aria-labelledby="editor-tab"
+                tabIndex={activeMainTab === 'editor' ? 0 : -1}
             >
                 {t('gen_tab_editor')}
             </button>
-            <button 
+            <button
                 onClick={() => setActiveMainTab('analysis')}
                 className={`h-full border-b-2 text-sm font-medium transition-colors ${activeMainTab === 'analysis' ? 'border-brand-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+                role="tab"
+                aria-selected={activeMainTab === 'analysis'}
+                aria-controls="analysis-panel"
+                aria-labelledby="analysis-tab"
+                tabIndex={activeMainTab === 'analysis' ? 0 : -1}
             >
                 {t('gen_tab_analysis')}
             </button>
-            <button 
+            <button
                 onClick={() => setActiveMainTab('simulation')}
                 className={`h-full border-b-2 text-sm font-medium transition-colors flex items-center space-x-1 ${activeMainTab === 'simulation' ? 'border-brand-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+                role="tab"
+                aria-selected={activeMainTab === 'simulation'}
+                aria-controls="simulation-panel"
+                aria-labelledby="simulation-tab"
+                tabIndex={activeMainTab === 'simulation' ? 0 : -1}
             >
                 <span>{t('gen_tab_simulation')}</span>
-                <span className="text-[10px] bg-brand-500/20 text-brand-400 px-1 rounded ml-1">Beta</span>
+                <span className="text-[10px] bg-brand-500/20 text-brand-400 px-1 rounded ml-1" aria-label="Beta feature">Beta</span>
             </button>
         </div>
 
@@ -238,29 +259,33 @@ export const Generator: React.FC = memo(() => {
               </div>
             }>
               {activeMainTab === 'editor' && (
-                  <CodeEditor 
-                      code={code} 
-                      filename={robotName} 
-                      onChange={setCode}
-                      onRefine={handleRefineCode}
-                      onExplain={handleExplainCode} // Wired up here
-                  />
+                  <div id="editor-panel" role="tabpanel" aria-labelledby="editor-tab">
+                      <CodeEditor
+                          code={code}
+                          filename={robotName}
+                          onChange={setCode}
+                          onRefine={handleRefineCode}
+                          onExplain={handleExplainCode}
+                      />
+                  </div>
               )}
 
               {activeMainTab === 'simulation' && (
-                  <BacktestPanel 
-                      settings={backtestSettings}
-                      onChange={setBacktestSettings}
-                      onRun={runSimulation}
-                      result={simulationResult}
-                      isRunning={isSimulating}
-                      analysisExists={!!analysis}
-                  />
+                  <div id="simulation-panel" role="tabpanel" aria-labelledby="simulation-tab">
+                      <BacktestPanel
+                          settings={backtestSettings}
+                          onChange={setBacktestSettings}
+                          onRun={runSimulation}
+                          result={simulationResult}
+                          isRunning={isSimulating}
+                          analysisExists={!!analysis}
+                      />
+                  </div>
               )}
             </Suspense>
 
             {activeMainTab === 'analysis' && (
-                <div className="p-8 h-full overflow-y-auto bg-dark-bg custom-scrollbar">
+                <div id="analysis-panel" role="tabpanel" aria-labelledby="analysis-tab" className="p-8 h-full overflow-y-auto bg-dark-bg custom-scrollbar">
                     {!analysis ? (
                         <div className="text-center text-gray-500 mt-20">{t('gen_no_analysis')}</div>
                     ) : (
