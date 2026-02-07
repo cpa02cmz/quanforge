@@ -76,6 +76,7 @@ export class DatabaseCore implements DatabaseCoreInterface {
       const result = await client
         .from('robots')
         .select('*')
+        .is('deleted_at', null)  // Filter out soft-deleted records
         .order('created_at', { ascending: false });
 
       const duration = performance.now() - startTime;
@@ -97,6 +98,7 @@ export class DatabaseCore implements DatabaseCoreInterface {
         .from('robots')
         .select('*')
         .eq('id', id)
+        .is('deleted_at', null)  // Filter out soft-deleted records
         .single();
 
       const duration = performance.now() - startTime;
@@ -174,9 +176,10 @@ export class DatabaseCore implements DatabaseCoreInterface {
   async deleteRobot(client: SupabaseClient, id: string): Promise<{ data: any; error: any }> {
     const startTime = performance.now();
     try {
+      // Use soft delete instead of hard delete for data integrity
       const result = await client
         .from('robots')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', id);
 
       const duration = performance.now() - startTime;
