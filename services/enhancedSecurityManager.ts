@@ -159,8 +159,8 @@ export class EnhancedSecurityManager {
     unicode: [
       /%u[0-9a-fA-F]{4}/gi,
       /\\u[0-9a-fA-F]{4}/gi,
-      /%E2\%80\%AE/gi, // Right-to-left override
-      /%E2\%80\%8B/gi  // Zero-width space
+      /%E2%80%AE/gi, // Right-to-left override
+      /%E2%80%8B/gi  // Zero-width space
     ]
   };
 
@@ -553,6 +553,7 @@ export class EnhancedSecurityManager {
     let sanitized = input;
 
     // Remove null bytes
+    // eslint-disable-next-line no-control-regex -- Intentionally removing null bytes for security
     sanitized = sanitized.replace(/\x00/g, '');
 
     // Normalize Unicode
@@ -580,7 +581,7 @@ export class EnhancedSecurityManager {
     const obfuscationPatterns = [
       /\\x[0-9a-fA-F]{2}/g,  // Hex encoding
       /\\u[0-9a-fA-F]{4}/g,  // Unicode encoding
-      /\%[0-9a-fA-F]{2}/g,   // URL encoding
+      /%[0-9a-fA-F]{2}/g,   // URL encoding
       /eval\s*\(\s*['"`].*['"`]\s*\)/gi, // Eval with string
       /String\.fromCharCode/gi, // Char code obfuscation
       /atob\s*\(/gi,         // Base64 decode
