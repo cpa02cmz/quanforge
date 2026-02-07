@@ -1,13 +1,21 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { UI_TIMING } from '../constants';
 import { ToastContext, ToastType } from './ToastContext';
 export { ToastContext } from './ToastContext';
 import { getToastAriaLive, getToastLabel } from './toastUtils';
 export type { ToastType } from './ToastContext';
 
+interface ToastItem {
+  id: string;
+  message: string;
+  type: ToastType;
+  isExiting?: boolean;
+}
+
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [toasts, setToasts] = useState<{ id: string; message: string; type: ToastType }[]>([]);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
   const toastRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const exitTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const setToastRef = useCallback((id: string) => (el: HTMLDivElement | null) => {
     if (el) {
@@ -21,28 +29,60 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const id = Date.now().toString();
     setToasts((prev) => [...prev, { id, message, type }]);
 
-    const toastElement = toastRefs.current.get(id);
-    if (toastElement) {
-      toastElement.focus();
-    }
+    // Use requestAnimationFrame to ensure DOM is updated before focusing
+    requestAnimationFrame(() => {
+      const toastElement = toastRefs.current.get(id);
+      if (toastElement) {
+        toastElement.focus();
+      }
+    });
 
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
+    // Auto-dismiss after duration
+    const autoDismissTimer = setTimeout(() => {
+      removeToast(id);
     }, UI_TIMING.TOAST_DURATION);
+
+    exitTimersRef.current.set(`auto-${id}`, autoDismissTimer);
   }, []);
 
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+  const removeToast = useCallback((id: string) => {
+    // Clear any existing auto-dismiss timer
+    const autoTimer = exitTimersRef.current.get(`auto-${id}`);
+    if (autoTimer) {
+      clearTimeout(autoTimer);
+      exitTimersRef.current.delete(`auto-${id}`);
+    }
+
+    // Mark as exiting for animation
+    setToasts((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, isExiting: true } : t))
+    );
+
+    // Actually remove after exit animation completes
+    const exitTimer = setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+      exitTimersRef.current.delete(`exit-${id}`);
+    }, 300); // Match CSS animation duration
+
+    exitTimersRef.current.set(`exit-${id}`, exitTimer);
+  }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, id: string) => {
     if (e.key === 'Escape') {
       removeToast(id);
     }
-  }, []);
+  }, [removeToast]);
 
   const hideToast = useCallback((id: string) => {
     removeToast(id);
+  }, [removeToast]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      exitTimersRef.current.forEach((timer) => clearTimeout(timer));
+      exitTimersRef.current.clear();
+    };
   }, []);
 
   return (
@@ -67,7 +107,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               ${toast.type === 'success' ? 'border-brand-500/50 bg-brand-900/10' : ''}
               ${toast.type === 'error' ? 'border-red-500/50 bg-red-900/10' : ''}
               ${toast.type === 'info' ? 'border-blue-500/50 bg-blue-900/10' : ''}
-              animate-fade-in-up
+              ${toast.isExiting ? 'animate-fade-out-down' : 'animate-fade-in-up'}
             `}
             role="alert"
             aria-live={getToastAriaLive(toast.type)}

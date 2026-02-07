@@ -50,8 +50,25 @@ export const DEFAULT_STRATEGY_PARAMS = {
   customInputs: []
 };
 
+// Timeouts in milliseconds - centralized for consistency across the application
 export const TIMEOUTS = {
+  // Short timeouts (1-5 seconds)
+  QUICK_OPERATION: 5000, // 5 seconds - quick operations
+  CIRCUIT_BREAKER_FAST: 5000, // 5 seconds - fast circuit breaker timeout
+  RETRY_BASE_DELAY: 1000, // 1 second - base retry delay
+  POOL_ACQUIRE: 5000, // 5 seconds - connection pool acquire timeout
+
+  // Medium timeouts (10-30 seconds)
+  API_REQUEST: 10000, // 10 seconds - standard API request timeout
+  CIRCUIT_BREAKER_SLOW: 15000, // 15 seconds - slow operation circuit breaker
+  BACKUP_VERIFICATION: 10000, // 10 seconds - backup verification timeout
+  BUILD_TIME: 10000, // 10 seconds - build time threshold
+  METRICS_CLEANUP: 10000, // 10 seconds - metrics cleanup interval
+  POOL_HEALTH_CHECK: 10000, // 10 seconds - pool health check interval
+
+  // Long timeouts (30+ seconds)
   HEALTH_CHECK: 30000, // 30 seconds - health check intervals
+  CIRCUIT_BREAKER_RESET: 30000, // 30 seconds - circuit breaker reset timeout
   CACHE_TTL: 300000, // 5 minutes - default cache time-to-live
   PERFORMANCE_THRESHOLD: 3000, // 3 seconds - performance monitoring thresholds
   API_TIMEOUT: 30000, // 30 seconds - API request timeouts
@@ -60,6 +77,18 @@ export const TIMEOUTS = {
   RETRY_DELAY: 30000, // 30 seconds - retry delay for failed requests
   METRICS_UPDATE_INTERVAL: 30000, // 30 seconds - metrics update interval
   MONITORING_INTERVAL: 300000, // 5 minutes - background monitoring interval
+  AUTO_CLEANUP_INTERVAL: 300000, // 5 minutes - auto cleanup interval
+  BACKUP_CRITICAL_THRESHOLD: 30000, // 30 seconds - backup critical threshold
+  CACHE_CLEANUP_INTERVAL: 30000, // 30 seconds - cache cleanup interval
+  COALESCER_CLEANUP: 30000, // 30 seconds - request coalescer cleanup
+  COALESCER_CLEANUP_FAST: 15000, // 15 seconds - fast coalescer cleanup
+  DEDUPLICATOR_MAX_AGE: 30000, // 30 seconds - deduplicator max age
+  DEDUPLICATOR_CACHE_TTL: 300000, // 5 minutes - deduplicator cache TTL
+  LRU_CACHE_TTL: 300000, // 5 minutes - LRU cache TTL
+  REALTIME_SYNC_INTERVAL: 30000, // 30 seconds - realtime sync interval
+  EDGE_CACHE_TTL: 30000, // 30 seconds - edge cache TTL
+  POOL_IDLE_TIMEOUT: 30000, // 30 seconds - pool idle timeout
+  MAX_RETRY_DELAY: 30000, // 30 seconds - max retry delay
 } as const;
 
 export const PERFORMANCE_THRESHOLDS = {
