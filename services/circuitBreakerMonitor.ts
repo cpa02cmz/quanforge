@@ -3,7 +3,6 @@ import {
   CircuitBreakerConfig, 
   CircuitBreakerMetrics,
   HealthStatus,
-  IntegrationType,
   getConfig,
   classifyError,
   ErrorCategory
@@ -33,7 +32,7 @@ class CircuitBreaker {
   }
 
   async execute<T>(operation: () => Promise<T>): Promise<T> {
-    const metrics = this.getMetrics();
+    this.getMetrics();
 
     if (this.state === CircuitBreakerState.OPEN) {
       if (Date.now() >= (this.nextAttemptTime || 0)) {
@@ -197,7 +196,8 @@ class CircuitBreakerMonitor {
 
   getAllHealthStatuses(): Record<string, HealthStatus> {
     const result: Record<string, HealthStatus> = {};
-    this.circuitBreakers.forEach((breaker, name) => {
+    this.circuitBreakers.forEach((_breaker, name) => {
+      void _breaker;
       result[name] = this.getHealthStatus(name);
     });
     return result;
@@ -207,7 +207,6 @@ class CircuitBreakerMonitor {
     const breaker = this.circuitBreakers.get(name);
     const config = getConfig(name);
     const metrics = breaker?.getMetrics();
-    const currentStatus = this.healthStatuses.get(name);
 
     if (!metrics) {
       return {

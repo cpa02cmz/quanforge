@@ -1,7 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Robot } from '../types';
 import { queryOptimizer } from './queryOptimizer';
-import { robotCache } from './advancedCache';
 import { securityManager } from './securityManager';
 
 interface OptimizationConfig {
@@ -254,6 +253,10 @@ class DatabaseOptimizer {
       if (group.length === 1) {
         // Execute single operation
         const op = group[0];
+        if (!op) {
+          results.push({ data: null, error: { message: 'Operation is undefined' } });
+          continue;
+        }
         let result: { data: T | null; error: any };
         switch (op.operation) {
           case 'select': {
@@ -293,7 +296,7 @@ class DatabaseOptimizer {
   /**
    * Group similar queries for batching
    */
-  private groupSimilarQueries<T>(queries: Array<{ 
+  private groupSimilarQueries(queries: Array<{ 
     table: string; 
     operation: 'select' | 'insert' | 'update' | 'delete'; 
     params: any 
@@ -313,7 +316,8 @@ class DatabaseOptimizer {
       
       // Try to find existing group with similar operation
       for (const group of groups) {
-        if (this.areQueriesSimilar(group[0], query)) {
+        const firstQuery = group[0];
+        if (firstQuery && this.areQueriesSimilar(firstQuery, query)) {
           group.push(query);
           foundGroup = true;
           break;
@@ -352,14 +356,6 @@ class DatabaseOptimizer {
     return queries.map(() => ({ data: null as T | null, error: null }));
   }
 
-  /**
-   * Execute a single query (placeholder implementation)
-   */
-  private async executeQuery<T>(operation: string, params: any): Promise<T> {
-    // Placeholder implementation
-    return { data: null, error: null } as any;
-  }
- 
   /**
    * Get query optimization recommendations based on current performance
    */

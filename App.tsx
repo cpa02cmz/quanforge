@@ -74,7 +74,7 @@ useEffect(() => {
     const startTime = performance.now();
     
     // Critical path: Auth initialization first
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: UserSession | null } }) => {
       setSession(session);
       performanceMonitor.recordMetric('auth_init', performance.now() - startTime);
       databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, true);
@@ -86,7 +86,7 @@ useEffect(() => {
       
       // Initialize non-critical services after auth is complete
       initializeNonCriticalServices();
-    }).catch((err) => {
+    }).catch((err: Error) => {
       logger.warn("Auth initialization failed:", err);
       performanceMonitor.recordMetric('auth_error', 1);
       databasePerformanceMonitor.recordQuery('auth_getSession', performance.now() - startTime, false);
@@ -99,7 +99,7 @@ useEffect(() => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event: string, session: UserSession | null) => {
       setSession(session);
       performanceMonitor.recordMetric('auth_state_change', 1);
       
