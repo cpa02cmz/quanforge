@@ -69,6 +69,25 @@ export const PERFORMANCE_THRESHOLDS = {
   CRITICAL_SIZE: 300000, // 300KB - bundle size critical
 } as const;
 
+// UI Timing Constants
+export const UI_TIMING = {
+  TOAST_DURATION: 3000, // 3 seconds
+  COPY_FEEDBACK_DURATION: 2000, // 2 seconds
+  DIRECTION_INDICATOR_DURATION: 800, // 0.8 seconds
+  MEMORY_MONITOR_INTERVAL_LARGE: 5000, // 5 seconds
+  MEMORY_MONITOR_INTERVAL_NORMAL: 10000, // 10 seconds
+  MAX_CHAT_HISTORY_LENGTH: 5000, // Maximum messages to retain
+  PERFORMANCE_INSIGHTS_INTERVAL: 5000, // 5 seconds
+  FILTER_CACHE_TTL: 5000, // 5 seconds
+  FADE_TRANSITION_DURATION: 300, // 300ms
+} as const;
+
+// Virtual Scroll Constants
+export const VIRTUAL_SCROLL = {
+  OVERSCAN: 5, // Number of items to render outside viewport
+  ITEM_HEIGHT: 280, // Height of each robot card in px
+} as const;
+
 // Lazy load translations
 export const loadTranslations = async (language: Language) => {
   const translations = await import(`./translations/${language}.js`);

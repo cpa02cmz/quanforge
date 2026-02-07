@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef, useState, useMemo, useCallback, useLayoutEffect } from 'react';
 import { useTranslation } from '../services/i18n';
+import { UI_TIMING } from '../constants';
 
 interface CodeEditorProps {
   code: string;
@@ -49,7 +50,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(code);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), UI_TIMING.COPY_FEEDBACK_DURATION);
   }, [code]);
 
   const handleDownload = useCallback(() => {

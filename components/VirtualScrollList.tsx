@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Robot } from '../types';
 import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
 import { createScopedLogger } from '../utils/logger';
+import { VIRTUAL_SCROLL, UI_TIMING } from '../constants';
 
 const logger = createScopedLogger('VirtualScrollList');
 
@@ -12,6 +13,7 @@ interface VirtualScrollListProps {
   processingId: string | null;
   onDuplicate: (id: string) => void;
   onDelete: (id: string, name: string) => void;
+  onClearFilters?: () => void;
   t: (key: string, params?: Record<string, string | number>) => string;
 }
 
@@ -22,13 +24,14 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
   processingId,
   onDuplicate,
   onDelete,
+  onClearFilters,
   t
 }) => {
   const [scrollTop, setScrollTop] = useState(0);
   const [containerHeight, setContainerHeight] = useState(600);
   const containerRef = useRef<HTMLDivElement>(null);
-  const itemHeight = 280; // Height of each robot card
-  const overscan = 5; // Number of items to render outside viewport
+  const itemHeight = VIRTUAL_SCROLL.ITEM_HEIGHT;
+  const overscan = VIRTUAL_SCROLL.OVERSCAN;
 
    // Filter robots with memoization and performance optimization
    const filteredRobots = useMemo(() => {
@@ -45,7 +48,7 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
            return matchesSearch && matchesType;
          });
        },
-       5000 // 5 second TTL for this filter result
+        UI_TIMING.FILTER_CACHE_TTL
      );
      
       const duration = performance.now() - startTime;
@@ -98,14 +101,16 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
       <div className="bg-dark-surface border border-dark-border rounded-xl p-12 text-center">
         <h3 className="text-lg font-medium text-white mb-2">{t('dash_no_matches')}</h3>
         <p className="text-gray-400">Try adjusting your search or filters.</p>
-         <button
-           type="button"
-           onClick={() => { /* Clear filters handled by parent */ }}
-           className="mt-4 text-brand-400 hover:underline"
-           aria-label="Clear search and filters"
-         >
-           Clear filters
-         </button>
+         {onClearFilters && (
+           <button
+             type="button"
+             onClick={onClearFilters}
+             className="mt-4 text-brand-400 hover:underline"
+             aria-label="Clear search and filters"
+           >
+             Clear filters
+           </button>
+         )}
       </div>
     );
   }

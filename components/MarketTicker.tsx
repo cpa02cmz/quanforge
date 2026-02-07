@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef, memo } from 'react';
 import { marketData as marketService, MarketData } from '../services';
 import { useTranslation } from '../services/i18n';
+import { UI_TIMING } from '../constants';
 
 interface MarketTickerProps {
   symbol: string;
@@ -28,7 +29,7 @@ export const MarketTicker: React.FC<MarketTickerProps> = memo(({ symbol }) => {
 
     marketService.subscribe(symbol, handleUpdate);
 
-    const timeout = setTimeout(() => setDirection('neutral'), 800);
+    const timeout = setTimeout(() => setDirection('neutral'), UI_TIMING.DIRECTION_INDICATOR_DURATION);
 
     return () => {
       marketService.unsubscribe(symbol, handleUpdate);
