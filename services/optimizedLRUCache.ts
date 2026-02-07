@@ -1,4 +1,7 @@
 import { handleError } from '../utils/errorHandler';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('OptimizedLRUCache');
 
 interface CacheEntry<T> {
   value: T;
@@ -209,8 +212,8 @@ export class OptimizedLRUCache<T> {
     this.cleanupTimer = setInterval(() => {
       try {
         const cleaned = this.cleanup();
-        if (cleaned > 0 && import.meta.env.DEV) {
-          console.log(`Cache cleanup: removed ${cleaned} expired entries`);
+        if (cleaned > 0) {
+          logger.log(`Cache cleanup: removed ${cleaned} expired entries`);
         }
       } catch (error) {
         handleError(error as Error, 'cacheAutoCleanup', 'OptimizedLRUCache');
