@@ -7,6 +7,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { Robot, UserSession } from '../../types';
 import { securityManager } from '../securityManager';
 import { consolidatedCache } from '../consolidatedCacheManager';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('CoreSupabaseService');
 
 // Enhanced connection retry configuration
 const RETRY_CONFIG = {
@@ -35,7 +38,7 @@ const safeParse = (data: string | null, fallback: any) => {
   try {
     return securityManager.safeJSONParse(data) || fallback;
   } catch (e) {
-    console.error("Failed to parse data from storage:", e);
+    logger.error("Failed to parse data from storage:", e);
     return fallback;
   }
 };
@@ -53,7 +56,7 @@ const trySaveToStorage = (key: string, value: string) => {
       e.code === 22 ||
       e.code === 1014
     ) {
-      console.warn('Storage quota exceeded, attempting cleanup');
+      logger.warn('Storage quota exceeded, attempting cleanup');
       try {
         // Try to clean up old data
         const keys = Object.keys(localStorage);
@@ -62,7 +65,7 @@ const trySaveToStorage = (key: string, value: string) => {
         // Retry save
         localStorage.setItem(key, value);
       } catch (cleanupError) {
-        console.error('Failed to cleanup and save to storage:', cleanupError);
+        logger.error('Failed to cleanup and save to storage:', cleanupError);
       }
     }
   }
@@ -86,11 +89,12 @@ class CoreSupabaseService {
    */
   private initializeClient() {
     try {
-      const supabaseUrl = process.env['SUPABASE_URL'];
-      const supabaseAnonKey = process.env['SUPABASE_ANON_KEY'];
+      // Use import.meta.env for Vite environment variables
+      const supabaseUrl = import.meta.env['VITE_SUPABASE_URL'];
+      const supabaseAnonKey = import.meta.env['VITE_SUPABASE_ANON_KEY'];
 
       if (!supabaseUrl || !supabaseAnonKey) {
-        console.info('Supabase credentials not found, using mock mode');
+        logger.log('Supabase credentials not found, using mock mode');
         this.isMockMode = true;
         return;
       }
@@ -109,11 +113,11 @@ class CoreSupabaseService {
           },
         });
       }).catch(error => {
-        console.error('Failed to initialize Supabase client:', error);
+        logger.error('Failed to initialize Supabase client:', error);
         this.isMockMode = true;
       });
     } catch (error) {
-      console.error('Error initializing Supabase service:', error);
+      logger.error('Error initializing Supabase service:', error);
       this.isMockMode = true;
     }
   }
@@ -148,7 +152,7 @@ class CoreSupabaseService {
         this.retryCount++;
 
         if (this.retryCount > RETRY_CONFIG.maxRetries) {
-          console.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, error);
+          logger.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, error);
           throw error;
         }
 
@@ -157,7 +161,7 @@ class CoreSupabaseService {
         const jitter = RETRY_CONFIG.jitter ? Math.random() * 0.1 * baseDelay : 0;
         const delay = Math.min(baseDelay + jitter, RETRY_CONFIG.maxDelay);
 
-        console.warn(`Operation ${operationName} failed, retry ${this.retryCount}/${RETRY_CONFIG.maxRetries} in ${delay}ms:`, error);
+        logger.warn(`Operation ${operationName} failed, retry ${this.retryCount}/${RETRY_CONFIG.maxRetries} in ${delay}ms:`, error);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }

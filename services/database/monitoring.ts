@@ -1,6 +1,9 @@
 import { robotCache, queryCache } from './cache';
 import { getClient } from './client';
 import { handleError } from '../../utils/errorHandler';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('DatabaseMonitoring');
 
 // Performance monitoring for database operations
 export class DatabaseMonitor {
@@ -118,12 +121,12 @@ export class ConnectionHealthMonitor {
         await client.auth.getSession();
         
         if (!this.isHealthy) {
-          console.log('Database connection restored');
+          logger.log('Database connection restored');
           this.isHealthy = true;
         }
       } catch (error) {
         if (this.isHealthy) {
-          console.warn('Database connection health check failed:', error);
+          logger.warn('Database connection health check failed:', error);
           this.isHealthy = false;
         }
       }
@@ -168,7 +171,7 @@ if (typeof window !== 'undefined') {
   if (process.env['NODE_ENV'] === 'development') {
     setInterval(() => {
       const metrics = collectDatabaseMetrics();
-      console.log('Database Metrics:', metrics);
+      logger.log('Database Metrics:', metrics);
     }, 60000); // Every minute
   }
 }
