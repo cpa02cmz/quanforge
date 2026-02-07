@@ -6,7 +6,18 @@ import { loadSuggestedStrategies } from '../constants';
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
 
-const logger = createScopedLogger('ChatInterface');
+  const logger = createScopedLogger('ChatInterface');
+
+  // Memory API interface for Chrome's performance.memory extension
+  interface PerformanceMemory {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  }
+
+  interface PerformanceWithMemory extends Performance {
+    memory?: PerformanceMemory;
+  }
 
 // Loading fallback component
 const ChatInterfaceLoading = () => (
@@ -27,7 +38,12 @@ interface ChatInterfaceProps {
 }
 
 // Extract and memoize Message component to prevent re-renders of the whole list on input change
-const MemoizedMessage = memo(({ msg, formatMessageContent }: { msg: Message, formatMessageContent: (c: string) => any }) => {
+  interface Strategy {
+    label: string;
+    prompt: string;
+  }
+
+  const MemoizedMessage = memo(({ msg, formatMessageContent }: { msg: Message, formatMessageContent: (c: string) => React.ReactNode[] }) => {
     return (
         <div className={`flex ${msg.role === MessageRole.USER ? 'justify-end' : 'justify-start'}`}>
             <div
@@ -89,7 +105,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
         
         try {
           if (typeof window !== 'undefined' && 'memory' in performance) {
-            const memoryUsage = (performance as any).memory;
+            const perf = performance as PerformanceWithMemory;
+            const memoryUsage = perf.memory;
             if (memoryUsage) {
               const usedMB = Math.round(memoryUsage.usedJSHeapSize / 1024 / 1024);
               const limitMB = Math.round(memoryUsage.jsHeapSizeLimit / 1024 / 1024);
@@ -253,7 +270,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   }, [listRegex, parseInlineStyles]);
 
   // Get strategies based on current language
-  const [suggestedStrategies, setSuggestedStrategies] = useState<any[]>([]);
+  const [suggestedStrategies, setSuggestedStrategies] = useState<Strategy[]>([]);
 
   useEffect(() => {
     loadSuggestedStrategies(language).then(strategies => {

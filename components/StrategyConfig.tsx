@@ -28,6 +28,7 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
   const [manualImportText, setManualImportText] = useState('');
   const [errors, setErrors] = useState<Partial<Record<keyof StrategyParams, string>>>({});
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const validateField = (field: keyof StrategyParams, value: any): string | undefined => {
     switch (field) {
       case 'symbol':
@@ -95,6 +96,7 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
     return Object.keys(newErrors).length === 0;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleChangeWithValidation = useCallback((field: keyof StrategyParams, value: any) => {
     const error = validateField(field, value);
     setErrors(prev => ({
@@ -118,6 +120,7 @@ const sanitizeInput = (input: string): string => {
     });
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleChange = useCallback((field: keyof StrategyParams, value: any) => {
      if (typeof value === 'string') {
        value = sanitizeInput(value);
@@ -194,9 +197,10 @@ const sanitizeInput = (input: string): string => {
         showToast('Configuration imported successfully', 'success');
         setShowManualImport(false);
         setManualImportText('');
-    } catch (e: any) {
+    } catch (e: unknown) {
         logger.error(e);
-        showToast(`Import Failed: ${e.message}`, 'error');
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+        showToast(`Import Failed: ${errorMessage}`, 'error');
     }
   };
 
@@ -204,7 +208,7 @@ const sanitizeInput = (input: string): string => {
       try {
           const text = await navigator.clipboard.readText();
           parseAndImport(text);
-      } catch (e: any) {
+      } catch (e: unknown) {
           logger.warn("Clipboard read failed, switching to manual mode", e);
           setShowManualImport(true);
           showToast('Clipboard blocked. Please paste manually below.', 'info');
@@ -299,6 +303,7 @@ const sanitizeInput = (input: string): string => {
                   }`}
                   placeholder="BTCUSDT"
                   aria-invalid={!!errors.symbol}
+                  aria-describedby={errors.symbol ? 'config-symbol-error' : 'config-symbol-hint'}
                 />
               </FormField>
               <FormField
@@ -333,6 +338,7 @@ const sanitizeInput = (input: string): string => {
                     errors.riskPercent ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
                   }`}
                   aria-invalid={!!errors.riskPercent}
+                  aria-describedby={errors.riskPercent ? 'config-risk-error' : 'config-risk-hint'}
                 />
               </FormField>
               <FormField
@@ -350,43 +356,7 @@ const sanitizeInput = (input: string): string => {
                     errors.magicNumber ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
                   }`}
                   aria-invalid={!!errors.magicNumber}
-                />
-              </FormField>
-              <FormField
-                label={t('config_risk')}
-                error={errors.riskPercent}
-                hint="Percentage of account balance to risk per trade (1-100)"
-                required
-                htmlFor="config-risk"
-              >
-                <NumericInput
-                  id="config-risk"
-                  value={params.riskPercent}
-                  onChange={(val) => handleChangeWithValidation('riskPercent', val)}
-                  step="0.1"
-                  className={`w-full bg-dark-surface border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 outline-none transition-colors ${
-                    errors.riskPercent ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
-                  }`}
-                  aria-invalid={!!errors.riskPercent}
-                  aria-describedby={errors.riskPercent ? undefined : 'config-risk-hint'}
-                />
-              </FormField>
-              <FormField
-                label={t('config_magic')}
-                error={errors.magicNumber}
-                hint="Unique identifier for the Expert Advisor"
-                required
-                htmlFor="config-magic"
-              >
-                <NumericInput
-                  id="config-magic"
-                  value={params.magicNumber}
-                  onChange={(val) => handleChangeWithValidation('magicNumber', val)}
-                  className={`w-full bg-dark-surface border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 outline-none transition-colors ${
-                    errors.magicNumber ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
-                  }`}
-                  aria-invalid={!!errors.magicNumber}
-                  aria-describedby={errors.magicNumber ? undefined : 'config-magic-hint'}
+                  aria-describedby={errors.magicNumber ? 'config-magic-error' : 'config-magic-hint'}
                 />
               </FormField>
             </div>
@@ -414,6 +384,7 @@ const sanitizeInput = (input: string): string => {
                     errors.stopLoss ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
                   }`}
                   aria-invalid={!!errors.stopLoss}
+                  aria-describedby={errors.stopLoss ? 'config-sl-error' : 'config-sl-hint'}
                 />
               </FormField>
               <FormField
@@ -431,6 +402,7 @@ const sanitizeInput = (input: string): string => {
                     errors.takeProfit ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
                   }`}
                   aria-invalid={!!errors.takeProfit}
+                  aria-describedby={errors.takeProfit ? 'config-tp-error' : 'config-tp-hint'}
                 />
               </FormField>
             </div>
