@@ -21,6 +21,46 @@
 
 ## Fixed Bugs
 
+### 2026-02-07 - Backend Console Statement Fixes (Backend Engineer)
+
+#### ✅ services/backendOptimizer.ts
+- [x] **no-console**: Replaced 3 console statements with logger utility
+  - Line 102: `console.warn('Health check failed:', error)` → `logger.warn()`
+  - Line 346: `console.warn('Failed to warm up query for...', error)` → `logger.warn()`
+  - Line 435: `console.log('Suggested optimization for slow query:', slowQuery)` → `logger.log()`
+- [x] **@typescript-eslint/no-unused-vars**: Fixed unused error variables (lines 102, 346)
+  - Changed `error` → `_error` in catch blocks
+- [x] **Import**: Added `createScopedLogger` import from `../utils/logger`
+- [x] **Scope**: Created scoped logger instance `logger = createScopedLogger('BackendOptimizer')`
+
+#### ✅ services/databaseOptimizer.ts
+- [x] **no-console**: Replaced 8 console statements with logger utility
+  - Line 355: `console.log('Executing batched query...')` → `logger.log()`
+  - Line 390: `console.debug('Query statistics not available...')` → `logger.debug()`
+  - Line 418: `console.debug('Table statistics not available...')` → `logger.debug()`
+  - Line 449: `console.debug('Strategy performance insights not available')` → `logger.debug()`
+  - Line 493: `console.log('Table has deleted tuples...')` → `logger.log()`
+  - Line 529: `console.error('Error running ANALYZE:', analyzeError)` → `logger.error()`
+  - Line 540: `console.log('Table has deleted tuples...')` → `logger.log()`
+  - Line 550: `console.error('Database maintenance failed:', error)` → `logger.error()`
+- [x] **@typescript-eslint/no-unused-vars**: Fixed unused error variables (lines 392, 420, 451, 552)
+  - Changed `err/error` → `_err/_error` in catch blocks
+- [x] **Import**: Added `createScopedLogger` import from `../utils/logger`
+- [x] **Scope**: Created scoped logger instance `logger = createScopedLogger('DatabaseOptimizer')`
+
+**Benefits:**
+- Environment-aware logging (dev shows all, prod shows only errors)
+- Scoped logging with module prefixes for better debugging
+- Consistent with existing logger usage patterns in codebase
+- Reduced no-console lint warnings
+
+**Verification:**
+- ✅ TypeScript compilation: Zero errors
+- ✅ Build: Successful (12.59s)
+- ✅ Tests: All 423 tests passing
+- ✅ Lint: Zero new errors introduced
+- ✅ Documentation: Created comprehensive backend-engineer.md
+
 ### 2026-02-07 - Lint Error Fixes (Code Reviewer)
 
 #### ✅ services/securityManager.ts
