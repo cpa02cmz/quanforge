@@ -80,7 +80,7 @@ jobs:
 
             ## PHASE 1
             Step:
-            1. Check if 'opencode.json' exist, create if not exist. (analyze https://opencode.ai/schemas/opencode.json).
+            1. Check if 'opencode.json' exist, create if not exist. (analyze https://opencode.ai/docs before creating/updating).
                 - configure all agents using models: opencode/glm-4.7-free, opencode/kimi-k2.5-free or opencode/minimax-m2.1-free
                 - verify configuration until success
             2. Check and integrate the following repositories as supplements to current project. Ensure no conflict or redundant. if already implemented, skip it. Think harder, plan carefully, must be in harmony.:
