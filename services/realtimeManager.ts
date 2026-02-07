@@ -50,7 +50,7 @@ class RealtimeManager {
     isOnline: navigator.onLine,
   };
   private syncTimer: ReturnType<typeof setInterval> | null = null;
-  private reconnectTimer: ReturnType<typeof setInterval> | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   private constructor() {
     this.setupNetworkListeners();
