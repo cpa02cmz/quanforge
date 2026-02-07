@@ -6,10 +6,39 @@
 
 ### Build Warnings
 
-- [x] **Unused eslint-disable directives**: components/CodeEditor.tsx had 2 unused eslint-disable comments
-  - Lines 29 and 34: `// eslint-disable-next-line @typescript-eslint/no-explicit-any`
-  - **Fixed**: 2026-02-07 - Removed unused eslint-disable directives
-  - **Reason**: Type casting was already properly typed with `(window as unknown as { ... })`
+### Backend Service Issues
+
+- [x] **Console Statement Cleanup**: services/advancedAPICache.ts using console instead of logger
+  - **Fixed**: 2026-02-07 - Replaced console statements with scoped logger
+  - Changes:
+    - Added `import { createScopedLogger } from '../utils/logger'`
+    - Created scoped logger instance: `const logger = createScopedLogger('AdvancedAPICache')`
+    - Replaced `console.error` with `logger.error` (2 occurrences)
+    - Replaced `console.warn` with `logger.warn` (2 occurrences)
+    - Replaced `.catch(console.error)` with `.catch((err) => logger.error(...))`
+  - Benefits:
+    - Environment-aware logging (shows all in dev, errors only in prod)
+    - Scoped with module name for better filtering
+    - Consistent with codebase logging patterns
+
+- [x] **Type Safety Issues**: services/advancedAPICache.ts using `any` types
+  - **Fixed**: 2026-02-07 - Replaced `any` types with proper TypeScript generics
+  - Changes:
+    - `compressData(data: any): any` → `compressData<T>(data: T): T`
+    - `decompressData(data: any): any` → `decompressData<T>(data: T): T`
+    - `encryptData(data: any): any` → `encryptData<T>(data: T): T`
+    - `decryptData(data: any): any` → `decryptData<T>(data: T): T`
+    - `get<T = any>` → `get<T = unknown>`
+    - `set(key: string, data: any, ...)` → `set<T>(key: string, data: T, ...)`
+    - `staleWhileRevalidate<T = any>` → `staleWhileRevalidate<T = unknown>`
+    - `batchFetch<T = any[]>` → `batchFetch<T = unknown[]>`
+    - Fixed fetch type casting to use `globalThis.RequestInit`
+  - Benefits:
+    - Better type safety and inference
+    - Reduced lint warnings
+    - More maintainable code
+
+### Build Warnings
 
 - [x] **Dynamic Import Warning**: services/dynamicSupabaseLoader.ts dynamically imported but also statically imported
   - File: services/enhancedSupabasePool.ts importing from edgeSupabasePool.ts, readReplicaManager.ts

@@ -1,445 +1,258 @@
 # Technical Writer Guidelines
 
-## Overview
+## Role Overview
 
-This document provides comprehensive guidelines for technical writers contributing to QuantForge AI documentation. Following these standards ensures consistency, clarity, and maintainability across all project documentation.
+As a Technical Writer specialist for QuantForge AI, your primary responsibility is to ensure all documentation is accurate, consistent, accessible, and up-to-date. You serve as the bridge between technical implementation and user understanding.
 
-## Documentation Philosophy
+## Documentation Standards
 
-### Core Principles
+### 1. File Organization
 
-1. **Clarity Over Cleverness**: Write for comprehension, not to impress
-2. **Progressive Disclosure**: Simple explanations first, depth when needed
-3. **Show, Don't Tell**: Use examples, code snippets, and visuals
-4. **Audience Awareness**: Different documentation for different users
-5. **Maintainability**: Structure that enables easy updates
-
-### Documentation Types
-
-| Type | Audience | Purpose | Example |
-|------|----------|---------|---------|
-| **User Guide** | End Users | How to use the application | QUICK_START.md |
-| **Architecture** | Developers | System design and patterns | SERVICE_ARCHITECTURE.md |
-| **API Reference** | Developers | Interface specifications | (See service docs) |
-| **Troubleshooting** | All Users | Problem resolution | README.md#troubleshooting |
-| **Contributing** | Contributors | How to contribute | CONTRIBUTING.md |
-
-## Writing Standards
-
-### Language and Tone
-
-- **Use active voice**: "Click the button" not "The button should be clicked"
-- **Be direct**: Avoid "please", "we recommend", "it is suggested"
-- **Use second person**: Address the reader directly ("you")
-- **Be concise**: Remove unnecessary words and phrases
-- **Define terms**: First use of technical terms should include brief definition
-
-**Good Example**:
 ```
-Clone the repository and install dependencies:
+docs/
+├── blueprint.md              # System architecture overview
+├── SERVICE_ARCHITECTURE.md   # Service layer documentation
+├── DATA_ARCHITECTURE.md      # Database and data integrity docs
+├── INTEGRATION_RESILIENCE.md # Resilience system API docs
+├── INTEGRATION_MIGRATION.md  # Migration guide for developers
+├── FRONTEND_OPTIMIZER.md     # Performance optimization docs
+├── SEO_ENHANCEMENT_GUIDE.md  # SEO implementation guide
+├── QUICK_START.md            # End-user getting started guide
+├── task.md                   # Development task tracker
+├── bug.md                    # Bug tracking and fixes
+├── code-reviewer.md          # Code review guidelines
+├── frontend-engineer.md      # Frontend development guide
+└── technical-writer.md       # This file
+```
 
+### 2. Link Conventions
+
+**Internal Links (within docs/ folder):**
+```markdown
+<!-- Correct - relative to current file -->
+[Service Architecture](SERVICE_ARCHITECTURE.md)
+[Blueprint](blueprint.md)
+[Quick Start](QUICK_START.md)
+
+<!-- Correct - linking to parent directory -->
+[README](../README.md)
+[Coding Standards](../coding_standard.md)
+[Contributing](../CONTRIBUTING.md)
+
+<!-- Incorrect - don't use docs/ prefix within docs/ folder -->
+~~[Service Architecture](docs/SERVICE_ARCHITECTURE.md)~~
+```
+
+**External Links:**
+- Use HTTPS protocol
+- Prefer official documentation
+- Avoid linking to temporary resources
+
+### 3. Common Documentation Issues to Fix
+
+#### Issue 1: Incorrect Relative Links
+**Problem:** Links in `docs/*.md` files referencing other docs files with `docs/` prefix.
+
+**Example Fix:**
+```markdown
+<!-- Before (incorrect) -->
+- [Service Architecture](docs/SERVICE_ARCHITECTURE.md)
+- [Blueprint](docs/blueprint.md)
+
+<!-- After (correct) -->
+- [Service Architecture](SERVICE_ARCHITECTURE.md)
+- [Blueprint](blueprint.md)
+```
+
+#### Issue 2: Broken Links to Parent Directory
+**Problem:** Links to files in parent directory (`README.md`, `coding_standard.md`) not using `../` prefix.
+
+**Example Fix:**
+```markdown
+<!-- Before (incorrect) -->
+- [README](README.md)
+- [Coding Standards](coding_standard.md)
+
+<!-- After (correct) -->
+- [README](../README.md)
+- [Coding Standards](../coding_standard.md)
+```
+
+#### Issue 3: Outdated Information
+**Problem:** Documentation referencing deleted files or outdated architecture.
+
+**Files to NEVER reference (deleted):**
+- ~~`docs/API_DOCUMENTATION.md`~~ - Deleted, replaced by `SERVICE_ARCHITECTURE.md`
+- ~~`api/` directory~~ - Removed, no server-side API routes exist
+
+#### Issue 4: Inconsistent Formatting
+**Standards:**
+- Use ATX-style headers (`# Header` not `Header\n===`)
+- Code blocks must specify language: ```typescript not ```
+- Lists should have consistent indentation (2 spaces)
+- Line length: Soft wrap at 100 characters
+
+### 4. Writing Style Guidelines
+
+**Tone:**
+- Professional but approachable
+- Active voice preferred
+- Second person ("you") for instructions
+- Present tense for descriptions
+
+**Accessibility:**
+- Use descriptive link text (not "click here")
+- Provide alt text for diagrams
+- Use semantic heading hierarchy (don't skip levels)
+- Include code examples for technical concepts
+
+**Code Examples:**
+- Must be tested and working
+- Include imports in TypeScript examples
+- Show both "before" and "after" for migrations
+- Use realistic data in examples
+
+### 5. Verification Checklist
+
+Before submitting documentation changes:
+
+- [ ] All internal links work (use `grep` to verify)
+- [ ] No references to deleted files
+- [ ] Code examples are syntax-highlighted
+- [ ] Headers follow hierarchy (h1 → h2 → h3)
+- [ ] No TODO/FIXME markers left in content
+- [ ] Consistent terminology throughout
+- [ ] Build passes: `npm run build`
+- [ ] No TypeScript errors: `npm run typecheck`
+
+### 6. Documentation Types
+
+#### User Documentation (QUICK_START.md)
+**Audience:** End users creating trading strategies
+**Focus:** Step-by-step workflows, examples, safety warnings
+**Style:** Instructional, encouraging, safety-conscious
+
+#### Developer Documentation (SERVICE_ARCHITECTURE.md)
+**Audience:** Developers contributing to codebase
+**Focus:** Architecture patterns, API usage, implementation details
+**Style:** Technical, precise, comprehensive
+
+#### Migration Guides (INTEGRATION_MIGRATION.md)
+**Audience:** Developers updating existing code
+**Focus:** Before/after comparisons, step-by-step instructions
+**Style:** Clear, actionable, with rollback procedures
+
+#### Bug Documentation (bug.md)
+**Audience:** Development team
+**Focus:** Issue description, root cause, solution, verification
+**Style:** Structured, searchable, dated entries
+
+### 7. Maintenance Tasks
+
+**Weekly:**
+- Review task.md for documentation-related entries
+- Check for broken links
+- Verify code examples still work
+
+**Monthly:**
+- Update outdated screenshots/diagrams
+- Review and archive completed tasks
+- Check external links for availability
+
+**On Release:**
+- Update version references
+- Verify all migration guides are current
+- Update changelog/task.md
+
+### 8. Special Files Reference
+
+#### AGENTS.md
+- Contains agent insights and decisions
+- Documents resolution patterns
+- Tracks build compatibility issues
+- **Do not edit** - Append-only for agents
+
+#### task.md
+- Tracks all development tasks
+- Use specific format for entries
+- Mark completed tasks with [x]
+- Include date and detailed description
+
+#### ROADMAP.md
+- Product roadmap and feature planning
+- Update when features are completed
+- Link to relevant task.md entries
+
+### 9. Quick Fixes Reference
+
+**Fix broken internal links:**
 ```bash
-git clone https://github.com/cpa02cmz/quanforge.git
-cd quanforge
-npm install
-```
-```
+# Find all markdown links
+grep -rn "\[.*\](.*\.md)" docs/
 
-**Bad Example**:
-```
-We recommend that you please clone the repository first. It is suggested that you then install the dependencies. The dependencies are necessary for the application to function properly.
-```
-
-### Formatting Standards
-
-#### Headers
-- Use sentence case for headers ("Getting started", not "Getting Started")
-- Use proper header hierarchy (don't skip levels)
-- Keep headers concise but descriptive
-
-#### Code Blocks
-- Specify language for syntax highlighting
-- Keep examples focused and runnable
-- Include expected output when helpful
-
-```markdown
-**Good**:
-```typescript
-const robot = await db.getRobot(id);
-console.log(robot.name);
+# Check if linked files exist
+for file in $(grep -oP '\(.*?\.md\)' docs/*.md | tr -d '()' | sort -u); do
+  if [ ! -f "$file" ]; then
+    echo "Missing: $file"
+  fi
+done
 ```
 
-**Bad**:
-```
-Get robot and log it
-```
-```
-
-#### Lists
-- Use bullet points for unordered items
-- Use numbered lists for sequential steps
-- Keep list items parallel in structure
-
-#### Links
-- Use descriptive link text (avoid "click here")
-- Prefer relative links for internal docs
-- Use absolute URLs for external resources
-
-**Examples**:
-```markdown
-**Good**: See the [Service Architecture documentation](./SERVICE_ARCHITECTURE.md)
-**Bad**: Click [here](./SERVICE_ARCHITECTURE.md) for more info
-
-**Good**: Visit [Supabase documentation](https://supabase.com/docs)
-**Bad**: https://supabase.com/docs
+**Verify build:**
+```bash
+npm run build
+npm run typecheck
 ```
 
-## Document Structure
-
-### Standard Sections
-
-#### 1. Title and Overview
-```markdown
-# Document Title
-
-Brief description (1-2 sentences) explaining what this document covers and who it's for.
-```
-
-#### 2. Prerequisites (if applicable)
-```markdown
-## Prerequisites
-
-- Required software/versions
-- Required knowledge
-- Required access/permissions
-```
-
-#### 3. Main Content
-Organize by logical sections with clear progression
-
-#### 4. Examples (if applicable)
-```markdown
-## Examples
-
-### Example 1: Basic Usage
-...
-
-### Example 2: Advanced Usage
-...
-```
-
-#### 5. Troubleshooting (if applicable)
-```markdown
-## Troubleshooting
-
-### Issue: [Problem description]
-**Solution**: [Step-by-step fix]
-
-### Issue: [Another problem]
-**Solution**: [Another fix]
-```
-
-#### 6. References
-```markdown
-## References
-
-- [Related Document 1](./doc1.md)
-- [Related Document 2](./doc2.md)
-- [External Resource](https://example.com)
-```
-
-## Common Patterns
-
-### Feature Documentation
-```markdown
-## Feature Name
-
-**Purpose**: One sentence describing what this feature does
-
-**When to Use**: When/why users should use this feature
-
-**How to Use**:
-1. Step one
-2. Step two
-3. Step three
-
-**Configuration Options**:
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| option1 | string | "default" | Description |
-
-**Example**:
-```typescript
-// Code example showing feature usage
-```
-```
-
-### API Documentation
-```markdown
-## Function/Method Name
-
-**Signature**: `functionName(param1: Type, param2?: Type): ReturnType`
-
-**Description**: What this function does
-
-**Parameters**:
-- `param1` (Type): Description
-- `param2` (Type, optional): Description
-
-**Returns**: Description of return value
-
-**Throws**: Any errors that might be thrown
-
-**Example**:
-```typescript
-const result = functionName("value");
-```
-
-**See Also**: Related functions or documentation
-```
-
-### Troubleshooting Entry
-```markdown
-### Issue: [Clear problem statement]
-
-**Symptoms**:
-- Symptom 1
-- Symptom 2
-
-**Cause**: Brief explanation of root cause
-
-**Solution**:
-1. Step one
-2. Step two
-3. Step three
-
-**Prevention**: How to avoid this issue
-```
-
-## Code Examples
-
-### Principles
-1. **Runnable**: Examples should actually work when copied
-2. **Complete**: Include all necessary imports/setup
-3. **Realistic**: Use realistic values and scenarios
-4. **Tested**: Verify examples work before publishing
-
-### TypeScript/React Examples
-```markdown
-**Good**:
-```typescript
-import { db } from './services';
-
-// Get all robots for current user
-const robots = await db.getRobots();
-console.log(`Found ${robots.length} robots`);
-```
-
-**Bad**:
-```typescript
-// Incomplete, won't work
-getRobots().then(r => console.log(r));
-```
-```
-
-### SQL Examples
-```markdown
-**Good**:
-```sql
--- Check RLS policies for robots table
-SELECT * FROM pg_policies WHERE tablename = 'robots';
-```
-
-**Bad**:
-```sql
--- Vague and incomplete
-SELECT * FROM table
-```
-```
-
-## Review Checklist
-
-Before submitting documentation changes, verify:
-
-### Content
-- [ ] Information is accurate and up-to-date
-- [ ] All code examples are tested and working
-- [ ] No placeholder text or TODOs remain
-- [ ] Technical terms are defined on first use
-- [ ] Steps are clear and actionable
-
-### Formatting
-- [ ] Proper Markdown syntax throughout
-- [ ] Code blocks have language specifications
-- [ ] Headers follow hierarchy (no skipped levels)
-- [ ] Lists are properly formatted
-- [ ] Tables are readable in raw Markdown
-
-### Links
-- [ ] All internal links use relative paths
-- [ ] All external links are valid
-- [ ] Link text is descriptive
-- [ ] Images have alt text (if applicable)
-
-### Style
-- [ ] Active voice used consistently
-- [ ] Second person ("you") used throughout
-- [ ] Consistent terminology
-- [ ] No grammar or spelling errors
-- [ ] Concise writing without filler words
-
-## Common Errors to Fix
-
-### Typos and Spelling
-- Variable names in code examples must match actual code
-- Technical terms must be spelled correctly
-- Consistent capitalization (e.g., "Supabase" not "supabase")
-
-### Broken Links
-- Check all links before publishing
-- Update links when files are moved or renamed
-- Use relative links for internal documentation
-
-### Outdated Information
-- Remove references to deprecated features
-- Update version numbers and requirements
-- Update screenshots when UI changes
-
-### Inconsistent Formatting
-- Use consistent code block languages
-- Maintain consistent header styles
-- Standardize list formatting
-
-## Specific Guidelines for This Project
-
-### File Naming
-- Use UPPERCASE for multi-word filenames: `QUICK_START.md`
-- Use descriptive names: `SERVICE_ARCHITECTURE.md` not `ARCH.md`
-- Keep files in appropriate directories:
-  - `docs/` for technical documentation
-  - Root for user-facing docs (README.md, CONTRIBUTING.md)
-
-### Repository References
-- Always use actual repository URL: `https://github.com/cpa02cmz/quanforge`
-- Never use placeholder URLs in user-facing docs
-- Update all references if repository moves
-
-### Environment Variables
-- Always prefix with `VITE_` for client-side variables
-- Document all required variables in Prerequisites
-- Provide examples in code blocks
-
-### Version References
-- Specify version numbers for dependencies
-- Note when features were added/changed
-- Maintain changelog for significant changes
-
-## Maintenance
-
-### Regular Updates
-- Review docs quarterly for accuracy
-- Update when features change
-- Fix broken links immediately
-
-### Version Control
-- Commit documentation with related code changes
-- Use descriptive commit messages
-- Tag significant documentation updates
-
-### Feedback Loop
-- Monitor user questions for doc gaps
-- Update based on common issues
-- Improve clarity based on user feedback
-
-## Examples of Good Documentation
-
-### From This Project
-
-**QUICK_START.md** - Excellent user guide with:
-- Clear step-by-step instructions
-- Multiple examples for different scenarios
-- Visual aids where helpful
-- Safety warnings appropriately placed
-
-**SERVICE_ARCHITECTURE.md** - Excellent technical doc with:
-- Comprehensive architecture overview
-- Clear service descriptions
-- Usage examples for each service
-- Troubleshooting section
-
-**README.md#troubleshooting** - Excellent troubleshooting with:
-- Organized by issue type
-- Clear symptoms and solutions
-- Code examples for diagnostics
-- Multiple solution approaches
-
-## Anti-Patterns to Avoid
-
-❌ **Walls of text** without structure or breaks
-❌ **Vague instructions** like "do the thing"
-❌ **Untested code** examples that don't work
-❌ **Inconsistent terminology** ("app" vs "application")
-❌ **Missing context** - assuming reader knows background
-❌ **Outdated information** - stale screenshots, old APIs
-❌ **Placeholder content** - "TODO", "FIXME", "coming soon"
-
-## Tools and Resources
-
-### Recommended Tools
-- **Markdown Editor**: VS Code with Markdown extensions
-- **Link Checker**: Use `markdown-link-check` or similar
-- **Spell Checker**: Built-in or extensions
-- **Preview**: VS Code Markdown preview or similar
-
-### Helpful Resources
-- [Microsoft Writing Style Guide](https://docs.microsoft.com/en-us/style-guide/welcome/)
-- [Google Developer Documentation Style Guide](https://developers.google.com/style)
-- [MDN Web Docs Writing Guidelines](https://developer.mozilla.org/en-US/docs/MDN/Guidelines/Writing_style_guide)
-
-## Quick Reference
-
-### Markdown Cheat Sheet
-```markdown
-# Header 1
-## Header 2
-### Header 3
-
-**Bold text**
-*Italic text*
-`Inline code`
-
-```typescript
-// Code block
-const x = 1;
-```
-
-- Bullet point
-- Another point
-
-1. Numbered step
-2. Next step
-
-[Link text](url)
-![Alt text](image-url)
-
-| Column 1 | Column 2 |
-|----------|----------|
-| Value 1  | Value 2  |
-```
-
-### Common Replacements
-| Instead of | Use |
-|------------|-----|
-| "It is suggested that" | (Remove) |
-| "We recommend" | (Remove or use imperative) |
-| "Please" | (Remove) |
-| "Click here" | Descriptive link text |
-| "Just" | (Remove) |
-| "Simply" | (Remove) |
-| "Very" | (Remove or use stronger word) |
+### 10. Common Patterns
+
+**Documenting a New Feature:**
+1. Add entry to task.md with [x] marker
+2. Update relevant architecture docs
+3. Add user-facing documentation if applicable
+4. Update ROADMAP.md if feature was planned
+5. Verify all cross-references work
+
+**Fixing a Bug:**
+1. Add entry to bug.md with date prefix
+2. Document root cause and solution
+3. Include verification steps
+4. Reference related task.md entries
+
+**Updating API Documentation:**
+1. Update SERVICE_ARCHITECTURE.md for service changes
+2. Update INTEGRATION_RESILIENCE.md for resilience patterns
+3. Update INTEGRATION_MIGRATION.md if breaking changes
+4. Verify all code examples compile
 
 ---
 
-**Document Maintenance**: This guide should be updated when new documentation patterns emerge or standards evolve.
+## Current Documentation Status
 
-**Last Updated**: 2026-02-07
+**Last Updated:** 2026-02-07
+
+**Active Issues:**
+- Fixed: QUICK_START.md internal link references
+- Fixed: Relative path links to parent directory files
+
+**Build Status:** ✅ Passing
+- Build time: ~13s
+- TypeScript: 0 errors
+- No broken internal links
+
+**Documentation Coverage:**
+- ✅ User Guide (QUICK_START.md)
+- ✅ Architecture (blueprint.md, SERVICE_ARCHITECTURE.md)
+- ✅ Data Architecture (DATA_ARCHITECTURE.md)
+- ✅ Integration Patterns (INTEGRATION_RESILIENCE.md)
+- ✅ Migration Guides (INTEGRATION_MIGRATION.md)
+- ✅ Performance (FRONTEND_OPTIMIZER.md)
+- ✅ Security (covered in blueprint.md)
+- ✅ SEO (SEO_ENHANCEMENT_GUIDE.md)
+- ✅ Development Guides (code-reviewer.md, frontend-engineer.md)
+- ✅ Task Tracking (task.md)
+- ✅ Bug Tracking (bug.md)
+
+---
+
+**Note:** This document should be updated whenever new documentation patterns are established or standards change.

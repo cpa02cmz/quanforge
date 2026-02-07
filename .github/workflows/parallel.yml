@@ -74,9 +74,9 @@ jobs:
           while [ $retry_count -lt $max_retries ]; do
             echo "Attempt $((retry_count + 1)) of $max_retries"
 
-            if opencode run /ulw-loop "analisa semua dokumen di folder /docs, analisa log github, temukan bugs dan errors, catat di docs/bugs.md" \
-              --agent arsitek \
-              --model opencode/glm-4.7-free \
+            if opencode run /ulw-loop "Anda adalah RepoKeeper. Tugas anda adalah menjaga repositori tetap efisien, teratur dan terorganisir, bersih dari file/folder redundant, sementara dan tidak digunakan lagi. Jaga dokumentasi tetap up to date dan sesuai dengan code." \
+              --agent RepoKeeper \
+              --model opencode/kimi-k2.5-free \
               --share false; then
               echo "✅ Architect work completed successfully"
               break
