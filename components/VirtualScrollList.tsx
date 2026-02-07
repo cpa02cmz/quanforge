@@ -140,7 +140,7 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
            
            return (
              <div
-               key={`${robot.id}-${actualIndex}`} // Include index to ensure uniqueness
+                key={robot.id} // Use stable robot ID for React reconciliation
                style={{
                  position: 'absolute',
                  top: `${top - (visibleRange.startIndex * itemHeight)}px`, // Relative to container
