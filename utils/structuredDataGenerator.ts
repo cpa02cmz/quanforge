@@ -1,4 +1,4 @@
-import { enhancedStructuredDataTemplates } from './enhancedSEO';
+import { enhancedStructuredDataTemplates } from './seoUnified';
 
 interface TradingStrategy {
   name: string;

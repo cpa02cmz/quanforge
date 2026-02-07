@@ -2,7 +2,7 @@ import React, { useState, useEffect, memo, useCallback } from 'react';
 
 export const NumericInput: React.FC<{
     value: number;
-    onChange: (val: number) => void;
+    onChange: (_val: number) => void;
     className?: string;
     step?: number;
     min?: number;
