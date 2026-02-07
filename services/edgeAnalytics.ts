@@ -345,7 +345,7 @@ class EdgeAnalytics {
     });
 
     // Track scrolls
-    let scrollTimeout: NodeJS.Timeout;
+    let scrollTimeout: ReturnType<typeof setInterval>;
     document.addEventListener('scroll', () => {
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {

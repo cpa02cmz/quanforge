@@ -58,7 +58,7 @@ export class OptimizedDatabaseService {
   private config: DatabaseConfig;
   private queryCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
   private batchQueue: BatchOperation<any>[] = [];
-  private batchTimer: NodeJS.Timeout | null = null;
+  private batchTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(config: Partial<DatabaseConfig> = {}) {
     this.config = {

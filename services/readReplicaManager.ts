@@ -200,7 +200,9 @@ class ReadReplicaManager {
   }
 
   private generateCacheKey(query: string, params: any[]): string {
-    return `analytics:${Buffer.from(query + JSON.stringify(params)).toString('base64')}`;
+    // Use btoa for browser-compatible Base64 encoding
+    const data = query + JSON.stringify(params);
+    return `analytics:${btoa(encodeURIComponent(data))}`;
   }
 
   private recordMetrics(metrics: QueryMetrics) {

@@ -23,7 +23,7 @@ class EdgeSupabasePool {
     connectionTimeout: 1500, // 1.5 seconds for better edge reliability
     maxRetries: 5, // Reduced retries for faster failure detection
   };
-  private healthCheckTimer: NodeJS.Timeout | null = null;
+  private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
 
   private constructor() {
     this.startHealthChecks();

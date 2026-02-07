@@ -65,7 +65,7 @@ export class AnalyticsManager {
   private config: AnalyticsConfig;
   private sessionId: string;
   private userId?: string;
-  private flushTimer: NodeJS.Timeout | null = null;
+  private flushTimer: ReturnType<typeof setInterval> | null = null;
   private isOnline = navigator.onLine;
   private persistenceKey = 'quanforge_analytics_events';
 

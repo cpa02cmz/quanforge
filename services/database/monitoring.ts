@@ -107,7 +107,7 @@ export class QueryOptimizer {
 
 // Connection health monitor
 export class ConnectionHealthMonitor {
-  private static healthCheckInterval: NodeJS.Timeout | null = null;
+  private static healthCheckInterval: ReturnType<typeof setInterval> | null = null;
   private static isHealthy = true;
 
   static startHealthCheck(intervalMs: number = 30000): void {
