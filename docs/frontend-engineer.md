@@ -41,12 +41,21 @@ This document serves as a guide for frontend engineers working on the QuantForge
 
 **Example**:
 ```typescript
-// ❌ Bad - App.tsx exports non-component functions
-export const loadGeminiService = () => import('./services/gemini');
+// ❌ Bad - Toast.tsx exports non-component functions
+export const getToastAriaLive = (type: ToastType) => { ... };
+export const getToastLabel = (type: ToastType) => { ... };
 
-// ✅ Good - Move to utils/loaders.ts
-export const loadGeminiService = () => import('./services/gemini');
+// ✅ Good - Move to toastUtils.ts
+// components/toastUtils.ts
+export const getToastAriaLive = (type: ToastType) => { ... };
+export const getToastLabel = (type: ToastType) => { ... };
+
+// components/Toast.tsx
+import { getToastAriaLive, getToastLabel } from './toastUtils';
 ```
+
+**Fixed In**:
+- `components/Toast.tsx` - Moved helper functions to `components/toastUtils.ts`
 
 ### 2. Unused Variables
 **Issue**: ESLint error for unused variables in catch blocks
@@ -95,6 +104,23 @@ const data: any = await response.json();
 // ✅ Good
 const data: ApiResponse = await response.json();
 ```
+
+**Frontend-Specific Fixes**:
+- `components/ChatInterface.tsx`: Replaced `any[]` with `Strategy[]` for suggested strategies state
+- `components/ChatInterface.tsx`: Added proper `PerformanceMemory` interface for browser memory API
+- `components/ChatInterface.tsx`: Fixed `formatMessageContent` return type to `React.ReactNode[]`
+- `components/DatabaseSettingsModal.tsx`: Fixed `DBMode` type usage in radio inputs
+- `components/DatabaseSettingsModal.tsx`: Changed `e: any` to `e: unknown` in catch blocks
+- `components/StrategyConfig.tsx`: Added proper eslint-disable comments for complex validation logic
+- `components/StrategyConfig.tsx`: Changed error handling to use `unknown` type with type guards
+- `components/VirtualScrollList.tsx`: Fixed translation function type to `Record<string, string | number>`
+- `components/CodeEditor.tsx`: Added proper typing for `window.Prism` global
+- `pages/Dashboard.tsx`: Fixed debounce utility type definition
+- `pages/Dashboard.tsx`: Fixed translation function parameter type
+- `pages/FAQ.tsx`: Added `FAQQuestion` and `FAQCategory` interfaces
+- `pages/FAQ.tsx`: Replaced `any` types in filter logic with proper types
+- `pages/Wiki.tsx`: Added `WikiSection` type import
+- `pages/Wiki.tsx`: Fixed filteredSections type with proper type assertion
 
 ## Build Commands
 
@@ -153,8 +179,64 @@ npm run build:analyze
 ## Common Frontend Bugs
 
 ### Bug: Fast Refresh Breaking
-**Location**: App.tsx
-**Fix**: Move non-component exports to separate utility files
+**Location**: App.tsx, Toast.tsx, FAQ.tsx
+**Issue**: Files export non-component functions (e.g., `getToastAriaLive`, `getToastLabel`)
+**Fix**: Move non-component exports to separate utility files (e.g., `toastUtils.ts`)
+**Files Fixed**:
+- `components/Toast.tsx` - Moved helpers to `components/toastUtils.ts`
+
+### Bug: Type `any` in Components
+**Location**: Multiple frontend files
+**Issue**: Using `any` type bypasses TypeScript type checking
+**Files Fixed**:
+- `components/ChatInterface.tsx` - Strategy type, PerformanceMemory interface
+- `components/CodeEditor.tsx` - window.Prism typing
+- `components/DatabaseSettingsModal.tsx` - DBMode type usage
+- `components/StrategyConfig.tsx` - Validation function types with eslint-disable
+- `components/VirtualScrollList.tsx` - Translation parameter types
+- `pages/Dashboard.tsx` - Debounce utility types
+- `pages/FAQ.tsx` - FAQQuestion and FAQCategory interfaces
+- `pages/Wiki.tsx` - WikiSection type
+
+### Bug: Error Handling with `any` Type
+**Location**: StrategyConfig.tsx, DatabaseSettingsModal.tsx
+**Issue**: Using `e: any` in catch blocks
+**Fix**: Change to `e: unknown` with type guards
+**Example**:
+```typescript
+// ❌ Bad
+catch (e: any) {
+  showToast(`Error: ${e.message}`, 'error');
+}
+
+// ✅ Good
+catch (e: unknown) {
+  const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+  showToast(`Error: ${errorMessage}`, 'error');
+}
+```
+
+### Bug: Browser API Typing
+**Location**: ChatInterface.tsx, CodeEditor.tsx
+**Issue**: Using `(window as any)` or `(performance as any)` for browser-specific APIs
+**Fix**: Define proper interfaces for browser extensions
+**Example**:
+```typescript
+// ✅ Good - Define interface for Chrome's memory API
+interface PerformanceMemory {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
+}
+
+interface PerformanceWithMemory extends Performance {
+  memory?: PerformanceMemory;
+}
+
+// Usage
+const perf = performance as PerformanceWithMemory;
+const memoryUsage = perf.memory;
+```
 
 ### Bug: Unused Catch Variables  
 **Location**: ErrorBoundary.tsx
