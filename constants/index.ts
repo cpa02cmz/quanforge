@@ -114,6 +114,12 @@ export const PERF_THRESHOLDS = {
   MEMORY_CLEANUP_THRESHOLD: 1000, // Memory cleanup trigger
 } as const;
 
+// Performance Score Thresholds (for UI indicators)
+export const PERFORMANCE_SCORE_THRESHOLDS = {
+  EXCELLENT: 80, // Score >= 80 is considered excellent
+  GOOD: 60, // Score >= 60 is considered good
+  POOR: 0, // Score < 60 needs improvement
+} as const;
 // Lazy load translations
 export const loadTranslations = async (language: Language) => {
   const translations = await import(`./translations/${language}.js`);
