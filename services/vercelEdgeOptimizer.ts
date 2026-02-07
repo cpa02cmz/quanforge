@@ -100,11 +100,9 @@ class VercelEdgeOptimizer {
 
   private setupResourcePrefetching(): void {
     // Prefetch critical resources with enhanced strategy
+    // Note: This is a client-side SPA with no REST API endpoints
+    // All data is handled through client-side services
     const criticalResources = [
-      '/api/robots',
-      '/api/strategies',
-      '/api/health',
-      '/api/analytics/performance-score',
       'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700',
     ];
 
@@ -117,26 +115,29 @@ class VercelEdgeOptimizer {
     });
 
     // Prefetch based on user interaction patterns
+    // Note: API endpoints removed - this is a client-side SPA
     this.setupIntelligentPrefetching();
   }
 
   private setupIntelligentPrefetching(): void {
     // Prefetch resources based on user behavior
-    
+    // Note: This is a client-side SPA with no REST API endpoints
+    // Consider prefetching critical JS chunks instead
     
     const prefetchWhenIdle = () => {
       if ('requestIdleCallback' in window) {
         requestIdleCallback(() => {
-          // Prefetch next likely pages/resources
-          const likelyResources = [
-            '/api/edge-optimize',
-            '/api/analytics/summary',
+          // Prefetch next likely page chunks for better UX
+          // This is a client-side SPA - no API endpoints to prefetch
+          const likelyChunks = [
+            '/assets/js/route-dashboard.js',
+            '/assets/js/route-generator.js',
           ];
           
-          likelyResources.forEach(resource => {
+          likelyChunks.forEach(chunk => {
             const link = document.createElement('link');
             link.rel = 'prefetch';
-            link.href = resource;
+            link.href = chunk;
             document.head.appendChild(link);
           });
         });
@@ -163,9 +164,9 @@ class VercelEdgeOptimizer {
 
   private setupResourcePreloading(): void {
     // Preload critical resources
+    // Note: Removed non-existent /api/health endpoint
     const criticalResources = [
       { href: '/fonts/inter-var.woff2', as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' },
-      { href: '/api/health', as: 'fetch' },
     ];
 
     criticalResources.forEach((resource) => {
@@ -373,34 +374,11 @@ const entries = list.getEntries();
   }
 
   private setupAPICaching(): void {
-    // Cache API responses based on endpoint patterns
-    const cacheStrategies: Record<string, { ttl: number; vary: string[] }> = {
-      '/api/robots': { ttl: TIMEOUTS.CACHE_TTL, vary: ['Authorization'] }, // 5 minutes
-      '/api/strategies': { ttl: TIMEOUTS.CACHE_TTL * 2, vary: ['Authorization'] }, // 10 minutes
-      '/api/analytics': { ttl: TIMEOUTS.CACHE_TTL * 0.6, vary: ['Authorization'] }, // 3 minutes
-      '/api/health': { ttl: TIMEOUTS.HEALTH_CHECK, vary: [] }, // 30 seconds
-    };
-
-    // Apply caching headers to fetch requests
-    const originalFetch = window.fetch;
-    window.fetch = async (input, init) => {
-      const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input.url);
-      
-      for (const [pattern, strategy] of Object.entries(cacheStrategies)) {
-        if (url.includes(pattern)) {
-          init = init || {};
-          init.headers = {
-            ...init.headers,
-            'Cache-Control': `max-age=${Math.floor(strategy.ttl / 1000)}`,
-            'Vary': strategy.vary.join(', '),
-            'X-Edge-Cache-Strategy': pattern,
-          };
-          break;
-        }
-      }
-
-      return originalFetch(input, init);
-    };
+    // Note: This is a client-side SPA with no REST API endpoints
+    // All data is handled through client-side services (supabase.ts, etc.)
+    // API caching is not needed - services handle their own caching
+    // This method is kept for compatibility but does nothing
+    console.debug('API caching skipped - client-side SPA with service-layer architecture');
   }
 
   private setupStaticAssetCaching(): void {
@@ -561,8 +539,8 @@ const entries = list.getEntries();
       optimizedQuery += '.limit(100)';
     }
 
-    // Generate cache key
-    const cacheKey = `${table}_${Buffer.from(optimizedQuery).toString('base64')}`;
+    // Generate cache key (using btoa for browser compatibility instead of Buffer)
+    const cacheKey = `${table}_${btoa(encodeURIComponent(optimizedQuery))}`;
     
     // Determine TTL based on table type
     const ttlMap: Record<string, number> = {

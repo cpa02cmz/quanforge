@@ -105,11 +105,11 @@ class EdgeMonitoringService {
   private startHealthChecks(): void {
     if (!this.config.enableHealthChecks) return;
 
+    // Note: This is a client-side SPA with no REST API endpoints
+    // Health checks are performed on static assets instead
     const endpoints = [
-      '/api/health',
-      '/api/robots',
-      '/api/strategies',
-      '/api/analytics/performance-score'
+      '/manifest.json',
+      '/index.html',
     ];
 
     const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'];
@@ -220,8 +220,10 @@ class EdgeMonitoringService {
   }
 
   private collectPerformanceMetrics(): void {
+    // Note: This is a client-side SPA with no REST API endpoints
+    // Metrics are collected from client-side services, not API endpoints
     const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'];
-    const endpoints = ['/api/robots', '/api/strategies', '/api/analytics'];
+    const endpoints = ['/manifest.json', '/index.html'];
 
     regions.forEach(region => {
       endpoints.forEach(endpoint => {
