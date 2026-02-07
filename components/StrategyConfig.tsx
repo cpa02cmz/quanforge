@@ -333,7 +333,9 @@ const sanitizeInput = (input: string): string => {
                   id="config-risk"
                   value={params.riskPercent}
                   onChange={(val) => handleChangeWithValidation('riskPercent', val)}
-                  step="0.1"
+                  step={0.1}
+                  min={0.1}
+                  max={100}
                   className={`w-full bg-dark-surface border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 outline-none transition-colors ${
                     errors.riskPercent ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
                   }`}

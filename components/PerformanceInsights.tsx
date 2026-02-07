@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
 import { performanceMonitor } from '../utils/performance';
+import { UI_TIMING, PERFORMANCE_SCORE_THRESHOLDS } from '../constants';
 
 interface PerformanceInsightsProps {
   showInsights?: boolean;
@@ -18,7 +19,7 @@ const PerformanceInsights: React.FC<PerformanceInsightsProps> = ({ showInsights 
         setMetrics(frontendPerformanceOptimizer.getMetrics());
         setPerfMetrics(performanceMonitor.getWebVitals());
         setOptimizationScore(frontendPerformanceOptimizer.getOptimizationScore());
-      }, 5000); // Update every 5 seconds when visible
+      }, UI_TIMING.PERFORMANCE_INSIGHTS_INTERVAL);
       
       return () => clearInterval(interval);
     }
@@ -31,14 +32,14 @@ const PerformanceInsights: React.FC<PerformanceInsightsProps> = ({ showInsights 
   };
 
   const getScoreColor = (score: number): string => {
-    if (score >= 80) return 'text-green-400';
-    if (score >= 60) return 'text-yellow-400';
+    if (score >= PERFORMANCE_SCORE_THRESHOLDS.EXCELLENT) return 'text-green-400';
+    if (score >= PERFORMANCE_SCORE_THRESHOLDS.GOOD) return 'text-yellow-400';
     return 'text-red-400';
   };
 
   const getScoreLabel = (score: number): string => {
-    if (score >= 80) return 'Excellent';
-    if (score >= 60) return 'Good';
+    if (score >= PERFORMANCE_SCORE_THRESHOLDS.EXCELLENT) return 'Excellent';
+    if (score >= PERFORMANCE_SCORE_THRESHOLDS.GOOD) return 'Good';
     return 'Needs Improvement';
   };
 
@@ -82,8 +83,8 @@ const PerformanceInsights: React.FC<PerformanceInsightsProps> = ({ showInsights 
           <div className="w-full bg-dark-bg rounded-full h-2">
             <div 
               className={`h-2 rounded-full ${
-                optimizationScore >= 80 ? 'bg-green-500' : 
-                optimizationScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                optimizationScore >= PERFORMANCE_SCORE_THRESHOLDS.EXCELLENT ? 'bg-green-500' : 
+                optimizationScore >= PERFORMANCE_SCORE_THRESHOLDS.GOOD ? 'bg-yellow-500' : 'bg-red-500'
               }`} 
               style={{ width: `${Math.min(100, optimizationScore)}%` }}
             ></div>
