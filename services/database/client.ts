@@ -94,7 +94,7 @@ export const getClient = (): SupabaseClient | any => {
 
     const settings = settingsManager.getDBSettings();
     
-    if (settings.mode === 'supabase' && settings.url && settings.anonKey) {
+    if (settings && settings.mode === 'supabase' && settings.url && settings.anonKey) {
         try {
             activeClient = new SupabaseClient(settings.url, settings.anonKey, {
                 auth: {

@@ -84,7 +84,7 @@ class EnhancedRobotsTxtGenerator {
   save(outputPath: string = './public/robots.txt'): void {
     const robotsTxt = this.generate();
     writeFileSync(outputPath, robotsTxt);
-    console.log(`Enhanced robots.txt generated at ${outputPath}`);
+    // Enhanced robots.txt generated
   }
 }
 
