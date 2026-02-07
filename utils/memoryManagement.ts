@@ -45,7 +45,7 @@ export function debounce<T extends (...args: any[]) => any>(
   func: T,
   delay: number
 ): T {
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId: ReturnType<typeof setTimeout>;
   return ((...args: any[]) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => func(...args), delay);
@@ -69,7 +69,7 @@ export function throttle<T extends (...args: any[]) => any>(
 
 // Memory monitoring utility
 export class MemoryMonitor {
-  private interval: NodeJS.Timeout | null = null;
+  private interval: ReturnType<typeof setInterval> | null = null;
   private threshold: number;
   private onThresholdExceeded?: (usage: number) => void;
 

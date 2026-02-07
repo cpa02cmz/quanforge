@@ -125,18 +125,13 @@ class BackendOptimizationManager {
   async getQueryOptimizationRecommendations(client: SupabaseClient): Promise<any> {
     if (!this.config.enableDatabaseOptimization) return { recommendations: [] };
     
-    try {
-      // For now, return basic recommendations
-      return { 
-        recommendations: [
-          'Consider adding indexes for frequently queried columns',
-          'Review slow query logs for optimization opportunities'
-        ] 
-      };
-    } catch (error) {
-      console.error('Error getting query recommendations:', error);
-      return { recommendations: [] };
-    }
+    // For now, return basic recommendations
+    return { 
+      recommendations: [
+        'Consider adding indexes for frequently queried columns',
+        'Review slow query logs for optimization opportunities'
+      ] 
+    };
   }
 
   /**

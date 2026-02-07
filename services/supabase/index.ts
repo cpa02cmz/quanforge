@@ -164,11 +164,6 @@ export const getConnectionState = () => {
     return { connected: false, mode: 'mock', provider: 'localStorage' };
   }
   
-  try {
-    // TODO: Implement real connection management
-    return { connected: false, mode: 'real', provider: 'supabase' };
-  } catch (error) {
-    handleError(error as Error, 'supabase.get_connection_state');
-    return { connected: false, mode: 'error', error: 'Failed to get connection state' };
-  }
+  // TODO: Implement real connection management
+  return { connected: false, mode: 'real', provider: 'supabase' };
 };

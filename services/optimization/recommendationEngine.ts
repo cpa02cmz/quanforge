@@ -76,22 +76,13 @@ export class RecommendationEngine {
    * Analyze query patterns
    */
   private async analyzeQueries(): Promise<QueryAnalysis> {
-    try {
-      // For now, return basic query analysis
-      // TODO: Implement actual query pattern analysis when available
-      return {
-        slowQueries: [],
-        cacheHitRate: 75, // Default assumed cache hit rate
-        recommendations: ['Consider monitoring slow queries for optimization opportunities']
-      };
-    } catch (error) {
-      console.error('Error analyzing queries:', error);
-      return {
-        slowQueries: [],
-        cacheHitRate: 0,
-        recommendations: []
-      };
-    }
+    // For now, return basic query analysis
+    // TODO: Implement actual query pattern analysis when available
+    return {
+      slowQueries: [],
+      cacheHitRate: 75, // Default assumed cache hit rate
+      recommendations: ['Consider monitoring slow queries for optimization opportunities']
+    };
   }
 
   /**

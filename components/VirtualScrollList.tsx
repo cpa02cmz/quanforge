@@ -140,7 +140,7 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
            
            return (
              <div
-               key={`${robot.id}-${actualIndex}`} // Include index to ensure uniqueness
+                key={robot.id} // Use stable robot ID for React reconciliation
                style={{
                  position: 'absolute',
                  top: `${top - (visibleRange.startIndex * itemHeight)}px`, // Relative to container
@@ -199,8 +199,8 @@ const RobotCard: React.FC<RobotCardProps> = React.memo(({
       )}
       
       <div className="flex justify-between items-start mb-4">
-        <div className="p-2 bg-brand-500/10 rounded-lg text-brand-400 group-hover:bg-brand-500 group-hover:text-white transition-colors">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="p-2 bg-brand-500/10 rounded-lg text-brand-400 group-hover:bg-brand-500 group-hover:text-white transition-colors" aria-hidden="true">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
           </svg>
         </div>
@@ -226,22 +226,24 @@ const RobotCard: React.FC<RobotCardProps> = React.memo(({
         </span>
         
         <div className="flex items-center space-x-1">
-          <button 
+          <button
             onClick={handleDuplicate}
             className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-colors"
+            aria-label={`Duplicate ${robot.name}`}
             title="Duplicate Robot"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 01-2-2V4" />
             </svg>
           </button>
-          
-          <button 
+
+          <button
             onClick={handleDelete}
             className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
+            aria-label={`Delete ${robot.name}`}
             title="Delete Robot"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
           </button>

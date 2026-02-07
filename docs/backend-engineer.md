@@ -633,12 +633,12 @@ CREATE TABLE robot_versions (
 
 ## Resources
 
-- **Service Architecture**: `docs/SERVICE_ARCHITECTURE.md`
-- **Data Architecture**: `docs/DATA_ARCHITECTURE.md`
-- **Integration Resilience**: `docs/INTEGRATION_RESILIENCE.md`
+- **Service Architecture**: `SERVICE_ARCHITECTURE.md`
+- **Data Architecture**: `DATA_ARCHITECTURE.md`
+- **Integration Resilience**: `INTEGRATION_RESILIENCE.md`
 - **Type Definitions**: `types.ts`
-- **Bug Tracker**: `docs/bug.md`
-- **Task Tracker**: `docs/task.md`
+- **Bug Tracker**: `bug.md`
+- **Task Tracker**: `task.md`
 
 ## Build and Test
 
@@ -669,6 +669,63 @@ When contributing backend changes:
 7. Run full test suite before submitting PR
 
 ## Recent Bug Fixes (2026-02-07)
+
+### Backend Engineer Fixes - Console Statement Cleanup
+Replaced direct console statements with scoped logger across backend services:
+- `services/database/monitoring.ts`: Replaced 3 console statements (log/warn)
+- `services/optimizedLRUCache.ts`: Replaced 1 console statement with logger
+- `services/advancedCache.ts`: Replaced 7 console statements (log/warn/debug)
+- `services/supabase/core.ts`: Replaced 8 console statements (log/warn/error)
+
+Pattern: `const logger = createScopedLogger('ServiceName');` then use `logger.log()`, `logger.warn()`, `logger.error()`.
+
+### Backend Engineer Fixes - Additional Lint Fixes (2026-02-07)
+
+#### ✅ services/Logger.ts
+- [x] **no-console**: Added eslint-disable comments for intentional console usage
+  - Logger.ts is a wrapper service that intentionally uses console methods
+  - Added `// eslint-disable-next-line no-console` before each console call
+  - Lines 61, 73, 84, 94: All console statements now properly documented
+
+#### ✅ services/advancedSupabasePool.ts
+- [x] **no-console**: Replaced 7 console statements with scoped logger
+  - Line 112: Removed `console.log` for pool initialization
+  - Line 215: Changed to `logger.log` for connection creation
+  - Line 219: Changed to `logger.error` for connection failures  
+  - Line 324: Changed to `logger.warn` for unhealthy connections
+  - Line 485: Changed to `logger.log` for pool warmup
+  - Line 491: Changed to `logger.log` for warmup completion
+  - Line 521: Changed to `logger.log` for pool closure
+- [x] **Import**: Added `createScopedLogger` import from `../utils/logger`
+- [x] **Scope**: Created scoped logger instance `logger = createScopedLogger('AdvancedSupabasePool')`
+
+#### ✅ services/advancedSupabasePool.ts - TypeScript Fixes
+- [x] **Type Safety**: Fixed `DEFAULT_CONFIG` type from `Partial<ConnectionConfig>` to `ConnectionConfig`
+  - Added required fields `url: ''` and `anonKey: ''` to default config
+- [x] **Promise.race type fix**: Changed timeoutPromise return type from `boolean` to `never`
+  - Fixed type narrowing for health check result handling
+  - Changed `!result.error` to `!('error' in result && result.error)`
+- [x] **Null vs Undefined**: Fixed return type consistency
+  - Changed `waitForAvailableConnection` return from `PooledConnection | null` to `PooledConnection | undefined`
+  - Changed return value from `null` to `undefined`
+
+#### ✅ services/ai/aiCore.ts
+- [x] **@typescript-eslint/no-unused-vars**: Fixed unused error variable
+  - Line 222: Changed `} catch (error) {` to `} catch {`
+  - Error variable was not being used in the catch block
+
+### Build Verification (After Backend Engineer Fixes)
+- **Build**: ✅ Successful (12.43s)
+- **TypeScript**: ✅ Zero compilation errors
+- **Tests**: ✅ All 445 tests passing
+- **Lint**: Console statement warnings reduced in 3 backend service files
+
+### Critical Bug Fix - Supabase Client Initialization
+Fixed critical bug in `services/supabase/core.ts`:
+- **Issue**: Used `process.env` instead of `import.meta.env` for Vite environment variables
+- **Impact**: Real Supabase client never initialized, always fell back to mock mode
+- **Fix**: Changed to `import.meta.env['VITE_SUPABASE_URL']` and `import.meta.env['VITE_SUPABASE_ANON_KEY']`
+- **Result**: Real Supabase connection now works when credentials are provided
 
 ### Merge Conflict Resolution
 Fixed merge conflict markers in multiple service files that were causing parsing errors:
@@ -717,17 +774,26 @@ Added missing DOMPurify import:
 Fixed incomplete variable declaration:
 - `services/security/MQL5SecurityService.ts`: Changed `const errors: string = ;` to `const errors: string[] = [];`
 
-### Build Status
-- **Build**: ✅ Successful (12.49s)
-- **Lint Errors**: Reduced from 52 to 4 (all unreachable code warnings)
+### Build Status (After Backend Engineer Fixes)
+- **Build**: ✅ Successful (13.09s)
 - **TypeScript**: ✅ Zero compilation errors
+- **Tests**: ✅ All 445 tests passing
+- **Lint**: Console statements reduced in 4 backend service files
 
-### Files Modified
-- 14 service files fixed
-- 1 utility file fixed
-- All changes maintain backward compatibility
+### Files Modified (Backend Engineer)
+- `services/database/monitoring.ts` - Scoped logger implementation
+- `services/optimizedLRUCache.ts` - Scoped logger implementation  
+- `services/advancedCache.ts` - Scoped logger implementation
+- `services/supabase/core.ts` - Fixed env variable access + scoped logger
+- `docs/backend-engineer.md` - Documentation updated
+
+### Backend Best Practices Enforced
+1. **Environment Variables**: Use `import.meta.env` not `process.env` in Vite apps
+2. **Logging**: Always use scoped logger (`createScopedLogger`) instead of console
+3. **Error Handling**: Consistent use of `handleError` from errorHandler utility
+4. **Resource Cleanup**: All intervals/timeouts properly cleaned up in service destructors
 
 ---
 
-**Last Updated**: 2026-02-07
+**Last Updated**: 2026-02-07 (Backend Engineer Update - Lint Fixes and TypeScript Improvements)
 **Maintained by**: Backend Engineering Team

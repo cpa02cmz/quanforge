@@ -168,7 +168,7 @@ export const generateMQL5Code = async (
         const requestKey = createHash(`${prompt}-${currentCode?.substring(0, 200)}-${JSON.stringify(strategyParams)}-${history.length}`);
         
         // Use request deduplication to prevent duplicate API calls
-        let rawResponse = await apiDeduplicator.deduplicate(requestKey, async () => {
+        const rawResponse = await apiDeduplicator.deduplicate(requestKey, async () => {
             // Build context prompt using AI core
             const fullPrompt = await ai.generateContent(sanitizedPrompt);
             return fullPrompt;
@@ -242,7 +242,7 @@ ${currentCode}
 
 Provide the improved code only, no explanation needed.`;
 
-        let rawResponse = await ai.generateContent(prompt);
+        const rawResponse = await ai.generateContent(prompt);
         
         // Use worker if available for processing
         let response: string;
@@ -400,7 +400,7 @@ Focus on:
 
 Provide only valid JSON format.`;
 
-        let rawAnalysis = await ai.generateContent(prompt);
+        const rawAnalysis = await ai.generateContent(prompt);
         
         // Try to parse JSON response, handle potential markdown wrapping
         let analysis: StrategyAnalysis;

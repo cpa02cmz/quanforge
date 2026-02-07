@@ -316,20 +316,27 @@ export function wrapWithTimeout<T>(
   timeoutMs: number,
   operationName: string
 ): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      const error = createStandardizedError(
+        'TIMEOUT',
+        ErrorCategory.TIMEOUT,
+        `Operation ${operationName} timed out after ${timeoutMs}ms`,
+        undefined,
+        { timeoutMs, operationName }
+      );
+      reject(error);
+    }, timeoutMs);
+  });
+
   return Promise.race([
-    promise,
-    new Promise<T>((_, reject) => {
-      setTimeout(() => {
-        const error = createStandardizedError(
-          'TIMEOUT',
-          ErrorCategory.TIMEOUT,
-          `Operation ${operationName} timed out after ${timeoutMs}ms`,
-          undefined,
-          { timeoutMs, operationName }
-        );
-        reject(error);
-      }, timeoutMs);
-    })
+    promise.then(value => {
+      clearTimeout(timeoutId);
+      return value;
+    }),
+    timeoutPromise
   ]);
 }
 

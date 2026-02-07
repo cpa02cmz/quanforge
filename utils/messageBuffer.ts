@@ -119,7 +119,7 @@ export class MessageBuffer {
 export class MessageMemoryMonitor {
     private static readonly WARNING_THRESHOLD_MB = 5; // Reduced to 5MB for better memory management
     private static readonly CRITICAL_THRESHOLD_MB = 10; // Reduced to 10MB for better memory management
-    private static checkInterval: NodeJS.Timeout | null = null;
+    private static checkInterval: ReturnType<typeof setInterval> | null = null;
 
     static startMonitoring(buffer: MessageBuffer, intervalMs: number = 15000): void { // Check more frequently
         this.checkInterval = setInterval(() => {

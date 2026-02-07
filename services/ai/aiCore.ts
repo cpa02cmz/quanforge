@@ -219,7 +219,7 @@ export class AICore {
       
       // Fallback: try to parse entire text as JSON
       return JSON.parse(text);
-    } catch (error) {
+    } catch {
       logger.warn('Failed to extract JSON from response:', text.substring(0, 200));
       return null;
     }

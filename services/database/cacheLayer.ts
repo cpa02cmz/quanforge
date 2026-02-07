@@ -88,22 +88,13 @@ export class CacheLayer implements CacheLayerInterface {
   }
 
   async getCacheStats(): Promise<any> {
-    try {
-      // Since getStats is not available, return basic metrics
-      // In a real implementation, we would track metrics internally
-      return {
-        size: 0, // Would be tracked internally
-        hitRate: 0, // Would be calculated from hits/misses
-        error: 'Basic stats - detailed stats not available'
-      };
-    } catch (error) {
-      handleError(error as Error, 'cache.getCacheStats', 'cacheLayer');
-      return {
-        size: 0,
-        hitRate: 0,
-        error: 'Failed to get cache stats'
-      };
-    }
+    // Since getStats is not available, return basic metrics
+    // In a real implementation, we would track metrics internally
+    return {
+      size: 0, // Would be tracked internally
+      hitRate: 0, // Would be calculated from hits/misses
+      error: 'Basic stats - detailed stats not available'
+    };
   }
 
   async preloadCommonData(): Promise<void> {
