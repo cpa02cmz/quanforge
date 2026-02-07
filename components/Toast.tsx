@@ -1,47 +1,11 @@
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { UI_TIMING } from '../constants';
-
-export type ToastType = 'success' | 'error' | 'info';
-
-interface Toast {
-  id: string;
-  message: string;
-  type: ToastType;
-}
-
-interface ToastContextType {
-  showToast: (message: string, type?: ToastType) => void;
-}
-
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
-
-export const useToast = () => {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToast must be used within a ToastProvider');
-  }
-  return context;
-};
-
-const getToastAriaLive = (type: ToastType): 'assertive' | 'polite' => {
-  return type === 'error' ? 'assertive' : 'polite';
-};
-
-const getToastLabel = (type: ToastType): string => {
-  switch (type) {
-    case 'success':
-      return 'Success notification';
-    case 'error':
-      return 'Error notification';
-    case 'info':
-      return 'Information notification';
-    default:
-      return 'Notification';
-  }
-};
+import { ToastContext, ToastType } from './ToastContext';
+import { getToastAriaLive, getToastLabel } from './toastUtils';
+export type { ToastType } from './ToastContext';
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toasts, setToasts] = useState<{ id: string; message: string; type: ToastType }[]>([]);
   const toastRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const setToastRef = useCallback((id: string) => (el: HTMLDivElement | null) => {

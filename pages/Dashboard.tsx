@@ -4,15 +4,17 @@ import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOpt
 import { Link } from 'react-router-dom';
 import { db } from '../services';
 import { Robot, UserSession } from '../types';
-import { useToast } from '../components/Toast';
+import { useToast } from '../components/useToast';
 import { useTranslation } from '../services/i18n';
 import { AdvancedSEO } from '../utils/advancedSEO';
 import { createScopedLogger } from '../utils/logger';
 import { VirtualScrollList } from '../components/VirtualScrollList';
 
 // Debounce utility for search optimization
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const debounce = <T extends (...args: any[]) => any>(func: T, delay: number): T => {
   let timeoutId: NodeJS.Timeout;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return ((...args: any[]) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => func(...args), delay);
@@ -77,7 +79,7 @@ interface RobotCardProps {
   processingId: string | null;
   onDuplicate: (id: string) => void;
   onDelete: (id: string, name: string) => void;
-  t: (key: string, params?: Record<string, any>) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 const RobotCard: React.FC<RobotCardProps> = memo(({
