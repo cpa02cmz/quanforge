@@ -1,0 +1,150 @@
+{
+  "$schema": "https://opencode.ai/schemas/opencode.json",
+  "version": "1.0.0",
+  "project": {
+    "name": "QuanForge",
+    "type": "web-application",
+    "framework": "vite-react-typescript",
+    "repository": "quanforge"
+  },
+  "models": {
+    "default": "opencode/kimi-k2.5-free",
+    "alternatives": [
+      "opencode/glm-4.7-free",
+      "opencode/minimax-m2.1-free"
+    ]
+  },
+  "plugin": [
+    "oh-my-opencode"
+  ],
+  "agents": {
+    "sisyphus": {
+      "enabled": true,
+      "model": "opencode/kimi-k2.5-free",
+      "temperature": 0.7,
+      "description": "Main orchestrator agent - Sisyphus the relentless boulder roller"
+    },
+    "hephaestus": {
+      "enabled": true,
+      "model": "opencode/glm-4.7-free",
+      "temperature": 0.5,
+      "description": "Autonomous deep worker - The Legitimate Craftsman"
+    },
+    "oracle": {
+      "enabled": true,
+      "model": "opencode/glm-4.7-free",
+      "temperature": 0.3,
+      "description": "Design and debugging specialist"
+    },
+    "librarian": {
+      "enabled": true,
+      "model": "opencode/kimi-k2.5-free",
+      "temperature": 0.4,
+      "description": "Documentation and codebase exploration"
+    },
+    "explore": {
+      "enabled": true,
+      "model": "opencode/minimax-m2.1-free",
+      "temperature": 0.6,
+      "description": "Fast codebase grep and exploration"
+    }
+  },
+  "skills": [
+    ".opencode/skills"
+  ],
+  "mcp": {
+    "enabled": ["websearch", "context7", "github_search"]
+  },
+  "hooks": {
+    "user_prompt_submit": [
+      "inject-context",
+      "check-ultrawork"
+    ],
+    "pre_tool_use": [
+      "validate-action"
+    ],
+    "post_tool_use": [
+      "log-usage"
+    ]
+  },
+  "context": {
+    "injection": {
+      "enabled": true,
+      "files": [
+        "AGENTS.md",
+        "README.md",
+        "ROADMAP.md",
+        "REPOSITORY_EFFICIENCY.md"
+      ],
+      "conditional": {
+        "security": {
+          "patterns": ["security", "vulnerability", "secret", "auth", "encrypt"],
+          "files": ["SECURITY.md"]
+        },
+        "performance": {
+          "patterns": ["performance", "optimize", "bundle", "cache", "memory"],
+          "files": ["BUNDLE_ANALYSIS_REPORT.md"]
+        },
+        "database": {
+          "patterns": ["database", "sql", "supabase", "query", "migration"],
+          "files": ["DATABASE_OPTIMIZER_TYPE_SAFETY_SUMMARY.md"]
+        }
+      }
+    }
+  },
+  "integrations": {
+    "oh-my-opencode": {
+      "enabled": true,
+      "config": ".opencode/oh-my-opencode.json"
+    },
+    "superpowers": {
+      "enabled": true,
+      "skills": [
+        "brainstorming",
+        "writing-plans",
+        "test-driven-development",
+        "systematic-debugging",
+        "github-workflow-automation"
+      ]
+    },
+    "agent-skill": {
+      "enabled": true,
+      "skills": [
+        "planning",
+        "skill-creator"
+      ]
+    }
+  },
+  "features": {
+    "ultrawork": {
+      "enabled": true,
+      "keyword": "ultrawork",
+      "shortcut": "ulw"
+    },
+    "todo_continuation": {
+      "enabled": true,
+      "force_completion": true
+    },
+    "comment_checker": {
+      "enabled": true,
+      "prevent_excessive_comments": true
+    },
+    "background_agents": {
+      "enabled": true,
+      "max_concurrent": 3
+    },
+    "lsp_ast_tools": {
+      "enabled": true,
+      "auto_activate": true
+    },
+    "session_tools": {
+      "enabled": true
+    }
+  },
+  "references": {
+    "system_prompts": {
+      "path": ".opencode/references/system_prompts_leaks",
+      "description": "Reference collection of system prompts from popular chatbots"
+    }
+  }
+}
