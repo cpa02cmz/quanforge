@@ -227,6 +227,7 @@ await dbUtils.importDatabase(jsonString, true);
 | Operation | Function | Description |
 |-----------|----------|-------------|
 | Read All | `db.getRobots()` | Get all robots for current user |
+| Read By ID | `db.getRobot(id)` | Get single robot by ID |
 | Read Paginated | `db.getRobotsPaginated(userId, page, limit)` | Get paginated results |
 | Read By IDs | `db.getRobotsByIds(ids)` | Get multiple robots by ID |
 | Create | `db.saveRobot(robot)` | Save new robot |
@@ -423,7 +424,53 @@ const { error } = await client
 **Verification:**
 - ✅ TypeScript compilation: No errors
 - ✅ Production build: Successful (13.03s)
-- ✅ Test suite: All tests passing
+- ✅ Test suite: 423 tests passing
+- ✅ Soft Delete Consistency: All services now use uniform soft delete pattern
+
+---
+
+### Issue 6: Missing `getRobot` Operation in Resilient Database Service
+
+**Problem:** The `getRobot(id)` function existed in `services/database/operations.ts` but was not exposed through the `resilientDb` service in `services/resilientDbService.ts`. This caused errors for consumers attempting to use `db.getRobot(id)` to fetch individual robots.
+
+**Impact:**
+- Code attempting to fetch a single robot by ID using the resilient database service would fail
+- Inconsistent API surface between database operations and the resilient service wrapper
+- Missing resilience patterns (circuit breaker, retry, fallback) for single-robot retrieval
+
+**Fix Applied:**
+
+Added the missing `getRobot` operation to `services/resilientDbService.ts`:
+
+```typescript
+// Get a single robot by ID
+async getRobot(id: string): Promise<Robot | null> {
+  const result = await withIntegrationResilience(
+    IntegrationType.DATABASE,
+    'database',
+    async () => await dbOperations.getRobot(id),
+    {
+      operationName: 'get_robot',
+      fallbacks: [
+        databaseFallbacks.mockData(null)
+      ]
+    }
+  );
+
+  return result.data || null;
+}
+```
+
+**Files Modified:**
+- ✅ `services/resilientDbService.ts` - Added `getRobot()` operation with full resilience patterns
+
+**Status:** Fixed (2026-02-07)
+
+**Verification:**
+- ✅ TypeScript compilation: No errors
+- ✅ Production build: Successful (12.44s)
+- ✅ Resilience patterns applied: Circuit breaker, retry logic, fallback support
+- ✅ API consistency: All database operations now available through resilient service
 
 ---
 
@@ -705,13 +752,18 @@ WHERE deleted_at IS NULL;
    - `services/database/RobotDatabaseService.ts` - Added soft delete filtering to all query methods, converted `deleteRobot()` from hard delete to soft delete
    - `services/database/coreOperations.ts` - Added soft delete filtering to `getRobots()` and `getRobotById()`, converted `deleteRobot()` to soft delete
    - All fallback storage operations now filter by `!r.deleted_at`
+4. ✅ **Added missing `getRobot()` operation to `services/resilientDbService.ts`**:
+   - Single robot retrieval by ID now available through resilient service
+   - Full resilience patterns applied (circuit breaker, retry, fallback)
+   - API consistency restored across all database operations
 
 ### Build Status
 
 - ✅ TypeScript Compilation: No errors
-- ✅ Production Build: Successful (13.03s)
+- ✅ Production Build: Successful (12.44s)
 - ✅ Test Suite: 423 tests passing
 - ✅ Soft Delete Consistency: All services now use uniform soft delete pattern
+- ✅ API Completeness: All database operations exposed through resilient service
 
 ### Architecture Health
 
