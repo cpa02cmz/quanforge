@@ -313,6 +313,15 @@ class PerformanceMonitor {
     
     return Math.max(0, Math.round(score));
   }
+
+  /**
+   * Cleanup method to clear metrics and memory snapshots
+   * Called when the app unmounts to prevent memory leaks
+   */
+  cleanup(): void {
+    this.metrics = [];
+    this.memorySnapshots = [];
+  }
 }
 
 // Global performance monitor instance

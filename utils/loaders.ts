@@ -7,7 +7,7 @@ import { logger } from './logger';
 
 export const loadGeminiService = () => import('../services/gemini');
 
-export const loadSEOUtils = () => import('./seoEnhanced');
+export const loadSEOUtils = () => import('./seoUnified');
 
 export const loadChartComponents = () => import('../components/ChartComponents');
 
