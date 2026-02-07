@@ -39,3 +39,6 @@ build_output.txt
 *.tmp
 *.temp
 .cache
+
+# Archive - old/deprecated files (not tracked)
+/archive/

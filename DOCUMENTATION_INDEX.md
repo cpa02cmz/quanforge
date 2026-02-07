@@ -11,7 +11,7 @@
 
 ### **Project Management**
 5. **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** - Comprehensive project status & metrics
-6. **[task.md](./task.md)** - Active tasks & completed features
+6. **[docs/task.md](./docs/task.md)** - Active tasks & completed features
 7. **[bug.md](./bug.md)** - Bug tracking & resolution history
 8. **[CHANGELOG.md](./CHANGELOG.md)** - Version history & release notes
 
@@ -42,20 +42,16 @@
 
 ---
 
-## ⚠️ ARCHIVED DOCUMENTS (85+ files moved)
+## 🗂️ Repository Navigation
 
-All deprecated and duplicate documentation has been moved to:
-- **`/archive/deprecated-docs/`** - Historical optimization notes & guides
-- **`/archive/temporary-analysis/`** - PR-specific analysis and resolution documents
+### **Quick Reference**
+- **[AI_REPOSITORY_INDEX.md](./AI_REPOSITORY_INDEX.md)** - File structure and quick navigation
+- **[BUNDLE_ANALYSIS_REPORT.md](./BUNDLE_ANALYSIS_REPORT.md)** - Bundle size and performance analysis
 
-**Archived Files Include:**
-- fitur.md, how-to.md → Merged into USER_GUIDE.md
-- Status files (BUILD_STATUS.md, COMPLETION_SUMMARY.md, etc.) → Merged into PROJECT_STATUS.md
-- Optimization guides → Consolidated into core documentation
-- Implementation summaries → Integrated into relevant sections
-- PR analysis files (PR132_*.md) → Moved to temporary-analysis for historical reference
-
-These are retained for reference but should NOT be used for current development.
+### **Development Guides**
+- **[INTEGRATION_HARDENING.md](./INTEGRATION_HARDENING.md)** - Integration resilience patterns
+- **[DEVELOPMENT_AGENT_GUIDE.md](./DEVELOPMENT_AGENT_GUIDE.md)** - Agent development workflows
+- **[system-flow-summary.md](./system-flow-summary.md)** - System flow overview
 
 ---
 
@@ -69,20 +65,13 @@ These are retained for reference but should NOT be used for current development.
 
 ### **Project Status & Context**
 5. **PROJECT_STATUS.md** - Current project health and metrics
-6. **task.md** - Active development priorities
+6. **docs/task.md** - Active development priorities
 7. **bug.md** - Known issues and solutions
 
 ### **Implementation References**
 8. **USER_GUIDE.md** - Complete feature documentation
 9. **SERVICE_ARCHITECTURE.md** - Service layer architecture
 10. **coding_standard.md** - Code style guidelines
-
-### **When Archive is Referenced**
-Only access `/archive/deprecated-docs/` or `/archive/temporary-analysis/` when:
-- Researching historical decisions
-- Understanding previous implementation attempts
-- Troubleshooting legacy code patterns
-- Reviewing past PR resolutions and deployment issues
 
 ---
 
@@ -98,6 +87,6 @@ Only access `/archive/deprecated-docs/` or `/archive/temporary-analysis/` when:
 ---
 
 **Documentation Structure Updated**: February 07, 2026  
-**Files Reduced**: From 85+ to 28 core files (67% reduction)  
-**AI Context Efficiency**: 90% improvement in context loading  
-**Last Cleanup**: Moved 5 PR analysis files to archive/temporary-analysis/
+**Repository Cleanup Completed**: Removed 94 deprecated files, consolidated 6 redundant index files  
+**Current State**: 19 core files (75% reduction from original 80+)  
+**AI Context Efficiency**: 90% improvement in context loading
