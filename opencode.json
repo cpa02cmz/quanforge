@@ -1,0 +1,145 @@
+{
+  "$schema": "https://opencode.ai/schemas/opencode.json",
+  "version": "3.2.4",
+  "project": {
+    "name": "QuanForge",
+    "type": "web-application",
+    "framework": "vite-react-typescript",
+    "description": "AI-Powered Trading Strategy Generator with MQL5 code generation"
+  },
+  "agents": {
+    "primary": {
+      "default": {
+        "model": "opencode/kimi-k2.5-free",
+        "temperature": 0.7,
+        "max_tokens": 8192
+      },
+      "security": {
+        "model": "opencode/glm-4.7-free",
+        "temperature": 0.3,
+        "max_tokens": 4096
+      },
+      "performance": {
+        "model": "opencode/minimax-m2.1-free",
+        "temperature": 0.4,
+        "max_tokens": 4096
+      },
+      "refactoring": {
+        "model": "opencode/glm-4.7-free",
+        "temperature": 0.3,
+        "max_tokens": 8192
+      },
+      "documentation": {
+        "model": "opencode/kimi-k2.5-free",
+        "temperature": 0.5,
+        "max_tokens": 4096
+      }
+    },
+    "subagents": {
+      "general": {
+        "model": "opencode/glm-4.7-free",
+        "temperature": 0.5,
+        "max_tokens": 4096
+      },
+      "explore": {
+        "model": "opencode/minimax-m2.1-free",
+        "temperature": 0.3,
+        "max_tokens": 2048
+      }
+    }
+  },
+  "integrations": {
+    "oh-my-opencode": {
+      "enabled": true,
+      "repository": "https://github.com/code-yeongyu/oh-my-opencode.git",
+      "config_path": ".opencode/oh-my-opencode.json"
+    },
+    "superpowers": {
+      "enabled": true,
+      "repository": "https://github.com/obra/superpowers.git",
+      "skills": ["brainstorming", "writing-plans", "test-driven-development", "systematic-debugging"]
+    },
+    "agent-skill": {
+      "enabled": true,
+      "repository": "https://github.com/sulhi-sabil/agent-skill",
+      "skills": ["planning", "skill-creator", "github-workflow-automation"]
+    },
+    "system_prompts_leaks": {
+      "enabled": true,
+      "repository": "https://github.com/asgeirtj/system_prompts_leaks.git",
+      "reference_path": ".opencode/references/system_prompts_leaks",
+      "description": "Reference collection for prompt engineering"
+    }
+  },
+  "skills": {
+    "path": ".opencode/skills",
+    "enabled": [
+      "brainstorming",
+      "test-driven-development",
+      "systematic-debugging",
+      "writing-plans",
+      "github-workflow-automation",
+      "planning",
+      "skill-creator"
+    ]
+  },
+  "mcp": {
+    "enabled": ["websearch", "context7", "github_search"],
+    "websearch": {
+      "provider": "exa",
+      "enabled": true
+    },
+    "context7": {
+      "enabled": true
+    },
+    "github_search": {
+      "provider": "grep_app",
+      "enabled": true
+    }
+  },
+  "features": {
+    "todo_continuation_enforcer": {
+      "enabled": true,
+      "force_completion": true
+    },
+    "comment_checker": {
+      "enabled": true,
+      "prevent_excessive_comments": true
+    },
+    "background_agents": {
+      "enabled": true,
+      "max_concurrent": 3,
+      "providers": {
+        "opencode": {
+          "models": ["opencode/minimax-m2.1-free"],
+          "concurrency": 2
+        }
+      }
+    },
+    "lsp_ast_tools": {
+      "enabled": true,
+      "auto_activate": true
+    },
+    "context_injection": {
+      "enabled": true,
+      "files": ["AGENTS.md", "README.md", "ROADMAP.md"],
+      "conditional": {
+        "security": {
+          "patterns": ["security", "vulnerability", "secret", "auth"],
+          "files": ["SECURITY.md"]
+        },
+        "performance": {
+          "patterns": ["performance", "optimize", "bundle", "cache"],
+          "files": ["BUNDLE_ANALYSIS_REPORT.md"]
+        }
+      }
+    }
+  },
+  "customization": {
+    "ultrawork_keyword": "ultrawork",
+    "ultrawork_shortcut": "ulw",
+    "claude_code_compatibility": true,
+    "session_tools": true,
+    "interactive_terminal": false
+  }
+}
