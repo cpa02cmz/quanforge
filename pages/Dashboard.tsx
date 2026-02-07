@@ -13,7 +13,7 @@ import { VirtualScrollList } from '../components/VirtualScrollList';
 // Debounce utility for search optimization
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const debounce = <T extends (...args: any[]) => any>(func: T, delay: number): T => {
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId: ReturnType<typeof setTimeout>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return ((...args: any[]) => {
     clearTimeout(timeoutId);

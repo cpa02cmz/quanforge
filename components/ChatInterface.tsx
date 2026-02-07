@@ -83,8 +83,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const memoryMonitorRef = useRef<NodeJS.Timeout | null>(null);
-  const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const memoryMonitorRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cleanupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
 
   // Enhanced memory management with proper cleanup and memory leak prevention
