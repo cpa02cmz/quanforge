@@ -108,6 +108,23 @@ export const resilientDb = {
     return result.data;
   },
 
+  // Get a single robot by ID
+  async getRobot(id: string): Promise<Robot | null> {
+    const result = await withIntegrationResilience(
+      IntegrationType.DATABASE,
+      'database',
+      async () => await dbOperations.getRobot(id),
+      {
+        operationName: 'get_robot',
+        fallbacks: [
+          databaseFallbacks.mockData(null)
+        ]
+      }
+    );
+
+    return result.data || null;
+  },
+
   // Additional operations from database/operations.ts with resilience
   async getRobotsPaginated(
     userId: string,
