@@ -157,8 +157,11 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
   async getStats(): Promise<{ count: number; storageType: string }> {
     try {
       const client = await this.getClient();
-      const { count } = await client.from('robots').select('*', { count: 'exact', head: true });
-      
+      const { count } = await client
+        .from('robots')
+        .select('*', { count: 'exact', head: true })
+        .is('deleted_at', null);  // Filter out soft-deleted records
+
       return {
         count: count || 0,
         storageType: this.getConfig().mode === 'mock' ? 'Browser Local Storage' : 'Supabase Cloud DB'

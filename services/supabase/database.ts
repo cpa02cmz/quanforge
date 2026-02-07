@@ -23,7 +23,9 @@ export const DB_CONFIG = {
 
 // Storage operations
 const getStoredRobots = (): Robot[] => {
-  return safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
+  const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
+  // Filter out soft-deleted records by default
+  return robots.filter((r: Robot) => !r.deleted_at);
 };
 
 const saveStoredRobots = (robots: Robot[]) => {
@@ -127,15 +129,20 @@ export const mockDB = {
 
         delete: async () => {
           try {
-            const robots = getStoredRobots();
-            const filtered = robots.filter(robot => robot[column as keyof Robot] !== value);
+            // Use soft delete instead of hard delete for data integrity
+            const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
+            const updatedRobots = robots.map((robot: Robot) => 
+              robot[column as keyof Robot] === value 
+                ? { ...robot, deleted_at: new Date().toISOString() }
+                : robot
+            );
             
-            saveStoredRobots(filtered);
+            saveStoredRobots(updatedRobots);
             return { data: null, error: null };
-} catch (error) {
-          handleError(error instanceof Error ? error : String(error), 'database.operation');
-          return { data: null, error };
-        }
+          } catch (error) {
+            handleError(error instanceof Error ? error : String(error), 'database.operation');
+            return { data: null, error };
+          }
         }
       }),
 
@@ -317,7 +324,21 @@ export const updateRobot = async (id: string, updates: Partial<Robot>) => {
 };
 
 export const deleteRobot = async (id: string) => {
-  return mockDB.from('robots').eq('id', id).delete();
+  // Use soft delete for data integrity
+  const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
+  const updatedRobots = robots.map((robot: Robot) => 
+    robot.id === id 
+      ? { ...robot, deleted_at: new Date().toISOString() }
+      : robot
+  );
+  
+  try {
+    saveStoredRobots(updatedRobots);
+    return { data: null, error: null };
+  } catch (error) {
+    handleError(error instanceof Error ? error : String(error), 'database.delete');
+    return { data: null, error };
+  }
 };
 
 export const duplicateRobot = async (id: string) => {
