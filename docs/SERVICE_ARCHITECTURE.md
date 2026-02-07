@@ -408,8 +408,8 @@ If migrating from previous architecture with REST API endpoints:
 
 ## References
 
-- **Architecture**: `docs/blueprint.md`
+- **Architecture**: `blueprint.md`
 - **Type Definitions**: `types.ts`
-- **Coding Standards**: `coding_standard.md`
-- **Task Tracker**: `docs/task.md`
+- **Coding Standards**: `../coding_standard.md`
+- **Task Tracker**: `task.md`
 - **Build Configuration**: `vite.config.ts`

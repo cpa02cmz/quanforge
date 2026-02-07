@@ -679,9 +679,9 @@ When integration issues occur:
 - **Resilient AI Service**: `services/resilientAIService.ts`
 - **Resilient Market Service**: `services/resilientMarketService.ts`
 - **Service Index**: `services/index.ts`
-- **Migration Guide**: `docs/INTEGRATION_MIGRATION.md`
-- **Resilience API**: `docs/INTEGRATION_RESILIENCE.md`
-- **Architecture**: `docs/SERVICE_ARCHITECTURE.md`
+- **Migration Guide**: `INTEGRATION_MIGRATION.md`
+- **Resilience API**: `INTEGRATION_RESILIENCE.md`
+- **Architecture**: `SERVICE_ARCHITECTURE.md`
 
 ---
 

@@ -382,8 +382,8 @@ const robots = await db.getRobots();
 
 ## Related Documentation
 
-- `docs/SERVICE_ARCHITECTURE.md` - Complete service layer documentation
-- `docs/INTEGRATION_MIGRATION.md` - Migration guide from REST API
+- `SERVICE_ARCHITECTURE.md` - Complete service layer documentation
+- `INTEGRATION_MIGRATION.md` - Migration guide from REST API
 - `services/README.md` - Service usage examples (if exists)
 
 ## Contact

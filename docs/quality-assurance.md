@@ -63,7 +63,7 @@ This document outlines the quality assurance standards, current status, and proc
 4. **Edge Case Tests**: Boundary conditions and error handling
 
 ### Bug Tracking
-Active bugs tracked in `docs/bug.md`:
+Active bugs tracked in `bug.md`:
 - TypeScript errors: 0 (all resolved)
 - Build warnings: Dynamic import optimization
 - Test stderr: Non-critical noise in storage/cache tests

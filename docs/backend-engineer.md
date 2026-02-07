@@ -633,12 +633,12 @@ CREATE TABLE robot_versions (
 
 ## Resources
 
-- **Service Architecture**: `docs/SERVICE_ARCHITECTURE.md`
-- **Data Architecture**: `docs/DATA_ARCHITECTURE.md`
-- **Integration Resilience**: `docs/INTEGRATION_RESILIENCE.md`
+- **Service Architecture**: `SERVICE_ARCHITECTURE.md`
+- **Data Architecture**: `DATA_ARCHITECTURE.md`
+- **Integration Resilience**: `INTEGRATION_RESILIENCE.md`
 - **Type Definitions**: `types.ts`
-- **Bug Tracker**: `docs/bug.md`
-- **Task Tracker**: `docs/task.md`
+- **Bug Tracker**: `bug.md`
+- **Task Tracker**: `task.md`
 
 ## Build and Test
 
