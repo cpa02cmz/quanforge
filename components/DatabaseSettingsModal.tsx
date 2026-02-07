@@ -3,7 +3,7 @@ import React, { useState, useEffect, memo } from 'react';
 import { DBSettings } from '../types';
 import { settingsManager, DEFAULT_DB_SETTINGS } from '../services/settingsManager';
 import { dbUtils } from '../services';
-import { useToast } from './Toast';
+import { useToast } from './useToast';
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
 
