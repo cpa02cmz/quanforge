@@ -1,4 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { createScopedLogger } from './logger';
+
+const logger = createScopedLogger('SEOAnalytics');
 
 interface SEOAnalyticsProps {
   pageUrl: string;
@@ -198,8 +201,8 @@ export const SEOAnalytics: React.FC<SEOAnalyticsProps> = ({
     }
 
     // Log for debugging (remove in production)
-    if (process.env['NODE_ENV'] === 'development') {
-      console.log('Analytics Event:', eventName, data);
+    if (import.meta.env.DEV) {
+      logger.log('Analytics Event:', eventName, data);
     }
   };
 

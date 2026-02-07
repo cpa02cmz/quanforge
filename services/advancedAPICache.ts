@@ -4,6 +4,9 @@
  */
 
 import { storage } from '../utils/storage';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('AdvancedAPICache');
 
 // Import required types for compatibility
 type HeadersInit = string[][] | Record<string, string> | Headers;
@@ -76,30 +79,30 @@ class AdvancedAPICache {
        try {
          const data = JSON.parse(event.newValue);
          this.cache = new Map(data);
-       } catch (e) {
-         console.error('Failed to sync cache from storage:', e);
-       }
+        } catch (e) {
+          logger.error('Failed to sync cache from storage:', e);
+        }
      }
    };
   
    private saveToStorage(): void {
       try {
         storage.set(this.storageKey, Array.from(this.cache.entries()));
-      } catch (e) {
-        console.error('Failed to save cache to storage:', e);
-      }
-    }
-  
-   private loadFromStorage(): void {
-      try {
-        const stored = storage.get<[string, CacheEntry][]>(this.storageKey);
-        if (stored) {
-          this.cache = new Map(stored);
-        }
-      } catch (e) {
-        console.error('Failed to load cache from storage:', e);
-      }
-    }
+       } catch (e) {
+         logger.error('Failed to save cache to storage:', e);
+       }
+     }
+   
+    private loadFromStorage(): void {
+       try {
+         const stored = storage.get<[string, CacheEntry][]>(this.storageKey);
+         if (stored) {
+           this.cache = new Map(stored);
+         }
+       } catch (e) {
+         logger.error('Failed to load cache from storage:', e);
+       }
+     }
   
 private generateKey(url: string, options?: RequestInit): string {
      // Create a unique key based on URL and request options
@@ -123,7 +126,7 @@ private generateKey(url: string, options?: RequestInit): string {
      return Math.abs(hash).toString(36);
    }
   
-  private compressData(data: any): any {
+  private compressData<T>(data: T): T {
     if (!this.config.compression) return data;
     
     // In a real implementation, we would use a compression library
@@ -131,14 +134,14 @@ private generateKey(url: string, options?: RequestInit): string {
     return data;
   }
   
-  private decompressData(data: any): any {
+  private decompressData<T>(data: T): T {
     if (!this.config.compression) return data;
     
     // In a real implementation, we would decompress the data
     return data;
   }
   
-  private encryptData(data: any): any {
+  private encryptData<T>(data: T): T {
     if (!this.config.encryption) return data;
     
     // In a real implementation, we would encrypt the data
@@ -181,7 +184,7 @@ private generateKey(url: string, options?: RequestInit): string {
     }
   }
   
-  async get<T = any>(key: string): Promise<T | null> {
+  async get<T = unknown>(key: string): Promise<T | null> {
     this.cleanupExpired();
     
     const entry = this.cache.get(key);
@@ -199,13 +202,13 @@ private generateKey(url: string, options?: RequestInit): string {
       const decrypted = this.decryptData(decompressed);
       return decrypted as T;
     } catch (e) {
-      console.warn('Failed to retrieve cached data:', e);
+      logger.warn('Failed to retrieve cached data:', e);
       this.cache.delete(key);
       return null;
     }
   }
   
-  async set(key: string, data: any, ttl?: number): Promise<void> {
+  async set<T>(key: string, data: T, ttl?: number): Promise<void> {
     this.cleanupExpired();
     
     const entry: CacheEntry = {
@@ -252,7 +255,7 @@ private generateKey(url: string, options?: RequestInit): string {
     }
     
     // Fetch from network
-    const response = await fetch(url, options as any);
+    const response = await fetch(url, options as unknown as globalThis.RequestInit);
     
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -266,12 +269,12 @@ private generateKey(url: string, options?: RequestInit): string {
     return data;
   }
   
-   // Stale-while-revalidate pattern
-   async staleWhileRevalidate<T = any>(
-     url: string,
-     options?: RequestInit,
-     cacheTTL?: number
-   ): Promise<{ data: T; isStale?: boolean }> {
+    // Stale-while-revalidate pattern
+    async staleWhileRevalidate<T = unknown>(
+      url: string,
+      options?: RequestInit,
+      cacheTTL?: number
+    ): Promise<{ data: T; isStale?: boolean }> {
     const cacheKey = this.generateKey(url, options);
     const ttl = cacheTTL ?? this.config.defaultTTL;
     
@@ -287,7 +290,7 @@ private generateKey(url: string, options?: RequestInit): string {
     
     if (cached) {
       // Return stale data while revalidating
-      this.revalidate(url, options, cacheKey, ttl).catch(console.error);
+      this.revalidate(url, options, cacheKey, ttl).catch((err) => logger.error('Revalidation error:', err));
       return { data: cached, isStale };
     }
     
@@ -303,19 +306,19 @@ private generateKey(url: string, options?: RequestInit): string {
     ttl: number
   ): Promise<void> {
     try {
-const response = await fetch(url, options as any);
+const response = await fetch(url, options as unknown as globalThis.RequestInit);
       if (response.ok) {
         const data = await response.json();
         await this.set(cacheKey, data, ttl);
       }
     } catch (error) {
-      console.warn('Revalidation failed:', error);
+      logger.warn('Revalidation failed:', error);
       // Keep the stale data in cache
     }
   }
   
   // Batch API calls for better performance
-  async batchFetch<T = any[]>(
+  async batchFetch<T = unknown[]>(
     requests: Array<{ url: string; options?: RequestInit }>,
     cacheTTL?: number
   ): Promise<T[]> {

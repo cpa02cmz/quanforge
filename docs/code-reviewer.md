@@ -371,8 +371,8 @@ Fixed the following TypeScript errors:
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
 - [React Best Practices](https://react.dev/learn)
 - [ESLint Rules](https://eslint.org/docs/rules/)
-- [Project README](./README.md)
-- [Bug Tracker](./docs/bug.md)
+- [Project README](../README.md)
+- [Bug Tracker](./bug.md)
 
 ---
 

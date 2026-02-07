@@ -1,4 +1,4 @@
-import { ToastType } from './Toast';
+import { ToastType } from './ToastContext';
 
 export const getToastAriaLive = (type: ToastType): 'assertive' | 'polite' => {
   return type === 'error' ? 'assertive' : 'polite';
