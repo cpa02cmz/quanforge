@@ -19,6 +19,35 @@
 
 ## Fixed Bugs
 
+### 2026-02-07 - Lint Error Fixes (Code Reviewer)
+
+#### ✅ services/securityManager.ts
+- [x] **no-useless-escape**: Fixed 23 unnecessary escape characters in regex patterns (lines 466, 613)
+  - Inside character classes `[]`, special characters don't need escaping except: `-`, `]`, `\`, `^`
+  - Removed escapes: `\(`, `\)`, `\[`, `\]`, `\{`, `\}`, `\.`, `\,`, `\;`, `\:`, `\+`, `\*`, `\/`, `\=`, `\>`, `\<`, `\!`, `\&`, `\|`, `\^`, `\~`, `\%`
+- [x] **no-prototype-builtins**: Fixed unsafe prototype method call (line 1556)
+  - Changed: `obj.hasOwnProperty(key)` → `Object.prototype.hasOwnProperty.call(obj, key)`
+
+#### ✅ services/enhancedSecurityManager.ts
+- [x] **no-useless-escape**: Fixed 5 unnecessary escape characters (lines 162, 163, 583)
+  - Removed `\` before `%` in Unicode attack patterns
+- [x] **no-control-regex**: Added eslint-disable comment for intentional null byte check (line 556)
+  - Security feature requires checking for null bytes in input sanitization
+
+#### ✅ services/predictiveCacheStrategy.ts
+- [x] **no-useless-catch**: Removed unnecessary try/catch wrapper (line 410)
+  - Catch block only re-threw the error without adding value
+
+#### ✅ services/resilientMarketService.ts
+- [x] **no-empty**: Fixed empty catch block (line 55)
+  - Added explanatory comment for intentionally ignored unsubscribe errors
+
+**Verification:**
+- ✅ TypeScript compilation: Zero errors
+- ✅ Build: Successful (12.62s)
+- ✅ Tests: All 423 tests passing
+- ✅ Lint: Zero errors (1681 warnings remaining)
+
 ### 2026-02-07 - PHASE 2 Bug Fixes (Code Reviewer)
 
 #### ✅ services/integrationHealthMonitor.ts

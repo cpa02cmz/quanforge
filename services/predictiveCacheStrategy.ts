@@ -407,13 +407,9 @@ class PredictiveCacheStrategy {
    * Prefetch a URL for caching
    */
   private async prefetch(url: string): Promise<void> {
-    try {
-      // In a real implementation, this would make an actual request
-      // For now, simulate the prefetch
-      await new Promise(resolve => setTimeout(resolve, 50));
-    } catch (error) {
-      throw error;
-    }
+    // In a real implementation, this would make an actual request
+    // For now, simulate the prefetch
+    await new Promise(resolve => setTimeout(resolve, 50));
   }
 
   /**
