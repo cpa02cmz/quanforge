@@ -7,6 +7,9 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { queryOptimizer } from './queryOptimizer';
 import { databasePerformanceMonitor } from './databasePerformanceMonitor';
 import { robotCache } from './advancedCache';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('BackendOptimizer');
 
 interface RequestDeduplicationEntry {
   promise: Promise<any>;
@@ -98,8 +101,8 @@ class BackendOptimizer {
       // Perform health check in background without blocking
       try {
         await this.performHealthCheck();
-      } catch (error) {
-        console.warn('Health check failed:', error);
+      } catch (_error) {
+        logger.warn('Health check failed:', _error);
       }
     }, this.config.healthCheckInterval);
   }
@@ -243,8 +246,8 @@ class BackendOptimizer {
     const startTime = Date.now();
     
     try {
-      // Test basic connection
-      const connectionTest = await fetch('/api/health', { method: 'GET' }).then(r => r.ok);
+      // Test basic connection (using static asset instead of non-existent API)
+      const connectionTest = await fetch('/manifest.json', { method: 'HEAD', cache: 'no-cache' }).then(r => r.ok);
       
       // Get database metrics
       const dbMetrics = databasePerformanceMonitor.getMetrics();
@@ -342,8 +345,8 @@ class BackendOptimizer {
             return result.data;
           }
         );
-      } catch (error) {
-        console.warn(`Failed to warm up query for ${table}:`, error);
+      } catch (_error) {
+        logger.warn(`Failed to warm up query for ${table}:`, _error);
       }
     });
 
@@ -432,7 +435,7 @@ class BackendOptimizer {
     
     // Suggest indexes for slow queries
     for (const slowQuery of report.topSlowQueries.slice(0, 5)) {
-      console.log('Suggested optimization for slow query:', slowQuery);
+      logger.log('Suggested optimization for slow query:', slowQuery);
       optimizationsApplied++;
       performanceGain += 20; // Estimated 20% improvement per optimization
     }

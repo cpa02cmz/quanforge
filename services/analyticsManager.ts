@@ -571,8 +571,10 @@ export class AnalyticsManager {
 }
 
 // Singleton instance
+// Note: This is a client-side SPA with no REST API endpoints
+// Analytics are stored locally or sent to external services, not to internal APIs
 export const analyticsManager = new AnalyticsManager({
-  endpoint: process.env['NODE_ENV'] === 'production' ? '/api/analytics' : undefined,
+  endpoint: undefined, // No internal API endpoint - client-side only
   batchSize: 50,
   flushInterval: 30000,
   enableRealTime: true,
