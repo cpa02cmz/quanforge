@@ -52,8 +52,8 @@ export class InputValidationService {
           /require\s*\(\s*["']fs["']/gi,
           /require\s*\(\s*["']child_process["']/gi,
           /document\.write/gi,
-          /innerHTML\s*\=/gi,
-          /outerHTML\s*\=/gi,
+          /innerHTML\s*=/gi,
+          /outerHTML\s*=/gi,
         ],
         safeIncludes: [
           /^#property\s+.*$/gm,
@@ -534,7 +534,7 @@ export class InputValidationService {
 
       case 'token':
         // Token sanitization - only allow alphanumeric and specific characters
-        sanitized = sanitized.replace(/[^a-zA-Z0-9\-_\.]/g, '').substring(0, 500);
+        sanitized = sanitized.replace(/[^a-zA-Z0-9\-_.]/g, '').substring(0, 500);
         break;
 
       case 'text':
@@ -556,8 +556,8 @@ export class InputValidationService {
    */
   sanitizeSymbol(symbol: string): string {
     // Allow common forex symbols and crypto pairs
-    const symbolRegex = /^[A-Z]{3,6}[\/]?[A-Z]{3,6}$/;
-    const cleanSymbol = symbol.replace(/[^A-Z\/]/g, '').toUpperCase();
+    const symbolRegex = /^[A-Z]{3,6}\/?[A-Z]{3,6}$/;
+    const cleanSymbol = symbol.replace(/[^A-Z/]/g, '').toUpperCase();
     return symbolRegex.test(cleanSymbol) ? cleanSymbol : '';
   }
 
@@ -571,25 +571,29 @@ export class InputValidationService {
 
     // Use existing validation methods based on type
     switch (type) {
-      case 'search':
+      case 'search': {
         const searchValidation = this.sanitizeAndValidate({ searchTerm: input }, 'strategy');
         return searchValidation.isValid && searchValidation.riskScore < 30;
+      }
 
-      case 'record':
+      case 'record': {
         const recordValidation = this.sanitizeAndValidate(input, 'robot');
         return recordValidation.isValid && recordValidation.riskScore < 50;
+      }
 
       case 'robot':
       case 'strategy':
       case 'backtest':
-      case 'user':
+      case 'user': {
         const validation = this.sanitizeAndValidate(input, type);
         return validation.isValid && validation.riskScore < 70;
+      }
 
-      default:
+      default: {
         // For other types, use basic sanitization
         const sanitized = this.sanitizeInput(String(input), type);
         return sanitized.length > 0 && sanitized.length < 10000;
+      }
     }
   }
 
@@ -612,7 +616,7 @@ export class InputValidationService {
 
     // Check nested objects
     for (const key in obj) {
-      if (obj.hasOwnProperty(key) && typeof obj[key] === 'object') {
+      if (Object.prototype.hasOwnProperty.call(obj, key) && typeof obj[key] === 'object') {
         if (this.isPrototypePollution(obj[key])) {
           return true;
         }

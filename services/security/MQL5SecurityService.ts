@@ -1,6 +1,6 @@
 export interface MQL5ValidationResult {
   isValid: boolean;
-  errors: string[];
+  errors: string;
   sanitizedCode: string;
 }
 
@@ -151,7 +151,7 @@ export class MQL5SecurityService {
 
     // Check for obfuscated code patterns
     const obfuscatedPatterns = [
-      /[^a-zA-Z0-9\s\(\)\[\]\{\}\.\,\;\:\+\-\*\/\=\>\<\!\&\|\^\~\%]+/g,
+      /[^a-zA-Z0-9\s(){},.;:+/=><!&|^~%-]+/g,
       /0x[0-9a-fA-F]+/g,
       /\\u[0-9a-fA-F]{4}/g,
       /\\x[0-9a-fA-F]{2}/g,

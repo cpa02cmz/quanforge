@@ -157,7 +157,7 @@ export const WAF_PATTERNS = [
   },
   {
     name: 'Path Traversal',
-    patterns: [/(\.\.\/|\.\.\\)/g, /%2e%2e[\/\\]/gi],
+    patterns: [/(\.\.\/|\.\.\\)/g, /%2e%2e[/\\]/gi],
     riskScore: 75
   },
   {
