@@ -327,10 +327,10 @@ logger.info(`Database Performance:`, {
 
 ## Resources
 
-- **Full Documentation:** `docs/INTEGRATION_RESILIENCE.md`
-- **Architecture:** `docs/SERVICE_ARCHITECTURE.md`
-- **Blueprint:** `docs/blueprint.md`
-- **Task Tracker:** `docs/task.md`
+- **Full Documentation:** `INTEGRATION_RESILIENCE.md`
+- **Architecture:** `SERVICE_ARCHITECTURE.md`
+- **Blueprint:** `blueprint.md`
+- **Task Tracker:** `task.md`
 
 ## Support
 
