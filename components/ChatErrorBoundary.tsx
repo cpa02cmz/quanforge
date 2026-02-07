@@ -1,4 +1,7 @@
 import React from 'react';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('ChatErrorBoundary');
 
 interface ChatErrorBoundaryState {
   hasError: boolean;
@@ -21,15 +24,15 @@ class ChatErrorBoundary extends React.Component<ChatErrorBoundaryProps, ChatErro
   }
 
   override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ChatInterface Error:', error, errorInfo);
-    
+    logger.error('ChatInterface Error:', error, errorInfo);
+
     // Log specific chat errors for debugging
     if (error.message.includes('network') || error.message.includes('fetch')) {
-      console.warn('Network error in ChatInterface - AI service might be unavailable');
+      logger.warn('Network error in ChatInterface - AI service might be unavailable');
     }
-    
+
     if (error.message.includes('abort')) {
-      console.info('Generation aborted by user or system');
+      logger.info('Generation aborted by user or system');
     }
   }
 

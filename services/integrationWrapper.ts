@@ -163,7 +163,10 @@ export class IntegrationWrapper {
       }
 
       if (result === undefined) {
-        result = await this.executeOperation(options);
+        const operationResult = await this.executeOperationWithMetrics(options);
+        result = operationResult.result;
+        attempts = operationResult.attempts;
+        retried = operationResult.retried;
       }
 
       const totalTime = Date.now() - startTime;
@@ -246,6 +249,29 @@ export class IntegrationWrapper {
     );
 
     return retryResult.result as T;
+  }
+
+  private static async executeOperationWithMetrics<T>(
+    options: IntegrationWrapperOptions<T>
+  ): Promise<{ result: T; attempts: number; retried: boolean }> {
+    const operation = async () => {
+      return await options.operation();
+    };
+
+    const operationWithTimeout = () => this.withTimeout(operation, options);
+    const operationWithCircuitBreaker = () => 
+      this.withCircuitBreaker(operationWithTimeout, options);
+
+    const retryResult = await this.withRetry(
+      operationWithCircuitBreaker,
+      options
+    );
+
+    return {
+      result: retryResult.result as T,
+      attempts: retryResult.attempts,
+      retried: retryResult.attempts > 1
+    };
   }
 
   static createOperation<T>(
