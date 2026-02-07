@@ -1,24 +1,8 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { UI_TIMING } from '../constants';
 import { ToastContext, ToastType } from './ToastContext';
+import { getToastAriaLive, getToastLabel } from './toastUtils';
 export type { ToastType } from './ToastContext';
-
-const getToastAriaLive = (type: ToastType): 'assertive' | 'polite' => {
-  return type === 'error' ? 'assertive' : 'polite';
-};
-
-const getToastLabel = (type: ToastType): string => {
-  switch (type) {
-    case 'success':
-      return 'Success notification';
-    case 'error':
-      return 'Error notification';
-    case 'info':
-      return 'Information notification';
-    default:
-      return 'Notification';
-  }
-};
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<{ id: string; message: string; type: ToastType }[]>([]);
