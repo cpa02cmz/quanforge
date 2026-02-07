@@ -6,9 +6,11 @@
 
 ### Build Warnings
 
-- [ ] **Dynamic Import Warning**: services/dynamicSupabaseLoader.ts dynamically imported but also statically imported
+- [x] **Dynamic Import Warning**: services/dynamicSupabaseLoader.ts dynamically imported but also statically imported
   - File: services/enhancedSupabasePool.ts importing from edgeSupabasePool.ts, readReplicaManager.ts
   - Impact: Dynamic import will not move module into another chunk
+  - **Fixed**: 2026-02-07 - Converted dynamic import to static import in enhancedSupabasePool.ts
+  - **Solution**: Added static import at top of file, removed dynamic import statement
 
 ### Test stderr Output (Non-critical, but noisy)
 
@@ -18,6 +20,46 @@
 - [ ] **mockImplementation.test.ts**: Storage quota exceeded message logged
 
 ## Fixed Bugs
+
+### 2026-02-07 - Backend Console Statement Fixes (Backend Engineer)
+
+#### ✅ services/backendOptimizer.ts
+- [x] **no-console**: Replaced 3 console statements with logger utility
+  - Line 102: `console.warn('Health check failed:', error)` → `logger.warn()`
+  - Line 346: `console.warn('Failed to warm up query for...', error)` → `logger.warn()`
+  - Line 435: `console.log('Suggested optimization for slow query:', slowQuery)` → `logger.log()`
+- [x] **@typescript-eslint/no-unused-vars**: Fixed unused error variables (lines 102, 346)
+  - Changed `error` → `_error` in catch blocks
+- [x] **Import**: Added `createScopedLogger` import from `../utils/logger`
+- [x] **Scope**: Created scoped logger instance `logger = createScopedLogger('BackendOptimizer')`
+
+#### ✅ services/databaseOptimizer.ts
+- [x] **no-console**: Replaced 8 console statements with logger utility
+  - Line 355: `console.log('Executing batched query...')` → `logger.log()`
+  - Line 390: `console.debug('Query statistics not available...')` → `logger.debug()`
+  - Line 418: `console.debug('Table statistics not available...')` → `logger.debug()`
+  - Line 449: `console.debug('Strategy performance insights not available')` → `logger.debug()`
+  - Line 493: `console.log('Table has deleted tuples...')` → `logger.log()`
+  - Line 529: `console.error('Error running ANALYZE:', analyzeError)` → `logger.error()`
+  - Line 540: `console.log('Table has deleted tuples...')` → `logger.log()`
+  - Line 550: `console.error('Database maintenance failed:', error)` → `logger.error()`
+- [x] **@typescript-eslint/no-unused-vars**: Fixed unused error variables (lines 392, 420, 451, 552)
+  - Changed `err/error` → `_err/_error` in catch blocks
+- [x] **Import**: Added `createScopedLogger` import from `../utils/logger`
+- [x] **Scope**: Created scoped logger instance `logger = createScopedLogger('DatabaseOptimizer')`
+
+**Benefits:**
+- Environment-aware logging (dev shows all, prod shows only errors)
+- Scoped logging with module prefixes for better debugging
+- Consistent with existing logger usage patterns in codebase
+- Reduced no-console lint warnings
+
+**Verification:**
+- ✅ TypeScript compilation: Zero errors
+- ✅ Build: Successful (12.59s)
+- ✅ Tests: All 423 tests passing
+- ✅ Lint: Zero new errors introduced
+- ✅ Documentation: Created comprehensive backend-engineer.md
 
 ### 2026-02-07 - Lint Error Fixes (Code Reviewer)
 
@@ -98,6 +140,23 @@
 - ✅ Build: Successful (12.30s)
 - ✅ Tests: All 423 tests passing
 - ✅ Lint: No errors (warnings only)
+
+### 2026-02-07 - Build Warning Fixes (Code Reviewer)
+
+#### ✅ services/enhancedSupabasePool.ts
+- [x] **Dynamic Import Warning**: Module dynamically imported but also statically imported
+  - Issue: `dynamicSupabaseLoader.ts` was both dynamically imported (line 133) and statically imported in other files
+  - Impact: Build warning "dynamic import will not move module into another chunk"
+  - Solution: Converted dynamic import to static import
+    - Added: `import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';` at top of file
+    - Removed: `const { createDynamicSupabaseClient } = await import('./dynamicSupabaseLoader');`
+  - Result: Eliminates build warning, consistent import pattern across codebase
+
+**Verification:**
+- ✅ TypeScript compilation: Zero errors
+- ✅ Build: Successful (12.22s) - No dynamic import warnings
+- ✅ Tests: All 423 tests passing
+- ✅ Lint: No new errors
 
 ### 2026-02-07 - PHASE 1 Bug Fixes
 
