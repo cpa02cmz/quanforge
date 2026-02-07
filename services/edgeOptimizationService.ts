@@ -61,7 +61,7 @@ class EdgeOptimizationService {
   };
   
   private metrics: Map<string, EdgeMetrics[]> = new Map();
-  private optimizationTimer: NodeJS.Timeout | null = null;
+  private optimizationTimer: ReturnType<typeof setInterval> | null = null;
   private readonly edgeRegions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'];
   private currentRegion = process.env['VERCEL_REGION'] || 'unknown';
 

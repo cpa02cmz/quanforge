@@ -9,7 +9,7 @@ interface PendingRequest<T = any> {
   resolve: (value: T) => void;
   reject: (reason: any) => void;
   timestamp: number;
-  timeout?: NodeJS.Timeout;
+  timeout?: ReturnType<typeof setInterval>;
 }
 
 interface CoalescerConfig {
@@ -31,7 +31,7 @@ class EdgeRequestCoalescer {
   private pendingRequests = new Map<string, PendingRequest>();
   private config: CoalescerConfig;
   private metrics: CoalescerMetrics;
-  private cleanupTimer?: NodeJS.Timeout;
+  private cleanupTimer?: ReturnType<typeof setInterval>;
 
   constructor(config: Partial<CoalescerConfig> = {}) {
     this.config = {

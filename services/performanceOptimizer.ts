@@ -97,7 +97,7 @@ class PerformanceOptimizer {
     overallScore: 0,
   };
 
-  private monitoringTimer: NodeJS.Timeout | null = null;
+  private monitoringTimer: ReturnType<typeof setInterval> | null = null;
   private performanceHistory: PerformanceMetrics[] = [];
   private readonly MAX_HISTORY = 100;
 

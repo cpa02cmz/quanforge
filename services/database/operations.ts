@@ -11,6 +11,7 @@ export const getRobots = async (userId: string): Promise<Robot[]> => {
             .from('robots')
             .select('*')
             .eq('user_id', userId)
+            .is('deleted_at', null)  // Filter out soft-deleted records
             .order('updated_at', { ascending: false });
 
         if (error) throw error;
@@ -19,7 +20,7 @@ export const getRobots = async (userId: string): Promise<Robot[]> => {
         handleError(error instanceof Error ? error : String(error), 'getRobots');
         // Fallback to storage
         const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
-        return robots.filter((r: Robot) => r.user_id === userId);
+        return robots.filter((r: Robot) => r.user_id === userId && !r.deleted_at);
     }
 };
 
@@ -163,19 +164,21 @@ export const getRobotsPaginated = async (
         const client = getClient();
         const offset = (page - 1) * limit;
         
-        // Get total count
+        // Get total count (excluding soft-deleted)
         const { count: total, error: countError } = await client
             .from('robots')
             .select('*', { count: 'exact', head: true })
-            .eq('user_id', userId);
+            .eq('user_id', userId)
+            .is('deleted_at', null);  // Filter out soft-deleted records
 
         if (countError) throw countError;
 
-        // Get paginated data
+        // Get paginated data (excluding soft-deleted)
         const { data, error } = await client
             .from('robots')
             .select('*')
             .eq('user_id', userId)
+            .is('deleted_at', null)  // Filter out soft-deleted records
             .order('updated_at', { ascending: false })
             .range(offset, offset + limit - 1);
 
@@ -193,7 +196,7 @@ export const getRobotsPaginated = async (
         handleError(error instanceof Error ? error : String(error), 'getRobotsPaginated');
         // Fallback to storage
         const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
-        const userRobots = robots.filter((r: Robot) => r.user_id === userId);
+        const userRobots = robots.filter((r: Robot) => r.user_id === userId && !r.deleted_at);
         const total = userRobots.length;
         const totalPages = Math.ceil(total / limit);
         const offset = (page - 1) * limit;

@@ -24,7 +24,7 @@ class MarketDataService {
   private binanceWs: WebSocket | null = null;
   private binanceSubscriptions: Set<string> = new Set();
   private binanceReconnectAttempts: number = 0;
-  private binanceReconnectTimer: NodeJS.Timeout | null = null;
+  private binanceReconnectTimer: ReturnType<typeof setInterval> | null = null;
   private readonly maxReconnectAttempts = 10;
   private readonly baseReconnectDelay = 1000; // 1 second
   
@@ -32,7 +32,7 @@ class MarketDataService {
   private twelveDataWs: WebSocket | null = null;
   private twelveDataSubscriptions: Set<string> = new Set();
   private twelveDataReconnectAttempts: number = 0;
-  private twelveDataReconnectTimer: NodeJS.Timeout | null = null;
+  private twelveDataReconnectTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     // Listen for setting changes to reconnect Twelve Data if API key changes

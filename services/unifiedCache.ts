@@ -55,7 +55,7 @@ export class UnifiedCache {
   private memoryCache: AdvancedCache;
   private metrics: CacheMetrics;
   private compressionThreshold = 1024; // 1KB
-  private cleanupInterval: NodeJS.Timeout;
+  private cleanupInterval: ReturnType<typeof setInterval>;
 
   constructor(name: string, options: { maxSize?: number; defaultTTL?: number } = {}) {
     this.memoryCache = CacheFactory.getInstance(name, {

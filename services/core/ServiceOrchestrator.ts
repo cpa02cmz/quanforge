@@ -31,7 +31,7 @@ const logger = createScopedLogger('ServiceOrchestrator');
 export class ServiceOrchestrator implements IServiceOrchestrator {
   private isInitialized = false;
   private healthStatus: ServiceHealthStatus = {};
-  private healthCheckTimer?: NodeJS.Timeout;
+  private healthCheckTimer?: ReturnType<typeof setInterval>;
 
   async initialize(): Promise<void> {
     if (this.isInitialized) {

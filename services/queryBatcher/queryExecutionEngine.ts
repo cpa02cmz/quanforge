@@ -199,18 +199,14 @@ export class QueryExecutionEngine {
    * Execute SELECT query
    */
   private async executeSelect(query: BatchQuery): Promise<{ data: any }> {
-    try {
-      const queryBuilder = this.client.from(query.table || 'unknown');
-      const result = await queryBuilder.select('*').limit(1000);
-      
-      if (result.error) {
-        throw result.error;
-      }
-
-      return { data: result.data };
-    } catch (error) {
-      throw error;
+    const queryBuilder = this.client.from(query.table || 'unknown');
+    const result = await queryBuilder.select('*').limit(1000);
+    
+    if (result.error) {
+      throw result.error;
     }
+
+    return { data: result.data };
   }
 
   /**

@@ -49,8 +49,8 @@ class RealtimeManager {
     conflicts: [],
     isOnline: navigator.onLine,
   };
-  private syncTimer: NodeJS.Timeout | null = null;
-  private reconnectTimer: NodeJS.Timeout | null = null;
+  private syncTimer: ReturnType<typeof setInterval> | null = null;
+  private reconnectTimer: ReturnType<typeof setInterval> | null = null;
 
   private constructor() {
     this.setupNetworkListeners();

@@ -45,7 +45,7 @@ class PerformanceOptimizer {
   private static instance: PerformanceOptimizer;
   private config: OptimizationConfig;
   private profiles: Map<string, PerformanceProfile> = new Map();
-  private monitoringInterval: NodeJS.Timeout | null = null;
+  private monitoringInterval: ReturnType<typeof setInterval> | null = null;
   private lastOptimizationTime = 0;
 
   private constructor() {

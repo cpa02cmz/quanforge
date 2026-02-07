@@ -68,7 +68,7 @@ interface DisasterRecoveryPlan {
 class AutomatedBackupService {
   private backupHistory: BackupMetadata[] = [];
   private isBackupRunning: boolean = false;
-  private backupTimer: NodeJS.Timeout | null = null;
+  private backupTimer: ReturnType<typeof setInterval> | null = null;
   private lastFullBackup: string | null = null;
   private lastBackupTimestamp: string | null = null;
 
