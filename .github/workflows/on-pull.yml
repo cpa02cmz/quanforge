@@ -73,9 +73,43 @@ jobs:
           curl -fsSL https://opencode.ai/install | bash
           echo "$HOME/.opencode/bin" >> $GITHUB_PATH
 
+      - name: OpenX
+        run: |
+          opencode run /ulw-loop "$(cat <<'PROMPT'
+            # You are  **OpenX**, repository automation specialist using OpenCode CLI. You work on current workspace (project level)
+
+            ## PHASE 1
+            Step:
+            1. Check if 'opencode.json' and '.opencode/oh-my-opencode.json' exist, create if not exist. (analyze https://github.com/code-yeongyu/oh-my-opencode.git before creating).
+                - configure all agents using models: opencode/glm-4.7-free, opencode/kimi-k2.5-free or opencode/minimax-m2.1-free
+            2. Check and integrate the following repositories as supplements to current project. Ensure no conflict or redundant. if already implemented, skip it. Think harder, plan carefully, must be in harmony.:
+                - https://github.com/code-yeongyu/oh-my-opencode.git
+                - https://github.com/obra/superpowers.git
+                - https://github.com/asgeirtj/system_prompts_leaks.git
+                - https://github.com/sulhi-sabil/agent-skill
+            3. Setup agent skill for opencode cli (.opencode/skill on workspace. copy to project configuration folder if skill installed at global configuration folder), skip if already implemented.
+            4. Remove temporary and unused file/folder. 
+            5. Review and **self reflection**. fix/optimize your work if needed
+            6. Verify if all configuration working and optimized. your task fail if not verified
+
+            ## PHASE 2
+            Step:
+            1.  **Push**:
+            - Commit changes.
+            - Push to `agent-workspace`: `git push origin agent-workspace`. Create if no exist.
+            2.  **PR**:
+            - Create or update Pull Request from `agent-workspace` to `main`.
+            - Wait and monitor check if check fail fix until all check pass
+            3. 	**Merge**
+            - If all check pass, no conflict with 'main', merge or set to automerge
+          PROMPT
+          )" \
+            --model opencode/kimi-k2.5-free \
+            --share false \
+
       - name: On Pull
         run: |
-          opencode run "$(cat <<'PROMPT'
+          opencode run /ulw-loop "$(cat <<'PROMPT'
           YOU ARE AN AUTONOMOUS SOFTWARE ENGINEERING AGENT.
           YOUR ROLE IS TO ACT AS A FULL-TIME REPOSITORY MAINTAINER, DEVELOPER, AND PRODUCT THINKER.
           
@@ -332,40 +366,6 @@ jobs:
           - DO NOT GUESS
           
           END OF PROMPT
-          PROMPT
-          )" \
-            --model opencode/kimi-k2.5-free \
-            --share false \
-
-      - name: OpenX
-        run: |
-          opencode run "$(cat <<'PROMPT'
-            # You are  **OpenX**, repository automation specialist using OpenCode CLI. You work on current workspace (project level)
-
-            ## PHASE 1
-            Step:
-            1. Check if 'opencode.json' and '.opencode/oh-my-opencode.json' exist, create if not exist. (analyze https://github.com/code-yeongyu/oh-my-opencode.git before creating).
-                - configure all agents using models: opencode/glm-4.7-free, opencode/kimi-k2.5-free or opencode/minimax-m2.1-free
-            2. Check and integrate the following repositories as supplements to current project. Ensure no conflict or redundant. if already implemented, skip it. Think harder, plan carefully, must be in harmony.:
-                - https://github.com/code-yeongyu/oh-my-opencode.git
-                - https://github.com/obra/superpowers.git
-                - https://github.com/asgeirtj/system_prompts_leaks.git
-				- https://github.com/sulhi-sabil/agent-skill/
-            3. Setup agent skill for opencode cli (.opencode/skill on workspace. copy to project configuration folder if skill installed at global configuration folder), skip if already implemented.
-            4. Remove temporary and unused file/folder. 
-            5. Review and **self reflection**. fix/optimize your work if needed
-            6. Verify if all configuration working and optimized. your task fail if not verified
-
-            ## PHASE 2
-            Step:
-            1.  **Push**:
-            - Commit changes.
-            - Push to `agent-workspace`: `git push origin agent-workspace`. Create if no exist.
-            2.  **PR**:
-            - Create or update Pull Request from `agent-workspace` to `main`.
-            - Wait and monitor check if check fail fix until all check pass
-            3. 	**Merge**
-            - If all check pass, no conflict with 'main', merge or set to automerge
           PROMPT
           )" \
             --model opencode/kimi-k2.5-free \
