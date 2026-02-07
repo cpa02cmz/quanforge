@@ -2,7 +2,7 @@
 import React, { useState, useEffect, memo } from 'react';
 import { AISettings, AIProvider, Language } from '../types';
 import { settingsManager, DEFAULT_AI_SETTINGS } from '../services/settingsManager';
-import { useToast } from './Toast';
+import { useToast } from './useToast';
 // testAIConnection imported dynamically to avoid bundle issues
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';

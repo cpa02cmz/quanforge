@@ -28,7 +28,7 @@ const storage = getLocalStorage({ prefix: 'mock_', enableSerialization: true });
 const safeParse = <T>(data: T | null, fallback: any) => {
     if (!data) return fallback;
     try {
-        return data || fallback;
+        return securityManager.safeJSONParse(data as string) || fallback;
     } catch (e) {
         console.error("Failed to parse data from storage:", e);
         return fallback;
@@ -71,7 +71,7 @@ const isValidRobot = (r: any): boolean => {
 // --- Mock Implementation ---
 
 const getMockSession = () => {
-  return safeParse(localStorage.getItem(STORAGE_KEY), null);
+  return safeParse(storage.get(STORAGE_KEY), null);
 };
 
 const authListeners: Array<(event: string, session: UserSession | null) => void> = [];
@@ -114,7 +114,7 @@ const mockAuth = {
     return { data: { user: { email }, session }, error: null };
   },
   signOut: async () => {
-    localStorage.removeItem(STORAGE_KEY);
+    storage.remove(STORAGE_KEY);
     authListeners.forEach(cb => cb('SIGNED_OUT', null));
     return { error: null };
   }
@@ -402,7 +402,7 @@ const cached = await consolidatedCache.get<Robot[]>(cacheKey);
 return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
           return withRetry(async () => {
             const client = await getClient();
-            const result = client
+            const result = await client
               .from('robots')
               .select('*')
               .order('created_at', { ascending: false })
@@ -884,28 +884,30 @@ if (result.data && !result.error) {
           }
       }
       
-      const client = await getClient();
-      const { data: original, error } = await client.from('robots').select('*').eq('id', id).single();
-      if (error || !original) {
+      return withRetry(async () => {
+        const client = await getClient();
+        const { data: original, error } = await client.from('robots').select('*').eq('id', id).single();
+        if (error || !original) {
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('duplicateRobot', duration);
+          return { error: error || "Robot not found" };
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id: _, created_at, updated_at, ...rest } = original;
+        const session = await client.auth.getSession();
+        
+        const newRobotPayload = {
+            ...rest,
+            name: `Copy of ${original.name}`,
+            user_id: session.data.session?.user?.id,
+        };
+
+        const result = await client.from('robots').insert([newRobotPayload]).select();
         const duration = performance.now() - startTime;
         performanceMonitor.record('duplicateRobot', duration);
-        return { error: error || "Robot not found" };
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { id: _, created_at, updated_at, ...rest } = original;
-      const session = await client.auth.getSession();
-      
-      const newRobotPayload = {
-          ...rest,
-          name: `Copy of ${original.name}`,
-          user_id: session.data.session?.user?.id,
-      };
-
-      const result = await client.from('robots').insert([newRobotPayload]).select();
-      const duration = performance.now() - startTime;
-      performanceMonitor.record('duplicateRobot', duration);
-      return result;
+        return result;
+      }, 'duplicateRobot');
     } catch (error) {
       const duration = performance.now() - startTime;
       performanceMonitor.record('duplicateRobot', duration);
@@ -1250,7 +1252,7 @@ export const dbUtils = {
     /**
      * Batch operations for better performance
      */
-    async batchUpdateRobots(updates: Array<{ id: string; updates: any }>): Promise<{ success: number; failed: number; errors?: string[] }> {
+    async batchUpdateRobots(updates: Array<{ id: string; data: Partial<Robot> }>): Promise<{ success: number; failed: number; errors?: string[] }> {
         const startTime = performance.now();
         try {
             const settings = settingsManager.getDBSettings();
@@ -1268,9 +1270,9 @@ export const dbUtils = {
                         if (robotIndex !== -1) {
                             robots[robotIndex] = { 
                                 ...robots[robotIndex], 
-                                ...item.updates, 
+                                ...item.data, 
                                 updated_at: new Date().toISOString() 
-                            };
+                            } as Robot;
                             successCount++;
                         } else {
                             failedCount++;
@@ -1283,7 +1285,7 @@ export const dbUtils = {
                     
                     const duration = performance.now() - startTime;
                     performanceMonitor.record('batchUpdateRobots', duration);
-const batchResult: { success: number; failed: number; errors?: string[] } = {
+	const batchResult: { success: number; failed: number; errors?: string[] } = {
                         success: successCount, 
                         failed: failedCount
                     };
@@ -1311,7 +1313,7 @@ const batchResult: { success: number; failed: number; errors?: string[] } = {
                         for (const item of batch) {
                             const result = await client
                                 .from('robots')
-                                .update({ ...item.updates, updated_at: new Date().toISOString() })
+                                .update({ ...item.data, updated_at: new Date().toISOString() })
                                 .match({ id: item.id })
                                 .select();
                                 
