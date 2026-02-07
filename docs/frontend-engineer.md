@@ -323,9 +323,43 @@ export const LazyDashboard = createLazyComponent(...);  // ✅ Only components e
 
 ## Recent Frontend Fixes
 
-### 2026-02-07 - Frontend Engineering Fixes
+### 2026-02-07 - Frontend Performance & Stability Fixes
 
-#### 1. React Fast Refresh Warning Fixes (LazyLoader.tsx)
+#### 1. Unstable Keys in VirtualScrollList (Performance Bug)
+**Issue**: Unstable React keys causing unnecessary re-renders during scroll
+
+**Root Cause**: The key was including `actualIndex` which changes as user scrolls: `key={`${robot.id}-${actualIndex}`}`
+
+**Impact**: React treated the same robot as different components during scroll, causing:
+- Unnecessary re-renders
+- Loss of component state
+- Performance degradation with large lists
+
+**Solution Applied**:
+- Changed to stable key based only on robot ID: `key={robot.id}`
+- Robot ID is immutable and unique, providing stable identity across renders
+
+**Files Changed**:
+- `components/VirtualScrollList.tsx` (line 143)
+
+#### 2. Missing useCallback in useGeneratorLogic (Performance Bug)
+**Issue**: `stopGeneration` function not wrapped in `useCallback`
+
+**Root Cause**: Function defined as regular function instead of memoized callback
+
+**Impact**: 
+- `useEffect` in Generator.tsx (line 88) was re-triggering unnecessarily
+- Keyboard event listener being removed/re-added on every render
+- Potential performance issues with dependent components
+
+**Solution Applied**:
+- Wrapped `stopGeneration` in `useCallback` with proper dependencies
+- Added `showToast` to dependency array
+
+**Files Changed**:
+- `hooks/useGeneratorLogic.ts` (lines 143-150)
+
+#### 3. React Fast Refresh Warning Fixes (LazyLoader.tsx)
 **Issue**: ESLint warning "Fast refresh only works when a file only exports components"
 
 **Root Cause**: `LazyLoader.tsx` was exporting both components AND utility functions (`createLazyComponent`, `loadComponentOnInteraction`, `preloadCriticalComponents`, `InteractionTrigger`)
@@ -363,10 +397,13 @@ export const LazyDashboard = createLazyComponent(...);  // ✅ Only components e
 - Better module identification in logs
 
 ### Build Verification:
-- ✅ Production build: 12.04s (no regressions)
+- ✅ Production build: 16.13s (no regressions)
 - ✅ TypeScript compilation: Zero errors
 - ✅ Lint status: 0 errors in frontend components (components/, pages/)
 - ✅ No new lint warnings introduced
+- ✅ Tests: All 445 tests passing
+- ✅ Key stability: Fixed unstable React keys in VirtualScrollList
+- ✅ Performance: Added useCallback for stopGeneration to prevent unnecessary re-renders
 
 ### Previous Fixes (2026-02-07)
 

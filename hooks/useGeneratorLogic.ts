@@ -140,14 +140,14 @@ export const useGeneratorLogic = (id?: string) => {
      dispatch({ type: 'RESET_STATE' });
    }, []);
 
-const stopGeneration = () => {
+const stopGeneration = useCallback(() => {
     if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
         dispatch({ type: 'SET_LOADING', payload: false });
         showToast("Generation stopped by user", "info");
     }
-};
+}, [showToast]);
 
 // Handle Logic: Load existing robot OR Reset for new robot
    useEffect(() => {
