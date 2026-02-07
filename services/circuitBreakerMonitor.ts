@@ -32,8 +32,6 @@ class CircuitBreaker {
   }
 
   async execute<T>(operation: () => Promise<T>): Promise<T> {
-    this.getMetrics();
-
     if (this.state === CircuitBreakerState.OPEN) {
       if (Date.now() >= (this.nextAttemptTime || 0)) {
         this.transitionTo(CircuitBreakerState.HALF_OPEN);

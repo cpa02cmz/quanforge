@@ -698,8 +698,45 @@ If you encounter integration issues:
 
 ---
 
+## Recent Fixes & Improvements
+
+### 2026-02-07 - Integration Hardening Fixes
+
+#### Bug Fixes
+
+1. **Fixed metrics tracking in integrationWrapper.ts**
+   - **Issue**: `attempts` and `retried` metrics were always reporting 0/false
+   - **Root Cause**: The `executeOperation` method didn't return retry attempt counts
+   - **Fix**: Added `executeOperationWithMetrics` method that returns `{result, attempts, retried}`
+   - **Impact**: Metrics now accurately reflect retry behavior for debugging and monitoring
+
+2. **Removed dead code in circuitBreakerMonitor.ts**
+   - **Issue**: Unused `getMetrics()` call on line 34 had no side effects
+   - **Fix**: Removed the unused call to clean up the execution path
+   - **Impact**: Cleaner code, no functional change
+
+3. **Fixed browser compatibility in integrationHealthMonitor.ts**
+   - **Issue**: Used `NodeJS.Timeout` type which is not available in browser environments
+   - **Fix**: Changed to `ReturnType<typeof setInterval>` for proper browser/Node compatibility
+   - **Impact**: Eliminates TypeScript errors in browser-only builds
+
+#### Verification
+
+All fixes verified with:
+- ✅ TypeScript compilation: `npm run typecheck` - 0 errors
+- ✅ Production build: `npm run build` - 12.75s, successful
+- ✅ Test suite: `npm test` - 445 tests passing
+- ✅ No breaking changes to public APIs
+
+---
+
 ## Version History
 
+- **v1.6.1** (2026-02-07) - Integration hardening fixes
+  - Fixed metrics tracking for retry attempts
+  - Removed dead code in circuit breaker
+  - Fixed browser compatibility for interval types
+  
 - **v1.6** (2026-02-07) - Initial integration engineer documentation
   - Comprehensive resilience system documentation
   - Debugging techniques and best practices
