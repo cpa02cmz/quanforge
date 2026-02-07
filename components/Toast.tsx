@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { UI_TIMING } from '../constants';
+import { getToastAriaLive, getToastLabel } from './toastUtils';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -21,23 +22,6 @@ export const useToast = () => {
     throw new Error('useToast must be used within a ToastProvider');
   }
   return context;
-};
-
-const getToastAriaLive = (type: ToastType): 'assertive' | 'polite' => {
-  return type === 'error' ? 'assertive' : 'polite';
-};
-
-const getToastLabel = (type: ToastType): string => {
-  switch (type) {
-    case 'success':
-      return 'Success notification';
-    case 'error':
-      return 'Error notification';
-    case 'info':
-      return 'Information notification';
-    default:
-      return 'Notification';
-  }
 };
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

@@ -173,44 +173,19 @@ class EdgeFunctionOptimizer {
         ];
 
       case 'api/analytics':
-        return [
-          {
-            url: `${protocol}://${baseUrl}/api/analytics/ping`,
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-warmup': 'true',
-            },
-            body: JSON.stringify({ type: 'warmup', timestamp: Date.now() }),
-            timestamp: Date.now(),
-          },
-        ];
+        // Note: This is a client-side SPA with no REST API endpoints
+        // Return empty warmup configuration for non-existent endpoints
+        return [];
 
       case 'api/edge-metrics':
-        return [
-          {
-            url: `${protocol}://${baseUrl}/api/edge-metrics`,
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-warmup': 'true',
-            },
-            timestamp: Date.now(),
-          },
-        ];
+        // Note: This is a client-side SPA with no REST API endpoints
+        // Return empty warmup configuration for non-existent endpoints
+        return [];
 
       default:
-        return [
-          {
-            url: `${protocol}://${baseUrl}/api/${functionName}/ping`,
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-warmup': 'true',
-            },
-            timestamp: Date.now(),
-          },
-        ];
+        // Note: This is a client-side SPA with no REST API endpoints
+        // Return empty warmup configuration for non-existent endpoints
+        return [];
     }
   }
 

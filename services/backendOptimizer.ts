@@ -246,8 +246,8 @@ class BackendOptimizer {
     const startTime = Date.now();
     
     try {
-      // Test basic connection
-      const connectionTest = await fetch('/api/health', { method: 'GET' }).then(r => r.ok);
+      // Test basic connection (using static asset instead of non-existent API)
+      const connectionTest = await fetch('/manifest.json', { method: 'HEAD', cache: 'no-cache' }).then(r => r.ok);
       
       // Get database metrics
       const dbMetrics = databasePerformanceMonitor.getMetrics();

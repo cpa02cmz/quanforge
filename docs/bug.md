@@ -6,9 +6,11 @@
 
 ### Build Warnings
 
-- [ ] **Dynamic Import Warning**: services/dynamicSupabaseLoader.ts dynamically imported but also statically imported
+- [x] **Dynamic Import Warning**: services/dynamicSupabaseLoader.ts dynamically imported but also statically imported
   - File: services/enhancedSupabasePool.ts importing from edgeSupabasePool.ts, readReplicaManager.ts
   - Impact: Dynamic import will not move module into another chunk
+  - **Fixed**: 2026-02-07 - Converted dynamic import to static import in enhancedSupabasePool.ts
+  - **Solution**: Added static import at top of file, removed dynamic import statement
 
 ### Test stderr Output (Non-critical, but noisy)
 
@@ -138,6 +140,23 @@
 - ✅ Build: Successful (12.30s)
 - ✅ Tests: All 423 tests passing
 - ✅ Lint: No errors (warnings only)
+
+### 2026-02-07 - Build Warning Fixes (Code Reviewer)
+
+#### ✅ services/enhancedSupabasePool.ts
+- [x] **Dynamic Import Warning**: Module dynamically imported but also statically imported
+  - Issue: `dynamicSupabaseLoader.ts` was both dynamically imported (line 133) and statically imported in other files
+  - Impact: Build warning "dynamic import will not move module into another chunk"
+  - Solution: Converted dynamic import to static import
+    - Added: `import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';` at top of file
+    - Removed: `const { createDynamicSupabaseClient } = await import('./dynamicSupabaseLoader');`
+  - Result: Eliminates build warning, consistent import pattern across codebase
+
+**Verification:**
+- ✅ TypeScript compilation: Zero errors
+- ✅ Build: Successful (12.22s) - No dynamic import warnings
+- ✅ Tests: All 423 tests passing
+- ✅ Lint: No new errors
 
 ### 2026-02-07 - PHASE 1 Bug Fixes
 
