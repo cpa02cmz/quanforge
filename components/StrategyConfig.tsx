@@ -28,6 +28,7 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
   const [manualImportText, setManualImportText] = useState('');
   const [errors, setErrors] = useState<Partial<Record<keyof StrategyParams, string>>>({});
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const validateField = (field: keyof StrategyParams, value: any): string | undefined => {
     switch (field) {
       case 'symbol':
@@ -95,6 +96,7 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
     return Object.keys(newErrors).length === 0;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleChangeWithValidation = useCallback((field: keyof StrategyParams, value: any) => {
     const error = validateField(field, value);
     setErrors(prev => ({
@@ -118,6 +120,7 @@ const sanitizeInput = (input: string): string => {
     });
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleChange = useCallback((field: keyof StrategyParams, value: any) => {
      if (typeof value === 'string') {
        value = sanitizeInput(value);
@@ -194,9 +197,10 @@ const sanitizeInput = (input: string): string => {
         showToast('Configuration imported successfully', 'success');
         setShowManualImport(false);
         setManualImportText('');
-    } catch (e: any) {
+    } catch (e: unknown) {
         logger.error(e);
-        showToast(`Import Failed: ${e.message}`, 'error');
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+        showToast(`Import Failed: ${errorMessage}`, 'error');
     }
   };
 
@@ -204,7 +208,7 @@ const sanitizeInput = (input: string): string => {
       try {
           const text = await navigator.clipboard.readText();
           parseAndImport(text);
-      } catch (e: any) {
+      } catch (e: unknown) {
           logger.warn("Clipboard read failed, switching to manual mode", e);
           setShowManualImport(true);
           showToast('Clipboard blocked. Please paste manually below.', 'info');
