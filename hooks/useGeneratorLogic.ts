@@ -3,7 +3,7 @@ import { useReducer, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Message, MessageRole, Robot, StrategyParams, StrategyAnalysis, BacktestSettings, SimulationResult } from '../types';
 import { db } from '../services';
-import { useToast } from '../components/Toast';
+import { useToast } from '../components/useToast';
 import { DEFAULT_STRATEGY_PARAMS } from '../constants';
 import { runMonteCarloSimulation } from '../services/simulation';
 import { ValidationService } from '../utils/validation';
