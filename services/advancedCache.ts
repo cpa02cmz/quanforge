@@ -43,7 +43,7 @@ export class AdvancedCache {
     cleanupInterval: 30000, // 30 seconds
     compressionThreshold: 512, // 0.5KB (more aggressive)
   };
-  private cleanupTimer: NodeJS.Timeout | null = null;
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(config?: Partial<CacheConfig>) {
     if (config) {

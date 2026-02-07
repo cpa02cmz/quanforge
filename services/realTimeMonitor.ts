@@ -58,7 +58,7 @@ export class RealTimeMonitor {
   private budget: PerformanceBudget;
   private isMonitoring = false;
   private reportingEndpoint?: string;
-  private reportInterval: NodeJS.Timeout | null = null;
+  private reportInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(config?: Partial<AlertConfig>) {
     this.sessionId = this.generateSessionId();

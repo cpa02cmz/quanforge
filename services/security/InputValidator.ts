@@ -35,33 +35,37 @@ export class InputValidator {
 
       // Type-specific validation
       switch (type) {
-        case 'robot':
+        case 'robot': {
           const robotResult = this.validateRobotData(data);
           errors.push(...robotResult.errors);
           sanitizedData = robotResult.sanitizedData;
           riskScore += robotResult.riskScore;
           break;
+        }
 
-        case 'strategy':
+        case 'strategy': {
           const strategyResult = this.validateStrategyData(data);
           errors.push(...strategyResult.errors);
           sanitizedData = strategyResult.sanitizedData;
           riskScore += strategyResult.riskScore;
           break;
+        }
 
-        case 'backtest':
+        case 'backtest': {
           const backtestResult = this.validateBacktestData(data);
           errors.push(...backtestResult.errors);
           sanitizedData = backtestResult.sanitizedData;
           riskScore += backtestResult.riskScore;
           break;
+        }
 
-        case 'user':
+        case 'user': {
           const userResult = this.validateUserData(data);
           errors.push(...userResult.errors);
           sanitizedData = userResult.sanitizedData;
           riskScore += userResult.riskScore;
           break;
+        }
       }
 
     } catch (error) {

@@ -57,7 +57,7 @@ class SemanticCache {
   private semanticIndex = new Map<string, Set<string>>(); // semanticKey -> cacheKeys
   private config: SemanticConfig;
   private metrics: SemanticMetrics;
-  private cleanupTimer?: NodeJS.Timeout;
+  private cleanupTimer?: ReturnType<typeof setInterval>;
 
   constructor(config: Partial<SemanticConfig> = {}) {
     this.config = {

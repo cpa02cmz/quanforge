@@ -79,7 +79,7 @@ class UXPerformanceMonitor {
   private config: UXConfig;
   private metrics: UXMetrics;
   private observers: PerformanceObserver[] = [];
-  private monitoringTimer?: NodeJS.Timeout;
+  private monitoringTimer?: ReturnType<typeof setInterval>;
   private scoreHistory: UXScore[] = [];
   private maxHistorySize = 100;
 

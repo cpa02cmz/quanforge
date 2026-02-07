@@ -55,7 +55,12 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
   async getRobot(id: string): Promise<Robot | null> {
     try {
       const client = await this.getClient();
-      const { data, error } = await client.from('robots').select('*').eq('id', id).single();
+      const { data, error } = await client
+        .from('robots')
+        .select('*')
+        .eq('id', id)
+        .is('deleted_at', null)  // Filter out soft-deleted records
+        .single();
 
       if (error) {
         if (error.code === 'PGRST116') {
@@ -77,6 +82,7 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
       const { data, error } = await client
         .from('robots')
         .select('*')
+        .is('deleted_at', null)  // Filter out soft-deleted records
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -110,7 +116,11 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
   async deleteRobot(id: string): Promise<boolean> {
     try {
       const client = await this.getClient();
-      const { error } = await client.from('robots').delete().eq('id', id);
+      // Use soft delete instead of hard delete for data integrity
+      const { error } = await client
+        .from('robots')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id);
 
       if (error) throw error;
       return true;
@@ -127,7 +137,8 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
       let query = client
         .from('robots')
         .select('*')
-        .or(`name.ilike.%${term}%,code.ilike.%${term}%`);
+        .or(`name.ilike.%${term}%,code.ilike.%${term}%`)
+        .is('deleted_at', null);  // Filter out soft-deleted records
 
       if (filter && filter !== 'All') {
         query = query.eq('strategy_type', filter);

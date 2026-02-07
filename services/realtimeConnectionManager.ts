@@ -32,7 +32,7 @@ class RealtimeConnectionManager {
     heartbeatInterval: 30000, // 30 seconds
     idleTimeout: 300000, // 5 minutes
   };
-  private heartbeatTimer: NodeJS.Timeout | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
   private constructor() {
     this.startHeartbeat();

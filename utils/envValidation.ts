@@ -51,7 +51,7 @@ export const validateEnvironment = (): EnvironmentValidation => {
       result.isValid = false;
       result.errors.push('VITE_ENCRYPTION_BASE_KEY must be at least 16 characters long');
     }
-    if (!/^[a-zA-Z0-9_\-]+$/.test(key)) {
+    if (!/^[a-zA-Z0-9_-]+$/.test(key)) {
       result.warnings.push('VITE_ENCRYPTION_BASE_KEY contains special characters which may cause issues');
     }
   }

@@ -356,6 +356,77 @@ export const trySaveToStorage = (key: string, value: any) => {
 
 ---
 
+### Issue 5: Soft Delete Filtering Missing in Multiple Services (CRITICAL)
+
+**Problem:** Multiple database query methods were not filtering out soft-deleted records (`deleted_at IS NOT NULL`), causing deleted robots to appear in query results. Additionally, some services were using hard delete instead of soft delete.
+
+**Affected Files:**
+- `services/database/operations.ts` - `getRobots()`, `getRobotsPaginated()`
+- `services/database/RobotDatabaseService.ts` - `getAllRobots()`, `searchRobots()`, `getRobot()`, `deleteRobot()`
+- `services/database/coreOperations.ts` - `getRobots()`, `getRobotById()`, `deleteRobot()`
+
+**Impact:**
+- Soft-deleted robots appearing in dashboard and search results
+- Inconsistent delete behavior across services (some hard delete, some soft delete)
+- Data integrity issues when restoring robots
+- Incorrect pagination counts including deleted records
+
+**Fix Applied:**
+
+1. **Added soft delete filtering to all query methods:**
+
+```typescript
+// services/database/operations.ts - getRobots()
+const { data, error } = await client
+    .from('robots')
+    .select('*')
+    .eq('user_id', userId)
+    .is('deleted_at', null)  // Filter out soft-deleted
+    .order('updated_at', { ascending: false });
+
+// Fallback storage filtering
+const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
+return robots.filter((r: Robot) => r.user_id === userId && !r.deleted_at);
+```
+
+2. **Converted hard delete to soft delete:**
+
+```typescript
+// Before (hard delete)
+const { error } = await client.from('robots').delete().eq('id', id);
+
+// After (soft delete)
+const { error } = await client
+    .from('robots')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
+```
+
+3. **Updated RobotDatabaseService.ts:**
+- `getAllRobots()` - Added `.is('deleted_at', null)` filter
+- `getRobot()` - Added `.is('deleted_at', null)` filter  
+- `searchRobots()` - Added `.is('deleted_at', null)` filter
+- `deleteRobot()` - Changed from hard delete to soft delete
+
+4. **Updated coreOperations.ts:**
+- `getRobots()` - Added `.is('deleted_at', null)` filter
+- `getRobotById()` - Added `.is('deleted_at', null)` filter
+- `deleteRobot()` - Changed from hard delete to soft delete
+
+**Files Modified:**
+- ✅ `services/database/operations.ts` - Fixed `getRobots()` and `getRobotsPaginated()`
+- ✅ `services/database/RobotDatabaseService.ts` - Fixed all query and delete methods
+- ✅ `services/database/coreOperations.ts` - Fixed all query and delete methods
+
+**Status:** Fixed (2026-02-07)
+
+**Verification:**
+- ✅ TypeScript compilation: No errors
+- ✅ Production build: Successful (13.03s)
+- ✅ Test suite: All tests passing
+
+---
+
 ## Best Practices
 
 ### 1. Always Use Resilient Database Service
@@ -629,12 +700,18 @@ WHERE deleted_at IS NULL;
    - `getAuditLog()` - Audit log retrieval with resilience
    - `restoreRobot()` - Soft delete restoration with resilience
    - `permanentlyDeleteRobot()` - Hard delete with resilience
+3. ✅ **CRITICAL: Fixed soft delete filtering across all database services**:
+   - `services/database/operations.ts` - Added `.is('deleted_at', null)` to `getRobots()` and `getRobotsPaginated()`
+   - `services/database/RobotDatabaseService.ts` - Added soft delete filtering to all query methods, converted `deleteRobot()` from hard delete to soft delete
+   - `services/database/coreOperations.ts` - Added soft delete filtering to `getRobots()` and `getRobotById()`, converted `deleteRobot()` to soft delete
+   - All fallback storage operations now filter by `!r.deleted_at`
 
 ### Build Status
 
 - ✅ TypeScript Compilation: No errors
-- ✅ Production Build: Successful (11.84s)
+- ✅ Production Build: Successful (13.03s)
 - ✅ Test Suite: 423 tests passing
+- ✅ Soft Delete Consistency: All services now use uniform soft delete pattern
 
 ### Architecture Health
 

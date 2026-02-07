@@ -1,3 +1,5 @@
+import DOMPurify from 'dompurify';
+
 /**
  * Core security utilities and helper functions
  * Provides basic sanitization, hash generation, and anti-pollution utilities
@@ -19,8 +21,8 @@ export class SecurityUtils {
    * Sanitize trading symbol to allow only valid formats
    */
   sanitizeSymbol(symbol: string): string {
-    const symbolRegex = /^[A-Z]{3,6}[\/]?[A-Z]{3,6}$/;
-    const cleanSymbol = symbol.replace(/[^A-Z\/]/g, '').toUpperCase();
+    const symbolRegex = /^[A-Z]{3,6}\/?[A-Z]{3,6}$/;
+    const cleanSymbol = symbol.replace(/[^A-Z/]/g, '').toUpperCase();
     return symbolRegex.test(cleanSymbol) ? cleanSymbol : '';
   }
 
@@ -79,7 +81,7 @@ export class SecurityUtils {
 
     // Check nested objects
     for (const key in obj) {
-      if (obj.hasOwnProperty(key) && typeof obj[key] === 'object') {
+      if (Object.prototype.hasOwnProperty.call(obj, key) && typeof obj[key] === 'object') {
         if (this.isPrototypePollution(obj[key])) {
           return true;
         }

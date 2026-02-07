@@ -46,7 +46,7 @@ class SmartCacheInvalidation {
   private metrics: CacheMetrics;
   private processingQueue: InvalidationEvent[] = [];
   private isProcessing = false;
-  private scheduleTimer: NodeJS.Timeout | null = null;
+  private scheduleTimer: ReturnType<typeof setInterval> | null = null;
 
   private constructor() {
     this.metrics = {

@@ -1,9 +1,5 @@
 import { settingsManager } from './settingsManager';
-<<<<<<< HEAD
-import { handleErrorCompat as handleError } from '../utils/errorManager';
-=======
 import { handleError } from '../utils/errorHandler';
->>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 import { consolidatedCache } from './consolidatedCacheManager';
 import { connectionPool } from './supabaseConnectionPool';
 
@@ -54,7 +50,7 @@ export class QueryOptimizerEnhanced {
   private queryMetrics: Map<string, QueryMetrics[]> = new Map();
   private indexRecommendations: Map<string, IndexRecommendation[]> = new Map();
   private batchQueue: Map<string, BatchQuery[]> = new Map();
-  private batchTimeout: Map<string, NodeJS.Timeout> = new Map();
+  private batchTimeout: Map<string, ReturnType<typeof setInterval>> = new Map();
   private readonly BATCH_DELAY = 50; // 50ms batching window
   private readonly METRICS_RETENTION_LIMIT = 1000;
   private readonly SLOW_QUERY_THRESHOLD = 1000; // 1 second

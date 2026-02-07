@@ -224,12 +224,10 @@ class EnhancedRobotsTxtGenerator {
   saveToFile(outputPath: string = './public/robots.txt'): void {
     const content = this.generate();
     
-    try {
-      require('fs').writeFileSync(outputPath, content, 'utf8');
-      // Robots.txt generated successfully
-    } catch (error) {
-      throw error;
-    }
+    // Note: fs module is Node.js only, not available in browser
+    // This method should only be called in a Node.js environment
+    const fs = require('fs');
+    fs.writeFileSync(outputPath, content, 'utf8');
   }
 
   // Add custom user agent rule

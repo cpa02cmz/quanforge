@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { handleErrorCompat as handleError } from '../utils/errorManager';
-=======
 import { handleError } from '../utils/errorHandler';
->>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
 
 interface CacheEntry<T> {
   value: T;
@@ -27,7 +23,7 @@ export class OptimizedLRUCache<T> {
   private readonly defaultTtl: number;
   private hits = 0;
   private misses = 0;
-  private cleanupTimer: NodeJS.Timeout | null = null;
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(maxSize: number = 200, defaultTtl: number = 900000) { // 15 min default TTL
     this.maxSize = maxSize;

@@ -12,7 +12,7 @@ class QueryBatcher {
   private static instance: QueryBatcher;
   private queueManager: QueryQueueManager;
   private executionEngine: QueryExecutionEngine;
-  private batchProcessor: NodeJS.Timeout | null = null;
+  private batchProcessor: ReturnType<typeof setInterval> | null = null;
   private stats: BatchStats = {
     totalBatches: 0,
     totalQueries: 0,
