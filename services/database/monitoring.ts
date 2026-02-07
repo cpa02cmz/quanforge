@@ -1,10 +1,9 @@
 import { robotCache, queryCache } from './cache';
 import { getClient } from './client';
-<<<<<<< HEAD
-import { handleErrorCompat as handleError } from '../../utils/errorManager';
-=======
 import { handleError } from '../../utils/errorHandler';
->>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('DatabaseMonitoring');
 
 // Performance monitoring for database operations
 export class DatabaseMonitor {
@@ -111,7 +110,7 @@ export class QueryOptimizer {
 
 // Connection health monitor
 export class ConnectionHealthMonitor {
-  private static healthCheckInterval: NodeJS.Timeout | null = null;
+  private static healthCheckInterval: ReturnType<typeof setInterval> | null = null;
   private static isHealthy = true;
 
   static startHealthCheck(intervalMs: number = 30000): void {
@@ -122,12 +121,12 @@ export class ConnectionHealthMonitor {
         await client.auth.getSession();
         
         if (!this.isHealthy) {
-          console.log('Database connection restored');
+          logger.log('Database connection restored');
           this.isHealthy = true;
         }
       } catch (error) {
         if (this.isHealthy) {
-          console.warn('Database connection health check failed:', error);
+          logger.warn('Database connection health check failed:', error);
           this.isHealthy = false;
         }
       }
@@ -172,7 +171,7 @@ if (typeof window !== 'undefined') {
   if (process.env['NODE_ENV'] === 'development') {
     setInterval(() => {
       const metrics = collectDatabaseMetrics();
-      console.log('Database Metrics:', metrics);
+      logger.log('Database Metrics:', metrics);
     }, 60000); // Every minute
   }
 }

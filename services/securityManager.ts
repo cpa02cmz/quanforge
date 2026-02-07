@@ -1,5 +1,6 @@
 import { Robot, StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
+import { SecureStorage } from '../utils/secureStorage';
 
 interface SecurityConfig {
   maxPayloadSize: number;
@@ -73,6 +74,11 @@ class SecurityManager {
     }
   };
   private rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+  private secureStorage = new SecureStorage({
+    namespace: 'qf_security',
+    encrypt: true,
+    maxSize: 1024 * 1024 // 1MB limit for security data
+  });
 
   private constructor() {}
 
@@ -933,13 +939,13 @@ private validateRobotData(data: any): ValidationResult {
   }
 
   // Advanced API key rotation
-  rotateAPIKeys(): { oldKey: string; newKey: string; expiresAt: number } {
-    const oldKey = this.getCurrentAPIKey();
+  async rotateAPIKeys(): Promise<{ oldKey: string; newKey: string; expiresAt: number }> {
+    const oldKey = await this.getCurrentAPIKey();
     const newKey = this.generateSecureAPIKey();
     const expiresAt = Date.now() + this.config.encryption.keyRotationInterval;
 
-    // Store new key with expiration
-    this.storeAPIKey(newKey, expiresAt);
+    // Store new key with expiration using secure storage
+    await this.storeAPIKey(newKey, expiresAt);
 
     return {
       oldKey,
@@ -948,9 +954,11 @@ private validateRobotData(data: any): ValidationResult {
     };
   }
 
-  private getCurrentAPIKey(): string {
-    // Retrieve current API key from secure storage
-    return localStorage.getItem('current_api_key') || '';
+  private async getCurrentAPIKey(): Promise<string> {
+    // Retrieve current API key from secure encrypted storage
+    // This is safer than localStorage as it uses Web Crypto API encryption
+    const key = await this.secureStorage.get<string>('current_api_key', '');
+    return key || '';
   }
 
   private generateSecureAPIKey(): string {
@@ -959,9 +967,11 @@ private validateRobotData(data: any): ValidationResult {
     return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
   }
 
-  private storeAPIKey(key: string, expiresAt: number): void {
-    localStorage.setItem('current_api_key', key);
-    localStorage.setItem('api_key_expires', expiresAt.toString());
+  private async storeAPIKey(key: string, expiresAt: number): Promise<void> {
+    // Use secure storage with encryption instead of localStorage
+    // This prevents XSS attacks from accessing API keys
+    await this.secureStorage.set('current_api_key', key, { ttl: expiresAt - Date.now() });
+    await this.secureStorage.set('api_key_expires', expiresAt.toString());
   }
 
   // Content Security Policy monitoring

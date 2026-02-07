@@ -5,6 +5,7 @@
 
 import { consolidatedCache } from './consolidatedCacheManager';
 import { edgeKVService } from './edgeKVStorage';
+import { createSafeWildcardPattern, ReDoSError } from '../utils/safeRegex';
 
 interface InvalidationRule {
   id: string;
@@ -46,7 +47,7 @@ class SmartCacheInvalidation {
   private metrics: CacheMetrics;
   private processingQueue: InvalidationEvent[] = [];
   private isProcessing = false;
-  private scheduleTimer: NodeJS.Timeout | null = null;
+  private scheduleTimer: ReturnType<typeof setInterval> | null = null;
 
   private constructor() {
     this.metrics = {
@@ -312,15 +313,22 @@ class SmartCacheInvalidation {
     const allKeys = consolidatedCache.keys();
 
     for (const pattern of patterns) {
-      // Convert pattern to regex
-      const regex = new RegExp(
-        pattern.replace(/\*/g, '.*').replace(/\?/g, '.'),
-        'i'
-      );
+      try {
+        // Convert pattern to safe regex with ReDoS protection
+        const regex = createSafeWildcardPattern(pattern);
 
-      // Find matching keys
-      const matchingKeys = allKeys.filter(key => regex.test(key));
-      affectedKeys.push(...matchingKeys);
+        // Find matching keys
+        const matchingKeys = allKeys.filter(key => regex.test(key));
+        affectedKeys.push(...matchingKeys);
+      } catch (error) {
+        // Handle unsafe patterns gracefully
+        if (error instanceof ReDoSError) {
+          console.warn(`Unsafe cache invalidation pattern "${pattern}":`, error.message);
+          // Fall back to simple string matching
+          const fallbackKeys = allKeys.filter(key => key.includes(pattern.replace(/[*?]/g, '')));
+          affectedKeys.push(...fallbackKeys);
+        }
+      }
 
       // Add dynamic keys based on data
       if (data.id) {

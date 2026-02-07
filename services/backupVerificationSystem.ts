@@ -96,7 +96,7 @@ interface MonitoringMetrics {
 class BackupVerificationSystem {
   private verificationHistory: VerificationReport[] = [];
   private activeAlerts: VerificationAlert[] = [];
-  private verificationTimer: NodeJS.Timeout | null = null;
+  private verificationTimer: ReturnType<typeof setInterval> | null = null;
   private isVerificationRunning: boolean = false;
   private consecutiveFailedVerifications: number = 0;
 

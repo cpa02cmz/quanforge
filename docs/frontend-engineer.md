@@ -168,6 +168,39 @@ npm run build:analyze
 4. **Image Optimization**: Use WebP format with fallbacks
 5. **CSS**: Use Tailwind's purge feature to remove unused styles
 
+### Lazy Loading Pattern
+
+**File Structure**:
+```
+components/
+├── LazyLoader.tsx          # Only exports lazy-loaded components
+utils/
+├── lazyUtils.tsx           # Contains utility functions (createLazyComponent, etc.)
+```
+
+**Usage**:
+```typescript
+// Import lazy components
+import { LazyDashboard, LazyGenerator } from './components/LazyLoader';
+
+// Import utilities (if needed)
+import { preloadCriticalComponents } from './utils/lazyUtils';
+
+// Use in Router
+<Route path="/dashboard" element={<LazyDashboard />} />
+
+// Preload critical components on app start
+useEffect(() => {
+  preloadCriticalComponents();
+}, []);
+```
+
+**Benefits**:
+- Code splitting for better initial load performance
+- Error boundaries for failed component loads
+- Preloading for critical path optimization
+- Fast Refresh compliance (separate utilities from components)
+
 ## Testing Guidelines
 
 1. Write unit tests for utilities and hooks
@@ -243,12 +276,136 @@ const memoryUsage = perf.memory;
 **Fix**: Prefix unused variables with underscore
 
 ### Bug: Console in Production
-**Location**: constants/index.ts
-**Fix**: Use logger utility with DEV environment check
+**Location**: constants/index.ts, ChatErrorBoundary.tsx, CodeEditorErrorBoundary.tsx
+**Fix**: Use logger utility with scoped logger instances
 
-## Recent Frontend Fixes (2026-02-07)
+**Example**:
+```typescript
+// ❌ Bad - Using console directly
+console.error('ChatInterface Error:', error);
+console.warn('Network error in ChatInterface');
 
-### Fixed Issues:
+// ✅ Good - Using scoped logger
+import { createScopedLogger } from '../utils/logger';
+const logger = createScopedLogger('ChatErrorBoundary');
+
+logger.error('ChatInterface Error:', error);
+logger.warn('Network error in ChatInterface');
+```
+
+**Files Fixed**:
+- `components/ChatErrorBoundary.tsx` - Replaced console with logger
+- `components/CodeEditorErrorBoundary.tsx` - Replaced console with logger
+
+### Bug: React Fast Refresh in LazyLoader
+**Location**: LazyLoader.tsx
+**Issue**: File exports both components and utility functions, breaking Fast Refresh
+**Fix**: Separate utilities into utils/lazyUtils.tsx, keep only components in LazyLoader.tsx
+
+**Before**:
+```typescript
+// components/LazyLoader.tsx
+export function createLazyComponent(...) { ... }  // ❌ Non-component export
+export const LazyDashboard = createLazyComponent(...);
+export const preloadCriticalComponents = () => { ... };  // ❌ Non-component export
+```
+
+**After**:
+```typescript
+// utils/lazyUtils.tsx
+export function createLazyComponent(...) { ... }  // ✅ Utility in utils file
+export const preloadCriticalComponents = () => { ... };  // ✅ Utility in utils file
+
+// components/LazyLoader.tsx
+import { createLazyComponent } from '../utils/lazyUtils';
+export const LazyDashboard = createLazyComponent(...);  // ✅ Only components exported
+```
+
+## Recent Frontend Fixes
+
+### 2026-02-07 - Frontend Performance & Stability Fixes
+
+#### 1. Unstable Keys in VirtualScrollList (Performance Bug)
+**Issue**: Unstable React keys causing unnecessary re-renders during scroll
+
+**Root Cause**: The key was including `actualIndex` which changes as user scrolls: `key={`${robot.id}-${actualIndex}`}`
+
+**Impact**: React treated the same robot as different components during scroll, causing:
+- Unnecessary re-renders
+- Loss of component state
+- Performance degradation with large lists
+
+**Solution Applied**:
+- Changed to stable key based only on robot ID: `key={robot.id}`
+- Robot ID is immutable and unique, providing stable identity across renders
+
+**Files Changed**:
+- `components/VirtualScrollList.tsx` (line 143)
+
+#### 2. Missing useCallback in useGeneratorLogic (Performance Bug)
+**Issue**: `stopGeneration` function not wrapped in `useCallback`
+
+**Root Cause**: Function defined as regular function instead of memoized callback
+
+**Impact**: 
+- `useEffect` in Generator.tsx (line 88) was re-triggering unnecessarily
+- Keyboard event listener being removed/re-added on every render
+- Potential performance issues with dependent components
+
+**Solution Applied**:
+- Wrapped `stopGeneration` in `useCallback` with proper dependencies
+- Added `showToast` to dependency array
+
+**Files Changed**:
+- `hooks/useGeneratorLogic.ts` (lines 143-150)
+
+#### 3. React Fast Refresh Warning Fixes (LazyLoader.tsx)
+**Issue**: ESLint warning "Fast refresh only works when a file only exports components"
+
+**Root Cause**: `LazyLoader.tsx` was exporting both components AND utility functions (`createLazyComponent`, `loadComponentOnInteraction`, `preloadCriticalComponents`, `InteractionTrigger`)
+
+**Solution Applied**:
+- Created `utils/lazyUtils.tsx` to house all non-component exports
+- Moved `createLazyComponent()` function to utils file (contains JSX, requires .tsx)
+- Moved `loadComponentOnInteraction()` utility to utils file
+- Moved `preloadCriticalComponents()` utility to utils file
+- Moved `InteractionTrigger` type export to utils file
+- Simplified `LazyLoader.tsx` to only export lazy-loaded component wrappers
+
+**Files Changed**:
+- `utils/lazyUtils.tsx` (new file) - Contains all utility functions
+- `components/LazyLoader.tsx` - Now only exports lazy component wrappers
+
+#### 2. Console Statement Cleanup (Error Boundaries)
+**Issue**: Console statements in error boundary components causing lint warnings
+
+**Files Fixed**:
+- `components/ChatErrorBoundary.tsx`:
+  - Replaced `console.error` with `logger.error`
+  - Replaced `console.warn` with `logger.warn`
+  - Replaced `console.info` with `logger.info`
+  - Added scoped logger: `createScopedLogger('ChatErrorBoundary')`
+
+- `components/CodeEditorErrorBoundary.tsx`:
+  - Replaced `console.error` with `logger.error`
+  - Replaced `console.warn` with `logger.warn`
+  - Added scoped logger: `createScopedLogger('CodeEditorErrorBoundary')`
+
+**Benefits**:
+- Environment-aware logging (dev vs production)
+- Consistent logging patterns across codebase
+- Better module identification in logs
+
+### Build Verification:
+- ✅ Production build: 16.13s (no regressions)
+- ✅ TypeScript compilation: Zero errors
+- ✅ Lint status: 0 errors in frontend components (components/, pages/)
+- ✅ No new lint warnings introduced
+- ✅ Tests: All 445 tests passing
+- ✅ Key stability: Fixed unstable React keys in VirtualScrollList
+- ✅ Performance: Added useCallback for stopGeneration to prevent unnecessary re-renders
+
+### Previous Fixes (2026-02-07)
 
 1. **ESLint Error Fixes** (CodeEditor.tsx):
    - Removed unused `eslint-disable-next-line @typescript-eslint/no-explicit-any` directives (lines 29, 34)
@@ -261,7 +418,7 @@ const memoryUsage = perf.memory;
    - Issue: Using `any` type bypassed TypeScript type checking
    - Resolution: Used properly defined `FAQQuestion` interface
 
-### Build Verification:
+### Build Verification (Previous):
 - ✅ Production build: 12.17s (no regressions)
 - ✅ TypeScript compilation: Zero errors
 - ✅ Lint errors: 2 → 0 (fixed all errors, warnings only remain)

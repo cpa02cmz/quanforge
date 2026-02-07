@@ -118,7 +118,7 @@ export const warmCache = async (keys: string[], dataLoader: (key: string) => Pro
 };
 
 // Periodic cache cleanup
-export const startCacheCleanup = (intervalMs: number = 60000): NodeJS.Timeout => {
+export const startCacheCleanup = (intervalMs: number = 60000): ReturnType<typeof setInterval> => {
   return setInterval(() => {
     const cleanedRobots = robotCache.cleanup();
     const cleanedQueries = queryCache.cleanup();

@@ -27,6 +27,9 @@ interface CacheStats {
 }
 
 import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('AdvancedCache');
 
 export class AdvancedCache {
   private cache = new Map<string, CacheEntry<any>>();
@@ -43,7 +46,7 @@ export class AdvancedCache {
     cleanupInterval: 30000, // 30 seconds
     compressionThreshold: 512, // 0.5KB (more aggressive)
   };
-  private cleanupTimer: NodeJS.Timeout | null = null;
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(config?: Partial<CacheConfig>) {
     if (config) {
@@ -83,7 +86,7 @@ export class AdvancedCache {
       try {
         return decompressFromUTF16(entry.data as string) as T;
       } catch (error) {
-        console.warn(`Failed to decompress cache entry: ${key}`, error);
+        logger.warn(`Failed to decompress cache entry: ${key}`, error);
         this.cache.delete(key);
         this.stats.misses++;
         return null;
@@ -104,7 +107,7 @@ export class AdvancedCache {
     
     // Check if data is too large
     if (size > this.config.maxSize) {
-      console.warn(`Cache entry too large: ${key} (${size} bytes)`);
+      logger.warn(`Cache entry too large: ${key} (${size} bytes)`);
       return;
     }
 
@@ -118,7 +121,7 @@ export class AdvancedCache {
         compressed = true;
         this.stats.compressions++;
       } catch (error) {
-        console.warn(`Failed to compress cache entry: ${key}`, error);
+        logger.warn(`Failed to compress cache entry: ${key}`, error);
       }
     }
 
@@ -195,9 +198,7 @@ export class AdvancedCache {
         const data = await loader();
         this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
       } catch (error) {
-         if (process.env['NODE_ENV'] === 'development') {
-            console.warn(`Failed to preload cache entry: ${key}`, error);
-          }
+        logger.warn(`Failed to preload cache entry: ${key}`, error);
       }
     });
 
@@ -219,7 +220,7 @@ export class AdvancedCache {
           const data = await loader(params);
 this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
         } catch (error) {
-          console.warn(`Failed to warm cache entry: ${key}`, error);
+          logger.warn(`Failed to warm cache entry: ${key}`, error);
         }
       }
     }
@@ -332,9 +333,7 @@ this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
       }
      });
 
-    if (process.env['NODE_ENV'] === 'development') {
-      console.debug(`[EdgeCache] Invalidated ${deletedCount} entries for region: ${region}`);
-    }
+    logger.log(`[EdgeCache] Invalidated ${deletedCount} entries for region: ${region}`);
     return deletedCount;
   }
 
@@ -397,9 +396,9 @@ this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
           });
         }
 
-        console.log(`Edge cache warmed for region: ${region}`);
+        logger.log(`Edge cache warmed for region: ${region}`);
       } catch (error) {
-        console.warn(`Failed to warm edge cache for region ${region}:`, error);
+        logger.warn(`Failed to warm edge cache for region ${region}:`, error);
       }
     }
   }

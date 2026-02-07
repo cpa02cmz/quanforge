@@ -24,7 +24,7 @@ class MarketDataService {
   private binanceWs: WebSocket | null = null;
   private binanceSubscriptions: Set<string> = new Set();
   private binanceReconnectAttempts: number = 0;
-  private binanceReconnectTimer: NodeJS.Timeout | null = null;
+  private binanceReconnectTimer: ReturnType<typeof setInterval> | null = null;
   private readonly maxReconnectAttempts = 10;
   private readonly baseReconnectDelay = 1000; // 1 second
   
@@ -32,13 +32,19 @@ class MarketDataService {
   private twelveDataWs: WebSocket | null = null;
   private twelveDataSubscriptions: Set<string> = new Set();
   private twelveDataReconnectAttempts: number = 0;
-  private twelveDataReconnectTimer: NodeJS.Timeout | null = null;
+  private twelveDataReconnectTimer: ReturnType<typeof setInterval> | null = null;
+  
+  // Event listener reference for proper cleanup
+  private readonly handleSettingsChange: () => void;
 
   constructor() {
-    // Listen for setting changes to reconnect Twelve Data if API key changes
-    window.addEventListener('ai-settings-changed', () => {
+    // Bind the event handler to preserve reference for cleanup
+    this.handleSettingsChange = () => {
         this.reconnectTwelveData();
-    });
+    };
+    
+    // Listen for setting changes to reconnect Twelve Data if API key changes
+    window.addEventListener('ai-settings-changed', this.handleSettingsChange);
   }
 
   // --- Binance Implementation (Crypto) ---
@@ -387,8 +393,8 @@ class MarketDataService {
       this.binanceReconnectAttempts = 0;
       this.twelveDataReconnectAttempts = 0;
       
-      // Remove event listener
-      window.removeEventListener('ai-settings-changed', this.reconnectTwelveData);
+      // Remove event listener using stored reference
+      window.removeEventListener('ai-settings-changed', this.handleSettingsChange);
   }
 }
 

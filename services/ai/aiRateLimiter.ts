@@ -30,7 +30,7 @@ export interface RateLimitResult {
 export class AIRateLimiter {
   private userLimits = new Map<string, UserRateLimit>();
   private defaultConfig: RateLimitConfig;
-  private cleanupInterval: NodeJS.Timeout;
+  private cleanupInterval: ReturnType<typeof setInterval>;
 
   constructor(config?: Partial<RateLimitConfig>) {
     this.defaultConfig = {
@@ -138,7 +138,7 @@ export class AIRateLimiter {
 
   recordSuccess(userId: string): void {
     const now = Date.now();
-    let userLimit = this.userLimits.get(userId);
+    const userLimit = this.userLimits.get(userId);
 
     if (!userLimit) return;
 

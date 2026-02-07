@@ -21,7 +21,7 @@ export interface PoolConfig {
 export class ConnectionPool implements IConnectionPool {
   private config!: PoolConfig;
   private isInitialized = false;
-  private healthCheckTimer?: NodeJS.Timeout;
+  private healthCheckTimer?: ReturnType<typeof setInterval>;
   private poolStats = {
     created: 0,
     acquired: 0,

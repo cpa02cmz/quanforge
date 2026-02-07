@@ -1,8 +1,7 @@
-<<<<<<< HEAD
-import { handleErrorCompat as handleError } from '../utils/errorManager';
-=======
 import { handleError } from '../utils/errorHandler';
->>>>>>> b6abd17 (Merge pull request #143 from cpa02cmz/feature/codebase-analysis-2025-12-20)
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('OptimizedLRUCache');
 
 interface CacheEntry<T> {
   value: T;
@@ -27,7 +26,7 @@ export class OptimizedLRUCache<T> {
   private readonly defaultTtl: number;
   private hits = 0;
   private misses = 0;
-  private cleanupTimer: NodeJS.Timeout | null = null;
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(maxSize: number = 200, defaultTtl: number = 900000) { // 15 min default TTL
     this.maxSize = maxSize;
@@ -213,8 +212,8 @@ export class OptimizedLRUCache<T> {
     this.cleanupTimer = setInterval(() => {
       try {
         const cleaned = this.cleanup();
-        if (cleaned > 0 && import.meta.env.DEV) {
-          console.log(`Cache cleanup: removed ${cleaned} expired entries`);
+        if (cleaned > 0) {
+          logger.log(`Cache cleanup: removed ${cleaned} expired entries`);
         }
       } catch (error) {
         handleError(error as Error, 'cacheAutoCleanup', 'OptimizedLRUCache');

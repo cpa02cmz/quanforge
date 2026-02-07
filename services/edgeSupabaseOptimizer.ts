@@ -52,7 +52,7 @@ export class EdgeSupabaseOptimizer {
 
   private queryCache = new Map<string, QueryCacheEntry>();
   private batchQueue: BatchedQuery[] = [];
-  private batchTimer: NodeJS.Timeout | null = null;
+  private batchTimer: ReturnType<typeof setInterval> | null = null;
   private metrics = {
     queriesExecuted: 0,
     cacheHits: 0,

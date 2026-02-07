@@ -23,7 +23,7 @@ interface RateLimitConfig {
 
 export class EnhancedRateLimiter {
   private store = new Map<string, RateLimitEntry>();
-  private cleanupInterval: NodeJS.Timeout;
+  private cleanupInterval: ReturnType<typeof setInterval>;
   
   constructor(private config: RateLimitConfig = {
     windowMs: 60000, // 1 minute

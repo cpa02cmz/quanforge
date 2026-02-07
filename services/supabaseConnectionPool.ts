@@ -44,7 +44,7 @@ class SupabaseConnectionPool {
     retryAttempts: 2, // Reduced retries for edge reliability
     retryDelay: 300, // Faster retry for edge environments
   };
-  private healthCheckTimer: NodeJS.Timeout | null = null;
+  private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
   private readReplicaIndex = 0;
 
   private constructor() {

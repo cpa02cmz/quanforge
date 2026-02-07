@@ -40,7 +40,7 @@ export class RateLimiter implements IRateLimiter {
   }
   private config!: RateLimitConfig;
   private limits = new Map<string, RateLimitInfo>();
-  private cleanupTimer?: NodeJS.Timeout;
+  private cleanupTimer?: ReturnType<typeof setInterval>;
   private stats = {
     totalRequests: 0,
     blockedRequests: 0,

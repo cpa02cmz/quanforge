@@ -381,7 +381,7 @@ class TimingUtilities {
 
 class MemoryUtilities {
   private core: PerformanceCore;
-  private monitoringInterval?: NodeJS.Timeout;
+  private monitoringInterval?: ReturnType<typeof setInterval>;
 
   constructor(core: PerformanceCore) {
     this.core = core;

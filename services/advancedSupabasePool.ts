@@ -5,6 +5,9 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('AdvancedSupabasePool');
 
 interface ConnectionConfig {
   url: string;
@@ -49,9 +52,11 @@ class AdvancedSupabasePool {
   private pools: Map<string, PooledConnection[]> = new Map();
   private configs: Map<string, ConnectionConfig> = new Map();
   private metrics: PoolMetrics;
-  private healthCheckTimer: NodeJS.Timeout | null = null;
-  private cleanupTimer: NodeJS.Timeout | null = null;
-  private readonly DEFAULT_CONFIG: Partial<ConnectionConfig> = {
+  private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly DEFAULT_CONFIG: ConnectionConfig = {
+    url: '',
+    anonKey: '',
     maxConnections: 10,
     minConnections: 2,
     connectionTimeout: 5000,
@@ -96,7 +101,7 @@ class AdvancedSupabasePool {
       ...config,
       url: settings.url || config.url || '',
       anonKey: settings.anonKey || config.anonKey || '',
-      region: config.region || process.env['VERCEL_REGION'] || 'unknown',
+      region: config.region || 'unknown',
     };
 
     if (!fullConfig.url || !fullConfig.anonKey) {
@@ -109,7 +114,7 @@ class AdvancedSupabasePool {
     // Create minimum connections
     await this.ensureMinimumConnections(poolId);
     
-    console.log(`Initialized Supabase connection pool '${poolId}' with ${fullConfig.minConnections} connections`);
+    // Pool initialized successfully
   }
 
   /**
@@ -210,11 +215,11 @@ class AdvancedSupabasePool {
         errorCount: 0,
       };
 
-      console.log(`Created new Supabase connection for pool '${poolId}' in ${creationTime}ms`);
+      logger.log(`Created new Supabase connection for pool '${poolId}' in ${creationTime}ms`);
       return connection;
 
     } catch (error) {
-      console.error(`Failed to create connection for pool '${poolId}':`, error);
+      logger.error(`Failed to create connection for pool '${poolId}':`, error);
       throw error;
     }
   }
@@ -224,7 +229,7 @@ class AdvancedSupabasePool {
    */
   private async performHealthCheck(client: SupabaseClient): Promise<boolean> {
     try {
-      const timeoutPromise = new Promise<boolean>((_, reject) => 
+      const timeoutPromise = new Promise<never>((_, reject) => 
         setTimeout(() => reject(new Error('Health check timeout')), 3000)
       );
 
@@ -235,8 +240,8 @@ class AdvancedSupabasePool {
         .single();
 
       const result = await Promise.race([healthPromise, timeoutPromise]);
-      return !result.error;
-    } catch (_error) {
+      return !('error' in result && result.error);
+    } catch {
       return false;
     }
   }
@@ -244,7 +249,7 @@ class AdvancedSupabasePool {
   /**
    * Wait for an available connection
    */
-  private async waitForAvailableConnection(poolId: string, timeout: number): Promise<PooledConnection | null> {
+  private async waitForAvailableConnection(poolId: string, timeout: number): Promise<PooledConnection | undefined> {
     const startTime = Date.now();
     
     while (Date.now() - startTime < timeout) {
@@ -259,7 +264,7 @@ class AdvancedSupabasePool {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     
-    return null;
+    return undefined;
   }
 
   /**
@@ -316,7 +321,7 @@ class AdvancedSupabasePool {
         if (!isHealthy) {
           connection.isHealthy = false;
           connection.errorCount++;
-          console.warn(`Connection in pool '${poolId}' marked as unhealthy`);
+          logger.warn(`Connection in pool '${poolId}' marked as unhealthy`);
         } else {
           connection.isHealthy = true;
         }
@@ -477,13 +482,13 @@ class AdvancedSupabasePool {
     const config = this.configs.get(poolId);
     if (!config) return;
 
-    console.log(`Warming up pool '${poolId}'...`);
+    logger.log(`Warming up pool '${poolId}'...`);
     
     // Ensure minimum connections are created and healthy
     await this.ensureMinimumConnections(poolId);
     await this.performPoolHealthChecks();
     
-    console.log(`Pool '${poolId}' warmed up successfully`);
+    logger.log(`Pool '${poolId}' warmed up successfully`);
   }
 
   /**
@@ -513,7 +518,7 @@ class AdvancedSupabasePool {
       regionDistribution: {}
     };
     
-    console.log('All Supabase connection pools closed');
+    logger.log('All Supabase connection pools closed');
   }
 
   /**

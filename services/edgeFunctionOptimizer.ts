@@ -33,7 +33,7 @@ class EdgeFunctionOptimizer {
   private static instance: EdgeFunctionOptimizer;
   private configs: Map<string, EdgeFunctionConfig> = new Map();
   private metrics: Map<string, EdgeMetrics> = new Map();
-  private warmupTimers: Map<string, NodeJS.Timeout> = new Map();
+  private warmupTimers: Map<string, ReturnType<typeof setInterval>> = new Map();
   private isWarmingUp: Set<string> = new Set();
 
   private constructor() {
@@ -150,27 +150,10 @@ class EdgeFunctionOptimizer {
 
     switch (functionName) {
       case 'api/supabase':
-        return [
-          {
-            url: `${protocol}://${baseUrl}/api/supabase/health`,
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-warmup': 'true',
-              'x-edge-region': 'auto',
-            },
-            timestamp: Date.now(),
-          },
-          {
-            url: `${protocol}://${baseUrl}/api/supabase/status`,
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-warmup': 'true',
-            },
-            timestamp: Date.now(),
-          },
-        ];
+        // Note: This is a client-side SPA with no REST API endpoints
+        // Supabase health checks should be done via client library, not REST API
+        // Return empty warmup configuration for non-existent endpoints
+        return [];
 
       case 'api/analytics':
         // Note: This is a client-side SPA with no REST API endpoints

@@ -58,7 +58,7 @@ export class RealTimeMonitor {
   private budget: PerformanceBudget;
   private isMonitoring = false;
   private reportingEndpoint?: string;
-  private reportInterval: NodeJS.Timeout | null = null;
+  private reportInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(config?: Partial<AlertConfig>) {
     this.sessionId = this.generateSessionId();
@@ -82,10 +82,10 @@ export class RealTimeMonitor {
       bundleSize: 256000 // 250KB
     };
 
-    // Initialize reporting endpoint for production
-    this.reportingEndpoint = process.env["NODE_ENV"] === 'production' 
-      ? '/api/performance-metrics' 
-      : undefined;
+    // Note: This is a client-side SPA with no REST API endpoints
+    // Reporting endpoint is disabled - metrics are logged to console only
+    // To enable server-side reporting, implement edge functions and set endpoint here
+    this.reportingEndpoint = undefined;
   }
 
   private generateSessionId(): string {

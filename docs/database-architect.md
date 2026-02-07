@@ -227,6 +227,7 @@ await dbUtils.importDatabase(jsonString, true);
 | Operation | Function | Description |
 |-----------|----------|-------------|
 | Read All | `db.getRobots()` | Get all robots for current user |
+| Read By ID | `db.getRobot(id)` | Get single robot by ID |
 | Read Paginated | `db.getRobotsPaginated(userId, page, limit)` | Get paginated results |
 | Read By IDs | `db.getRobotsByIds(ids)` | Get multiple robots by ID |
 | Create | `db.saveRobot(robot)` | Save new robot |
@@ -353,6 +354,123 @@ export const trySaveToStorage = (key: string, value: any) => {
 ```
 
 **Recommendation:** For production use, configure Supabase credentials to use cloud storage.
+
+---
+
+### Issue 5: Soft Delete Filtering Missing in Multiple Services (CRITICAL)
+
+**Problem:** Multiple database query methods were not filtering out soft-deleted records (`deleted_at IS NOT NULL`), causing deleted robots to appear in query results. Additionally, some services were using hard delete instead of soft delete.
+
+**Affected Files:**
+- `services/database/operations.ts` - `getRobots()`, `getRobotsPaginated()`
+- `services/database/RobotDatabaseService.ts` - `getAllRobots()`, `searchRobots()`, `getRobot()`, `deleteRobot()`
+- `services/database/coreOperations.ts` - `getRobots()`, `getRobotById()`, `deleteRobot()`
+
+**Impact:**
+- Soft-deleted robots appearing in dashboard and search results
+- Inconsistent delete behavior across services (some hard delete, some soft delete)
+- Data integrity issues when restoring robots
+- Incorrect pagination counts including deleted records
+
+**Fix Applied:**
+
+1. **Added soft delete filtering to all query methods:**
+
+```typescript
+// services/database/operations.ts - getRobots()
+const { data, error } = await client
+    .from('robots')
+    .select('*')
+    .eq('user_id', userId)
+    .is('deleted_at', null)  // Filter out soft-deleted
+    .order('updated_at', { ascending: false });
+
+// Fallback storage filtering
+const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
+return robots.filter((r: Robot) => r.user_id === userId && !r.deleted_at);
+```
+
+2. **Converted hard delete to soft delete:**
+
+```typescript
+// Before (hard delete)
+const { error } = await client.from('robots').delete().eq('id', id);
+
+// After (soft delete)
+const { error } = await client
+    .from('robots')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
+```
+
+3. **Updated RobotDatabaseService.ts:**
+- `getAllRobots()` - Added `.is('deleted_at', null)` filter
+- `getRobot()` - Added `.is('deleted_at', null)` filter  
+- `searchRobots()` - Added `.is('deleted_at', null)` filter
+- `deleteRobot()` - Changed from hard delete to soft delete
+
+4. **Updated coreOperations.ts:**
+- `getRobots()` - Added `.is('deleted_at', null)` filter
+- `getRobotById()` - Added `.is('deleted_at', null)` filter
+- `deleteRobot()` - Changed from hard delete to soft delete
+
+**Files Modified:**
+- ✅ `services/database/operations.ts` - Fixed `getRobots()` and `getRobotsPaginated()`
+- ✅ `services/database/RobotDatabaseService.ts` - Fixed all query and delete methods
+- ✅ `services/database/coreOperations.ts` - Fixed all query and delete methods
+
+**Status:** Fixed (2026-02-07)
+
+**Verification:**
+- ✅ TypeScript compilation: No errors
+- ✅ Production build: Successful (13.03s)
+- ✅ Test suite: 423 tests passing
+- ✅ Soft Delete Consistency: All services now use uniform soft delete pattern
+
+---
+
+### Issue 6: Missing `getRobot` Operation in Resilient Database Service
+
+**Problem:** The `getRobot(id)` function existed in `services/database/operations.ts` but was not exposed through the `resilientDb` service in `services/resilientDbService.ts`. This caused errors for consumers attempting to use `db.getRobot(id)` to fetch individual robots.
+
+**Impact:**
+- Code attempting to fetch a single robot by ID using the resilient database service would fail
+- Inconsistent API surface between database operations and the resilient service wrapper
+- Missing resilience patterns (circuit breaker, retry, fallback) for single-robot retrieval
+
+**Fix Applied:**
+
+Added the missing `getRobot` operation to `services/resilientDbService.ts`:
+
+```typescript
+// Get a single robot by ID
+async getRobot(id: string): Promise<Robot | null> {
+  const result = await withIntegrationResilience(
+    IntegrationType.DATABASE,
+    'database',
+    async () => await dbOperations.getRobot(id),
+    {
+      operationName: 'get_robot',
+      fallbacks: [
+        databaseFallbacks.mockData(null)
+      ]
+    }
+  );
+
+  return result.data || null;
+}
+```
+
+**Files Modified:**
+- ✅ `services/resilientDbService.ts` - Added `getRobot()` operation with full resilience patterns
+
+**Status:** Fixed (2026-02-07)
+
+**Verification:**
+- ✅ TypeScript compilation: No errors
+- ✅ Production build: Successful (12.44s)
+- ✅ Resilience patterns applied: Circuit breaker, retry logic, fallback support
+- ✅ API consistency: All database operations now available through resilient service
 
 ---
 
@@ -629,12 +747,23 @@ WHERE deleted_at IS NULL;
    - `getAuditLog()` - Audit log retrieval with resilience
    - `restoreRobot()` - Soft delete restoration with resilience
    - `permanentlyDeleteRobot()` - Hard delete with resilience
+3. ✅ **CRITICAL: Fixed soft delete filtering across all database services**:
+   - `services/database/operations.ts` - Added `.is('deleted_at', null)` to `getRobots()` and `getRobotsPaginated()`
+   - `services/database/RobotDatabaseService.ts` - Added soft delete filtering to all query methods, converted `deleteRobot()` from hard delete to soft delete
+   - `services/database/coreOperations.ts` - Added soft delete filtering to `getRobots()` and `getRobotById()`, converted `deleteRobot()` to soft delete
+   - All fallback storage operations now filter by `!r.deleted_at`
+4. ✅ **Added missing `getRobot()` operation to `services/resilientDbService.ts`**:
+   - Single robot retrieval by ID now available through resilient service
+   - Full resilience patterns applied (circuit breaker, retry, fallback)
+   - API consistency restored across all database operations
 
 ### Build Status
 
 - ✅ TypeScript Compilation: No errors
-- ✅ Production Build: Successful (11.84s)
+- ✅ Production Build: Successful (12.44s)
 - ✅ Test Suite: 423 tests passing
+- ✅ Soft Delete Consistency: All services now use uniform soft delete pattern
+- ✅ API Completeness: All database operations exposed through resilient service
 
 ### Architecture Health
 

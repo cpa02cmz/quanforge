@@ -679,9 +679,9 @@ When integration issues occur:
 - **Resilient AI Service**: `services/resilientAIService.ts`
 - **Resilient Market Service**: `services/resilientMarketService.ts`
 - **Service Index**: `services/index.ts`
-- **Migration Guide**: `docs/INTEGRATION_MIGRATION.md`
-- **Resilience API**: `docs/INTEGRATION_RESILIENCE.md`
-- **Architecture**: `docs/SERVICE_ARCHITECTURE.md`
+- **Migration Guide**: `INTEGRATION_MIGRATION.md`
+- **Resilience API**: `INTEGRATION_RESILIENCE.md`
+- **Architecture**: `SERVICE_ARCHITECTURE.md`
 
 ---
 
@@ -698,8 +698,97 @@ If you encounter integration issues:
 
 ---
 
+## Recent Fixes & Improvements
+
+### 2026-02-07 - Integration Memory Leak Fixes
+
+#### Bug Fixes
+
+1. **Fixed memory leak in integrationHealthMonitor.ts**
+   - **Issue**: `setTimeout` in `Promise.race` was not cleared when health check resolved before timeout
+   - **Root Cause**: The timeout callback remained in memory even after the primary promise resolved
+   - **Fix**: Store timeout ID and clear it after Promise.race resolves
+   - **Impact**: Prevents memory leaks during frequent health checks
+   - **Code Pattern**:
+     ```typescript
+     let timeoutId: ReturnType<typeof setTimeout>;
+     const result = await Promise.race([
+       check(),
+       new Promise((_, reject) => {
+         timeoutId = setTimeout(() => reject(new Error('Timeout')), timeout);
+       })
+     ]);
+     clearTimeout(timeoutId!);
+     ```
+
+2. **Fixed memory leak in integrationResilience.ts wrapWithTimeout**
+   - **Issue**: Timeout not cleared when promise resolves before timeout
+   - **Root Cause**: Similar issue - setTimeout keeps reference even after successful resolution
+   - **Fix**: Clear timeout in the success handler of the primary promise
+   - **Impact**: Prevents memory accumulation in long-running operations
+
+3. **Fixed memory leak in fallbackStrategies.ts**
+   - **Issue**: Fallback timeout not cleared when fallback executes successfully
+   - **Fix**: Apply same pattern - store timeout ID and clear after resolution
+   - **Impact**: Prevents memory leaks during fallback execution
+
+4. **Fixed lint warnings**
+   - **fallbackStrategies.ts**: Removed unused `_integrationType` variable
+   - **resilientMarketService.ts**: Removed unused `e` variable in catch block
+   - **Impact**: Cleaner code, reduced bundle size
+
+#### Verification
+
+All fixes verified with:
+- ✅ TypeScript compilation: `npm run typecheck` - 0 errors
+- ✅ Production build: `npm run build` - 11.47s, successful
+- ✅ Test suite: `npm test` - 445 tests passing
+- ✅ No breaking changes to public APIs
+
+---
+
+### 2026-02-07 - Integration Hardening Fixes
+
+#### Bug Fixes
+
+1. **Fixed metrics tracking in integrationWrapper.ts**
+   - **Issue**: `attempts` and `retried` metrics were always reporting 0/false
+   - **Root Cause**: The `executeOperation` method didn't return retry attempt counts
+   - **Fix**: Added `executeOperationWithMetrics` method that returns `{result, attempts, retried}`
+   - **Impact**: Metrics now accurately reflect retry behavior for debugging and monitoring
+
+2. **Removed dead code in circuitBreakerMonitor.ts**
+   - **Issue**: Unused `getMetrics()` call on line 34 had no side effects
+   - **Fix**: Removed the unused call to clean up the execution path
+   - **Impact**: Cleaner code, no functional change
+
+3. **Fixed browser compatibility in integrationHealthMonitor.ts**
+   - **Issue**: Used `NodeJS.Timeout` type which is not available in browser environments
+   - **Fix**: Changed to `ReturnType<typeof setInterval>` for proper browser/Node compatibility
+   - **Impact**: Eliminates TypeScript errors in browser-only builds
+
+#### Verification
+
+All fixes verified with:
+- ✅ TypeScript compilation: `npm run typecheck` - 0 errors
+- ✅ Production build: `npm run build` - 12.75s, successful
+- ✅ Test suite: `npm test` - 445 tests passing
+- ✅ No breaking changes to public APIs
+
+---
+
 ## Version History
 
+- **v1.6.2** (2026-02-07) - Memory leak fixes
+  - Fixed setTimeout memory leaks in Promise.race patterns
+  - Fixed lint warnings in integration services
+  - Applied consistent timeout cleanup pattern across all services
+
+- **v1.6.1** (2026-02-07) - Integration hardening fixes
+  - Fixed metrics tracking for retry attempts
+  - Removed dead code in circuit breaker
+  - Fixed browser compatibility for interval types
+  
 - **v1.6** (2026-02-07) - Initial integration engineer documentation
   - Comprehensive resilience system documentation
   - Debugging techniques and best practices

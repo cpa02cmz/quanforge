@@ -231,7 +231,7 @@ To deploy to Vercel:
 
 - **[USER_GUIDE.md](./USER_GUIDE.md)** - Complete user documentation and features overview
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Step-by-step deployment guide for all platforms
-- **[API_DOCUMENTATION.md](./docs/API_DOCUMENTATION.md)** - Complete API reference
+- **[SERVICE_ARCHITECTURE.md](./docs/SERVICE_ARCHITECTURE.md)** - Service layer architecture
 - **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Development contribution guidelines
 - **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common issues and solutions
 - **[SECURITY.md](./SECURITY.md)** - Security policies and vulnerability reporting

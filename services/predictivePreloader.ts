@@ -220,7 +220,7 @@ class PredictivePreloader {
     });
 
     // Track scrolls
-    let scrollTimeout: NodeJS.Timeout;
+    let scrollTimeout: ReturnType<typeof setInterval>;
     window.addEventListener('scroll', () => {
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {

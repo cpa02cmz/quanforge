@@ -9,7 +9,7 @@ import type { IService } from './ServiceInterfaces';
 class ServiceContainer {
   private services = new Map<string, IService>();
   private instances = new Map<string, IService>();
-  private healthCheckInterval: NodeJS.Timeout | null = null;
+  private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
   private startTime = Date.now();
 
   /**

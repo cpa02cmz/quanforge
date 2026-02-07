@@ -18,7 +18,7 @@ export class CoreOptimizationEngine {
   private metricsCollector: MetricsCollector;
   private recommendationEngine: RecommendationEngine;
   private optimizationApplier: OptimizationApplier;
-  private optimizationTimer: NodeJS.Timeout | null = null;
+  private optimizationTimer: ReturnType<typeof setInterval> | null = null;
   private optimizationHistory: OptimizationHistory[] = [];
   
   private readonly MAX_OPTIMIZATION_HISTORY = 50;

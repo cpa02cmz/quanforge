@@ -5,6 +5,7 @@
 
 import { storage } from '../utils/storage';
 import { createScopedLogger } from '../utils/logger';
+import { createSafeWildcardPattern, ReDoSError } from '../utils/safeRegex';
 
 const logger = createScopedLogger('AdvancedAPICache');
 
@@ -338,10 +339,36 @@ const response = await fetch(url, options as unknown as globalThis.RequestInit);
     await this.batchFetch(requests);
   }
   
-  // Invalidate specific cache entries
-  async invalidate(pattern: string): Promise<void> {
+  // Invalidate specific cache entries with ReDoS protection
+  async invalidate(pattern: string | RegExp): Promise<void> {
     const keys = this.keys();
-    const regex = new RegExp(pattern);
+    
+    let regex: RegExp;
+    try {
+      if (typeof pattern === 'string') {
+        // Use safe regex creation for string patterns
+        if (pattern.includes('*') || pattern.includes('?')) {
+          regex = createSafeWildcardPattern(pattern);
+        } else {
+          regex = new RegExp(pattern);
+        }
+      } else {
+        regex = pattern;
+      }
+    } catch (error) {
+      if (error instanceof ReDoSError) {
+        logger.warn(`Unsafe cache invalidation pattern: ${error.message}`);
+        // Fall back to simple string matching
+        const safePattern = typeof pattern === 'string' ? pattern.replace(/[*?]/g, '') : pattern.source;
+        for (const key of keys) {
+          if (key.includes(safePattern)) {
+            await this.delete(key);
+          }
+        }
+        return;
+      }
+      throw error;
+    }
     
     for (const key of keys) {
       if (regex.test(key)) {
