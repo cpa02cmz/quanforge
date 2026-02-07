@@ -596,6 +596,10 @@ const visibleMessages = useMemo(() => {
 | ui-039 | BacktestPanel | Run/Export no aria attrs | Added aria-label | ✅ |
 | ui-040 | Generator | Mobile tabs no ARIA roles | Added tab roles | ✅ |
 | ui-041 | Global | No keyboard shortcuts help | Created KeyboardShortcutsModal | ✅ |
+| ui-042 | cacheLayer.ts | Unreachable code in getCacheStats | Removed unnecessary try-catch | ✅ |
+| ui-043 | recommendationEngine.ts | Unreachable code in analyzeQueries | Removed unnecessary try-catch | ✅ |
+| ui-044 | modularBackendOptimizationManager.ts | Unreachable code in getQueryOptimizationRecommendations | Removed unnecessary try-catch | ✅ |
+| ui-045 | supabase/index.ts | Unreachable code in getConnectionState | Removed unnecessary try-catch | ✅ |
 
 ---
 
