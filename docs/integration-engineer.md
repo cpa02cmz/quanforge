@@ -700,6 +700,53 @@ If you encounter integration issues:
 
 ## Recent Fixes & Improvements
 
+### 2026-02-07 - Integration Memory Leak Fixes
+
+#### Bug Fixes
+
+1. **Fixed memory leak in integrationHealthMonitor.ts**
+   - **Issue**: `setTimeout` in `Promise.race` was not cleared when health check resolved before timeout
+   - **Root Cause**: The timeout callback remained in memory even after the primary promise resolved
+   - **Fix**: Store timeout ID and clear it after Promise.race resolves
+   - **Impact**: Prevents memory leaks during frequent health checks
+   - **Code Pattern**:
+     ```typescript
+     let timeoutId: ReturnType<typeof setTimeout>;
+     const result = await Promise.race([
+       check(),
+       new Promise((_, reject) => {
+         timeoutId = setTimeout(() => reject(new Error('Timeout')), timeout);
+       })
+     ]);
+     clearTimeout(timeoutId!);
+     ```
+
+2. **Fixed memory leak in integrationResilience.ts wrapWithTimeout**
+   - **Issue**: Timeout not cleared when promise resolves before timeout
+   - **Root Cause**: Similar issue - setTimeout keeps reference even after successful resolution
+   - **Fix**: Clear timeout in the success handler of the primary promise
+   - **Impact**: Prevents memory accumulation in long-running operations
+
+3. **Fixed memory leak in fallbackStrategies.ts**
+   - **Issue**: Fallback timeout not cleared when fallback executes successfully
+   - **Fix**: Apply same pattern - store timeout ID and clear after resolution
+   - **Impact**: Prevents memory leaks during fallback execution
+
+4. **Fixed lint warnings**
+   - **fallbackStrategies.ts**: Removed unused `_integrationType` variable
+   - **resilientMarketService.ts**: Removed unused `e` variable in catch block
+   - **Impact**: Cleaner code, reduced bundle size
+
+#### Verification
+
+All fixes verified with:
+- ✅ TypeScript compilation: `npm run typecheck` - 0 errors
+- ✅ Production build: `npm run build` - 11.47s, successful
+- ✅ Test suite: `npm test` - 445 tests passing
+- ✅ No breaking changes to public APIs
+
+---
+
 ### 2026-02-07 - Integration Hardening Fixes
 
 #### Bug Fixes
@@ -731,6 +778,11 @@ All fixes verified with:
 ---
 
 ## Version History
+
+- **v1.6.2** (2026-02-07) - Memory leak fixes
+  - Fixed setTimeout memory leaks in Promise.race patterns
+  - Fixed lint warnings in integration services
+  - Applied consistent timeout cleanup pattern across all services
 
 - **v1.6.1** (2026-02-07) - Integration hardening fixes
   - Fixed metrics tracking for retry attempts

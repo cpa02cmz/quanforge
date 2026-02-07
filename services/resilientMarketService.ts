@@ -52,7 +52,7 @@ export const resilientMarketService = {
           setTimeout(() => {
             try {
               originalMarketService.unsubscribe(symbol, callback);
-            } catch (e) {
+            } catch {
               // Silently ignore unsubscribe errors - connection may already be closed
             }
             resolve(lastData);
