@@ -122,7 +122,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 </svg>
               )}
             </div>
-            <div className="text-sm font-medium flex-1">{toast.message}</div>
+            <div className="text-sm font-medium">{toast.message}</div>
             <button
               onClick={() => removeToast(toast.id)}
               className="ml-auto -mx-1.5 -my-1.5 rounded-lg p-1.5 text-gray-400 hover:text-white focus:ring-2 focus:ring-gray-300 focus:outline-none min-w-[32px] min-h-[32px] flex items-center justify-center transition-colors"
@@ -133,33 +133,6 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </button>
-          </div>
-        ))}
-        {/* Progress bar showing remaining time */}
-        {toasts.map((toast) => (
-          <div
-            key={`progress-${toast.id}`}
-            className={`
-              pointer-events-auto w-full max-w-xs h-1 -mt-1 rounded-b-lg overflow-hidden
-              ${toast.type === 'success' ? 'bg-brand-900/30' : ''}
-              ${toast.type === 'error' ? 'bg-red-900/30' : ''}
-              ${toast.type === 'info' ? 'bg-blue-900/30' : ''}
-            `}
-            aria-hidden="true"
-          >
-            <div
-              className={`
-                h-full rounded-b-lg animate-shrink
-                ${toast.type === 'success' ? 'bg-brand-500' : ''}
-                ${toast.type === 'error' ? 'bg-red-500' : ''}
-                ${toast.type === 'info' ? 'bg-blue-500' : ''}
-              `}
-              style={{
-                animationDuration: `${UI_TIMING.TOAST_DURATION}ms`,
-                animationTimingFunction: 'linear',
-                animationFillMode: 'forwards'
-              }}
-            />
           </div>
         ))}
       </div>
