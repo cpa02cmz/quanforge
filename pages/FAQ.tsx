@@ -340,7 +340,7 @@ const FAQComponent: React.FC = () => {
 
                 {expandedCategory === categoryKey && (
                   <div className="mt-4 space-y-4">
-                    {category.questions.map((question: any, index: number) => (
+                    {category.questions.map((question: FAQQuestion, index: number) => (
                       <div 
                         key={index}
                         className="bg-dark-surface border border-dark-border rounded-lg overflow-hidden"

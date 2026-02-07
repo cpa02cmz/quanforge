@@ -12,7 +12,7 @@ interface PendingRequest<T = any> {
 export class ApiDeduplicator {
   private pendingRequests = new Map<string, PendingRequest>();
   private readonly maxAge = 30000; // 30 seconds max age for pending requests
-  private cleanupInterval: NodeJS.Timeout;
+  private cleanupInterval: ReturnType<typeof setInterval>;
   private requestCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
   private readonly maxCacheSize = 100;
 

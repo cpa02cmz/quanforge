@@ -1,4 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { createScopedLogger } from './logger';
+
+const logger = createScopedLogger('SEOEnhanced');
 
 interface MetaTagsProps {
   title?: string;
@@ -295,8 +298,8 @@ export const useSEOAnalytics = ({ pageUrl, pageTitle, pageType = 'other', enable
         }
 
         // Log for debugging
-        if (process.env['NODE_ENV'] === 'development') {
-          console.debug('Analytics Event:', eventType, data);
+        if (import.meta.env.DEV) {
+          logger.debug('Analytics Event:', eventType, data);
         }
       } catch (error) {
         // Silent fail to not break user experience
@@ -1315,8 +1318,8 @@ export const trackCoreWebVitals = () => {
     }
     
     // Log for debugging
-    if (process.env['NODE_ENV'] === 'development') {
-      console.debug(`[Web Vitals] ${name}:`, Math.round(value), { id });
+    if (import.meta.env.DEV) {
+      logger.debug(`[Web Vitals] ${name}:`, Math.round(value), { id });
     }
   };
   

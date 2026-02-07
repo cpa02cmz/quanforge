@@ -201,22 +201,22 @@ input double StopLoss = 50.0;
 input double TakeProfit = 100.0;
 
 // Global variables
-int fastEMAHanlde;
-int slowEMAHanlde;
+int fastEMAHandle;
+int slowEMAHandle;
 
 // Initialize strategy
 int OnInit() {
     // Create indicator handles
-    fastEMAHanlde = iMA(_Symbol, _Period, FastEMA, 0, MODE_EMA, PRICE_CLOSE);
-    slowEMAHanlde = iMA(_Symbol, _Period, SlowEMA, 0, MODE_EMA, PRICE_CLOSE);
+    fastEMAHandle = iMA(_Symbol, _Period, FastEMA, 0, MODE_EMA, PRICE_CLOSE);
+    slowEMAHandle = iMA(_Symbol, _Period, SlowEMA, 0, MODE_EMA, PRICE_CLOSE);
     return(INIT_SUCCEEDED);
 }
 
 // Check for trading signals on each tick
 void OnTick() {
     // Get indicator values
-    double fastEMA = iMAGet(fastEMAHanlde, 0);
-    double slowEMA = iMAGet(slowEMAHanlde, 0);
+    double fastEMA = iMAGet(fastEMAHandle, 0);
+    double slowEMA = iMAGet(slowEMAHandle, 0);
 
     // Check for crossover
     if (fastEMA > slowEMA && /* was below before */) {
@@ -530,8 +530,8 @@ Only trade when ADX confirms strong trend.
 ### Documentation
 
 - **[README](../README.md)**: Project overview and setup
-- **[Service Architecture](SERVICE_ARCHITECTURE.md)**: Technical details
-- **[Blueprint](blueprint.md)**: System architecture
+- **[Service Architecture](./SERVICE_ARCHITECTURE.md)**: Technical details
+- **[Blueprint](./blueprint.md)**: System architecture
 - **[Coding Standards](../coding_standard.md)**: Development guidelines
 
 ### AI Prompting Tips

@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { SEOHead, structuredDataTemplates } from './seo';
 import { SEOAnalytics } from './seoAnalytics';
+import { createScopedLogger } from './logger';
+
+const logger = createScopedLogger('EnhancedSEO');
 
 interface EnhancedSEOProps {
   title?: string;
@@ -726,8 +729,8 @@ export const EnhancedSEOAnalytics: React.FC<SEOAnalyticsProps> = ({
     }
 
     // Log for debugging (remove in production)
-    if (process.env['NODE_ENV'] === 'development') {
-      console.log('Analytics Event:', eventName, data);
+    if (import.meta.env.DEV) {
+      logger.log('Analytics Event:', eventName, data);
     }
   };
 
