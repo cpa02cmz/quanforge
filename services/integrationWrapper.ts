@@ -11,7 +11,6 @@ import {
 import { circuitBreakerMonitor } from './circuitBreakerMonitor';
 import {
   fallbackManager,
-  FallbackOptions,
   FallbackStrategy,
   degradedModeManager
 } from './fallbackStrategies';

@@ -1,4 +1,4 @@
-import { IntegrationType, HealthStatus, getConfig, classifyError } from './integrationResilience';
+import { IntegrationType, HealthStatus, getConfig } from './integrationResilience';
 import { createScopedLogger } from '../utils/logger';
 
 const logger = createScopedLogger('integration-health');
@@ -144,7 +144,6 @@ export class IntegrationHealthMonitor {
   getHealthStatus(integrationType: IntegrationType, integrationName: string): HealthStatus {
     const key = `${integrationType}:${integrationName}`;
     const healthCheck = this.healthChecks.get(key);
-    const config = getConfig(integrationName);
 
     if (!healthCheck) {
       return {
@@ -186,6 +185,7 @@ export class IntegrationHealthMonitor {
 
     this.healthChecks.forEach((_, key) => {
       const [type, name] = key.split(':');
+      if (!type || !name) return;
       result[key] = this.getHealthStatus(type as IntegrationType, name);
     });
 
@@ -239,8 +239,9 @@ export class IntegrationHealthMonitor {
     
     this.healthChecks.forEach((_, key) => {
       const [type, name] = key.split(':');
+      if (!type || !name) return;
       const status = this.getHealthStatus(type as IntegrationType, name);
-      
+
       if (!status.healthy) {
         result.push({
           type: type as IntegrationType,
@@ -254,7 +255,7 @@ export class IntegrationHealthMonitor {
   }
 
   reset(): void {
-    this.healthChecks.forEach((healthCheck, key) => {
+    this.healthChecks.forEach((healthCheck, _key) => {
       if (healthCheck.intervalId) {
         clearInterval(healthCheck.intervalId);
       }
@@ -372,7 +373,9 @@ export class IntegrationMetrics {
 
     this.operationCounts.forEach((_, key) => {
       const [integrationName] = key.split(':');
-      integrations.add(integrationName);
+      if (integrationName) {
+        integrations.add(integrationName);
+      }
     });
 
     integrations.forEach(integrationName => {

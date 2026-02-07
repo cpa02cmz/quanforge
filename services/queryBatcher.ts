@@ -111,7 +111,9 @@ class QueryBatcher {
       
       for (let i = 0; i < this.batchQueue.length; i++) {
         const priorityOrder = { high: 3, medium: 2, low: 1 };
-        const currentPriority = priorityOrder[this.batchQueue[i].priority];
+        const batchItem = this.batchQueue[i];
+        if (!batchItem) continue;
+        const currentPriority = priorityOrder[batchItem.priority];
         const newPriority = priorityOrder[query.priority];
         
         if (newPriority > currentPriority) {
@@ -242,7 +244,7 @@ class QueryBatcher {
     operation: BatchQuery['operation'];
     queries: BatchQuery[];
   }): Promise<BatchResult[]> {
-    const { table, operation, queries } = group;
+    const { operation, queries } = group;
     const results: BatchResult[] = [];
 
     // Get Supabase client
@@ -294,16 +296,16 @@ class QueryBatcher {
         // Apply combined filters
         if (combined.combinedFilters) {
           for (const filter of combined.combinedFilters) {
-            queryBuilder = queryBuilder.filter(filter.column, filter.operator, filter.value);
+            (queryBuilder as any) = (queryBuilder as any).filter(filter.column, filter.operator, filter.value);
           }
         }
 
         // Apply select columns
         if (combined.selectColumns) {
-          queryBuilder = queryBuilder.select(combined.selectColumns);
+          (queryBuilder as any) = (queryBuilder as any).select(combined.selectColumns);
         }
 
-        const { data, error } = await queryBuilder;
+        const { data, error } = await (queryBuilder as any);
 
         const executionTime = performance.now() - startTime;
 
@@ -369,7 +371,8 @@ class QueryBatcher {
 
     for (const [key, groupQueries] of groups) {
       const [table, selectColumns] = key.split('-');
-      
+      if (!table) continue;
+
       combined.push({
         table,
         originalQueries: groupQueries,
@@ -387,7 +390,7 @@ class QueryBatcher {
   private extractSelectColumns(query: BatchQuery): string {
     // Simple parsing - in real implementation, this would be more sophisticated
     const match = query.query.match(/select\s+(.+?)\s+from/i);
-    return match ? match[1].trim() : '*';
+    return match?.[1]?.trim() ?? '*';
   }
 
   /**
@@ -411,7 +414,7 @@ class QueryBatcher {
   /**
    * Filter data for specific query
    */
-  private filterDataForQuery(data: any[], query: BatchQuery): any[] {
+  private filterDataForQuery(data: any[], _query: BatchQuery): any[] {
     // Simple implementation - in practice, this would be more sophisticated
     return data;
   }
@@ -567,8 +570,6 @@ class QueryBatcher {
     for (const result of results) {
       const pending = this.pendingResults.get(result.id);
       if (pending) {
-        const totalTime = performance.now() - pending.startTime;
-        
         if (result.error) {
           pending.reject(result.error);
         } else {
@@ -631,7 +632,7 @@ class QueryBatcher {
    */
   clearQueue(): void {
     // Reject all pending queries
-    for (const [id, pending] of this.pendingResults.entries()) {
+    for (const [, pending] of this.pendingResults.entries()) {
       pending.reject(new Error('Query queue cleared'));
     }
     
@@ -652,7 +653,7 @@ class QueryBatcher {
       queueLength: this.batchQueue.length,
       pendingResults: this.pendingResults.size,
       hasHighPriority: this.hasHighPriorityQueries(),
-      oldestQuery: this.batchQueue.length > 0 ? 
+      oldestQuery: this.batchQueue.length > 0 && this.batchQueue[0] ? 
         Date.now() - this.batchQueue[0].timestamp : 0
     };
   }

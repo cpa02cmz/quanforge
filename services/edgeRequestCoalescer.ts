@@ -66,7 +66,7 @@ class EdgeRequestCoalescer {
       metadata?: any;
     } = {}
   ): Promise<T> {
-    const { priority = 'medium', timeout = this.config.maxWaitTime } = options;
+    const { priority = 'medium' } = options;
     
     this.metrics.totalRequests++;
 
@@ -286,7 +286,7 @@ class EdgeRequestCoalescer {
     }
 
     // Reject all pending requests
-    for (const [key, pending] of this.pendingRequests.entries()) {
+    for (const [, pending] of this.pendingRequests.entries()) {
       pending.reject(new Error('Request coalescer destroyed'));
       if (pending.timeout) {
         clearTimeout(pending.timeout);

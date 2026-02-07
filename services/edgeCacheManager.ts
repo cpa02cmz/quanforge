@@ -365,7 +365,7 @@ export class EdgeCacheManager<T = any> {
   /**
    * Refresh entry in background
    */
-  private async refreshEntryInBackground(originalKey: string, varyKey: string, region: string): Promise<void> {
+  private async refreshEntryInBackground(originalKey: string, _varyKey: string, region: string): Promise<void> {
     // Don't wait for this to complete
     setTimeout(async () => {
       try {
@@ -430,7 +430,6 @@ export class EdgeCacheManager<T = any> {
     region?: string;
     cascade?: boolean;
   }): Promise<void> {
-    const region = options?.region || this.currentRegion;
     const patterns = Array.isArray(pattern) ? pattern : [pattern];
 
     for (const pattern of patterns) {
@@ -462,14 +461,16 @@ export class EdgeCacheManager<T = any> {
    * Semantic cache invalidation based on entity and action
    */
   async invalidateSemantic(entity: string, action: 'create' | 'update' | 'delete', id?: string): Promise<void> {
+    // Use action to avoid unused parameter error while maintaining API consistency
+    void action;
     const patterns = [
       `${entity}_list`,
       `${entity}_search`,
       `${entity}_filter`,
       id ? `${entity}_${id}` : null,
       `${entity}_analytics`
-    ].filter(Boolean);
-    
+    ].filter(Boolean) as string[];
+
     await this.invalidateIntelligent(patterns, { cascade: true, dependencies: true });
   }
 
@@ -556,12 +557,14 @@ export class EdgeCacheManager<T = any> {
   }
 
   private updateRegionalStats(region: string, tier: 'memory' | 'edge' | 'persistent'): void {
+    void tier; // Mark as intentionally unused - reserved for future tier-based stats
     const stats = this.stats.regionalStats.get(region);
     if (stats) {
       stats.hits++;
     }
   }
 
+  // @ts-ignore - Reserved for future edge cache retrieval implementation
   private async getFromEdgeCache(key: string, region: string): Promise<EdgeCacheEntry<T> | null> {
     // Simulated edge cache - in real implementation, this would use Vercel's Edge Cache API
     const edgeKey = `${region}:${key}`;
@@ -728,7 +731,9 @@ export class EdgeCacheManager<T = any> {
 
   /**
    * Predictive cache warming based on usage patterns
+   * @ts-ignore - Reserved for future cache warming implementation
    */
+  // @ts-ignore
   private async predictiveCacheWarming(): Promise<void> {
     const userPatterns = this.analyzeUserPatterns();
     const criticalPaths = this.getCriticalPaths();
@@ -921,8 +926,7 @@ export class EdgeCacheManager<T = any> {
    * Prioritize keys for warmup based on usage patterns and region
    */
   private prioritizeKeysForWarmup(keys: string[], region: string): string[] {
-    const stats = this.getStats();
-    const regionStats = stats.regionalStats.get(region);
+    void region; // Reserved for future region-based prioritization
     
     return keys.sort((a, b) => {
       // Prioritize based on historical access patterns
@@ -945,6 +949,7 @@ export class EdgeCacheManager<T = any> {
    * Get access score for a key in a specific region
    */
   private getAccessScore(key: string, region: string): number {
+    void region; // Reserved for future region-based scoring
     // Simulate access scoring based on key patterns
     if (key.includes('robots_list')) return 100;
     if (key.includes('strategies')) return 90;
@@ -1011,10 +1016,8 @@ export class EdgeCacheManager<T = any> {
    * Predict keys that are likely to be accessed
    */
   private predictAccessKeys(region: string, stats: EdgeCacheStats): string[] {
-    const keys: string[] = [];
-    
     // Base keys that are commonly accessed
-    const baseKeys = [
+    const keys: string[] = [
       'robots_list',
       'strategies_list',
       'market_data_major_pairs',
@@ -1026,17 +1029,17 @@ export class EdgeCacheManager<T = any> {
     const regionStats = stats.regionalStats.get(region);
     if (regionStats && regionStats.hits > 100) {
       // High-traffic region gets more aggressive warming
-      baseKeys.push('robots_search_trending', 'strategies_popular', 'market_data_volatility');
+      keys.push('robots_search_trending', 'strategies_popular', 'market_data_volatility');
     }
-    
+
     // Add time-based predictions
     const hour = new Date().getHours();
     if (hour >= 9 && hour <= 17) {
       // Business hours - more trading activity
-      baseKeys.push('market_data_realtime', 'strategies_active_trading');
+      keys.push('market_data_realtime', 'strategies_active_trading');
     }
-    
-    return baseKeys;
+
+    return keys;
   }
 
   /**
@@ -1148,7 +1151,7 @@ export class EdgeCacheManager<T = any> {
     let totalRegionalHits = 0;
     let activeRegions = 0;
     
-    for (const [region, regionStats] of stats.regionalStats.entries()) {
+    for (const [_region, regionStats] of stats.regionalStats.entries()) {
       if (regionStats.hits > 10) {
         totalRegionalHits += regionStats.hits;
         activeRegions++;
