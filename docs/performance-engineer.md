@@ -317,6 +317,106 @@ const logger = createScopedLogger('ServiceName');
 logger.log('Debug message'); // Only shows in development
 ```
 
+### Bug #3: Missing Timer Cleanup in EdgeCacheStrategy (Fixed 2026-02-07)
+
+**Issue:** `startCleanupTimer()` method in `services/edgeCacheStrategy.ts:274` created `setInterval` without storing the timer ID, making it impossible to clear.
+
+**Impact:** Memory leak - timer continues running even after cache is no longer needed.
+
+**Fix:** Store timer reference and provide cleanup methods:
+```typescript
+private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+
+private startCleanupTimer(): void {
+  this.cleanupTimer = setInterval(() => {
+    this.cleanup();
+  }, 60000);
+}
+
+stopCleanupTimer(): void {
+  if (this.cleanupTimer) {
+    clearInterval(this.cleanupTimer);
+    this.cleanupTimer = null;
+  }
+}
+
+destroy(): void {
+  this.stopCleanupTimer();
+  this.clear();
+}
+```
+
+### Bug #4: Type Mismatch in RealtimeManager (Fixed 2026-02-07)
+
+**Issue:** `reconnectTimer` in `services/realtimeManager.ts:53` was typed as `ReturnType<typeof setInterval>` but cleared with `clearTimeout`. The timer was never actually assigned.
+
+**Impact:** Type inconsistency and dead code - timer variable declared but never used.
+
+**Fix:** Correct the type to match actual usage:
+```typescript
+// Before
+private reconnectTimer: ReturnType<typeof setInterval> | null = null;
+
+// After
+private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+```
+
+### Bug #5: Untracked setTimeout in PredictiveCacheStrategy (Fixed 2026-02-07)
+
+**Issue:** `intelligentWarmup()` method in `services/predictiveCacheStrategy.ts:369,374` created `setTimeout` calls for staged cache warming but didn't track them, preventing cleanup.
+
+**Impact:** Memory leak - warmup timers could accumulate if method called multiple times.
+
+**Fix:** Track and cleanup warmup timers:
+```typescript
+private warmupTimers: ReturnType<typeof setTimeout>[] = [];
+
+async intelligentWarmup(): Promise<void> {
+  // ... setup code ...
+  
+  const mediumTimer = setTimeout(() => {
+    this.warmupBatch(mediumPriority, 'medium');
+  }, 1000);
+  this.warmupTimers.push(mediumTimer);
+
+  const lowTimer = setTimeout(() => {
+    this.warmupBatch(lowPriority, 'low');
+  }, 2000);
+  this.warmupTimers.push(lowTimer);
+}
+
+cleanup(): void {
+  // Clear existing cleanup timer...
+  
+  // Clear all warmup timers
+  this.warmupTimers.forEach(timer => clearTimeout(timer));
+  this.warmupTimers = [];
+}
+```
+
+### Bug #6: Global Cache Instances Without Cleanup (Fixed 2026-02-07)
+
+**Issue:** Global cache instances in `services/optimizedLRUCache.ts:244-252` were created at module level with auto-cleanup started, but no global cleanup function existed for application shutdown.
+
+**Impact:** Memory leak during hot module replacement or application restart - timers keep running.
+
+**Fix:** Export cleanup function for global cache instances:
+```typescript
+export function cleanupGlobalCaches(): void {
+  robotCache.destroy();
+  analyticsCache.destroy();
+  marketDataCache.destroy();
+}
+
+export function getGlobalCacheStats() {
+  return {
+    robot: robotCache.getStats(),
+    analytics: analyticsCache.getStats(),
+    marketData: marketDataCache.getStats()
+  };
+}
+```
+
 ## Performance Monitoring
 
 ### Real-time Metrics
@@ -391,8 +491,16 @@ dist/bundle-stats.html
 - **Bundle Analyzer**: Visualize bundle composition
 - **Web Vitals**: Real-world performance metrics
 
-## Recent Improvements (2026-01-08)
+## Recent Improvements (2026-02-07)
 
+### Performance Bug Fixes
+- **Timer Cleanup**: Fixed 4 memory leaks from untracked/mismanaged timers across services:
+  - `edgeCacheStrategy.ts`: Added timer storage and cleanup methods
+  - `realtimeManager.ts`: Fixed type mismatch for reconnectTimer
+  - `predictiveCacheStrategy.ts`: Added warmup timer tracking and cleanup
+  - `optimizedLRUCache.ts`: Added global cache cleanup functions
+
+### Previous Improvements (2026-01-08)
 - **Bundle Optimization**: Separated React Router from React core (35KB savings)
 - **Build Time**: Reduced from 13.98s to 11.14s (20% improvement)
 - **Memory Leak Fix**: Fixed unbounded timer in OptimizedLRUCache
@@ -400,4 +508,4 @@ dist/bundle-stats.html
 
 ---
 
-Last Updated: 2026-01-08 by Performance Engineer Agent
+Last Updated: 2026-02-07 by Performance Engineer Agent

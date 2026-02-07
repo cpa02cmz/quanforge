@@ -251,3 +251,24 @@ if (typeof window !== 'undefined') {
   analyticsCache.startAutoCleanup();
   marketDataCache.startAutoCleanup();
 }
+
+/**
+ * Cleanup all global cache instances
+ * Call this during application shutdown or hot module replacement
+ */
+export function cleanupGlobalCaches(): void {
+  robotCache.destroy();
+  analyticsCache.destroy();
+  marketDataCache.destroy();
+}
+
+/**
+ * Get cache statistics for all global caches
+ */
+export function getGlobalCacheStats() {
+  return {
+    robot: robotCache.getStats(),
+    analytics: analyticsCache.getStats(),
+    marketData: marketDataCache.getStats()
+  };
+}

@@ -44,6 +44,7 @@ class PredictiveCacheStrategy {
   private predictions: Map<string, PredictionResult[]> = new Map();
   private config: CacheConfig;
   private cleanupTimer: number | null = null;
+  private warmupTimers: ReturnType<typeof setTimeout>[] = [];
   private learningEnabled: boolean = true;
 
   private constructor() {
@@ -366,14 +367,16 @@ class PredictiveCacheStrategy {
       await this.warmupBatch(highPriority, 'high');
 
       // Stage 2: Medium priority (delayed)
-      setTimeout(() => {
+      const mediumTimer = setTimeout(() => {
         this.warmupBatch(mediumPriority, 'medium');
       }, 1000);
+      this.warmupTimers.push(mediumTimer);
 
       // Stage 3: Low priority (further delayed)
-      setTimeout(() => {
+      const lowTimer = setTimeout(() => {
         this.warmupBatch(lowPriority, 'low');
       }, 2000);
+      this.warmupTimers.push(lowTimer);
 
       const duration = performance.now() - startTime;
       console.log(`Intelligent cache warm-up completed in ${duration.toFixed(2)}ms (${recommendations.length} predictions)`);
@@ -559,7 +562,11 @@ class PredictiveCacheStrategy {
       window.clearInterval(this.cleanupTimer);
       this.cleanupTimer = null;
     }
-    
+
+    // Clear all warmup timers
+    this.warmupTimers.forEach(timer => clearTimeout(timer));
+    this.warmupTimers = [];
+
     // Save patterns before cleanup
     this.savePatterns();
   }
