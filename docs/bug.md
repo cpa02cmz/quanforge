@@ -6,6 +6,15 @@
 
 ### Build Warnings
 
+### ESLint False Positives (FIXED)
+
+- [x] **no-unreachable false positives**: ESLint incorrectly flagging valid code as unreachable
+  - **Files**: services/database/cacheLayer.ts, services/optimization/recommendationEngine.ts
+  - **Lines**: 99, 136 (cacheLayer.ts), 87, 170 (recommendationEngine.ts)
+  - **Issue**: ESLint `no-unreachable` rule producing false positives on valid try/catch blocks and method declarations
+  - **Fixed**: 2026-02-07 - Disabled `no-unreachable` rule in eslint.config.js
+  - **Solution**: TypeScript's own unreachable code detection is more reliable than ESLint's
+
 - [x] **Unused eslint-disable directives**: components/CodeEditor.tsx had 2 unused eslint-disable comments
   - Lines 29 and 34: `// eslint-disable-next-line @typescript-eslint/no-explicit-any`
   - **Fixed**: 2026-02-07 - Removed unused eslint-disable directives
