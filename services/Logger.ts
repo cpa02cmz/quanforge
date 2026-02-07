@@ -58,6 +58,7 @@ export class Logger {
     
     if (!this.isProduction) {
       const prefix = scope ? `[${scope}]` : '';
+      // eslint-disable-next-line no-console
       console.debug(prefix, message, metadata || '');
     }
   }
@@ -70,6 +71,7 @@ export class Logger {
     
     if (!this.isProduction) {
       const prefix = scope ? `[${scope}]` : '';
+      // eslint-disable-next-line no-console
       console.info(prefix, message, metadata || '');
     }
   }
@@ -81,6 +83,7 @@ export class Logger {
     this.addToHistory(entry);
     
     const prefix = scope ? `[${scope}]` : '';
+    // eslint-disable-next-line no-console
     console.warn(prefix, message, metadata || '');
   }
 
@@ -91,6 +94,7 @@ export class Logger {
     this.addToHistory(entry);
     
     const prefix = scope ? `[${scope}]` : '';
+    // eslint-disable-next-line no-console
     console.error(prefix, message, metadata || '');
   }
 
