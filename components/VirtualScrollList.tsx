@@ -173,7 +173,7 @@ interface RobotCardProps {
   processingId: string | null;
   onDuplicate: (id: string) => void;
   onDelete: (id: string, name: string) => void;
-  t: (key: string, params?: Record<string, any>) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 const RobotCard: React.FC<RobotCardProps> = React.memo(({

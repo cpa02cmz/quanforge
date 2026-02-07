@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, memo } from 'react';
-import { DBSettings } from '../types';
+import { DBSettings, DBMode } from '../types';
 import { settingsManager, DEFAULT_DB_SETTINGS } from '../services/settingsManager';
 import { dbUtils } from '../services';
-import { useToast } from './Toast';
+import { useToast } from './useToast';
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
 
@@ -81,8 +81,9 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
             } else {
                 showToast('Migration failed', 'error');
             }
-        } catch (e: any) {
-             showToast(`Migration error: ${e.message}`, 'error');
+        } catch (e: unknown) {
+             const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+             showToast(`Migration error: ${errorMessage}`, 'error');
         } finally {
             setIsMigrating(false);
         }
@@ -118,7 +119,7 @@ return (
                                     name="mode"
                                     value="mock"
                                     checked={settings.mode === 'mock'}
-                                    onChange={(e) => setSettings({ ...settings, mode: e.target.value as any })}
+                                    onChange={(e) => setSettings({ ...settings, mode: e.target.value as DBMode })}
                                     className="mr-3 text-brand-600 focus:ring-brand-500"
                                 />
                                 <div>
@@ -132,7 +133,7 @@ return (
                                     name="mode"
                                     value="supabase"
                                     checked={settings.mode === 'supabase'}
-                                    onChange={(e) => setSettings({ ...settings, mode: e.target.value as any })}
+                                    onChange={(e) => setSettings({ ...settings, mode: e.target.value as DBMode })}
                                     className="mr-3 text-brand-600 focus:ring-brand-500"
                                 />
                                 <div>
