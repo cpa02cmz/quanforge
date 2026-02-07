@@ -161,10 +161,15 @@ class EdgeSupabaseClient {
       return Promise.all(promises);
     } else {
       // Execute sequentially
-      const results = [];
+      const results: { data: any[] | null; error: any }[] = [];
       for (const op of operations) {
         const result = await this.edgeBatch([op], { parallel: true });
-        results.push(result[0]);
+        const firstResult = result[0];
+        if (firstResult) {
+          results.push(firstResult);
+        } else {
+          results.push({ data: null, error: new Error('No result from batch operation') });
+        }
       }
       return results;
     }
@@ -299,51 +304,20 @@ class EdgeSupabaseClient {
    /**
     * Base query execution
     */
-   private async baseQuery<T = any>(table: string, query: string): Promise<{ data: T[] | null; error: any }> {
-     try {
-       // Simple query execution - the complex parsing was causing type issues
-       const { data, error } = await this.client.from(table).select('*');
-       return { data, error };
-     } catch (error) {
-       return { data: null, error };
-     }
-   }
+    private async baseQuery<T = any>(table: string, _query: string): Promise<{ data: T[] | null; error: any }> {
+      try {
+        // Simple query execution - the complex parsing was causing type issues
+        const { data, error } = await this.client.from(table).select('*');
+        return { data, error };
+      } catch (error) {
+        return { data: null, error };
+      }
+    }
 
   /**
    * Parse and optimize query string
    */
-  private parseQuery(query: string): any {
-    const optimized: any = {};
-
-    // Simple query parsing (in production, use a proper parser)
-    if (query.includes('select')) {
-      const selectMatch = query.match(/select\((.*?)\)/);
-      if (selectMatch) {
-        optimized.select = selectMatch[1];
-      }
-    } else {
-      optimized.select = query;
-    }
-
-    if (query.includes('order')) {
-      const orderMatch = query.match(/order\((.*?),\s*{?\s*ascending:\s*(true|false)\s*}?/);
-      if (orderMatch) {
-        optimized.order = {
-          column: orderMatch[1],
-          ascending: orderMatch[2] === 'true',
-        };
-      }
-    }
-
-    if (query.includes('limit')) {
-      const limitMatch = query.match(/limit\((\d+)\)/);
-      if (limitMatch) {
-        optimized.limit = parseInt(limitMatch[1]);
-      }
-    }
-
-    return optimized;
-  }
+   // parseQuery method reserved for future query optimization implementation
 
   /**
    * Execute operations in a transaction-like manner

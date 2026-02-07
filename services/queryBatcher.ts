@@ -110,9 +110,11 @@ class QueryBatcher {
       let insertIndex = this.batchQueue.length;
       
       for (let i = 0; i < this.batchQueue.length; i++) {
-        const priorityOrder = { high: 3, medium: 2, low: 1 };
-        const currentPriority = priorityOrder[this.batchQueue[i].priority];
-        const newPriority = priorityOrder[query.priority];
+        const priorityOrder: Record<string, number> = { high: 3, medium: 2, low: 1 };
+        const currentBatchQuery = this.batchQueue[i];
+        if (!currentBatchQuery) continue;
+        const currentPriority = priorityOrder[currentBatchQuery.priority] || 0;
+        const newPriority = priorityOrder[query.priority] || 0;
         
         if (newPriority > currentPriority) {
           insertIndex = i;
@@ -242,7 +244,7 @@ class QueryBatcher {
     operation: BatchQuery['operation'];
     queries: BatchQuery[];
   }): Promise<BatchResult[]> {
-    const { table, operation, queries } = group;
+    const { table: _table, operation, queries } = group;
     const results: BatchResult[] = [];
 
     // Get Supabase client
@@ -289,12 +291,13 @@ class QueryBatcher {
       const startTime = performance.now();
       
       try {
-        let queryBuilder = client.from(combined.table!);
+        // Build query with proper typing
+        let queryBuilder: any = client.from(combined.table!);
 
-        // Apply combined filters
+        // Apply combined filters using eq operator
         if (combined.combinedFilters) {
           for (const filter of combined.combinedFilters) {
-            queryBuilder = queryBuilder.filter(filter.column, filter.operator, filter.value);
+            queryBuilder = queryBuilder.eq(filter.column, filter.value);
           }
         }
 
@@ -367,11 +370,13 @@ class QueryBatcher {
       selectColumns?: string;
     }> = [];
 
-    for (const [key, groupQueries] of groups) {
-      const [table, selectColumns] = key.split('-');
+    for (const [groupKey, groupQueries] of groups) {
+      const parts = groupKey.split('-');
+      const tableName = parts[0] || 'unknown';
+      const selectColumns = parts[1];
       
       combined.push({
-        table,
+        table: tableName,
         originalQueries: groupQueries,
         selectColumns: selectColumns !== 'undefined' ? selectColumns : undefined,
         combinedFilters: this.extractFilters(groupQueries)
@@ -387,7 +392,7 @@ class QueryBatcher {
   private extractSelectColumns(query: BatchQuery): string {
     // Simple parsing - in real implementation, this would be more sophisticated
     const match = query.query.match(/select\s+(.+?)\s+from/i);
-    return match ? match[1].trim() : '*';
+    return match && match[1] ? match[1].trim() : '*';
   }
 
   /**
@@ -411,7 +416,7 @@ class QueryBatcher {
   /**
    * Filter data for specific query
    */
-  private filterDataForQuery(data: any[], query: BatchQuery): any[] {
+  private filterDataForQuery(data: any[], _query: BatchQuery): any[] {
     // Simple implementation - in practice, this would be more sophisticated
     return data;
   }
@@ -567,7 +572,7 @@ class QueryBatcher {
     for (const result of results) {
       const pending = this.pendingResults.get(result.id);
       if (pending) {
-        const totalTime = performance.now() - pending.startTime;
+        // Total time: performance.now() - pending.startTime;
         
         if (result.error) {
           pending.reject(result.error);
@@ -631,7 +636,7 @@ class QueryBatcher {
    */
   clearQueue(): void {
     // Reject all pending queries
-    for (const [id, pending] of this.pendingResults.entries()) {
+    for (const [_id, pending] of this.pendingResults.entries()) {
       pending.reject(new Error('Query queue cleared'));
     }
     
@@ -652,7 +657,7 @@ class QueryBatcher {
       queueLength: this.batchQueue.length,
       pendingResults: this.pendingResults.size,
       hasHighPriority: this.hasHighPriorityQueries(),
-      oldestQuery: this.batchQueue.length > 0 ? 
+      oldestQuery: this.batchQueue.length > 0 && this.batchQueue[0] ? 
         Date.now() - this.batchQueue[0].timestamp : 0
     };
   }

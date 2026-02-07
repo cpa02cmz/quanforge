@@ -1,7 +1,9 @@
-import { IntegrationType, getConfig } from './integrationResilience';
 import { createScopedLogger } from '../utils/logger';
 
 const logger = createScopedLogger('fallback-strategies');
+
+// Import IntegrationType for type safety
+import type { IntegrationType } from './integrationResilience';
 
 export interface FallbackResult<T> {
   data?: T;
@@ -39,7 +41,7 @@ export class FallbackManager {
   private fallbackMetrics = new Map<string, FallbackMetrics>();
 
   async executeWithFallback<T>(options: FallbackOptions<T>): Promise<FallbackResult<T>> {
-    const { integrationType, integrationName, primaryOperation, fallbacks, fallbackTimeout = 5000, logFallbacks = true } = options;
+    const { integrationType: _integrationType, integrationName, primaryOperation, fallbacks, fallbackTimeout = 5000, logFallbacks = true } = options;
     const metrics = this.getOrCreateMetrics(integrationName);
 
     try {
@@ -138,7 +140,7 @@ export class FallbackManager {
 
   getAllMetrics(): Record<string, FallbackMetrics> {
     const result: Record<string, FallbackMetrics> = {};
-    this.fallbackMetrics.forEach((metrics, name) => {
+    this.fallbackMetrics.forEach((_metrics, name) => {
       result[name] = this.getMetrics(name);
     });
     return result;

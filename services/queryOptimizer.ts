@@ -22,7 +22,6 @@ class QueryOptimizer {
   private queryMetrics: QueryMetrics[] = [];
   private readonly DEFAULT_TTL = 600000; // 10 minutes - extended for better cache hit rates
   private readonly MAX_METRICS = 1000;
-  private cacheHitRate = 0;
   private totalQueries = 0;
   private cacheHits = 0;
 
@@ -89,8 +88,7 @@ class QueryOptimizer {
         this.cacheHits++;
         cached.hits++; // Track cache hit frequency
         
-        // Update cache hit rate
-        this.cacheHitRate = (this.cacheHits / this.totalQueries) * 100;
+        // Cache hit rate: (this.cacheHits / this.totalQueries) * 100
         
         const metrics: QueryMetrics = {
           executionTime: performance.now() - startTime,
