@@ -6,6 +6,11 @@
 
 ### Build Warnings
 
+- [x] **Unused eslint-disable directives**: components/CodeEditor.tsx had 2 unused eslint-disable comments
+  - Lines 29 and 34: `// eslint-disable-next-line @typescript-eslint/no-explicit-any`
+  - **Fixed**: 2026-02-07 - Removed unused eslint-disable directives
+  - **Reason**: Type casting was already properly typed with `(window as unknown as { ... })`
+
 - [x] **Dynamic Import Warning**: services/dynamicSupabaseLoader.ts dynamically imported but also statically imported
   - File: services/enhancedSupabasePool.ts importing from edgeSupabasePool.ts, readReplicaManager.ts
   - Impact: Dynamic import will not move module into another chunk

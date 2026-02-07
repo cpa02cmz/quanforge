@@ -6,7 +6,7 @@ import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
-import { TIMEOUTS } from '../constants';
+import { TIMEOUTS, CACHE_LIMITS, BATCH_SIZES } from '../constants';
 import { getLocalStorage, StorageQuotaError } from '../utils/storage';
 
 // Enhanced connection retry configuration with exponential backoff
@@ -406,7 +406,7 @@ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
               .from('robots')
               .select('*')
               .order('created_at', { ascending: false })
-              .limit(100); // Add reasonable limit to prevent performance issues
+              .limit(CACHE_LIMITS.DEFAULT_QUERY_LIMIT); // Use centralized limit
             
             if (result.data && !result.error) {
               // Create index for performance
@@ -1095,9 +1095,9 @@ export const dbUtils = {
 
             if (payload.length === 0) return { success: false, count: 0, error: "Local data invalid." };
 
-            const BATCH_SIZE = 10;
-            for (let i = 0; i < payload.length; i += BATCH_SIZE) {
-                const chunk = payload.slice(i, i + BATCH_SIZE);
+            const batchSize = BATCH_SIZES.DATABASE_OPERATIONS;
+            for (let i = 0; i < payload.length; i += batchSize) {
+                const chunk = payload.slice(i, i + batchSize);
                 const { error } = await client.from('robots').insert(chunk);
                 if (error) {
                     console.error("Batch migration failed", error);
@@ -1302,10 +1302,10 @@ export const dbUtils = {
                 }
             } else {
                 // For Supabase, process in batches to avoid query limits
-                const BATCH_SIZE = 10;
-                
-                for (let i = 0; i < updates.length; i += BATCH_SIZE) {
-                    const batch = updates.slice(i, i + BATCH_SIZE);
+                const batchSize = BATCH_SIZES.DATABASE_OPERATIONS;
+
+                for (let i = 0; i < updates.length; i += batchSize) {
+                    const batch = updates.slice(i, i + batchSize);
                     
                     try {
                         // Process each item in the batch individually due to Supabase limitations

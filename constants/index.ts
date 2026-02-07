@@ -89,6 +89,31 @@ export const VIRTUAL_SCROLL = {
   ITEM_HEIGHT: 280, // Height of each robot card in px
 } as const;
 
+// Cache and Query Limits
+export const CACHE_LIMITS = {
+  DEFAULT_QUERY_LIMIT: 100, // Default limit for database queries
+  ROBOT_CACHE_SIZE: 200, // Maximum items in robot cache
+  ANALYTICS_CACHE_SIZE: 100, // Maximum items in analytics cache
+  MARKET_DATA_CACHE_SIZE: 50, // Maximum items in market data cache
+  CACHE_HISTORY_LIMIT: 100, // Maximum history entries to retain
+} as const;
+
+// Batch Processing Sizes
+export const BATCH_SIZES = {
+  DATABASE_OPERATIONS: 10, // Batch size for DB operations
+  PAGINATION_DEFAULT: 20, // Default items per page
+  PAGINATION_MAX: 100, // Maximum items per page
+  PREFETCH_BATCH: 20, // Batch size for prefetch operations
+} as const;
+
+// Performance Thresholds (ms)
+export const PERF_THRESHOLDS = {
+  QUERY_SLOW: 500, // Slow query threshold
+  QUERY_CRITICAL: 1000, // Critical query threshold
+  CACHE_LOW_HIT_RATE: 30, // Low cache hit rate percentage
+  MEMORY_CLEANUP_THRESHOLD: 1000, // Memory cleanup trigger
+} as const;
+
 // Lazy load translations
 export const loadTranslations = async (language: Language) => {
   const translations = await import(`./translations/${language}.js`);
