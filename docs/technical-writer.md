@@ -236,6 +236,7 @@ npm run typecheck
 - Fixed: Relative path links to parent directory files
 - Fixed: Broken references to deleted API_DOCUMENTATION.md (see Bug Fixes below)
 - Fixed: Internal documentation links with incorrect `docs/` prefix (see Link Fixes below)
+- Fixed: Internal documentation links with incorrect `./` prefix (see Consistency Fixes below)
 
 **Bug Fixes (2026-02-07):**
 - **Issue**: Multiple documentation files referenced deleted `docs/API_DOCUMENTATION.md`
@@ -258,6 +259,16 @@ npm run typecheck
   7. reliability-engineer.md: Fixed 4 internal links
 - **Pattern**: Changed `[Text](docs/FILENAME.md)` to `[Text](FILENAME.md)` for files within docs/ folder
 - **Impact**: All internal documentation links now follow correct relative path conventions
+
+**Documentation Consistency Fixes (2026-02-07):**
+- **Issue**: 4 documentation files used inconsistent `./` prefix for same-directory links
+- **Files Fixed**:
+  1. QUICK_START.md: Fixed 2 links (`./SERVICE_ARCHITECTURE.md` → `SERVICE_ARCHITECTURE.md`, `./blueprint.md` → `blueprint.md`)
+  2. code-reviewer.md: Fixed 1 link (`./bug.md` → `bug.md`)
+  3. devops-engineer.md: Fixed 2 links (`./SERVICE_ARCHITECTURE.md` → `SERVICE_ARCHITECTURE.md`, `./INTEGRATION_RESILIENCE.md` → `INTEGRATION_RESILIENCE.md`)
+  4. reliability-engineer.md: Fixed 4 links (`./INTEGRATION_RESILIENCE.md` → `INTEGRATION_RESILIENCE.md`, `./SERVICE_ARCHITECTURE.md` → `SERVICE_ARCHITECTURE.md`, `./bug.md` → `bug.md`, `./code-reviewer.md` → `code-reviewer.md`)
+- **Pattern**: Removed unnecessary `./` prefix from same-directory internal links
+- **Impact**: All internal documentation links now follow consistent formatting conventions
 
 **Code Quality Fixes (2026-02-07):**
 - **Issue**: 4 lint errors due to unreachable code in service files
