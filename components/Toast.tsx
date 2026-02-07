@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { UI_TIMING } from '../constants';
 import { ToastContext, ToastType } from './ToastContext';
+export { ToastContext } from './ToastContext';
 import { getToastAriaLive, getToastLabel } from './toastUtils';
 export type { ToastType } from './ToastContext';
 
@@ -40,8 +41,12 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
+  const hideToast = useCallback((id: string) => {
+    removeToast(id);
+  }, []);
+
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={{ toasts, showToast, hideToast }}>
       {children}
       <div 
         className="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"

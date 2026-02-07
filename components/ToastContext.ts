@@ -9,7 +9,9 @@ export interface Toast {
 }
 
 export interface ToastContextType {
+  toasts: Toast[];
   showToast: (message: string, type?: ToastType) => void;
+  hideToast: (id: string) => void;
 }
 
 export const ToastContext = createContext<ToastContextType | undefined>(undefined);
