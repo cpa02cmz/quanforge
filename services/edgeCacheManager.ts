@@ -4,6 +4,7 @@
  */
 
 import { EdgeCacheCompression } from './edgeCacheCompression';
+import { createSafeWildcardPattern, ReDoSError } from '../utils/safeRegex';
 
 interface EdgeCacheEntry<T> {
   data: T;
@@ -707,10 +708,19 @@ export class EdgeCacheManager<T = any> {
   }
 
   private matchesPattern(key: string, pattern: string): boolean {
-    // Simple pattern matching - can be enhanced with regex
+    // Simple pattern matching with ReDoS protection
     if (pattern.includes('*')) {
-      const regex = new RegExp(pattern.replace(/\*/g, '.*'));
-      return regex.test(key);
+      try {
+        const regex = createSafeWildcardPattern(pattern);
+        return regex.test(key);
+      } catch (error) {
+        // Fall back to simple string matching if pattern is unsafe
+        if (error instanceof ReDoSError) {
+          console.warn('Unsafe cache pattern detected:', error.message);
+          return key.includes(pattern.replace(/\*/g, ''));
+        }
+        return false;
+      }
     }
     return key.includes(pattern);
   }
