@@ -53,6 +53,7 @@ export const resilientMarketService = {
             try {
               originalMarketService.unsubscribe(symbol, callback);
             } catch (e) {
+              // Silently ignore unsubscribe errors - connection may already be closed
             }
             resolve(lastData);
           }, 100);

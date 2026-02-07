@@ -6,6 +6,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { createScopedLogger } from '../utils/logger';
+import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 
 const logger = createScopedLogger('EnhancedConnectionPool');
 
@@ -127,10 +128,7 @@ class EnhancedSupabaseConnectionPool {
 
     const id = this.generateConnectionId();
     const preferredRegion = region || process.env['VERCEL_REGION'] || 'default';
-    
-    // Use dynamic loader for better bundle optimization
-    const { createDynamicSupabaseClient } = await import('./dynamicSupabaseLoader');
-    
+
     // Enhanced connection configuration for edge optimization
     const client = await createDynamicSupabaseClient(
       settings.url, 

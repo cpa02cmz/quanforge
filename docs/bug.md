@@ -6,9 +6,11 @@
 
 ### Build Warnings
 
-- [ ] **Dynamic Import Warning**: services/dynamicSupabaseLoader.ts dynamically imported but also statically imported
+- [x] **Dynamic Import Warning**: services/dynamicSupabaseLoader.ts dynamically imported but also statically imported
   - File: services/enhancedSupabasePool.ts importing from edgeSupabasePool.ts, readReplicaManager.ts
   - Impact: Dynamic import will not move module into another chunk
+  - **Fixed**: 2026-02-07 - Converted dynamic import to static import in enhancedSupabasePool.ts
+  - **Solution**: Added static import at top of file, removed dynamic import statement
 
 ### Test stderr Output (Non-critical, but noisy)
 
@@ -18,6 +20,35 @@
 - [ ] **mockImplementation.test.ts**: Storage quota exceeded message logged
 
 ## Fixed Bugs
+
+### 2026-02-07 - Lint Error Fixes (Code Reviewer)
+
+#### ✅ services/securityManager.ts
+- [x] **no-useless-escape**: Fixed 23 unnecessary escape characters in regex patterns (lines 466, 613)
+  - Inside character classes `[]`, special characters don't need escaping except: `-`, `]`, `\`, `^`
+  - Removed escapes: `\(`, `\)`, `\[`, `\]`, `\{`, `\}`, `\.`, `\,`, `\;`, `\:`, `\+`, `\*`, `\/`, `\=`, `\>`, `\<`, `\!`, `\&`, `\|`, `\^`, `\~`, `\%`
+- [x] **no-prototype-builtins**: Fixed unsafe prototype method call (line 1556)
+  - Changed: `obj.hasOwnProperty(key)` → `Object.prototype.hasOwnProperty.call(obj, key)`
+
+#### ✅ services/enhancedSecurityManager.ts
+- [x] **no-useless-escape**: Fixed 5 unnecessary escape characters (lines 162, 163, 583)
+  - Removed `\` before `%` in Unicode attack patterns
+- [x] **no-control-regex**: Added eslint-disable comment for intentional null byte check (line 556)
+  - Security feature requires checking for null bytes in input sanitization
+
+#### ✅ services/predictiveCacheStrategy.ts
+- [x] **no-useless-catch**: Removed unnecessary try/catch wrapper (line 410)
+  - Catch block only re-threw the error without adding value
+
+#### ✅ services/resilientMarketService.ts
+- [x] **no-empty**: Fixed empty catch block (line 55)
+  - Added explanatory comment for intentionally ignored unsubscribe errors
+
+**Verification:**
+- ✅ TypeScript compilation: Zero errors
+- ✅ Build: Successful (12.62s)
+- ✅ Tests: All 423 tests passing
+- ✅ Lint: Zero errors (1681 warnings remaining)
 
 ### 2026-02-07 - PHASE 2 Bug Fixes (Code Reviewer)
 
@@ -69,6 +100,23 @@
 - ✅ Build: Successful (12.30s)
 - ✅ Tests: All 423 tests passing
 - ✅ Lint: No errors (warnings only)
+
+### 2026-02-07 - Build Warning Fixes (Code Reviewer)
+
+#### ✅ services/enhancedSupabasePool.ts
+- [x] **Dynamic Import Warning**: Module dynamically imported but also statically imported
+  - Issue: `dynamicSupabaseLoader.ts` was both dynamically imported (line 133) and statically imported in other files
+  - Impact: Build warning "dynamic import will not move module into another chunk"
+  - Solution: Converted dynamic import to static import
+    - Added: `import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';` at top of file
+    - Removed: `const { createDynamicSupabaseClient } = await import('./dynamicSupabaseLoader');`
+  - Result: Eliminates build warning, consistent import pattern across codebase
+
+**Verification:**
+- ✅ TypeScript compilation: Zero errors
+- ✅ Build: Successful (12.22s) - No dynamic import warnings
+- ✅ Tests: All 423 tests passing
+- ✅ Lint: No new errors
 
 ### 2026-02-07 - PHASE 1 Bug Fixes
 
