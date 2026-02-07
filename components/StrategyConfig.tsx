@@ -299,6 +299,7 @@ const sanitizeInput = (input: string): string => {
                   }`}
                   placeholder="BTCUSDT"
                   aria-invalid={!!errors.symbol}
+                  aria-describedby={errors.symbol ? 'config-symbol-error' : 'config-symbol-hint'}
                 />
               </FormField>
               <FormField
@@ -333,6 +334,7 @@ const sanitizeInput = (input: string): string => {
                     errors.riskPercent ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
                   }`}
                   aria-invalid={!!errors.riskPercent}
+                  aria-describedby={errors.riskPercent ? 'config-risk-error' : 'config-risk-hint'}
                 />
               </FormField>
               <FormField
@@ -350,43 +352,7 @@ const sanitizeInput = (input: string): string => {
                     errors.magicNumber ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
                   }`}
                   aria-invalid={!!errors.magicNumber}
-                />
-              </FormField>
-              <FormField
-                label={t('config_risk')}
-                error={errors.riskPercent}
-                hint="Percentage of account balance to risk per trade (1-100)"
-                required
-                htmlFor="config-risk"
-              >
-                <NumericInput
-                  id="config-risk"
-                  value={params.riskPercent}
-                  onChange={(val) => handleChangeWithValidation('riskPercent', val)}
-                  step="0.1"
-                  className={`w-full bg-dark-surface border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 outline-none transition-colors ${
-                    errors.riskPercent ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
-                  }`}
-                  aria-invalid={!!errors.riskPercent}
-                  aria-describedby={errors.riskPercent ? undefined : 'config-risk-hint'}
-                />
-              </FormField>
-              <FormField
-                label={t('config_magic')}
-                error={errors.magicNumber}
-                hint="Unique identifier for the Expert Advisor"
-                required
-                htmlFor="config-magic"
-              >
-                <NumericInput
-                  id="config-magic"
-                  value={params.magicNumber}
-                  onChange={(val) => handleChangeWithValidation('magicNumber', val)}
-                  className={`w-full bg-dark-surface border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 outline-none transition-colors ${
-                    errors.magicNumber ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
-                  }`}
-                  aria-invalid={!!errors.magicNumber}
-                  aria-describedby={errors.magicNumber ? undefined : 'config-magic-hint'}
+                  aria-describedby={errors.magicNumber ? 'config-magic-error' : 'config-magic-hint'}
                 />
               </FormField>
             </div>
@@ -414,6 +380,7 @@ const sanitizeInput = (input: string): string => {
                     errors.stopLoss ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
                   }`}
                   aria-invalid={!!errors.stopLoss}
+                  aria-describedby={errors.stopLoss ? 'config-sl-error' : 'config-sl-hint'}
                 />
               </FormField>
               <FormField
@@ -431,6 +398,7 @@ const sanitizeInput = (input: string): string => {
                     errors.takeProfit ? 'border-red-500 focus:ring-red-500' : 'border-dark-border focus:ring-brand-500'
                   }`}
                   aria-invalid={!!errors.takeProfit}
+                  aria-describedby={errors.takeProfit ? 'config-tp-error' : 'config-tp-hint'}
                 />
               </FormField>
             </div>
