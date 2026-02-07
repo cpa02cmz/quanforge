@@ -23,6 +23,7 @@ export class OptimizedLRUCache<T> {
   private readonly defaultTtl: number;
   private hits = 0;
   private misses = 0;
+  private cleanupTimer: NodeJS.Timeout | null = null;
 
   constructor(maxSize: number = 200, defaultTtl: number = 900000) { // 15 min default TTL
     this.maxSize = maxSize;
@@ -202,7 +203,10 @@ export class OptimizedLRUCache<T> {
    * Set up automatic cleanup interval
    */
   startAutoCleanup(intervalMs: number = 300000): void { // 5 minutes
-    setInterval(() => {
+    // Clear existing timer if any
+    this.stopAutoCleanup();
+    
+    this.cleanupTimer = setInterval(() => {
       try {
         const cleaned = this.cleanup();
         if (cleaned > 0 && import.meta.env.DEV) {
@@ -212,6 +216,24 @@ export class OptimizedLRUCache<T> {
         handleError(error as Error, 'cacheAutoCleanup', 'OptimizedLRUCache');
       }
     }, intervalMs);
+  }
+
+  /**
+   * Stop automatic cleanup interval
+   */
+  stopAutoCleanup(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+  }
+
+  /**
+   * Destroy the cache and cleanup all resources
+   */
+  destroy(): void {
+    this.stopAutoCleanup();
+    this.clear();
   }
 }
 
