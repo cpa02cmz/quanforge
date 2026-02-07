@@ -97,13 +97,12 @@ class FrontendOptimizer {
     }
   }
 
-  /**
+   /**
    * Setup resource prefetching for critical resources
+   * Note: This is a client-side SPA - no REST API endpoints exist
    */
   private setupResourcePrefetching(): void {
     const criticalResources = [
-      '/api/robots',
-      '/api/strategies',
       'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
     ];
 
