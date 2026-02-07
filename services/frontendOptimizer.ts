@@ -3,6 +3,10 @@
  * Provides additional performance optimizations for the frontend
  */
 
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('FrontendOptimizer');
+
 interface FrontendOptimizationConfig {
   enableResourcePrefetching: boolean;
   enableLazyLoading: boolean;
@@ -97,13 +101,12 @@ class FrontendOptimizer {
     }
   }
 
-  /**
+   /**
    * Setup resource prefetching for critical resources
+   * Note: This is a client-side SPA - no REST API endpoints exist
    */
   private setupResourcePrefetching(): void {
     const criticalResources = [
-      '/api/robots',
-      '/api/strategies',
       'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
     ];
 
@@ -238,7 +241,7 @@ class FrontendOptimizer {
     nonCriticalModules.forEach((moduleLoader, index) => {
       setTimeout(() => {
         moduleLoader().catch((error) => {
-          console.warn(`Failed to preload module ${index}:`, error);
+          logger.warn(`Failed to preload module ${index}:`, error);
         });
       }, 5000 + index * 2000); // Stagger loading
     });

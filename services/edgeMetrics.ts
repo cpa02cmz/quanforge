@@ -53,8 +53,9 @@ class EdgeMetricsCollector {
   private async detectEdgeRegion(): Promise<void> {
     try {
       // Use a simple latency test to detect nearest edge region
+      // Note: Using a static asset instead of non-existent API endpoint
       const startTime = performance.now();
-      await fetch('/api/health', { method: 'HEAD' });
+      await fetch('/manifest.json', { method: 'HEAD', cache: 'no-cache' });
       const responseTime = performance.now() - startTime;
       
       this.recordMetric({

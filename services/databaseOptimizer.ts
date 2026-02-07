@@ -2,6 +2,9 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Robot } from '../types';
 import { queryOptimizer } from './queryOptimizer';
 import { securityManager } from './securityManager';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('DatabaseOptimizer');
 
 interface OptimizationConfig {
   enableQueryCaching: boolean;
@@ -352,7 +355,7 @@ class DatabaseOptimizer {
     params: any 
   }>): Promise<Array<{ data: T | null; error: any }>> {
     // Implementation would combine queries into a single database operation
-    console.log(`Executing batched query for ${queries.length} operations`);
+    logger.log(`Executing batched query for ${queries.length} operations`);
     return queries.map(() => ({ data: null as T | null, error: null }));
   }
 
@@ -385,9 +388,9 @@ class DatabaseOptimizer {
           }
         });
       }
-    } catch (err) {
+    } catch (_err) {
       // pg_stat_statements might not be available, which is fine
-      console.debug('Query statistics not available for optimization recommendations');
+      logger.debug('Query statistics not available for optimization recommendations');
     }
     
     // Add general recommendations based on our metrics
@@ -414,10 +417,10 @@ class DatabaseOptimizer {
           recommendations.push(`Table "${table.relname}" has ${table.n_tup_del} deleted rows, consider VACUUM operation for optimization.`);
         });
       }
-    } catch (err) {
-      console.debug('Table statistics not available for optimization recommendations');
+    } catch (_err) {
+      logger.debug('Table statistics not available for optimization recommendations');
     }
-    
+
     return {
       recommendations,
       severity: recommendations.length > 5 ? 'high' : recommendations.length > 2 ? 'medium' : 'low',
@@ -445,10 +448,10 @@ class DatabaseOptimizer {
       if (!strategyError && strategyInsights) {
         performanceInsights.push(...strategyInsights);
       }
-    } catch (err) {
-      console.debug('Strategy performance insights not available');
+    } catch (_err) {
+      logger.debug('Strategy performance insights not available');
     }
-    
+
     // Suggest materialized views for complex aggregations
     materializedViewRecommendations.push(
       'CREATE MATERIALIZED VIEW IF NOT EXISTS robots_summary_cache AS SELECT strategy_type, COUNT(*) as count, AVG(view_count) as avg_views FROM robots GROUP BY strategy_type;',
@@ -490,7 +493,7 @@ class DatabaseOptimizer {
         for (const table of tables) {
           if (table.n_tup_del > 1000) {
             // In a real implementation, we would run VACUUM ANALYZE on the table
-            console.log(`Table ${table.relname} has ${table.n_tup_del} deleted tuples, optimization recommended`);
+            logger.log(`Table ${table.relname} has ${table.n_tup_del} deleted tuples, optimization recommended`);
           }
         }
       }
@@ -526,31 +529,31 @@ class DatabaseOptimizer {
       // Run ANALYZE to update table statistics
       const { error: analyzeError } = await client.rpc('pg_stat_reset');
       if (analyzeError) {
-        console.error('Error running ANALYZE:', analyzeError);
+        logger.error('Error running ANALYZE:', analyzeError);
       }
-      
+
       // Get tables that need maintenance
       const { data: tables, error: tableError } = await client
         .from('pg_stat_user_tables')
         .select('relname, n_tup_del')
         .gt('n_tup_del', 5000); // Tables with significant deletions
-      
+
       if (!tableError && tables) {
         for (const table of tables) {
-          console.log(`Table ${table.relname} has ${table.n_tup_del} deleted tuples, maintenance recommended`);
+          logger.log(`Table ${table.relname} has ${table.n_tup_del} deleted tuples, maintenance recommended`);
           // In a real scenario, we would run VACUUM operations here
         }
       }
-      
+
       return {
         success: true,
         message: 'Database maintenance completed'
       };
-    } catch (error) {
-      console.error('Database maintenance failed:', error);
+    } catch (_error) {
+      logger.error('Database maintenance failed:', _error);
       return {
         success: false,
-        message: `Database maintenance failed: ${error}`
+        message: `Database maintenance failed: ${_error}`
       };
     }
   }

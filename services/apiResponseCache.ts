@@ -5,6 +5,9 @@
  */
 
 import { edgeKVService } from './edgeKVStorage';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('ApiResponseCache');
 
 // Cache configuration
 const CACHE_CONFIG = {
@@ -34,14 +37,14 @@ const CACHE_CONFIG = {
   },
   
   // Cache warming
+  // Note: This is a client-side SPA with no REST API endpoints
+  // Cache warming targets static assets instead
   WARMING: {
     ENABLED: true,
     INTERVAL: 300000, // 5 minutes
     PRIORITY_ENDPOINTS: [
-      '/api/robots/list',
-      '/api/strategies/types',
-      '/api/user/preferences',
-      '/api/analytics/summary',
+      '/index.html',
+      '/manifest.json',
     ],
   },
 };
@@ -99,33 +102,35 @@ class APIResponseCache {
   }
 
   // Setup invalidation rules
+  // Note: This is a client-side SPA with no REST API endpoints
+  // Invalidation rules target service-level cache keys instead
   private setupInvalidationRules() {
     // User data invalidation
     this.addInvalidationRule({
-      pattern: /^\/api\/user\//,
-      endpoints: ['/api/user/*', '/api/robots/list'],
+      pattern: /^user:/,
+      endpoints: ['user:*', 'robots:list'],
       strategy: 'immediate',
     });
 
     // Robot data invalidation
     this.addInvalidationRule({
-      pattern: /^\/api\/robots\//,
-      endpoints: ['/api/robots/*', '/api/search/*'],
+      pattern: /^robot:/,
+      endpoints: ['robot:*', 'search:*'],
       strategy: 'immediate',
     });
 
     // Analytics invalidation
     this.addInvalidationRule({
-      pattern: /^\/api\/analytics\//,
-      endpoints: ['/api/analytics/*'],
+      pattern: /^analytics:/,
+      endpoints: ['analytics:*'],
       strategy: 'delayed',
       delay: 5000, // 5 seconds delay
     });
 
     // Search invalidation
     this.addInvalidationRule({
-      pattern: /^\/api\/search\//,
-      endpoints: ['/api/search/*'],
+      pattern: /^search:/,
+      endpoints: ['search:*'],
       strategy: 'delayed',
       delay: 2000, // 2 seconds delay
     });
@@ -179,7 +184,7 @@ class APIResponseCache {
         return { compressed: true, data: compressed, originalSize, compressedSize };
       }
     } catch (e) {
-      console.warn('Compression failed:', e);
+      logger.warn('Compression failed:', e);
     }
 
     return { compressed: false, data, originalSize, compressedSize: originalSize };
@@ -198,7 +203,7 @@ class APIResponseCache {
     try {
       return atob(data);
     } catch (e) {
-      console.warn('Decompression failed:', e);
+      logger.warn('Decompression failed:', e);
       return data;
     }
   }
@@ -267,7 +272,7 @@ class APIResponseCache {
       this.metrics.misses++;
       return null;
     } catch (error) {
-      console.error('Cache get error:', error);
+      logger.error('Cache get error:', error);
       this.metrics.misses++;
       return null;
     }
@@ -285,7 +290,7 @@ class APIResponseCache {
       
       // Check size limit
       if (serialized.length > CACHE_CONFIG.MAX_RESPONSE_SIZE) {
-        console.warn(`Response too large for cache: ${serialized.length} bytes`);
+        logger.warn(`Response too large for cache: ${serialized.length} bytes`);
         return false;
       }
 
@@ -319,7 +324,7 @@ class APIResponseCache {
       this.metrics.sets++;
       return true;
     } catch (error) {
-      console.error('Cache set error:', error);
+      logger.error('Cache set error:', error);
       return false;
     }
   }
@@ -353,9 +358,9 @@ class APIResponseCache {
         
         this.metrics.invalidations += keysToDelete.length;
         
-        console.log(`Invalidated ${keysToDelete.length} cache entries for pattern:`, pattern);
+        logger.log(`Invalidated ${keysToDelete.length} cache entries for pattern:`, pattern);
       } catch (error) {
-        console.error('Cache invalidation error:', error);
+        logger.error('Cache invalidation error:', error);
       }
     };
 
@@ -394,7 +399,7 @@ class APIResponseCache {
   }
 
   // Cache warming for popular endpoints
-  private async warmCache(): Promise<void> {
+  async warmCache(): Promise<void> {
     if (!CACHE_CONFIG.WARMING.ENABLED) return;
 
     try {
@@ -408,15 +413,15 @@ class APIResponseCache {
             if (response.ok) {
               const data = await response.json();
               await this.set(endpoint, 'GET', data, undefined, Object.fromEntries(response.headers.entries()));
-              console.log(`Warmed cache for endpoint: ${endpoint}`);
+              logger.log(`Warmed cache for endpoint: ${endpoint}`);
             }
           } catch (e) {
-            console.warn(`Failed to warm cache for ${endpoint}:`, e);
+            logger.warn(`Failed to warm cache for ${endpoint}:`, e);
           }
         }
       }
     } catch (error) {
-      console.error('Cache warming error:', error);
+      logger.error('Cache warming error:', error);
     }
   }
 
@@ -450,7 +455,7 @@ class APIResponseCache {
     }
     
     if (cleanedCount > 0) {
-      console.log(`Cleaned up ${cleanedCount} expired cache entries`);
+      logger.log(`Cleaned up ${cleanedCount} expired cache entries`);
     }
   }
 
@@ -478,7 +483,7 @@ class APIResponseCache {
   async clearAll(): Promise<void> {
     this.memoryCache.clear();
     await edgeKVService.clearAll();
-    console.log('All caches cleared');
+    logger.log('All caches cleared');
   }
 
   // Export cache state (for debugging)
