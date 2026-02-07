@@ -1,0 +1,211 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/kimi-k2.5-free",
+  "small_model": "opencode/minimax-m2.1-free",
+  "autoupdate": true,
+  "theme": "opencode",
+  "tui": {
+    "scroll_speed": 3,
+    "scroll_acceleration": {
+      "enabled": true
+    },
+    "diff_style": "auto"
+  },
+  "server": {
+    "port": 4096,
+    "hostname": "0.0.0.0",
+    "mdns": true,
+    "mdnsDomain": "quanforge.local"
+  },
+  "provider": {
+    "opencode": {
+      "models": {
+        "kimi-k2.5-free": {
+          "options": {
+            "temperature": 0.7
+          }
+        },
+        "glm-4.7-free": {
+          "options": {
+            "temperature": 0.5
+          }
+        },
+        "minimax-m2.1-free": {
+          "options": {
+            "temperature": 0.4
+          }
+        }
+      }
+    }
+  },
+  "agent": {
+    "default": {
+      "model": "opencode/kimi-k2.5-free",
+      "prompt": "You are a professional software engineer working on the QuanForge project, an AI-Powered Trading Strategy Generator. Follow best practices, write clean code, and ensure all changes are tested.",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "sisyphus": {
+      "description": "Autonomous workflow automation agent for continuous tasks",
+      "model": "opencode/kimi-k2.5-free",
+      "prompt": "You are Sisyphus, an autonomous workflow agent. Handle continuous tasks, monitor processes, and ensure workflows complete successfully.",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "hephaestus": {
+      "description": "Deep work specialist for complex refactoring",
+      "model": "opencode/glm-4.7-free",
+      "prompt": "You are Hephaestus, a deep work specialist. Focus on complex refactoring, architectural changes, and deep codebase analysis.",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "oracle": {
+      "description": "Design and debugging specialist",
+      "model": "opencode/glm-4.7-free",
+      "prompt": "You are Oracle, a design and debugging specialist. Focus on UI/UX improvements, debugging complex issues, and code review.",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "librarian": {
+      "description": "Documentation and codebase exploration expert",
+      "model": "opencode/kimi-k2.5-free",
+      "prompt": "You are Librarian, a documentation and codebase exploration expert. Maintain documentation, explore code structure, and ensure knowledge is well-organized.",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "explore": {
+      "description": "Fast codebase exploration agent",
+      "model": "opencode/minimax-m2.1-free",
+      "prompt": "You are Explore, a fast codebase exploration agent. Quickly search, grep, and navigate the codebase to find information.",
+      "tools": {
+        "write": false,
+        "edit": false,
+        "bash": true
+      }
+    },
+    "security-audit": {
+      "description": "Security-focused code reviewer",
+      "model": "opencode/glm-4.7-free",
+      "prompt": "You are a security audit specialist. Review code for security vulnerabilities, check for secrets, and ensure best security practices.",
+      "tools": {
+        "write": false,
+        "edit": false,
+        "bash": true
+      }
+    },
+    "performance-optimization": {
+      "description": "Performance optimization specialist",
+      "model": "opencode/minimax-m2.1-free",
+      "prompt": "You are a performance optimization specialist. Analyze bundle sizes, optimize queries, and improve application performance.",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "refactoring": {
+      "description": "Code refactoring specialist",
+      "model": "opencode/glm-4.7-free",
+      "prompt": "You are a code refactoring specialist. Improve code quality, reduce technical debt, and maintain backward compatibility.",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "documentation": {
+      "description": "Technical documentation writer",
+      "model": "opencode/kimi-k2.5-free",
+      "prompt": "You are a technical documentation writer. Create clear, comprehensive documentation for code, APIs, and user guides.",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "bash": false
+      }
+    }
+  },
+  "default_agent": "default",
+  "command": {
+    "test": {
+      "template": "Run the test suite with coverage report. Focus on failing tests and suggest fixes.",
+      "description": "Run tests with coverage",
+      "agent": "default",
+      "model": "opencode/minimax-m2.1-free"
+    },
+    "build": {
+      "template": "Build the project and check for any TypeScript errors or build failures. Report the build status and any issues found.",
+      "description": "Build the project",
+      "agent": "default",
+      "model": "opencode/minimax-m2.1-free"
+    },
+    "lint": {
+      "template": "Run linting and report any issues. Fix auto-fixable problems and suggest fixes for manual issues.",
+      "description": "Run linter",
+      "agent": "default",
+      "model": "opencode/minimax-m2.1-free"
+    },
+    "security-check": {
+      "template": "Perform a security audit of the codebase. Check for vulnerabilities, secrets, and security best practices.",
+      "description": "Security audit",
+      "agent": "security-audit",
+      "model": "opencode/glm-4.7-free"
+    },
+    "optimize": {
+      "template": "Analyze and optimize the codebase for performance. Check bundle sizes, query performance, and suggest improvements.",
+      "description": "Performance optimization",
+      "agent": "performance-optimization",
+      "model": "opencode/minimax-m2.1-free"
+    }
+  },
+  "tools": {
+    "write": true,
+    "edit": true,
+    "bash": true,
+    "read": true,
+    "grep": true,
+    "glob": true
+  },
+  "permission": {
+    "edit": "ask",
+    "bash": "ask"
+  },
+  "instructions": [
+    "AGENTS.md",
+    "README.md",
+    "ROADMAP.md"
+  ],
+  "compaction": {
+    "auto": true,
+    "prune": true
+  },
+  "watcher": {
+    "ignore": [
+      "node_modules/**",
+      "dist/**",
+      ".git/**",
+      "coverage/**",
+      "*.log",
+      "build_output.txt"
+    ]
+  },
+  "share": "manual",
+  "disabled_providers": [],
+  "enabled_providers": [
+    "opencode"
+  ]
+}

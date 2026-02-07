@@ -1,0 +1,142 @@
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/main/schemas/oh-my-opencode.json",
+  "version": "3.2.4",
+  "project": {
+    "name": "QuanForge",
+    "type": "web-application",
+    "framework": "vite-react-typescript",
+    "description": "AI-Powered Trading Strategy Generator with MQL5 code generation"
+  },
+  "sisyphus": {
+    "enabled": true,
+    "model": "opencode/kimi-k2.5-free",
+    "temperature": 0.7,
+    "teammates": {
+      "hephaestus": {
+        "enabled": true,
+        "model": "opencode/glm-4.7-free",
+        "role": "autonomous-deep-worker"
+      },
+      "oracle": {
+        "enabled": true,
+        "model": "opencode/glm-4.7-free",
+        "role": "design-debugging"
+      },
+      "librarian": {
+        "enabled": true,
+        "model": "opencode/kimi-k2.5-free",
+        "role": "docs-codebase-exploration"
+      },
+      "explore": {
+        "enabled": true,
+        "model": "opencode/minimax-m2.1-free",
+        "role": "fast-codebase-grep"
+      }
+    }
+  },
+  "integrations": {
+    "superpowers": {
+      "enabled": true,
+      "repository": "https://github.com/obra/superpowers",
+      "skills": ["brainstorming", "writing-plans", "test-driven-development", "systematic-debugging"]
+    },
+    "agent-skill": {
+      "enabled": true,
+      "repository": "https://github.com/sulhi-sabil/agent-skill",
+      "skills": ["planning", "skill-creator", "github-workflow-automation"]
+    },
+    "system-prompts-reference": {
+      "enabled": true,
+      "repository": "https://github.com/asgeirtj/system_prompts_leaks",
+      "description": "Reference collection for prompt engineering"
+    }
+  },
+  "features": {
+    "todo_continuation_enforcer": {
+      "enabled": true,
+      "force_completion": true
+    },
+    "comment_checker": {
+      "enabled": true,
+      "prevent_excessive_comments": true
+    },
+    "background_agents": {
+      "enabled": true,
+      "max_concurrent": 3,
+      "providers": {
+        "opencode": {
+          "models": ["opencode/minimax-m2.1-free"],
+          "concurrency": 2
+        }
+      }
+    },
+    "lsp_ast_tools": {
+      "enabled": true,
+      "auto_activate": true
+    },
+    "context_injection": {
+      "enabled": true,
+      "files": ["AGENTS.md", "README.md", "ROADMAP.md"],
+      "conditional": {
+        "security": {
+          "patterns": ["security", "vulnerability", "secret", "auth"],
+          "files": ["SECURITY.md"]
+        },
+        "performance": {
+          "patterns": ["performance", "optimize", "bundle", "cache"],
+          "files": ["BUNDLE_ANALYSIS_REPORT.md"]
+        }
+      }
+    }
+  },
+  "mcp": {
+    "enabled": ["websearch", "context7", "github_search"],
+    "websearch": {
+      "provider": "exa",
+      "enabled": true
+    },
+    "context7": {
+      "enabled": true
+    },
+    "github_search": {
+      "provider": "grep_app",
+      "enabled": true
+    }
+  },
+  "hooks": {
+    "disabled": [],
+    "pre_tool_use": [],
+    "post_tool_use": [],
+    "user_prompt_submit": [],
+    "stop": []
+  },
+  "categories": {
+    "security": {
+      "agent": "security-audit",
+      "model": "opencode/glm-4.7-free",
+      "temperature": 0.3
+    },
+    "performance": {
+      "agent": "performance-optimization",
+      "model": "opencode/minimax-m2.1-free",
+      "temperature": 0.4
+    },
+    "refactoring": {
+      "agent": "refactoring",
+      "model": "opencode/glm-4.7-free",
+      "temperature": 0.3
+    },
+    "documentation": {
+      "agent": "documentation",
+      "model": "opencode/kimi-k2.5-free",
+      "temperature": 0.5
+    }
+  },
+  "customization": {
+    "ultrawork_keyword": "ultrawork",
+    "ultrawork_shortcut": "ulw",
+    "claude_code_compatibility": true,
+    "session_tools": true,
+    "interactive_terminal": false
+  }
+}
