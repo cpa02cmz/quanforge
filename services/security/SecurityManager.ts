@@ -236,7 +236,7 @@ class SecurityManager {
         break;
       
       case 'symbol':
-        sanitized = sanitized.replace(/[^A-Z0-9_\/]/g, '').toUpperCase();
+        sanitized = sanitized.replace(/[^A-Z0-9_/]/g, '').toUpperCase();
         break;
       
       case 'url':

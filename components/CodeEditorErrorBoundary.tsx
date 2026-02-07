@@ -1,4 +1,7 @@
 import React from 'react';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('CodeEditorErrorBoundary');
 
 interface CodeEditorErrorBoundaryState {
   hasError: boolean;
@@ -21,19 +24,19 @@ class CodeEditorErrorBoundary extends React.Component<CodeEditorErrorBoundaryPro
   }
 
   override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('CodeEditor Error:', error, errorInfo);
-    
+    logger.error('CodeEditor Error:', error, errorInfo);
+
     // Log specific code editor errors for debugging
     if (error.message.includes('syntax') || error.message.includes('parse')) {
-      console.warn('Syntax highlighting error in CodeEditor');
+      logger.warn('Syntax highlighting error in CodeEditor');
     }
-    
+
     if (error.message.includes('prism') || error.message.includes('highlight')) {
-      console.warn('Prism.js syntax highlighting error');
+      logger.warn('Prism.js syntax highlighting error');
     }
-    
+
     if (error.message.includes('memory') || error.message.includes('quota')) {
-      console.warn('Memory/quota error in CodeEditor - large code file');
+      logger.warn('Memory/quota error in CodeEditor - large code file');
     }
   }
 
