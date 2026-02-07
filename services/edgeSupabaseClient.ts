@@ -4,7 +4,6 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
-import { calculateRetryDelay } from '../utils/retryConfig';
 // Commenting out vercelEdgeOptimizer import since it's not being used properly
 // import { vercelEdgeOptimizer } from './vercelEdgeOptimizer';
 
@@ -162,11 +161,14 @@ class EdgeSupabaseClient {
       return Promise.all(promises);
     } else {
       // Execute sequentially
-      const results: { data: T[] | null; error: any }[] = [];
+      const results: { data: any[] | null; error: any }[] = [];
       for (const op of operations) {
         const result = await this.edgeBatch([op], { parallel: true });
-        if (result[0]) {
-          results.push(result[0]);
+        const firstResult = result[0];
+        if (firstResult) {
+          results.push(firstResult);
+        } else {
+          results.push({ data: null, error: new Error('No result from batch operation') });
         }
       }
       return results;
@@ -300,13 +302,11 @@ class EdgeSupabaseClient {
   }
 
    /**
-     * Base query execution
-     */
-    // @ts-ignore - Reserved for future query execution enhancement
-    private async baseQuery<T = any>(table: string, query: string): Promise<{ data: T[] | null; error: any }> {
+    * Base query execution
+    */
+    private async baseQuery<T = any>(table: string, _query: string): Promise<{ data: T[] | null; error: any }> {
       try {
         // Simple query execution - the complex parsing was causing type issues
-        void query; // Reserved for future use
         const { data, error } = await this.client.from(table).select('*');
         return { data, error };
       } catch (error) {
@@ -314,42 +314,10 @@ class EdgeSupabaseClient {
       }
     }
 
-   /**
-    * Parse and optimize query string
-    */
-   // @ts-ignore - Reserved for future query parsing implementation
-   private parseQuery(query: string): any {
-    const optimized: any = {};
-
-    // Simple query parsing (in production, use a proper parser)
-    if (query.includes('select')) {
-      const selectMatch = query.match(/select\((.*?)\)/);
-      if (selectMatch) {
-        optimized.select = selectMatch[1];
-      }
-    } else {
-      optimized.select = query;
-    }
-
-    if (query.includes('order')) {
-      const orderMatch = query.match(/order\((.*?),\s*{?\s*ascending:\s*(true|false)\s*}?/);
-      if (orderMatch) {
-        optimized.order = {
-          column: orderMatch[1],
-          ascending: orderMatch[2] === 'true',
-        };
-      }
-    }
-
-    if (query.includes('limit')) {
-      const limitMatch = query.match(/limit\((\d+)\)/);
-      if (limitMatch?.[1]) {
-        optimized.limit = parseInt(limitMatch[1]);
-      }
-    }
-
-    return optimized;
-  }
+  /**
+   * Parse and optimize query string
+   */
+   // parseQuery method reserved for future query optimization implementation
 
   /**
    * Execute operations in a transaction-like manner
@@ -416,8 +384,8 @@ class EdgeSupabaseClient {
         throw error;
       }
 
-      // Exponential backoff using centralized config
-      const delay = calculateRetryDelay(attempt);
+      // Exponential backoff
+      const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
       await new Promise(resolve => setTimeout(resolve, delay));
 
       console.warn(`Retrying edge operation ${operationName}, attempt ${attempt + 1}`);

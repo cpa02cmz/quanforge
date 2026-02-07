@@ -1,9 +1,9 @@
-import { IntegrationType } from './integrationResilience';
 import { createScopedLogger } from '../utils/logger';
-import { DEFAULT_TIMEOUT_CONFIG } from '../utils/retryConfig';
 
 const logger = createScopedLogger('fallback-strategies');
-const { fallback: DEFAULT_FALLBACK_TIMEOUT } = DEFAULT_TIMEOUT_CONFIG;
+
+// Import IntegrationType for type safety
+import type { IntegrationType } from './integrationResilience';
 
 export interface FallbackResult<T> {
   data?: T;
@@ -41,7 +41,7 @@ export class FallbackManager {
   private fallbackMetrics = new Map<string, FallbackMetrics>();
 
   async executeWithFallback<T>(options: FallbackOptions<T>): Promise<FallbackResult<T>> {
-    const { integrationName, primaryOperation, fallbacks, fallbackTimeout = DEFAULT_FALLBACK_TIMEOUT, logFallbacks = true } = options;
+    const { integrationType: _integrationType, integrationName, primaryOperation, fallbacks, fallbackTimeout = 5000, logFallbacks = true } = options;
     const metrics = this.getOrCreateMetrics(integrationName);
 
     try {

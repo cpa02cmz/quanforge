@@ -144,7 +144,6 @@ export class IntegrationHealthMonitor {
   getHealthStatus(integrationType: IntegrationType, integrationName: string): HealthStatus {
     const key = `${integrationType}:${integrationName}`;
     const healthCheck = this.healthChecks.get(key);
-
     if (!healthCheck) {
       return {
         integration: integrationName,
@@ -183,10 +182,11 @@ export class IntegrationHealthMonitor {
   getAllHealthStatuses(): Record<string, HealthStatus> {
     const result: Record<string, HealthStatus> = {};
 
-    this.healthChecks.forEach((_, key) => {
-      const [type, name] = key.split(':');
-      if (!type || !name) return;
-      result[key] = this.getHealthStatus(type as IntegrationType, name);
+    this.healthChecks.forEach((_, checkKey) => {
+      const parts = checkKey.split(':');
+      const type = parts[0] as IntegrationType;
+      const name = parts[1] || '';
+      result[checkKey] = this.getHealthStatus(type, name);
     });
 
     return result;
@@ -238,13 +238,14 @@ export class IntegrationHealthMonitor {
     const result: Array<{ type: IntegrationType; name: string; status: HealthStatus }> = [];
     
     this.healthChecks.forEach((_, key) => {
-      const [type, name] = key.split(':');
-      if (!type || !name) return;
-      const status = this.getHealthStatus(type as IntegrationType, name);
-
+      const parts = key.split(':');
+      const type = parts[0] as IntegrationType;
+      const name = parts[1] || '';
+      const status = this.getHealthStatus(type, name);
+      
       if (!status.healthy) {
         result.push({
-          type: type as IntegrationType,
+          type,
           name,
           status
         });
@@ -255,7 +256,7 @@ export class IntegrationHealthMonitor {
   }
 
   reset(): void {
-    this.healthChecks.forEach((healthCheck, _key) => {
+    this.healthChecks.forEach((healthCheck) => {
       if (healthCheck.intervalId) {
         clearInterval(healthCheck.intervalId);
       }
@@ -371,11 +372,10 @@ export class IntegrationMetrics {
     const result: Record<string, any> = {};
     const integrations = new Set<string>();
 
-    this.operationCounts.forEach((_, key) => {
-      const [integrationName] = key.split(':');
-      if (integrationName) {
-        integrations.add(integrationName);
-      }
+    this.operationCounts.forEach((_, opKey) => {
+      const parts = opKey.split(':');
+      const integrationName = parts[0] || '';
+      integrations.add(integrationName);
     });
 
     integrations.forEach(integrationName => {

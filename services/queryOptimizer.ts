@@ -87,7 +87,9 @@ class QueryOptimizer {
       if (cached && Date.now() - cached.timestamp < cached.ttl) {
         this.cacheHits++;
         cached.hits++; // Track cache hit frequency
-
+        
+        // Cache hit rate: (this.cacheHits / this.totalQueries) * 100
+        
         const metrics: QueryMetrics = {
           executionTime: performance.now() - startTime,
           resultCount: Array.isArray(cached.data) ? cached.data.length : 0,
