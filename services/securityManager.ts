@@ -463,7 +463,7 @@ private validateRobotData(data: any): ValidationResult {
 
 // Check for obfuscated code patterns
        const obfuscatedPatterns = [
-         /[^a-zA-Z0-9\s\(\)\[\]\{\}\.\,\;\:\+\-\*\/\=\>\<\!\&\|\^\~\%]+/g, // Non-alphanumeric characters
+         /[^a-zA-Z0-9\s()[\]{}.,;:+\-*/=><!&|^~%]+/g, // Non-alphanumeric characters
          /0x[0-9a-fA-F]+/g, // Hex numbers
          /\\u[0-9a-fA-F]{4}/g, // Unicode escapes
          /\\x[0-9a-fA-F]{2}/g, // Hex escapes
@@ -610,8 +610,8 @@ private validateRobotData(data: any): ValidationResult {
 
   private sanitizeSymbol(symbol: string): string {
     // Allow common forex symbols and crypto pairs
-    const symbolRegex = /^[A-Z]{3,6}[\/]?[A-Z]{3,6}$/;
-    const cleanSymbol = symbol.replace(/[^A-Z\/]/g, '').toUpperCase();
+    const symbolRegex = /^[A-Z]{3,6}[/]?[A-Z]{3,6}$/;
+    const cleanSymbol = symbol.replace(/[^A-Z/]/g, '').toUpperCase();
     return symbolRegex.test(cleanSymbol) ? cleanSymbol : '';
   }
 
@@ -1553,7 +1553,7 @@ private validateRobotData(data: any): ValidationResult {
 
     // Check nested objects
     for (const key in obj) {
-      if (obj.hasOwnProperty(key) && typeof obj[key] === 'object') {
+      if (Object.prototype.hasOwnProperty.call(obj, key) && typeof obj[key] === 'object') {
         if (this.isPrototypePollution(obj[key])) {
           return true;
         }
