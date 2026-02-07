@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { UI_TIMING } from '../constants';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -62,7 +63,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3000);
+    }, UI_TIMING.TOAST_DURATION);
   }, []);
 
   const removeToast = (id: string) => {

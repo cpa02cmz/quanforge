@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Robot } from '../types';
 import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
 import { createScopedLogger } from '../utils/logger';
+import { VIRTUAL_SCROLL, UI_TIMING } from '../constants';
 
 const logger = createScopedLogger('VirtualScrollList');
 
@@ -29,8 +30,8 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
   const [scrollTop, setScrollTop] = useState(0);
   const [containerHeight, setContainerHeight] = useState(600);
   const containerRef = useRef<HTMLDivElement>(null);
-  const itemHeight = 280; // Height of each robot card
-  const overscan = 5; // Number of items to render outside viewport
+  const itemHeight = VIRTUAL_SCROLL.ITEM_HEIGHT;
+  const overscan = VIRTUAL_SCROLL.OVERSCAN;
 
    // Filter robots with memoization and performance optimization
    const filteredRobots = useMemo(() => {
@@ -47,7 +48,7 @@ export const VirtualScrollList: React.FC<VirtualScrollListProps> = React.memo(({
            return matchesSearch && matchesType;
          });
        },
-       5000 // 5 second TTL for this filter result
+        UI_TIMING.FILTER_CACHE_TTL
      );
      
       const duration = performance.now() - startTime;
