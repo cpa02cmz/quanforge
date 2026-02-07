@@ -529,10 +529,10 @@ Only trade when ADX confirms strong trend.
 
 ### Documentation
 
-- **[README](README.md)**: Project overview and setup
-- **[Service Architecture](docs/SERVICE_ARCHITECTURE.md)**: Technical details
-- **[Blueprint](docs/blueprint.md)**: System architecture
-- **[Coding Standards](coding_standard.md)**: Development guidelines
+- **[README](../README.md)**: Project overview and setup
+- **[Service Architecture](SERVICE_ARCHITECTURE.md)**: Technical details
+- **[Blueprint](blueprint.md)**: System architecture
+- **[Coding Standards](../coding_standard.md)**: Development guidelines
 
 ### AI Prompting Tips
 
@@ -544,7 +544,7 @@ Only trade when ADX confirms strong trend.
 
 ### Troubleshooting
 
-- **[Troubleshooting Guide](README.md#troubleshooting)**: Common issues and solutions
+- **[Troubleshooting Guide](../README.md#troubleshooting)**: Common issues and solutions
 - **Check Console**: Browser DevTools for errors
 - **Review Code**: Check generated MQL5 for logic errors
 - **Re-prompt**: Ask AI to fix specific issues
