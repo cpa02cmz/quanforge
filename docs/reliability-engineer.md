@@ -174,6 +174,41 @@ const [data1, data2] = await Promise.all([fetchData1(), fetchData2()]);
 - Object URLs not revoked
 - Intervals/timeouts not cleared
 
+**Event Listener Memory Leak Pattern**:
+```typescript
+// BAD: Anonymous function can't be removed
+class Service {
+  constructor() {
+    window.addEventListener('event', () => this.handle()); // Anonymous
+  }
+  destroy() {
+    window.removeEventListener('event', this.handle); // Won't work!
+  }
+}
+
+// GOOD: Store reference for proper cleanup
+class Service {
+  private readonly handleEvent: () => void;
+  
+  constructor() {
+    this.handleEvent = () => this.handle();
+    window.addEventListener('event', this.handleEvent);
+  }
+  destroy() {
+    window.removeEventListener('event', this.handleEvent);
+  }
+}
+```
+
+**Detection**:
+```bash
+# Find addEventListener with arrow functions
+grep -rn "window.addEventListener.*=>" src/ --include="*.ts" | grep -v "removeEventListener"
+
+# Check services with cleanup methods for missing event listener removal
+grep -l "destroy\|dispose\|cleanup" src/services/*.ts | xargs grep -L "removeEventListener"
+```
+
 ### 5. Error Swallowing
 
 **Issue**: Errors caught but not properly logged or handled.
@@ -465,6 +500,42 @@ npm run lint 2>&1 | grep "no-explicit-any"
 ```
 
 ## Recent Reliability Improvements
+
+### 2026-02-07 - Event Listener Memory Leak Fix (Reliability Engineer)
+
+Fixed critical memory leak in `services/marketData.ts`:
+- **Issue**: Event listener added with anonymous arrow function in constructor
+- **Problem**: `removeEventListener` in cleanup() used different function reference
+- **Impact**: Event listener never removed, causing memory leak on cleanup
+- **Fix**: Store bound event handler as class property, use same reference for add/remove
+- **Pattern**: Always store event listener reference when cleanup is needed
+
+```typescript
+// BEFORE (Broken):
+constructor() {
+  window.addEventListener('event', () => { this.handle(); }); // Anonymous function
+}
+cleanup() {
+  window.removeEventListener('event', this.handle); // Different reference!
+}
+
+// AFTER (Fixed):
+private readonly handleSettingsChange: () => void;
+
+constructor() {
+  this.handleSettingsChange = () => { this.handle(); };
+  window.addEventListener('event', this.handleSettingsChange);
+}
+cleanup() {
+  window.removeEventListener('event', this.handleSettingsChange); // Same reference
+}
+```
+
+**Verification**:
+- Build: ✅ Successful (12.97s)
+- Tests: ✅ All 445 tests passing
+- TypeScript: ✅ Zero errors
+- Lint: ✅ 0 errors, 2132 warnings
 
 ### 2026-02-07 - Lint Error Fixes (Code Reviewer)
 
