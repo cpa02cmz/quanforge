@@ -42,16 +42,18 @@
 
 ---
 
-## ⚠️ ARCHIVED DOCUMENTS (80+ files moved)
+## ⚠️ ARCHIVED DOCUMENTS (85+ files moved)
 
 All deprecated and duplicate documentation has been moved to:
 - **`/archive/deprecated-docs/`** - Historical optimization notes & guides
+- **`/archive/temporary-analysis/`** - PR-specific analysis and resolution documents
 
 **Archived Files Include:**
 - fitur.md, how-to.md → Merged into USER_GUIDE.md
 - Status files (BUILD_STATUS.md, COMPLETION_SUMMARY.md, etc.) → Merged into PROJECT_STATUS.md
 - Optimization guides → Consolidated into core documentation
 - Implementation summaries → Integrated into relevant sections
+- PR analysis files (PR132_*.md) → Moved to temporary-analysis for historical reference
 
 These are retained for reference but should NOT be used for current development.
 
@@ -76,10 +78,11 @@ These are retained for reference but should NOT be used for current development.
 10. **coding_standard.md** - Code style guidelines
 
 ### **When Archive is Referenced**
-Only access `/archive/deprecated-docs/` when:
+Only access `/archive/deprecated-docs/` or `/archive/temporary-analysis/` when:
 - Researching historical decisions
 - Understanding previous implementation attempts
 - Troubleshooting legacy code patterns
+- Reviewing past PR resolutions and deployment issues
 
 ---
 
@@ -94,6 +97,7 @@ Only access `/archive/deprecated-docs/` when:
 
 ---
 
-**Documentation Structure Updated**: December 21, 2025  
-**Files Reduced**: From 80+ to 13 core files (84% reduction)  
-**AI Context Efficiency**: 90% improvement in context loading
+**Documentation Structure Updated**: February 07, 2026  
+**Files Reduced**: From 85+ to 28 core files (67% reduction)  
+**AI Context Efficiency**: 90% improvement in context loading  
+**Last Cleanup**: Moved 5 PR analysis files to archive/temporary-analysis/
