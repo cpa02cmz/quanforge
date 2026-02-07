@@ -173,7 +173,6 @@ class ReadReplicaManager {
     // Find best performing replica
     const firstAvailable = availableReplicas[0];
     let bestReplica = firstAvailable ? firstAvailable[1] : this.primaryClient!;
-    let bestRegion = firstAvailable ? firstAvailable[0] : 'primary';
     let bestTime = Infinity;
 
     availableReplicas.forEach(([region, client]) => {
@@ -184,7 +183,6 @@ class ReadReplicaManager {
       if (performance < bestTime) {
         bestTime = performance;
         bestReplica = client;
-        bestRegion = region;
       }
     });
 

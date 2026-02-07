@@ -168,7 +168,9 @@ class UXPerformanceMonitor {
       const observer = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         const lastEntry = entries[entries.length - 1];
-        this.metrics.lcp = lastEntry.startTime;
+        if (lastEntry) {
+          this.metrics.lcp = lastEntry.startTime;
+        }
       });
       
       observer.observe({ entryTypes: ['largest-contentful-paint'] });
