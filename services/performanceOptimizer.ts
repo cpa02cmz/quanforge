@@ -8,6 +8,9 @@ import { backendOptimizationManager } from './backendOptimizationManager';
 import { databaseOptimizer } from './databaseOptimizer';
 import { queryOptimizer } from './queryOptimizer';
 import { robotCache } from './advancedCache';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('PerformanceOptimizer');
 
 interface PerformanceOptimizerConfig {
   enableRealTimeMonitoring: boolean;
@@ -108,8 +111,8 @@ class PerformanceOptimizer {
    * Initialize the performance optimizer
    */
   async initialize(): Promise<void> {
-    console.log('Initializing Performance Optimizer...');
-    
+    logger.log('Initializing Performance Optimizer...');
+
     // Start real-time monitoring if enabled
     if (this.config.enableRealTimeMonitoring) {
       this.startMonitoring();
@@ -166,7 +169,7 @@ class PerformanceOptimizer {
       
       return this.metrics;
     } catch (error) {
-      console.error('Error collecting performance metrics:', error);
+      logger.error('Error collecting performance metrics:', error);
       return this.metrics;
     }
   }
@@ -273,7 +276,7 @@ class PerformanceOptimizer {
    */
   private async analyzePerformance(): Promise<void> {
     if (this.metrics.overallScore < this.config.optimizationThreshold) {
-      console.log(`Performance score (${this.metrics.overallScore}) below threshold (${this.config.optimizationThreshold}), optimizing...`);
+      logger.log(`Performance score (${this.metrics.overallScore}) below threshold (${this.config.optimizationThreshold}), optimizing...`);
       await this.performOptimization();
     }
   }
@@ -308,10 +311,10 @@ class PerformanceOptimizer {
    */
   private async optimizeDatabase(): Promise<void> {
     try {
-      console.log('Optimizing database performance...');
+      logger.log('Optimizing database performance...');
       await databaseOptimizer.runDatabaseMaintenance({} as SupabaseClient);
     } catch (error) {
-      console.error('Database optimization failed:', error);
+      logger.error('Database optimization failed:', error);
     }
   }
 
@@ -320,11 +323,11 @@ class PerformanceOptimizer {
    */
   private async optimizeCache(): Promise<void> {
     try {
-      console.log('Optimizing cache performance...');
+      logger.log('Optimizing cache performance...');
       // Clear old entries and optimize cache - using available method
       robotCache.destroy();
     } catch (error) {
-      console.error('Cache optimization failed:', error);
+      logger.error('Cache optimization failed:', error);
     }
   }
 
@@ -333,10 +336,10 @@ class PerformanceOptimizer {
    */
   private async optimizeEdge(): Promise<void> {
     try {
-      console.log('Optimizing edge performance...');
+      logger.log('Optimizing edge performance...');
       // This would typically call edge optimizer methods
     } catch (error) {
-      console.error('Edge optimization failed:', error);
+      logger.error('Edge optimization failed:', error);
     }
   }
 
@@ -451,7 +454,7 @@ class PerformanceOptimizer {
       this.monitoringTimer = null;
     }
     
-    console.log('Performance Optimizer shut down');
+    logger.log('Performance Optimizer shut down');
   }
 
   /**
@@ -513,7 +516,7 @@ export const performanceOptimizer = new PerformanceOptimizer();
 if (typeof window !== 'undefined') {
   setTimeout(() => {
     performanceOptimizer.initialize().catch(error => {
-      console.error('Failed to initialize performance optimizer:', error);
+      logger.error('Failed to initialize performance optimizer:', error);
     });
   }, 3000); // Initialize after other optimizers
 }
