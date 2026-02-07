@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { WIKI_CONTENT } from '../constants';
 import { useTranslation } from '../services/i18n';
-import { SEOHead, structuredDataTemplates } from '../utils/seo';
+import { SEOHead, structuredDataTemplates } from '../utils/seoUnified';
 import type { WikiSection } from '../types';
 
 export const Wiki: React.FC = () => {
