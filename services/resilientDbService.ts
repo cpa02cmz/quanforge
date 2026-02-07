@@ -1,8 +1,10 @@
 import { mockDb as originalMockDb, dbUtils as originalDbUtils } from './supabase';
+import * as dbOperations from './database/operations';
 import { withIntegrationResilience } from './integrationWrapper';
 import { IntegrationType } from './integrationResilience';
 import { databaseFallbacks } from './fallbackStrategies';
 import { storage } from '../utils/storage';
+import type { Robot, AuditLog, RobotVersion } from '../types';
 
 export const resilientDb = {
   async updateRobot(id: string, updates: any) {
@@ -104,6 +106,89 @@ export const resilientDb = {
     );
 
     return result.data;
+  },
+
+  // Additional operations from database/operations.ts with resilience
+  async getRobotsPaginated(
+    userId: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ robots: Robot[]; total: number; page: number; totalPages: number }> {
+    const result = await withIntegrationResilience(
+      IntegrationType.DATABASE,
+      'database',
+      async () => await dbOperations.getRobotsPaginated(userId, page, limit),
+      {
+        operationName: 'get_robots_paginated',
+        fallbacks: [
+          databaseFallbacks.mockData({ robots: [], total: 0, page, totalPages: 0 })
+        ]
+      }
+    );
+
+    return result.data || { robots: [], total: 0, page, totalPages: 0 };
+  },
+
+  async getRobotHistory(robotId: string): Promise<RobotVersion[]> {
+    const result = await withIntegrationResilience(
+      IntegrationType.DATABASE,
+      'database',
+      async () => await dbOperations.getRobotHistory(robotId),
+      {
+        operationName: 'get_robot_history',
+        fallbacks: [
+          databaseFallbacks.mockData([])
+        ]
+      }
+    );
+
+    return result.data || [];
+  },
+
+  async getAuditLog(tableName: string, recordId: string): Promise<AuditLog[]> {
+    const result = await withIntegrationResilience(
+      IntegrationType.DATABASE,
+      'database',
+      async () => await dbOperations.getAuditLog(tableName, recordId),
+      {
+        operationName: 'get_audit_log',
+        fallbacks: [
+          databaseFallbacks.mockData([])
+        ]
+      }
+    );
+
+    return result.data || [];
+  },
+
+  async restoreRobot(id: string): Promise<Robot | null> {
+    const result = await withIntegrationResilience(
+      IntegrationType.DATABASE,
+      'database',
+      async () => await dbOperations.restoreRobot(id),
+      {
+        operationName: 'restore_robot',
+        fallbacks: [
+          databaseFallbacks.mockData(null)
+        ]
+      }
+    );
+
+    return result.data || null;
+  },
+
+  async permanentlyDeleteRobot(id: string): Promise<void> {
+    await withIntegrationResilience(
+      IntegrationType.DATABASE,
+      'database',
+      async () => {
+        await dbOperations.permanentlyDeleteRobot(id);
+        return { data: null, error: null };
+      },
+      {
+        operationName: 'permanently_delete_robot'
+      }
+    );
   }
 };
 

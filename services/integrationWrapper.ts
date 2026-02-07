@@ -69,7 +69,7 @@ export class IntegrationWrapper {
         const result = await operation();
         
         if (attempt > 0) {
-          logger.info(`Operation ${options.operation} succeeded after ${attempt} retries`);
+          logger.info(`Operation ${options.operationName || 'integration-operation'} succeeded after ${attempt} retries`);
         }
         
         return { result, attempts: attempt + 1 };
@@ -80,17 +80,17 @@ export class IntegrationWrapper {
         const isRetryable = retryPolicy.retryableErrors.includes(errorCategory);
         
         if (!isRetryable) {
-          logger.debug(`Operation ${options.operation} encountered non-retryable error: ${errorCategory}`);
+          logger.debug(`Operation ${options.operationName || 'integration-operation'} encountered non-retryable error: ${errorCategory}`);
           throw error;
         }
 
         if (attempt === retryPolicy.maxRetries) {
-          logger.warn(`Operation ${options.operation} failed after ${retryPolicy.maxRetries} retries`);
+          logger.warn(`Operation ${options.operationName || 'integration-operation'} failed after ${retryPolicy.maxRetries} retries`);
           throw error;
         }
 
         const delay = calculateRetryDelay(attempt, retryPolicy);
-        logger.warn(`Operation ${options.operation} failed (attempt ${attempt + 1}/${retryPolicy.maxRetries + 1}), retrying in ${delay}ms...`);
+        logger.warn(`Operation ${options.operationName || 'integration-operation'} failed (attempt ${attempt + 1}/${retryPolicy.maxRetries + 1}), retrying in ${delay}ms...`);
 
         await new Promise(resolve => setTimeout(resolve, delay));
       }
