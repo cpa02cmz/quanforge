@@ -3,6 +3,10 @@
  * Provides additional performance optimizations for the frontend
  */
 
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('FrontendOptimizer');
+
 interface FrontendOptimizationConfig {
   enableResourcePrefetching: boolean;
   enableLazyLoading: boolean;
@@ -237,7 +241,7 @@ class FrontendOptimizer {
     nonCriticalModules.forEach((moduleLoader, index) => {
       setTimeout(() => {
         moduleLoader().catch((error) => {
-          console.warn(`Failed to preload module ${index}:`, error);
+          logger.warn(`Failed to preload module ${index}:`, error);
         });
       }, 5000 + index * 2000); // Stagger loading
     });

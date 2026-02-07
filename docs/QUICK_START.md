@@ -544,7 +544,7 @@ Only trade when ADX confirms strong trend.
 
 ### Troubleshooting
 
-- **[Troubleshooting Guide](README.md#troubleshooting)**: Common issues and solutions
+- **[Troubleshooting Guide](../README.md#troubleshooting)**: Common issues and solutions
 - **Check Console**: Browser DevTools for errors
 - **Review Code**: Check generated MQL5 for logic errors
 - **Re-prompt**: Ask AI to fix specific issues

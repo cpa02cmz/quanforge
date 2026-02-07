@@ -190,12 +190,12 @@ npm run build:analyze
 **Issue**: Using `any` type bypasses TypeScript type checking
 **Files Fixed**:
 - `components/ChatInterface.tsx` - Strategy type, PerformanceMemory interface
-- `components/CodeEditor.tsx` - window.Prism typing
+- `components/CodeEditor.tsx` - window.Prism typing, removed unused eslint-disable directives
 - `components/DatabaseSettingsModal.tsx` - DBMode type usage
 - `components/StrategyConfig.tsx` - Validation function types with eslint-disable
 - `components/VirtualScrollList.tsx` - Translation parameter types
 - `pages/Dashboard.tsx` - Debounce utility types
-- `pages/FAQ.tsx` - FAQQuestion and FAQCategory interfaces
+- `pages/FAQ.tsx` - FAQQuestion and FAQCategory interfaces, fixed `any` type in questions.map (line 343)
 - `pages/Wiki.tsx` - WikiSection type
 
 ### Bug: Error Handling with `any` Type
@@ -245,6 +245,26 @@ const memoryUsage = perf.memory;
 ### Bug: Console in Production
 **Location**: constants/index.ts
 **Fix**: Use logger utility with DEV environment check
+
+## Recent Frontend Fixes (2026-02-07)
+
+### Fixed Issues:
+
+1. **ESLint Error Fixes** (CodeEditor.tsx):
+   - Removed unused `eslint-disable-next-line @typescript-eslint/no-explicit-any` directives (lines 29, 34)
+   - Issue: ESLint reported "Unused eslint-disable directive" errors
+   - Resolution: Removed unnecessary comments since proper typing was already in place
+
+2. **Type Safety Improvement** (FAQ.tsx):
+   - Fixed `any` type in questions.map callback (line 343)
+   - Changed: `(question: any, index: number)` → `(question: FAQQuestion, index: number)`
+   - Issue: Using `any` type bypassed TypeScript type checking
+   - Resolution: Used properly defined `FAQQuestion` interface
+
+### Build Verification:
+- ✅ Production build: 12.17s (no regressions)
+- ✅ TypeScript compilation: Zero errors
+- ✅ Lint errors: 2 → 0 (fixed all errors, warnings only remain)
 
 ## Deployment Checklist
 

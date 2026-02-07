@@ -1,185 +1,289 @@
-# Integration Engineer Guidelines
+# Integration Engineer Guide
 
 ## Overview
 
-This document outlines the responsibilities, patterns, and best practices for the Integration Engineer role in the QuantForge AI project. Integration engineers focus on ensuring reliable communication between the application and external services (databases, AI providers, market data sources).
+This guide provides comprehensive documentation for integration engineers working on QuantForge AI's external service integrations. It covers the resilience system architecture, common issues, debugging techniques, and best practices.
 
-## Core Responsibilities
+**Last Updated**: 2026-02-07  
+**System Version**: v1.6+  
+**Scope**: Database, AI Service, Market Data, and Cache integrations
 
-### 1. Integration Resilience System Maintenance
+---
 
-The codebase includes a comprehensive integration resilience system that provides:
+## Architecture Overview
 
-- **Automatic Retry Logic**: Exponential backoff with jitter
-- **Circuit Breakers**: Prevent cascading failures
-- **Timeouts**: Prevent hanging operations
-- **Fallbacks**: Graceful degradation
-- **Health Monitoring**: Real-time health tracking
-- **Metrics**: Performance monitoring
+The integration resilience system provides automatic failure handling for all external service integrations:
 
-**Key Files:**
-- `services/integrationResilience.ts` - Core configuration and types
-- `services/integrationWrapper.ts` - Main execution wrapper
-- `services/circuitBreakerMonitor.ts` - Circuit breaker implementation
-- `services/fallbackStrategies.ts` - Fallback strategy definitions
-- `services/integrationHealthMonitor.ts` - Health monitoring system
-
-### 2. Service Integration Patterns
-
-#### Using Resilient Services (Recommended)
-
-```typescript
-import { db, aiService, marketData, dbUtils } from '../services';
-
-// Database operations with automatic retry and fallback
-const robots = await db.getRobots();
-
-// AI service with circuit breaker protection
-const code = await aiService.generateMQL5Code(prompt, currentCode, params);
-
-// Market data with real-time fallbacks
-marketData.subscribe('EURUSD', callback);
+```
+┌─────────────────────────────────────────────────────────┐
+│           Application Components                       │
+└─────────────────────┬───────────────────────────────────┘
+                      │
+                      │ Uses resilient services
+                      ▼
+┌─────────────────────────────────────────────────────────┐
+│         Integration Resilience System                  │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐         │
+│  │   Retry    │  │  Circuit   │  │   Timeout  │         │
+│  │   Logic    │  │  Breaker   │  │            │         │
+│  └─────┬──────┘  └─────┬──────┘  └─────┬──────┘         │
+└────────┼──────────────┼──────────────┼──────────────────┘
+         │              │              │
+         ▼              ▼              ▼
+┌─────────────────────────────────────────────────────────┐
+│           External Services                            │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐              │
+│  │ Database │  │  AI      │  │  Market  │              │
+│  │          │  │ Service  │  │   Data   │              │
+│  └──────────┘  └──────────┘  └──────────┘              │
+└─────────────────────────────────────────────────────────┘
 ```
 
-#### Legacy Services (Backward Compatibility)
+---
 
+## Core Integration Services
+
+### 1. Database Service (`db`)
+
+**File**: `services/resilientDbService.ts`
+
+**Purpose**: Resilient database operations with automatic retries and fallbacks.
+
+**Exports**:
+- `db` - Main database operations (getRobots, saveRobot, deleteRobot, etc.)
+- `dbUtils` - Utility operations (checkConnection, getStats, exportDatabase, etc.)
+
+**Usage**:
 ```typescript
-// Legacy exports available but not recommended
-import { supabase, mockDb, marketService } from '../services';
-```
+import { db, dbUtils } from '../services';
 
-## Common Issues & Solutions
-
-### Issue 1: Incorrect Logging in Retry Logic
-
-**Problem**: Using `options.operation` (function reference) instead of `options.operationName` (string) in logger calls causes the entire function code to be logged.
-
-**Status**: ✅ FIXED
-
-**Fix Applied**: In `services/integrationWrapper.ts`, replaced all occurrences:
-- Line 72: `logger.info(\`Operation ${options.operation}...\`)` → `logger.info(\`Operation ${options.operationName || 'integration-operation'}...\`)`
-- Line 83: `logger.debug(\`Operation ${options.operation}...\`)` → `logger.debug(\`Operation ${options.operationName || 'integration-operation'}...\`)`
-- Line 88: `logger.warn(\`Operation ${options.operation}...\`)` → `logger.warn(\`Operation ${options.operationName || 'integration-operation'}...\`)`
-- Line 93: `logger.warn(\`Operation ${options.operation}...\`)` → `logger.warn(\`Operation ${options.operationName || 'integration-operation'}...\`)`
-
-**Impact**: Cleaner logs with meaningful operation names instead of function code dumps.
-
-### Issue 2: Undefined Returns from Resilient Services
-
-**Problem**: Resilient services may return `undefined` when all retries fail and no fallback is available.
-
-**Solution**: Always add null checks:
-
-```typescript
+// Fetch all robots with resilience
 const robots = await db.getRobots();
 if (!robots) {
   console.error('Failed to fetch robots');
   return;
 }
-// Use robots safely
+
+// Check connection
+const status = await dbUtils.checkConnection();
+console.log(status.success ? 'Connected' : 'Failed');
 ```
 
-### Issue 3: Circuit Breaker Trip Handling
+**Resilience Configuration**:
+- Max Retries: 3
+- Circuit Breaker Threshold: 5 failures
+- Timeouts: Connect 5s, Read 10s, Write 15s, Overall 30s
+- Fallbacks: Cache-first, Mock data
 
-**Problem**: When a service fails repeatedly, the circuit breaker opens and blocks all calls.
+---
 
-**Solution**: Monitor circuit breaker status and provide user feedback:
+### 2. AI Service (`aiService`)
 
+**File**: `services/resilientAIService.ts`
+
+**Purpose**: Resilient AI code generation with intelligent caching and fallbacks.
+
+**Methods**:
+- `generateMQL5Code()` - Generate trading code
+- `refineCode()` - Refine existing code
+- `explainCode()` - Explain code logic
+- `analyzeStrategy()` - Analyze strategy risk/profitability
+- `testConnection()` - Test AI provider connection
+
+**Usage**:
 ```typescript
-import { getCircuitBreakerStatus, resetCircuitBreaker } from '../services';
+import { aiService } from '../services';
 
-const status = getCircuitBreakerStatus('database');
+// Generate code with resilience
+try {
+  const code = await aiService.generateMQL5Code(
+    'Create EMA crossover strategy',
+    currentCode,
+    strategyParams,
+    history,
+    abortSignal
+  );
+} catch (error) {
+  if (error.category === ErrorCategory.TIMEOUT) {
+    showToast('AI generation timed out', 'warning');
+  }
+}
+```
+
+**Resilience Configuration**:
+- Max Retries: 3
+- Circuit Breaker Threshold: 3 failures
+- Timeouts: Connect 5s, Read 30s, Write 10s, Overall 60s
+- Fallbacks: Cached response, Generic response, Error response
+
+---
+
+### 3. Market Data Service (`marketData`)
+
+**File**: `services/resilientMarketService.ts`
+
+**Purpose**: Resilient real-time market data with fallbacks to simulated data.
+
+**Methods**:
+- `subscribe()` - Subscribe to real-time updates
+- `unsubscribe()` - Unsubscribe from updates
+- `getCurrentData()` - Get current quote with fallback
+
+**Usage**:
+```typescript
+import { marketData } from '../services';
+
+// Subscribe to market updates
+marketData.subscribe('EURUSD', (data) => {
+  console.log('Quote:', data);
+});
+
+// Get current data with fallback
+const quote = await marketData.getCurrentData('EURUSD');
+```
+
+**Resilience Configuration**:
+- Max Retries: 2
+- Circuit Breaker Threshold: 10 failures
+- Timeouts: Connect 2s, Read 5s, Write 2s, Overall 10s
+- Fallbacks: Simulated data, Zero data
+
+---
+
+## Integration Resilience Components
+
+### Integration Wrapper (`services/integrationWrapper.ts`)
+
+**Purpose**: Core wrapper that orchestrates retry logic, circuit breakers, timeouts, and fallbacks.
+
+**Key Exports**:
+- `withIntegrationResilience()` - Main wrapper function
+- `IntegrationWrapper.execute()` - Class method for advanced usage
+- `getIntegrationHealth()` - Check integration health
+- `getCircuitBreakerStatus()` - Check circuit breaker state
+- `resetCircuitBreaker()` - Manually reset circuit breaker
+
+**Usage Pattern**:
+```typescript
+import { withIntegrationResilience, IntegrationType } from '../services';
+
+const result = await withIntegrationResilience(
+  IntegrationType.AI_SERVICE,
+  'ai_service',
+  async () => {
+    // Your operation here
+    return await fetchFromAIService(prompt);
+  },
+  {
+    operationName: 'custom_ai_request',
+    customTimeout: 30000,
+    fallbacks: [
+      {
+        name: 'cached-result',
+        priority: 1,
+        execute: () => getCachedResult(prompt)
+      }
+    ]
+  }
+);
+```
+
+### Circuit Breaker Monitor (`services/circuitBreakerMonitor.ts`)
+
+**Purpose**: Manages circuit breaker states to prevent cascading failures.
+
+**States**:
+- `CLOSED` - Normal operation
+- `OPEN` - Circuit tripped, blocking calls
+- `HALF_OPEN` - Testing if service recovered
+
+**Key Methods**:
+```typescript
+import { circuitBreakerMonitor } from '../services';
+
+// Get circuit breaker status
+const status = circuitBreakerMonitor.getCircuitBreaker('database')?.getMetrics();
+console.log('State:', status?.state);
+
+// Reset circuit breaker
 if (status?.state === 'OPEN') {
-  showUserMessage('Service temporarily unavailable. Please try again later.');
-  // Optionally reset after investigation
-  // resetCircuitBreaker('database');
+  circuitBreakerMonitor.resetCircuitBreaker('database');
 }
 ```
 
-## Integration Configuration
+### Fallback Strategies (`services/fallbackStrategies.ts`)
 
-### Default Configurations
+**Purpose**: Provides graceful degradation when primary operations fail.
 
-#### Database Integration
+**Built-in Fallbacks**:
+- `databaseFallbacks.cacheFirst()` - Return cached data
+- `databaseFallbacks.mockData()` - Return mock data
+- `aiServiceFallbacks.cachedResponse()` - Return cached AI response
+- `aiServiceFallbacks.errorResponse()` - Return error message
+- `marketDataFallbacks.simulatedData()` - Generate simulated data
+
+**Usage**:
 ```typescript
-{
-  timeouts: {
-    connect: 5000,
-    read: 10000,
-    write: 15000,
-    overall: 30000
-  },
-  retryPolicy: {
-    maxRetries: 3,
-    initialDelay: 500,
-    maxDelay: 10000,
-    backoffMultiplier: 2,
-    jitter: true
-  },
-  circuitBreaker: {
-    failureThreshold: 5,
-    successThreshold: 2,
-    timeout: 30000,
-    resetTimeout: 60000
+import { databaseFallbacks, aiServiceFallbacks } from '../services';
+
+const result = await withIntegrationResilience(
+  IntegrationType.DATABASE,
+  'database',
+  operation,
+  {
+    fallbacks: [
+      databaseFallbacks.cacheFirst('robots_list', cacheGet),
+      databaseFallbacks.mockData([])
+    ]
   }
-}
+);
 ```
 
-#### AI Service Integration
+### Health Monitor (`services/integrationHealthMonitor.ts`)
+
+**Purpose**: Real-time health monitoring and metrics collection.
+
+**Key Features**:
+- Automatic health checks at configured intervals
+- Response time tracking
+- Error rate calculation
+- Consecutive failure/success tracking
+
+**Usage**:
 ```typescript
-{
-  timeouts: {
-    connect: 5000,
-    read: 30000,
-    write: 10000,
-    overall: 60000  // Longer for AI generation
-  },
-  retryPolicy: {
-    maxRetries: 3,
-    initialDelay: 1000,
-    maxDelay: 15000,
-    backoffMultiplier: 1.5,
-    jitter: true
-  },
-  circuitBreaker: {
-    failureThreshold: 3,
-    successThreshold: 2,
-    timeout: 60000,
-    resetTimeout: 120000
-  }
-}
+import { integrationHealthMonitor, integrationMetrics } from '../services';
+
+// Get health status
+const health = integrationHealthMonitor.getHealthStatus(
+  IntegrationType.DATABASE,
+  'database'
+);
+
+// Get metrics
+const metrics = integrationMetrics.getMetrics('database', 'get_robots');
+console.log(`Avg Latency: ${metrics.avgLatency}ms`);
+console.log(`Error Rate: ${(metrics.errorRate * 100).toFixed(2)}%`);
 ```
 
-#### Market Data Integration
+---
+
+## Integration Types
+
 ```typescript
-{
-  timeouts: {
-    connect: 2000,
-    read: 5000,
-    write: 2000,
-    overall: 10000  // Fast for real-time data
-  },
-  retryPolicy: {
-    maxRetries: 2,
-    initialDelay: 200,
-    maxDelay: 2000,
-    backoffMultiplier: 1.5,
-    jitter: true
-  },
-  circuitBreaker: {
-    failureThreshold: 10,  // More tolerant
-    successThreshold: 5,
-    timeout: 10000,
-    resetTimeout: 30000
-  }
+enum IntegrationType {
+  DATABASE = 'database',
+  AI_SERVICE = 'ai_service',
+  MARKET_DATA = 'market_data',
+  CACHE = 'cache',
+  EXTERNAL_API = 'external_api'
 }
 ```
 
-## Error Handling Best Practices
+---
+
+## Error Handling
 
 ### Standardized Error Format
-
-All integration errors follow a standardized format:
 
 ```typescript
 interface StandardizedError {
@@ -204,216 +308,400 @@ interface StandardizedError {
 - `VALIDATION` - Input validation errors
 - `UNKNOWN` - Unspecified error
 
-### Error Handling Pattern
+### Best Practices
 
 ```typescript
-import { aiService, ErrorCategory } from '../services';
-
 try {
-  const code = await aiService.generateMQL5Code(prompt);
-} catch (error: any) {
+  const result = await aiService.generateMQL5Code(prompt);
+} catch (error) {
   if (error.category === ErrorCategory.TIMEOUT) {
     showToast('Request timed out, please try again', 'warning');
-  } else if (error.category === ErrorCategory.RATE_LIMIT) {
-    showToast('Too many requests, please wait', 'warning');
   } else if (error.retryable) {
     showToast('Temporary error, system will retry', 'info');
   } else {
-    showToast(`Error: ${error.message}`, 'error');
+    console.error('Permanent error:', error.message);
+    showToast('An error occurred', 'error');
   }
 }
 ```
 
-## Health Monitoring
+---
 
-### Monitoring Integration Health
+## Common Issues & Solutions
+
+### Issue 1: Integration Not Responding
+
+**Symptom**: Operations hang indefinitely  
+**Solution**: Check circuit breaker status
 
 ```typescript
-import { getAllIntegrationHealth, getIntegrationHealth } from '../services';
-
-// Get health of all integrations
-const allHealth = getAllIntegrationHealth();
-Object.entries(allHealth).forEach(([name, status]) => {
-  console.log(`${name}: ${status.healthy ? 'OK' : 'FAIL'}`);
-  if (status.healthy) {
-    console.log(`  Response Time: ${status.responseTime}ms`);
-    console.log(`  Error Rate: ${(status.errorRate * 100).toFixed(2)}%`);
-  }
-});
-
-// Get specific integration health
-const dbHealth = getIntegrationHealth('database');
-console.log('Database Circuit Breaker State:', dbHealth.circuitBreakerState);
+const status = getCircuitBreakerStatus('database');
+if (status.state === 'OPEN') {
+  console.log('Circuit breaker is open, blocking calls');
+  console.log('Next attempt at:', new Date(status.nextAttemptTime));
+}
 ```
 
-### Metrics Collection
+### Issue 2: High Error Rate
+
+**Symptom**: Many operations failing  
+**Solution**: Check health status and error rate
+
+```typescript
+const health = getIntegrationHealth('database');
+console.log('Error Rate:', (health.errorRate * 100).toFixed(2), '%');
+if (health.errorRate > 0.5) {
+  console.log('High error rate detected!');
+}
+```
+
+### Issue 3: Fallbacks Not Working
+
+**Symptom**: Fallback strategies not triggering  
+**Solution**: Verify fallbacks are configured correctly
+
+```typescript
+const result = await withIntegrationResilience(
+  IntegrationType.DATABASE,
+  'database',
+  primaryOperation,
+  {
+    fallbacks: [  // Ensure fallbacks array is provided
+      {
+        name: 'cache-first',
+        priority: 1,
+        execute: () => getCached()
+      }
+    ]
+  }
+);
+```
+
+### Issue 4: Circuit Breaker Keeps Tripping
+
+**Symptom**: Circuit breaker repeatedly transitions to OPEN  
+**Solution**: Check consecutive failures and investigate root cause
+
+```typescript
+const health = getIntegrationHealth('database');
+console.log('Consecutive Failures:', health.consecutiveFailures);
+console.log('Circuit Breaker State:', health.circuitBreakerState);
+
+// Reset if needed (e.g., after fixing service issue)
+resetCircuitBreaker('database');
+```
+
+---
+
+## Debugging Techniques
+
+### 1. Enable Debug Logging
+
+```typescript
+// Enable detailed logging in browser console
+localStorage.setItem('debug', 'true');
+
+// Check integration health
+console.log('Health:', getAllIntegrationHealth());
+
+// Check circuit breakers
+console.log('Circuit Breakers:', getAllCircuitBreakerStatuses());
+
+// Check metrics
+console.log('Metrics:', integrationMetrics.getAllMetrics());
+```
+
+### 2. Monitor Network Requests
+
+Use browser DevTools Network tab to:
+- Check request/response times
+- Identify failed requests
+- Verify retry attempts
+
+### 3. Track Integration Metrics
+
+```typescript
+// Record custom metrics
+integrationMetrics.recordOperation(
+  'database',
+  'custom_operation',
+  latency,
+  success
+);
+
+// Get metrics summary
+const summary = integrationMetrics.getMetrics('database');
+console.log(`Total calls: ${summary.count}`);
+console.log(`Avg latency: ${summary.avgLatency}ms`);
+console.log(`Error rate: ${(summary.errorRate * 100).toFixed(2)}%`);
+```
+
+### 4. Test Resilience Features
+
+```typescript
+// Test retry logic
+// 1. Temporarily disable network
+// 2. Call resilient service
+// 3. Verify retry attempts in console logs
+// 4. Restore network and verify success
+
+// Test circuit breaker
+// 1. Trigger multiple consecutive failures
+// 2. Check circuit breaker status
+// 3. Verify state changes: CLOSED → OPEN → HALF_OPEN → CLOSED
+```
+
+---
+
+## Best Practices
+
+### 1. Always Use Resilient Services
+
+✅ **Good**:
+```typescript
+import { db, aiService } from '../services';
+const robots = await db.getRobots();
+```
+
+❌ **Bad**:
+```typescript
+import { supabase } from '../services';
+const robots = await supabase.getRobots(); // No resilience
+```
+
+### 2. Handle Null Returns
+
+Resilient services return `undefined` on failure:
+
+```typescript
+const robots = await db.getRobots();
+if (!robots) {
+  console.error('Failed to fetch robots');
+  return;
+}
+// Use robots
+```
+
+### 3. Provide Meaningful Fallbacks
+
+```typescript
+const result = await withIntegrationResilience(
+  IntegrationType.AI_SERVICE,
+  'ai_service',
+  operation,
+  {
+    fallbacks: [
+      {
+        name: 'cached-response',
+        priority: 1,
+        execute: () => getCachedResponse()
+      },
+      {
+        name: 'default-response',
+        priority: 2,
+        execute: () => getDefaultResponse()
+      }
+    ]
+  }
+);
+```
+
+### 4. Monitor Integration Health
+
+```typescript
+useEffect(() => {
+  const interval = setInterval(() => {
+    const health = getAllIntegrationHealth();
+    updateDashboard(health);
+  }, 5000);
+
+  return () => clearInterval(interval);
+}, []);
+```
+
+### 5. Handle Timeouts Gracefully
+
+```typescript
+try {
+  const code = await aiService.generateMQL5Code(prompt);
+} catch (error) {
+  if (error.category === ErrorCategory.TIMEOUT) {
+    showToast('AI generation timed out. Please try again.', 'warning');
+  }
+}
+```
+
+---
+
+## Testing Integration Resilience
+
+### Unit Test Example
+
+```typescript
+import { withIntegrationResilience, IntegrationType } from '../services';
+
+describe('Integration Resilience', () => {
+  it('should retry on failure', async () => {
+    let attempts = 0;
+    const operation = async () => {
+      attempts++;
+      if (attempts < 3) throw new Error('Network error');
+      return 'success';
+    };
+
+    const result = await withIntegrationResilience(
+      IntegrationType.DATABASE,
+      'test',
+      operation,
+      { disableCircuitBreaker: true }
+    );
+
+    expect(result.success).toBe(true);
+    expect(attempts).toBe(3);
+  });
+
+  it('should use fallback on failure', async () => {
+    const operation = async () => {
+      throw new Error('Primary failed');
+    };
+
+    const result = await withIntegrationResilience(
+      IntegrationType.DATABASE,
+      'test',
+      operation,
+      {
+        disableRetry: true,
+        disableCircuitBreaker: true,
+        fallbacks: [
+          {
+            name: 'test-fallback',
+            priority: 1,
+            execute: () => 'fallback-value'
+          }
+        ]
+      }
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.data).toBe('fallback-value');
+    expect(result.metrics.fallbackUsed).toBe(true);
+  });
+});
+```
+
+---
+
+## Migration Guide
+
+### Migrating from Legacy Services
+
+**Before (Legacy)**:
+```typescript
+import { supabase, marketService } from '../services';
+
+const robots = await supabase.getRobots();
+marketService.subscribe(symbol, callback);
+```
+
+**After (Resilient)**:
+```typescript
+import { db, marketData as marketService } from '../services';
+
+const robots = await db.getRobots();
+marketService.subscribe(symbol, callback);
+```
+
+### Notes
+
+- Auth operations (`Auth.tsx`, `Layout.tsx`, `App.tsx`) continue using `supabase` directly - auth operations don't need resilience (client-side SDK)
+- All other database operations should use `db` for resilience
+- Market data operations should use `marketData` for resilience
+- AI operations should use `aiService` for resilience
+
+---
+
+## Performance Monitoring
+
+### Integration Metrics
 
 ```typescript
 import { integrationMetrics } from '../services';
 
-// Get metrics for specific operation
+// Get metrics for specific integration
 const metrics = integrationMetrics.getMetrics('database', 'get_robots');
-console.log(`Total Calls: ${metrics.count}`);
-console.log(`Avg Latency: ${metrics.avgLatency}ms`);
-console.log(`P95 Latency: ${metrics.p95Latency}ms`);
-console.log(`Error Rate: ${(metrics.errorRate * 100).toFixed(2)}%`);
+console.log('Total Calls:', metrics.count);
+console.log('Avg Latency:', metrics.avgLatency, 'ms');
+console.log('P95 Latency:', metrics.p95Latency, 'ms');
+console.log('P99 Latency:', metrics.p99Latency, 'ms');
+console.log('Error Count:', metrics.errorCount);
+console.log('Error Rate:', (metrics.errorRate * 100).toFixed(2), '%');
+
+// Get all metrics
+const allMetrics = integrationMetrics.getAllMetrics();
 ```
 
-## Migration Guide
-
-### Migrating Components to Resilient Services
-
-1. **Update Imports**:
-   ```typescript
-   // Before
-   import { supabase, marketService } from '../services';
-   
-   // After
-   import { db, marketData as marketService } from '../services';
-   ```
-
-2. **Add Null Checks**:
-   ```typescript
-   const robots = await db.getRobots();
-   if (!robots) {
-     // Handle failure
-     return;
-   }
-   ```
-
-3. **Update Error Handling**:
-   ```typescript
-   try {
-     const result = await db.saveRobot(robot);
-   } catch (error: any) {
-     if (error.retryable) {
-       // Will be retried automatically
-     }
-   }
-   ```
-
-## Testing Integration Resilience
-
-### Manual Testing Checklist
-
-- [ ] Test retry logic by temporarily disabling network
-- [ ] Test circuit breaker by triggering multiple failures
-- [ ] Test fallbacks by disabling primary service
-- [ ] Verify health monitoring updates correctly
-- [ ] Check metrics are being recorded
-
-### Automated Testing
-
-Run the test suite to ensure integration resilience works:
-
-```bash
-npm test
-```
-
-All 423 tests should pass, including tests for:
-- Retry logic
-- Circuit breaker behavior
-- Fallback strategies
-- Error classification
-- Health monitoring
-
-## Performance Considerations
-
-### Timeout Tuning
-
-- **Database**: 30s overall (slower for complex queries)
-- **AI Service**: 60s overall (AI generation takes time)
-- **Market Data**: 10s overall (real-time data needs to be fast)
-
-### Retry Policy
-
-- More retries for critical operations (database writes)
-- Fewer retries for real-time operations (market data)
-- Exponential backoff prevents overwhelming failing services
-
-### Circuit Breaker Thresholds
-
-- Lower threshold for AI service (3 failures) - expensive operations
-- Higher threshold for market data (10 failures) - more tolerant of intermittent issues
-- Reset timeout varies by service criticality
-
-## Security Considerations
-
-### Error Information Leakage
-
-Never expose internal error details to users:
+### Reset Metrics
 
 ```typescript
-// Bad - exposes internal details
-} catch (error) {
-  showToast(error.message); // May contain sensitive info
-}
+// Reset metrics for specific integration
+integrationMetrics.reset('database');
 
-// Good - sanitized error message
-} catch (error: any) {
-  showToast('Service temporarily unavailable');
-  console.error('Internal error:', error); // Log internally only
-}
+// Reset all metrics
+integrationMetrics.reset();
 ```
 
-### Input Validation
+---
 
-Always validate inputs before passing to integrations:
+## Troubleshooting Checklist
 
-```typescript
-import { sanitizeInput } from '../services';
+When integration issues occur:
 
-const sanitizedPrompt = sanitizeInput(userPrompt);
-const code = await aiService.generateMQL5Code(sanitizedPrompt);
-```
+- [ ] Check build passes: `npm run build`
+- [ ] Check typecheck passes: `npm run typecheck`
+- [ ] Verify imports use resilient services (`db`, `aiService`, `marketData`)
+- [ ] Check circuit breaker status: `getCircuitBreakerStatus('database')`
+- [ ] Check integration health: `getAllIntegrationHealth()`
+- [ ] Review browser console for error logs
+- [ ] Verify fallbacks are configured correctly
+- [ ] Check network connectivity to external services
+- [ ] Reset circuit breaker if needed: `resetCircuitBreaker('database')`
 
-## Documentation References
+---
 
-- **Integration Resilience API**: `docs/INTEGRATION_RESILIENCE.md`
+## References
+
+- **Integration Resilience**: `services/integrationResilience.ts`
+- **Integration Wrapper**: `services/integrationWrapper.ts`
+- **Circuit Breaker**: `services/circuitBreakerMonitor.ts`
+- **Fallback Strategies**: `services/fallbackStrategies.ts`
+- **Health Monitor**: `services/integrationHealthMonitor.ts`
+- **Resilient DB Service**: `services/resilientDbService.ts`
+- **Resilient AI Service**: `services/resilientAIService.ts`
+- **Resilient Market Service**: `services/resilientMarketService.ts`
+- **Service Index**: `services/index.ts`
 - **Migration Guide**: `docs/INTEGRATION_MIGRATION.md`
-- **Service Architecture**: `docs/SERVICE_ARCHITECTURE.md`
-- **Bug Tracker**: `docs/bug.md`
+- **Resilience API**: `docs/INTEGRATION_RESILIENCE.md`
+- **Architecture**: `docs/SERVICE_ARCHITECTURE.md`
 
-## Build Verification
+---
 
-After making integration changes, always verify:
+## Support
 
-```bash
-# TypeScript compilation
-npm run typecheck
+If you encounter integration issues:
 
-# Production build
-npm run build
+1. Check integration health status
+2. Review circuit breaker state
+3. Verify service logs in browser console
+4. Check for TypeScript errors: `npm run typecheck`
+5. Verify build passes: `npm run build`
+6. Consult existing documentation in `/docs`
 
-# Test suite
-npm test
-```
+---
 
-**Current Status** (as of 2026-02-07):
-- ✅ TypeScript: 0 errors
-- ✅ Build: 12.34s (successful)
-- ✅ Tests: 423 passing
-- ✅ Bug Fixed: Logger operation name issue resolved
+## Version History
 
-## Recent Changes
-
-### 2026-02-07 - Bug Fix: Logger Operation Names
-- Fixed `integrationWrapper.ts` to use `options.operationName` instead of `options.operation` in logger calls
-- Prevents logging entire function code in retry messages
-- 4 occurrences updated (lines 72, 83, 88, 93)
-
-## Future Enhancements
-
-1. **Adaptive Timeouts**: Adjust timeouts based on historical performance
-2. **Predictive Fallbacks**: Use ML to predict failures and preemptively fallback
-3. **Integration Testing**: Add integration tests with simulated failures
-4. **Metrics Dashboard**: Build UI for real-time integration health monitoring
-
-## Contact & Support
-
-For integration-related issues:
-1. Check integration health status: `getAllIntegrationHealth()`
-2. Review circuit breaker state: `getAllCircuitBreakerStatuses()`
-3. Check logs for specific operation failures
-4. Verify build and test status
-5. Consult `docs/INTEGRATION_RESILIENCE.md` for detailed API documentation
+- **v1.6** (2026-02-07) - Initial integration engineer documentation
+  - Comprehensive resilience system documentation
+  - Debugging techniques and best practices
+  - Troubleshooting checklist
+  - Migration guide for legacy services
