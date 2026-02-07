@@ -120,7 +120,6 @@ export const PERFORMANCE_SCORE_THRESHOLDS = {
   GOOD: 60, // Score >= 60 is considered good
   POOR: 0, // Score < 60 needs improvement
 } as const;
-
 // Lazy load translations
 export const loadTranslations = async (language: Language) => {
   const translations = await import(`./translations/${language}.js`);

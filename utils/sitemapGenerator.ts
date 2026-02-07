@@ -361,12 +361,7 @@ ${xmlEntries.join('\n')}
   saveToFile(): void {
     const sitemap = this.generateSitemap();
     
-    try {
-      writeFileSync(this.options.outputPath, sitemap, 'utf8');
-      // Sitemap generated successfully
-    } catch (error) {
-      throw error;
-    }
+    writeFileSync(this.options.outputPath, sitemap, 'utf8');
   }
 
   // Generate sitemap index for multiple sitemaps
