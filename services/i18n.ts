@@ -5,12 +5,15 @@ import { loadTranslations } from '../constants';
 import { Language } from '../types';
 
 export const useTranslation = () => {
-    const [language, setLanguage] = useState<Language>(settingsManager.getSettings().language);
+    const [language, setLanguage] = useState<Language>('en');
     const [translations, setTranslations] = useState<Record<string, string>>({});
 
     useEffect(() => {
         const handleSettingsChange = () => {
-            setLanguage(settingsManager.getSettings().language);
+            const settings = settingsManager.getSettings();
+            if (settings) {
+                setLanguage(settings.language);
+            }
         };
 
         window.addEventListener('ai-settings-changed', handleSettingsChange);
