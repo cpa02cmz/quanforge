@@ -33,7 +33,7 @@ class EdgeFunctionOptimizer {
   private static instance: EdgeFunctionOptimizer;
   private configs: Map<string, EdgeFunctionConfig> = new Map();
   private metrics: Map<string, EdgeMetrics> = new Map();
-  private warmupTimers: Map<string, NodeJS.Timeout> = new Map();
+  private warmupTimers: Map<string, ReturnType<typeof setInterval>> = new Map();
   private isWarmingUp: Set<string> = new Set();
 
   private constructor() {

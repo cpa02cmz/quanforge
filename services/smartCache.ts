@@ -51,7 +51,7 @@ export class SmartCache<T = any> {
     cleanupInterval: 60000, // 1 minute
     compressionThreshold: 1024, // 1KB
   };
-  private cleanupTimer: NodeJS.Timeout | null = null;
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
   private dbName = 'smartCache';
   private storeName = 'cache';
 

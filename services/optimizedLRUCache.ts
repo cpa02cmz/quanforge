@@ -27,7 +27,7 @@ export class OptimizedLRUCache<T> {
   private readonly defaultTtl: number;
   private hits = 0;
   private misses = 0;
-  private cleanupTimer: NodeJS.Timeout | null = null;
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(maxSize: number = 200, defaultTtl: number = 900000) { // 15 min default TTL
     this.maxSize = maxSize;

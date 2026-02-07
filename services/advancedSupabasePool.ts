@@ -49,8 +49,8 @@ class AdvancedSupabasePool {
   private pools: Map<string, PooledConnection[]> = new Map();
   private configs: Map<string, ConnectionConfig> = new Map();
   private metrics: PoolMetrics;
-  private healthCheckTimer: NodeJS.Timeout | null = null;
-  private cleanupTimer: NodeJS.Timeout | null = null;
+  private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
   private readonly DEFAULT_CONFIG: Partial<ConnectionConfig> = {
     maxConnections: 10,
     minConnections: 2,

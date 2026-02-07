@@ -16,7 +16,7 @@ class RealTimeUXScoring {
   private metricsCollector: UXMetricsCollector;
   private scoreCalculator: UXScoreCalculator;
   private uxAnalyzer: UXAnalyzer;
-  private monitoringTimer?: NodeJS.Timeout;
+  private monitoringTimer?: ReturnType<typeof setInterval>;
   private isMonitoring = false;
 
   private constructor(config: Partial<UXConfig> = {}) {

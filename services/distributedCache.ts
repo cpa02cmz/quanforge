@@ -54,7 +54,7 @@ export class DistributedCache extends AdvancedCache {
   private distributedConfig: DistributedCacheConfig;
   private currentRegion: string;
   private versionMap = new Map<string, number>();
-  private syncTimer: NodeJS.Timeout | null = null;
+  private syncTimer: ReturnType<typeof setInterval> | null = null;
   private eventListeners = new Map<string, Function[]>();
   private pendingInvalidations = new Set<string>();
   private syncQueue: CacheSyncMessage[] = [];

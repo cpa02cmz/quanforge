@@ -38,7 +38,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
   private metricsQueue: PerformanceMetric[] = [];
   private operationQueue: OperationRecord[] = [];
   private isProcessing = false;
-  private batchProcessor?: NodeJS.Timeout;
+  private batchProcessor?: ReturnType<typeof setInterval>;
 
   async initialize(): Promise<void> {
     this.config = {

@@ -34,7 +34,7 @@ export interface QueryMetrics {
 export class AdvancedQueryOptimizer {
   private queryCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
   private batchQueue: BatchQuery<any>[] = [];
-  private batchTimer: NodeJS.Timeout | null = null;
+  private batchTimer: ReturnType<typeof setInterval> | null = null;
   private connectionPool: any[] = [];
   private activeConnections = 0;
   private maxConnections = 10;

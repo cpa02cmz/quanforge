@@ -61,7 +61,7 @@ class EdgeMonitoringService {
   private healthChecks: Map<string, HealthCheckResult> = new Map();
   private performanceMetrics: PerformanceMetrics[] = [];
   private alerts: Map<string, Alert> = new Map();
-  private monitoringIntervals: Map<string, NodeJS.Timeout> = new Map();
+  private monitoringIntervals: Map<string, ReturnType<typeof setInterval>> = new Map();
   private isMonitoring = false;
 
   private constructor() {

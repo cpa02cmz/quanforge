@@ -22,7 +22,7 @@ export interface HealthCheckResult {
 export class IntegrationHealthMonitor {
   private healthChecks = new Map<string, {
     options: HealthCheckOptions;
-    intervalId?: NodeJS.Timeout;
+    intervalId?: ReturnType<typeof setInterval>;
     lastResult: HealthCheckResult;
     consecutiveFailures: number;
     consecutiveSuccesses: number;

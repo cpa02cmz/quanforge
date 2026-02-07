@@ -45,7 +45,7 @@ export class OptimizedCache {
   private maxSize: number;
   private defaultTTL: number;
   private compressionThreshold = 1024; // 1KB
-  private cleanupInterval: NodeJS.Timeout;
+  private cleanupInterval: ReturnType<typeof setInterval>;
   private accessCounter = 0;
   private metrics = {
     hits: 0,

@@ -87,7 +87,7 @@ class ConnectionManager {
   private configs: Map<string, ConnectionConfig> = new Map();
   private readReplicas: DatabaseConnection[] = [];
   private metrics: PoolMetrics;
-  private healthCheckTimer: NodeJS.Timeout | null = null;
+  private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
 
   private constructor() {
     this.metrics = {

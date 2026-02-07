@@ -8,7 +8,7 @@ import { BatchQuery, BatchConfig, PendingQuery, QueryBatch } from './queryTypes'
 export class QueryQueueManager {
   private batchQueue: BatchQuery[] = [];
   private pendingResults: Map<string, PendingQuery> = new Map();
-  private batchTimer: NodeJS.Timeout | null = null;
+  private batchTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(private config: BatchConfig) {}
 

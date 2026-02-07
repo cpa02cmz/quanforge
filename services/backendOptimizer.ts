@@ -52,7 +52,7 @@ class BackendOptimizer {
   
   private requestCache = new Map<string, RequestDeduplicationEntry>();
   private activeRequests = 0;
-  private healthCheckIntervalId: NodeJS.Timeout | null = null;
+  private healthCheckIntervalId: ReturnType<typeof setInterval> | null = null;
   private metrics = {
     deduplicatedRequests: 0,
     savedBandwidth: 0,
