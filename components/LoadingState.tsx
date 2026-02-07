@@ -12,9 +12,15 @@ export const LoadingState: React.FC<LoadingStateProps> = memo(({
   className = ''
 }) => {
   const sizeClasses = {
-    sm: 'h-4 w-4',
-    md: 'h-8 w-8',
-    lg: 'h-12 w-12'
+    sm: 'h-4 w-4 border-2',
+    md: 'h-8 w-8 border-3',
+    lg: 'h-12 w-12 border-4'
+  };
+
+  const innerSizeClasses = {
+    sm: 'h-2 w-2',
+    md: 'h-4 w-4',
+    lg: 'h-6 w-6'
   };
 
   return (
@@ -24,12 +30,25 @@ export const LoadingState: React.FC<LoadingStateProps> = memo(({
       aria-live="polite"
       aria-busy="true"
     >
-      <div
-        className={`animate-spin rounded-full border-b-2 border-brand-500 ${sizeClasses[size]}`}
-        aria-hidden="true"
-      ></div>
+      {/* Dual-ring gradient spinner for modern visual polish */}
+      <div className="relative" aria-hidden="true">
+        {/* Outer ring */}
+        <div
+          className={`${sizeClasses[size]} rounded-full border-brand-500/30 border-t-brand-500 animate-spin`}
+          style={{ animationDuration: '1s' }}
+        ></div>
+        {/* Inner ring - counter rotation for visual interest */}
+        <div
+          className={`absolute inset-0 flex items-center justify-center`}
+        >
+          <div
+            className={`${innerSizeClasses[size]} rounded-full border-brand-400/40 border-b-brand-400 animate-spin`}
+            style={{ animationDuration: '0.75s', animationDirection: 'reverse' }}
+          ></div>
+        </div>
+      </div>
       {message && (
-        <p className="mt-4 text-gray-400 text-sm" aria-live="polite">{message}</p>
+        <p className="mt-4 text-gray-400 text-sm animate-pulse" aria-live="polite">{message}</p>
       )}
     </div>
   );

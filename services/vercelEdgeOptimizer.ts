@@ -3,7 +3,7 @@
  * Provides edge-specific optimizations for better performance
  */
 
-import { TIMEOUTS } from '../constants';
+import { TIMEOUTS, CACHE_LIMITS } from '../constants';
 
 interface EdgeConfig {
   enableEdgeRuntime: boolean;
@@ -536,7 +536,7 @@ const entries = list.getEntries();
 
     // Add limit for performance
     if (!query.includes('limit') && !query.includes('LIMIT')) {
-      optimizedQuery += '.limit(100)';
+      optimizedQuery += `.limit(${CACHE_LIMITS.DEFAULT_QUERY_LIMIT})`;
     }
 
     // Generate cache key (using btoa for browser compatibility instead of Buffer)
