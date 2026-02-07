@@ -386,7 +386,7 @@ The repository has undergone comprehensive consolidation for optimal performance
 - **Documentation**: Check `AGENTS.md` for development guidelines
 - **Code Standards**: See `coding_standard.md` for conventions
 - **Architecture**: Review `blueprint.md` for system design
-- **API Documentation**: Complete reference in `docs/API_DOCUMENTATION.md`
+- **Service Architecture**: Complete reference in `docs/SERVICE_ARCHITECTURE.md`
 
 ---
 

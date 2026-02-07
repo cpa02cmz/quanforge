@@ -234,11 +234,22 @@ npm run typecheck
 **Active Issues:**
 - Fixed: QUICK_START.md internal link references
 - Fixed: Relative path links to parent directory files
+- Fixed: Broken references to deleted API_DOCUMENTATION.md (see Bug Fixes below)
+
+**Bug Fixes (2026-02-07):**
+- **Issue**: Multiple documentation files referenced deleted `docs/API_DOCUMENTATION.md`
+- **Files Fixed**:
+  1. README.md (line 234): Replaced with `SERVICE_ARCHITECTURE.md`
+  2. USER_GUIDE.md (line 389): Replaced with `SERVICE_ARCHITECTURE.md`
+  3. AI_AGENT_DOCUMENTATION_INDEX.md (line 24): Replaced with `SERVICE_ARCHITECTURE.md`
+  4. DOCUMENTATION_INDEX.md (lines 26, 75): Replaced with `SERVICE_ARCHITECTURE.md`
+- **Impact**: All documentation links now point to existing, accurate service architecture documentation
 
 **Build Status:** ✅ Passing
-- Build time: ~13s
+- Build time: ~14s
 - TypeScript: 0 errors
 - No broken internal links
+- No new lint errors introduced
 
 **Documentation Coverage:**
 - ✅ User Guide (QUICK_START.md)
