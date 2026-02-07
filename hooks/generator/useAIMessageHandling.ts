@@ -41,8 +41,8 @@ export const useAIMessageHandling = ({
   const handleSendMessage = useCallback(async (content: string) => {
     // Validate input
     const validationResult = ValidationService.validateChatMessage(content);
-    if (!validationResult.isValid) {
-      showToast(ValidationService.formatErrors(validationResult.errors), 'error');
+    if (!ValidationService.isValid(validationResult)) {
+      showToast(ValidationService.formatErrors(validationResult), 'error');
       return;
     }
 

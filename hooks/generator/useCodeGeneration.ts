@@ -32,8 +32,8 @@ export const useCodeGeneration = ({
   const handleApplySettings = useCallback(async () => {
     // Validate strategy parameters before applying
     const validationResult = ValidationService.validateStrategyParams(strategyParams);
-    if (!validationResult.isValid) {
-      validationResult.errors.forEach((error: any) => showToast(error.message, 'error'));
+    if (!ValidationService.isValid(validationResult)) {
+      validationResult.forEach((error) => showToast(error.message, 'error'));
       return;
     }
     

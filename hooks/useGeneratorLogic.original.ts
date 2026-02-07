@@ -130,10 +130,10 @@ export const useGeneratorLogic = (id?: string) => {
   const { addMessage, getMessages } = useMessageBuffer(50);
 
 // Enhanced validation using ValidationService
-    const validateStrategyParams = useCallback((params: StrategyParams): string[] => {
-      const result = ValidationService.validateStrategyParams(params);
-      return result.isValid ? [] : result.errors.map((error: any) => error.message);
-    }, []);
+     const validateStrategyParams = useCallback((params: StrategyParams): string[] => {
+       const result = ValidationService.validateStrategyParams(params);
+       return ValidationService.isValid(result) ? [] : result.map((error) => error.message);
+     }, []);
 
    // Reset State Helper
    const resetState = useCallback(() => {
@@ -275,8 +275,8 @@ const stopGeneration = () => {
   const handleSendMessage = async (content: string) => {
     // Validate input
     const validationResult = ValidationService.validateChatMessage(content);
-    if (!validationResult.isValid) {
-      showToast(ValidationService.formatErrors(validationResult.errors), 'error');
+    if (!ValidationService.isValid(validationResult)) {
+      showToast(ValidationService.formatErrors(validationResult), 'error');
       return;
     }
 
@@ -434,9 +434,9 @@ const stopGeneration = () => {
 
   const handleSave = async () => {
       // Validate robot name
-      const nameValidation = ValidationService.validateRobot({ name: state.robotName });
-      if (!nameValidation.isValid) {
-        showToast(ValidationService.formatErrors(nameValidation.errors), 'error');
+      const nameValidation = ValidationService.validateRobotName(state.robotName);
+      if (!ValidationService.isValid(nameValidation)) {
+        showToast(ValidationService.formatErrors(nameValidation), 'error');
         return;
 }
       dispatch({ type: 'SET_SAVING', payload: true });

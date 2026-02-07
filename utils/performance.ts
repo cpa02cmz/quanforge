@@ -48,6 +48,11 @@ class PerformanceMonitor {
     // Clear would have to be added to performanceManager if needed
     console.warn('clearMetrics not implemented in consolidated version');
   }
+
+  cleanup(): void {
+    // Cleanup any resources used by the performance monitor
+    this.clearMetrics();
+  }
 }
 
 export const performanceMonitor = new PerformanceMonitor();

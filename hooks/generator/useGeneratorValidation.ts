@@ -10,13 +10,13 @@ export const useGeneratorValidation = ({ showToast }: UseGeneratorValidationProp
   
   const validateStrategyParams = useCallback((params: StrategyParams): string[] => {
     const result = ValidationService.validateStrategyParams(params);
-    return result.isValid ? [] : result.errors.map((error: any) => error.message);
+    return ValidationService.isValid(result) ? [] : result.map((error) => error.message);
   }, []);
 
   const validateAndShowErrors = useCallback((params: StrategyParams): boolean => {
     const validationResult = ValidationService.validateStrategyParams(params);
-    if (!validationResult.isValid) {
-      const errorMessage = ValidationService.formatErrors(validationResult.errors);
+    if (!ValidationService.isValid(validationResult)) {
+      const errorMessage = ValidationService.formatErrors(validationResult);
       showToast(errorMessage, 'error');
       return false;
     }
@@ -24,9 +24,9 @@ export const useGeneratorValidation = ({ showToast }: UseGeneratorValidationProp
   }, [showToast]);
 
   const validateRobotName = useCallback((name: string): boolean => {
-    const nameValidation = ValidationService.validateRobot({ name });
-    if (!nameValidation.isValid) {
-      const errorMessage = ValidationService.formatErrors(nameValidation.errors);
+    const nameValidation = ValidationService.validateRobotName(name);
+    if (!ValidationService.isValid(nameValidation)) {
+      const errorMessage = ValidationService.formatErrors(nameValidation);
       showToast(errorMessage, 'error');
       return false;
     }
@@ -35,8 +35,8 @@ export const useGeneratorValidation = ({ showToast }: UseGeneratorValidationProp
 
   const validateChatMessage = useCallback((content: string): string | null => {
     const validationResult = ValidationService.validateChatMessage(content);
-    if (!validationResult.isValid) {
-      return ValidationService.formatErrors(validationResult.errors);
+    if (!ValidationService.isValid(validationResult)) {
+      return ValidationService.formatErrors(validationResult);
     }
     return null;
   }, []);
@@ -54,14 +54,14 @@ export const useGeneratorValidation = ({ showToast }: UseGeneratorValidationProp
 
     // Validate chat message
     const messageValidation = ValidationService.validateChatMessage(content);
-    if (!messageValidation.isValid) {
-      errors.push(...messageValidation.errors.map((error: any) => error.message));
+    if (!ValidationService.isValid(messageValidation)) {
+      errors.push(...messageValidation.map((error) => error.message));
     }
 
     // Validate strategy params
     const strategyValidation = ValidationService.validateStrategyParams(strategyParams);
-    if (!strategyValidation.isValid) {
-      errors.push(...strategyValidation.errors.map((error: any) => error.message));
+    if (!ValidationService.isValid(strategyValidation)) {
+      errors.push(...strategyValidation.map((error) => error.message));
     }
 
     // Additional business logic validation
@@ -83,15 +83,15 @@ export const useGeneratorValidation = ({ showToast }: UseGeneratorValidationProp
     const errors: string[] = [];
 
     // Validate robot name
-    const nameValidation = ValidationService.validateRobot({ name: robotName });
-    if (!nameValidation.isValid) {
-      errors.push(...nameValidation.errors.map((error: any) => error.message));
+    const nameValidation = ValidationService.validateRobotName(robotName);
+    if (!ValidationService.isValid(nameValidation)) {
+      errors.push(...nameValidation.map((error) => error.message));
     }
 
     // Validate strategy params
     const strategyValidation = ValidationService.validateStrategyParams(strategyParams);
-    if (!strategyValidation.isValid) {
-      errors.push(...strategyValidation.errors.map((error: any) => error.message));
+    if (!ValidationService.isValid(strategyValidation)) {
+      errors.push(...strategyValidation.map((error) => error.message));
     }
 
     // Validate code presence
