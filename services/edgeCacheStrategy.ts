@@ -36,6 +36,7 @@ class EdgeCacheStrategy {
     enableCompression: true,
     enableMetrics: true
   };
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(config?: Partial<CacheConfig>) {
     this.config = { ...this.config, ...config };
@@ -315,9 +316,19 @@ class EdgeCacheStrategy {
   }
 
   private startCleanupTimer(): void {
-    setInterval(() => {
+    this.cleanupTimer = setInterval(() => {
       this.cleanup();
     }, 60000); // Cleanup every minute
+  }
+
+  /**
+   * Stop the cleanup timer
+   */
+  stopCleanupTimer(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
   }
 
   private cleanup(): void {
@@ -348,6 +359,14 @@ class EdgeCacheStrategy {
     this.cache.clear();
     this.tagIndex.clear();
     this.stats = { hits: 0, misses: 0, size: 0, entries: 0, hitRate: 0 };
+  }
+
+  /**
+   * Destroy the cache and cleanup all resources
+   */
+  destroy(): void {
+    this.stopCleanupTimer();
+    this.clear();
   }
 
   // Smart cache invalidation based on events
