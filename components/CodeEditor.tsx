@@ -26,11 +26,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
 
   // Re-run highlighting when code changes or when switching back to view mode
   useLayoutEffect(() => {
-    if (!isEditing && codeRef.current && (window as any).Prism) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!isEditing && codeRef.current && (window as unknown as { Prism?: { highlightElement: (el: HTMLElement) => void } }).Prism) {
         // MQL5 is very similar to C++, so we use the cpp language definition
         // Use requestAnimationFrame to ensure highlighting happens after DOM updates
         requestAnimationFrame(() => {
-          (window as any).Prism.highlightElement(codeRef.current!);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (window as unknown as { Prism?: { highlightElement: (el: HTMLElement) => void } }).Prism?.highlightElement(codeRef.current!);
         });
     }
   }, [code, isEditing]);
