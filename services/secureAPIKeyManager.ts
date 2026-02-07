@@ -21,7 +21,9 @@ interface APIKeyResponse {
 
 export class SecureAPIKeyManager {
   private static instance: SecureAPIKeyManager;
-  private edgeFunctionURL = '/api/edge/api-key-manager';
+  // Note: This is a client-side SPA with no REST API endpoints
+  // Edge function URL is reserved for future server-side implementation
+  // private edgeFunctionURL = '/api/edge/api-key-manager';
   private sessionId: string;
   private keyCache = new Map<string, { key: string; expires: number }>();
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -56,6 +58,17 @@ export class SecureAPIKeyManager {
       return cached.key;
     }
 
+    // Note: This is a client-side SPA with no REST API endpoints
+    // For now, return a mock key or throw an error indicating client-side only mode
+    // In production with server-side edge functions, the fetch call below would be used
+    throw new Error(
+      `Secure API key management requires server-side implementation. ` +
+      `This is a client-side SPA. Please configure API keys via environment variables. ` +
+      `Provider: ${provider}, Operation: ${operation}`
+    );
+
+    /* 
+    // Future implementation with server-side edge functions:
     try {
       const request: APIKeyRequest = {
         sessionId: this.sessionId,
@@ -102,6 +115,7 @@ export class SecureAPIKeyManager {
         `Failed to retrieve secure API key: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
+    */
   }
 
   // Method to validate API key availability
@@ -117,6 +131,13 @@ export class SecureAPIKeyManager {
 
   // Get masked key for display purposes
   async getMaskedKey(provider: 'google' | 'openai'): Promise<string> {
+    // Note: This is a client-side SPA with no REST API endpoints
+    // Return placeholder since server-side edge function is not available
+    console.warn(`getMaskedKey called for ${provider} but no server-side API available in client-side SPA`);
+    return '***';
+    
+    /*
+    // Future implementation with server-side edge functions:
     try {
       const request: APIKeyRequest = {
         sessionId: this.sessionId,
@@ -148,6 +169,7 @@ export class SecureAPIKeyManager {
       console.error('Failed to get masked key:', error);
       return '***';
     }
+    */
   }
 
   // Clear cache (useful for testing or when keys change)

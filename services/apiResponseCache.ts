@@ -6,6 +6,7 @@
 
 import { edgeKVService } from './edgeKVStorage';
 import { createScopedLogger } from '../utils/logger';
+import { createSafeWildcardPattern, ReDoSError } from '../utils/safeRegex';
 
 const logger = createScopedLogger('ApiResponseCache');
 
@@ -384,9 +385,17 @@ class APIResponseCache {
         // Invalidate related endpoints
         for (const relatedEndpoint of rule.endpoints) {
           if (relatedEndpoint.includes('*')) {
-            // Pattern-based invalidation
-            const pattern = relatedEndpoint.replace('*', '.*');
-            await this.invalidate(new RegExp(pattern), delay);
+            // Pattern-based invalidation with ReDoS protection
+            try {
+              const safePattern = createSafeWildcardPattern(relatedEndpoint);
+              await this.invalidate(safePattern, delay);
+            } catch (error) {
+              if (error instanceof ReDoSError) {
+                logger.warn(`Unsafe invalidation pattern "${relatedEndpoint}": ${error.message}`);
+                // Fall back to exact endpoint invalidation
+                await this.invalidate(relatedEndpoint.replace(/\*/g, ''), delay);
+              }
+            }
           } else {
             // Exact endpoint invalidation
             await this.invalidate(relatedEndpoint, delay);

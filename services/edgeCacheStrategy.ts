@@ -1,3 +1,5 @@
+import { createSafeWildcardPattern, ReDoSError } from '../utils/safeRegex';
+
 interface CacheEntry {
   data: any;
   timestamp: number;
@@ -106,7 +108,49 @@ class EdgeCacheStrategy {
   }
 
   async invalidateByPattern(pattern: string): Promise<void> {
-    const regex = new RegExp(pattern);
+    let regex: RegExp;
+    
+    try {
+      // Use safe regex creation with ReDoS protection
+      if (pattern.includes('*') || pattern.includes('?')) {
+        regex = createSafeWildcardPattern(pattern);
+      } else {
+        // For non-wildcard patterns, validate the regex is safe
+        if (pattern.length > 200) {
+          console.warn('Pattern too long, falling back to simple matching');
+          // Fall back to simple string matching
+          const keysToDelete: string[] = [];
+          for (const key of this.cache.keys()) {
+            if (key.includes(pattern)) {
+              keysToDelete.push(key);
+            }
+          }
+          for (const key of keysToDelete) {
+            this.delete(key);
+          }
+          return;
+        }
+        regex = new RegExp(pattern);
+      }
+    } catch (error) {
+      if (error instanceof ReDoSError) {
+        console.warn(`Unsafe cache pattern: ${error.message}`);
+        // Fall back to simple string matching
+        const safePattern = pattern.replace(/[*?[\]()+\\^$.]/g, '');
+        const keysToDelete: string[] = [];
+        for (const key of this.cache.keys()) {
+          if (key.includes(safePattern)) {
+            keysToDelete.push(key);
+          }
+        }
+        for (const key of keysToDelete) {
+          this.delete(key);
+        }
+        return;
+      }
+      throw error;
+    }
+    
     const keysToDelete: string[] = [];
 
     for (const key of this.cache.keys()) {
