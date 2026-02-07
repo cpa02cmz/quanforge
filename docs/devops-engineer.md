@@ -581,8 +581,8 @@ npm run build:analyze
 ### Documentation
 - [Vercel Docs](https://vercel.com/docs)
 - [Vite Docs](https://vitejs.dev/)
-- [Service Architecture](./SERVICE_ARCHITECTURE.md)
-- [Integration Resilience](./INTEGRATION_RESILIENCE.md)
+- [Service Architecture](SERVICE_ARCHITECTURE.md)
+- [Integration Resilience](INTEGRATION_RESILIENCE.md)
 
 ### Tools
 - Vercel Dashboard: https://vercel.com/dashboard

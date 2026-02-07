@@ -7,6 +7,7 @@ import { handleErrorCompat as handleError } from '../../utils/errorManager';
 import { globalCache } from '../unifiedCacheManager';
 import { Robot } from '../../types';
 import { STORAGE_KEYS, safeParse, trySaveToStorage, generateUUID } from './storage';
+import { createSafeSQLPattern, ReDoSError } from '../../utils/safeRegex';
 
 // Database configurations
 export const DB_CONFIG = {
@@ -22,7 +23,9 @@ export const DB_CONFIG = {
 
 // Storage operations
 const getStoredRobots = (): Robot[] => {
-  return safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
+  const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
+  // Filter out soft-deleted records by default
+  return robots.filter((r: Robot) => !r.deleted_at);
 };
 
 const saveStoredRobots = (robots: Robot[]) => {
@@ -126,15 +129,20 @@ export const mockDB = {
 
         delete: async () => {
           try {
-            const robots = getStoredRobots();
-            const filtered = robots.filter(robot => robot[column as keyof Robot] !== value);
+            // Use soft delete instead of hard delete for data integrity
+            const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
+            const updatedRobots = robots.map((robot: Robot) => 
+              robot[column as keyof Robot] === value 
+                ? { ...robot, deleted_at: new Date().toISOString() }
+                : robot
+            );
             
-            saveStoredRobots(filtered);
+            saveStoredRobots(updatedRobots);
             return { data: null, error: null };
-} catch (error) {
-          handleError(error instanceof Error ? error : String(error), 'database.operation');
-          return { data: null, error };
-        }
+          } catch (error) {
+            handleError(error instanceof Error ? error : String(error), 'database.operation');
+            return { data: null, error };
+          }
         }
       }),
 
@@ -143,16 +151,22 @@ export const mockDB = {
         select: async () => {
           try {
             const robots = getStoredRobots();
-            const regex = new RegExp(pattern.replace(/%/g, '.*'), 'i');
+            // Use safe regex to prevent ReDoS attacks
+            const regex = createSafeSQLPattern(pattern);
             const filtered = robots.filter(robot => 
               regex.test(String(robot[column as keyof Robot]))
             );
             
             return { data: filtered, error: null };
-} catch (error) {
-          handleError(error instanceof Error ? error : String(error), 'database.operation');
-          return { data: null, error };
-        }
+          } catch (error) {
+            // Handle ReDoS errors gracefully
+            if (error instanceof ReDoSError) {
+              console.warn('Unsafe pattern detected in ilike:', error.message);
+              return { data: [], error: { message: `Invalid search pattern: ${error.message}` } };
+            }
+            handleError(error instanceof Error ? error : String(error), 'database.operation');
+            return { data: null, error };
+          }
         }
       }),
 
@@ -276,7 +290,8 @@ export const getRobotsPaginated = async (page: number = 1, pageSize: number = 10
 export const searchRobots = async (searchTerm: string) => {
   try {
     const robots = getStoredRobots();
-    const regex = new RegExp(searchTerm.replace(/%/g, '.*'), 'i');
+    // Use safe regex to prevent ReDoS attacks
+    const regex = createSafeSQLPattern(searchTerm);
     const filtered = robots.filter(robot => 
       regex.test(robot.name) || 
       regex.test(robot.description) ||
@@ -285,6 +300,11 @@ export const searchRobots = async (searchTerm: string) => {
     
     return { data: filtered, error: null };
   } catch (error) {
+    // Handle ReDoS errors gracefully
+    if (error instanceof ReDoSError) {
+      console.warn('Unsafe search pattern detected:', error.message);
+      return { data: [], error: { message: `Invalid search pattern: ${error.message}` } };
+    }
     handleError(error instanceof Error ? error : String(error), 'database.search');
     return { data: [], error };
   }
@@ -304,7 +324,21 @@ export const updateRobot = async (id: string, updates: Partial<Robot>) => {
 };
 
 export const deleteRobot = async (id: string) => {
-  return mockDB.from('robots').eq('id', id).delete();
+  // Use soft delete for data integrity
+  const robots = safeParse(localStorage.getItem(STORAGE_KEYS.ROBOTS), []);
+  const updatedRobots = robots.map((robot: Robot) => 
+    robot.id === id 
+      ? { ...robot, deleted_at: new Date().toISOString() }
+      : robot
+  );
+  
+  try {
+    saveStoredRobots(updatedRobots);
+    return { data: null, error: null };
+  } catch (error) {
+    handleError(error instanceof Error ? error : String(error), 'database.delete');
+    return { data: null, error };
+  }
 };
 
 export const duplicateRobot = async (id: string) => {

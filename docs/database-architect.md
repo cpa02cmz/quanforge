@@ -757,13 +757,34 @@ WHERE deleted_at IS NULL;
    - Full resilience patterns applied (circuit breaker, retry, fallback)
    - API consistency restored across all database operations
 
+### Database Architect Fixes (2026-02-07)
+
+**Issue 7: Missing Soft Delete Filter in getStats()**
+- **Problem**: `RobotDatabaseService.getStats()` was not filtering out soft-deleted records when counting robots
+- **Impact**: Stats showing incorrect count including deleted robots
+- **Fix**: Added `.is('deleted_at', null)` filter to the count query
+- **File**: `services/database/RobotDatabaseService.ts`
+
+**Issue 8: Mock Database Not Filtering Soft-Deleted Records**
+- **Problem**: `services/supabase/database.ts` `getStoredRobots()` was returning all robots including soft-deleted ones
+- **Impact**: Mock mode showing deleted robots in dashboard and search results
+- **Fix**: Added filter `!r.deleted_at` to `getStoredRobots()` helper function
+- **File**: `services/supabase/database.ts`
+
+**Issue 9: Mock Database Hard Delete Instead of Soft Delete**
+- **Problem**: Mock database `deleteRobot()` and `eq().delete()` were permanently removing records instead of soft deleting
+- **Impact**: Inconsistent behavior between Supabase and mock modes; no ability to restore deleted robots in mock mode
+- **Fix**: Updated both methods to set `deleted_at` timestamp instead of removing records
+- **Files**: `services/supabase/database.ts`
+
 ### Build Status
 
 - ✅ TypeScript Compilation: No errors
-- ✅ Production Build: Successful (12.44s)
+- ✅ Production Build: Successful (12.96s)
 - ✅ Test Suite: 423 tests passing
 - ✅ Soft Delete Consistency: All services now use uniform soft delete pattern
 - ✅ API Completeness: All database operations exposed through resilient service
+- ✅ Mock Database Consistency: Soft delete filtering and behavior aligned with Supabase mode
 
 ### Architecture Health
 
