@@ -3,6 +3,10 @@
  * Provides comprehensive performance monitoring with Web Vitals and custom metrics
  */
 
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('RealTimePerformanceMonitor');
+
 interface PerformanceMetric {
   name: string;
   value: number;
@@ -105,7 +109,7 @@ class RealTimePerformanceMonitor {
       });
     }
 
-    console.log('Performance monitoring started');
+    logger.log('Performance monitoring started');
   }
 
   /**
@@ -121,7 +125,7 @@ class RealTimePerformanceMonitor {
     this.observers = [];
 
     this.isMonitoring = false;
-    console.log('Performance monitoring stopped');
+    logger.log('Performance monitoring stopped');
   }
 
   /**
@@ -141,7 +145,7 @@ class RealTimePerformanceMonitor {
       observer.observe({ entryTypes: ['navigation'] });
       this.observers.push(observer);
     } catch (error) {
-      console.warn('Navigation observer not supported:', error);
+      logger.warn('Navigation observer not supported:', error);
     }
   }
 
@@ -167,7 +171,7 @@ class RealTimePerformanceMonitor {
       observer.observe({ entryTypes: ['paint'] });
       this.observers.push(observer);
     } catch (error) {
-      console.warn('Paint observer not supported:', error);
+      logger.warn('Paint observer not supported:', error);
     }
   }
 
@@ -196,7 +200,7 @@ class RealTimePerformanceMonitor {
       observer.observe({ entryTypes: ['layout-shift'] });
       this.observers.push(observer);
     } catch (error) {
-      console.warn('Layout shift observer not supported:', error);
+      logger.warn('Layout shift observer not supported:', error);
     }
   }
 
@@ -236,7 +240,7 @@ class RealTimePerformanceMonitor {
       observer.observe({ entryTypes: ['first-input', 'event'] });
       this.observers.push(observer);
     } catch (error) {
-      console.warn('Interaction observer not supported:', error);
+      logger.warn('Interaction observer not supported:', error);
     }
   }
 
@@ -256,7 +260,7 @@ class RealTimePerformanceMonitor {
       observer.observe({ entryTypes: ['resource'] });
       this.observers.push(observer);
     } catch (error) {
-      console.warn('Resource observer not supported:', error);
+      logger.warn('Resource observer not supported:', error);
     }
   }
 
