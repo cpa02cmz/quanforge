@@ -4,7 +4,7 @@ import DOMPurify from 'dompurify';
 import { StrategyParams, CustomInput } from '../types';
 import { TIMEFRAMES } from '../constants';
 import { MarketTicker } from './MarketTicker';
-import { useToast } from './Toast';
+import { useToast } from './useToast';
 import { NumericInput } from './NumericInput';
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
