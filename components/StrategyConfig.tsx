@@ -225,24 +225,27 @@ const sanitizeInput = (input: string): string => {
         </h2>
         <div className="flex gap-2">
             {onReset && (
-                <button 
+                <button
                     onClick={onReset}
                     className="text-xs text-gray-500 hover:text-red-400 transition-colors"
+                    aria-label={t('config_reset')}
                     title={t('config_reset')}
                 >
                     {t('config_reset')}
                 </button>
             )}
-            <button 
+            <button
                 onClick={importConfig}
                 className="text-xs text-gray-500 hover:text-white transition-colors"
+                aria-label={t('config_import_clipboard')}
                 title={t('config_import_clipboard')}
             >
                 {t('config_import_clipboard')}
             </button>
-            <button 
+            <button
                 onClick={copyConfig}
                 className="text-xs text-gray-500 hover:text-white transition-colors"
+                aria-label={t('config_copy')}
                 title={t('config_copy')}
             >
                 {t('config_copy')}
@@ -417,13 +420,14 @@ const sanitizeInput = (input: string): string => {
                <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>
                {t('config_custom_inputs')}
              </h3>
-             <button
-               onClick={addInput}
-               className="text-xs bg-brand-600 hover:bg-brand-500 text-white px-2 py-1 rounded flex items-center gap-1"
-             >
-               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-               {t('config_add_input')}
-             </button>
+              <button
+                onClick={addInput}
+                className="text-xs bg-brand-600 hover:bg-brand-500 text-white px-2 py-1 rounded flex items-center gap-1"
+                aria-label={t('config_add_input')}
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                {t('config_add_input')}
+              </button>
            </div>
            
            <div className="space-y-3">
