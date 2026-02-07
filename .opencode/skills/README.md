@@ -29,6 +29,16 @@ This directory contains specialized skills for the OpenCode CLI to enhance devel
 **Purpose**: Automate GitHub workflows including /ulw-loop  
 **Based on**: sulhi-sabil/agent-skill
 
+### 6. Planning (`planning.md`)
+**Trigger**: Starting new features or complex tasks  
+**Purpose**: Break down tasks into actionable steps with verification criteria  
+**Based on**: sulhi-sabil/agent-skill planning skill
+
+### 7. Skill Creator (`skill-creator.md`)
+**Trigger**: Developing new agent capabilities  
+**Purpose**: Create new skills following best practices and integration patterns  
+**Based on**: sulhi-sabil/agent-skill skill-creator
+
 ## How to Use
 
 Skills are automatically loaded by OpenCode based on context. You can also invoke them explicitly:
@@ -39,7 +49,14 @@ Skills are automatically loaded by OpenCode based on context. You can also invok
 /debug [issue description]
 /plan [task description]
 /ulw-loop
+/create-skill [skill concept]
 ```
+
+Or mention the skill in your prompt:
+- "Use brainstorming to explore this architecture"
+- "Apply systematic debugging to this error"
+- "Create a plan for implementing X"
+- "Use test-driven development for this feature"
 
 ## Configuration
 

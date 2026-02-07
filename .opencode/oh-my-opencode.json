@@ -1,10 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/main/schemas/oh-my-opencode.json",
-  "version": "3.2.0",
+  "version": "3.2.4",
   "project": {
     "name": "QuanForge",
     "type": "web-application",
-    "framework": "vite-react-typescript"
+    "framework": "vite-react-typescript",
+    "description": "AI-Powered Trading Strategy Generator with MQL5 code generation"
   },
   "sisyphus": {
     "enabled": true,
@@ -31,6 +32,23 @@
         "model": "opencode/minimax-m2.1-free",
         "role": "fast-codebase-grep"
       }
+    }
+  },
+  "integrations": {
+    "superpowers": {
+      "enabled": true,
+      "repository": "https://github.com/obra/superpowers",
+      "skills": ["brainstorming", "writing-plans", "test-driven-development", "systematic-debugging"]
+    },
+    "agent-skill": {
+      "enabled": true,
+      "repository": "https://github.com/sulhi-sabil/agent-skill",
+      "skills": ["planning", "skill-creator", "github-workflow-automation"]
+    },
+    "system-prompts-reference": {
+      "enabled": true,
+      "repository": "https://github.com/asgeirtj/system_prompts_leaks",
+      "description": "Reference collection for prompt engineering"
     }
   },
   "features": {
