@@ -530,8 +530,8 @@ Only trade when ADX confirms strong trend.
 ### Documentation
 
 - **[README](../README.md)**: Project overview and setup
-- **[Service Architecture](./SERVICE_ARCHITECTURE.md)**: Technical details
-- **[Blueprint](./blueprint.md)**: System architecture
+- **[Service Architecture](SERVICE_ARCHITECTURE.md)**: Technical details
+- **[Blueprint](blueprint.md)**: System architecture
 - **[Coding Standards](../coding_standard.md)**: Development guidelines
 
 ### AI Prompting Tips

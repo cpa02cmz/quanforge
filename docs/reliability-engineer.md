@@ -585,10 +585,10 @@ Created comprehensive storage abstraction:
 
 ## Resources
 
-- [Error Handling Patterns](./INTEGRATION_RESILIENCE.md)
-- [Service Architecture](./SERVICE_ARCHITECTURE.md)
-- [Bug Tracker](./bug.md)
-- [Code Reviewer Guide](./code-reviewer.md)
+- [Error Handling Patterns](INTEGRATION_RESILIENCE.md)
+- [Service Architecture](SERVICE_ARCHITECTURE.md)
+- [Bug Tracker](bug.md)
+- [Code Reviewer Guide](code-reviewer.md)
 
 ---
 
