@@ -21,7 +21,7 @@
 - **USER_GUIDE.md** - End-user documentation
 
 ### 4. API & Integration
-- **docs/API_DOCUMENTATION.md** - API reference
+- **docs/SERVICE_ARCHITECTURE.md** - Service layer architecture
 - **docs/MEMORY_MANAGEMENT_GUIDE.md** - Memory optimization
 - **DEVELOPMENT_AGENT_GUIDE.md** - Agent development guide
 

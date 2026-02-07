@@ -23,7 +23,7 @@
 13. **[SECURITY.md](./SECURITY.md)** - Security policies & vulnerability reporting
 
 ### **Technical Documentation**
-- **[API_DOCUMENTATION.md](./docs/API_DOCUMENTATION.md)** - Complete API reference
+- **[SERVICE_ARCHITECTURE.md](./docs/SERVICE_ARCHITECTURE.md)** - Service layer architecture
 - **[MEMORY_MANAGEMENT_GUIDE.md](./docs/MEMORY_MANAGEMENT_GUIDE.md)** - Performance optimization
 - **[SEO_ENHANCEMENT_GUIDE.md](./docs/SEO_ENHANCEMENT_GUIDE.md)** - SEO implementation
 - **[coding_standard.md](./coding_standard.md)** - Code guidelines & patterns
@@ -72,7 +72,7 @@ These are retained for reference but should NOT be used for current development.
 
 ### **Implementation References**
 8. **USER_GUIDE.md** - Complete feature documentation
-9. **API_DOCUMENTATION.md** - API reference
+9. **SERVICE_ARCHITECTURE.md** - Service layer architecture
 10. **coding_standard.md** - Code style guidelines
 
 ### **When Archive is Referenced**
