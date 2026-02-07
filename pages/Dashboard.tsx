@@ -399,6 +399,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
           processingId={processingId}
           onDuplicate={handleDuplicate}
           onDelete={handleDelete}
+          onClearFilters={() => { setSearchTerm(''); setFilterType('All'); }}
           t={t}
         />
       ) : (
