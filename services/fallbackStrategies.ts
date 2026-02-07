@@ -41,7 +41,7 @@ export class FallbackManager {
   private fallbackMetrics = new Map<string, FallbackMetrics>();
 
   async executeWithFallback<T>(options: FallbackOptions<T>): Promise<FallbackResult<T>> {
-    const { integrationType: _integrationType, integrationName, primaryOperation, fallbacks, fallbackTimeout = 5000, logFallbacks = true } = options;
+    const { integrationName, primaryOperation, fallbacks, fallbackTimeout = 5000, logFallbacks = true } = options;
     const metrics = this.getOrCreateMetrics(integrationName);
 
     try {
@@ -76,11 +76,15 @@ export class FallbackManager {
         try {
           const startTime = Date.now();
           const fallbackPromise = Promise.resolve(fallback.execute());
+          let timeoutId: ReturnType<typeof setTimeout>;
           const fallbackData = await Promise.race([
-            fallbackPromise,
-            new Promise<T>((_, reject) => 
-              setTimeout(() => reject(new Error('Fallback timeout')), fallbackTimeout)
-            )
+            fallbackPromise.then(value => {
+              clearTimeout(timeoutId);
+              return value;
+            }),
+            new Promise<T>((_, reject) => {
+              timeoutId = setTimeout(() => reject(new Error('Fallback timeout')), fallbackTimeout);
+            })
           ]);
 
           metrics.fallbackSuccesses[fallback.name] = (metrics.fallbackSuccesses[fallback.name] || 0) + 1;

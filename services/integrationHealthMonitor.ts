@@ -45,12 +45,14 @@ export class IntegrationHealthMonitor {
       const startTime = Date.now();
       
       try {
+        let timeoutId: ReturnType<typeof setTimeout>;
         const result = await Promise.race([
           check(),
-          new Promise<{ success: boolean; latency?: number; error?: any }>((_, reject) => 
-            setTimeout(() => reject(new Error('Health check timeout')), timeout)
-          )
+          new Promise<{ success: boolean; latency?: number; error?: any }>((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error('Health check timeout')), timeout);
+          })
         ]) as { success: boolean; latency?: number; error?: any };
+        clearTimeout(timeoutId!);
 
         const latency = result.latency || (Date.now() - startTime);
         const healthCheckResult: HealthCheckResult = {
