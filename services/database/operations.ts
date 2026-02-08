@@ -136,13 +136,19 @@ export const batchUpdateRobots = async (robots: Robot[]): Promise<Robot[]> => {
     }
 };
 
-export const getRobotsByIds = async (ids: string[]): Promise<Robot[]> => {
+export const getRobotsByIds = async (ids: string[], userId: string): Promise<Robot[]> => {
+    if (!userId) {
+        throw new Error('userId is required for security');
+    }
+    
     try {
         const client = getClient();
         const { data, error } = await client
             .from('robots')
             .select('*')
-            .in('id', ids);
+            .in('id', ids)
+            .eq('user_id', userId)
+            .is('deleted_at', null);  // Filter out soft-deleted records
 
         if (error) throw error;
         return data || [];
@@ -150,7 +156,7 @@ export const getRobotsByIds = async (ids: string[]): Promise<Robot[]> => {
         handleError(error instanceof Error ? error : String(error), 'getRobotsByIds');
         // Fallback to storage
         const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
-        return robots.filter((r: Robot) => ids.includes(r.id));
+        return robots.filter((r: Robot) => ids.includes(r.id) && r.user_id === userId && !r.deleted_at);
     }
 };
 
