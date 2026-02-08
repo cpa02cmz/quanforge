@@ -16,6 +16,11 @@ import {
 } from './fallbackStrategies';
 import { integrationHealthMonitor, integrationMetrics } from './integrationHealthMonitor';
 import { createScopedLogger } from '../utils/logger';
+import { dbUtils } from './supabase';
+import { testAIConnection } from './gemini';
+import { marketService } from './marketData';
+import { consolidatedCache } from './consolidatedCacheManager';
+import { settingsManager } from './settingsManager';
 
 const logger = createScopedLogger('integration-wrapper');
 
@@ -299,38 +304,62 @@ export class IntegrationHealthChecker {
         integrationType: config.type,
         integrationName: name,
         check: async () => {
+          const startTime = Date.now();
           try {
-            const startTime = Date.now();
-            
             if (name === 'database') {
+              const result = await dbUtils.checkConnection();
               return {
-                success: true,
-                latency: Date.now() - startTime
+                success: result.success,
+                latency: Date.now() - startTime,
+                message: result.message,
+                mode: result.mode
               };
             } else if (name === 'ai_service') {
+              const settings = settingsManager.getSettings();
+              if (!settings.apiKey) {
+                return {
+                  success: false,
+                  latency: Date.now() - startTime,
+                  error: 'AI API key not configured'
+                };
+              }
+              await testAIConnection(settings);
               return {
                 success: true,
                 latency: Date.now() - startTime
               };
             } else if (name === 'market_data') {
+              // Check if market data service has any active connections
+              const hasSubscribers = marketService['subscribers'].size > 0;
+              const lastData = marketService['lastKnownData'];
               return {
                 success: true,
-                latency: Date.now() - startTime
+                latency: Date.now() - startTime,
+                hasActiveSubscriptions: hasSubscribers,
+                symbolsTracked: lastData.size
               };
             } else if (name === 'cache') {
+              // Test cache operation
+              const testKey = 'health_check_test';
+              const testValue = { timestamp: Date.now() };
+              await consolidatedCache.set(testKey, testValue, 'health', ['health_check']);
+              const retrieved = await consolidatedCache.get(testKey);
+              const success = retrieved && retrieved.timestamp === testValue.timestamp;
+              await consolidatedCache.invalidateByTags(['health_check']);
+              
               return {
-                success: true,
+                success,
                 latency: Date.now() - startTime
               };
             }
 
-            return { success: false };
+            return { success: false, latency: Date.now() - startTime };
           } catch (error) {
             logger.error(`Health check failed for ${name}:`, error);
             return {
               success: false,
-              error,
-              latency: Date.now() - Date.now()
+              error: error instanceof Error ? error.message : String(error),
+              latency: Date.now() - startTime
             };
           }
         },
