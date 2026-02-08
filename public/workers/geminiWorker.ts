@@ -49,9 +49,27 @@ interface WorkerResponse {
   id: string;
 }
 
-// Handle messages from main thread
+// Handle messages from main thread with origin validation
 self.addEventListener('message', async (event: MessageEvent<WorkerMessage>) => {
+  // Validate origin - only accept messages from same origin
+  if (event.origin && event.origin !== self.location.origin) {
+    console.warn(`Rejected message from unauthorized origin: ${event.origin}`);
+    return;
+  }
+
+  // Validate data structure
+  if (!event.data || typeof event.data !== 'object') {
+    console.warn('Rejected message: invalid data structure');
+    return;
+  }
+
   const { type, payload, id } = event.data;
+
+  // Validate required fields
+  if (!type || !id) {
+    console.warn('Rejected message: missing required fields (type or id)');
+    return;
+  }
 
   try {
     switch (type) {

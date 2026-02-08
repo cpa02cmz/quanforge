@@ -79,7 +79,26 @@ class AIWorkerManager {
   }
 
   private handleWorkerMessage(event: MessageEvent<WorkerResponse>): void {
+    // Validate origin - only accept messages from the worker (same origin)
+    if (event.origin && event.origin !== self.location.origin) {
+      logger.warn(`Rejected worker message from unauthorized origin: ${event.origin}`);
+      return;
+    }
+
+    // Validate data structure
+    if (!event.data || typeof event.data !== 'object') {
+      logger.warn('Rejected worker message: invalid data structure');
+      return;
+    }
+
     const { type, id, data, error } = event.data;
+
+    // Validate required fields
+    if (!type || !id) {
+      logger.warn('Rejected worker message: missing required fields (type or id)');
+      return;
+    }
+
     const pending = this.pendingRequests.get(id);
 
     if (!pending) {
