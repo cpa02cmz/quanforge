@@ -304,7 +304,7 @@ const isValidApiKey = (key: string) => {
 };
 
 // Secure key storage
-const apiKey = process.env.API_KEY;
+const apiKey = import.meta.env.VITE_API_KEY;
 if (!apiKey) {
   throw new Error('API key not configured');
 }
@@ -380,8 +380,8 @@ const generateWithFallback = async (prompt: string) => {
 #### Supabase Connection Failed
 ```typescript
 // Check configuration
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   throw new Error('Supabase configuration missing');
@@ -397,8 +397,8 @@ if (error) {
 #### Solution
 ```bash
 # Check environment variables
- echo SUPABASE_URL: $NEXT_PUBLIC_SUPABASE_URL
- echo SUPABASE_KEY: $SUPABASE_SERVICE_ROLE_KEY
+ echo SUPABASE_URL: $VITE_SUPABASE_URL
+ echo SUPABASE_KEY: $VITE_SUPABASE_ANON_KEY
 
 # Test connection manually
 curl -H "apikey: YOUR_KEY" \
@@ -763,7 +763,7 @@ cat dev.log
 
 #### Priority Issues
 - **Security Vulnerabilities**: security@quanforge.ai
-- **Production Outages]: support@quanforge.ai
+- **Production Outages**: support@quanforge.ai
 - **Enterprise Inquiries**: enterprise@quanforge.ai
 
 #### Response Times

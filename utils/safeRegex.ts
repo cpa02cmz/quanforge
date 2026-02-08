@@ -258,7 +258,7 @@ export function createSafeWildcardPattern(
   }
 
   // Escape special regex characters except * and ?
-  let regexPattern = pattern
+  const regexPattern = pattern
     .replace(/[.+^${}()|[\]\\]/g, '\\$&')
     .replace(/\*/g, '.*')
     .replace(/\?/g, '.');
@@ -291,7 +291,7 @@ export function createSafeSQLPattern(
   }
 
   // Replace SQL wildcards with regex equivalents
-  let regexPattern = pattern
+  const regexPattern = pattern
     .replace(/[.+^${}()|[\]\\]/g, '\\$&') // Escape special regex chars
     .replace(/%/g, '.*')                    // % becomes .*
     .replace(/_/g, '.');                    // _ becomes .
