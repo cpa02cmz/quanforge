@@ -1,5 +1,4 @@
 // Unified AI Service with Modular Architecture
-import { MQL5_SYSTEM_PROMPT } from "../constants";
 import { StrategyParams, StrategyAnalysis, Message, AISettings } from "../types";
 import { getActiveKey } from "../utils/apiKeyUtils";
 import { handleError } from "../utils/errorHandler";
@@ -8,7 +7,7 @@ import { AI_CONFIG, TIME_CONSTANTS } from "../constants/config";
 import { supabase } from "./supabase";
 
 // Import modular AI components
-import { aiCore, AICoreConfig, AIGenerationResult, AIAnalysisResult } from "./ai/aiCore";
+import { aiCore, AICoreConfig } from "./ai/aiCore";
 import { aiWorkerManager } from "./ai/aiWorkerManager";
 import { aiRateLimiter } from "./ai/aiRateLimiter";
 import { aiCacheManager } from "./ai/aiCacheManager";
