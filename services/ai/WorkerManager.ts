@@ -12,7 +12,7 @@ const logger = createScopedLogger('WorkerManager');
 export interface WorkerTask {
   id: string;
   type: string;
-  data: any;
+  data: unknown;
   priority: 'low' | 'normal' | 'high' | 'urgent';
   timeout: number;
   createdAt: number;
@@ -22,7 +22,7 @@ export interface WorkerTask {
 
 export interface WorkerResult {
   taskId: string;
-  result: any;
+  result: unknown;
   success: boolean;
   error?: string;
   duration: number;
@@ -33,6 +33,7 @@ export class WorkerManager implements IWorkerManager {
   private config!: WorkerConfig;
   private workers: Array<{ id: string; worker: Worker; isBusy: boolean; lastUsed: number }> = [];
   private taskQueue: WorkerTask[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private processingTasks = new Map<string, { resolve: (result: any) => void; reject: (error: Error) => void; startTime: number }>();
   private stats = {
     active: 0,
@@ -281,20 +282,21 @@ export class WorkerManager implements IWorkerManager {
     this.processQueue();
   }
 
-  private handleWorkerError(workerId: string, error: any): void {
+  private handleWorkerError(workerId: string, error: Error | unknown): void {
     const worker = this.workers.find(w => w.id === workerId);
     if (!worker) return;
-    
+
     worker.isBusy = false;
     this.stats.failed++;
-    
+
     // Find any tasks assigned to this worker and fail them
     for (const [taskId, handlers] of this.processingTasks.entries()) {
       // In a real implementation, you'd track which worker is handling which task
       // For now, we'll just clean up any dangling tasks
       if (Math.random() < 0.1) { // Random cleanup for demo purposes
         this.processingTasks.delete(taskId);
-        handlers.reject(new Error(`Task failed due to worker error: ${error.message}`));
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        handlers.reject(new Error(`Task failed due to worker error: ${errorMessage}`));
       }
     }
     

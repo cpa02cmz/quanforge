@@ -6,7 +6,6 @@
 
 import { IAICore, AICoreConfig } from '../../types/serviceInterfaces';
 import { settingsManager } from '../settingsManager';
-import { getActiveKey } from '../../utils/apiKeyUtils';
 import { handleError } from '../../utils/errorHandler';
 import { createScopedLogger } from '../../utils/logger';
 import { AI_CONFIG } from '../../constants/config';
@@ -73,7 +72,7 @@ export class AICore implements IAICore {
     return { ...this.config };
   }
 
-  async generateContent(prompt: string, options?: any): Promise<string> {
+  async generateContent(prompt: string, options?: Record<string, unknown>): Promise<string> {
     if (!this.isInitialized) {
       throw new Error('AI Core not initialized');
     }
@@ -91,10 +90,10 @@ export class AICore implements IAICore {
       } else {
         throw new Error(`Unsupported provider: ${this.config.provider}`);
       }
-    } catch (error: any) {
+    } catch (error) {
       const duration = Date.now() - startTime;
       logger.error(`Content generation failed after ${duration}ms:`, error);
-      throw handleError(error, 'AIContentGeneration', 'AICore');
+      throw handleError(error as Error, 'AIContentGeneration', 'AICore');
     }
   }
 
@@ -115,10 +114,11 @@ export class AICore implements IAICore {
       } else {
         return { success: false, message: 'No response from model' };
       }
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return { 
         success: false, 
-        message: `Connection failed: ${error.message || 'Unknown error'}` 
+        message: `Connection failed: ${errorMessage}` 
       };
     }
   }
@@ -147,9 +147,9 @@ export class AICore implements IAICore {
         constructor: function(apiKey: string) {
           this.apiKey = apiKey;
         },
-        getGenerativeModel: function(config: any) {
+        getGenerativeModel: function(_config: Record<string, unknown>) {
           return {
-            generateContent: async (prompt: string, config: any) => {
+            generateContent: async (_prompt: string, _config2: Record<string, unknown>) => {
               // Mock response
               return {
                 response: {
@@ -169,7 +169,7 @@ export class AICore implements IAICore {
     }
   }
 
-  private async generateWithGoogle(prompt: string, options?: any): Promise<string> {
+  private   async generateWithGoogle(prompt: string, options?: Record<string, unknown>): Promise<string> {
     if (!this.GoogleGenAI || !this.config.apiKey) {
       throw new Error('Google GenAI not properly initialized');
     }
@@ -243,9 +243,9 @@ export class AICore implements IAICore {
       } else {
         throw new Error('No response text in conversation result');
       }
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Generation with history failed:', error);
-      throw handleError(error, 'AIHistoryGeneration', 'AICore');
+      throw handleError(error as Error, 'AIHistoryGeneration', 'AICore');
     }
   }
 
