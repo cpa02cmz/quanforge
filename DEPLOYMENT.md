@@ -32,9 +32,9 @@ QuantForge AI supports multiple deployment targets optimized for different use c
 - **Preview**: Automated previews for pull requests
 
 ### 🏗️ Architecture
-- **Frontend**: React + TypeScript + Vite
-- **Backend**: Next.js API routes with edge runtime
-- **Database**: Supabase (PostgreSQL) with optional fallback
+- **Frontend**: React + TypeScript + Vite SPA (Single Page Application)
+- **Backend**: Client-side service layer with direct Supabase integration
+- **Database**: Supabase (PostgreSQL) with optional LocalStorage fallback
 - **CDN**: Platform-specific edge caching
 - **Monitoring**: Built-in performance and error tracking
 
@@ -80,17 +80,18 @@ cp .env.example .env
 
 #### Core Configuration
 ```bash
-# Database
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+# Database (Vite requires VITE_ prefix for client-side env vars)
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# AI Services
-GEMINI_API_KEY=your_gemini_api_key
-OPENAI_API_KEY=your_openai_api_key  # Optional
+# AI Services (Vite requires VITE_ prefix for client-side env vars)
+VITE_API_KEY=your_gemini_api_key
+
+# Optional: Real-time market data
+VITE_TWELVE_DATA_API_KEY=your_twelve_data_api_key
 
 # Application
 NODE_ENV=production
-NEXT_PUBLIC_APP_URL=https://your-domain.com
 ```
 
 #### Optional Variables
@@ -228,10 +229,6 @@ vars = { NODE_ENV = "production" }
 [build.environment]
   NODE_VERSION = "18"
 
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
 ```
 
 #### Setup
@@ -239,6 +236,8 @@ vars = { NODE_ENV = "production" }
 2. Configure build settings in netlify.toml
 3. Add environment variables in Netlify dashboard
 4. Deploy automatically on git push
+
+Note: This is a Vite SPA without server-side API routes. All functionality is client-side with direct Supabase integration.
 
 ### 4. AWS (Advanced)
 
@@ -403,14 +402,14 @@ vercel --prod -b staging --to-production
 
 #### Verification
 ```bash
-# Check application health
-curl https://quanforge.ai/api/health
+# Check application loads correctly
+curl https://quanforge.ai
 
-# Verify key functionality
-curl https://quanforge.ai/api/robots
+# Verify build artifacts exist
+ls -la dist/
 
-# Check performance metrics
-curl https://quanforge.ai/api/metrics
+# Check that the app is accessible
+# Open browser and navigate to your deployed URL
 ```
 
 #### Monitoring
@@ -426,30 +425,45 @@ curl https://quanforge.ai/api/metrics
 ### Health Checks
 
 #### Application Health
-```bash
-# Health endpoint
-GET /api/health
+Since this is a Vite SPA without server-side API routes, health checks are performed differently:
 
-# Expected response
-{
-  "status": "healthy",
-  "timestamp": "2025-12-21T10:00:00Z",
-  "version": "1.6.0",
-  "services": {
-    "database": "connected",
-    "ai_provider": "operational",
-    "cache": "active"
+**Browser-based Health Check:**
+```javascript
+// In browser console
+const health = {
+  status: 'healthy',
+  timestamp: new Date().toISOString(),
+  version: '1.6.0',
+  services: {
+    database: window.localStorage ? 'available' : 'unavailable',
+    supabase: !!import.meta.env.VITE_SUPABASE_URL ? 'configured' : 'mock-mode',
+    ai_provider: !!import.meta.env.VITE_API_KEY ? 'configured' : 'unavailable'
   }
-}
+};
+console.log('Health:', health);
+```
+
+**Build Health Check:**
+```bash
+# Verify build succeeded
+npm run build
+
+# Verify no TypeScript errors
+npm run typecheck
+
+# Verify linting passes
+npm run lint
 ```
 
 #### Database Health
-```bash
-# Database connection test
-GET /api/health/database
+```javascript
+// Test Supabase connection in browser
+import { supabase } from './services/supabase';
 
-# Cache status
-GET /api/health/cache
+async function checkDatabaseHealth() {
+  const { data, error } = await supabase.getRobots();
+  console.log('Database:', error ? 'Error: ' + error : 'Connected');
+}
 ```
 
 ### Performance Monitoring
@@ -459,10 +473,12 @@ GET /api/health/cache
 - **First Input Delay (FID)**: < 100ms
 - **Cumulative Layout Shift (CLS)**: < 0.1
 
-#### API Performance
-- **Response Time**: < 200ms average
+#### Service Performance (Client-Side)
+- **Supabase Query Time**: < 200ms average
+- **AI Generation Time**: 2-10s depending on complexity
+- **LocalStorage Access**: < 10ms
 - **Error Rate**: < 1%
-- **Throughput**: 1000+ requests/minute
+- **Bundle Load Time**: < 3s on 3G
 
 ### Log Management
 
@@ -542,8 +558,8 @@ npm run build && npm run preview
 # Check application logs
 vercel logs
 
-# Test health endpoint
-curl https://your-domain.com/api/health
+# Test application loads
+curl https://your-domain.com
 
 # Check configuration
 vercel inspect
