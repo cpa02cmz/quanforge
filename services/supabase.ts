@@ -630,53 +630,68 @@ if (index !== -1) {
 
    /**
      * Get multiple robots by IDs in a single query for better performance
+     * Security: Filters by current user_id and excludes soft-deleted records
      */
-   async getRobotsByIds(ids: string[]) {
-     const startTime = performance.now();
-     try {
-       const settings = settingsManager.getDBSettings();
-       
-       if (settings.mode === 'mock') {
-         const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
-         const allRobots = stored;
-         const robots = allRobots.filter((robot: Robot) => ids.includes(robot.id));
-         
-         const duration = performance.now() - startTime;
-         performanceMonitor.record('getRobotsByIds', duration);
-         return { data: robots, error: null };
-       }
-       
-const cacheKey = `robots_batch_${ids.sort().join('_')}`;
+    async getRobotsByIds(ids: string[]) {
+      const startTime = performance.now();
+      try {
+        const settings = settingsManager.getDBSettings();
+        
+        // Get current user session for security filtering
+        const client = await getClient();
+        const { data: sessionData } = await client.auth.getSession();
+        const userId = sessionData.session?.user?.id;
+        
+        if (!userId) {
+          return { data: [], error: 'Authentication required' };
+        }
+        
+        if (settings.mode === 'mock') {
+          const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+          const robots = stored.filter((robot: Robot) => 
+            ids.includes(robot.id) && 
+            robot.user_id === userId && 
+            !robot.deleted_at
+          );
+          
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('getRobotsByIds', duration);
+          return { data: robots, error: null };
+        }
+        
+        // Include user_id in cache key for security isolation
+        const cacheKey = `robots_batch_${userId}_${ids.sort().join('_')}`;
         const cached = await consolidatedCache.get<Robot[]>(cacheKey);
         if (cached) {
           const duration = performance.now() - startTime;
           performanceMonitor.record('getRobotsByIds', duration);
           return { data: cached, error: null };
         }
-       
-       return withRetry(async () => {
-         const client = await getClient();
-         const result = await client
-           .from('robots')
-           .select('*')
-           .in('id', ids)
-           .order('created_at', { ascending: false });
-         
-if (result.data && !result.error) {
+        
+        return withRetry(async () => {
+          const result = await client
+            .from('robots')
+            .select('*')
+            .in('id', ids)
+            .eq('user_id', userId)  // Security: Filter by current user
+            .is('deleted_at', null)  // Data Integrity: Exclude soft-deleted records
+            .order('created_at', { ascending: false });
+          
+          if (result.data && !result.error) {
             await consolidatedCache.set(cacheKey, result.data, 'api', ['robots', 'batch']);
           }
-         
-         const duration = performance.now() - startTime;
-         performanceMonitor.record('getRobotsByIds', duration);
-         return result;
-       }, 'getRobotsByIds');
-     } catch (error) {
-       const duration = performance.now() - startTime;
-       performanceMonitor.record('getRobotsByIds', duration);
-       handleError(error as Error, 'getRobotsByIds', 'mockDb');
-       throw error;
-     }
-   },
+          
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('getRobotsByIds', duration);
+          return result;
+        }, 'getRobotsByIds');
+      } catch (error) {
+        const duration = performance.now() - startTime;
+        performanceMonitor.record('getRobotsByIds', duration);
+        handleError(error as Error, 'getRobotsByIds', 'mockDb');
+        throw error;
+      }
+    },
 
    async saveRobot(robot: any) {
     const startTime = performance.now();
