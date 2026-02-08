@@ -4,6 +4,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
+import { createListenerManager, ListenerManager } from '../utils/listenerManager';
 
 interface BatchQuery {
   id: string;
@@ -56,8 +57,10 @@ class QueryBatcher {
     cacheHitRate: 0,
     retryRate: 0
   };
+  private listenerManager: ListenerManager;
 
   private constructor() {
+    this.listenerManager = createListenerManager();
     this.startBatchProcessor();
   }
 
@@ -590,7 +593,7 @@ class QueryBatcher {
    */
   private startBatchProcessor(): void {
     // Process any remaining queries every second
-    setInterval(() => {
+    this.listenerManager.setInterval(() => {
       if (this.batchQueue.length > 0) {
         this.processBatch();
       }
@@ -660,6 +663,16 @@ class QueryBatcher {
       oldestQuery: this.batchQueue.length > 0 && this.batchQueue[0] ? 
         Date.now() - this.batchQueue[0].timestamp : 0
     };
+  }
+
+  /**
+   * Destroy the query batcher and clean up all resources
+   * Prevents memory leaks by clearing timers and rejecting pending queries
+   */
+  destroy(): void {
+    this.clearQueue();
+    this.listenerManager.cleanup();
+    console.log('QueryBatcher destroyed and resources cleaned up');
   }
 }
 
