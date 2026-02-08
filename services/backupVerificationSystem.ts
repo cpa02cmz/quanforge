@@ -7,6 +7,7 @@
 import { automatedBackupService, BackupMetadata } from './automatedBackupService';
 import { handleErrorCompat as handleError } from '../utils/errorManager';
 import { globalCache } from './unifiedCacheManager';
+import { createListenerManager, ListenerManager } from '../utils/listenerManager';
 
 // Verification configuration
 const VERIFICATION_CONFIG = {
@@ -99,8 +100,10 @@ class BackupVerificationSystem {
   private verificationTimer: ReturnType<typeof setInterval> | null = null;
   private isVerificationRunning: boolean = false;
   private consecutiveFailedVerifications: number = 0;
+  private listenerManager: ListenerManager;
 
   constructor() {
+    this.listenerManager = createListenerManager();
     this.initializeVerificationSystem();
   }
 
@@ -964,7 +967,7 @@ class BackupVerificationSystem {
    */
   private setupPerformanceMonitoring(): void {
     // Monitor verification performance trends
-    setInterval(() => {
+    this.listenerManager.setInterval(() => {
       this.analyzePerformanceTrends();
     }, 24 * 60 * 60 * 1000); // Daily
   }
@@ -1145,6 +1148,16 @@ class BackupVerificationSystem {
       this.verificationTimer = null;
     }
     console.log('Backup verification system stopped');
+  }
+
+  /**
+   * Destroy the verification system and clean up all resources
+   * Prevents memory leaks by removing timers and listeners
+   */
+  destroy(): void {
+    this.stopVerificationSystem();
+    this.listenerManager.cleanup();
+    console.log('BackupVerificationSystem destroyed and resources cleaned up');
   }
 }
 

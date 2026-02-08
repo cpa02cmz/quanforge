@@ -76,6 +76,13 @@ const getMockSession = () => {
 
 const authListeners: Array<(event: string, session: UserSession | null) => void> = [];
 
+/**
+ * Clear all auth listeners - used for cleanup to prevent memory leaks
+ */
+const clearAllAuthListeners = (): void => {
+  authListeners.length = 0;
+};
+
 const mockAuth = {
   getSession: async () => {
     return { data: { session: getMockSession() }, error: null };
@@ -1520,5 +1527,14 @@ export const dbUtils = {
                 lastOptimized: new Date().toISOString()
             };
         }
+    },
+
+    /**
+     * Destroy the Supabase service and clean up all resources
+     * Prevents memory leaks by clearing auth listeners
+     */
+    destroy(): void {
+        clearAllAuthListeners();
+        console.log('Supabase service destroyed and resources cleaned up');
     }
 };

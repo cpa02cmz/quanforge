@@ -4,6 +4,7 @@
  */
 
 import { TIMEOUTS, CACHE_LIMITS } from '../constants';
+import { createListenerManager, ListenerManager } from '../utils/listenerManager';
 
 interface EdgeConfig {
   enableEdgeRuntime: boolean;
@@ -25,6 +26,7 @@ interface EdgeMetrics {
 
 class VercelEdgeOptimizer {
   private static instance: VercelEdgeOptimizer;
+  private listenerManager: ListenerManager;
   private config: EdgeConfig = {
     enableEdgeRuntime: process.env['VITE_EDGE_RUNTIME'] === 'true',
     enableEdgeCaching: true,
@@ -37,6 +39,7 @@ class VercelEdgeOptimizer {
   private metrics: Map<string, EdgeMetrics> = new Map();
 
   private constructor() {
+    this.listenerManager = createListenerManager();
     this.initializeEdgeFeatures();
   }
 
@@ -158,6 +161,7 @@ class VercelEdgeOptimizer {
       const mainContent = document.querySelector('main');
       if (mainContent) {
         observer.observe(mainContent);
+        this.listenerManager.addObserver(observer, mainContent);
       }
     }
   }
@@ -186,13 +190,14 @@ class VercelEdgeOptimizer {
       try {
         // Monitor Largest Contentful Paint
         const lcpObserver = new PerformanceObserver((list) => {
-const entries = list.getEntries();
-        const lastEntry = entries[entries.length - 1];
-        if (lastEntry) {
-          this.recordMetric('lcp', lastEntry.startTime);
-        }
+          const entries = list.getEntries();
+          const lastEntry = entries[entries.length - 1];
+          if (lastEntry) {
+            this.recordMetric('lcp', lastEntry.startTime);
+          }
         });
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+        this.listenerManager.addObserver(lcpObserver);
 
         // Monitor First Input Delay
         const fidObserver = new PerformanceObserver((list) => {
@@ -202,6 +207,7 @@ const entries = list.getEntries();
           });
         });
         fidObserver.observe({ entryTypes: ['first-input'] });
+        this.listenerManager.addObserver(fidObserver);
 
         // Monitor Cumulative Layout Shift
         let clsValue = 0;
@@ -215,6 +221,7 @@ const entries = list.getEntries();
           });
         });
         clsObserver.observe({ entryTypes: ['layout-shift'] });
+        this.listenerManager.addObserver(clsObserver);
       } catch (error) {
         console.warn('Performance monitoring setup failed:', error);
       }
@@ -331,7 +338,7 @@ const entries = list.getEntries();
   // Setup edge-specific error handling
   setupEdgeErrorHandling(): void {
     // Global error handler for edge environment
-    window.addEventListener('error', (event) => {
+    this.listenerManager.addEventListener(window, 'error', (event) => {
       console.error('Edge error:', {
         message: event.message,
         filename: event.filename,
@@ -341,7 +348,7 @@ const entries = list.getEntries();
       });
     });
 
-    window.addEventListener('unhandledrejection', (event) => {
+    this.listenerManager.addEventListener(window, 'unhandledrejection', (event) => {
       console.error('Edge unhandled promise rejection:', {
         reason: event.reason,
         region: this.detectEdgeRegion(),
@@ -432,9 +439,9 @@ const entries = list.getEntries();
 
     // Hook into data modification operations
     if (typeof window !== 'undefined') {
-      window.addEventListener('robot-updated', () => invalidateCache('robots'));
-      window.addEventListener('robot-created', () => invalidateCache('robots'));
-      window.addEventListener('robot-deleted', () => invalidateCache('robots'));
+      this.listenerManager.addEventListener(window, 'robot-updated', () => invalidateCache('robots'));
+      this.listenerManager.addEventListener(window, 'robot-created', () => invalidateCache('robots'));
+      this.listenerManager.addEventListener(window, 'robot-deleted', () => invalidateCache('robots'));
     }
   }
 
@@ -603,6 +610,15 @@ const entries = list.getEntries();
       // Additional minification settings would be handled by build tools
       console.debug('Minification enabled for production build');
     }
+  }
+
+  /**
+   * Destroy the optimizer and clean up all resources
+   * Prevents memory leaks by removing event listeners and observers
+   */
+  destroy(): void {
+    this.listenerManager.cleanup();
+    console.log('VercelEdgeOptimizer destroyed and resources cleaned up');
   }
 }
 

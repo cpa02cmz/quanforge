@@ -1,3 +1,5 @@
+import { createListenerManager, ListenerManager } from '../utils/listenerManager';
+
 interface UserEvent {
   type: string;
   category: 'navigation' | 'interaction' | 'performance' | 'error' | 'business';
@@ -68,8 +70,10 @@ export class AnalyticsManager {
   private flushTimer: ReturnType<typeof setInterval> | null = null;
   private isOnline = navigator.onLine;
   private persistenceKey = 'quanforge_analytics_events';
+  private listenerManager: ListenerManager;
 
   constructor(config?: Partial<AnalyticsConfig>) {
+    this.listenerManager = createListenerManager();
     this.config = {
       batchSize: 25, // Reduced for edge constraints
       flushInterval: 15000, // 15 seconds - faster for edge
@@ -127,17 +131,17 @@ export class AnalyticsManager {
 
   private setupEventListeners(): void {
     // Track online/offline status
-    window.addEventListener('online', () => {
+    this.listenerManager.addEventListener(window, 'online', () => {
       this.isOnline = true;
       this.flushEvents(); // Flush when coming back online
     });
 
-    window.addEventListener('offline', () => {
+    this.listenerManager.addEventListener(window, 'offline', () => {
       this.isOnline = false;
     });
 
     // Track page visibility
-    document.addEventListener('visibilitychange', () => {
+    this.listenerManager.addEventListener(document, 'visibilitychange', () => {
       if (document.hidden) {
         this.trackEvent('page_hidden', 'interaction', 'Page Hidden');
       } else {
@@ -146,7 +150,7 @@ export class AnalyticsManager {
     });
 
     // Track page unload
-    window.addEventListener('beforeunload', () => {
+    this.listenerManager.addEventListener(window, 'beforeunload', () => {
       this.trackEvent('page_unload', 'interaction', 'Page Unload');
       this.flushEvents(); // Try to flush before unload
     });
@@ -562,6 +566,9 @@ export class AnalyticsManager {
       clearInterval(this.flushTimer);
       this.flushTimer = null;
     }
+    
+    // Clean up all event listeners
+    this.listenerManager.cleanup();
     
     // Try to flush remaining events
     this.flushEvents();
