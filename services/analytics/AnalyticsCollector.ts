@@ -5,6 +5,7 @@
  */
 
 import { IAnalyticsCollector, AnalyticsConfig } from '../../types/serviceInterfaces';
+import { supabase } from '../supabase';
 
 export interface AnalyticsEvent {
   event: string;
@@ -97,7 +98,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
         event,
         properties,
         timestamp: Date.now(),
-        userId: this.getCurrentUserId(),
+        userId: await this.getCurrentUserId(),
         sessionId: this.getSessionId(),
       };
 
@@ -125,7 +126,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
         timestamp: Date.now(),
         tags,
         context: {
-          userId: this.getCurrentUserId(),
+          userId: await this.getCurrentUserId(),
           sessionId: this.getSessionId(),
         },
       };
@@ -153,7 +154,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
         success,
         timestamp: Date.now(),
         properties: {
-          userId: this.getCurrentUserId(),
+          userId: await this.getCurrentUserId(),
           sessionId: this.getSessionId(),
         },
       };
@@ -270,25 +271,17 @@ export class AnalyticsCollector implements IAnalyticsCollector {
     });
   }
 
-  private getCurrentUserId(): string | undefined {
+  private async getCurrentUserId(): Promise<string | undefined> {
     try {
-      // Try to get user from Supabase session
-      const sessionData = localStorage.getItem('supabase.auth.token');
-      if (sessionData) {
-        const session = JSON.parse(sessionData);
-        return session?.user?.id;
-      }
-      
-      // Fallback to mock session
-      const mockSession = localStorage.getItem('mock_session');
-      if (mockSession) {
-        const session = JSON.parse(mockSession);
-        return session?.user?.id;
+      // Try to get user from Supabase session using secure method
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        return session.user.id;
       }
     } catch (error) {
-      // Silently fail
+      // Silently fail - user might not be authenticated
     }
-    
+
     return undefined;
   }
 

@@ -5,6 +5,7 @@ import { getActiveKey } from "../utils/apiKeyUtils";
 import { handleError } from "../utils/errorHandler";
 import { createScopedLogger } from "../utils/logger";
 import { AI_CONFIG, TIME_CONSTANTS } from "../constants/config";
+import { supabase } from "./supabase";
 
 // Import modular AI components
 import { aiCore, AICoreConfig, AIGenerationResult, AIAnalysisResult } from "./ai/aiCore";
@@ -15,20 +16,18 @@ import { aiCacheManager } from "./ai/aiCacheManager";
 const logger = createScopedLogger('modular-gemini');
 
 // Helper function to get current user ID for rate limiting
-const getCurrentUserId = (): string | null => {
+const getCurrentUserId = async (): Promise<string | null> => {
   try {
-    // Try to get user from Supabase session first
-    const sessionData = localStorage.getItem('supabase.auth.token');
-    if (sessionData) {
-      const session = JSON.parse(sessionData);
-      return session?.user?.id || null;
+    // Try to get user from Supabase session using secure method
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.id) {
+      return session.user.id;
     }
     
-    // Fallback to mock session
-    const mockSession = localStorage.getItem('mock_session');
-    if (mockSession) {
-      const session = JSON.parse(mockSession);
-      return session?.user?.id || null;
+    // Fallback to mock session from secure storage
+    const { data: { session: mockSession } } = await supabase.auth.getSession();
+    if (mockSession?.user?.id) {
+      return mockSession.user.id;
     }
     
     // Generate anonymous session ID if none exists
@@ -94,8 +93,8 @@ export const generateMQL5Code = async (
   settings: AISettings,
   signal?: AbortSignal
 ): Promise<{ thinking?: string, content: string }> => {
-  const userId = getCurrentUserId();
-  
+  const userId = await getCurrentUserId();
+
   try {
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
@@ -175,8 +174,8 @@ export const analyzeStrategy = async (
   settings: AISettings,
   signal?: AbortSignal
 ): Promise<StrategyAnalysis> => {
-  const userId = getCurrentUserId();
-  
+  const userId = await getCurrentUserId();
+
   try {
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
