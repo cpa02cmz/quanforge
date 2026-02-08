@@ -3,6 +3,10 @@
  * Provides sophisticated caching strategies for React components and data
  */
 
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('ComponentCache');
+
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
@@ -19,7 +23,7 @@ interface ComponentCacheConfig {
 }
 
 class AdvancedComponentCache {
-  private cache: Map<string, CacheEntry<any>> = new Map();
+  private cache: Map<string, CacheEntry<unknown>> = new Map();
   private config: Required<ComponentCacheConfig>;
   private size: number = 0; // Current cache size in bytes
 
@@ -49,7 +53,7 @@ class AdvancedComponentCache {
       return null;
     }
 
-    return entry.data;
+    return entry.data as T;
   }
 
   /**
@@ -215,14 +219,14 @@ class AdvancedComponentCache {
   /**
    * Preheats the cache with common keys
    */
-  async preheat(keys: Array<{ key: string; loader: () => Promise<any> }>): Promise<void> {
+  async preheat(keys: Array<{ key: string; loader: () => Promise<unknown> }>): Promise<void> {
     const promises = keys.map(async ({ key, loader }) => {
       if (!this.has(key)) {
         try {
           const data = await loader();
           this.set(key, data);
         } catch (error) {
-          console.warn(`Failed to preheat cache for key ${key}:`, error);
+          logger.warn(`Failed to preheat cache for key ${key}:`, error);
         }
       }
     });
@@ -233,7 +237,7 @@ class AdvancedComponentCache {
   /**
    * Gets the cache entry without checking expiration
    */
-  getRaw(key: string): CacheEntry<any> | undefined {
+  getRaw(key: string): CacheEntry<unknown> | undefined {
     return this.cache.get(key);
   }
 

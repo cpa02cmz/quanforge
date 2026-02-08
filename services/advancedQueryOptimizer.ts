@@ -19,7 +19,7 @@ export interface BatchQuery<T> {
   priority: 'high' | 'normal' | 'low';
   timeout: number;
   resolve: (_value: T) => void;
-  reject: (_reason: any) => void;
+  reject: (_reason: Error | unknown) => void;
 }
 
 export interface QueryMetrics {
@@ -32,10 +32,10 @@ export interface QueryMetrics {
 }
 
 export class AdvancedQueryOptimizer {
-  private queryCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
-  private batchQueue: BatchQuery<any>[] = [];
+  private queryCache = new Map<string, { data: unknown; timestamp: number; ttl: number }>();
+  private batchQueue: BatchQuery<unknown>[] = [];
   private batchTimer: ReturnType<typeof setInterval> | null = null;
-  private connectionPool: any[] = [];
+  private connectionPool: unknown[] = [];
   private activeConnections = 0;
   private maxConnections = 10;
   private metrics: QueryMetrics = {
