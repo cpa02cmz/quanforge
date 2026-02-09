@@ -8,6 +8,9 @@ import { supabase } from './supabase';
 import { settingsManager } from './settingsManager';
 import { handleErrorCompat as handleError } from '../utils/errorManager';
 import { globalCache } from './unifiedCacheManager';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('AutomatedBackupService');
 
 // Backup configuration
 const BACKUP_CONFIG = {
@@ -93,7 +96,7 @@ class AutomatedBackupService {
       // Verify backup infrastructure
       await this.verifyBackupInfrastructure();
       
-      console.log('Automated Backup Service initialized successfully');
+      logger.log('Automated Backup Service initialized successfully');
     } catch (error) {
       handleError(error as Error, 'initializeBackupService', 'AutomatedBackupService');
       throw error;
@@ -116,7 +119,7 @@ class AutomatedBackupService {
       }
     }, BACKUP_CONFIG.scheduleInterval);
 
-    console.log(`Backup scheduler started with ${BACKUP_CONFIG.scheduleInterval / (60 * 60 * 1000)} hour interval`);
+    logger.log(`Backup scheduler started with ${BACKUP_CONFIG.scheduleInterval / (60 * 60 * 1000)} hour interval`);
   }
 
   /**
@@ -134,7 +137,7 @@ class AutomatedBackupService {
       // Monitor page visibility to pause/resume backups
       document.addEventListener('visibilitychange', () => {
         if (document.hidden && this.isBackupRunning) {
-          console.log('Page hidden - backup may be paused');
+          logger.log('Page hidden - backup may be paused');
         }
       });
     }
@@ -154,16 +157,16 @@ class AutomatedBackupService {
       // Verify backup compression capabilities
       const compressionTest = await this.testCompressionCapabilities();
       if (!compressionTest.success) {
-        console.warn('Compression test failed, backups will be uncompressed');
+        logger.warn('Compression test failed, backups will be uncompressed');
       }
 
       // Check available storage space
       const spaceCheck = await this.checkStorageSpace();
       if (spaceCheck.available < BACKUP_CONFIG.maxBackupSize) {
-        console.warn('Low storage space detected for backups');
+        logger.warn('Low storage space detected for backups');
       }
 
-      console.log('Backup infrastructure verification completed');
+      logger.log('Backup infrastructure verification completed');
     } catch (error) {
       handleError(error as Error, 'verifyBackupInfrastructure', 'AutomatedBackupService');
       throw error;
@@ -175,7 +178,7 @@ class AutomatedBackupService {
    */
   private async performScheduledBackup(): Promise<BackupResult> {
     if (this.isBackupRunning) {
-      console.log('Backup already in progress, skipping scheduled backup');
+      logger.log('Backup already in progress, skipping scheduled backup');
       return {
         success: false,
         backupId: '',
@@ -193,8 +196,8 @@ class AutomatedBackupService {
       // Create backup metadata
       const metadata = this.createBackupMetadata(backupType);
       
-      console.log(`Starting ${backupType} backup: ${metadata.id}`);
-      
+      logger.log(`Starting ${backupType} backup: ${metadata.id}`);
+
       // Perform the backup
       const result = await this.executeBackup(metadata);
       
@@ -205,8 +208,8 @@ class AutomatedBackupService {
         
         // Clean up old backups
         await this.cleanupOldBackups();
-        
-        console.log(`Backup completed successfully: ${result.backupId}`);
+
+        logger.log(`Backup completed successfully: ${result.backupId}`);
       } else {
         await this.handleBackupError('Backup execution failed', result.error);
       }
@@ -314,7 +317,7 @@ class AutomatedBackupService {
         lastError = error;
         
         if (attempt < BACKUP_CONFIG.maxRetries) {
-          console.warn(`Backup attempt ${attempt + 1} failed, retrying...`, error);
+          logger.warn(`Backup attempt ${attempt + 1} failed, retrying...`, error);
           await new Promise(resolve => setTimeout(resolve, BACKUP_CONFIG.retryDelay));
         }
       }
@@ -363,7 +366,7 @@ class AutomatedBackupService {
       };
     } else if (_type === 'incremental' || _type === 'differential') {
       // For mock mode, we can't easily track changes, so fallback to full
-      console.warn('Incremental/differential backups not fully supported in mock mode, using full backup');
+      logger.warn('Incremental/differential backups not fully supported in mock mode, using full backup');
       return this.getMockBackupData('full');
     }
     
@@ -433,7 +436,7 @@ class AutomatedBackupService {
         processedData = await this.compressData(processedData);
         metadata.compressed = true;
       } catch (error) {
-        console.warn('Compression failed, continuing with uncompressed backup:', error);
+        logger.warn('Compression failed, continuing with uncompressed backup:', error);
         metadata.compressed = false;
       }
     }
@@ -479,7 +482,7 @@ class AutomatedBackupService {
         return btoa(String.fromCharCode.apply(null, Array.from(compressed)));
       }
     } catch (error) {
-      console.warn('CompressionStream not available, using fallback');
+      logger.warn('CompressionStream not available, using fallback');
     }
     
     // Fallback: simple compression simulation (in real implementation, use proper compression)
@@ -511,7 +514,7 @@ class AutomatedBackupService {
         return 'local';
       }
     } catch (error) {
-      console.warn('Local storage failed:', error);
+      logger.warn('Local storage failed:', error);
     }
 
     try {
@@ -519,7 +522,7 @@ class AutomatedBackupService {
       await this.storeToEdgeStorage(backupId, data, metadata);
       return 'edge';
     } catch (error) {
-      console.warn('Edge storage failed:', error);
+      logger.warn('Edge storage failed:', error);
     }
 
     // If all else fails, try memory storage (temporary)
@@ -566,7 +569,7 @@ class AutomatedBackupService {
  */
   private async storeToMemory(_backupId: string, _data: string, _metadata: BackupMetadata): Promise<void> {
     // In a real implementation, this would use a more sophisticated memory store
-    console.warn('Using memory storage - backup will be lost on page refresh');
+    logger.warn('Using memory storage - backup will be lost on page refresh');
   }
 
   /**
@@ -615,7 +618,7 @@ class AutomatedBackupService {
         return await globalCache.get(cacheKey) || null;
       }
     } catch (error) {
-      console.error('Failed to retrieve backup data:', error);
+      logger.error('Failed to retrieve backup data:', error);
     }
     return null;
   }
@@ -640,15 +643,15 @@ class AutomatedBackupService {
   private async handleBackupError(message: string, error?: string | Error): Promise<void> {
     const errorMessage = error instanceof Error ? error.message : error || 'Unknown error';
     
-    console.error(`Backup Error: ${message}`, errorMessage);
-    
+    logger.error(`Backup Error: ${message}`, errorMessage);
+
     // In a real implementation, this would trigger alerts/notifications
     // For now, just log to console
-    
+
     // Check if error is critical
     const isCritical = this.isBackupErrorCritical(errorMessage);
     if (isCritical) {
-      console.warn('CRITICAL BACKUP ERROR DETECTED - Manual intervention may be required');
+      logger.warn('CRITICAL BACKUP ERROR DETECTED - Manual intervention may be required');
     }
   }
 
@@ -685,18 +688,18 @@ class AutomatedBackupService {
           await this.deleteBackup(backup.id, backup.location);
           cleanedCount++;
         } catch (error) {
-          console.warn(`Failed to delete old backup ${backup.id}:`, error);
+          logger.warn(`Failed to delete old backup ${backup.id}:`, error);
         }
       }
     }
-    
+
     // Update backup history
     this.backupHistory = this.backupHistory.filter(backup => 
       new Date(backup.timestamp) >= cutoffDate
     );
     
     if (cleanedCount > 0) {
-      console.log(`Cleaned up ${cleanedCount} old backups`);
+      logger.log(`Cleaned up ${cleanedCount} old backups`);
     }
   }
 
@@ -737,7 +740,7 @@ if (fullBackups.length > 0) {
         this.lastBackupTimestamp = latestBackup.timestamp;
       }
     } catch (error) {
-      console.warn('Failed to load backup history:', error);
+      logger.warn('Failed to load backup history:', error);
       this.backupHistory = [];
     }
   }
@@ -893,7 +896,7 @@ if (fullBackups.length > 0) {
       const restoreResult = await this.restoreFromBackup(metadata);
       
       if (restoreResult.success) {
-        console.log(`Disaster recovery completed successfully from backup: ${targetBackupId}`);
+        logger.log(`Disaster recovery completed successfully from backup: ${targetBackupId}`);
         return { success: true };
       } else {
         return { success: false, error: restoreResult.error };
@@ -989,7 +992,7 @@ if (fullBackups.length > 0) {
       clearInterval(this.backupTimer);
       this.backupTimer = null;
     }
-    console.log('Backup service stopped');
+    logger.log('Backup service stopped');
   }
 }
 
