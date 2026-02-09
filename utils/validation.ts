@@ -1,5 +1,6 @@
 import { StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
+import { TRADING_CONSTANTS, VALIDATION_CONFIG, RATE_LIMITING } from '../constants/config';
 
 export interface ValidationError {
   field: string;
@@ -7,28 +8,28 @@ export interface ValidationError {
 }
 
 export class ValidationService {
-  private static readonly TIMEFRAMES = ['M1', 'M5', 'M15', 'M30', 'H1', 'H1', 'D1', 'W1', 'MN1'];
-  private static readonly SYMBOL_REGEX = /^[A-Z]{3,6}\/?[A-Z]{3,6}$/;
-  private static readonly NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
-  private static readonly MAX_RISK_PERCENT = 100;
-  private static readonly MIN_RISK_PERCENT = 0.01;
-  private static readonly MAX_STOP_LOSS = 1000;
-  private static readonly MIN_STOP_LOSS = 1;
-  private static readonly MAX_TAKE_PROFIT = 1000;
-  private static readonly MIN_TAKE_PROFIT = 1;
-  private static readonly MAX_MAGIC_NUMBER = 999999;
-  private static readonly MIN_MAGIC_NUMBER = 1;
-  private static readonly MAX_INITIAL_DEPOSIT = 10000000;
-  private static readonly MIN_INITIAL_DEPOSIT = 100;
-  private static readonly MAX_DURATION = 365;
-  private static readonly MIN_DURATION = 1;
-  private static readonly MAX_LEVERAGE = 1000;
-  private static readonly MIN_LEVERAGE = 1;
+  private static readonly TIMEFRAMES = TRADING_CONSTANTS.TIMEFRAMES;
+  private static readonly SYMBOL_REGEX = TRADING_CONSTANTS.SYMBOL_REGEX;
+  private static readonly NAME_REGEX = VALIDATION_CONFIG.PATTERNS.NAME;
+  private static readonly MAX_RISK_PERCENT = TRADING_CONSTANTS.MAX_RISK_PERCENT;
+  private static readonly MIN_RISK_PERCENT = TRADING_CONSTANTS.MIN_RISK_PERCENT;
+  private static readonly MAX_STOP_LOSS = TRADING_CONSTANTS.MAX_STOP_LOSS_PIPS;
+  private static readonly MIN_STOP_LOSS = TRADING_CONSTANTS.MIN_STOP_LOSS_PIPS;
+  private static readonly MAX_TAKE_PROFIT = TRADING_CONSTANTS.MAX_TAKE_PROFIT_PIPS;
+  private static readonly MIN_TAKE_PROFIT = TRADING_CONSTANTS.MIN_TAKE_PROFIT_PIPS;
+  private static readonly MAX_MAGIC_NUMBER = TRADING_CONSTANTS.MAX_MAGIC_NUMBER;
+  private static readonly MIN_MAGIC_NUMBER = TRADING_CONSTANTS.MIN_MAGIC_NUMBER;
+  private static readonly MAX_INITIAL_DEPOSIT = TRADING_CONSTANTS.MAX_INITIAL_DEPOSIT;
+  private static readonly MIN_INITIAL_DEPOSIT = TRADING_CONSTANTS.MIN_INITIAL_DEPOSIT;
+  private static readonly MAX_DURATION = TRADING_CONSTANTS.MAX_BACKTEST_DURATION;
+  private static readonly MIN_DURATION = TRADING_CONSTANTS.MIN_BACKTEST_DURATION;
+  private static readonly MAX_LEVERAGE = TRADING_CONSTANTS.MAX_LEVERAGE;
+  private static readonly MIN_LEVERAGE = TRADING_CONSTANTS.MIN_LEVERAGE;
 
   // Rate limiting for chat validation
   private static rateLimiter = new Map<string, { count: number; resetTime: number }>();
-  private static readonly RATE_LIMIT_WINDOW = 60000; // 1 minute
-  private static readonly RATE_LIMIT_MAX_REQUESTS = 10;
+  private static readonly RATE_LIMIT_WINDOW = RATE_LIMITING.DEFAULT_WINDOW;
+  private static readonly RATE_LIMIT_MAX_REQUESTS = RATE_LIMITING.DEFAULT_MAX_REQUESTS;
   
   // Cached regex patterns for performance in chat validation
   private static readonly XSS_PATTERNS = [

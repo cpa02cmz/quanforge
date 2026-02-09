@@ -1,4 +1,5 @@
 import { createScopedLogger } from '../utils/logger';
+import { API_CONFIG, TIME_CONSTANTS, CACHE_CONFIG } from '../constants/config';
 
 const logger = createScopedLogger('ApiDeduplicator');
 
@@ -11,17 +12,17 @@ interface PendingRequest<T = any> {
 
 export class ApiDeduplicator {
   private pendingRequests = new Map<string, PendingRequest>();
-  private readonly maxAge = 30000; // 30 seconds max age for pending requests
+  private readonly maxAge = API_CONFIG.REQUEST_TIMEOUT;
   private cleanupInterval: ReturnType<typeof setInterval>;
   private requestCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
-  private readonly maxCacheSize = 100;
+  private readonly maxCacheSize = CACHE_CONFIG.MAX_LRU_CACHE_SIZE;
 
   constructor() {
-    // Clean up expired requests every 10 seconds
+    // Clean up expired requests every 30 seconds
     this.cleanupInterval = setInterval(() => {
       this.cleanupExpiredRequests();
       this.cleanupExpiredCache();
-    }, 10000);
+    }, TIME_CONSTANTS.CLEANUP_DEFAULT_INTERVAL);
   }
 
   /**
@@ -151,9 +152,9 @@ export class ApiDeduplicator {
    * Enhanced deduplication with response caching
    */
   async deduplicateWithCache<T>(
-    key: string, 
-    requestFn: () => Promise<T>, 
-    cacheTTL: number = 300000 // 5 minutes default TTL
+    key: string,
+    requestFn: () => Promise<T>,
+    cacheTTL: number = TIME_CONSTANTS.CACHE_DEFAULT_TTL // 5 minutes default TTL
   ): Promise<T> {
     // Check cache first
     const cached = this.requestCache.get(key);
