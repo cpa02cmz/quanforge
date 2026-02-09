@@ -100,7 +100,7 @@ export class ConnectionPool implements IConnectionPool {
     return { ...this.config };
   }
 
-  async acquire(): Promise<any> {
+  async acquire(): Promise<ReturnType<typeof edgeConnectionPool.getClient>> {
     const startTime = Date.now();
     
     try {
@@ -120,7 +120,7 @@ export class ConnectionPool implements IConnectionPool {
     }
   }
 
-  async release(connection: any): Promise<void> {
+  async release(connection: Awaited<ReturnType<typeof edgeConnectionPool.getClient>>): Promise<void> {
     try {
       // Edge connection pool manages its own pooling
       // Just mark as released in stats
@@ -157,7 +157,7 @@ export class ConnectionPool implements IConnectionPool {
   private async initializeEdgePool(): Promise<void> {
     try {
       // Pre-warm connections
-      const connections: any[] = [];
+      const connections: Awaited<ReturnType<typeof edgeConnectionPool.getClient>>[] = [];
       for (let i = 0; i < this.config.minConnections; i++) {
         try {
           const connection = await this.acquire();
@@ -293,12 +293,12 @@ export class ConnectionPool implements IConnectionPool {
       
       const latency = Date.now() - startTime;
       return { success: true, latency };
-    } catch (error: any) {
+    } catch (error: unknown) {
       const latency = Date.now() - startTime;
       return { 
         success: false, 
         latency, 
-        error: error.message || 'Unknown error' 
+        error: error instanceof Error ? error.message : 'Unknown error' 
       };
     }
   }

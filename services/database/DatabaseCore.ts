@@ -13,6 +13,29 @@ import { createScopedLogger } from '../../utils/logger';
 
 const logger = createScopedLogger('DatabaseCore');
 
+// Mock Supabase client interface for type safety
+interface MockSupabaseClient {
+  from: (table: string) => {
+    select: (columns: string) => {
+      order: (column: string, options: unknown) => {
+        limit: (limit: number) => Promise<{ data: []; error: null }>;
+        then: (resolve: (value: { data: []; error: null }) => void) => Promise<{ data: []; error: null }>;
+      };
+      count: (option: string) => {
+        head: (option: boolean) => Promise<{ count: number; error: null }>;
+      };
+    };
+    insert: (data: unknown) => Promise<{ data: unknown; error: null }>;
+    update: (data: unknown) => {
+      eq: (column: string, value: unknown) => Promise<{ data: unknown; error: null }>;
+    };
+    delete: () => {
+      eq: (column: string, value: unknown) => Promise<{ error: null }>;
+    };
+  };
+  rpc: (functionName: string, params: unknown) => Promise<{ data: null; error: null }>;
+}
+
 // Helper functions for standardized API responses
 const createSuccessResponse = <T>(data: T): APIResponse<T> => ({
   success: true,
@@ -82,7 +105,7 @@ export class DatabaseCore implements IDatabaseCore {
     return { ...this.config };
   }
 
-  async getClient(): Promise<any> {
+  async getClient(): Promise<ReturnType<typeof edgeConnectionPool.getClient>> {
     if (this.config.mode === 'mock') {
       return this.createMockClient();
     }
@@ -100,7 +123,7 @@ export class DatabaseCore implements IDatabaseCore {
     }
   }
 
-  async executeQuery<T>(query: string, params?: any[]): Promise<APIResponse<T[]>> {
+  async executeQuery<T>(query: string, params?: unknown[]): Promise<APIResponse<T[]>> {
     const startTime = performance.now();
     
     try {
@@ -168,10 +191,11 @@ export class DatabaseCore implements IDatabaseCore {
         message: `Connected to Supabase. Found ${count} records.`, 
         mode: 'supabase' 
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
       return { 
         success: false, 
-        message: `Connection Failed: ${error.message || error}`, 
+        message: `Connection Failed: ${message}`, 
         mode: this.config.mode 
       };
     }
@@ -180,12 +204,12 @@ export class DatabaseCore implements IDatabaseCore {
   // Private helper methods
 
   private async withRetry<T>(fn: () => Promise<T>): Promise<T> {
-    let lastError: any;
+    let lastError: unknown;
     
     for (let attempt = 0; attempt <= this.retryConfig.maxRetries; attempt++) {
       try {
         return await fn();
-      } catch (error: any) {
+      } catch (error: unknown) {
         lastError = error;
         
         if (attempt === this.retryConfig.maxRetries) {
@@ -213,31 +237,31 @@ export class DatabaseCore implements IDatabaseCore {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  private createMockClient(): any {
+  private createMockClient(): MockSupabaseClient {
     return {
       from: (table: string) => ({
         select: (columns: string) => ({
-          order: (column: string, options: any) => ({
+          order: (column: string, options: unknown) => ({
             limit: (limit: number) => Promise.resolve({ data: [], error: null }),
-            then: (resolve: any) => Promise.resolve({ data: [], error: null }),
+            then: (resolve: (value: { data: []; error: null }) => void) => Promise.resolve({ data: [], error: null }),
           }),
           count: (option: string) => ({
             head: (option: boolean) => Promise.resolve({ count: 0, error: null }),
           }),
         }),
-        insert: (data: any) => Promise.resolve({ data, error: null }),
-        update: (data: any) => ({
-          eq: (column: string, value: any) => Promise.resolve({ data, error: null }),
+        insert: (data: unknown) => Promise.resolve({ data, error: null }),
+        update: (data: unknown) => ({
+          eq: (column: string, value: unknown) => Promise.resolve({ data, error: null }),
         }),
         delete: () => ({
-          eq: (column: string, value: any) => Promise.resolve({ error: null }),
+          eq: (column: string, value: unknown) => Promise.resolve({ error: null }),
         }),
       }),
-      rpc: (functionName: string, params: any) => Promise.resolve({ data: null, error: null }),
+      rpc: (functionName: string, params: unknown) => Promise.resolve({ data: null, error: null }),
     };
   }
 
-  private async executeMockQuery<T>(query: string, params?: any[]): Promise<APIResponse<T[]>> {
+  private async executeMockQuery<T>(query: string, params?: unknown[]): Promise<APIResponse<T[]>> {
     // Basic mock query implementation
     logger.log('Mock query executed:', query, params);
     return createSuccessResponse([]);
