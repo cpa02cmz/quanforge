@@ -4,6 +4,9 @@
  */
 
 import { BaseCache, BaseCacheEntry, CacheConfig, CacheStrategy, CompressionUtils, CACHE_CONSTANTS } from './__init__';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('unifiedCache');
 
 interface UnifiedCacheMetrics {
   hits: number;
@@ -85,7 +88,7 @@ export class UnifiedCacheManager extends BaseCache {
         const decompressed = await CompressionUtils.decompress(entry.data, entry.compressed);
         data = decompressed;
       } catch (error) {
-        console.warn('Failed to decompress cached data:', error);
+        logger.warn('Failed to decompress cached data:', error);
         this.cache.delete(key);
         this.recordMiss();
         this.recordRegionHit(region, false);
@@ -131,7 +134,7 @@ export class UnifiedCacheManager extends BaseCache {
           this.metrics.compressions++;
         }
       } catch (error) {
-        console.warn('Compression failed:', error);
+        logger.warn('Compression failed:', error);
       }
     }
 
@@ -329,7 +332,7 @@ export class UnifiedCacheManager extends BaseCache {
         ]);
         localStorage.setItem(this.storageKey, JSON.stringify(serializable));
       } catch (error) {
-        console.error('Failed to save cache to storage:', error);
+        logger.error('Failed to save cache to storage:', error);
       }
     }
   }
@@ -351,7 +354,7 @@ export class UnifiedCacheManager extends BaseCache {
           this.updateMemoryUsage();
         }
       } catch (error) {
-        console.error('Failed to load cache from storage:', error);
+        logger.error('Failed to load cache from storage:', error);
       }
     }
   }
@@ -370,7 +373,7 @@ export class UnifiedCacheManager extends BaseCache {
         ]));
         this.updateMemoryUsage();
       } catch (error) {
-        console.error('Failed to sync cache from storage:', error);
+        logger.error('Failed to sync cache from storage:', error);
       }
     }
   };

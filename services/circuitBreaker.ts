@@ -1,14 +1,11 @@
 // Circuit Breaker Pattern Implementation for API Resilience
-import { TIMEOUTS } from '../constants';
+import { TIMEOUTS, CIRCUIT_BREAKER } from '../constants';
 
 export interface CircuitBreakerConfig {
   failureThreshold: number;
   timeout: number;
   resetTimeout: number;
 }
-
-// Circuit breaker success threshold - consecutive successes needed to close circuit
-const CIRCUIT_CLOSE_THRESHOLD = 3;
 
 export enum CircuitState {
   CLOSED = 'CLOSED',
@@ -49,7 +46,7 @@ export class CircuitBreaker {
     
     if (this.state === CircuitState.HALF_OPEN) {
       this.successCount++;
-      if (this.successCount >= CIRCUIT_CLOSE_THRESHOLD) {
+      if (this.successCount >= CIRCUIT_BREAKER.CLOSE_THRESHOLD) {
         this.state = CircuitState.CLOSED;
       }
     }
@@ -88,18 +85,18 @@ export class CircuitBreaker {
 // Default circuit breaker configurations using centralized timeouts
 export const DEFAULT_CIRCUIT_BREAKERS = {
   database: new CircuitBreaker({
-    failureThreshold: 5,
-    timeout: TIMEOUTS.API_REQUEST, // 10 seconds
-    resetTimeout: 60000 // 1 minute - specific to database recovery
+    failureThreshold: CIRCUIT_BREAKER.DEFAULT_FAILURE_THRESHOLD,
+    timeout: TIMEOUTS.API_REQUEST,
+    resetTimeout: CIRCUIT_BREAKER.RESET_TIMEOUT_DB
   }),
   ai: new CircuitBreaker({
-    failureThreshold: 3,
-    timeout: TIMEOUTS.CIRCUIT_BREAKER_SLOW, // 15 seconds
-    resetTimeout: TIMEOUTS.CIRCUIT_BREAKER_RESET // 30 seconds
+    failureThreshold: CIRCUIT_BREAKER.AI_FAILURE_THRESHOLD,
+    timeout: TIMEOUTS.CIRCUIT_BREAKER_SLOW,
+    resetTimeout: TIMEOUTS.CIRCUIT_BREAKER_RESET
   }),
   marketData: new CircuitBreaker({
-    failureThreshold: 7,
-    timeout: TIMEOUTS.CIRCUIT_BREAKER_FAST, // 5 seconds
-    resetTimeout: 120000 // 2 minutes - market data takes longer to recover
+    failureThreshold: CIRCUIT_BREAKER.MARKET_DATA_FAILURE_THRESHOLD,
+    timeout: TIMEOUTS.CIRCUIT_BREAKER_FAST,
+    resetTimeout: CIRCUIT_BREAKER.RESET_TIMEOUT_MARKET
   })
 };

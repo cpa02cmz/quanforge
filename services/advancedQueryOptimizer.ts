@@ -4,6 +4,9 @@
  */
 
 import { Robot } from '../types';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('advancedQueryOptimizer');
 
 export interface QueryOptions {
   cache?: boolean;
@@ -330,7 +333,7 @@ export class AdvancedQueryOptimizer {
         if (result.status === 'fulfilled') {
           results.push(result.value);
         } else {
-          console.error(`Failed to update robot ${batch[index].id}:`, result.reason);
+          logger.error(`Failed to update robot ${batch[index].id}:`, result.reason);
         }
       });
     }

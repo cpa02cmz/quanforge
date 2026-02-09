@@ -91,6 +91,23 @@ export const TIMEOUTS = {
   MAX_RETRY_DELAY: 30000, // 30 seconds - max retry delay
 } as const;
 
+// Circuit Breaker Configuration
+export const CIRCUIT_BREAKER = {
+  CLOSE_THRESHOLD: 3, // Consecutive successes needed to close circuit
+  DEFAULT_FAILURE_THRESHOLD: 5, // Default failures before opening circuit
+  AI_FAILURE_THRESHOLD: 3, // AI service specific threshold
+  MARKET_DATA_FAILURE_THRESHOLD: 7, // Market data specific threshold
+  RESET_TIMEOUT_DB: 60000, // 1 minute - database recovery
+  RESET_TIMEOUT_MARKET: 120000, // 2 minutes - market data recovery
+} as const;
+
+// Retry Configuration
+export const RETRY = {
+  DEFAULT_MAX_RETRIES: 3, // Default max retry attempts
+  BACKOFF_BASE: 1000, // Base delay for exponential backoff (1 second)
+  REALTIME_MAX_RETRIES: 3, // Realtime subscription max retries
+} as const;
+
 export const PERFORMANCE_THRESHOLDS = {
   FCP_GOOD: 1800, // 1.8 seconds - First Contentful Paint good threshold
   FCP_POOR: 3000, // 3 seconds - First Contentful Paint poor threshold
@@ -133,6 +150,7 @@ export const BATCH_SIZES = {
   PAGINATION_DEFAULT: 20, // Default items per page
   PAGINATION_MAX: 100, // Maximum items per page
   PREFETCH_BATCH: 20, // Batch size for prefetch operations
+  REALTIME_SYNC: 50, // Batch size for realtime sync operations
 } as const;
 
 // Performance Thresholds (ms)
