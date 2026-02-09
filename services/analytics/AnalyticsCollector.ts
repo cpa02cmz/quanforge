@@ -6,6 +6,9 @@
 
 import { IAnalyticsCollector, AnalyticsConfig } from '../../types/serviceInterfaces';
 import { supabase } from '../supabase';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('AnalyticsCollector');
 
 export interface AnalyticsEvent {
   event: string;
@@ -75,7 +78,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
       
       return true;
     } catch (error) {
-      console.error('Analytics health check failed:', error);
+      logger.error('Analytics health check failed:', error);
       return false;
     }
   }
@@ -109,7 +112,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
         await this.processEventQueue();
       }
     } catch (error) {
-      console.error(`Failed to track event ${event}:`, error);
+      logger.error(`Failed to track event ${event}:`, error);
     }
   }
 
@@ -138,7 +141,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
         await this.processMetricsQueue();
       }
     } catch (error) {
-      console.error(`Failed to track metric ${name}:`, error);
+      logger.error(`Failed to track metric ${name}:`, error);
     }
   }
 
@@ -166,7 +169,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
         await this.processOperationQueue();
       }
     } catch (error) {
-      console.error(`Failed to track operation ${operation}:`, error);
+      logger.error(`Failed to track operation ${operation}:`, error);
     }
   }
 
@@ -209,7 +212,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
         this.processOperationQueue(),
       ]);
     } catch (error) {
-      console.error('Error during batch processing:', error);
+      logger.error('Error during batch processing:', error);
     } finally {
       this.isProcessing = false;
     }
@@ -221,12 +224,12 @@ export class AnalyticsCollector implements IAnalyticsCollector {
     const events = this.eventQueue.splice(0, this.config.batchSize);
     
     // Send events to analytics service
-    console.log(`Processing ${events.length} analytics events`);
+    logger.log(`Processing ${events.length} analytics events`);
     
     // Here you would send to your analytics backend
     // For now, we'll just log them
     events.forEach(event => {
-      console.log('Event:', {
+      logger.log('Event:', {
         event: event.event,
         timestamp: new Date(event.timestamp).toISOString(),
         properties: event.properties,
@@ -240,10 +243,10 @@ export class AnalyticsCollector implements IAnalyticsCollector {
     const metrics = this.metricsQueue.splice(0, this.config.batchSize);
     
     // Send metrics to monitoring service
-    console.log(`Processing ${metrics.length} performance metrics`);
+    logger.log(`Processing ${metrics.length} performance metrics`);
     
     metrics.forEach(metric => {
-      console.log('Metric:', {
+      logger.log('Metric:', {
         name: metric.name,
         value: metric.value,
         unit: metric.unit,
@@ -259,10 +262,10 @@ export class AnalyticsCollector implements IAnalyticsCollector {
     const operations = this.operationQueue.splice(0, this.config.batchSize);
     
     // Send operation data to analytics service
-    console.log(`Processing ${operations.length} operation records`);
+    logger.log(`Processing ${operations.length} operation records`);
     
     operations.forEach(operation => {
-      console.log('Operation:', {
+      logger.log('Operation:', {
         operation: operation.operation,
         duration: operation.duration,
         success: operation.success,

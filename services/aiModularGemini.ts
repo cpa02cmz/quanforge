@@ -1,9 +1,7 @@
 // Unified AI Service with Modular Architecture
-import { StrategyParams, StrategyAnalysis, Message, AISettings } from "../types";
-import { getActiveKey } from "../utils/apiKeyUtils";
-import { handleError } from "../utils/errorHandler";
+import { StrategyParams, StrategyAnalysis, AISettings } from "../types";
 import { createScopedLogger } from "../utils/logger";
-import { AI_CONFIG, TIME_CONSTANTS } from "../constants/config";
+import { AI_CONFIG } from "../constants/config";
 import { supabase } from "./supabase";
 
 // Import modular AI components

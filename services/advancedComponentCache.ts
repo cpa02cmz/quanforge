@@ -68,7 +68,7 @@ class AdvancedComponentCache {
     if (this.config.maxSize > 0) {
       try {
         size = new Blob([JSON.stringify(data)]).size;
-      } catch (_e) {
+      } catch {
         // Fallback size calculation
         size = JSON.stringify(data).length;
       }
