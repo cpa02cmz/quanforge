@@ -216,13 +216,107 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
     },
     fallbackEnabled: false,
     healthCheckInterval: 60000
+  },
+  external_api_slow: {
+    type: IntegrationType.EXTERNAL_API,
+    name: 'External API (Slow)',
+    timeouts: {
+      connect: 10000,
+      read: 30000,
+      write: 30000,
+      overall: 60000
+    },
+    retryPolicy: {
+      maxRetries: 5,
+      initialDelay: 1000,
+      maxDelay: 30000,
+      backoffMultiplier: 2,
+      jitter: true,
+      retryableErrors: [
+        ErrorCategory.TIMEOUT,
+        ErrorCategory.NETWORK,
+        ErrorCategory.SERVER_ERROR,
+        ErrorCategory.RATE_LIMIT
+      ]
+    },
+    circuitBreaker: {
+      failureThreshold: 10,
+      successThreshold: 5,
+      timeout: 60000,
+      halfOpenMaxCalls: 3,
+      resetTimeout: 120000
+    },
+    fallbackEnabled: true,
+    healthCheckInterval: 60000
+  },
+  external_api_fast: {
+    type: IntegrationType.EXTERNAL_API,
+    name: 'External API (Fast)',
+    timeouts: {
+      connect: 2000,
+      read: 5000,
+      write: 5000,
+      overall: 10000
+    },
+    retryPolicy: {
+      maxRetries: 1,
+      initialDelay: 200,
+      maxDelay: 1000,
+      backoffMultiplier: 1.5,
+      jitter: true,
+      retryableErrors: [
+        ErrorCategory.TIMEOUT,
+        ErrorCategory.NETWORK
+      ]
+    },
+    circuitBreaker: {
+      failureThreshold: 10,
+      successThreshold: 5,
+      timeout: 10000,
+      halfOpenMaxCalls: 5,
+      resetTimeout: 30000
+    },
+    fallbackEnabled: false,
+    healthCheckInterval: 30000
+  },
+  webhook: {
+    type: IntegrationType.EXTERNAL_API,
+    name: 'Webhook Endpoint',
+    timeouts: {
+      connect: 2000,
+      read: 3000,
+      write: 3000,
+      overall: 5000
+    },
+    retryPolicy: {
+      maxRetries: 0,
+      initialDelay: 0,
+      maxDelay: 0,
+      backoffMultiplier: 1,
+      jitter: false,
+      retryableErrors: []
+    },
+    circuitBreaker: {
+      failureThreshold: 20,
+      successThreshold: 10,
+      timeout: 5000,
+      halfOpenMaxCalls: 5,
+      resetTimeout: 60000
+    },
+    fallbackEnabled: false,
+    healthCheckInterval: 60000
   }
 };
 
 export function getConfig(integrationKey: string): IntegrationConfig {
   const config = INTEGRATION_CONFIGS[integrationKey];
   if (!config) {
-    logger.warn(`Integration config not found for ${integrationKey}, using default`);
+    const availableConfigs = Object.keys(INTEGRATION_CONFIGS).join(', ');
+    logger.warn(
+      `Integration config not found for '${integrationKey}'. Using generic default config. ` +
+      `Available configs: ${availableConfigs}. ` +
+      `Consider adding explicit configuration for '${integrationKey}' to INTEGRATION_CONFIGS.`
+    );
     return {
       type: IntegrationType.EXTERNAL_API,
       name: integrationKey,
