@@ -11,8 +11,8 @@ export const withRetry = async <T>(
     // Import dynamically to avoid circular dependencies
     const { DEFAULT_CIRCUIT_BREAKERS } = require('../circuitBreaker');
     
-    let lastError: any;
-    
+    let lastError: Error | undefined;
+
     for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
         try {
             if (attempt > 0) {
@@ -20,25 +20,25 @@ export const withRetry = async <T>(
                     RETRY_CONFIG.retryDelay * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1),
                     RETRY_CONFIG.maxDelay
                 );
-                
+
                 // Add jitter to prevent thundering herd
-                const jitterDelay = RETRY_CONFIG.jitter 
+                const jitterDelay = RETRY_CONFIG.jitter
                     ? delay * (0.5 + Math.random() * 0.5)
                     : delay;
-                    
+
                 await new Promise(resolve => setTimeout(resolve, jitterDelay));
             }
-            
+
             return DEFAULT_CIRCUIT_BREAKERS.database.execute(operation);
-        } catch (error: any) {
-            lastError = error;
-            
+        } catch (error: unknown) {
+            lastError = error as Error;
+
             // Check if we should retry based on error type
             if (shouldNotRetry(error) || attempt === RETRY_CONFIG.maxRetries) {
                 break;
             }
-            
-            console.warn(`Attempt ${attempt + 1} failed for ${operationName}:`, error.message);
+
+            console.warn(`Attempt ${attempt + 1} failed for ${operationName}:`, (error as Error).message);
         }
     }
     
