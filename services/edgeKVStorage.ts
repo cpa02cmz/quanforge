@@ -71,7 +71,7 @@ class EdgeKVClient {
         return this.gzipDecompress(parsed.data);
       }
       return data;
-    } catch (e) {
+    } catch (_e) {
       return data; // Not compressed or invalid JSON
     }
   }
@@ -478,7 +478,7 @@ export const edgeKVService = {
         latency,
         metrics: edgeKVClient.getMetrics(),
       };
-    } catch (error) {
+    } catch (_error) {
       return {
         status: 'unhealthy',
         latency: Date.now() - start,

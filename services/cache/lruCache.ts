@@ -3,7 +3,7 @@
  * Replaces OptimizedLRUCache with enhanced memory management and performance
  */
 
-import { BaseCache, BaseCacheEntry, CacheConfig, CacheMetrics, CompressionUtils, CACHE_CONSTANTS } from './__init__';
+import { BaseCache, BaseCacheEntry, CacheConfig, CompressionUtils, CACHE_CONSTANTS } from './__init__';
 import { createScopedLogger } from '../../utils/logger';
 
 const logger = createScopedLogger('lruCache');

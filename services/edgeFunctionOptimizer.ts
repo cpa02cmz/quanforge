@@ -145,8 +145,9 @@ class EdgeFunctionOptimizer {
    * Generate warmup requests for a function
    */
   private generateWarmupRequests(functionName: string): WarmupRequest[] {
-    const baseUrl = process.env['VERCEL_URL'] || 'localhost:3000';
-    const protocol = process.env['NODE_ENV'] === 'production' ? 'https' : 'http';
+    // Configuration available for future use if endpoints are added
+    void process.env['VERCEL_URL'];
+    void process.env['NODE_ENV'];
 
     switch (functionName) {
       case 'api/supabase':

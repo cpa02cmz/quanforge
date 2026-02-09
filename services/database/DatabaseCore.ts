@@ -8,7 +8,7 @@ import { IDatabaseCore, DatabaseConfig } from '../../types/serviceInterfaces';
 import { APIResponse } from '../../types/common';
 import { settingsManager } from '../settingsManager';
 import { edgeConnectionPool } from '../edgeSupabasePool';
-import { handleError } from '../../utils/errorHandler';
+
 import { createScopedLogger } from '../../utils/logger';
 
 const logger = createScopedLogger('DatabaseCore');
@@ -238,13 +238,12 @@ export class DatabaseCore implements IDatabaseCore {
   }
 
   private createMockClient(): MockSupabaseClient {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return {
       from: (_table: string) => ({
         select: (_columns: string) => ({
           order: (_column: string, _options: unknown) => ({
             limit: (_limit: number) => Promise.resolve({ data: [], error: null }),
-            then: (resolve: (value: { data: []; error: null }) => void) => Promise.resolve({ data: [], error: null }),
+            then: (_resolve: (value: { data: []; error: null }) => void) => Promise.resolve({ data: [], error: null }),
           }),
           count: (_option: string) => ({
             head: (_headOption: boolean) => Promise.resolve({ count: 0, error: null }),

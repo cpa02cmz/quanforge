@@ -3,7 +3,7 @@
  * Collects metrics from database, cache, and edge systems
  */
 
-import { SupabaseClient } from '@supabase/supabase-js';
+
 import { OptimizationMetrics, OptimizationConfig, CacheStats, EdgeMetrics } from './optimizationTypes';
 import { databasePerformanceMonitor } from '../databasePerformanceMonitor';
 import { robotCache } from '../advancedCache';

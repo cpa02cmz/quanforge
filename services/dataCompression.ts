@@ -28,8 +28,8 @@ class DataCompressionService {
       try {
         compressed = compressToUTF16(originalData);
         compressedSize = new Blob([compressed]).size;
-      } catch (error) {
-        console.warn('Compression failed, using original data:', error);
+      } catch (_error) {
+        console.warn('Compression failed, using original data:', _error);
         // If compression fails, return original with zero savings
         compressed = originalData;
         compressedSize = originalSize;
@@ -109,7 +109,7 @@ class DataCompressionService {
       const compressed = compressToUTF16(original);
       const compressedSize = new Blob([compressed]).size;
       return compressedSize / originalSize;
-    } catch (error) {
+    } catch (_error) {
       return 1; // No compression applied
     }
   }

@@ -122,6 +122,8 @@ export class AnalyticsCollector implements AnalyticsCollectorInterface {
       totalOperations += metrics.count;
       totalErrors += metrics.errors;
       totalDuration += metrics.totalDuration;
+      // Using totalDuration for logging purposes only
+      void totalDuration;
       
       // Calculate weighted average for response time
       if (metrics.count > 0) {
