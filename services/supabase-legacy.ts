@@ -11,6 +11,7 @@ import { globalOrchestrator } from './core/ServiceOrchestrator';
 import { SERVICE_TOKENS } from '../types/serviceInterfaces';
 import { Robot, UserSession } from '../types';
 import { handleError } from '../utils/errorHandler';
+import { STORAGE_KEYS } from '../constants';
 
 // Import the robot database service
 import { RobotDatabaseService, IRobotDatabaseService } from './database/RobotDatabaseService';
@@ -32,8 +33,8 @@ const getService = async (): Promise<IRobotDatabaseService> => {
 };
 
 // Mock session and auth utilities (preserved from original)
-const STORAGE_KEY = 'mock_session';
-const ROBOTS_KEY = 'mock_robots';
+const STORAGE_KEY = STORAGE_KEYS.SESSION;
+const ROBOTS_KEY = STORAGE_KEYS.ROBOTS;
 
 const safeParse = (data: string | null, fallback: any) => {
     if (!data) return fallback;
@@ -211,7 +212,7 @@ export const mockDb = {
             const cache = await globalOrchestrator.getCache();
             
             // Try cache first
-            const cacheKey = 'robots_list';
+            const cacheKey = STORAGE_KEYS.ROBOTS_LIST;
             let robots = await cache.get<Robot[]>(cacheKey);
             
             if (!robots) {

@@ -173,6 +173,9 @@ export const SECURITY_CONFIG = {
   MIN_API_KEY_LENGTH: 10,
   MAX_API_KEY_LENGTH: 500,
   API_KEY_ROTATION_INTERVAL: 30 * TIME_CONSTANTS.DAY,
+  
+  // Encryption settings
+  ENCRYPTION_KEY: 'QuantForge_AI_Secure_Key_2024',
 };
 
 // ========== PERFORMANCE THRESHOLDS ==========
@@ -548,6 +551,44 @@ export const CACHE_SIZING_CONFIG = {
   }
 };
 
+// ========== SIMULATION CONFIGURATION ==========
+export const SIMULATION_CONFIG = {
+  // Time limits
+  MAX_DAYS: 3650, // 10 years maximum to prevent performance issues
+  
+  // Win rate calculation (profitability score -> win rate %)
+  WIN_RATE: {
+    BASE: 40,           // Base win rate percentage
+    MULTIPLIER: 2.5,    // Profitability score multiplier
+    MIN: 42.5,          // Minimum win rate (profitability = 1)
+    MAX: 65,            // Maximum win rate (profitability = 10)
+  },
+  
+  // Daily drift calculation (profitability score -> daily return %)
+  DAILY_DRIFT: {
+    NEUTRAL_BASE: 4,    // Neutral profitability score
+    MULTIPLIER: 0.0005, // Daily drift multiplier
+  },
+  
+  // Volatility calculation (risk score -> daily volatility %)
+  VOLATILITY: {
+    RISK_MULTIPLIER: 0.003,  // Risk score multiplier
+    BASE_OFFSET: 0.002,      // Base volatility offset
+  },
+  
+  // Risk and profitability bounds
+  RISK_SCORE: {
+    MIN: 1,
+    MAX: 10,
+    DEFAULT: 5,
+  },
+  PROFITABILITY_SCORE: {
+    MIN: 1,
+    MAX: 10,
+    DEFAULT: 5,
+  },
+};
+
 // ========== BACKEND OPTIMIZATION CONFIGURATION ==========
 export const BACKEND_OPTIMIZATION_CONFIG = {
   // Performance thresholds
@@ -589,6 +630,33 @@ export const getConfig = <T>(section: string, key: string): T => {
   
   throw new Error(`Configuration key '${key}' not found in section '${section}'`);
 };
+
+// ========== STORAGE CONFIGURATION ==========
+export const STORAGE_KEYS = {
+  // Session storage
+  SESSION: 'mock_session',
+  
+  // Robot data storage
+  ROBOTS: 'mock_robots',
+  
+  // Settings storage
+  AI_SETTINGS: 'quantforge_ai_settings',
+  DB_SETTINGS: 'quantforge_db_settings',
+  
+  // Cache storage
+  STRATEGY_TYPES: 'strategy_types',
+  ROBOTS_LIST: 'robots_list',
+  
+  // Test keys
+  STORAGE_TEST: '__storage_test__',
+} as const;
+
+// Storage prefixes for localStorage
+export const STORAGE_PREFIXES = {
+  MOCK: 'mock_',
+  QUANTFORGE: 'quantforge_',
+  TEST: 'test_',
+} as const;
 
 // ========== DATABASE CONFIGURATION ==========
 export const DATABASE_CONFIG = {

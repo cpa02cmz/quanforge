@@ -2,7 +2,9 @@
 // Note: This is client-side obfuscation, not server-grade encryption
 // For production, consider additional server-side encryption for sensitive data
 
-const ENCRYPTION_KEY = 'QuantForge_AI_Secure_Key_2024';
+import { SECURITY_CONFIG } from '../constants/config';
+
+const ENCRYPTION_KEY = SECURITY_CONFIG.ENCRYPTION_KEY;
 
 // Improved XOR cipher with additional obfuscation
 const xorCipher = (text: string, key: string): string => {

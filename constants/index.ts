@@ -1,6 +1,21 @@
 import { Language } from "../types";
 import { logger } from "../utils/logger";
 
+// Re-export configuration constants for centralized access
+export { 
+  STORAGE_KEYS, 
+  STORAGE_PREFIXES,
+  TRADING_CONSTANTS,
+  SECURITY_CONFIG,
+  AI_CONFIG,
+  TIME_CONSTANTS,
+  CACHE_CONFIG,
+  API_CONFIG,
+  DATABASE_CONFIG,
+  CIRCUIT_BREAKER_CONFIG,
+  SIMULATION_CONFIG,
+} from './config';
+
 export const TIMEFRAMES = [
   'M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'
 ];

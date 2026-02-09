@@ -1,5 +1,6 @@
 
 import { StrategyAnalysis, BacktestSettings, SimulationResult } from '../types';
+import { SIMULATION_CONFIG } from '../constants/config';
 
 /**
  * Runs a Monte Carlo simulation based on AI Analysis.
@@ -21,10 +22,16 @@ export const runMonteCarloSimulation = (
         };
     }
     
-    const riskScore = Math.max(1, Math.min(10, analysis?.riskScore || 5)); // 1-10 (10 is high risk)
-    const profitability = Math.max(1, Math.min(10, analysis?.profitability || 5)); // 1-10 (10 is high profit)
+    const riskScore = Math.max(
+        SIMULATION_CONFIG.RISK_SCORE.MIN, 
+        Math.min(SIMULATION_CONFIG.RISK_SCORE.MAX, analysis?.riskScore || SIMULATION_CONFIG.RISK_SCORE.DEFAULT)
+    );
+    const profitability = Math.max(
+        SIMULATION_CONFIG.PROFITABILITY_SCORE.MIN, 
+        Math.min(SIMULATION_CONFIG.PROFITABILITY_SCORE.MAX, analysis?.profitability || SIMULATION_CONFIG.PROFITABILITY_SCORE.DEFAULT)
+    );
     
-    const days = Math.min(settings.days, 3650); // Cap at 10 years to prevent performance issues
+    const days = Math.min(settings.days, SIMULATION_CONFIG.MAX_DAYS);
     let balance = settings.initialDeposit;
     // Pre-allocate array for performance with exact size needed
     const equityCurve = new Array(days + 1) as { date: string; balance: number }[];
@@ -35,11 +42,11 @@ export const runMonteCarloSimulation = (
     // Pre-calculate simulation parameters
     // Higher Profitability -> Higher positive daily drift mean
     // 5 is neutral (0 drift), 10 is 0.5% daily avg, 1 is -0.1% daily avg
-    const dailyDriftMean = (profitability - 4) * 0.0005; 
+    const dailyDriftMean = (profitability - SIMULATION_CONFIG.DAILY_DRIFT.NEUTRAL_BASE) * SIMULATION_CONFIG.DAILY_DRIFT.MULTIPLIER; 
 
     // Volatility (Standard Deviation)
     // Risk 1: 0.5%, Risk 10: 5% daily swings
-    const dailyVol = (riskScore * 0.003) + 0.002;
+    const dailyVol = (riskScore * SIMULATION_CONFIG.VOLATILITY.RISK_MULTIPLIER) + SIMULATION_CONFIG.VOLATILITY.BASE_OFFSET;
 
     // Generate all random values at once using a more efficient approach
     const randomValues = new Float64Array(days); // Typed array for better performance
@@ -80,7 +87,7 @@ export const runMonteCarloSimulation = (
     const totalReturn = ((balance - settings.initialDeposit) / settings.initialDeposit) * 100;
     
     // Estimated Win Rate based on profitability score (rough proxy)
-    const winRate = 40 + (profitability * 2.5); // Range: 42.5% to 65%
+    const winRate = SIMULATION_CONFIG.WIN_RATE.BASE + (profitability * SIMULATION_CONFIG.WIN_RATE.MULTIPLIER);
 
     return {
         equityCurve,

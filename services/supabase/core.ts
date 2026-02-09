@@ -8,6 +8,7 @@ import { Robot, UserSession } from '../../types';
 import { securityManager } from '../securityManager';
 import { consolidatedCache } from '../consolidatedCacheManager';
 import { createScopedLogger } from '../../utils/logger';
+import { STORAGE_KEYS } from '../../constants';
 
 const logger = createScopedLogger('CoreSupabaseService');
 
@@ -27,8 +28,8 @@ const CACHE_CONFIG = {
 };
 
 // Mock storage keys for fallback mode
-const STORAGE_KEY = 'mock_session';
-const ROBOTS_KEY = 'mock_robots';
+const STORAGE_KEY = STORAGE_KEYS.SESSION;
+const ROBOTS_KEY = STORAGE_KEYS.ROBOTS;
 
 /**
  * Safe JSON parsing with security validation

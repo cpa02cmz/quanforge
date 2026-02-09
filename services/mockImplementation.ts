@@ -1,10 +1,11 @@
 import { UserSession } from '../types';
 import { securityManager } from './securityManager';
 import { getLocalStorage, StorageQuotaError } from '../utils/storage';
+import { STORAGE_KEYS, STORAGE_PREFIXES } from '../constants/config';
 
-const STORAGE_KEY = 'mock_session';
-const ROBOTS_KEY = 'mock_robots';
-const storage = getLocalStorage({ prefix: 'mock_' });
+const STORAGE_KEY = STORAGE_KEYS.SESSION;
+const ROBOTS_KEY = STORAGE_KEYS.ROBOTS;
+const storage = getLocalStorage({ prefix: STORAGE_PREFIXES.MOCK });
 
 const safeParse = <T>(data: T | null, fallback: any) => {
     if (!data) return fallback;

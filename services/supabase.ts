@@ -1,4 +1,4 @@
- 
+  
 import { settingsManager } from './settingsManager';
 import { Robot, UserSession } from '../types';
 import { edgeConnectionPool } from './edgeSupabasePool';
@@ -6,7 +6,7 @@ import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
-import { TIMEOUTS, CACHE_LIMITS, BATCH_SIZES } from '../constants';
+import { TIMEOUTS, CACHE_LIMITS, BATCH_SIZES, STORAGE_KEYS, STORAGE_PREFIXES } from '../constants';
 import { getLocalStorage, StorageQuotaError } from '../utils/storage';
 
 // Enhanced connection retry configuration with exponential backoff
@@ -20,9 +20,9 @@ const RETRY_CONFIG = {
 
 
 // Mock session storage
-const STORAGE_KEY = 'mock_session';
-const ROBOTS_KEY = 'mock_robots';
-const storage = getLocalStorage({ prefix: 'mock_', enableSerialization: true });
+const STORAGE_KEY = STORAGE_KEYS.SESSION;
+const ROBOTS_KEY = STORAGE_KEYS.ROBOTS;
+const storage = getLocalStorage({ prefix: STORAGE_PREFIXES.MOCK, enableSerialization: true });
 
 // Helper for safe JSON parsing with enhanced security
 const safeParse = <T>(data: T | null, fallback: any) => {
@@ -395,7 +395,7 @@ async getRobots() {
          return { data: robots, error: null };
        }
         
-        const cacheKey = 'robots_list';
+        const cacheKey = STORAGE_KEYS.ROBOTS_LIST;
 const cached = await consolidatedCache.get<Robot[]>(cacheKey);
         if (cached) {
           // Create index for performance

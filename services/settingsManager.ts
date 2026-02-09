@@ -2,10 +2,11 @@
 import { AISettings, DBSettings } from "../types";
 import { encryptApiKey, decryptApiKey, validateApiKey } from "../utils/encryption";
 import { getLocalStorage } from "../utils/storage";
+import { STORAGE_KEYS, STORAGE_PREFIXES } from '../constants/config';
 
-const AI_SETTINGS_KEY = 'quantforge_ai_settings';
-const DB_SETTINGS_KEY = 'quantforge_db_settings';
-const storage = getLocalStorage({ prefix: 'quantforge_' });
+const AI_SETTINGS_KEY = STORAGE_KEYS.AI_SETTINGS;
+const DB_SETTINGS_KEY = STORAGE_KEYS.DB_SETTINGS;
+const storage = getLocalStorage({ prefix: STORAGE_PREFIXES.QUANTFORGE });
 
 // Safe Environment Variable Access
 export const getEnv = (key: string): string => {
