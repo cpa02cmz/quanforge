@@ -3,6 +3,7 @@ import { UI_TIMING } from '../constants';
 import { ToastContext, ToastType } from './ToastContext';
 export { ToastContext } from './ToastContext';
 import { getToastAriaLive, getToastLabel } from './toastUtils';
+import { IconButton } from './IconButton';
 export type { ToastType } from './ToastContext';
 
 interface ToastItem {
@@ -132,16 +133,18 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               )}
             </div>
             <div className="text-sm font-medium">{toast.message}</div>
-            <button
+            <IconButton
               onClick={() => removeToast(toast.id)}
-              className="ml-auto -mx-1.5 -my-1.5 rounded-lg p-1.5 text-gray-400 hover:text-white focus:ring-2 focus:ring-gray-300 focus:outline-none min-w-[32px] min-h-[32px] flex items-center justify-center transition-colors"
+              variant="default"
               aria-label="Close notification"
-              type="button"
+              title="Close"
+              size="sm"
+              className="ml-auto"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
-            </button>
+            </IconButton>
           </div>
         ))}
       </div>
