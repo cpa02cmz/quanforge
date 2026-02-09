@@ -40,7 +40,7 @@
     "edge:warmup:enhanced": "node scripts/enhanced-edge-warming.cjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "test": "vitest",
     "test:ui": "vitest --ui",

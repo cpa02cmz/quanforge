@@ -1,6 +1,13 @@
 import { Robot, StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
 import { SecureStorage } from '../utils/secureStorage';
+import {
+  RATE_LIMITING,
+  TIME_CONSTANTS,
+  DEV_SERVER_CONFIG,
+  TRADING_CONSTANTS,
+  VALIDATION_CONFIG
+} from '../constants/config';
 
 interface SecurityConfig {
   maxPayloadSize: number;
@@ -40,26 +47,26 @@ interface ValidationResult {
 class SecurityManager {
   private static instance: SecurityManager;
   private config: SecurityConfig = {
-    maxPayloadSize: 5 * 1024 * 1024, // Reduced to 5MB for better security
+    maxPayloadSize: 5 * 1024 * 1024, // 5MB for better security - defined locally for flexibility
     allowedOrigins: [
       'https://quanforge.ai',
       'https://www.quanforge.ai',
-      'http://localhost:3000',
-      'http://localhost:5173' // Vite dev server
+      DEV_SERVER_CONFIG.getDevUrl(),
+      DEV_SERVER_CONFIG.getViteUrl()
     ],
     rateLimiting: {
-      windowMs: 60000, // 1 minute
-      maxRequests: 100,
+      windowMs: RATE_LIMITING.DEFAULT_WINDOW, // 1 minute
+      maxRequests: RATE_LIMITING.DEFAULT_MAX_REQUESTS,
     },
     encryption: {
       algorithm: 'AES-256-GCM',
-      keyRotationInterval: 43200000, // 12 hours - more frequent rotation
+      keyRotationInterval: TIME_CONSTANTS.HOUR * 12, // 12 hours - more frequent rotation
     },
     // Add missing edge security configurations
     edgeRateLimiting: {
       enabled: true,
-      requestsPerSecond: 10,
-      burstLimit: 20
+      requestsPerSecond: RATE_LIMITING.EDGE.requestsPerSecond,
+      burstLimit: RATE_LIMITING.EDGE.burstLimit
     },
     regionBlocking: {
       enabled: true,
@@ -68,17 +75,17 @@ class SecurityManager {
     botDetection: {
       enabled: true,
       suspiciousPatterns: [
-        'sqlmap', 'nikto', 'nmap', 'masscan', 'dirb', 'gobuster', 
+        'sqlmap', 'nikto', 'nmap', 'masscan', 'dirb', 'gobuster',
         'wfuzz', 'burp', 'owasp', 'scanner', 'bot', 'crawler', 'spider'
       ]
     }
   };
   private rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-  private secureStorage = new SecureStorage({
-    namespace: 'qf_security',
-    encrypt: true,
-    maxSize: 1024 * 1024 // 1MB limit for security data
-  });
+   private secureStorage = new SecureStorage({
+     namespace: 'qf_security',
+     encrypt: true,
+     maxSize: 1024 * 1024 // 1MB limit for security data - local constant for clarity
+   });
 
   private constructor() {}
 
@@ -188,8 +195,8 @@ private validateRobotData(data: any): ValidationResult {
      // Name validation
      if (data.name) {
        const sanitizedName = this.sanitizeString(data.name);
-       if (sanitizedName.length < 3 || sanitizedName.length > 100) {
-         errors.push('Robot name must be between 3 and 100 characters');
+       if (sanitizedName.length < 3 || sanitizedName.length > VALIDATION_CONFIG.MAX_STRING_LENGTH) {
+         errors.push(`Robot name must be between 3 and ${VALIDATION_CONFIG.MAX_STRING_LENGTH} characters`);
          riskScore += 10;
        }
        sanitized.name = sanitizedName;
@@ -201,8 +208,8 @@ private validateRobotData(data: any): ValidationResult {
     // Description validation
     if (data.description) {
       const sanitizedDescription = this.sanitizeString(data.description);
-      if (sanitizedDescription.length > 1000) {
-        errors.push('Description too long (max 1000 characters)');
+      if (sanitizedDescription.length > VALIDATION_CONFIG.MAX_TEXT_AREA_LENGTH) {
+        errors.push(`Description too long (max ${VALIDATION_CONFIG.MAX_TEXT_AREA_LENGTH} characters)`);
         riskScore += 5;
       }
       sanitized.description = sanitizedDescription;
@@ -246,8 +253,7 @@ private validateRobotData(data: any): ValidationResult {
 
     // Timeframe validation
     if (data.timeframe) {
-      const validTimeframes = ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'];
-      if (!validTimeframes.includes(data.timeframe)) {
+      if (!TRADING_CONSTANTS.TIMEFRAMES.includes(data.timeframe)) {
         errors.push('Invalid timeframe');
         riskScore += 10;
       }
@@ -266,11 +272,11 @@ private validateRobotData(data: any): ValidationResult {
 
     // Risk percent validation
     if (typeof data.riskPercent === 'number') {
-      if (data.riskPercent < 0.01 || data.riskPercent > 100) {
-        errors.push('Risk percent must be between 0.01 and 100');
+      if (data.riskPercent < TRADING_CONSTANTS.MIN_RISK_PERCENT || data.riskPercent > TRADING_CONSTANTS.MAX_RISK_PERCENT) {
+        errors.push(`Risk percent must be between ${TRADING_CONSTANTS.MIN_RISK_PERCENT} and ${TRADING_CONSTANTS.MAX_RISK_PERCENT}`);
         riskScore += 10;
       }
-      sanitized.riskPercent = Math.max(0.01, Math.min(100, data.riskPercent));
+      sanitized.riskPercent = Math.max(TRADING_CONSTANTS.MIN_RISK_PERCENT, Math.min(TRADING_CONSTANTS.MAX_RISK_PERCENT, data.riskPercent));
     }
 
     return {
@@ -288,20 +294,20 @@ private validateRobotData(data: any): ValidationResult {
 
     // Initial deposit validation
     if (typeof data.initialDeposit === 'number') {
-      if (data.initialDeposit < 100 || data.initialDeposit > 10000000) {
-        errors.push('Initial deposit must be between $100 and $10,000,000');
+      if (data.initialDeposit < TRADING_CONSTANTS.MIN_INITIAL_DEPOSIT || data.initialDeposit > TRADING_CONSTANTS.MAX_INITIAL_DEPOSIT) {
+        errors.push(`Initial deposit must be between $${TRADING_CONSTANTS.MIN_INITIAL_DEPOSIT} and $${TRADING_CONSTANTS.MAX_INITIAL_DEPOSIT.toLocaleString()}`);
         riskScore += 10;
       }
-      sanitized.initialDeposit = Math.max(100, Math.min(10000000, data.initialDeposit));
+      sanitized.initialDeposit = Math.max(TRADING_CONSTANTS.MIN_INITIAL_DEPOSIT, Math.min(TRADING_CONSTANTS.MAX_INITIAL_DEPOSIT, data.initialDeposit));
     }
 
     // Days validation
     if (typeof data.days === 'number') {
-      if (data.days < 1 || data.days > 365) {
-        errors.push('Backtest duration must be between 1 and 365 days');
+      if (data.days < TRADING_CONSTANTS.MIN_BACKTEST_DURATION || data.days > TRADING_CONSTANTS.MAX_BACKTEST_DURATION) {
+        errors.push(`Backtest duration must be between ${TRADING_CONSTANTS.MIN_BACKTEST_DURATION} and ${TRADING_CONSTANTS.MAX_BACKTEST_DURATION} days`);
         riskScore += 10;
       }
-      sanitized.days = Math.max(1, Math.min(365, data.days));
+      sanitized.days = Math.max(TRADING_CONSTANTS.MIN_BACKTEST_DURATION, Math.min(TRADING_CONSTANTS.MAX_BACKTEST_DURATION, data.days));
     }
 
     return {
@@ -1071,11 +1077,11 @@ private validateRobotData(data: any): ValidationResult {
     const now = Date.now();
     const record = this.rateLimitMap.get(identifier);
 
-    // Adaptive limits based on user tier
+    // Adaptive limits based on user tier - using centralized configuration
     const tierLimits = {
-      basic: { maxRequests: 100, windowMs: 60000 },
-      premium: { maxRequests: 500, windowMs: 60000 },
-      enterprise: { maxRequests: 2000, windowMs: 60000 }
+      basic: { maxRequests: RATE_LIMITING.TIERS.FREE.MAX_REQUESTS, windowMs: RATE_LIMITING.TIERS.FREE.WINDOW },
+      premium: { maxRequests: RATE_LIMITING.TIERS.PRO.MAX_REQUESTS, windowMs: RATE_LIMITING.TIERS.PRO.WINDOW },
+      enterprise: { maxRequests: RATE_LIMITING.TIERS.ENTERPRISE.MAX_REQUESTS, windowMs: RATE_LIMITING.TIERS.ENTERPRISE.WINDOW }
     };
 
     const limits = tierLimits[userTier as keyof typeof tierLimits] || tierLimits.basic;
@@ -1186,7 +1192,7 @@ private validateRobotData(data: any): ValidationResult {
     if (typeof window !== 'undefined') {
       setInterval(() => {
         this.analyzeEdgeRequestPatterns();
-      }, 30000); // Check every 30 seconds
+      }, TIME_CONSTANTS.CLEANUP_SHORT_INTERVAL); // Check every 30 seconds
     }
   }
 
@@ -1219,7 +1225,7 @@ private validateRobotData(data: any): ValidationResult {
   private detectEdgeAnomalies(requests: Array<{ timestamp: number; region: string; endpoint: string }>): string[] {
     const anomalies: string[] = [];
     const now = Date.now();
-    const recentRequests = requests.filter(r => now - r.timestamp < 60000); // Last minute
+    const recentRequests = requests.filter(r => now - r.timestamp < TIME_CONSTANTS.MINUTE); // Last minute
 
     // Check for rapid region hopping
     const regions = new Set(recentRequests.map(r => r.region));
@@ -1262,7 +1268,7 @@ private validateRobotData(data: any): ValidationResult {
       };
     }
 
-    const windowMs = 1000; // 1 second window for edge rate limiting
+    const windowMs = TIME_CONSTANTS.SECOND; // 1 second window for edge rate limiting
     const maxRequests = this.config.edgeRateLimiting.requestsPerSecond;
 
     if (!record || now > record.resetTime) {
