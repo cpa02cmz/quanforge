@@ -272,7 +272,7 @@ class BackendOptimizer {
           errorRate: dbMetrics.errorRate,
         }
       };
-    } catch (error) {
+    } catch {
       return {
         healthy: false,
         responseTime: Date.now() - startTime,
@@ -394,27 +394,27 @@ class BackendOptimizer {
         try {
           const { data } = await client.from('user_settings').select('*').limit(1);
           return data;
-        } catch (e) {
+        } catch {
           return null;
         }
       }),
-      
+
       // Preload common robot configurations
       this.executeWithDeduplication('preload_configs', async () => {
         try {
           const { data } = await client.from('robot_configs').select('*').limit(5);
           return data;
-        } catch (e) {
+        } catch {
           return null;
         }
       }),
-      
+
       // Preload strategy templates
       this.executeWithDeduplication('preload_templates', async () => {
         try {
           const { data } = await client.from('strategy_templates').select('*').limit(10);
           return data;
-        } catch (e) {
+        } catch {
           return null;
         }
       })
