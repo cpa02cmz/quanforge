@@ -252,11 +252,45 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
 
               <button
                 onClick={handleCopy}
-                className="flex items-center space-x-1 px-2 py-1 hover:bg-white/5 rounded text-xs transition-colors"
+                className={`flex items-center space-x-1.5 px-2 py-1 rounded text-xs transition-all duration-200 ${
+                  copied 
+                    ? 'bg-green-500/10 text-green-400 scale-105' 
+                    : 'hover:bg-white/5 text-gray-400 hover:text-gray-200'
+                }`}
                 aria-label={copied ? t('editor_copied') : t('editor_copy')}
                 title="Copy code to clipboard"
               >
-                {copied ? <span className="text-green-500">{t('editor_copied')}</span> : <span>{t('editor_copy')}</span>}
+                {copied ? (
+                  <>
+                    <svg 
+                      className="w-3.5 h-3.5 animate-[scaleIn_0.2s_ease-out]" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2.5} 
+                        d="M5 13l4 4L19 7" 
+                        className="animate-[drawCheck_0.3s_ease-out_0.1s_both]"
+                        style={{
+                          strokeDasharray: 24,
+                          strokeDashoffset: copied ? 0 : 24,
+                          transition: 'stroke-dashoffset 0.3s ease-out 0.1s'
+                        }}
+                      />
+                    </svg>
+                    <span className="font-medium">{t('editor_copied')}</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span>{t('editor_copy')}</span>
+                  </>
+                )}
               </button>
               <button
                 onClick={handleDownload}
