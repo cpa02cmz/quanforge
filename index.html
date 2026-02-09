@@ -444,21 +444,45 @@
        }
 
         /* IconButton Ripple Animation */
-        @keyframes ripple-effect {
-          0% {
-            transform: scale(0);
-            opacity: 0.5;
-          }
-          50% {
-            opacity: 0.3;
-          }
-          100% {
-            transform: scale(20);
-            opacity: 0;
-          }
-        }
+         @keyframes ripple-effect {
+           0% {
+             transform: scale(0);
+             opacity: 0.5;
+           }
+           50% {
+             opacity: 0.3;
+           }
+           100% {
+             transform: scale(20);
+             opacity: 0;
+           }
+         }
 
-       /* Remove default outline for mouse users, keep for keyboard */
+         /* Save Button Animations */
+         @keyframes scaleIn {
+           0% {
+             transform: scale(0);
+             opacity: 0;
+           }
+           50% {
+             transform: scale(1.2);
+           }
+           100% {
+             transform: scale(1);
+             opacity: 1;
+           }
+         }
+
+         @keyframes drawCheck {
+           0% {
+             stroke-dashoffset: 24;
+           }
+           100% {
+             stroke-dashoffset: 0;
+           }
+         }
+
+        /* Remove default outline for mouse users, keep for keyboard */
        *:focus:not(:focus-visible) {
          outline: none;
        }
