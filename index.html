@@ -482,6 +482,21 @@
            }
          }
 
+         /* Particle Burst Animation for Copy Button */
+         @keyframes particle-burst {
+           0% {
+             opacity: 1;
+             transform: translate(-50%, -50%) translateX(0);
+           }
+           50% {
+             opacity: 0.8;
+           }
+           100% {
+             opacity: 0;
+             transform: translate(-50%, -50%) translateX(30px);
+           }
+         }
+
         /* Remove default outline for mouse users, keep for keyboard */
        *:focus:not(:focus-visible) {
          outline: none;
