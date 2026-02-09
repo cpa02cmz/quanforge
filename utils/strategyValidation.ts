@@ -1,19 +1,20 @@
 import { StrategyParams } from '../types';
 import { ValidationError } from './validationTypes';
 import { validateRequired, validateRange, validateRegex, validateInSet } from './validationHelpers';
+import { TRADING_CONSTANTS } from '../constants/config';
 
 // Validation constants
-const TIMEFRAMES = ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'] as const;
+const TIMEFRAMES = TRADING_CONSTANTS.TIMEFRAMES as unknown as readonly string[];
 const TIMEFRAMES_SET = new Set(TIMEFRAMES);
-const SYMBOL_REGEX = /^[A-Z]{3,6}\/?[A-Z]{3,6}$/;
-const MAX_RISK_PERCENT = 100;
-const MIN_RISK_PERCENT = 0.01;
-const MAX_STOP_LOSS = 1000;
-const MIN_STOP_LOSS = 1;
-const MAX_TAKE_PROFIT = 1000;
-const MIN_TAKE_PROFIT = 1;
-const MAX_MAGIC_NUMBER = 999999;
-const MIN_MAGIC_NUMBER = 1;
+const SYMBOL_REGEX = TRADING_CONSTANTS.SYMBOL_REGEX;
+const MAX_RISK_PERCENT = TRADING_CONSTANTS.MAX_RISK_PERCENT;
+const MIN_RISK_PERCENT = TRADING_CONSTANTS.MIN_RISK_PERCENT;
+const MAX_STOP_LOSS = TRADING_CONSTANTS.MAX_STOP_LOSS_PIPS;
+const MIN_STOP_LOSS = TRADING_CONSTANTS.MIN_STOP_LOSS_PIPS;
+const MAX_TAKE_PROFIT = TRADING_CONSTANTS.MAX_TAKE_PROFIT_PIPS;
+const MIN_TAKE_PROFIT = TRADING_CONSTANTS.MIN_TAKE_PROFIT_PIPS;
+const MAX_MAGIC_NUMBER = TRADING_CONSTANTS.MAX_MAGIC_NUMBER;
+const MIN_MAGIC_NUMBER = TRADING_CONSTANTS.MIN_MAGIC_NUMBER;
 
 // Strategy params validation
 export const validateStrategyParams = (params: StrategyParams): ValidationError[] => {

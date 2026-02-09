@@ -1,6 +1,7 @@
 
 import { settingsManager } from './settingsManager';
 import { createScopedLogger } from '../utils/logger';
+import { API_CONFIG } from '../constants/config';
 
 const logger = createScopedLogger('MarketDataService');
 
@@ -19,14 +20,14 @@ export interface MarketData {
 class MarketDataService {
   private subscribers: Map<string, Set<PriceUpdateCallback>> = new Map();
   private lastKnownData: Map<string, MarketData> = new Map();
-  
+
   // Binance WebSocket
   private binanceWs: WebSocket | null = null;
   private binanceSubscriptions: Set<string> = new Set();
   private binanceReconnectAttempts: number = 0;
   private binanceReconnectTimer: ReturnType<typeof setInterval> | null = null;
-  private readonly maxReconnectAttempts = 10;
-  private readonly baseReconnectDelay = 1000; // 1 second
+  private readonly maxReconnectAttempts = API_CONFIG.MAX_RETRY_ATTEMPTS;
+  private readonly baseReconnectDelay = API_CONFIG.RETRY_DELAY_BASE;
   
   // Twelve Data WebSocket
   private twelveDataWs: WebSocket | null = null;

@@ -19,6 +19,7 @@ type GenAIType = {
 let GoogleGenAI: GoogleGenAIConstructor | null = null;
 let Type: GenAIType | null = null;
 import { MQL5_SYSTEM_PROMPT, TIMEOUTS } from "../constants";
+import { AI_CONFIG } from "../constants/config";
 import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
 import { settingsManager } from "./settingsManager";
 import { getActiveKey } from "../utils/apiKeyUtils";
@@ -87,7 +88,7 @@ class EnhancedCache<T> {
   private cache = new Map<string, CacheEntry<T>>();
   private readonly maxSize: number;
   
-  constructor(maxSize: number = 100) {
+  constructor(maxSize: number = AI_CONFIG.CACHE.MAX_CACHE_SIZE) {
     this.maxSize = maxSize;
   }
   
@@ -188,12 +189,12 @@ const sanitizePrompt = (prompt: string): string => {
   if (hasSuspiciousContent) {
     logger.warn('Suspicious content detected in prompt, applying additional sanitization');
     // Additional sanitization for suspicious content
-    return sanitized.replace(/[<>]/g, '').substring(0, 2000);
+    return sanitized.replace(/[<>]/g, '').substring(0, AI_CONFIG.CACHE.MAX_ANALYSIS_CACHE_SIZE * 10);
   }
   
   // Enforce length limits to prevent token exhaustion attacks
-  if (sanitized.length > 10000) {
-    throw new Error('Prompt too long: maximum 10,000 characters allowed');
+  if (sanitized.length > AI_CONFIG.TOKEN_LIMITS.DEFAULT) {
+    throw new Error(`Prompt too long: maximum ${AI_CONFIG.TOKEN_LIMITS.DEFAULT} characters allowed`);
   }
   
   if (sanitized.length < 10) {
@@ -357,7 +358,12 @@ const requestDeduplicator = new RequestDeduplicator();
  * Utility: Retry an async operation with exponential backoff.
  * Useful for handling API rate limits (429) or transient network errors.
  */
-async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, maxDelay = 10000): Promise<T> {
+async function withRetry<T>(
+    fn: () => Promise<T>,
+    retries = AI_CONFIG.RETRY.MAX_ATTEMPTS,
+    delay = AI_CONFIG.RETRY.INITIAL_DELAY,
+    maxDelay = AI_CONFIG.RETRY.MAX_DELAY
+): Promise<T> {
     try {
         return await fn();
     } catch (error: unknown) {
@@ -390,13 +396,13 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000, max
 
 // Optimized token budgeting with efficient caching
   class TokenBudgetManager {
-      private static readonly MAX_CONTEXT_CHARS = 100000;
-      private static readonly MIN_HISTORY_CHARS = 1000;
+      private static readonly MAX_CONTEXT_CHARS = AI_CONFIG.TOKEN_LIMITS.GOOGLE;
+      private static readonly MIN_HISTORY_CHARS = AI_CONFIG.CACHE.MAX_CACHE_SIZE;
     
     // LRU cache for context parts
     private contextCache = new Map<string, { content: string, timestamp: number }>();
-    private static readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-    private static readonly MAX_CACHE_SIZE = 20; // Reduced cache size
+    private static readonly CACHE_TTL = AI_CONFIG.CACHE.MQL5_GENERATION_TTL;
+    private static readonly MAX_CACHE_SIZE = AI_CONFIG.CACHE.MAX_CACHE_SIZE;
     
     private getCachedContext(key: string, builder: () => string): string {
         const cached = this.contextCache.get(key);
