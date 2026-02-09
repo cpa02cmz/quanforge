@@ -8,6 +8,7 @@ import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import { useTranslation } from '../services/i18n';
 import { UserSession } from '../types';
 import PerformanceInsights from './PerformanceInsights';
+import { ScrollToTopButton } from './ScrollToTopButton';
 
 interface LayoutProps {
   session: UserSession | null;
@@ -213,6 +214,7 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
            <Outlet />
          </div>
          <PerformanceInsights />
+         <ScrollToTopButton />
        </main>
      </div>
    );
