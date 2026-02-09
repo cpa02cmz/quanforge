@@ -177,14 +177,13 @@ export abstract class BaseCache<T = any> {
 
   // Common cache operations
   async delete(key: string): Promise<boolean> {
-    const entry = this.cache.get(key);
     const deleted = this.cache.delete(key);
-    
+
     if (deleted) {
       this.metrics.deletes++;
       this.updateMemoryUsage();
     }
-    
+
     return deleted;
   }
 

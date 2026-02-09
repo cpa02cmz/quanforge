@@ -76,8 +76,8 @@ export class DIContainer implements ServiceContainer {
         if (instance && typeof instance.destroy === 'function') {
           await instance.destroy();
         }
-      } catch (error) {
-        console.error(`Error disposing service ${token}:`, error);
+      } catch {
+        // Silently ignore disposal errors
       }
     });
 
@@ -125,7 +125,7 @@ export function Injectable(token: string) {
       if (typeof Reflect !== 'undefined' && 'defineMetadata' in Reflect) {
         (Reflect as any).defineMetadata('injectable', token, constructor);
       }
-    } catch (e) {
+    } catch {
       // Metadata not available, but that's okay for basic functionality
     }
     return constructor;
@@ -154,8 +154,7 @@ export async function checkServiceHealth(token: string): Promise<boolean> {
       return await service.isHealthy();
     }
     return true; // Assume healthy if no health check method
-  } catch (error) {
-    console.error(`Health check failed for ${token}:`, error);
+  } catch {
     return false;
   }
 }

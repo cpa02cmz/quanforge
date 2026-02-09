@@ -4,6 +4,9 @@
  */
 
 import type { IService } from './ServiceInterfaces';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('ServiceContainer');
 
 // Service container implementation
 class ServiceContainer {
@@ -65,9 +68,9 @@ class ServiceContainer {
       try {
         await service.initialize();
         this.instances.set(name, service);
-        console.log(`✅ Service '${name}' initialized successfully`);
+        logger.log(`✅ Service '${name}' initialized successfully`);
       } catch (error) {
-        console.error(`❌ Failed to initialize service '${name}':`, error);
+        logger.error(`❌ Failed to initialize service '${name}':`, error);
         throw error;
       }
     });
@@ -93,10 +96,10 @@ class ServiceContainer {
         if (result.status === 'fulfilled') {
           const health = result.value;
           if (health.status === 'unhealthy') {
-            console.warn(`⚠️ Service '${serviceName}' unhealthy: ${health.message}`);
+            logger.warn(`⚠️ Service '${serviceName}' unhealthy: ${health.message}`);
           }
         } else {
-          console.error(`❌ Health check failed for service '${serviceName}':`, result.reason);
+          logger.error(`❌ Health check failed for service '${serviceName}':`, result.reason);
         }
       });
     }, intervalMs);
@@ -146,8 +149,8 @@ class ServiceContainer {
     const disposePromises = Array.from(this.instances.values()).map(async (service) => {
       try {
         await service.dispose();
-      } catch (error) {
-        console.error('Error disposing service:', error);
+      } catch {
+        // Silently ignore disposal errors
       }
     });
 
@@ -175,20 +178,20 @@ export class ServiceOrchestrator {
    * Initialize and start all services
    */
   async start(): Promise<void> {
-    console.log('🚀 Starting service orchestration...');
-    
+    logger.log('🚀 Starting service orchestration...');
+
     try {
       await this.container.initializeAll();
       this.container.startHealthMonitoring();
-      
+
       const health = await this.container.getOverallHealth();
-      console.log(`✅ All services started. Healthy: ${health.healthy.length}, Unhealthy: ${health.unhealthy.length}`);
-      
+      logger.log(`✅ All services started. Healthy: ${health.healthy.length}, Unhealthy: ${health.unhealthy.length}`);
+
       if (health.unhealthy.length > 0) {
-        console.warn('⚠️ Unhealthy services:', health.unhealthy);
+        logger.warn('⚠️ Unhealthy services:', health.unhealthy);
       }
     } catch (error) {
-      console.error('❌ Failed to start services:', error);
+      logger.error('❌ Failed to start services:', error);
       throw error;
     }
   }
@@ -197,13 +200,13 @@ export class ServiceOrchestrator {
    * Gracefully stop all services
    */
   async stop(): Promise<void> {
-    console.log('🛑 Stopping service orchestration...');
-    
+    logger.log('🛑 Stopping service orchestration...');
+
     try {
       await this.container.disposeAll();
-      console.log('✅ All services stopped gracefully');
+      logger.log('✅ All services stopped gracefully');
     } catch (error) {
-      console.error('❌ Error stopping services:', error);
+      logger.error('❌ Error stopping services:', error);
       throw error;
     }
   }
@@ -219,17 +222,17 @@ export class ServiceOrchestrator {
    * Restart a specific service
    */
   async restartService(serviceName: string): Promise<void> {
-    console.log(`🔄 Restarting service '${serviceName}'...`);
-    
+    logger.log(`🔄 Restarting service '${serviceName}'...`);
+
     try {
       const service = await this.container.get(serviceName);
       await service.dispose();
-      
+
       // Re-initialize the service
       await service.initialize();
-      console.log(`✅ Service '${serviceName}' restarted successfully`);
+      logger.log(`✅ Service '${serviceName}' restarted successfully`);
     } catch (error) {
-      console.error(`❌ Failed to restart service '${serviceName}':`, error);
+      logger.error(`❌ Failed to restart service '${serviceName}':`, error);
       throw error;
     }
   }
