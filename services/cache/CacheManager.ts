@@ -5,7 +5,10 @@
  */
 
 import { ICacheManager, CacheConfig } from '../../types/serviceInterfaces';
+import { createScopedLogger } from '../../utils/logger';
 import { consolidatedCache } from '../consolidatedCacheManager';
+
+const logger = createScopedLogger('CacheManager');
 
 export class CacheManager implements ICacheManager {
   private config!: CacheConfig;
@@ -41,7 +44,7 @@ export class CacheManager implements ICacheManager {
       
       return retrieved === testValue;
     } catch (error) {
-      console.error('Cache health check failed:', error);
+      logger.error('Cache health check failed:', error);
       return false;
     }
   }
@@ -66,7 +69,7 @@ export class CacheManager implements ICacheManager {
       this.stats.misses++;
       return null;
     } catch (error) {
-      console.error(`Cache get failed for key ${key}:`, error);
+      logger.error(`Cache get failed for key ${key}:`, error);
       this.stats.misses++;
       return null;
     }
@@ -77,7 +80,7 @@ export class CacheManager implements ICacheManager {
       await consolidatedCache.set(key, value, 'api', tags);
       this.stats.sets++;
     } catch (error) {
-      console.error(`Cache set failed for key ${key}:`, error);
+      logger.error(`Cache set failed for key ${key}:`, error);
       throw error;
     }
   }
@@ -88,12 +91,12 @@ export class CacheManager implements ICacheManager {
       
       for (const patternToRemove of patterns) {
         // This would need to be implemented in the consolidated cache
-        console.log(`Invalidating cache pattern: ${patternToRemove}`);
+        logger.log(`Invalidating cache pattern: ${patternToRemove}`);
       }
       
       this.stats.invalidations += patterns.length;
     } catch (error) {
-      console.error(`Cache invalidation failed for pattern ${pattern}:`, error);
+      logger.error(`Cache invalidation failed for pattern ${pattern}:`, error);
       throw error;
     }
   }
@@ -101,10 +104,10 @@ export class CacheManager implements ICacheManager {
   async clear(): Promise<void> {
     try {
       // Clear all cache - this would need to be implemented in consolidated cache
-      console.log('Clearing all cache');
+      logger.log('Clearing all cache');
       this.stats.invalidations++;
     } catch (error) {
-      console.error('Cache clear failed:', error);
+      logger.error('Cache clear failed:', error);
       throw error;
     }
   }
@@ -141,11 +144,11 @@ export class CacheManager implements ICacheManager {
 
   async invalidateByTags(tags: string[]): Promise<void> {
     try {
-      console.log(`Invalidating cache by tags: ${tags.join(', ')}`);
+      logger.log(`Invalidating cache by tags: ${tags.join(', ')}`);
       // This would need to be implemented in the consolidated cache
       this.stats.invalidations += tags.length;
     } catch (error) {
-      console.error(`Cache tag invalidation failed:`, error);
+      logger.error(`Cache tag invalidation failed:`, error);
       throw error;
     }
   }
@@ -173,21 +176,21 @@ export class CacheManager implements ICacheManager {
   // Cache warming and optimization
 
   async warmCache<T>(entries: Record<string, T>, tags?: string[]): Promise<void> {
-    console.log(`Warming cache with ${Object.keys(entries).length} entries`);
+    logger.log(`Warming cache with ${Object.keys(entries).length} entries`);
     await this.setMultiple(entries, tags);
   }
 
   async cleanup(): Promise<{ cleaned: number; errors: number }> {
     try {
       // Cleanup expired entries and optimize cache
-      console.log('Running cache cleanup');
+      logger.log('Running cache cleanup');
       
       return {
         cleaned: 0, // Would need to be calculated from actual cache
         errors: 0,
       };
     } catch (error) {
-      console.error('Cache cleanup failed:', error);
+      logger.error('Cache cleanup failed:', error);
       return { cleaned: 0, errors: 1 };
     }
   }

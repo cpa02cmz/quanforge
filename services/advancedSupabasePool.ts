@@ -396,7 +396,7 @@ class AdvancedSupabasePool {
     let totalRequests = 0;
     const regionDistribution: Record<string, number> = {};
 
-    for (const [_poolId, pool] of this.pools) {
+    for (const [, pool] of this.pools) {
       for (const connection of pool) {
         totalConnections++;
         

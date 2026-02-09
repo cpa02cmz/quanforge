@@ -4,6 +4,9 @@
  */
 
 import { BaseCache, BaseCacheEntry, CacheConfig, CacheMetrics, CompressionUtils, CACHE_CONSTANTS } from './__init__';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('lruCache');
 
 export interface LRUCacheOptions extends CacheConfig {
   maxSize?: number;
@@ -52,7 +55,7 @@ export class OptimizedLRUCache<T = any> extends BaseCache<T> {
       try {
         return await CompressionUtils.decompress(entry.data, entry.compressed);
       } catch (error) {
-        console.warn(`Failed to decompress cache entry: ${key}`, error);
+        logger.warn(`Failed to decompress cache entry: ${key}`, error);
         this.cache.delete(key);
         this.recordMiss();
         return null;
@@ -87,7 +90,7 @@ export class OptimizedLRUCache<T = any> extends BaseCache<T> {
           this.metrics.compressions++;
         }
       } catch (error) {
-        console.warn('Compression failed:', error);
+        logger.warn('Compression failed:', error);
       }
     }
 
@@ -202,10 +205,10 @@ export class OptimizedLRUCache<T = any> extends BaseCache<T> {
       try {
         const cleaned = this.cleanup();
         if (cleaned > 0 && process.env.NODE_ENV === 'development') {
-          console.log(`LRU Cache cleanup: removed ${cleaned} expired entries`);
+          logger.log(`LRU Cache cleanup: removed ${cleaned} expired entries`);
         }
       } catch (error) {
-        console.warn('LRU Cache auto cleanup failed:', error);
+        logger.warn('LRU Cache auto cleanup failed:', error);
       }
     }, intervalMs);
   }
