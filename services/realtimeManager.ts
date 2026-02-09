@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Robot } from '../types';
+import { TIMEOUTS, BATCH_SIZES, RETRY } from '../constants';
 
 interface RealtimeSubscription {
   id: string;
@@ -38,9 +39,9 @@ class RealtimeManager {
   private client: SupabaseClient | null = null;
   private syncQueue: Array<SyncChange> = [];
   private config: SyncConfig = {
-    batchSize: 50,
-    syncInterval: 30000, // 30 seconds
-    maxRetries: 3,
+    batchSize: BATCH_SIZES.REALTIME_SYNC,
+    syncInterval: TIMEOUTS.REALTIME_SYNC_INTERVAL,
+    maxRetries: RETRY.REALTIME_MAX_RETRIES,
     conflictResolution: 'server',
   };
   private syncStatus: SyncStatus = {
@@ -181,7 +182,7 @@ class RealtimeManager {
 
     // Continue processing if there are more changes
     if (this.syncQueue.length > 0) {
-      setTimeout(() => this.processSyncQueue(), 1000);
+      setTimeout(() => this.processSyncQueue(), TIMEOUTS.RETRY_BASE_DELAY);
     }
   }
 
@@ -264,7 +265,7 @@ class RealtimeManager {
     
     if (subscription.retryCount <= this.config.maxRetries) {
       // Exponential backoff
-      const delay = Math.min(1000 * Math.pow(2, subscription.retryCount), 30000);
+      const delay = Math.min(RETRY.BACKOFF_BASE * Math.pow(2, subscription.retryCount), TIMEOUTS.MAX_RETRY_DELAY);
       setTimeout(() => {
         this.activateSubscription(subscription);
       }, delay);
