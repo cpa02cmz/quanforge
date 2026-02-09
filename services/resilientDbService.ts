@@ -4,7 +4,10 @@ import { withIntegrationResilience } from './integrationWrapper';
 import { IntegrationType } from './integrationResilience';
 import { databaseFallbacks } from './fallbackStrategies';
 import { storage } from '../utils/storage';
+import { createScopedLogger } from '../utils/logger';
 import type { Robot, AuditLog, RobotVersion } from '../types';
+
+const logger = createScopedLogger('ResilientDb');
 
 export const resilientDb = {
   async updateRobot(id: string, updates: any) {
@@ -16,6 +19,10 @@ export const resilientDb = {
         operationName: 'update_robot'
       }
     );
+
+    if (!result.success && result.error) {
+      logger.error('updateRobot failed:', result.error);
+    }
 
     return result.data;
   },
@@ -37,6 +44,10 @@ export const resilientDb = {
       }
     );
 
+    if (!result.success && result.error) {
+      logger.error('getRobots failed:', result.error);
+    }
+
     return result.data;
   },
 
@@ -49,6 +60,10 @@ export const resilientDb = {
         operationName: 'save_robot'
       }
     );
+
+    if (!result.success && result.error) {
+      logger.error('saveRobot failed:', result.error);
+    }
 
     return result.data;
   },
