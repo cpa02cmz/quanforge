@@ -7,8 +7,8 @@ const logger = createScopedLogger('ai-worker-manager');
 export interface WorkerTask {
   id: string;
   type: 'generation' | 'analysis';
-  data: any;
-  resolve: (result: any) => void;
+  data: unknown;
+  resolve: (result: unknown) => void;
   reject: (error: Error) => void;
   abortSignal?: AbortSignal;
   timeout?: number;
@@ -57,7 +57,7 @@ export class AIWorkerManager {
 
   async executeTask<T>(
     type: 'generation' | 'analysis',
-    data: any,
+    data: unknown,
     signal?: AbortSignal,
     timeout: number = AI_CONFIG.RETRY.MAX_DELAY
   ): Promise<T> {
@@ -71,7 +71,7 @@ export class AIWorkerManager {
         id: taskId,
         type,
         data,
-        resolve: resolve as (result: any) => void,
+        resolve: resolve as (result: unknown) => void,
         reject,
         abortSignal: signal,
         timeout
@@ -140,7 +140,7 @@ export class AIWorkerManager {
     this.handleTaskError(error);
   }
 
-  private handleTaskSuccess(result: any): void {
+  private handleTaskSuccess(result: unknown): void {
     if (!this.currentTask) return;
 
     const task = this.currentTask;

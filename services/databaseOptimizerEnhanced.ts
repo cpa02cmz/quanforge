@@ -2,6 +2,25 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Robot } from '../types';
 import { queryOptimizer } from './queryOptimizer';
 
+// Type definitions to replace 'any'
+interface QueryCacheEntry {
+  data: Robot[] | unknown;
+  timestamp: number;
+  ttl: number;
+}
+
+interface QueryResult<T> {
+  data: T[] | null;
+  error: Error | null;
+  metrics: QueryMetrics;
+}
+
+interface QueryMetrics {
+  executionTime: number;
+  cacheHit: boolean;
+  queryComplexity: number;
+}
+
 interface OptimizationConfig {
   enableQueryCaching: boolean;
   enableBatchOperations: boolean;
@@ -71,11 +90,11 @@ class DatabaseOptimizerEnhanced {
     cacheHit: boolean;
   }> = [];
 
-  private queryCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+  private queryCache = new Map<string, QueryCacheEntry>();
   private readonly DEFAULT_TTL = 600000; // 10 minutes
 
   // Generate query hash for caching
-  private generateQueryHash(obj: any): string {
+  private generateQueryHash(obj: Record<string, unknown> | string | number | boolean | null): string {
     const str = JSON.stringify(obj);
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -87,7 +106,7 @@ class DatabaseOptimizerEnhanced {
   }
 
   // Check cache
-  private async checkCache(queryHash: string): Promise<any> {
+  private async checkCache(queryHash: string): Promise<Robot[] | unknown | null> {
     const cached = this.queryCache.get(queryHash);
     if (cached && Date.now() - cached.timestamp < cached.ttl) {
       return cached.data;
@@ -96,7 +115,7 @@ class DatabaseOptimizerEnhanced {
   }
 
   // Set cache
-  private async setCache(queryHash: string, data: any): Promise<void> {
+  private async setCache(queryHash: string, data: Robot[] | unknown): Promise<void> {
     this.queryCache.set(queryHash, {
       data,
       timestamp: Date.now(),
@@ -110,7 +129,7 @@ class DatabaseOptimizerEnhanced {
   async searchRobotsEnhanced(
     client: SupabaseClient,
     params: SearchParams
-  ): Promise<{ data: Robot[] | null; error: any; metrics: any }> {
+  ): Promise<QueryResult<Robot>> {
     const startTime = performance.now();
     
     const queryHash = this.generateQueryHash({
@@ -169,8 +188,8 @@ class DatabaseOptimizerEnhanced {
         optimizationLevel: 'advanced'
       });
       
-      return { data, error: null, metrics: { executionTime, cacheHit: false } };
-    } catch (error: any) {
+      return { data, error: null, metrics: { executionTime, cacheHit: false, queryComplexity: 0 } };
+    } catch (error: unknown) {
       const executionTime = performance.now() - startTime;
       
       this.updateMetrics({
@@ -181,7 +200,8 @@ class DatabaseOptimizerEnhanced {
         optimizationLevel: 'basic'
       });
       
-      return { data: null, error, metrics: { executionTime, cacheHit: false } };
+      const typedError = error instanceof Error ? error : new Error(String(error));
+      return { data: null, error: typedError, metrics: { executionTime, cacheHit: false, queryComplexity: 0 } };
     }
   }
 

@@ -3,6 +3,7 @@
 
 import { Message, StrategyParams } from '../types';
 import { createScopedLogger } from '../utils/logger';
+import { AI_CONFIG } from '../constants/config';
 
 const logger = createScopedLogger('aiWorkerManager');
 
@@ -12,20 +13,20 @@ type WorkerResponseType = 'CONTEXT_BUILT' | 'RESPONSE_PROCESSED' | 'CODE_EXTRACT
 interface WorkerMessage {
   type: WorkerMessageType;
   id: string;
-  data: any;
+  data: unknown;
 }
 
 interface WorkerResponse {
   type: WorkerResponseType;
   id: string;
-  data?: any;
+  data?: unknown;
   error?: string;
 }
 
 interface PendingRequest {
-  resolve: (value: any) => void;
+  resolve: (value: unknown) => void;
   reject: (error: Error) => void;
-  timeout: ReturnType<typeof setInterval>;
+  timeout: ReturnType<typeof setTimeout>;
 }
 
 class AIWorkerManager {
@@ -117,7 +118,7 @@ class AIWorkerManager {
     }
   }
 
-  private async sendMessage<T>(type: WorkerMessageType, data: any, timeout = 30000): Promise<T> {
+  private async sendMessage<T>(type: WorkerMessageType, data: unknown, timeout = AI_CONFIG.WORKER_TIMEOUTS.DEFAULT): Promise<T> {
     await this.initializeWorker();
 
     if (!this.worker) {
@@ -149,7 +150,7 @@ class AIWorkerManager {
       const result = await this.sendMessage<{ context: string }>(
         'BUILD_CONTEXT',
         { prompt, currentCode, strategyParams, history },
-        10000 // 10 second timeout for context building
+        AI_CONFIG.WORKER_TIMEOUTS.BUILD_CONTEXT
       );
       return result.context;
     } catch (error) {
@@ -163,7 +164,7 @@ class AIWorkerManager {
       const result = await this.sendMessage<{ thinking?: string; content: string }>(
         'PROCESS_RESPONSE',
         { rawResponse },
-        5000 // 5 second timeout for response processing
+        AI_CONFIG.WORKER_TIMEOUTS.PROCESS_RESPONSE
       );
       return result;
     } catch (error) {
@@ -177,7 +178,7 @@ class AIWorkerManager {
       const result = await this.sendMessage<{ code: string | null }>(
         'EXTRACT_CODE',
         { text },
-        3000 // 3 second timeout for code extraction
+        AI_CONFIG.WORKER_TIMEOUTS.EXTRACT_CODE
       );
       return result.code;
     } catch (error) {
@@ -191,7 +192,7 @@ class AIWorkerManager {
       const result = await this.sendMessage<{ formatted: string }>(
         'FORMAT_MESSAGE',
         { rawText, hasCode },
-        3000 // 3 second timeout for message formatting
+        AI_CONFIG.WORKER_TIMEOUTS.FORMAT_MESSAGE
       );
       return result.formatted;
     } catch (error) {
@@ -206,7 +207,7 @@ class AIWorkerManager {
       const result = await this.sendMessage<{ response: string }>(
         'GENERATE_CONTENT',
         { fullPrompt },
-        60000 // 60 second timeout for content generation
+        AI_CONFIG.WORKER_TIMEOUTS.GENERATE_CONTENT
       );
       return result;
     } catch (error) {
@@ -215,12 +216,12 @@ class AIWorkerManager {
     }
   }
 
-  async parseGeminiResponse(response: string): Promise<{ code?: string; analysis?: any; thinking?: string }> {
+  async parseGeminiResponse(response: string): Promise<{ code?: string; analysis?: unknown; thinking?: string }> {
     try {
-      const result = await this.sendMessage<{ code?: string; analysis?: any; thinking?: string }>(
+      const result = await this.sendMessage<{ code?: string; analysis?: unknown; thinking?: string }>(
         'PARSE_RESPONSE',
         { response },
-        5000 // 5 second timeout for response parsing
+        AI_CONFIG.WORKER_TIMEOUTS.PARSE_RESPONSE
       );
       return result;
     } catch (error) {
@@ -267,7 +268,7 @@ class AIWorkerManager {
   // Health check
   async healthCheck(): Promise<boolean> {
     try {
-      await this.sendMessage('BUILD_CONTEXT', { prompt: 'test', history: [] }, 2000);
+      await this.sendMessage('BUILD_CONTEXT', { prompt: 'test', history: [] }, AI_CONFIG.WORKER_TIMEOUTS.HEALTH_CHECK);
       return true;
     } catch (error) {
       logger.warn('Worker health check failed:', error);
