@@ -33,7 +33,7 @@ const ROBOTS_KEY = 'mock_robots';
 /**
  * Safe JSON parsing with security validation
  */
-const safeParse = (data: string | null, fallback: any) => {
+const safeParse = <T>(data: string | null, fallback: T): T => {
   if (!data) return fallback;
   try {
     return securityManager.safeJSONParse(data) || fallback;
@@ -49,12 +49,13 @@ const safeParse = (data: string | null, fallback: any) => {
 const trySaveToStorage = (key: string, value: string) => {
   try {
     localStorage.setItem(key, value);
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const error = e as { name?: string; code?: number };
     if (
-      e.name === 'QuotaExceededError' || 
-      e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-      e.code === 22 ||
-      e.code === 1014
+      error.name === 'QuotaExceededError' || 
+      error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+      error.code === 22 ||
+      error.code === 1014
     ) {
       logger.warn('Storage quota exceeded, attempting cleanup');
       try {
@@ -148,20 +149,21 @@ class CoreSupabaseService {
     while (this.retryCount <= RETRY_CONFIG.maxRetries) {
       try {
         return await operation();
-      } catch (error: any) {
+      } catch (error: unknown) {
         this.retryCount++;
+        const err = error instanceof Error ? error : new Error(String(error));
 
         if (this.retryCount > RETRY_CONFIG.maxRetries) {
-          logger.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, error);
-          throw error;
+          logger.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, err);
+          throw err;
         }
 
         // Calculate delay with exponential backoff and jitter
         const baseDelay = RETRY_CONFIG.retryDelay * Math.pow(RETRY_CONFIG.backoffMultiplier, this.retryCount - 1);
-        const jitter = RETRY_CONFIG.jitter ? Math.random() * 0.1 * baseDelay : 0;
-        const delay = Math.min(baseDelay + jitter, RETRY_CONFIG.maxDelay);
+        const jitterDelay = RETRY_CONFIG.jitter ? Math.random() * 0.1 * baseDelay : 0;
+        const delay = Math.min(baseDelay + jitterDelay, RETRY_CONFIG.maxDelay);
 
-        logger.warn(`Operation ${operationName} failed, retry ${this.retryCount}/${RETRY_CONFIG.maxRetries} in ${delay}ms:`, error);
+        logger.warn(`Operation ${operationName} failed, retry ${this.retryCount}/${RETRY_CONFIG.maxRetries} in ${delay}ms:`, err);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }

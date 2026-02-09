@@ -24,7 +24,7 @@ export const STORAGE_KEYS = {
 } as const;
 
 // Helper for safe JSON parsing with enhanced security
-export const safeParse = (data: string | null, fallback: any): any => {
+export const safeParse = <T>(data: string | null, fallback: T): T => {
     if (!data) return fallback;
     try {
         // Import dynamically to avoid circular dependencies
@@ -40,12 +40,13 @@ export const safeParse = (data: string | null, fallback: any): any => {
 export const trySaveToStorage = (key: string, value: string): void => {
     try {
         localStorage.setItem(key, value);
-    } catch (e: any) {
+    } catch (e: unknown) {
+        const error = e as { name?: string; code?: number };
         if (
-            e.name === 'QuotaExceededError' || 
-            e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-            e.code === 22 ||
-            e.code === 1014
+            error.name === 'QuotaExceededError' || 
+            error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+            error.code === 22 ||
+            error.code === 1014
         ) {
             throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
         }
@@ -66,21 +67,28 @@ export const generateUUID = (): string => {
 };
 
 // Robot validation helper
-export const isValidRobot = (r: any): r is Robot => {
+export const isValidRobot = (r: unknown): r is Robot => {
     return (
         typeof r === 'object' &&
         r !== null &&
-        typeof r.name === 'string' &&
-        typeof r.code === 'string'
+        'name' in r &&
+        'code' in r &&
+        typeof (r as Record<string, unknown>).name === 'string' &&
+        typeof (r as Record<string, unknown>).code === 'string'
     );
 };
 
 // Determine if an error should not be retried
-export const shouldNotRetry = (error: any): boolean => {
+interface RetryError {
+    status?: number;
+    message?: string;
+}
+
+export const shouldNotRetry = (error: RetryError | null | undefined): boolean => {
     if (!error) return false;
     
     // Don't retry client errors (4xx)
-    if (error.status >= 400 && error.status < 500) {
+    if (error.status && error.status >= 400 && error.status < 500) {
         return true;
     }
     
