@@ -1,7 +1,8 @@
 
-import React, { useState, useEffect, memo, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, memo, useMemo, lazy, Suspense, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { StrategyConfig } from '../components/StrategyConfig';
+import { SaveButton } from '../components/SaveButton';
 import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
 import { useTranslation } from '../services/i18n';
 import { AdvancedSEO } from '../utils/advancedSEO';
@@ -35,7 +36,6 @@ export const Generator: React.FC = memo(() => {
     loadingProgress,
     robotName,
     analysis,
-    saving,
     strategyParams,
     mobileView,
     backtestSettings,
@@ -61,31 +61,47 @@ export const Generator: React.FC = memo(() => {
    // Local UI State
    const [activeMainTab, setActiveMainTab] = useState<'editor' | 'analysis' | 'simulation'>('editor');
    const [activeSidebarTab, setActiveSidebarTab] = useState<'chat' | 'settings'>('chat');
+   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'success'>('idle');
    
-   // Keyboard shortcuts
-   useEffect(() => {
-     const handleKeyDown = (e: KeyboardEvent) => {
-       // Ctrl/Cmd + S to save
-       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-         e.preventDefault();
-         handleSave();
-       }
-       
-       // Ctrl/Cmd + Enter to send message if on chat tab
-       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && activeSidebarTab === 'chat') {
-         // We can't trigger the chat send directly from here
-         // This would require accessing the ChatInterface's send function
-       }
-       
-       // Escape to stop generation
-       if (e.key === 'Escape' && isLoading) {
-         stopGeneration();
-       }
-     };
-     
-     window.addEventListener('keydown', handleKeyDown);
-     return () => window.removeEventListener('keydown', handleKeyDown);
-   }, [handleSave, isLoading, stopGeneration]);
+   // Enhanced save handler with success state
+   const handleSaveWithState = useCallback(async () => {
+     setSaveState('saving');
+     try {
+       await handleSave();
+       setSaveState('success');
+       // Reset to idle after showing success
+       setTimeout(() => {
+         setSaveState('idle');
+       }, 2000);
+     } catch (error) {
+       setSaveState('idle');
+     }
+   }, [handleSave]);
+   
+    // Keyboard shortcuts
+    useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        // Ctrl/Cmd + S to save
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+          e.preventDefault();
+          handleSaveWithState();
+        }
+        
+        // Ctrl/Cmd + Enter to send message if on chat tab
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && activeSidebarTab === 'chat') {
+          // We can't trigger the chat send directly from here
+          // This would require accessing the ChatInterface's send function
+        }
+        
+        // Escape to stop generation
+        if (e.key === 'Escape' && isLoading) {
+          stopGeneration();
+        }
+      };
+      
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [handleSaveWithState, isLoading, stopGeneration]);
    
    const onApplySettings = async () => {
        setActiveMainTab('editor'); // Switch to editor to see changes
@@ -159,13 +175,16 @@ export const Generator: React.FC = memo(() => {
                 className="bg-transparent text-white font-bold text-lg border-none focus:ring-0 outline-none w-full placeholder-gray-500"
                 placeholder={t('gen_placeholder_name')}
             />
-             <button 
-                onClick={handleSave}
-                disabled={saving || !code}
-                className="ml-2 px-3 py-1.5 text-xs font-medium bg-brand-600 hover:bg-brand-500 text-white rounded transition-colors disabled:opacity-50 whitespace-nowrap"
-            >
-                {saving ? t('gen_saving') : t('gen_save')}
-            </button>
+             <SaveButton
+                onClick={handleSaveWithState}
+                state={saveState}
+                disabled={!code}
+                idleText={t('gen_save')}
+                savingText={t('gen_saving')}
+                successText={t('gen_saved') || 'Saved!'}
+                className="ml-2 whitespace-nowrap"
+                aria-label="Save trading robot"
+            />
         </div>
         
         {/* Loading Progress Indicator */}
