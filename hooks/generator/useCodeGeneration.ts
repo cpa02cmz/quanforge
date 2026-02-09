@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react';
-import { Message, MessageRole } from '../../types';
+import { Message, MessageRole, StrategyParams } from '../../types';
 import { createScopedLogger } from '../../utils/logger';
 import { loadGeminiService } from '../../services/aiServiceLoader';
 import { ValidationService } from '../../utils/validation';
@@ -8,7 +8,7 @@ const logger = createScopedLogger('useCodeGeneration');
 
 interface UseCodeGenerationProps {
   code: string;
-  strategyParams: any;
+  strategyParams: StrategyParams;
   messages: Message[];
   processAIResponse: (response: { content: string; thinking?: string }) => Promise<void>;
   setLoading: (loading: boolean) => void;
