@@ -504,6 +504,8 @@ export const useSEOAnalytics = ({ pageUrl, pageTitle, pageType = 'other', enable
 class SEOMonitorService {
   private metrics: Partial<SEOMetrics> = {};
   private auditStartTime: number = 0; // Used for audit duration tracking
+  private observers: PerformanceObserver[] = [];
+  private eventListeners: { event: string; handler: EventListener; options?: AddEventListenerOptions }[] = [];
 
   constructor() {
     this.initializePerformanceTracking();
@@ -546,6 +548,7 @@ class SEOMonitorService {
       this.metrics.cumulativeLayoutShift = clsValue;
     });
     clsObserver.observe({ entryTypes: ['layout-shift'] });
+    this.observers.push(clsObserver);
 
     // Track FID
     const fidObserver = new PerformanceObserver((list) => {
@@ -554,6 +557,7 @@ class SEOMonitorService {
       }
     });
     fidObserver.observe({ entryTypes: ['first-input'] });
+    this.observers.push(fidObserver);
 
     // Track LCP
     const lcpObserver = new PerformanceObserver((list) => {
@@ -562,6 +566,7 @@ class SEOMonitorService {
       this.metrics.largestContentfulPaint = lastEntry?.startTime;
     });
     lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+    this.observers.push(lcpObserver);
   }
 
   private trackUserInteractions(): void {
@@ -576,8 +581,38 @@ class SEOMonitorService {
 
     // Track various user interactions
     ['click', 'scroll', 'keypress', 'touchstart'].forEach(event => {
-      window.addEventListener(event, trackInteraction, { passive: true });
+      const options = { passive: true };
+      window.addEventListener(event, trackInteraction, options);
+      this.eventListeners.push({ event, handler: trackInteraction, options });
     });
+  }
+
+  /**
+   * Clean up all observers and event listeners to prevent memory leaks.
+   * Call this method when the service is no longer needed.
+   */
+  public destroy(): void {
+    // Disconnect all PerformanceObserver instances
+    this.observers.forEach(observer => {
+      try {
+        observer.disconnect();
+      } catch (e) {
+        // Observer may already be disconnected
+      }
+    });
+    this.observers = [];
+
+    // Remove all event listeners
+    if (typeof window !== 'undefined') {
+      this.eventListeners.forEach(({ event, handler, options }) => {
+        try {
+          window.removeEventListener(event, handler, options);
+        } catch (e) {
+          // Listener may already be removed
+        }
+      });
+    }
+    this.eventListeners = [];
   }
 
   private calculateTimeToInteractive(navigation: PerformanceNavigationTiming): number {
