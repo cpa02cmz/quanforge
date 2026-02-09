@@ -315,6 +315,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
         icon: '🚀',
         articles: [
           {
+            id: 'welcome-to-quantforge-ai',
             title: 'Welcome to QuantForge AI',
             content: `QuantForge AI is a powerful tool designed to bridge the gap between trading ideas and executable MQL5 code. 
             
@@ -327,6 +328,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     - **Cloud Sync:** Save your robots to the cloud.`
           },
           {
+            id: 'how-to-generate-a-robot',
             title: 'How to Generate a Robot',
             content: `1. Go to the **New Robot** page via the sidebar.
     2. In the **Chat Panel** (left), type your strategy. Example: *"Create a strategy that buys when Price is above EMA 200 and RSI is below 30."*
@@ -342,12 +344,14 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
         icon: '💻',
         articles: [
           {
+            id: 'oninit-and-ontick',
             title: 'OnInit() and OnTick()',
             content: `**OnInit()**: This function runs **once** when you drag the robot onto the chart. It's used to verify settings, create indicator handles, and initialize variables. If this fails, the robot won't start.
     
     **OnTick()**: This is the heartbeat of your robot. It runs **every time the price changes** (a new tick arrives). The logic inside here checks conditions and executes trades.`
           },
           {
+            id: 'inputs-and-variables',
             title: 'Inputs and Variables',
             content: `**input**: Variables starting with \`input\` are visible in the MetaTrader settings window. Users can change these without editing code (e.g., LotSize, StopLoss).
     
@@ -357,6 +361,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     - \`bool\`: True/False switches (e.g., UseTrailingStop = true).`
           },
           {
+            id: 'handles-and-buffers',
             title: 'Handles and Buffers',
             content: `In MQL5, indicators (like RSI or MA) work differently than MQL4.
     
@@ -371,6 +376,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
         icon: '📈',
         articles: [
           {
+            id: 'moving-averages-sma-ema',
             title: 'Moving Averages (SMA/EMA)',
             content: `**SMA (Simple Moving Average)**: The average price over X periods.
     **EMA (Exponential Moving Average)**: Gives more weight to recent prices, reacting faster to trends.
@@ -378,6 +384,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     *Usage*: Often used to determine trend direction. "Price above EMA 200" usually implies an uptrend.`
           },
           {
+            id: 'rsi-relative-strength-index',
             title: 'RSI (Relative Strength Index)',
             content: `A momentum oscillator that measures the speed and change of price movements. Range: 0 to 100.
     
@@ -385,6 +392,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     - **Oversold**: Usually < 30 (Potential Buy signal).`
           },
           {
+            id: 'macd',
             title: 'MACD',
             content: `**Moving Average Convergence Divergence**. A trend-following momentum indicator.
     
@@ -395,6 +403,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     *Signal*: When MACD crosses above Signal, it's bullish. Below is bearish.`
           },
           {
+            id: 'bollinger-bands',
             title: 'Bollinger Bands',
             content: `A volatility indicator consisting of a middle band (SMA) and two outer bands (Standard Deviations).
     
@@ -403,6 +412,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     - Price touching the upper band often indicates overbought conditions.`
           },
           {
+            id: 'atr-average-true-range',
             title: 'ATR (Average True Range)',
             content: `Measures market **volatility**. It does NOT indicate direction.
     
@@ -416,6 +426,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
         icon: '📚',
         articles: [
           {
+            id: 'pips-vs-points',
             title: 'Pips vs Points',
             content: `**Pip**: The standard unit of movement in Forex. For EURUSD, 1 Pip is 0.0001.
     **Point**: The smallest price change supported by the broker. Most brokers use "5-digit pricing", meaning 1 Pip = 10 Points.
@@ -423,6 +434,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     *QuantForge AI inputs are in Pips for convenience, but the generated code automatically converts them to Points.*`
           },
           {
+            id: 'ask-bid-and-spread',
             title: 'Ask, Bid, and Spread',
             content: `**Bid**: The price you SELL at.
     **Ask**: The price you BUY at.
@@ -431,12 +443,14 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     *Note*: Buy orders open at Ask and close at Bid. Sell orders open at Bid and close at Ask.`
           },
           {
+            id: 'magic-number',
             title: 'Magic Number',
             content: `A unique integer ID assigned to every trade opened by a robot. 
             
     This allows the robot to distinguish its own trades from manual trades or trades opened by other robots running on the same account.`
           },
           {
+            id: 'lot-size-and-money-management',
             title: 'Lot Size & Money Management',
             content: `**Lot**: The volume of the trade.
     - 1.00 Standard Lot = 100,000 units.
@@ -453,6 +467,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
         icon: '🔌',
         articles: [
             {
+                id: 'market-data-sources',
                 title: 'Market Data Sources',
                 content: `QuantForge uses real-time WebSockets to provide live price data.
                 
@@ -460,6 +475,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     2. **Forex/Gold (Twelve Data)**: Requires a free API Key. Used for pairs with '/' or XAUUSD.`
             },
             {
+                id: 'how-to-get-twelve-data-key',
                 title: 'How to get Twelve Data Key',
                 content: `1. Go to **twelvedata.com** and sign up.
     2. Copy your API Key from their dashboard.
@@ -467,6 +483,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     4. Paste the key and save.`
             },
             {
+                id: 'troubleshooting-disconnected',
                 title: 'Troubleshooting "Disconnected"',
                 content: `If the Market Ticker shows "Disconnected" or "Data Unavailable":
     - **Crypto**: Check your internet connection.
@@ -480,6 +497,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
         icon: '💡',
         articles: [
           {
+            id: 'custom-ai-instructions',
             title: 'Custom AI Instructions',
             content: `You can customize how the AI writes code in **AI Settings**.
     
@@ -489,6 +507,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     - *"Prioritize safety checks over execution speed"*`
           },
           {
+            id: 'optimizing-prompts',
             title: 'Optimizing Prompts',
             content: `To get the best results, be specific:
     
@@ -496,6 +515,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     **Good:** "Create a trend following bot for EURUSD H1. Use EMA(50) and EMA(200). Buy when 50 crosses above 200. Close trade when price falls below EMA(50). Risk 1% per trade."`
           },
           {
+            id: 'importing-exporting',
             title: 'Importing/Exporting',
             content: `**Database**: Go to Database Settings to backup all your robots to a JSON file.
     **Config**: In the Strategy Settings panel, use "Copy JSON" to share your specific parameter configuration with others.`
@@ -510,6 +530,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
         icon: '🚀',
         articles: [
           {
+            id: 'selamat-datang-di-quantforge-ai',
             title: 'Selamat Datang di QuantForge AI',
             content: `QuantForge AI adalah alat canggih yang dirancang untuk menjembatani ide trading menjadi kode MQL5 yang dapat dieksekusi.
             
@@ -522,6 +543,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     - **Cloud Sync:** Simpan robot Anda ke cloud.`
           },
           {
+            id: 'cara-membuat-robot',
             title: 'Cara Membuat Robot',
             content: `1. Pergi ke halaman **Robot Baru** melalui sidebar.
     2. Di **Panel Obrolan** (kiri), ketik strategi Anda. Contoh: *"Buat strategi buy saat Harga di atas EMA 200 dan RSI di bawah 30."*
@@ -537,12 +559,14 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
         icon: '💻',
         articles: [
           {
+            id: 'oninit-dan-ontick',
             title: 'OnInit() dan OnTick()',
             content: `**OnInit()**: Fungsi ini berjalan **sekali** saat Anda memasang robot ke grafik. Digunakan untuk memverifikasi pengaturan, membuat handle indikator, dan inisialisasi variabel. Jika gagal, robot tidak akan mulai.
     
     **OnTick()**: Ini adalah jantung robot Anda. Berjalan **setiap kali harga berubah** (tick baru masuk). Logika di dalamnya memeriksa kondisi dan mengeksekusi trading.`
           },
           {
+            id: 'inputs-dan-variabel',
             title: 'Inputs dan Variabel',
             content: `**input**: Variabel yang dimulai dengan \`input\` terlihat di jendela pengaturan MetaTrader. Pengguna dapat mengubahnya tanpa mengedit kode (contoh: LotSize, StopLoss).
     
@@ -559,6 +583,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
         icon: '📈',
         articles: [
           {
+            id: 'moving-averages-sma-ema-id',
             title: 'Moving Averages (SMA/EMA)',
             content: `**SMA (Simple Moving Average)**: Harga rata-rata selama X periode.
     **EMA (Exponential Moving Average)**: Memberikan bobot lebih pada harga terbaru, bereaksi lebih cepat terhadap tren.
@@ -566,6 +591,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     *Penggunaan*: Sering digunakan untuk menentukan arah tren. "Harga di atas EMA 200" biasanya menyiratkan tren naik.`
           },
           {
+            id: 'rsi-relative-strength-index-id',
             title: 'RSI (Relative Strength Index)',
             content: `Osilator momentum yang mengukur kecepatan dan perubahan pergerakan harga. Rentang: 0 hingga 100.
     
@@ -573,6 +599,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     - **Oversold**: Biasanya < 30 (Potensi sinyal Beli).`
           },
           {
+            id: 'macd-id',
             title: 'MACD',
             content: `**Moving Average Convergence Divergence**. Indikator momentum mengikuti tren.
     
@@ -588,6 +615,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
         icon: '📚',
         articles: [
           {
+            id: 'pips-vs-points-id',
             title: 'Pips vs Points',
             content: `**Pip**: Unit standar pergerakan di Forex. Untuk EURUSD, 1 Pip adalah 0.0001.
     **Point**: Perubahan harga terkecil yang didukung broker. Kebanyakan broker menggunakan "5 digit", artinya 1 Pip = 10 Points.
@@ -595,6 +623,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     *Input QuantForge AI menggunakan Pip untuk kenyamanan, tetapi kode yang dihasilkan otomatis mengonversinya ke Points.*`
           },
           {
+            id: 'ask-bid-dan-spread',
             title: 'Ask, Bid, dan Spread',
             content: `**Bid**: Harga saat Anda MENJUAL (Sell).
     **Ask**: Harga saat Anda MEMBELI (Buy).
@@ -603,6 +632,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     *Catatan*: Order Buy dibuka di Ask dan ditutup di Bid. Order Sell dibuka di Bid dan ditutup di Ask.`
           },
           {
+            id: 'magic-number-id',
             title: 'Magic Number',
             content: `ID integer unik yang diberikan untuk setiap trading yang dibuka oleh robot. 
             
@@ -616,6 +646,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
         icon: '🔌',
         articles: [
             {
+                id: 'sumber-data-pasar',
                 title: 'Sumber Data Pasar',
                 content: `QuantForge menggunakan WebSocket real-time untuk data harga langsung.
                 
@@ -623,6 +654,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     2. **Forex/Emas (Twelve Data)**: Memerlukan API Key gratis. Digunakan untuk pasangan dengan '/' atau XAUUSD.`
             },
             {
+                id: 'cara-mendapatkan-key-twelve-data',
                 title: 'Cara mendapatkan Key Twelve Data',
                 content: `1. Kunjungi **twelvedata.com** dan daftar.
     2. Salin API Key dari dasbor mereka.
@@ -630,6 +662,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     4. Tempelkan kunci dan simpan.`
             },
             {
+                id: 'mengatasi-terputus',
                 title: 'Mengatasi "Terputus"',
                 content: `Jika Ticker Pasar menampilkan "Terputus" atau "Data Tidak Tersedia":
     - **Crypto**: Periksa koneksi internet Anda.
@@ -643,6 +676,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
         icon: '💡',
         articles: [
           {
+            id: 'instruksi-ai-kustom',
             title: 'Instruksi AI Kustom',
             content: `Anda dapat menyesuaikan cara AI menulis kode di **Pengaturan AI**.
     
@@ -651,6 +685,7 @@ export const WIKI_CONTENT: Record<Language, WikiSection[]> = {
     - *"Gunakan penamaan variabel ketat dengan awalan 'm_'"*`
           },
           {
+            id: 'impor-ekspor',
             title: 'Impor/Ekspor',
             content: `**Database**: Buka Pengaturan Database untuk backup semua robot ke file JSON.
     **Config**: Di panel Pengaturan Strategi, gunakan "Salin JSON" untuk membagikan konfigurasi parameter spesifik.`
