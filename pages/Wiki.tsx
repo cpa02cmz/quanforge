@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo, useCallback, useMemo } from 'react';
 import { WIKI_CONTENT } from '../constants';
 import { useTranslation } from '../services/i18n';
 import { SEOHead, structuredDataTemplates } from '../utils/seoUnified';
 import type { WikiSection } from '../types';
 
-export const Wiki: React.FC = () => {
+export const Wiki: React.FC = memo(() => {
   const { language } = useTranslation();
   
   // Dynamic content based on language
@@ -19,8 +19,8 @@ export const Wiki: React.FC = () => {
       setActiveSectionId(content[0]?.id || 'getting-started');
   }, [language, content]);
 
-  // Helper to highlight text if searching
-  const highlightText = (text: string, highlight: string) => {
+  // Helper to highlight text if searching - memoized with useCallback
+  const highlightText = useCallback((text: string, highlight: string) => {
     if (!highlight.trim()) {
       return <span>{text}</span>;
     }
@@ -33,26 +33,28 @@ export const Wiki: React.FC = () => {
         )}
       </span>
     );
-  };
+  }, []);
 
-  // Filter content based on search
-  const filteredSections = content.map(section => {
-    const matchingArticles = section.articles.filter(article => 
-      article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.content.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    
-    // Also include the section if the section title matches
-    const titleMatch = section.title.toLowerCase().includes(searchTerm.toLowerCase());
+  // Filter content based on search - memoized with useMemo
+  const filteredSections = useMemo(() => {
+    return content.map(section => {
+      const matchingArticles = section.articles.filter(article => 
+        article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        article.content.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      
+      // Also include the section if the section title matches
+      const titleMatch = section.title.toLowerCase().includes(searchTerm.toLowerCase());
 
-    if (titleMatch || matchingArticles.length > 0) {
-      return {
-        ...section,
-        articles: matchingArticles.length > 0 ? matchingArticles : section.articles
-      };
-    }
-    return null;
-  }).filter(Boolean) as WikiSection[];
+      if (titleMatch || matchingArticles.length > 0) {
+        return {
+          ...section,
+          articles: matchingArticles.length > 0 ? matchingArticles : section.articles
+        };
+      }
+      return null;
+    }).filter(Boolean) as WikiSection[];
+  }, [content, searchTerm]);
 
   const activeSection = content.find(s => s.id === activeSectionId);
 
@@ -222,8 +224,8 @@ structuredData={[
                   </header>
 
                   <div className="space-y-10">
-                      {activeSection.articles.map((article, idx) => (
-                          <section key={idx} className="bg-dark-surface border border-dark-border rounded-xl p-6 shadow-sm">
+                      {activeSection.articles.map((article) => (
+                          <section key={article.id} className="bg-dark-surface border border-dark-border rounded-xl p-6 shadow-sm">
                               <h3 className="text-xl font-bold text-brand-400 mb-4">{highlightText(article.title, searchTerm)}</h3>
                               <div className="text-gray-300 leading-relaxed text-sm md:text-base">
                                   {renderContent(article.content)}
@@ -241,4 +243,4 @@ structuredData={[
       </div>
     </>
   );
-};
+});

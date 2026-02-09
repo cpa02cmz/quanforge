@@ -115,6 +115,7 @@ export interface DBSettings {
 }
 
 export interface WikiArticle {
+  id: string;
   title: string;
   content: string;
 }
