@@ -51,8 +51,8 @@ const CACHE_CONFIG = {
 };
 
 // Cache entry metadata
-interface CacheEntry {
-  data: any;
+interface CacheEntry<T = unknown> {
+  data: T;
   metadata: {
     createdAt: number;
     expiresAt: number;
@@ -280,7 +280,7 @@ class APIResponseCache {
   }
 
   // Set cached response
-  async set(endpoint: string, method: string, data: any, params?: Record<string, any>, headers?: Record<string, string>, customTTL?: number): Promise<boolean> {
+  async set<T = unknown>(endpoint: string, method: string, data: T, params?: Record<string, string | number | boolean>, headers?: Record<string, string>, customTTL?: number): Promise<boolean> {
     const cacheKey = this.generateCacheKey(endpoint, method, params, headers);
     const ttl = customTTL || this.getTTL(endpoint, method);
     
@@ -524,12 +524,13 @@ const apiCache = new APIResponseCache();
 // Export service with convenient methods
 export const apiResponseCache = {
   // Get cached response
-  async get(endpoint: string, method: string = 'GET', params?: Record<string, any>, headers?: Record<string, string>) {
-    return await apiCache.get(endpoint, method, params, headers);
+  async get<T = unknown>(endpoint: string, method: string = 'GET', params?: Record<string, string | number | boolean>, headers?: Record<string, string>): Promise<T | null> {
+    const entry = await apiCache.get(endpoint, method, params, headers);
+    return entry?.data as T ?? null;
   },
 
   // Set cached response
-  async set(endpoint: string, method: string = 'GET', data: any, params?: Record<string, any>, headers?: Record<string, string>, ttl?: number) {
+  async set<T = unknown>(endpoint: string, method: string = 'GET', data: T, params?: Record<string, string | number | boolean>, headers?: Record<string, string>, ttl?: number): Promise<boolean> {
     return await apiCache.set(endpoint, method, data, params, headers, ttl);
   },
 
