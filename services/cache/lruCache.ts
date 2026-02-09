@@ -3,7 +3,7 @@
  * Replaces OptimizedLRUCache with enhanced memory management and performance
  */
 
-import { BaseCache, BaseCacheEntry, CacheConfig, CompressionUtils, CACHE_CONSTANTS } from './__init__';
+import { BaseCache, BaseCacheEntry, CacheConfig, CacheMetrics, CompressionUtils, CACHE_CONSTANTS } from './__init__';
 import { createScopedLogger } from '../../utils/logger';
 
 const logger = createScopedLogger('lruCache');
@@ -72,6 +72,7 @@ export class OptimizedLRUCache<T = any> extends BaseCache<T> {
     }
 
     const ttl = options.ttl || this.getTTLForEntry(key, data);
+    const _expires = Date.now() + ttl;
 
     // Process data (compression if needed)
     let processedData: any = data;

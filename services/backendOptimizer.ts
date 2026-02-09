@@ -272,7 +272,7 @@ class BackendOptimizer {
           errorRate: dbMetrics.errorRate,
         }
       };
-    } catch {
+    } catch (_error) {
       return {
         healthy: false,
         responseTime: Date.now() - startTime,
@@ -394,7 +394,7 @@ class BackendOptimizer {
         try {
           const { data } = await client.from('user_settings').select('*').limit(1);
           return data;
-        } catch {
+        } catch (_e) {
           return null;
         }
       }),
@@ -404,7 +404,7 @@ class BackendOptimizer {
         try {
           const { data } = await client.from('robot_configs').select('*').limit(5);
           return data;
-        } catch {
+        } catch (_e) {
           return null;
         }
       }),
@@ -414,7 +414,7 @@ class BackendOptimizer {
         try {
           const { data } = await client.from('strategy_templates').select('*').limit(10);
           return data;
-        } catch {
+        } catch (_e) {
           return null;
         }
       })

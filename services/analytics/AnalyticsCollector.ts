@@ -281,7 +281,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
       if (session?.user?.id) {
         return session.user.id;
       }
-    } catch {
+    } catch (_error) {
       // Silently fail - user might not be authenticated
     }
 

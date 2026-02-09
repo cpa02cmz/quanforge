@@ -120,7 +120,7 @@ export class ConnectionPool implements IConnectionPool {
     }
   }
 
-  async release(connection: Awaited<ReturnType<typeof edgeConnectionPool.getClient>>): Promise<void> {
+  async release(_connection: any) {
     try {
       // Edge connection pool manages its own pooling
       // Just mark as released in stats
@@ -220,7 +220,7 @@ export class ConnectionPool implements IConnectionPool {
         idle: Math.floor(Math.random() * 5),
         total: Math.floor(Math.random() * 10),
       };
-    } catch (error) {
+    } catch (_error) {
       return { active: 0, idle: 0, total: 0 };
     }
   }

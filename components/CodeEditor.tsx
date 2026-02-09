@@ -12,17 +12,28 @@ interface CodeEditorProps {
   onExplain?: () => void; // New Prop
 }
 
+interface Particle {
+  id: number;
+  x: number;
+  y: number;
+  angle: number;
+  color: string;
+}
+
 export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnly = false, filename = "ExpertAdvisor", onChange, onRefine, onExplain }) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [wordWrap, setWordWrap] = useState(false);
   const [fontSize, setFontSize] = useState(14); // Default font size in px
-  
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const particleIdRef = useRef(0);
+
   const contentRef = useRef<HTMLDivElement>(null);
   const gutterRef = useRef<HTMLDivElement>(null);
   const codeRef = useRef<HTMLElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const copyButtonRef = useRef<HTMLButtonElement>(null);
 
   // Re-run highlighting when code changes or when switching back to view mode
   useLayoutEffect(() => {
@@ -47,11 +58,40 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
     }
   }, []);
 
+  // Generate particle burst effect for delightful copy feedback
+  const triggerParticleBurst = useCallback((buttonElement: HTMLButtonElement) => {
+    const rect = buttonElement.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    // Create 8 particles with different angles and colors
+    const newParticles: Particle[] = Array.from({ length: 8 }, (_, i) => ({
+      id: particleIdRef.current++,
+      x: centerX,
+      y: centerY,
+      angle: (i * 45) + (Math.random() * 20 - 10), // 8 directions with slight randomness
+      color: i % 2 === 0 ? '#22c55e' : '#4ade80', // Alternate between brand colors
+    }));
+
+    setParticles(newParticles);
+
+    // Clear particles after animation completes
+    setTimeout(() => {
+      setParticles([]);
+    }, 600);
+  }, []);
+
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(code);
     setCopied(true);
+
+    // Trigger particle burst for delightful feedback
+    if (copyButtonRef.current) {
+      triggerParticleBurst(copyButtonRef.current);
+    }
+
     setTimeout(() => setCopied(false), UI_TIMING.COPY_FEEDBACK_DURATION);
-  }, [code]);
+  }, [code, triggerParticleBurst]);
 
   const handleDownload = useCallback(() => {
     const element = document.createElement("a");
@@ -251,28 +291,47 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
               </button>
 
               <button
+                ref={copyButtonRef}
                 onClick={handleCopy}
-                className={`flex items-center space-x-1.5 px-2 py-1 rounded text-xs transition-all duration-200 ${
-                  copied 
-                    ? 'bg-green-500/10 text-green-400 scale-105' 
+                className={`relative flex items-center space-x-1.5 px-2 py-1 rounded text-xs transition-all duration-200 ${
+                  copied
+                    ? 'bg-green-500/10 text-green-400 scale-105'
                     : 'hover:bg-white/5 text-gray-400 hover:text-gray-200'
                 }`}
                 aria-label={copied ? t('editor_copied') : t('editor_copy')}
-                title="Copy code to clipboard"
+                title="Copy code to clipboard (Ctrl+C)"
               >
+                {/* Particle burst effect for delightful feedback */}
+                {particles.map((particle) => (
+                  <span
+                    key={particle.id}
+                    className="fixed pointer-events-none z-50"
+                    style={{
+                      left: particle.x,
+                      top: particle.y,
+                      width: '4px',
+                      height: '4px',
+                      backgroundColor: particle.color,
+                      borderRadius: '50%',
+                      animation: `particle-burst 0.6s ease-out forwards`,
+                      transform: `rotate(${particle.angle}deg)`,
+                    }}
+                  />
+                ))}
+
                 {copied ? (
                   <>
-                    <svg 
-                      className="w-3.5 h-3.5 animate-[scaleIn_0.2s_ease-out]" 
-                      fill="none" 
-                      stroke="currentColor" 
+                    <svg
+                      className="w-3.5 h-3.5 animate-[scaleIn_0.2s_ease-out]"
+                      fill="none"
+                      stroke="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2.5} 
-                        d="M5 13l4 4L19 7" 
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2.5}
+                        d="M5 13l4 4L19 7"
                         className="animate-[drawCheck_0.3s_ease-out_0.1s_both]"
                         style={{
                           strokeDasharray: 24,
