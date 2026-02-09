@@ -9,6 +9,9 @@ import { APIResponse } from '../../types/common';
 import { settingsManager } from '../settingsManager';
 import { edgeConnectionPool } from '../edgeSupabasePool';
 import { handleError } from '../../utils/errorHandler';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('DatabaseCore');
 
 // Helper functions for standardized API responses
 const createSuccessResponse = <T>(data: T): APIResponse<T> => ({
@@ -50,9 +53,9 @@ export class DatabaseCore implements IDatabaseCore {
     if (this.config.mode === 'supabase') {
       try {
         // Clear connection cache - edgeConnectionPool doesn't have explicit close method
-        console.log('DatabaseCore: Connection pool cleanup completed');
+        logger.log('Connection pool cleanup completed');
       } catch (error) {
-        console.error('Error closing database connections:', error);
+        logger.error('Error closing database connections:', error);
       }
     }
   }
@@ -62,7 +65,7 @@ export class DatabaseCore implements IDatabaseCore {
       const result = await this.checkConnection();
       return result.success;
     } catch (error) {
-      console.error('Database health check failed:', error);
+      logger.error('Health check failed:', error);
       return false;
     }
   }
@@ -92,7 +95,7 @@ export class DatabaseCore implements IDatabaseCore {
       // Use edge connection pool for better performance
       return await edgeConnectionPool.getClient();
     } catch (error) {
-      console.error('Failed to get database client:', error);
+      logger.error('Failed to get database client:', error);
       throw error;
     }
   }
@@ -114,7 +117,7 @@ export class DatabaseCore implements IDatabaseCore {
 
       const duration = performance.now() - startTime;
       if (duration > 1000) {
-        console.warn(`Slow query detected: ${query} took ${duration.toFixed(2)}ms`);
+        logger.warn(`Slow query detected: ${query} took ${duration.toFixed(2)}ms`);
       }
 
       // Convert result to APIResponse format
@@ -128,7 +131,7 @@ export class DatabaseCore implements IDatabaseCore {
       return createSuccessResponse(result.data || []);
     } catch (error: unknown) {
       const duration = performance.now() - startTime;
-      console.error(`Query failed after ${duration.toFixed(2)}ms:`, error);
+      logger.error(`Query failed after ${duration.toFixed(2)}ms:`, error);
       
       return createErrorResponse(
         error instanceof Error ? error.message : 'Query execution failed',
@@ -198,7 +201,7 @@ export class DatabaseCore implements IDatabaseCore {
         
         delay = Math.min(delay, this.retryConfig.maxDelay);
         
-        console.warn(`Database operation failed, retrying in ${delay}ms (attempt ${attempt + 1}/${this.retryConfig.maxRetries})`);
+        logger.warn(`Database operation failed, retrying in ${delay}ms (attempt ${attempt + 1}/${this.retryConfig.maxRetries})`);
         await this.sleep(delay);
       }
     }
@@ -236,7 +239,7 @@ export class DatabaseCore implements IDatabaseCore {
 
   private async executeMockQuery<T>(query: string, params?: any[]): Promise<APIResponse<T[]>> {
     // Basic mock query implementation
-    console.log('Mock query executed:', query, params);
+    logger.log('Mock query executed:', query, params);
     return createSuccessResponse([]);
   }
 }
