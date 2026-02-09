@@ -343,6 +343,18 @@ export const AI_CONFIG = {
     DEEPSEEK: 'https://api.deepseek.com/v1',
     LOCAL_LLM: 'http://localhost:8000/v1',
   },
+  
+  // AI Worker timeouts (in milliseconds)
+  WORKER_TIMEOUTS: {
+    DEFAULT: 30 * TIME_CONSTANTS.SECOND,
+    BUILD_CONTEXT: 10 * TIME_CONSTANTS.SECOND,
+    PROCESS_RESPONSE: 5 * TIME_CONSTANTS.SECOND,
+    EXTRACT_CODE: 3 * TIME_CONSTANTS.SECOND,
+    FORMAT_MESSAGE: 3 * TIME_CONSTANTS.SECOND,
+    GENERATE_CONTENT: 60 * TIME_CONSTANTS.SECOND,
+    PARSE_RESPONSE: 5 * TIME_CONSTANTS.SECOND,
+    HEALTH_CHECK: 2 * TIME_CONSTANTS.SECOND,
+  },
 };
 
 // ========== MONITORING CONFIGURATION ==========
@@ -359,6 +371,31 @@ export const MONITORING_CONFIG = {
   // Alerts
   ALERT_COOLDOWN: TIME_CONSTANTS.MINUTE * 5, // 5 minutes
   MAX_ALERTS_PER_HOUR: 20,
+};
+
+// ========== ANALYTICS CONFIGURATION ==========
+export const ANALYTICS_CONFIG = {
+  // Event batching
+  DEFAULT_BATCH_SIZE: 25,
+  DEFAULT_FLUSH_INTERVAL: 15 * TIME_CONSTANTS.SECOND,
+  MAX_BATCH_SIZE: 100,
+  MIN_BATCH_SIZE: 5,
+  
+  // Sampling
+  DEFAULT_SAMPLE_RATE: 0.1, // 10%
+  REAL_TIME_SAMPLE_RATE: 1.0, // 100%
+  
+  // Persistence
+  DEFAULT_PERSISTENCE_ENABLED: false,
+  PERSISTENCE_KEY: 'quanforge_analytics_events',
+  MAX_PERSISTED_EVENTS: 1000,
+  EVENT_RETENTION_HOURS: 1,
+  
+  // Session
+  SESSION_ID_LENGTH: 9,
+  
+  // Business metrics
+  METRICS_RETENTION_DAYS: 30,
 };
 
 // ========== DEVELOPMENT SERVER CONFIGURATION ==========
