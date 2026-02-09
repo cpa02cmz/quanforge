@@ -438,7 +438,7 @@ npm run build
   ```
 - Check for large dependencies:
   ```bash
-  npm run build -- --mode analyze
+  npm run build:analyze
   ```
 
 #### Application Laggy

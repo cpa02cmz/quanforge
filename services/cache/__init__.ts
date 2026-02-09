@@ -4,6 +4,10 @@
  * Provides consistent interfaces, configuration, and optimization
  */
 
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('cache');
+
 // Base interfaces and types
 export interface BaseCacheEntry<T = any> {
   data: T;
@@ -108,7 +112,7 @@ export class CompressionUtils {
         return { compressed: true, data: compressedData, size: compressedSize };
       }
     } catch (error) {
-      console.warn('Compression failed:', error);
+      logger.warn('Compression failed:', error);
     }
     
     return { compressed: false, data, size: originalSize };
@@ -123,7 +127,7 @@ export class CompressionUtils {
       const decompressed = decompressFromUTF16(data);
       return JSON.parse(decompressed);
     } catch (error) {
-      console.warn('Decompression failed:', error);
+      logger.warn('Decompression failed:', error);
       throw new Error('Failed to decompress cached data');
     }
   }

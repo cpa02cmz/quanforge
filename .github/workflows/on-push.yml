@@ -8,8 +8,8 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: global
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:
@@ -70,6 +70,29 @@ jobs:
           echo "open_issue_count=$count" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Verify Build
+        timeout-minutes: 5
+        run: |
+          echo "::group::Build Verification"
+          npm run build
+          echo "::endgroup::"
+
+      - name: Type Check
+        timeout-minutes: 3
+        run: |
+          echo "::group::TypeScript Check"
+          npm run typecheck
+          echo "::endgroup::"
 
       - name: 00 flow
         timeout-minutes: 30

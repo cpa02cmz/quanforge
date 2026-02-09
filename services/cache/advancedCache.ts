@@ -4,6 +4,9 @@
  */
 
 import { BaseCache, BaseCacheEntry, CacheConfig, CompressionUtils, CACHE_CONSTANTS } from './__init__';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('advancedCache');
 
 export interface AdvancedCacheConfig extends CacheConfig {
   maxSize: number;
@@ -68,7 +71,7 @@ export class AdvancedCache extends BaseCache {
       try {
         return await CompressionUtils.decompress(entry.data, entry.compressed);
       } catch (error) {
-        console.warn(`Failed to decompress cache entry: ${key}`, error);
+        logger.warn(`Failed to decompress cache entry: ${key}`, error);
         this.cache.delete(key);
         this.recordMiss();
         return null;
@@ -96,7 +99,7 @@ export class AdvancedCache extends BaseCache {
     
     // Check if data is too large
     if (size > this.config.maxSize) {
-      console.warn(`Cache entry too large: ${key} (${size} bytes)`);
+      logger.warn(`Cache entry too large: ${key} (${size} bytes)`);
       return;
     }
 
@@ -116,7 +119,7 @@ export class AdvancedCache extends BaseCache {
           this.metrics.compressions++;
         }
       } catch (error) {
-        console.warn(`Failed to compress cache entry: ${key}`, error);
+        logger.warn(`Failed to compress cache entry: ${key}`, error);
       }
     }
 
@@ -195,7 +198,7 @@ export class AdvancedCache extends BaseCache {
         await this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
       } catch (error) {
          if (process.env.NODE_ENV === 'development') {
-           console.warn(`Failed to preload cache entry: ${key}`, error);
+           logger.warn(`Failed to preload cache entry: ${key}`, error);
          }
       }
     });
@@ -218,7 +221,7 @@ export class AdvancedCache extends BaseCache {
           const data = await loader(params);
           await this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
         } catch (error) {
-          console.warn(`Failed to warm cache entry: ${key}`, error);
+          logger.warn(`Failed to warm cache entry: ${key}`, error);
         }
       }
     }
@@ -307,9 +310,9 @@ export class AdvancedCache extends BaseCache {
       }
     });
     
-     // Use logger instead of console.log for production safety
+     // Use logger instead of logger.log for production safety
      if (process.env.NODE_ENV === 'development') {
-       console.log(`Invalidated ${deletedCount} cache entries for region: ${region}`);
+       logger.log(`Invalidated ${deletedCount} cache entries for region: ${region}`);
      }
     return deletedCount;
   }
@@ -370,9 +373,9 @@ export class AdvancedCache extends BaseCache {
           });
         }
 
-        console.log(`Edge cache warmed for region: ${region}`);
+        logger.log(`Edge cache warmed for region: ${region}`);
       } catch (error) {
-        console.warn(`Failed to warm edge cache for region ${region}:`, error);
+        logger.warn(`Failed to warm edge cache for region ${region}:`, error);
       }
     }
   }
