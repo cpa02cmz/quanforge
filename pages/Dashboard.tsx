@@ -6,6 +6,7 @@ import { db } from '../services';
 import { Robot, UserSession } from '../types';
 import { useToast } from '../components/useToast';
 import { useTranslation } from '../services/i18n';
+import { useAnimatedPlaceholder } from '../hooks/useAnimatedPlaceholder';
 import { AdvancedSEO } from '../utils/advancedSEO';
 import { createScopedLogger } from '../utils/logger';
 import { VirtualScrollList } from '../components/VirtualScrollList';
@@ -176,6 +177,60 @@ const RobotCard: React.FC<RobotCardProps> = memo(({
          prevProps.t === nextProps.t;
 });
 
+// Animated search input with cycling placeholder suggestions
+interface AnimatedSearchInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  onDebouncedChange: (value: string) => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
+}
+
+const AnimatedSearchInput: React.FC<AnimatedSearchInputProps> = memo(({
+  value,
+  onChange,
+  onDebouncedChange,
+  t
+}) => {
+  // Cycling search suggestions for delightful UX
+  const animatedPlaceholder = useAnimatedPlaceholder({
+    suggestions: [
+      t('dash_search_placeholder'),
+      'EMA crossover...',
+      'RSI strategy...',
+      'Scalping bot...',
+      'Trend following...'
+    ],
+    typingSpeed: 60,
+    deleteSpeed: 35,
+    pauseDuration: 1800
+  });
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    onChange(newValue);
+    onDebouncedChange(newValue);
+  }, [onChange, onDebouncedChange]);
+
+  return (
+    <div className="flex-1 relative">
+      <svg className="w-5 h-5 absolute left-3 top-2.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <input
+        type="text"
+        placeholder={value ? t('dash_search_placeholder') : animatedPlaceholder}
+        value={value}
+        onChange={handleChange}
+        className="w-full bg-dark-bg border border-dark-border rounded-lg pl-10 pr-4 py-2 text-white focus:ring-1 focus:ring-brand-500 outline-none placeholder-gray-600 transition-all"
+        aria-label="Search trading robots"
+        id="robot-search"
+      />
+    </div>
+  );
+});
+
+AnimatedSearchInput.displayName = 'AnimatedSearchInput';
+
 interface DashboardProps {
     session?: UserSession | null;
 }
@@ -343,21 +398,12 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
       {/* Search and Filter Toolbar */}
       {robots.length > 0 && (
           <div className="bg-dark-surface border border-dark-border rounded-xl p-4 mb-6 flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                  <svg className="w-5 h-5 absolute left-3 top-2.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                  <input 
-                      type="text" 
-                      placeholder={t('dash_search_placeholder')}
-                      value={searchTerm}
-                      onChange={(e) => {
-                        setSearchTerm(e.target.value);
-                        debouncedSetSearchTerm(e.target.value);
-                      }}
-                      className="w-full bg-dark-bg border border-dark-border rounded-lg pl-10 pr-4 py-2 text-white focus:ring-1 focus:ring-brand-500 outline-none placeholder-gray-600"
-                      aria-label="Search trading robots"
-                      id="robot-search"
-                  />
-              </div>
+              <AnimatedSearchInput
+                value={searchTerm}
+                onChange={setSearchTerm}
+                onDebouncedChange={debouncedSetSearchTerm}
+                t={t}
+              />
               <div className="w-full md:w-48">
                   <label htmlFor="robot-filter" className="sr-only">{t('dash_filter_label')}</label>
                   <select 
