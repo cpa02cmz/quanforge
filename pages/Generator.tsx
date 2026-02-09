@@ -76,9 +76,9 @@ export const Generator: React.FC = memo(() => {
        setTimeout(() => {
          setSaveState('idle');
        }, 2000);
-     } catch (error) {
-       setSaveState('idle');
-     }
+      } catch {
+        setSaveState('idle');
+      }
    }, [handleSave]);
    
      // Keyboard shortcuts
