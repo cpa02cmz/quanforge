@@ -1,6 +1,11 @@
 -- Migration Script for QuantForge AI Database Optimizations
 -- This script applies all the database schema optimizations for Supabase
 -- Run this in Supabase SQL Editor or via migration tool
+--
+-- MIGRATION ORDER DEPENDENCY:
+-- This is migration 001. It should be followed by migration 004 (004_soft_delete_audit_logging.sql)
+-- which adds soft delete support and updates views/functions to filter by deleted_at.
+-- Run migrations in order: 001 → 002 → 003 → 004 → etc.
 
 -- =====================================================
 -- 1. OPTIMIZED ROBOTS TABLE
@@ -147,6 +152,10 @@ CREATE TRIGGER trigger_update_robot_updated_at
 -- 4. VIEWS FOR COMMON QUERIES
 -- =====================================================
 
+-- NOTE: These views will be updated by migration 004 (004_soft_delete_audit_logging.sql)
+-- to include deleted_at IS NULL filters for proper soft delete support.
+-- Run migration 004 after this migration to complete soft delete implementation.
+
 -- User robots view with optimized queries
 CREATE OR REPLACE VIEW user_robots AS
 SELECT 
@@ -189,6 +198,9 @@ ORDER BY r.view_count DESC, r.copy_count DESC;
 -- =====================================================
 -- 5. SEARCH FUNCTIONS
 -- =====================================================
+
+-- NOTE: This function will be updated by migration 004 to include deleted_at IS NULL filter
+-- for proper soft delete support. Run migration 004 after this migration.
 
 -- Enhanced search function with CTE optimization
 CREATE OR REPLACE FUNCTION search_robots(
@@ -274,6 +286,9 @@ $$ LANGUAGE plpgsql;
 -- 6. ANALYTICS FUNCTIONS
 -- =====================================================
 
+-- NOTE: This function will be updated by migration 004 to include deleted_at IS NULL filter
+-- for proper soft delete support. Run migration 004 after this migration.
+
 -- Robot analytics function with enhanced metrics
 CREATE OR REPLACE FUNCTION get_robot_analytics(target_user_id UUID DEFAULT NULL)
 RETURNS TABLE (
@@ -322,6 +337,9 @@ BEGIN
     WHERE target_user_id IS NULL OR r.user_id = target_user_id;
 END;
 $$ LANGUAGE plpgsql;
+
+-- NOTE: This function will be updated by migration 004 to include deleted_at IS NULL filter
+-- for proper soft delete support. Run migration 004 after this migration.
 
 -- Batch robot retrieval function for efficient multi-robot queries
 CREATE OR REPLACE FUNCTION get_robots_by_ids(robot_ids UUID[])
