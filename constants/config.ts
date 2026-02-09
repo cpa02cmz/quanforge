@@ -57,7 +57,7 @@ export const CACHE_CONFIG = {
 export const RATE_LIMITING = {
   // General rate limits
   DEFAULT_WINDOW: TIME_CONSTANTS.MINUTE,
-  DEFAULT_MAX_REQUESTS: 100,
+  DEFAULT_MAX_REQUESTS: 10,
   
   // User tier specific limits
   TIERS: {
