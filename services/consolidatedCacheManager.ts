@@ -1,5 +1,8 @@
 // Consolidated Cache Manager - Unifies all cache strategies
 import { decompressFromUTF16, compressToUTF16 } from 'lz-string';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('ConsolidatedCacheManager');
 
 // Core interfaces
 interface CacheEntry<T = any> {
@@ -205,7 +208,7 @@ export class ConsolidatedCacheManager {
         const decompressed = decompressFromUTF16(entry.data);
         data = JSON.parse(decompressed);
       } catch (error) {
-        console.warn('Failed to decompress cached data:', error);
+        logger.warn('Failed to decompress cached data:', error);
         this.cache.delete(key);
         this.recordMiss(region);
         return null;
@@ -268,7 +271,7 @@ export class ConsolidatedCacheManager {
           this.metrics.compressions++;
         }
       } catch (error) {
-        console.warn('Compression failed:', error);
+        logger.warn('Compression failed:', error);
       }
     }
 
@@ -663,7 +666,7 @@ export class ConsolidatedCacheManager {
         ]);
         localStorage.setItem(this.storageKey, JSON.stringify(serializable));
       } catch (error) {
-        console.error('Failed to save cache to storage:', error);
+        logger.error('Failed to save cache to storage:', error);
       }
     }
   }
@@ -687,7 +690,7 @@ export class ConsolidatedCacheManager {
           this.updateMemoryUsage();
         }
       } catch (error) {
-        console.error('Failed to load cache from storage:', error);
+        logger.error('Failed to load cache from storage:', error);
       }
     }
   }
@@ -700,7 +703,7 @@ export class ConsolidatedCacheManager {
       try {
         localStorage.removeItem(this.storageKey);
       } catch (error) {
-        console.error('Failed to remove cache from storage:', error);
+        logger.error('Failed to remove cache from storage:', error);
       }
     }
   }
@@ -721,7 +724,7 @@ export class ConsolidatedCacheManager {
         ]));
         this.updateMemoryUsage();
       } catch (error) {
-        console.error('Failed to sync cache from storage:', error);
+        logger.error('Failed to sync cache from storage:', error);
       }
     }
   };

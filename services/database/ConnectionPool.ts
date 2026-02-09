@@ -6,6 +6,9 @@
 
 import { IConnectionPool } from '../../types/serviceInterfaces';
 import { edgeConnectionPool } from '../edgeSupabasePool';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('ConnectionPool');
 
 export interface PoolConfig {
   maxConnections: number;
@@ -61,9 +64,9 @@ export class ConnectionPool implements IConnectionPool {
     
     // Close all connections
     try {
-      console.log('ConnectionPool: Closing all connections...');
+      logger.log('Closing all connections...');
     } catch (error) {
-      console.error('ConnectionPool: Error closing connections:', error);
+      logger.error('Error closing connections:', error);
     }
   }
 
@@ -81,7 +84,7 @@ export class ConnectionPool implements IConnectionPool {
       // Connection test should complete quickly (<5 seconds)
       return duration < 5000;
     } catch (error) {
-      console.error('Connection pool health check failed:', error);
+      logger.error('Health check failed:', error);
       return false;
     }
   }
@@ -97,7 +100,7 @@ export class ConnectionPool implements IConnectionPool {
     return { ...this.config };
   }
 
-  async acquire(): Promise<any> {
+  async acquire(): Promise<ReturnType<typeof edgeConnectionPool.getClient>> {
     const startTime = Date.now();
     
     try {
@@ -105,26 +108,26 @@ export class ConnectionPool implements IConnectionPool {
       
       const duration = Date.now() - startTime;
       if (duration > 100) {
-        console.warn(`Slow acquire: ${duration}ms`);
+        logger.warn(`Slow acquire: ${duration}ms`);
       }
       
       this.poolStats.acquired++;
       return connection;
     } catch (error) {
       this.poolStats.errors++;
-      console.error('ConnectionPool: Failed to acquire connection:', error);
+      logger.error('Failed to acquire connection:', error);
       throw error;
     }
   }
 
-  async release(connection: any): Promise<void> {
+  async release(connection: Awaited<ReturnType<typeof edgeConnectionPool.getClient>>): Promise<void> {
     try {
       // Edge connection pool manages its own pooling
       // Just mark as released in stats
       this.poolStats.released++;
     } catch (error) {
       this.poolStats.errors++;
-      console.error('ConnectionPool: Failed to release connection:', error);
+      logger.error('Failed to release connection:', error);
       throw error;
     }
   }
@@ -140,7 +143,7 @@ export class ConnectionPool implements IConnectionPool {
         total: edgeStats.total || 0,
       };
     } catch (error) {
-      console.error('Failed to get pool stats:', error);
+      logger.error('Failed to get pool stats:', error);
       return { active: 0, idle: 0, total: 0 };
     }
   }
@@ -154,14 +157,14 @@ export class ConnectionPool implements IConnectionPool {
   private async initializeEdgePool(): Promise<void> {
     try {
       // Pre-warm connections
-      const connections: any[] = [];
+      const connections: Awaited<ReturnType<typeof edgeConnectionPool.getClient>>[] = [];
       for (let i = 0; i < this.config.minConnections; i++) {
         try {
           const connection = await this.acquire();
           connections.push(connection);
           this.poolStats.created++;
         } catch (error) {
-          console.warn(`Failed to pre-warm connection ${i}:`, error);
+          logger.warn(`Failed to pre-warm connection ${i}:`, error);
         }
       }
       
@@ -170,13 +173,13 @@ export class ConnectionPool implements IConnectionPool {
         try {
           await this.release(connection);
         } catch (error) {
-          console.error('Error releasing pre-warmed connection:', error);
+          logger.error('Error releasing pre-warmed connection:', error);
         }
       }
       
-      console.log(`ConnectionPool: Initialized with ${connections.length}/${this.config.minConnections} connections`);
+      logger.log(`Initialized with ${connections.length}/${this.config.minConnections} connections`);
     } catch (error) {
-      console.error('ConnectionPool: Failed to initialize edge pool:', error);
+      logger.error('Failed to initialize edge pool:', error);
     }
   }
 
@@ -200,10 +203,10 @@ export class ConnectionPool implements IConnectionPool {
       
       const duration = Date.now() - startTime;
       if (duration > 1000) {
-        console.warn(`ConnectionPool: Slow health check: ${duration}ms`);
+        logger.warn(`Slow health check: ${duration}ms`);
       }
     } catch (error) {
-      console.error('ConnectionPool: Health check failed:', error);
+      logger.error('Health check failed:', error);
       this.poolStats.errors++;
     }
   }
@@ -225,10 +228,10 @@ export class ConnectionPool implements IConnectionPool {
   private applyConfigChanges(): void {
     // Apply configuration changes to edge pool
     try {
-      console.log('ConnectionPool: Applying configuration changes');
+      logger.log('Applying configuration changes');
       // This would need to be implemented based on edge pool capabilities
     } catch (error) {
-      console.error('ConnectionPool: Failed to apply config changes:', error);
+      logger.error('Failed to apply config changes:', error);
     }
   }
 
@@ -236,7 +239,7 @@ export class ConnectionPool implements IConnectionPool {
 
   async drain(): Promise<void> {
     try {
-      console.log('ConnectionPool: Draining pool...');
+      logger.log('Draining pool...');
       
       // Wait for all connections to be released
       let attempts = 0;
@@ -246,18 +249,18 @@ export class ConnectionPool implements IConnectionPool {
         const stats = this.getPoolStats();
         
         if (stats.active === 0) {
-          console.log('ConnectionPool: Pool drained successfully');
+          logger.log('Pool drained successfully');
           return;
         }
         
-        console.log(`ConnectionPool: Waiting for ${stats.active} active connections...`);
+        logger.log(`Waiting for ${stats.active} active connections...`);
         await this.sleep(1000);
         attempts++;
       }
       
-      console.warn('ConnectionPool: Pool drain timeout');
+      logger.warn('Pool drain timeout');
     } catch (error) {
-      console.error('ConnectionPool: Error draining pool:', error);
+      logger.error('Error draining pool:', error);
     }
   }
 
@@ -290,12 +293,12 @@ export class ConnectionPool implements IConnectionPool {
       
       const latency = Date.now() - startTime;
       return { success: true, latency };
-    } catch (error: any) {
+    } catch (error: unknown) {
       const latency = Date.now() - startTime;
       return { 
         success: false, 
         latency, 
-        error: error.message || 'Unknown error' 
+        error: error instanceof Error ? error.message : 'Unknown error' 
       };
     }
   }
@@ -307,16 +310,16 @@ export class ConnectionPool implements IConnectionPool {
       const stats = this.getPoolStats();
       
       if (stats.total > this.config.maxConnections) {
-        console.log('ConnectionPool: Reducing pool size...');
+        logger.log('Reducing pool size...');
         await this.drain();
       }
       
       if (stats.total < this.config.minConnections) {
-        console.log('ConnectionPool: Expanding pool size...');
+        logger.log('Expanding pool size...');
         await this.initializeEdgePool();
       }
     } catch (error) {
-      console.error('ConnectionPool: Pool optimization failed:', error);
+      logger.error('Pool optimization failed:', error);
     }
   }
 }

@@ -3,6 +3,10 @@
  * Provides comprehensive CSRF protection for API requests
  */
 
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('CSRFProtection');
+
 interface CSRFToken {
   token: string;
   expires: number;
@@ -168,7 +172,7 @@ class CSRFProtection {
     });
 
     if (expiredSessions.length > 0) {
-      console.debug(`Cleaned up ${expiredSessions.length} expired CSRF tokens`);
+      logger.debug(`Cleaned up ${expiredSessions.length} expired CSRF tokens`);
     }
   }
 
@@ -193,13 +197,13 @@ class CSRFProtection {
 
     // Check if token matches current token
     if (token !== this.currentToken.token) {
-      console.warn('CSRF token mismatch');
+      logger.warn('CSRF token mismatch');
       return false;
     }
 
     // Check if token has expired
     if (Date.now() > this.currentToken.expires) {
-      console.warn('CSRF token expired');
+      logger.warn('CSRF token expired');
       return false;
     }
 
@@ -287,7 +291,7 @@ class CSRFProtection {
    */
   configure(config: Partial<CSRFConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('CSRF protection configuration updated:', this.config);
+    logger.log('CSRF protection configuration updated');
   }
 
   /**
@@ -320,7 +324,7 @@ class CSRFProtection {
       return true;
     }
 
-    console.warn('CSRF origin validation failed:', { origin, referer, currentOrigin });
+    logger.warn('CSRF origin validation failed:', { origin, referer, currentOrigin });
     return false;
   }
 

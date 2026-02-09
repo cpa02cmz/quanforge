@@ -9,6 +9,32 @@ import { APIResponse } from '../../types/common';
 import { settingsManager } from '../settingsManager';
 import { edgeConnectionPool } from '../edgeSupabasePool';
 import { handleError } from '../../utils/errorHandler';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('DatabaseCore');
+
+// Mock Supabase client interface for type safety
+interface MockSupabaseClient {
+  from: (table: string) => {
+    select: (columns: string) => {
+      order: (column: string, options: unknown) => {
+        limit: (limit: number) => Promise<{ data: []; error: null }>;
+        then: (resolve: (value: { data: []; error: null }) => void) => Promise<{ data: []; error: null }>;
+      };
+      count: (option: string) => {
+        head: (option: boolean) => Promise<{ count: number; error: null }>;
+      };
+    };
+    insert: (data: unknown) => Promise<{ data: unknown; error: null }>;
+    update: (data: unknown) => {
+      eq: (column: string, value: unknown) => Promise<{ data: unknown; error: null }>;
+    };
+    delete: () => {
+      eq: (column: string, value: unknown) => Promise<{ error: null }>;
+    };
+  };
+  rpc: (functionName: string, params: unknown) => Promise<{ data: null; error: null }>;
+}
 
 // Helper functions for standardized API responses
 const createSuccessResponse = <T>(data: T): APIResponse<T> => ({
@@ -50,9 +76,9 @@ export class DatabaseCore implements IDatabaseCore {
     if (this.config.mode === 'supabase') {
       try {
         // Clear connection cache - edgeConnectionPool doesn't have explicit close method
-        console.log('DatabaseCore: Connection pool cleanup completed');
+        logger.log('Connection pool cleanup completed');
       } catch (error) {
-        console.error('Error closing database connections:', error);
+        logger.error('Error closing database connections:', error);
       }
     }
   }
@@ -62,7 +88,7 @@ export class DatabaseCore implements IDatabaseCore {
       const result = await this.checkConnection();
       return result.success;
     } catch (error) {
-      console.error('Database health check failed:', error);
+      logger.error('Health check failed:', error);
       return false;
     }
   }
@@ -79,7 +105,7 @@ export class DatabaseCore implements IDatabaseCore {
     return { ...this.config };
   }
 
-  async getClient(): Promise<any> {
+  async getClient(): Promise<ReturnType<typeof edgeConnectionPool.getClient>> {
     if (this.config.mode === 'mock') {
       return this.createMockClient();
     }
@@ -92,12 +118,12 @@ export class DatabaseCore implements IDatabaseCore {
       // Use edge connection pool for better performance
       return await edgeConnectionPool.getClient();
     } catch (error) {
-      console.error('Failed to get database client:', error);
+      logger.error('Failed to get database client:', error);
       throw error;
     }
   }
 
-  async executeQuery<T>(query: string, params?: any[]): Promise<APIResponse<T[]>> {
+  async executeQuery<T>(query: string, params?: unknown[]): Promise<APIResponse<T[]>> {
     const startTime = performance.now();
     
     try {
@@ -114,7 +140,7 @@ export class DatabaseCore implements IDatabaseCore {
 
       const duration = performance.now() - startTime;
       if (duration > 1000) {
-        console.warn(`Slow query detected: ${query} took ${duration.toFixed(2)}ms`);
+        logger.warn(`Slow query detected: ${query} took ${duration.toFixed(2)}ms`);
       }
 
       // Convert result to APIResponse format
@@ -128,7 +154,7 @@ export class DatabaseCore implements IDatabaseCore {
       return createSuccessResponse(result.data || []);
     } catch (error: unknown) {
       const duration = performance.now() - startTime;
-      console.error(`Query failed after ${duration.toFixed(2)}ms:`, error);
+      logger.error(`Query failed after ${duration.toFixed(2)}ms:`, error);
       
       return createErrorResponse(
         error instanceof Error ? error.message : 'Query execution failed',
@@ -165,10 +191,11 @@ export class DatabaseCore implements IDatabaseCore {
         message: `Connected to Supabase. Found ${count} records.`, 
         mode: 'supabase' 
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
       return { 
         success: false, 
-        message: `Connection Failed: ${error.message || error}`, 
+        message: `Connection Failed: ${message}`, 
         mode: this.config.mode 
       };
     }
@@ -177,12 +204,12 @@ export class DatabaseCore implements IDatabaseCore {
   // Private helper methods
 
   private async withRetry<T>(fn: () => Promise<T>): Promise<T> {
-    let lastError: any;
+    let lastError: unknown;
     
     for (let attempt = 0; attempt <= this.retryConfig.maxRetries; attempt++) {
       try {
         return await fn();
-      } catch (error: any) {
+      } catch (error: unknown) {
         lastError = error;
         
         if (attempt === this.retryConfig.maxRetries) {
@@ -198,7 +225,7 @@ export class DatabaseCore implements IDatabaseCore {
         
         delay = Math.min(delay, this.retryConfig.maxDelay);
         
-        console.warn(`Database operation failed, retrying in ${delay}ms (attempt ${attempt + 1}/${this.retryConfig.maxRetries})`);
+        logger.warn(`Database operation failed, retrying in ${delay}ms (attempt ${attempt + 1}/${this.retryConfig.maxRetries})`);
         await this.sleep(delay);
       }
     }
@@ -210,33 +237,33 @@ export class DatabaseCore implements IDatabaseCore {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  private createMockClient(): any {
+  private createMockClient(): MockSupabaseClient {
     return {
       from: (table: string) => ({
         select: (columns: string) => ({
-          order: (column: string, options: any) => ({
+          order: (column: string, options: unknown) => ({
             limit: (limit: number) => Promise.resolve({ data: [], error: null }),
-            then: (resolve: any) => Promise.resolve({ data: [], error: null }),
+            then: (resolve: (value: { data: []; error: null }) => void) => Promise.resolve({ data: [], error: null }),
           }),
           count: (option: string) => ({
             head: (option: boolean) => Promise.resolve({ count: 0, error: null }),
           }),
         }),
-        insert: (data: any) => Promise.resolve({ data, error: null }),
-        update: (data: any) => ({
-          eq: (column: string, value: any) => Promise.resolve({ data, error: null }),
+        insert: (data: unknown) => Promise.resolve({ data, error: null }),
+        update: (data: unknown) => ({
+          eq: (column: string, value: unknown) => Promise.resolve({ data, error: null }),
         }),
         delete: () => ({
-          eq: (column: string, value: any) => Promise.resolve({ error: null }),
+          eq: (column: string, value: unknown) => Promise.resolve({ error: null }),
         }),
       }),
-      rpc: (functionName: string, params: any) => Promise.resolve({ data: null, error: null }),
+      rpc: (functionName: string, params: unknown) => Promise.resolve({ data: null, error: null }),
     };
   }
 
-  private async executeMockQuery<T>(query: string, params?: any[]): Promise<APIResponse<T[]>> {
+  private async executeMockQuery<T>(query: string, params?: unknown[]): Promise<APIResponse<T[]>> {
     // Basic mock query implementation
-    console.log('Mock query executed:', query, params);
+    logger.log('Mock query executed:', query, params);
     return createSuccessResponse([]);
   }
 }
