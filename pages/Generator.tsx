@@ -3,6 +3,7 @@ import React, { useState, useEffect, memo, useMemo, lazy, Suspense, useCallback 
 import { useParams } from 'react-router-dom';
 import { StrategyConfig } from '../components/StrategyConfig';
 import { SaveButton } from '../components/SaveButton';
+import { CelebrationAnimation } from '../components/CelebrationAnimation';
 import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
 import { useTranslation } from '../services/i18n';
 import { AdvancedSEO } from '../utils/advancedSEO';
@@ -62,6 +63,8 @@ export const Generator: React.FC = memo(() => {
    const [activeMainTab, setActiveMainTab] = useState<'editor' | 'analysis' | 'simulation'>('editor');
    const [activeSidebarTab, setActiveSidebarTab] = useState<'chat' | 'settings'>('chat');
    const [saveState, setSaveState] = useState<'idle' | 'saving' | 'success'>('idle');
+   const [showCelebration, setShowCelebration] = useState(false);
+   const [prevLoading, setPrevLoading] = useState(isLoading);
    
    // Enhanced save handler with success state
    const handleSaveWithState = useCallback(async () => {
@@ -73,35 +76,44 @@ export const Generator: React.FC = memo(() => {
        setTimeout(() => {
          setSaveState('idle');
        }, 2000);
-     } catch (error) {
-       setSaveState('idle');
-     }
+      } catch {
+        setSaveState('idle');
+      }
    }, [handleSave]);
    
-    // Keyboard shortcuts
-    useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        // Ctrl/Cmd + S to save
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-          e.preventDefault();
-          handleSaveWithState();
-        }
-        
-        // Ctrl/Cmd + Enter to send message if on chat tab
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && activeSidebarTab === 'chat') {
-          // We can't trigger the chat send directly from here
-          // This would require accessing the ChatInterface's send function
-        }
-        
-        // Escape to stop generation
-        if (e.key === 'Escape' && isLoading) {
-          stopGeneration();
-        }
-      };
-      
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handleSaveWithState, isLoading, stopGeneration]);
+     // Keyboard shortcuts
+     useEffect(() => {
+       const handleKeyDown = (e: KeyboardEvent) => {
+         // Ctrl/Cmd + S to save
+         if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+           e.preventDefault();
+           handleSaveWithState();
+         }
+         
+         // Ctrl/Cmd + Enter to send message if on chat tab
+         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && activeSidebarTab === 'chat') {
+           // We can't trigger the chat send directly from here
+           // This would require accessing the ChatInterface's send function
+         }
+         
+         // Escape to stop generation
+         if (e.key === 'Escape' && isLoading) {
+           stopGeneration();
+         }
+       };
+       
+       window.addEventListener('keydown', handleKeyDown);
+       return () => window.removeEventListener('keydown', handleKeyDown);
+     }, [handleSaveWithState, isLoading, stopGeneration, activeSidebarTab]);
+     
+     // Celebration effect when code generation completes
+     useEffect(() => {
+       // Detect when loading transitions from true to false and code exists
+       if (prevLoading && !isLoading && code && code.length > 0) {
+         setShowCelebration(true);
+       }
+       setPrevLoading(isLoading);
+     }, [isLoading, code, prevLoading]);
    
    const onApplySettings = async () => {
        setActiveMainTab('editor'); // Switch to editor to see changes
@@ -125,6 +137,15 @@ export const Generator: React.FC = memo(() => {
         tags={robotName ? [robotName, 'MQL5', 'Trading Robot', 'AI'] : ['MQL5', 'Trading Robot', 'AI', 'Expert Advisor']}
         enableAnalytics={true}
       />
+      
+      {/* Celebration Animation for Code Generation Success */}
+      <CelebrationAnimation 
+        trigger={showCelebration}
+        onComplete={() => setShowCelebration(false)}
+        particleCount={40}
+        duration={1800}
+      />
+      
       <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] md:h-screen bg-dark-bg relative" role="main" aria-label="Strategy generator workspace">
       
         {/* Loading Progress Indicator */}

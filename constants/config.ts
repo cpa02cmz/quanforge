@@ -94,6 +94,12 @@ export const RATE_LIMITING = {
     WINDOW: TIME_CONSTANTS.MINUTE,
     MAX_REQUESTS: 200,
   },
+
+  // Edge-specific rate limiting
+  EDGE: {
+    requestsPerSecond: 10,
+    burstLimit: 20,
+  },
 };
 
 // ========== TRADING/STRATEGY CONSTANTS ==========
