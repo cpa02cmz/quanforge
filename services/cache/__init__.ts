@@ -93,7 +93,6 @@ export const CACHE_CONSTANTS = {
 
 // Compression utilities
 import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
-import { createScopedLogger } from '..'/../utils/logger';
 
 export class CompressionUtils {
   static async compress(data: any): Promise<{ compressed: boolean; data: any; size: number }> {
