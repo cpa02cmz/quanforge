@@ -170,20 +170,13 @@ describe('DIContainer', () => {
         destroy: async () => { throw new Error('Dispose error'); }
       };
       
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
       container.register('ErrorService', () => service1);
       await container.get('ErrorService');
       
       // Should not throw even if service dispose fails
       await expect(container.dispose()).resolves.not.toThrow();
       
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Error disposing service ErrorService:',
-        expect.any(Error)
-      );
-      
-      consoleSpy.mockRestore();
+      // Disposal errors are silently ignored (lint fix: no-console)
     });
 
     it('should allow operations after disposal completes', async () => {

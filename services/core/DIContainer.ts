@@ -125,9 +125,9 @@ export function Injectable(token: string) {
       if (typeof Reflect !== 'undefined' && 'defineMetadata' in Reflect) {
         (Reflect as any).defineMetadata('injectable', token, constructor);
       }
-  } catch {
-    // Metadata not available, but that's okay for basic functionality
-  }
+    } catch {
+      // Metadata not available, but that's okay for basic functionality
+    }
     return constructor;
   };
 }
