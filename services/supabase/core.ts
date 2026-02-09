@@ -314,7 +314,7 @@ return this.executeWithRetry(async () => {
     return this.executeWithRetry(async () => {
       if (!this.client) throw new Error('Supabase client not initialized');
 
-      let query = this.client.from('robots').select('*');
+      let query = this.client.from('robots').select('*').is('deleted_at', null);
       if (userId) {
         query = query.eq('user_id', userId);
       }
@@ -360,6 +360,7 @@ return this.executeWithRetry(async () => {
         .from('robots')
         .select('*')
         .eq('id', id)
+        .is('deleted_at', null)
         .single();
 
       if (error) {
@@ -487,7 +488,7 @@ return this.executeWithRetry(async () => {
 
       const { error } = await this.client
         .from('robots')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;
