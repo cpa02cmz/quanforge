@@ -1,4 +1,8 @@
 import { createListenerManager, ListenerManager } from '../utils/listenerManager';
+import { createScopedLogger } from '../utils/logger';
+import { TIME_CONSTANTS, ANALYTICS_CONFIG } from '../constants/config';
+
+const logger = createScopedLogger('AnalyticsManager');
 
 interface UserEvent {
   type: string;
@@ -12,7 +16,7 @@ interface UserEvent {
   url: string;
   userAgent: string;
   referrer?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | undefined>;
 }
 
 interface AnalyticsConfig {
@@ -54,6 +58,8 @@ interface BusinessMetrics {
   };
 }
 
+
+
 interface BIReport {
   period: 'hourly' | 'daily' | 'weekly' | 'monthly';
   timestamp: number;
@@ -69,17 +75,16 @@ export class AnalyticsManager {
   private userId?: string;
   private flushTimer: ReturnType<typeof setInterval> | null = null;
   private isOnline = navigator.onLine;
-  private persistenceKey = 'quanforge_analytics_events';
   private listenerManager: ListenerManager;
 
   constructor(config?: Partial<AnalyticsConfig>) {
     this.listenerManager = createListenerManager();
     this.config = {
-      batchSize: 25, // Reduced for edge constraints
-      flushInterval: 15000, // 15 seconds - faster for edge
+      batchSize: ANALYTICS_CONFIG.DEFAULT_BATCH_SIZE,
+      flushInterval: ANALYTICS_CONFIG.DEFAULT_FLUSH_INTERVAL,
       enableRealTime: true,
-      enablePersistence: false, // Disable for edge deployment
-      sampleRate: 0.1, // 10% sampling - optimized for edge
+      enablePersistence: ANALYTICS_CONFIG.DEFAULT_PERSISTENCE_ENABLED,
+      sampleRate: ANALYTICS_CONFIG.DEFAULT_SAMPLE_RATE,
       debugMode: process.env['NODE_ENV'] === 'development',
       ...config
     };
@@ -89,24 +94,24 @@ export class AnalyticsManager {
     this.startFlushTimer();
     this.setupEventListeners();
     
-    console.log('📊 Analytics Manager initialized');
+    logger.log('Analytics Manager initialized');
   }
 
   private generateSessionId(): string {
-    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `session_${Date.now()}_${Math.random().toString(36).substring(2, 2 + ANALYTICS_CONFIG.SESSION_ID_LENGTH)}`;
   }
 
   private initializePersistence(): void {
     if (this.config.enablePersistence) {
       // Load persisted events from localStorage
       try {
-        const persisted = localStorage.getItem(this.persistenceKey);
+        const persisted = localStorage.getItem(ANALYTICS_CONFIG.PERSISTENCE_KEY);
         if (persisted) {
           this.events = JSON.parse(persisted);
-          console.log(`📊 Loaded ${this.events.length} persisted events`);
+          logger.log(`Loaded ${this.events.length} persisted events`);
         }
       } catch (error) {
-        console.warn('Failed to load persisted analytics events:', error);
+        logger.warn('Failed to load persisted analytics events:', error);
       }
     }
   }
@@ -114,9 +119,9 @@ export class AnalyticsManager {
   private persistEvents(): void {
     if (this.config.enablePersistence && this.events.length > 0) {
       try {
-        localStorage.setItem(this.persistenceKey, JSON.stringify(this.events));
+        localStorage.setItem(ANALYTICS_CONFIG.PERSISTENCE_KEY, JSON.stringify(this.events));
       } catch (error) {
-        console.warn('Failed to persist analytics events:', error);
+        logger.warn('Failed to persist analytics events:', error);
         // Clear old events if storage is full
         this.clearOldEvents();
       }
@@ -124,8 +129,8 @@ export class AnalyticsManager {
   }
 
   private clearOldEvents(): void {
-    const oneHourAgo = Date.now() - (60 * 60 * 1000);
-    this.events = this.events.filter(event => event.timestamp > oneHourAgo);
+    const retentionTime = Date.now() - (ANALYTICS_CONFIG.EVENT_RETENTION_HOURS * TIME_CONSTANTS.HOUR);
+    this.events = this.events.filter(event => event.timestamp > retentionTime);
     this.persistEvents();
   }
 
@@ -170,7 +175,7 @@ export class AnalyticsManager {
     category: UserEvent['category'],
     label?: string,
     value?: number,
-    metadata?: Record<string, any>
+    metadata?: Record<string, string | number | boolean | undefined>
   ): void {
     // Sample rate check
     if (Math.random() > this.config.sampleRate) {
@@ -205,7 +210,7 @@ export class AnalyticsManager {
   }
 
   // Track robot generation
-  public trackRobotGeneration(strategyType: string, success: boolean, duration: number, metadata?: any): void {
+  public trackRobotGeneration(strategyType: string, success: boolean, duration: number, metadata?: Record<string, unknown>): void {
     this.trackEvent('robot_generated', 'business', `Robot Generation - ${strategyType}`, duration, {
       strategyType,
       success,
@@ -215,17 +220,17 @@ export class AnalyticsManager {
   }
 
   // Track user interactions
-  public trackInteraction(element: string, action: string, context?: any): void {
+  public trackInteraction(element: string, action: string, context?: Record<string, string | number | boolean | undefined>): void {
     this.trackEvent(`interaction_${action}`, 'interaction', element, undefined, context);
   }
 
   // Track performance metrics
-  public trackPerformance(metric: string, value: number, context?: any): void {
+  public trackPerformance(metric: string, value: number, context?: Record<string, string | number | boolean | undefined>): void {
     this.trackEvent(`performance_${metric}`, 'performance', metric, value, context);
   }
 
   // Track errors
-  public trackError(error: Error, context?: any): void {
+  public trackError(error: Error, context?: Record<string, string | number | boolean | undefined>): void {
     this.trackEvent('javascript_error', 'error', error.name, undefined, {
       message: error.message,
       stack: error.stack,
@@ -260,7 +265,7 @@ export class AnalyticsManager {
 
     // Debug logging
     if (this.config.debugMode) {
-      console.log('📊 Analytics Event:', event);
+      logger.log('Analytics Event:', event);
     }
 
     // Persist events
@@ -286,14 +291,14 @@ export class AnalyticsManager {
       
       // Clear persisted events on successful send
       if (this.config.enablePersistence) {
-        localStorage.removeItem(this.persistenceKey);
+        localStorage.removeItem(ANALYTICS_CONFIG.PERSISTENCE_KEY);
       }
       
       if (this.config.debugMode) {
-        console.log(`📊 Successfully sent ${eventsToSend.length} events`);
+        logger.log(`Successfully sent ${eventsToSend.length} events`);
       }
     } catch (error) {
-      console.error('Failed to send analytics events:', error);
+      logger.error('Failed to send analytics events:', error);
       
       // Re-add events to queue on failure
       this.events.unshift(...eventsToSend);
@@ -306,7 +311,7 @@ export class AnalyticsManager {
     if (!this.config.endpoint) {
       // Default to console logging in development
       if (this.config.debugMode) {
-        console.log('📊 Analytics Events (no endpoint configured):', events);
+        logger.log('Analytics Events (no endpoint configured):', events);
       }
       return;
     }
@@ -403,7 +408,7 @@ export class AnalyticsManager {
       switch (event.action) {
         case 'robot_generated':
           metrics.robotGeneration.total++;
-          if (event.metadata?.['success']) {
+          if (event.metadata && event.metadata.success) {
             metrics.robotGeneration.successful++;
           } else {
             metrics.robotGeneration.failed++;
@@ -413,8 +418,8 @@ export class AnalyticsManager {
             metrics.robotGeneration.averageTime += event.value;
           }
           
-          if (event.metadata?.['strategyType']) {
-            const strategy = event.metadata['strategyType'];
+          if (event.metadata && event.metadata.strategyType) {
+            const strategy = String(event.metadata.strategyType);
             metrics.robotGeneration.strategyTypes[strategy] = 
               (metrics.robotGeneration.strategyTypes[strategy] || 0) + 1;
           }
@@ -531,7 +536,15 @@ export class AnalyticsManager {
   }
 
   // Get current analytics statistics
-  public getStats(): any {
+  public getStats(): {
+    totalEvents: number;
+    sessionId: string;
+    userId: string | undefined;
+    isOnline: boolean;
+    config: AnalyticsConfig;
+    oldestEvent: number | null;
+    newestEvent: number | null;
+  } {
     return {
       totalEvents: this.events.length,
       sessionId: this.sessionId,
@@ -556,7 +569,7 @@ export class AnalyticsManager {
   public clearEvents(): void {
     this.events = [];
     if (this.config.enablePersistence) {
-      localStorage.removeItem(this.persistenceKey);
+      localStorage.removeItem(ANALYTICS_CONFIG.PERSISTENCE_KEY);
     }
   }
 
@@ -573,7 +586,7 @@ export class AnalyticsManager {
     // Try to flush remaining events
     this.flushEvents();
     
-    console.log('📊 Analytics Manager destroyed');
+    logger.log('Analytics Manager destroyed');
   }
 }
 
@@ -582,11 +595,11 @@ export class AnalyticsManager {
 // Analytics are stored locally or sent to external services, not to internal APIs
 export const analyticsManager = new AnalyticsManager({
   endpoint: undefined, // No internal API endpoint - client-side only
-  batchSize: 50,
-  flushInterval: 30000,
+  batchSize: ANALYTICS_CONFIG.DEFAULT_BATCH_SIZE * 2,
+  flushInterval: ANALYTICS_CONFIG.DEFAULT_FLUSH_INTERVAL * 2,
   enableRealTime: true,
-  enablePersistence: true,
-  sampleRate: 1.0,
+  enablePersistence: ANALYTICS_CONFIG.DEFAULT_PERSISTENCE_ENABLED,
+  sampleRate: ANALYTICS_CONFIG.REAL_TIME_SAMPLE_RATE,
   debugMode: process.env['NODE_ENV'] === 'development'
 });
 
