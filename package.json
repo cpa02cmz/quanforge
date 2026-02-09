@@ -1,7 +1,7 @@
 {
   "name": "quantforge-ai",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.6.0",
   "type": "module",
   "description": "Advanced MQL5 Trading Robot Generator powered by AI",
   "keywords": [
@@ -23,7 +23,7 @@
     "build:profile": "vite build --mode profile",
     "build:benchmark": "npm run clean && npm run build && npm run build:analyze",
     "build:edge": "NODE_ENV=production vite build --mode edge",
-    "build:edge-analyze": "ANALYZE=true vite build --mode edge && npx @vercel/webpack-bundle-analyzer dist/static/js/*.js",
+    "build:edge-analyze": "ANALYZE=true vite build --mode edge",
     "build:edge-profile": "vite build --mode edge --profile",
     "build:production": "npm run build:edge",
     "build:edge-optimized": "NODE_ENV=production vite build --mode edge && npm run optimize:bundle && npm run optimize:edge",
