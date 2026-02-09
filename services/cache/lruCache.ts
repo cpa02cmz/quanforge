@@ -72,7 +72,7 @@ export class OptimizedLRUCache<T = any> extends BaseCache<T> {
     }
 
     const ttl = options.ttl || this.getTTLForEntry(key, data);
-    const expires = Date.now() + ttl;
+    const _expires = Date.now() + ttl;
 
     // Process data (compression if needed)
     let processedData: any = data;

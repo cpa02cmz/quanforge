@@ -402,7 +402,7 @@ class AutomatedBackupService {
       if (error) throw error;
       
       // Manually filter by updated_at and order (since gte/order aren't available)
-      const filtered = data.filter((robot: any) => robot.updated_at >= cutoffTime)
+      const _filtered = data.filter((robot: any) => robot.updated_at >= cutoffTime)
         .sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
         
       if (error) throw error;
@@ -481,7 +481,7 @@ class AutomatedBackupService {
         
         return btoa(String.fromCharCode.apply(null, Array.from(compressed)));
       }
-    } catch (error) {
+    } catch (_error) {
       logger.warn('CompressionStream not available, using fallback');
     }
     
