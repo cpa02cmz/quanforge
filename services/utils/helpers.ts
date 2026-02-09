@@ -9,7 +9,7 @@ import { securityManager } from '../securityManager';
  * Safe JSON parsing with enhanced security and fallback
  * Uses security manager's safe JSON parsing when available
  */
-export const safeParse = (data: string | null, fallback: any) => {
+export const safeParse = <T>(data: string | null, fallback: T): T => {
     if (!data) return fallback;
     try {
         // Use security manager's safe JSON parsing
@@ -27,12 +27,13 @@ export const safeParse = (data: string | null, fallback: any) => {
 export const trySaveToStorage = (key: string, value: string) => {
     try {
         localStorage.setItem(key, value);
-    } catch (e: any) {
+    } catch (e: unknown) {
+        const error = e as { name?: string; code?: number };
         if (
-            e.name === 'QuotaExceededError' || 
-            e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-            e.code === 22 ||
-            e.code === 1014
+            error.name === 'QuotaExceededError' ||
+            error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+            error.code === 22 ||
+            error.code === 1014
         ) {
             throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
         }
@@ -59,11 +60,17 @@ export const generateUUID = (): string => {
  * Validate robot object structure and required properties
  * Ensures robot objects have minimal required fields for safety
  */
-export const isValidRobot = (r: any): boolean => {
+interface UnknownRobot {
+    name: unknown;
+    code: unknown;
+    [key: string]: unknown;
+}
+
+export const isValidRobot = (r: unknown): boolean => {
+    if (typeof r !== 'object' || r === null) return false;
+    const robot = r as UnknownRobot;
     return (
-        typeof r === 'object' &&
-        r !== null &&
-        typeof r.name === 'string' &&
-        typeof r.code === 'string'
+        typeof robot.name === 'string' &&
+        typeof robot.code === 'string'
     );
 };
