@@ -5,6 +5,7 @@
 
 import { BaseCache, BaseCacheEntry, CacheConfig, CompressionUtils, CACHE_CONSTANTS } from './__init__';
 import { createScopedLogger } from '../../utils/logger';
+import { CACHE_CONFIG, TIME_CONSTANTS } from '../../constants/config';
 
 const logger = createScopedLogger('advancedCache');
 
@@ -410,18 +411,18 @@ export class CacheFactory {
 
 // Pre-configured cache instances
 export const advancedRobotCache = CacheFactory.getInstance('robots', {
-  maxSize: 10 * 1024 * 1024, // 10MB
-  defaultTTL: 300000, // 5 minutes
+  maxSize: CACHE_CONFIG.MAX_CACHE_MEMORY_SIZE, // 10MB
+  defaultTTL: TIME_CONSTANTS.CACHE_DEFAULT_TTL, // 5 minutes
 });
 
 export const queryCache = CacheFactory.getInstance('queries', {
-  maxSize: 5 * 1024 * 1024, // 5MB
-  defaultTTL: 60000, // 1 minute
+  maxSize: CACHE_CONFIG.MAX_CACHE_MEMORY_SIZE / 2, // 5MB
+  defaultTTL: TIME_CONSTANTS.CLEANUP_DEFAULT_INTERVAL, // 1 minute
 });
 
 export const userCache = CacheFactory.getInstance('users', {
-  maxSize: 2 * 1024 * 1024, // 2MB
-  defaultTTL: 900000, // 15 minutes
+  maxSize: CACHE_CONFIG.MAX_CACHE_MEMORY_SIZE / 5, // 2MB
+  defaultTTL: TIME_CONSTANTS.CACHE_MEDIUM_TTL, // 15 minutes
 });
 
 // Cleanup on page unload to prevent memory leaks

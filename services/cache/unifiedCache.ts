@@ -5,6 +5,7 @@
 
 import { BaseCache, BaseCacheEntry, CacheConfig, CacheStrategy, CompressionUtils, CACHE_CONSTANTS } from './__init__';
 import { createScopedLogger } from '../../utils/logger';
+import { CACHE_CONFIG, TIME_CONSTANTS } from '../../constants/config';
 
 const logger = createScopedLogger('unifiedCache');
 
@@ -206,16 +207,16 @@ export class UnifiedCacheManager extends BaseCache {
       const timeSinceAccess = Date.now() - entry.lastAccessed;
       const accessFrequency = entry.accessCount / (age / 1000 || 1);
       
-      // Priority weights
-      const priorityWeight = entry.priority === 'high' ? 1000 : 
-                           entry.priority === 'medium' ? 500 : 100;
-      
+      // Priority weights - using configurable constants
+      const priorityWeight = entry.priority === 'high' ? CACHE_CONFIG.PRIORITY_WEIGHT_HIGH :
+                           entry.priority === 'medium' ? CACHE_CONFIG.PRIORITY_WEIGHT_MEDIUM : CACHE_CONFIG.PRIORITY_WEIGHT_LOW;
+
       // Utility score: higher is more useful
       const utilityScore = (
-        accessFrequency * 100 + // Access frequency weight
+        accessFrequency * CACHE_CONFIG.UTILITY_ACCESS_FREQUENCY_MULTIPLIER + // Access frequency weight
         priorityWeight + // Priority weight
-        (entry.size / 1024) * -1 + // Size penalty
-        (timeSinceAccess / 1000) * -10 // Recent access bonus
+        (entry.size / CACHE_CONFIG.UTILITY_SIZE_PENALTY_DIVISOR) * -1 + // Size penalty
+        (timeSinceAccess / CACHE_CONFIG.UTILITY_TIME_PENALTY_DIVISOR) * -CACHE_CONFIG.UTILITY_TIME_PENALTY_MULTIPLIER // Recent access bonus
       );
 
       return { key, entry, utilityScore };
@@ -399,7 +400,7 @@ export const CacheStrategies = {
     },
     getTTL: (_key: string, data: any) => {
       // Cache successful responses longer
-      return data && data.success ? 10 * 60 * 1000 : 2 * 60 * 1000; // 10min vs 2min
+      return data && data.success ? TIME_CONSTANTS.CACHE_LONG_TTL : TIME_CONSTANTS.CACHE_SHORT_TTL; // 10min vs 2min
     }
   },
 
@@ -413,7 +414,7 @@ export const CacheStrategies = {
     getTTL: (_key: string, data: any) => {
       // Cache based on content length
       const length = data?.content?.length || 0;
-      return length > 1000 ? 30 * 60 * 1000 : 15 * 60 * 1000; // 30min vs 15min
+      return length > CACHE_CONFIG.MAX_CACHE_ENTRIES ? TIME_CONSTANTS.CACHE_EXTENDED_TTL / 2 : TIME_CONSTANTS.CACHE_MEDIUM_TTL; // 30min vs 15min
     }
   },
 
@@ -426,7 +427,7 @@ export const CacheStrategies = {
     },
     getTTL: (_key: string, _data: any) => {
       // User data changes frequently
-      return 5 * 60 * 1000; // 5 minutes
+      return TIME_CONSTANTS.CACHE_DEFAULT_TTL; // 5 minutes
     }
   },
 
@@ -438,15 +439,15 @@ export const CacheStrategies = {
     },
     getTTL: (_key: string, _data: any) => {
       // Static data can be cached longer
-      return 60 * 60 * 1000; // 1 hour
+      return TIME_CONSTANTS.CACHE_LONG_TTL; // 1 hour
     }
   }
 } as const;
 
 // Global cache instance
 export const globalCache = new UnifiedCacheManager({
-  maxSize: 1000,
-  defaultTTL: 5 * 60 * 1000,
+  maxSize: CACHE_CONFIG.MAX_CACHE_ENTRIES,
+  defaultTTL: TIME_CONSTANTS.CACHE_DEFAULT_TTL,
   enableMetrics: process.env.NODE_ENV === 'development',
   enableCompression: false
 });

@@ -5,6 +5,7 @@
 
 import { EdgeCacheCompression } from './edgeCacheCompression';
 import { createSafeWildcardPattern, ReDoSError } from '../utils/safeRegex';
+import { CACHE_CONFIG, TIME_CONSTANTS, EDGE_CONFIG } from '../constants/config';
 
 interface EdgeCacheEntry<T> {
   data: T;
@@ -57,14 +58,14 @@ export class EdgeCacheManager<T = any> {
     regionalStats: new Map<string, { hits: number; size: number }>(),
   };
   private config: EdgeCacheConfig = {
-    memoryMaxSize: 16 * 1024 * 1024, // 16MB - increased for better performance
-    memoryMaxEntries: 1500, // Increased entries for better caching
+    memoryMaxSize: CACHE_CONFIG.MAX_CACHE_MEMORY_SIZE * 1.5, // 15MB - optimized for edge performance
+    memoryMaxEntries: CACHE_CONFIG.MAX_CACHE_ENTRIES * 1.5, // 1500 entries
     persistentMaxSize: 75 * 1024 * 1024, // 75MB persistent cache
     persistentMaxEntries: 3000, // Increased entries
-    defaultTTL: 60 * 60 * 1000, // 60 minutes - increased for better hit rates
-    cleanupInterval: 60000, // 60 seconds - balanced cleanup
-    compressionThreshold: 512, // 512B - lower threshold for more compression
-    edgeRegions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1', 'syd1', 'nrt1'],
+    defaultTTL: TIME_CONSTANTS.CACHE_LONG_TTL, // 60 minutes - increased for better hit rates
+    cleanupInterval: TIME_CONSTANTS.CLEANUP_DEFAULT_INTERVAL, // 60 seconds - balanced cleanup
+    compressionThreshold: CACHE_CONFIG.ADVANCED_CACHE_COMPRESSION_THRESHOLD, // 512B - lower threshold for more compression
+    edgeRegions: EDGE_CONFIG.REGIONS.concat(['sfo1', 'arn1', 'gru1', 'syd1', 'nrt1']), // Extended regions
     replicationFactor: 4, // Increased replication for better redundancy
   };
   private cleanupTimer: number | null = null;

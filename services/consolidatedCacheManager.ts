@@ -1,6 +1,7 @@
 // Consolidated Cache Manager - Unifies all cache strategies
 import { decompressFromUTF16, compressToUTF16 } from 'lz-string';
 import { createScopedLogger } from '../utils/logger';
+import { CACHE_CONFIG, TIME_CONSTANTS } from '../constants/config';
 
 const logger = createScopedLogger('ConsolidatedCacheManager');
 
@@ -66,11 +67,11 @@ export class ConsolidatedCacheManager {
 
   constructor(options: CacheOptions = {}) {
     this.options = {
-      maxSize: 500, // Reduced for edge constraints
-      maxMemorySize: 5 * 1024 * 1024, // 5MB - optimized for edge
-      defaultTTL: 3 * 60 * 1000, // 3 minutes - shorter for edge
-      cleanupInterval: 30000, // 30 seconds - faster cleanup for edge
-      compressionThreshold: 512, // 512B - lower threshold for edge
+      maxSize: CACHE_CONFIG.MAX_CACHE_ENTRIES / 2, // Reduced for edge constraints
+      maxMemorySize: CACHE_CONFIG.MAX_CACHE_MEMORY_SIZE / 2, // 5MB - optimized for edge
+      defaultTTL: TIME_CONSTANTS.CACHE_DEFAULT_TTL - TIME_CONSTANTS.MINUTE * 2, // 3 minutes - shorter for edge
+      cleanupInterval: TIME_CONSTANTS.CLEANUP_SHORT_INTERVAL, // 30 seconds - faster cleanup for edge
+      compressionThreshold: CACHE_CONFIG.ADVANCED_CACHE_COMPRESSION_THRESHOLD, // 512B - lower threshold for edge
       enableCompression: true,
       enableMetrics: process.env['NODE_ENV'] === 'development', // Disable in production for edge
       enablePersistence: false, // Disable for edge deployment
@@ -114,7 +115,7 @@ export class ConsolidatedCacheManager {
         return !data || !data.error;
       },
       getTTL: (_key: string, data: any) => {
-        return data && data.success ? 10 * 60 * 1000 : 2 * 60 * 1000;
+        return data && data.success ? TIME_CONSTANTS.CACHE_LONG_TTL : TIME_CONSTANTS.CACHE_SHORT_TTL;
       },
       getTags: () => ['api'],
       priority: 'high',
@@ -130,7 +131,7 @@ export class ConsolidatedCacheManager {
       },
       getTTL: (_key: string, data: any) => {
         const length = data?.content?.length || 0;
-        return length > 1000 ? 30 * 60 * 1000 : 15 * 60 * 1000;
+        return length > CACHE_CONFIG.MAX_CACHE_ENTRIES ? TIME_CONSTANTS.CACHE_EXTENDED_TTL / 2 : TIME_CONSTANTS.CACHE_MEDIUM_TTL;
       },
       getTags: () => ['ai', 'generation'],
       priority: 'medium',
@@ -142,7 +143,7 @@ export class ConsolidatedCacheManager {
     this.strategies.set('user', {
       name: 'user_data',
       shouldCache: () => true,
-      getTTL: () => 5 * 60 * 1000,
+      getTTL: () => TIME_CONSTANTS.CACHE_DEFAULT_TTL,
       getTags: () => ['user'],
       priority: 'high',
       compression: false,
@@ -153,7 +154,7 @@ export class ConsolidatedCacheManager {
     this.strategies.set('static', {
       name: 'static_data',
       shouldCache: () => true,
-      getTTL: () => 60 * 60 * 1000,
+      getTTL: () => TIME_CONSTANTS.CACHE_LONG_TTL,
       getTags: () => ['static'],
       priority: 'low',
       compression: true,
@@ -164,7 +165,7 @@ export class ConsolidatedCacheManager {
     this.strategies.set('market', {
       name: 'market_data',
       shouldCache: () => true,
-      getTTL: () => 30 * 1000, // 30 seconds
+      getTTL: () => TIME_CONSTANTS.CACHE_SHORT_TTL, // 30 seconds
       getTags: () => ['market', 'realtime'],
       priority: 'high',
       compression: false,
@@ -506,9 +507,9 @@ export class ConsolidatedCacheManager {
       
       // Utility score: higher is more useful
       const utilityScore = (
-        accessFrequency * 100 + // Access frequency weight
-        (entry.size / 1024) * -1 + // Size penalty
-        (timeSinceAccess / 1000) * -10 // Recent access bonus
+        accessFrequency * CACHE_CONFIG.UTILITY_ACCESS_FREQUENCY_MULTIPLIER + // Access frequency weight
+        (entry.size / CACHE_CONFIG.UTILITY_SIZE_PENALTY_DIVISOR) * -1 + // Size penalty
+        (timeSinceAccess / CACHE_CONFIG.UTILITY_TIME_PENALTY_DIVISOR) * -CACHE_CONFIG.UTILITY_TIME_PENALTY_MULTIPLIER // Recent access bonus
       );
 
       return { key, entry, utilityScore };
@@ -748,9 +749,9 @@ export class ConsolidatedCacheManager {
 
 // Global singleton instance
 export const consolidatedCache = new ConsolidatedCacheManager({
-  maxSize: 1000,
-  maxMemorySize: 10 * 1024 * 1024, // 10MB
-  defaultTTL: 5 * 60 * 1000, // 5 minutes
+  maxSize: CACHE_CONFIG.MAX_CACHE_ENTRIES,
+  maxMemorySize: CACHE_CONFIG.MAX_CACHE_MEMORY_SIZE, // 10MB
+  defaultTTL: TIME_CONSTANTS.CACHE_DEFAULT_TTL, // 5 minutes
   enableMetrics: process.env['NODE_ENV'] === 'development',
   enableCompression: true,
   enablePersistence: true,

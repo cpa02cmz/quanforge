@@ -4,6 +4,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
+import { DATABASE_CONFIG } from '../../constants/config';
 
 interface ConnectionConfig {
   maxConnections: number;
@@ -39,13 +40,13 @@ interface PoolStats {
 }
 
 const DEFAULT_CONFIG: ConnectionConfig = {
-  maxConnections: 10,
+  maxConnections: DATABASE_CONFIG.POOL.MAX_SIZE,
   minConnections: 2,
-  acquireTimeout: 5000,
-  idleTimeout: 30000,
-  healthCheckInterval: 10000,
-  retryAttempts: 3,
-  retryDelay: 1000,
+  acquireTimeout: DATABASE_CONFIG.POOL.ACQUIRE_TIMEOUT,
+  idleTimeout: DATABASE_CONFIG.POOL.IDLE_TIMEOUT,
+  healthCheckInterval: DATABASE_CONFIG.POOL.HEALTH_CHECK_INTERVAL,
+  retryAttempts: DATABASE_CONFIG.RETRY.MAX_ATTEMPTS,
+  retryDelay: DATABASE_CONFIG.POOL.RETRY_DELAY,
   enableConnectionDraining: true,
   regionAffinity: true,
   connectionWarming: true,
