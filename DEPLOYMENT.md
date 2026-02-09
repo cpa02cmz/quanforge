@@ -433,7 +433,7 @@ Since this is a Vite SPA without server-side API routes, health checks are perfo
 const health = {
   status: 'healthy',
   timestamp: new Date().toISOString(),
-  version: '1.6.0',
+  version: '<current-version>',
   services: {
     database: window.localStorage ? 'available' : 'unavailable',
     supabase: !!import.meta.env.VITE_SUPABASE_URL ? 'configured' : 'mock-mode',
@@ -700,5 +700,5 @@ For additional support, check the [USER_GUIDE.md](./USER_GUIDE.md) or open an is
 ---
 
 **Last Updated**: December 21, 2025  
-**Version**: v1.6.0  
+**Version**: Current stable release 
 **Maintainers**: QuantForge AI Team
