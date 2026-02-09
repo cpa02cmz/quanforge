@@ -4,11 +4,11 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
-import { OptimizationConfig, OptimizationMetrics, OptimizationHistory } from './optimizationTypes';
+import { OptimizationConfig, OptimizationMetrics } from './optimizationTypes';
 import { CoreOptimizationEngine } from './coreOptimizationEngine';
 import { backendOptimizer } from '../backendOptimizer';
 import { databaseOptimizer } from '../databaseOptimizer';
-import { queryOptimizer } from '../queryOptimizer';
+
 import { edgeOptimizer } from '../edgeFunctionOptimizer';
 import { databasePerformanceMonitor } from '../databasePerformanceMonitor';
 import { BACKEND_OPTIMIZATION_CONFIG } from '../../constants/config';
@@ -72,7 +72,7 @@ class BackendOptimizationManager {
   /**
    * Apply optimizations based on recommendations
    */
-  async applyOptimizations(recommendations: string[]): Promise<void> {
+  async applyOptimizations(_recommendations: string[]): Promise<void> {
     if (!this.coreEngine) {
       throw new Error('Optimization manager not initialized');
     }
@@ -100,11 +100,11 @@ class BackendOptimizationManager {
   /**
    * Optimize database queries for a specific table
    */
-  async optimizeTableQueries(client: SupabaseClient, tableName: string): Promise<void> {
+  async optimizeTableQueries(_client: SupabaseClient, tableName: string): Promise<void> {
     if (!this.config.enableDatabaseOptimization) return;
     
     // Analyze query patterns for the table
-    const report = databasePerformanceMonitor.getPerformanceReport();
+    void databasePerformanceMonitor.getPerformanceReport();
     // Note: This would need actual query analysis implementation
     console.log(`Optimizing queries for table: ${tableName}`);
   }
@@ -122,7 +122,7 @@ class BackendOptimizationManager {
   /**
    * Get query optimization recommendations
    */
-  async getQueryOptimizationRecommendations(client: SupabaseClient): Promise<any> {
+  async getQueryOptimizationRecommendations(_client: SupabaseClient): Promise<any> {
     if (!this.config.enableDatabaseOptimization) return { recommendations: [] };
     
     // For now, return basic recommendations
@@ -148,7 +148,7 @@ class BackendOptimizationManager {
   /**
    * Get advanced optimization insights
    */
-  async getAdvancedOptimizationInsights(client: SupabaseClient): Promise<any> {
+  async getAdvancedOptimizationInsights(_client: SupabaseClient): Promise<any> {
     if (!this.config.enableDatabaseOptimization) return null;
     
     try {
@@ -173,7 +173,7 @@ class BackendOptimizationManager {
   /**
    * Run comprehensive optimization
    */
-  async runComprehensiveOptimization(client: SupabaseClient): Promise<{
+  async runComprehensiveOptimization(_client: SupabaseClient): Promise<{
     optimizationsApplied: number;
     performanceGain: number;
     recommendations: string[];
@@ -206,7 +206,7 @@ class BackendOptimizationManager {
   /**
    * Get cross-system optimization recommendations
    */
-  async getCrossSystemOptimizationRecommendations(client: SupabaseClient): Promise<{
+  async getCrossSystemOptimizationRecommendations(_client: SupabaseClient): Promise<{
     priority: string;
     recommendations: string[];
     potentialImpact: string;
@@ -245,7 +245,7 @@ class BackendOptimizationManager {
   /**
    * Perform predictive optimization
    */
-  async performPredictiveOptimization(client: SupabaseClient): Promise<{
+  async performPredictiveOptimization(_client: SupabaseClient): Promise<{
     predictions: string[];
     automatedOptimizations: string[];
   }> {

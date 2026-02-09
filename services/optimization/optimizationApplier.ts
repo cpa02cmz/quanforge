@@ -6,10 +6,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { OptimizationConfig } from './optimizationTypes';
 import { backendOptimizer } from '../backendOptimizer';
-import { databaseOptimizer } from '../databaseOptimizer';
-import { queryOptimizer } from '../queryOptimizer';
 import { edgeOptimizer } from '../edgeFunctionOptimizer';
-import { edgeCacheManager } from '../edgeCacheManager';
 import { robotCache } from '../advancedCache';
 
 interface OptimizationResult {

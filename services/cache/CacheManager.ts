@@ -7,6 +7,7 @@
 import { ICacheManager, CacheConfig } from '../../types/serviceInterfaces';
 import { createScopedLogger } from '../../utils/logger';
 import { consolidatedCache } from '../consolidatedCacheManager';
+import { TIME_CONSTANTS, CACHE_CONFIG } from '../../constants/config';
 
 const logger = createScopedLogger('CacheManager');
 
@@ -21,8 +22,8 @@ export class CacheManager implements ICacheManager {
 
   async initialize(): Promise<void> {
     this.config = {
-      ttl: 15 * 60 * 1000, // 15 minutes
-      maxSize: 200,
+      ttl: TIME_CONSTANTS.CACHE_MEDIUM_TTL, // 15 minutes
+      maxSize: CACHE_CONFIG.MAX_LRU_CACHE_SIZE,
       strategy: 'lru',
     };
   }
@@ -222,7 +223,7 @@ export class CacheManager implements ICacheManager {
     if (hitRate > 0.8) {
       return baseTTL * 2; // Increase TTL for frequently accessed items
     } else if (hitRate < 0.2) {
-      return Math.max(baseTTL * 0.5, 5 * 60 * 1000); // Reduce TTL but keep minimum 5min
+      return Math.max(baseTTL * 0.5, TIME_CONSTANTS.CACHE_DEFAULT_TTL); // Reduce TTL but keep minimum 5min
     }
     
     return baseTTL;

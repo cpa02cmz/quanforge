@@ -71,7 +71,7 @@ export class DIContainer implements ServiceContainer {
     if (this.isDisposing) return;
     this.isDisposing = true;
 
-    const disposePromises = Array.from(this.instances.entries()).map(async ([token, instance]) => {
+    const disposePromises = Array.from(this.instances.entries()).map(async ([_token, instance]) => {
       try {
         if (instance && typeof instance.destroy === 'function') {
           await instance.destroy();

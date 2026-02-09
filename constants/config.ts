@@ -51,6 +51,20 @@ export const CACHE_CONFIG = {
   // Cleanup intervals for advanced cache
   ADVANCED_CACHE_CLEANUP_INTERVAL: TIME_CONSTANTS.CLEANUP_DEFAULT_INTERVAL, // 1 minute
   ADVANCED_CACHE_COMPRESSION_THRESHOLD: 512, // 0.5KB
+  
+  // Priority weights for cache entry utility scoring
+  PRIORITY_WEIGHT_HIGH: 1000,
+  PRIORITY_WEIGHT_MEDIUM: 500,
+  PRIORITY_WEIGHT_LOW: 100,
+  
+  // Utility score calculation constants
+  UTILITY_ACCESS_FREQUENCY_MULTIPLIER: 100,
+  UTILITY_SIZE_PENALTY_DIVISOR: 1024, // Convert to KB
+  UTILITY_TIME_PENALTY_DIVISOR: 1000, // Convert to seconds
+  UTILITY_TIME_PENALTY_MULTIPLIER: 10,
+  
+  // Access time retention for metrics
+  ACCESS_TIME_HISTORY_LIMIT: 100,
 };
 
 // ========== RATE LIMITING CONFIGURATION ==========

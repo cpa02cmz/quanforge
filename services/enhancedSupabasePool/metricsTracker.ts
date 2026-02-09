@@ -1,6 +1,6 @@
 // Connection metrics and analytics for Enhanced Supabase Pool
 
-import { PoolMetrics, Connection } from './types';
+import { PoolMetrics } from './types';
 
 export class ConnectionMetricsTracker {
   private metrics: PoolMetrics = {

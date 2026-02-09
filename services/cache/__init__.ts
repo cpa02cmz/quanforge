@@ -5,6 +5,7 @@
  */
 
 import { createScopedLogger } from '../../utils/logger';
+import { CACHE_CONFIG, TIME_CONSTANTS, EDGE_CONFIG } from '../../constants/config';
 
 const logger = createScopedLogger('cache');
 
@@ -54,31 +55,31 @@ export interface CacheStrategy {
   onEvict?: (key: string, data: any) => void;
 }
 
-// Constants for configuration
+// Constants for configuration - now centralized in constants/config.ts
 export const CACHE_CONSTANTS = {
-  DEFAULT_SIZE: 1000,
-  DEFAULT_MEMORY_SIZE: 10 * 1024 * 1024, // 10MB
-  DEFAULT_TTL: 5 * 60 * 1000, // 5 minutes
-  DEFAULT_CLEANUP_INTERVAL: 60 * 1000, // 1 minute
-  DEFAULT_COMPRESSION_THRESHOLD: 1024, // 1KB
-  COMPRESSION_RATIO_THRESHOLD: 0.8, // Only compress if reduces size by 20%
-  
+  DEFAULT_SIZE: CACHE_CONFIG.MAX_CACHE_ENTRIES,
+  DEFAULT_MEMORY_SIZE: CACHE_CONFIG.MAX_CACHE_MEMORY_SIZE, // 10MB
+  DEFAULT_TTL: TIME_CONSTANTS.CACHE_DEFAULT_TTL, // 5 minutes
+  DEFAULT_CLEANUP_INTERVAL: TIME_CONSTANTS.CLEANUP_DEFAULT_INTERVAL, // 1 minute
+  DEFAULT_COMPRESSION_THRESHOLD: CACHE_CONFIG.COMPRESSION_THRESHOLD, // 1KB
+  COMPRESSION_RATIO_THRESHOLD: CACHE_CONFIG.COMPRESSION_RATIO_THRESHOLD, // Only compress if reduces size by 20%
+
   // Specialized configurations
-  LRU_CACHE_SIZE: 200,
-  LRU_DEFAULT_TTL: 15 * 60 * 1000, // 15 minutes
-  
-  ADVANCED_CACHE_SIZE: 500,
-  ADVANCED_MEMORY_SIZE: 10 * 1024 * 1024,
-  ADVANCED_TTL: 3 * 60 * 1000, // 3 minutes
-  
-  UNIFIED_CACHE_SIZE: 1000,
-  UNIFIED_MEMORY_SIZE: 10 * 1024 * 1024,
-  UNIFIED_TTL: 5 * 60 * 1000, // 5 minutes
-  
+  LRU_CACHE_SIZE: CACHE_CONFIG.MAX_LRU_CACHE_SIZE,
+  LRU_DEFAULT_TTL: TIME_CONSTANTS.CACHE_MEDIUM_TTL, // 15 minutes
+
+  ADVANCED_CACHE_SIZE: CACHE_CONFIG.MAX_ADVANCED_CACHE_SIZE,
+  ADVANCED_MEMORY_SIZE: CACHE_CONFIG.MAX_CACHE_MEMORY_SIZE,
+  ADVANCED_TTL: TIME_CONSTANTS.CACHE_DEFAULT_TTL - TIME_CONSTANTS.MINUTE * 2, // 3 minutes
+
+  UNIFIED_CACHE_SIZE: CACHE_CONFIG.MAX_CACHE_ENTRIES,
+  UNIFIED_MEMORY_SIZE: CACHE_CONFIG.MAX_CACHE_MEMORY_SIZE,
+  UNIFIED_TTL: TIME_CONSTANTS.CACHE_DEFAULT_TTL, // 5 minutes
+
   // Edge configurations
-  EDGE_REGIONS: ['hkg1', 'iad1', 'sin1', 'cle1', 'fra1'],
-  EDGE_CACHE_TTL: 3 * 60 * 1000, // 3 minutes for edge
-  
+  EDGE_REGIONS: EDGE_CONFIG.REGIONS,
+  EDGE_CACHE_TTL: EDGE_CONFIG.EDGE_CACHE_TTL, // 3 minutes for edge
+
   // Tag configurations
   TAGS: {
     API: 'api',

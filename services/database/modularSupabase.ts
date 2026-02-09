@@ -24,7 +24,7 @@ const safeParse = <T = unknown>(data: string | null, fallback: T): T => {
   try {
     const parsed = securityManager.safeJSONParse(data);
     return (parsed as T) || fallback;
-  } catch (e) {
+  } catch (_e) {
     return fallback;
   }
 };
