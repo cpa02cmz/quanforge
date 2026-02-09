@@ -238,26 +238,27 @@ export class DatabaseCore implements IDatabaseCore {
   }
 
   private createMockClient(): MockSupabaseClient {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return {
-      from: (table: string) => ({
-        select: (columns: string) => ({
-          order: (column: string, options: unknown) => ({
-            limit: (limit: number) => Promise.resolve({ data: [], error: null }),
+      from: (_table: string) => ({
+        select: (_columns: string) => ({
+          order: (_column: string, _options: unknown) => ({
+            limit: (_limit: number) => Promise.resolve({ data: [], error: null }),
             then: (resolve: (value: { data: []; error: null }) => void) => Promise.resolve({ data: [], error: null }),
           }),
-          count: (option: string) => ({
-            head: (option: boolean) => Promise.resolve({ count: 0, error: null }),
+          count: (_option: string) => ({
+            head: (_headOption: boolean) => Promise.resolve({ count: 0, error: null }),
           }),
         }),
         insert: (data: unknown) => Promise.resolve({ data, error: null }),
         update: (data: unknown) => ({
-          eq: (column: string, value: unknown) => Promise.resolve({ data, error: null }),
+          eq: (_column: string, _value: unknown) => Promise.resolve({ data, error: null }),
         }),
         delete: () => ({
-          eq: (column: string, value: unknown) => Promise.resolve({ error: null }),
+          eq: (_column: string, _value: unknown) => Promise.resolve({ error: null }),
         }),
       }),
-      rpc: (functionName: string, params: unknown) => Promise.resolve({ data: null, error: null }),
+      rpc: (_functionName: string, _params: unknown) => Promise.resolve({ data: null, error: null }),
     };
   }
 

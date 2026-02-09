@@ -28,6 +28,13 @@ export const NumericInput: React.FC<{
     const [isIncrementPressed, setIsIncrementPressed] = useState(false);
     const [isDecrementPressed, setIsDecrementPressed] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+    
+    // Long-press state management
+    const incrementIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const decrementIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const incrementDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const decrementDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const repeatCountRef = useRef(0);
 
     // Sync local state if external value changes significantly (e.g. reset or load)
     useEffect(() => {
@@ -37,6 +44,14 @@ export const NumericInput: React.FC<{
             setLocalValue(value.toString());
         }
     }, [value]);
+    
+    // Cleanup long-press intervals on unmount
+    useEffect(() => {
+        return () => {
+            stopLongPress('increment');
+            stopLongPress('decrement');
+        };
+    }, []);
 
     const handleLocalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
@@ -79,7 +94,9 @@ export const NumericInput: React.FC<{
             onChange(newValue);
             setLocalValue(newValue.toString());
             triggerPulse();
+            return true;
         }
+        return false;
     }, [value, step, max, onChange, triggerPulse]);
 
     const decrement = useCallback(() => {
@@ -88,10 +105,78 @@ export const NumericInput: React.FC<{
             onChange(newValue);
             setLocalValue(newValue.toString());
             triggerPulse();
+            return true;
         }
+        return false;
     }, [value, step, min, onChange, triggerPulse]);
+    
+    // Long-press functionality with progressive speed
+    const getRepeatDelay = (count: number): number => {
+        // Start slow (400ms), then speed up to fast (50ms)
+        if (count < 5) return 400;
+        if (count < 10) return 200;
+        if (count < 20) return 100;
+        return 50;
+    };
+    
+    const startLongPress = useCallback((type: 'increment' | 'decrement') => {
+        repeatCountRef.current = 0;
+        
+        const performAction = () => {
+            const success = type === 'increment' ? increment() : decrement();
+            if (!success) {
+                // Stop if we hit min/max bounds
+                stopLongPress(type);
+                return;
+            }
+            
+            repeatCountRef.current++;
+            
+            // Clear existing interval and set up next with adjusted speed
+            const intervalRef = type === 'increment' ? incrementIntervalRef : decrementIntervalRef;
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+            
+            const nextDelay = getRepeatDelay(repeatCountRef.current);
+            intervalRef.current = setInterval(() => {
+                const success = type === 'increment' ? increment() : decrement();
+                if (!success) {
+                    stopLongPress(type);
+                } else {
+                    repeatCountRef.current++;
+                    // Re-schedule with updated speed if needed
+                    const currentDelay = getRepeatDelay(repeatCountRef.current);
+                    if (currentDelay !== nextDelay) {
+                        stopLongPress(type);
+                        startLongPress(type);
+                    }
+                }
+            }, nextDelay);
+        };
+        
+        // Initial delay before starting rapid changes (600ms to distinguish from click)
+        const delayRef = type === 'increment' ? incrementDelayRef : decrementDelayRef;
+        delayRef.current = setTimeout(() => {
+            performAction();
+        }, 600);
+    }, [increment, decrement]);
+    
+    const stopLongPress = useCallback((type: 'increment' | 'decrement') => {
+        const intervalRef = type === 'increment' ? incrementIntervalRef : decrementIntervalRef;
+        const delayRef = type === 'increment' ? incrementDelayRef : decrementDelayRef;
+        
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
+        if (delayRef.current) {
+            clearTimeout(delayRef.current);
+            delayRef.current = null;
+        }
+    }, []);
 
-    // Handle button press animation
+    // Handle button press animation and click
     const handleIncrementPress = useCallback(() => {
         setIsIncrementPressed(true);
         setTimeout(() => setIsIncrementPressed(false), 150);
@@ -103,6 +188,41 @@ export const NumericInput: React.FC<{
         setTimeout(() => setIsDecrementPressed(false), 150);
         decrement();
     }, [decrement]);
+    
+    // Mouse event handlers for long-press
+    const handleIncrementMouseDown = useCallback(() => {
+        startLongPress('increment');
+    }, [startLongPress]);
+    
+    const handleDecrementMouseDown = useCallback(() => {
+        startLongPress('decrement');
+    }, [startLongPress]);
+    
+    const handleMouseUp = useCallback(() => {
+        stopLongPress('increment');
+        stopLongPress('decrement');
+    }, [stopLongPress]);
+    
+    const handleMouseLeave = useCallback(() => {
+        stopLongPress('increment');
+        stopLongPress('decrement');
+    }, [stopLongPress]);
+    
+    // Touch event handlers for mobile long-press
+    const handleIncrementTouchStart = useCallback((e: React.TouchEvent) => {
+        e.preventDefault();
+        startLongPress('increment');
+    }, [startLongPress]);
+    
+    const handleDecrementTouchStart = useCallback((e: React.TouchEvent) => {
+        e.preventDefault();
+        startLongPress('decrement');
+    }, [startLongPress]);
+    
+    const handleTouchEnd = useCallback(() => {
+        stopLongPress('increment');
+        stopLongPress('decrement');
+    }, [stopLongPress]);
 
     const inputElement = (
         <input
@@ -130,6 +250,11 @@ export const NumericInput: React.FC<{
                 <button
                     type="button"
                     onClick={handleIncrementPress}
+                    onMouseDown={handleIncrementMouseDown}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseLeave}
+                    onTouchStart={handleIncrementTouchStart}
+                    onTouchEnd={handleTouchEnd}
                     disabled={max !== undefined && value >= max}
                     className={`flex items-center justify-center w-5 h-3 text-gray-400 hover:text-white hover:bg-dark-border disabled:text-gray-600 disabled:cursor-not-allowed rounded-t transition-colors ${isIncrementPressed ? 'animate-button-press animate-button-glow' : ''}`}
                     aria-label="Increment value"
@@ -142,6 +267,11 @@ export const NumericInput: React.FC<{
                 <button
                     type="button"
                     onClick={handleDecrementPress}
+                    onMouseDown={handleDecrementMouseDown}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseLeave}
+                    onTouchStart={handleDecrementTouchStart}
+                    onTouchEnd={handleTouchEnd}
                     disabled={min !== undefined && value <= min}
                     className={`flex items-center justify-center w-5 h-3 text-gray-400 hover:text-white hover:bg-dark-border disabled:text-gray-600 disabled:cursor-not-allowed rounded-b transition-colors ${isDecrementPressed ? 'animate-button-press animate-button-glow' : ''}`}
                     aria-label="Decrement value"
@@ -155,3 +285,7 @@ export const NumericInput: React.FC<{
         </div>
     );
 });
+
+NumericInput.displayName = 'NumericInput';
+
+export default NumericInput;

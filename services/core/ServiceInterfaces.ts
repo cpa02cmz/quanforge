@@ -3,12 +3,9 @@
  * Type-safe contracts for all services in the dependency injection system
  */
 
-import type { 
-  RobotInterface, 
-  RobotUpdate, 
-  DatabaseResponse, 
+import type {
+  RobotInterface,
   BatchUpdateResult,
-  ServiceResponse,
   QueryResult,
   QueryOptions
 } from '../../types/common';
