@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo, useCallback } from 'react';
+import React, { useState, useEffect, memo, useCallback, useRef } from 'react';
 
 export const NumericInput: React.FC<{
     value: number;
@@ -11,19 +11,23 @@ export const NumericInput: React.FC<{
     'aria-invalid'?: boolean;
     'aria-describedby'?: string;
     showSteppers?: boolean;
-}> = memo(({ 
-    value, 
-    onChange, 
-    className, 
+}> = memo(({
+    value,
+    onChange,
+    className,
     step = 1,
     min,
     max,
-    id, 
-    'aria-invalid': ariaInvalid, 
+    id,
+    'aria-invalid': ariaInvalid,
     'aria-describedby': ariaDescribedby,
     showSteppers = true
 }) => {
     const [localValue, setLocalValue] = useState(value.toString());
+    const [isPulsing, setIsPulsing] = useState(false);
+    const [isIncrementPressed, setIsIncrementPressed] = useState(false);
+    const [isDecrementPressed, setIsDecrementPressed] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     // Sync local state if external value changes significantly (e.g. reset or load)
     useEffect(() => {
@@ -63,29 +67,51 @@ export const NumericInput: React.FC<{
         }
     };
 
+    // Trigger pulse animation on input value
+    const triggerPulse = useCallback(() => {
+        setIsPulsing(true);
+        setTimeout(() => setIsPulsing(false), 200);
+    }, []);
+
     const increment = useCallback(() => {
         const newValue = value + step;
         if (max === undefined || newValue <= max) {
             onChange(newValue);
             setLocalValue(newValue.toString());
+            triggerPulse();
         }
-    }, [value, step, max, onChange]);
+    }, [value, step, max, onChange, triggerPulse]);
 
     const decrement = useCallback(() => {
         const newValue = value - step;
         if (min === undefined || newValue >= min) {
             onChange(newValue);
             setLocalValue(newValue.toString());
+            triggerPulse();
         }
-    }, [value, step, min, onChange]);
+    }, [value, step, min, onChange, triggerPulse]);
+
+    // Handle button press animation
+    const handleIncrementPress = useCallback(() => {
+        setIsIncrementPressed(true);
+        setTimeout(() => setIsIncrementPressed(false), 150);
+        increment();
+    }, [increment]);
+
+    const handleDecrementPress = useCallback(() => {
+        setIsDecrementPressed(true);
+        setTimeout(() => setIsDecrementPressed(false), 150);
+        decrement();
+    }, [decrement]);
 
     const inputElement = (
         <input
+            ref={inputRef}
             type="text"
             value={localValue}
             onChange={handleLocalChange}
             onBlur={handleBlur}
-            className={showSteppers ? `${className} pr-16` : className}
+            className={`${showSteppers ? `${className} pr-16` : className} ${isPulsing ? 'animate-value-pulse' : ''}`}
             inputMode="decimal"
             id={id}
             aria-invalid={ariaInvalid}
@@ -103,9 +129,9 @@ export const NumericInput: React.FC<{
             <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col">
                 <button
                     type="button"
-                    onClick={increment}
+                    onClick={handleIncrementPress}
                     disabled={max !== undefined && value >= max}
-                    className="flex items-center justify-center w-5 h-3 text-gray-400 hover:text-white hover:bg-dark-border disabled:text-gray-600 disabled:cursor-not-allowed rounded-t transition-colors"
+                    className={`flex items-center justify-center w-5 h-3 text-gray-400 hover:text-white hover:bg-dark-border disabled:text-gray-600 disabled:cursor-not-allowed rounded-t transition-colors ${isIncrementPressed ? 'animate-button-press animate-button-glow' : ''}`}
                     aria-label="Increment value"
                     tabIndex={-1}
                 >
@@ -115,9 +141,9 @@ export const NumericInput: React.FC<{
                 </button>
                 <button
                     type="button"
-                    onClick={decrement}
+                    onClick={handleDecrementPress}
                     disabled={min !== undefined && value <= min}
-                    className="flex items-center justify-center w-5 h-3 text-gray-400 hover:text-white hover:bg-dark-border disabled:text-gray-600 disabled:cursor-not-allowed rounded-b transition-colors"
+                    className={`flex items-center justify-center w-5 h-3 text-gray-400 hover:text-white hover:bg-dark-border disabled:text-gray-600 disabled:cursor-not-allowed rounded-b transition-colors ${isDecrementPressed ? 'animate-button-press animate-button-glow' : ''}`}
                     aria-label="Decrement value"
                     tabIndex={-1}
                 >
