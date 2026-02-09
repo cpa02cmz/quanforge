@@ -5,7 +5,7 @@
 
 import type { UserSession } from '../../types';
 import { STORAGE_KEYS } from '../core/databaseConfig';
-import { generateUUID, trySaveToStorage, safeParse } from '../utils/helpers';
+import { generateUUID, trySaveToStorage } from '../utils/helpers';
 import { getMockSession } from './mockSession';
 
 // Array of auth event listeners

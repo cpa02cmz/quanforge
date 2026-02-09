@@ -17,7 +17,7 @@ export type { OptimizationConfig, OptimizationMetrics };
 class LegacyBackendOptimizationManager {
   private initialized = false;
 
-  constructor(config?: Partial<OptimizationConfig>) {
+  constructor(_config?: Partial<OptimizationConfig>) {
     // Note: Config is applied during initialization
   }
 
@@ -172,22 +172,22 @@ class LegacyBackendOptimizationManager {
       const startTime = Date.now();
       
       // Apply optimizations based on options
-      const useCache = options?.useCache ?? true;
+      const _useCache = options?.useCache ?? true;
       const useDeduplication = options?.useDeduplication ?? true;
-      const useQueryOptimization = options?.useQueryOptimization ?? true;
-      const cacheKey = options?.cacheKey;
+      const _useQueryOptimization = options?.useQueryOptimization ?? true;
+      const _cacheKey = options?.cacheKey;
 
       // Execute the query
       let result: T;
       
       if (useDeduplication) {
         // Use backend optimizer for deduplication
-        result = await this.executeWithDeduplication(queryFn, cacheKey);
+        result = await this.executeWithDeduplication(queryFn, _cacheKey);
       } else {
         result = await queryFn();
       }
 
-      const executionTime = Date.now() - startTime;
+      const _executionTime = Date.now() - startTime;
 
       return {
         data: result,
@@ -206,7 +206,7 @@ class LegacyBackendOptimizationManager {
    */
   private async executeWithDeduplication<T>(
     queryFn: () => Promise<T>,
-    cacheKey?: string
+    _cacheKey?: string
   ): Promise<T> {
     // For now, just execute the query directly
     // TODO: Integrate with backend optimizer's deduplication
