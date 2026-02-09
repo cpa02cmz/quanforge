@@ -7,7 +7,7 @@ import tsparser from '@typescript-eslint/parser'
 
 export default [
   {
-    ignores: ['dist', 'node_modules', 'coverage', 'public'],
+    ignores: ['dist', 'node_modules', 'coverage', 'public', 'archive'],
   },
   {
     files: ['**/*.{ts,tsx}'],
@@ -40,14 +40,21 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      // Critical errors - these indicate actual bugs
+      '@typescript-eslint/no-unused-vars': ['error', { 
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      }],
+      'no-var': 'error',
+      // Warnings - code quality issues for gradual cleanup
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-console': 'warn',
       'prefer-const': 'warn',
-      'no-var': 'error',
-      'no-unused-vars': 'off', // Use @typescript-eslint/no-unused-vars instead
-      'no-redeclare': 'off', // TypeScript handles this
-      'no-undef': 'off', // TypeScript handles this
+      // Disabled - handled by TypeScript or not applicable
+      'no-unused-vars': 'off',
+      'no-redeclare': 'off',
+      'no-undef': 'off',
     },
   },
   // Disable no-unreachable for files with known false positives from TypeScript/ESLint parser
