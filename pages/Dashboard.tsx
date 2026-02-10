@@ -12,6 +12,7 @@ import { createScopedLogger } from '../utils/logger';
 import { VirtualScrollList } from '../components/VirtualScrollList';
 import { EmptyState } from '../components/EmptyState';
 import { IconButton } from '../components/IconButton';
+import { CardSkeletonLoader } from '../components/LoadingState';
 
 // Debounce utility for search optimization
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -423,9 +424,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
-        </div>
+        <CardSkeletonLoader count={6} aria-label="Loading trading robots" />
       ) : robots.length === 0 ? (
         <EmptyState
           title={t('dash_empty_title')}
