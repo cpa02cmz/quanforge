@@ -340,22 +340,12 @@ class FrontendPerformanceOptimizer {
 
   /**
    * Preload critical scripts for better performance
+   * Note: Libraries are bundled by Vite, no need for CDN preloads
    */
   private preloadCriticalScripts(): void {
-    const criticalScripts = [
-      { src: 'https://unpkg.com/lz-string@1.5.0/libs/lz-string.min.js', as: 'script' },
-      { src: 'https://unpkg.com/dompurify@3.0.5/dist/purify.min.js', as: 'script' },
-    ];
-
-    criticalScripts.forEach(script => {
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.href = script.src;
-      link.as = script.as;
-      link.crossOrigin = 'anonymous';
-      document.head.appendChild(link);
-      performanceMonitor.recordMetric('script_preloaded', 1);
-    });
+    // Libraries (lz-string, dompurify) are bundled by Vite into security-vendor chunk
+    // No CDN preloads needed - prevents "unused preload" warnings
+    performanceMonitor.recordMetric('script_preloaded', 0);
   }
 
   /**
