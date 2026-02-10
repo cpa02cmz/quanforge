@@ -274,7 +274,7 @@ export const loadTranslations = async (language: Language) => {
   try {
     const translations = await import(`./translations/${language}.ts`);
     return translations.TRANSLATIONS || {};
-  } catch (e) {
+  } catch (_e) {
     // Fallback to empty translations if file not found
     if (import.meta.env.DEV) {
       logger.debug(`Translations not found for language: ${language}`);
@@ -302,7 +302,7 @@ export const loadSuggestedStrategies = async (language: Language) => {
   try {
     const strategies = await import(`./strategies/${language}.ts`);
     return strategies.SUGGESTED_STRATEGIES || [];
-  } catch (e) {
+  } catch (_e) {
     // Fallback to empty strategies if file not found
     if (import.meta.env.DEV) {
       logger.debug(`Strategies not found for language: ${language}`);
