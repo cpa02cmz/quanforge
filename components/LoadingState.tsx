@@ -60,44 +60,110 @@ interface CardSkeletonProps {
   'aria-label'?: string;
 }
 
+/**
+ * ShimmerSkeleton - A single skeleton element with shimmer animation
+ */
+const ShimmerSkeleton: React.FC<{ 
+  className?: string;
+  delay?: number;
+}> = memo(({ className = '', delay = 0 }) => {
+  return (
+    <div 
+      className={`relative overflow-hidden bg-dark-bg rounded ${className}`}
+      aria-hidden="true"
+    >
+      {/* Shimmer gradient overlay */}
+      <div
+        className="absolute inset-0 shimmer-wave"
+        style={{
+          background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%)',
+          animation: `shimmer 2s infinite`,
+          animationDelay: `${delay}ms`
+        }}
+      />
+    </div>
+  );
+});
+
+ShimmerSkeleton.displayName = 'ShimmerSkeleton';
+
 export const CardSkeletonLoader: React.FC<CardSkeletonProps> = memo(({
   count = 3,
   className = '',
   'aria-label': ariaLabel = 'Loading content'
 }) => {
   return (
-    <div
-      className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ${className}`}
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-      aria-label={ariaLabel}
-    >
-      {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className="bg-dark-surface border border-dark-border rounded-xl p-6 animate-pulse"
-          aria-hidden="true"
-        >
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-10 h-10 bg-dark-bg rounded-lg"></div>
-            <div className="w-20 h-4 bg-dark-bg rounded"></div>
-          </div>
-          <div className="h-6 bg-dark-bg rounded mb-2 w-3/4"></div>
-          <div className="space-y-2 mb-4">
-            <div className="h-4 bg-dark-bg rounded"></div>
-            <div className="h-4 bg-dark-bg rounded w-5/6"></div>
-          </div>
-          <div className="pt-4 border-t border-dark-border flex items-center justify-between">
-            <div className="w-16 h-6 bg-dark-bg rounded-full"></div>
-            <div className="flex space-x-2">
-              <div className="w-8 h-8 bg-dark-bg rounded"></div>
-              <div className="w-8 h-8 bg-dark-bg rounded"></div>
-              <div className="w-12 h-8 bg-dark-bg rounded"></div>
+    <>
+      <div
+        className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ${className}`}
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+        aria-label={ariaLabel}
+      >
+        {Array.from({ length: count }).map((_, i) => (
+          <div
+            key={i}
+            className="bg-dark-surface border border-dark-border rounded-xl p-6 hover:border-dark-border/80 transition-colors duration-300"
+            aria-hidden="true"
+            style={{
+              animation: 'fade-in-up 0.4s ease-out forwards',
+              animationDelay: `${i * 100}ms`,
+              opacity: 0
+            }}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <ShimmerSkeleton className="w-10 h-10 rounded-lg" delay={i * 100} />
+              <ShimmerSkeleton className="w-20 h-4 rounded" delay={i * 100 + 50} />
+            </div>
+            <ShimmerSkeleton className="h-6 rounded mb-2 w-3/4" delay={i * 100 + 100} />
+            <div className="space-y-2 mb-4">
+              <ShimmerSkeleton className="h-4 rounded" delay={i * 100 + 150} />
+              <ShimmerSkeleton className="h-4 rounded w-5/6" delay={i * 100 + 200} />
+            </div>
+            <div className="pt-4 border-t border-dark-border flex items-center justify-between">
+              <ShimmerSkeleton className="w-16 h-6 rounded-full" delay={i * 100 + 250} />
+              <div className="flex space-x-2">
+                <ShimmerSkeleton className="w-8 h-8 rounded" delay={i * 100 + 300} />
+                <ShimmerSkeleton className="w-8 h-8 rounded" delay={i * 100 + 350} />
+                <ShimmerSkeleton className="w-12 h-8 rounded" delay={i * 100 + 400} />
+              </div>
             </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+        
+        .shimmer-wave {
+          will-change: transform;
+        }
+        
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        /* Staggered entry animation for skeleton cards */
+        .skeleton-card-enter {
+          animation: fade-in-up 0.4s ease-out forwards;
+        }
+      `}</style>
+    </>
   );
 });

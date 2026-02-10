@@ -399,7 +399,7 @@ async getRobots() {
        }
         
         const cacheKey = 'robots_list';
-const cached = await consolidatedCache.get<Robot[]>(cacheKey);
+ const cached = await consolidatedCache.get<Robot[]>(cacheKey);
         if (cached) {
           // Create index for performance
           robotIndexManager.getIndex(cached);
@@ -409,12 +409,13 @@ const cached = await consolidatedCache.get<Robot[]>(cacheKey);
           return { data: cached, error: null };
         }
         
-return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
+ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
           return withRetry(async () => {
             const client = await getClient();
             const result = await client
               .from('robots')
               .select('*')
+              .eq('is_active', true)
               .order('created_at', { ascending: false })
               .limit(CACHE_LIMITS.DEFAULT_QUERY_LIMIT); // Use centralized limit
             
@@ -578,7 +579,8 @@ if (index !== -1) {
           // Build query with optimized filters - single query builder pattern
           let query = client
             .from('robots')
-            .select('*', { count: 'exact', head: false });
+            .select('*', { count: 'exact', head: false })
+            .eq('is_active', true);
           
           // Apply filters in the most efficient order
           if (filterType && filterType !== 'All') {
@@ -857,7 +859,11 @@ if (index !== -1) {
       
       return withRetry(async () => {
         const client = await getClient();
-        const result = await client.from('robots').delete().match({ id });
+        // Use soft delete instead of hard delete for data integrity
+        const result = await client
+          .from('robots')
+          .update({ is_active: false, deleted_at: new Date().toISOString() })
+          .match({ id });
         
         const duration = performance.now() - startTime;
         performanceMonitor.record('deleteRobot', duration);
@@ -911,7 +917,7 @@ if (index !== -1) {
       
       return withRetry(async () => {
         const client = await getClient();
-        const { data: original, error } = await client.from('robots').select('*').eq('id', id).single();
+        const { data: original, error } = await client.from('robots').select('*').eq('id', id).eq('is_active', true).single();
         if (error || !original) {
           const duration = performance.now() - startTime;
           performanceMonitor.record('duplicateRobot', duration);
@@ -1205,7 +1211,7 @@ export const dbUtils = {
             } else {
                 // For Supabase, use database queries
                 const client = await getClient();
-                let query = client.from('robots').select('*');
+                let query = client.from('robots').select('*').eq('is_active', true);
                 
                 if (searchTerm) {
                     query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
