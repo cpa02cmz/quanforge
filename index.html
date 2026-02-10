@@ -102,7 +102,6 @@
     <!-- Additional performance and SEO optimizations -->
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
-    <link rel="dns-prefetch" href="//cdn.tailwindcss.com" />
     <link rel="dns-prefetch" href="//cdnjs.cloudflare.com" />
     <link rel="dns-prefetch" href="//www.googletagmanager.com" />
     <link rel="dns-prefetch" href="//connect.facebook.net" />
@@ -130,8 +129,7 @@
       .spinner{border:2px solid #334155;border-top:2px solid #22c55e;border-radius:50%;width:48px;height:48px;animation:spin 1s linear infinite}
       @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
     </style>
-    <!-- Tailwind CSS - Loaded async to prevent render-blocking -->
-    <script src="https://cdn.tailwindcss.com" defer fetchpriority="low"></script>
+    <!-- Tailwind CSS is built into the bundle via PostCSS - no CDN needed -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
     
