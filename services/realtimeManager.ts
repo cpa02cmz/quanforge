@@ -158,16 +158,12 @@ class RealtimeManager {
     }
 
     const batch = this.syncQueue.splice(0, this.config.batchSize);
-    let successCount = 0;
-    let failCount = 0;
 
     for (const change of batch) {
       try {
         await this.syncChange(change);
-        successCount++;
-      } catch (error) {
-        console.error('Failed to sync change:', error);
-        failCount++;
+      } catch (_error) {
+        console.error('Failed to sync change:', _error);
         
 // Re-queue failed changes for retry
           if ((change.retryCount ?? 0) < this.config.maxRetries) {
