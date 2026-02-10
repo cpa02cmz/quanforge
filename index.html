@@ -102,7 +102,6 @@
     <!-- Additional performance and SEO optimizations -->
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
-    <link rel="dns-prefetch" href="//cdn.tailwindcss.com" />
     <link rel="dns-prefetch" href="//cdnjs.cloudflare.com" />
     <link rel="dns-prefetch" href="//www.googletagmanager.com" />
     <link rel="dns-prefetch" href="//connect.facebook.net" />
@@ -130,8 +129,7 @@
       .spinner{border:2px solid #334155;border-top:2px solid #22c55e;border-radius:50%;width:48px;height:48px;animation:spin 1s linear infinite}
       @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
     </style>
-    <!-- Tailwind CSS - Loaded async to prevent render-blocking -->
-    <script src="https://cdn.tailwindcss.com" defer fetchpriority="low"></script>
+    <!-- Tailwind CSS is built into the bundle via PostCSS - no CDN needed -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
     
@@ -658,22 +656,112 @@
           animation: tooltip-arrow-appear 0.15s ease-out 0.05s both;
         }
 
-        /* Reduced motion support for accessibility */
-        @media (prefers-reduced-motion: reduce) {
-          .tooltip-enter,
-          .tooltip-exit {
-            animation: none;
-            opacity: 1;
-            transform: none;
+         /* Reduced motion support for accessibility */
+         @media (prefers-reduced-motion: reduce) {
+           .tooltip-enter,
+           .tooltip-exit {
+             animation: none;
+             opacity: 1;
+             transform: none;
+           }
+           
+           .tooltip-arrow {
+             animation: none;
+             opacity: 1;
+             transform: none;
+           }
+         }
+
+         /* ==========================================
+            SKELETON LOADER ANIMATIONS
+            Beautiful loading placeholders with shimmer effects
+            ========================================== */
+         
+         /* Pulse animation - subtle opacity breathing */
+         @keyframes skeleton-pulse {
+           0%, 100% {
+             opacity: 0.4;
           }
-          
-          .tooltip-arrow {
-            animation: none;
-            opacity: 1;
-            transform: none;
+           50% {
+             opacity: 0.8;
+           }
+         }
+         
+         .animate-skeleton-pulse {
+           animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+         }
+         
+         /* Shimmer animation - elegant light sweep */
+         @keyframes skeleton-shimmer {
+           0% {
+             transform: translateX(-100%);
+           }
+           100% {
+             transform: translateX(200%);
+           }
+         }
+         
+         .skeleton-shimmer {
+           animation: skeleton-shimmer 1.5s ease-in-out infinite;
+         }
+         
+         .animate-skeleton-shimmer {
+           position: relative;
+           overflow: hidden;
+         }
+         
+         .animate-skeleton-shimmer::after {
+           content: '';
+           position: absolute;
+           inset: 0;
+           background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
+           transform: translateX(-100%);
+           animation: skeleton-shimmer 1.5s ease-in-out infinite;
+         }
+         
+         /* Wave animation - brand-colored sweep */
+         @keyframes skeleton-wave {
+           0% {
+             transform: translateX(-100%);
           }
-        }
-       </style>
+           100% {
+             transform: translateX(200%);
+           }
+         }
+         
+         .skeleton-wave {
+           animation: skeleton-wave 2s ease-in-out infinite;
+         }
+         
+         .animate-skeleton-wave {
+           position: relative;
+           overflow: hidden;
+         }
+         
+         .animate-skeleton-wave::after {
+           content: '';
+           position: absolute;
+           inset: 0;
+           background: linear-gradient(90deg, transparent 0%, rgba(34,197,94,0.08) 50%, transparent 100%);
+           transform: translateX(-100%);
+           animation: skeleton-wave 2s ease-in-out infinite;
+         }
+         
+         /* Reduced motion support for skeleton loaders */
+         @media (prefers-reduced-motion: reduce) {
+           .animate-skeleton-pulse,
+           .skeleton-shimmer,
+           .animate-skeleton-shimmer::after,
+           .skeleton-wave,
+           .animate-skeleton-wave::after {
+             animation: none;
+           }
+           
+           .animate-skeleton-pulse {
+             opacity: 0.6;
+           }
+         }
+        </style>
   
 </head>
   <body>

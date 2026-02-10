@@ -7,6 +7,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { createScopedLogger } from '../utils/logger';
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
+import { TIMEOUTS, RETRY_CONFIG, STAGGER } from './constants';
 
 const logger = createScopedLogger('EnhancedConnectionPool');
 
@@ -828,9 +829,9 @@ class EnhancedSupabaseConnectionPool {
         return;
       }
 
-      // Create connection based on priority
-      const maxRetries = priority === 'high' ? 3 : priority === 'medium' ? 2 : 1;
-      const timeout = priority === 'high' ? 3000 : priority === 'medium' ? 5000 : 8000;
+      // Create connection based on priority using modular constants
+      const maxRetries = priority === 'high' ? RETRY_CONFIG.MAX_ATTEMPTS : priority === 'medium' ? 2 : 1;
+      const timeout = priority === 'high' ? TIMEOUTS.QUICK : priority === 'medium' ? TIMEOUTS.STANDARD : TIMEOUTS.EXTENDED;
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
@@ -1264,12 +1265,12 @@ class EnhancedSupabaseConnectionPool {
    * Graceful shutdown with retry logic
    */
   private async gracefulShutdownConnection(connection: Connection): Promise<void> {
-    const maxWaitTime = 5000; // 5 seconds max wait
+    const maxWaitTime = TIMEOUTS.STANDARD; // 5 seconds max wait
     const startTime = Date.now();
     
     // Wait for connection to become idle
     while (connection.inUse && (Date.now() - startTime) < maxWaitTime) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, STAGGER.DEFAULT_DELAY_MS));
     }
     
     // Force close if still in use after timeout
@@ -1320,7 +1321,7 @@ class EnhancedSupabaseConnectionPool {
       const maxAttempts = 10;
       
       while (connection.inUse && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, STAGGER.DEFAULT_DELAY_MS));
         attempts++;
       }
 

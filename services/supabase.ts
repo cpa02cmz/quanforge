@@ -219,12 +219,64 @@ window.addEventListener('db-settings-changed', () => {
     getClient(); 
 });
 
-export const supabase = new Proxy({}, {
-    get: async (_target, prop) => {
-        const client = await getClient();
-        return client[prop];
+// Fixed supabase export - auth accessible synchronously, rest lazy-loaded
+const supabaseAuth = {
+    getSession: async () => {
+        return { data: { session: getMockSession() }, error: null };
+    },
+    onAuthStateChange: (callback: (event: string, session: any) => void) => {
+        authListeners.push(callback);
+        return { 
+            data: { 
+                subscription: { 
+                    unsubscribe: () => {
+                        const idx = authListeners.indexOf(callback);
+                        if (idx > -1) authListeners.splice(idx, 1);
+                    } 
+                } 
+            }, 
+            error: null 
+        };
+    },
+    signInWithPassword: async ({ email }: { email: string }) => {
+        const session = {
+            user: { id: generateUUID(), email },
+            access_token: 'mock-token-' + Date.now(),
+            expires_in: 3600
+        };
+        trySaveToStorage(STORAGE_KEY, JSON.stringify(session));
+        authListeners.forEach(cb => cb('SIGNED_IN', session));
+        return { data: { session }, error: null };
+    },
+    signUp: async ({ email }: { email: string }) => {
+        const session = {
+            user: { id: generateUUID(), email },
+            access_token: 'mock-token-' + Date.now(),
+            expires_in: 3600
+        };
+        trySaveToStorage(STORAGE_KEY, JSON.stringify(session));
+        authListeners.forEach(cb => cb('SIGNED_IN', session));
+        return { data: { user: { email }, session }, error: null };
+    },
+    signOut: async () => {
+        storage.remove(STORAGE_KEY);
+        authListeners.forEach(cb => cb('SIGNED_OUT', null));
+        return { error: null };
     }
-}) as any;
+};
+
+// Create a proxy that has auth synchronously and delegates the rest
+export const supabase = new Proxy({ auth: supabaseAuth } as any, {
+    get: (target, prop: string | symbol) => {
+        // Auth is always synchronous
+        if (prop === 'auth') {
+            return target.auth;
+        }
+        // For everything else, use the lazy client
+        const client = getClient();
+        return (client as any)[prop];
+    }
+});
 
 
 // --- Database Operations Wrapper ---
