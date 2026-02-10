@@ -254,10 +254,10 @@ class QueryOptimizer {
     table: string,
     records: T[],
     batchSize: number = 100
-  ): Promise<{ data: T[] | null; error: any; metrics: QueryMetrics }> {
+  ): Promise<{ data: T[] | null; error: unknown; metrics: QueryMetrics }> {
     const startTime = performance.now();
     const results: T[] = [];
-    const errors: any[] = [];
+    const errors: unknown[] = [];
 
     // Process in batches to avoid payload limits
     for (let i = 0; i < records.length; i += batchSize) {

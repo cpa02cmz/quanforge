@@ -1,6 +1,7 @@
 import { IntegrationType, HealthStatus, getConfig } from './integrationResilience';
 import { createScopedLogger } from '../utils/logger';
 import { MEMORY_LIMITS, TIMEOUTS } from '../constants';
+import { getErrorMessage } from '../utils/errorHandler';
 
 const logger = createScopedLogger('integration-health');
 
@@ -69,12 +70,12 @@ export class IntegrationHealthMonitor {
           const status = this.getHealthStatus(integrationType, integrationName);
           onHealthChange(status);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         const latency = Date.now() - startTime;
         const healthCheckResult: HealthCheckResult = {
           healthy: false,
           latency,
-          error,
+          error: getErrorMessage(error),
           timestamp: Date.now()
         };
 
