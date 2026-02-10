@@ -1,4 +1,5 @@
 import { createScopedLogger } from '../utils/logger';
+import { getErrorMessage } from '../utils/errorHandler';
 
 const logger = createScopedLogger('fallback-strategies');
 
@@ -54,9 +55,9 @@ export class FallbackManager {
         data,
         fallbackUsed: false
       };
-    } catch (primaryError: any) {
+    } catch (primaryError: unknown) {
       metrics.primaryFailures++;
-      logger.warn(`Primary operation ${integrationName} failed:`, primaryError.message);
+      logger.warn(`Primary operation ${integrationName} failed:`, getErrorMessage(primaryError));
 
       if (fallbacks.length === 0) {
         return {
@@ -99,9 +100,9 @@ export class FallbackManager {
             fallbackUsed: true,
             fallbackType: fallback.name
           };
-        } catch (fallbackError: any) {
+        } catch (fallbackError: unknown) {
           metrics.fallbackFailures[fallback.name] = (metrics.fallbackFailures[fallback.name] || 0) + 1;
-          logger.warn(`Fallback ${fallback.name} failed for ${integrationName}:`, fallbackError.message);
+          logger.warn(`Fallback ${fallback.name} failed for ${integrationName}:`, getErrorMessage(fallbackError));
           continue;
         }
       }

@@ -1,6 +1,7 @@
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
+import { getErrorMessage } from '../utils/errorHandler';
 
 interface ConnectionPoolConfig {
   minConnections: number;
@@ -283,11 +284,11 @@ class SupabaseConnectionPool {
          return false;
        }
        
-       return true;
-     } catch (error: any) {
-       console.error('Connection health check failed:', error?.message || error);
-       return false;
-     }
+        return true;
+      } catch (error: unknown) {
+        console.error('Connection health check failed:', getErrorMessage(error));
+        return false;
+      }
    }
 
 private startHealthChecks(): void {
