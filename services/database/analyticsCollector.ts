@@ -27,7 +27,7 @@ interface SystemMetrics {
 }
 
 export interface AnalyticsCollectorInterface {
-  recordOperation(operation: string, duration: number, error?: any): void;
+  recordOperation(operation: string, duration: number, error?: Error | unknown): void;
   getMetrics(operation?: string): OperationMetrics | Record<string, OperationMetrics>;
   getSystemMetrics(): SystemMetrics;
   resetMetrics(): void;
@@ -40,7 +40,7 @@ export class AnalyticsCollector implements AnalyticsCollectorInterface {
   private startTime: number = Date.now();
   private operationCounts: Map<string, number[]> = new Map(); // For rolling window calculations
 
-  recordOperation(operation: string, duration: number, error?: any): void {
+  recordOperation(operation: string, duration: number, error?: Error | unknown): void {
     try {
       // Initialize operation metrics if not exists
       if (!this.operations.has(operation)) {
