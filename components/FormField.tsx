@@ -1,4 +1,4 @@
-import { forwardRef, ReactNode } from 'react';
+import { forwardRef, ReactNode, useState, useEffect, useRef } from 'react';
 
 export interface FormFieldProps {
   label: string;
@@ -9,12 +9,47 @@ export interface FormFieldProps {
   children: ReactNode;
   htmlFor: string;
   className?: string;
+  /**
+   * Enable shake animation when error appears
+   * @default true
+   */
+  shakeOnError?: boolean;
 }
 
 export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
-  ({ label, error, hint, required, disabled, children, htmlFor, className = '' }, ref) => {
+  ({ label, error, hint, required, disabled, children, htmlFor, className = '', shakeOnError = true }, ref) => {
     const hasError = !!error;
     const hasHint = !!hint && !hasError;
+    const [isShaking, setIsShaking] = useState(false);
+    const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+    const prevErrorRef = useRef(error);
+
+    // Check for reduced motion preference
+    useEffect(() => {
+      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      setPrefersReducedMotion(mediaQuery.matches);
+
+      const handleChange = (e: MediaQueryListEvent) => {
+        setPrefersReducedMotion(e.matches);
+      };
+
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }, []);
+
+    // Trigger shake animation when error appears
+    useEffect(() => {
+      if (shakeOnError && !prefersReducedMotion && error && !prevErrorRef.current) {
+        setIsShaking(true);
+        const timer = setTimeout(() => setIsShaking(false), 500);
+        return () => clearTimeout(timer);
+      }
+      prevErrorRef.current = error;
+      return undefined;
+    }, [error, shakeOnError, prefersReducedMotion]);
+
+    // Provide shake state to children via data attribute on a wrapper
+    const shakeClass = isShaking ? 'animate-form-shake' : '';
 
     const errorId = `${htmlFor}-error`;
     const hintId = `${htmlFor}-hint`;
@@ -38,7 +73,23 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
           )}
         </label>
 
-        {children}
+        <div className={shakeClass}>
+          {children}
+        </div>
+
+        {/* CSS animation for shake effect */}
+        {!prefersReducedMotion && (
+          <style>{`
+            @keyframes form-shake {
+              0%, 100% { transform: translateX(0); }
+              10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+              20%, 40%, 60%, 80% { transform: translateX(4px); }
+            }
+            .animate-form-shake {
+              animation: form-shake 0.5s cubic-bezier(0.36, 0, 0.66, -0.56) both;
+            }
+          `}</style>
+        )}
 
         {hasHint && (
           <p
