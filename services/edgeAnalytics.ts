@@ -147,7 +147,7 @@ class EdgeAnalytics {
 
       // Navigation timing monitoring
       this.observeNavigationTiming();
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Performance monitoring setup failed:', error);
     }
   }
@@ -165,7 +165,7 @@ class EdgeAnalytics {
       
       observer.observe({ entryTypes: ['largest-contentful-paint'] });
       this.observers.push(observer);
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('LCP observation failed:', error);
     }
   }
@@ -184,7 +184,7 @@ class EdgeAnalytics {
       
       observer.observe({ entryTypes: ['first-input'] });
       this.observers.push(observer);
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('FID observation failed:', error);
     }
   }
@@ -205,7 +205,7 @@ class EdgeAnalytics {
       
       observer.observe({ entryTypes: ['layout-shift'] });
       this.observers.push(observer);
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('CLS observation failed:', error);
     }
   }
@@ -223,7 +223,7 @@ class EdgeAnalytics {
       
       observer.observe({ entryTypes: ['paint'] });
       this.observers.push(observer);
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('FCP observation failed:', error);
     }
   }
@@ -241,7 +241,7 @@ class EdgeAnalytics {
       
       observer.observe({ entryTypes: ['navigation'] });
       this.observers.push(observer);
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('TTFB observation failed:', error);
     }
   }
@@ -282,7 +282,7 @@ class EdgeAnalytics {
       
       observer.observe({ entryTypes: ['resource'] });
       this.observers.push(observer);
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Resource timing observation failed:', error);
     }
   }
@@ -318,7 +318,7 @@ class EdgeAnalytics {
       
       observer.observe({ entryTypes: ['navigation'] });
       this.observers.push(observer);
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Navigation timing observation failed:', error);
     }
   }
@@ -532,7 +532,7 @@ class EdgeAnalytics {
       if (!isFinal) {
         this.metrics = [];
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Failed to report analytics:', error);
     }
   }
@@ -559,7 +559,7 @@ class EdgeAnalytics {
         },
         body: JSON.stringify(errorReport)
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Failed to report error:', error);
     }
   }

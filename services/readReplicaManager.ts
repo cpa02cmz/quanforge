@@ -124,7 +124,7 @@ class ReadReplicaManager {
         metrics
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       // Fallback to primary on replica failure
       if (client !== this.primaryClient && this.primaryClient) {
         console.warn(`Replica ${replicaName} failed, falling back to primary`);
@@ -293,7 +293,7 @@ class ReadReplicaManager {
             status: 'healthy',
             latency: Date.now() - start
           };
-        } catch (error) {
+        } catch (error: unknown) {
           return {
             region,
             status: 'unhealthy',

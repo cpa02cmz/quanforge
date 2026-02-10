@@ -22,7 +22,7 @@ export class SimpleConnectionManager implements ConnectionManagerInterface {
   async getClient(): Promise<SupabaseClient> {
     try {
       return getSupabaseClient();
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'getClient', 'simpleConnectionManager');
       throw error;
     }
@@ -34,7 +34,7 @@ export class SimpleConnectionManager implements ConnectionManagerInterface {
       const data = localStorage.getItem('mock_session');
       const session = data ? JSON.parse(data) : null;
       return { data: { session }, error: null };
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'getSession', 'simpleConnectionManager');
       return { data: { session: null }, error: (error as Error).message };
     }
@@ -62,7 +62,7 @@ export class SimpleConnectionManager implements ConnectionManagerInterface {
     try {
       localStorage.removeItem('mock_session');
       return { error: null };
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'signOut', 'simpleConnectionManager');
       return { error: (error as Error).message };
     }
@@ -78,7 +78,7 @@ export class SimpleConnectionManager implements ConnectionManagerInterface {
       
       const latency = performance.now() - startTime;
       return { healthy: true, latency };
-    } catch (error) {
+    } catch (error: unknown) {
       return { 
         healthy: false, 
         latency: 0, 

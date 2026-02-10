@@ -219,7 +219,7 @@ class AdvancedSupabasePool {
       logger.log(`Created new Supabase connection for pool '${poolId}' in ${creationTime}ms`);
       return connection;
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Failed to create connection for pool '${poolId}':`, error);
       throw error;
     }
@@ -548,7 +548,7 @@ class AdvancedSupabasePool {
         this.releaseConnection(poolId, client);
         return result;
         
-      } catch (error) {
+      } catch (error: unknown) {
         lastError = error as Error;
         
         if (client) {

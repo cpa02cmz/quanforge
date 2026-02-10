@@ -122,7 +122,7 @@ export class ThreatDetector {
         sanitizedData = this.deepXSSPrevention(data);
         hasXSS = JSON.stringify(sanitizedData) !== JSON.stringify(data);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('XSS prevention error:', error);
     }
 
@@ -157,7 +157,7 @@ export class ThreatDetector {
         sanitizedData = this.deepSQLPrevention(data, sqlPatterns);
         hasSQLInjection = JSON.stringify(sanitizedData) !== JSON.stringify(data);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('SQL injection prevention error:', error);
     }
 

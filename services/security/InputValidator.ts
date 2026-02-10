@@ -68,7 +68,7 @@ export class InputValidator {
         }
       }
 
-    } catch (error) {
+    } catch (error: unknown) {
       errors.push(`Validation error: ${error}`);
       riskScore += 20;
     }

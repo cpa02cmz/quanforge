@@ -26,7 +26,7 @@ export class EdgeCacheCompression {
       const jsonString = JSON.stringify(data);
       const compressed = compressToUTF16(jsonString);
       return compressed as unknown as T;
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Failed to compress data:', error);
       return data;
     }
@@ -37,7 +37,7 @@ export class EdgeCacheCompression {
       if (typeof data !== 'string') return data;
       const decompressed = decompressFromUTF16(data as string);
       return JSON.parse(decompressed);
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Failed to decompress data:', error);
       return data;
     }

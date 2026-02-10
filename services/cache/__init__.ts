@@ -112,7 +112,7 @@ export class CompressionUtils {
       if (compressedSize < originalSize * CACHE_CONSTANTS.COMPRESSION_RATIO_THRESHOLD) {
         return { compressed: true, data: compressedData, size: compressedSize };
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('Compression failed:', error);
     }
     
@@ -127,7 +127,7 @@ export class CompressionUtils {
     try {
       const decompressed = decompressFromUTF16(data);
       return JSON.parse(decompressed);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('Decompression failed:', error);
       throw new Error('Failed to decompress cached data');
     }

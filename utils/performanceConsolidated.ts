@@ -258,7 +258,7 @@ class TimingUtilities {
     try {
       const result = await fn();
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       success = false;
       errorType = error instanceof Error ? error.constructor.name : typeof error;
       throw error;
@@ -293,7 +293,7 @@ class TimingUtilities {
         resultSize = typeof result === 'string' ? result.length : 1;
       }
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       success = false;
       errorType = error instanceof Error ? error.constructor.name : typeof error;
       throw error;
@@ -335,7 +335,7 @@ class TimingUtilities {
       }
       
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       const duration = performance.now() - startTime;
       this.core.recordMetric(`edge_${name}_error_duration`, duration);
       console.error(`Edge function ${name} failed in region ${region} after ${duration.toFixed(2)}ms:`, error);
@@ -464,7 +464,7 @@ class MemoryUtilities {
       
       console.warn('Emergency memory cleanup performed');
       this.core.recordMetric('emergency_cleanup', 1);
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Failed to perform emergency cleanup:', error);
     }
   }

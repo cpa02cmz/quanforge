@@ -67,7 +67,7 @@ export class ApiDeduplicator {
       const result = await requestFn();
       resolve!(result);
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Request failed for key: ${key}`, error);
       reject!(error);
       throw error;
@@ -203,7 +203,7 @@ export class ApiDeduplicator {
       this.setCache(key, result, cacheTTL);
       
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Request failed for key: ${key}`, error);
       reject!(error);
       throw error;

@@ -16,7 +16,7 @@ export const getRobots = async (userId: string): Promise<Robot[]> => {
 
         if (error) throw error;
         return data || [];
-    } catch (error) {
+    } catch (error: unknown) {
         handleError(error instanceof Error ? error : String(error), 'getRobots');
         // Fallback to storage
         const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
@@ -35,7 +35,7 @@ export const getRobot = async (id: string): Promise<Robot | null> => {
 
         if (error) throw error;
         return data;
-    } catch (error) {
+    } catch (error: unknown) {
         handleError(error instanceof Error ? error : String(error), 'getRobot');
         // Fallback to storage
         const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
@@ -54,7 +54,7 @@ export const saveRobot = async (robot: Robot): Promise<Robot> => {
 
         if (error) throw error;
         return data;
-    } catch (error) {
+    } catch (error: unknown) {
         handleError(error instanceof Error ? error : String(error), 'saveRobot');
         // Fallback to storage
         const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
@@ -81,7 +81,7 @@ export const deleteRobot = async (id: string): Promise<void> => {
             .eq('id', id);
 
         if (error) throw error;
-    } catch (error) {
+    } catch (error: unknown) {
         handleError(error instanceof Error ? error : String(error), 'deleteRobot');
         // Fallback to storage - soft delete
         const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
@@ -116,7 +116,7 @@ export const batchUpdateRobots = async (robots: Robot[]): Promise<Robot[]> => {
 
         if (error) throw error;
         return data || [];
-    } catch (error) {
+    } catch (error: unknown) {
         handleError(error instanceof Error ? error : String(error), 'batchUpdateRobots');
         // Fallback to storage
         const existingRobots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
@@ -152,7 +152,7 @@ export const getRobotsByIds = async (ids: string[], userId: string): Promise<Rob
 
         if (error) throw error;
         return data || [];
-    } catch (error) {
+    } catch (error: unknown) {
         handleError(error instanceof Error ? error : String(error), 'getRobotsByIds');
         // Fallback to storage
         const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
@@ -198,7 +198,7 @@ export const getRobotsPaginated = async (
             page,
             totalPages
         };
-    } catch (error) {
+    } catch (error: unknown) {
         handleError(error instanceof Error ? error : String(error), 'getRobotsPaginated');
         // Fallback to storage
         const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
@@ -229,7 +229,7 @@ export const getAuditLog = async (tableName: string, recordId: string): Promise<
 
         if (error) throw error;
         return data || [];
-    } catch (error) {
+    } catch (error: unknown) {
         handleError(error instanceof Error ? error : String(error), 'getAuditLog');
         return [];
     }
@@ -246,7 +246,7 @@ export const getRobotHistory = async (robotId: string): Promise<RobotVersion[]> 
 
         if (error) throw error;
         return data || [];
-    } catch (error) {
+    } catch (error: unknown) {
         handleError(error instanceof Error ? error : String(error), 'getRobotHistory');
         return [];
     }
@@ -269,7 +269,7 @@ export const rollbackRobot = async (robotId: string, version: number, userId: st
             success: true,
             message: data?.[0]?.message || 'Rollback successful'
         };
-    } catch (error) {
+    } catch (error: unknown) {
         handleError(error instanceof Error ? error : String(error), 'rollbackRobot');
         return {
             robotId: robotId,
@@ -291,7 +291,7 @@ export const permanentlyDeleteRobot = async (id: string): Promise<void> => {
             .eq('id', id);
 
         if (error) throw error;
-    } catch (error) {
+    } catch (error: unknown) {
         handleError(error instanceof Error ? error : String(error), 'permanentlyDeleteRobot');
         // Fallback to storage - hard delete
         const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);
@@ -313,7 +313,7 @@ export const restoreRobot = async (id: string): Promise<Robot | null> => {
 
         if (error) throw error;
         return data;
-    } catch (error) {
+    } catch (error: unknown) {
         handleError(error instanceof Error ? error : String(error), 'restoreRobot');
         // Fallback to storage - restore
         const robots = safeParse(storage.get(STORAGE_KEYS.ROBOTS), []);

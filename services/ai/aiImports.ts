@@ -8,7 +8,7 @@ export async function importGoogleGenAI() {
   try {
     const { GoogleGenAI } = await import("@google/genai");
     return GoogleGenAI;
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Failed to import GoogleGenAI:', error);
     throw new Error('AI service unavailable');
   }
@@ -18,7 +18,7 @@ export async function importAIGenerationTypes() {
   try {
     const { Type } = await import("@google/genai");
     return Type;
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Failed to import AI types:', error);
     throw new Error('AI types unavailable');
   }
@@ -28,7 +28,7 @@ export async function importAIModels() {
   try {
     const genai = await import("@google/genai");
     return genai; // Return the module for model access
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Failed to import AI models:', error);
     throw new Error('AI models unavailable');
   }
@@ -41,7 +41,7 @@ export async function importDeepSeekClient() {
     // const { DeepSeek } = await import("deepseek-api");
     // return DeepSeek;
     throw new Error('DeepSeek not implemented yet');
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Failed to import DeepSeek:', error);
     throw new Error('DeepSeek service unavailable');
   }
@@ -53,7 +53,7 @@ export async function importOpenAIClient() {
     // const { OpenAI } = await import("openai");
     // return OpenAI;
     throw new Error('OpenAI not implemented yet');
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Failed to import OpenAI:', error);
     throw new Error('OpenAI service unavailable');
   }

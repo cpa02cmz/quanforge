@@ -276,7 +276,7 @@ class QueryOptimizer {
         } else if (data) {
           results.push(...data);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         errors.push(error);
       }
     }

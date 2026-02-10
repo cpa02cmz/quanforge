@@ -177,7 +177,7 @@ class QueryBatcher {
       this.updateStats(batch.length, executionTime);
       this.resolveBatch(results);
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Batch execution failed:', error);
       await this.handleBatchError(batch, error);
     }
@@ -195,7 +195,7 @@ class QueryBatcher {
       try {
         const groupResults = await this.executeQueryGroup(group);
         results.push(...groupResults);
-      } catch (error) {
+      } catch (error: unknown) {
         // Add error results for all queries in this group
         const errorResults = group.queries.map(query => ({
           id: query.id,
@@ -332,7 +332,7 @@ class QueryBatcher {
             });
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         const executionTime = performance.now() - startTime;
         for (const originalQuery of combined.originalQueries) {
           results.push({
@@ -450,7 +450,7 @@ class QueryBatcher {
           error,
           executionTime
         });
-      } catch (error) {
+      } catch (error: unknown) {
         const executionTime = performance.now() - startTime;
         results.push({
           id: query.id,
@@ -494,7 +494,7 @@ class QueryBatcher {
           error,
           executionTime
         });
-      } catch (error) {
+      } catch (error: unknown) {
         const executionTime = performance.now() - startTime;
         results.push({
           id: query.id,
@@ -540,7 +540,7 @@ class QueryBatcher {
           error,
           executionTime
         });
-      } catch (error) {
+      } catch (error: unknown) {
         const executionTime = performance.now() - startTime;
         results.push({
           id: query.id,

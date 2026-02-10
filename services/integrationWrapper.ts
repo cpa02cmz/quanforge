@@ -61,7 +61,7 @@ export class IntegrationWrapper {
       try {
         const result = await operation();
         return { result, attempts: 1 };
-      } catch (error) {
+      } catch (error: unknown) {
         return { attempts: 1, lastError: error };
       }
     }
@@ -354,7 +354,7 @@ export class IntegrationHealthChecker {
             }
 
             return { success: false, latency: Date.now() - startTime };
-          } catch (error) {
+          } catch (error: unknown) {
             logger.error(`Health check failed for ${name}:`, error);
             return {
               success: false,

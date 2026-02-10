@@ -71,7 +71,7 @@ export class AdvancedCache extends BaseCache {
     if (entry.compressed) {
       try {
         return await CompressionUtils.decompress(entry.data, entry.compressed);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Failed to decompress cache entry: ${key}`, error);
         this.cache.delete(key);
         this.recordMiss();
@@ -119,7 +119,7 @@ export class AdvancedCache extends BaseCache {
         if (compressed) {
           this.metrics.compressions++;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Failed to compress cache entry: ${key}`, error);
       }
     }
@@ -197,7 +197,7 @@ export class AdvancedCache extends BaseCache {
       try {
         const data = await loader();
         await this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
-      } catch (error) {
+      } catch (error: unknown) {
          if (process.env.NODE_ENV === 'development') {
            logger.warn(`Failed to preload cache entry: ${key}`, error);
          }
@@ -221,7 +221,7 @@ export class AdvancedCache extends BaseCache {
         try {
           const data = await loader(params);
           await this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
-        } catch (error) {
+        } catch (error: unknown) {
           logger.warn(`Failed to warm cache entry: ${key}`, error);
         }
       }
@@ -375,7 +375,7 @@ export class AdvancedCache extends BaseCache {
         }
 
         logger.log(`Edge cache warmed for region: ${region}`);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Failed to warm edge cache for region ${region}:`, error);
       }
     }

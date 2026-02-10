@@ -57,7 +57,7 @@ export const mockDB = {
           
           globalCache.set(cacheKey, robots, DB_CONFIG.CACHE_TTL, ['robots']);
           return { data: robots, error: null };
-        } catch (error) {
+        } catch (error: unknown) {
           handleError(error instanceof Error ? error : String(error), 'database.operation');
           return { data: null, error };
         }
@@ -83,7 +83,7 @@ export const mockDB = {
           saveStoredRobots(updatedRobots);
 
           return { data: insertedRobots, error: null };
-        } catch (error) {
+        } catch (error: unknown) {
           handleError(error instanceof Error ? error : String(error), 'database.operation');
           return { data: null, error };
         }
@@ -100,7 +100,7 @@ export const mockDB = {
           const updatedRobot = updatedRobots.find(r => r.id === data.id);
           
           return { data: updatedRobot || null, error: null };
-        } catch (error) {
+        } catch (error: unknown) {
           handleError(error instanceof Error ? error : String(error), 'database.operation');
           return { data: null, error };
         }
@@ -121,7 +121,7 @@ export const mockDB = {
             globalCache.set(cacheKey, filtered, DB_CONFIG.CACHE_TTL, ['robots', 'search']);
             
             return { data: filtered, error: null };
-} catch (error) {
+} catch (error: unknown) {
           handleError(error instanceof Error ? error : String(error), 'database.operation');
           return { data: null, error };
         }
@@ -139,7 +139,7 @@ export const mockDB = {
             
             saveStoredRobots(updatedRobots);
             return { data: null, error: null };
-          } catch (error) {
+          } catch (error: unknown) {
             handleError(error instanceof Error ? error : String(error), 'database.operation');
             return { data: null, error };
           }
@@ -158,7 +158,7 @@ export const mockDB = {
             );
             
             return { data: filtered, error: null };
-          } catch (error) {
+          } catch (error: unknown) {
             // Handle ReDoS errors gracefully
             if (error instanceof ReDoSError) {
               console.warn('Unsafe pattern detected in ilike:', error.message);
@@ -188,7 +188,7 @@ export const mockDB = {
               });
               
               return { data: sorted, error: null };
-} catch (error) {
+} catch (error: unknown) {
           handleError(error instanceof Error ? error : String(error), 'database.operation');
           return { data: null, error };
         }
@@ -206,7 +206,7 @@ export const mockDB = {
             globalCache.set(cacheKey, paginated, DB_CONFIG.CACHE_TTL, ['robots', 'paginated']);
             
             return { data: paginated, error: null };
-} catch (error) {
+} catch (error: unknown) {
           handleError(error instanceof Error ? error : String(error), 'database.operation');
           return { data: null, error };
         }
@@ -222,7 +222,7 @@ export const mockDB = {
             );
             
             return { data: filtered, error: null };
-} catch (error) {
+} catch (error: unknown) {
           handleError(error instanceof Error ? error : String(error), 'database.operation');
           return { data: null, error };
         }
@@ -247,7 +247,7 @@ export const mockDB = {
           
           saveStoredRobots(updatedRobots);
           return { data: dataArray, error: null };
-        } catch (error) {
+        } catch (error: unknown) {
           handleError(error instanceof Error ? error : String(error), 'database.operation');
           return { data: null, error };
         }
@@ -281,7 +281,7 @@ export const getRobotsPaginated = async (page: number = 1, pageSize: number = 10
     
     globalCache.set(cacheKey, result, DB_CONFIG.CACHE_TTL, ['robots', 'paginated']);
     return result;
-  } catch (error) {
+  } catch (error: unknown) {
     handleError(error instanceof Error ? error : String(error), 'database.operation');
     return { data: null, error };
   }
@@ -299,7 +299,7 @@ export const searchRobots = async (searchTerm: string) => {
     );
     
     return { data: filtered, error: null };
-  } catch (error) {
+  } catch (error: unknown) {
     // Handle ReDoS errors gracefully
     if (error instanceof ReDoSError) {
       console.warn('Unsafe search pattern detected:', error.message);
@@ -335,7 +335,7 @@ export const deleteRobot = async (id: string) => {
   try {
     saveStoredRobots(updatedRobots);
     return { data: null, error: null };
-  } catch (error) {
+  } catch (error: unknown) {
     handleError(error instanceof Error ? error : String(error), 'database.delete');
     return { data: null, error };
   }

@@ -22,7 +22,7 @@ export function createLazyComponent(
     try {
       logger.debug(`Loading component: ${componentName}`);
       return await importFunc();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Failed to load component ${componentName}:`, error);
       // Return a fallback component instead of crashing
       return {
@@ -99,7 +99,7 @@ export async function loadComponentOnInteraction<T extends ComponentType<unknown
     }
 
     return null;
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Error in conditional component loading:', error);
     return null;
   }
@@ -121,7 +121,7 @@ export async function preloadCriticalComponents(): Promise<void> {
     ]);
 
     logger.debug('Critical components preloaded');
-  } catch (error) {
+  } catch (error: unknown) {
     logger.warn('Error preloading components:', error);
   }
 }

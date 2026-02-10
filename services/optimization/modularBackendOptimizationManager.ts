@@ -164,7 +164,7 @@ class BackendOptimizationManager {
           optimizationOpportunities: recommendations.filter(r => !r.includes('error') && !r.includes('critical'))
         }
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error getting advanced insights:', error);
       return null;
     }
@@ -193,7 +193,7 @@ class BackendOptimizationManager {
         performanceGain,
         recommendations
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error in comprehensive optimization:', error);
       return {
         optimizationsApplied: 0,
@@ -328,7 +328,7 @@ class BackendOptimizationManager {
         performanceGain: Math.max(0, performanceGain),
         executionTime
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('System optimization failed:', error);
       return {
         optimizationsApplied,

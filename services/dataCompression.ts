@@ -65,7 +65,7 @@ class DataCompressionService {
       
       // If not compressed or decompression failed, try parsing directly
       return JSON.parse(compressedData) as Robot;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to decompress robot data:', error);
       return null;
     }

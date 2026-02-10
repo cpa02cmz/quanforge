@@ -71,7 +71,7 @@ const getCurrentUserId = (): string | null => {
       sessionStorageInstance.set('anonymous_session_id', anonymousId);
     }
     return anonymousId;
-  } catch (error) {
+  } catch (error: unknown) {
     logger.warn('Failed to get user ID for rate limiting:', error);
     return null;
   }
@@ -670,7 +670,7 @@ const buildContextPrompt = async (prompt: string, currentCode?: string, strategy
             // Fallback to main thread if worker is not available
             return tokenBudgetManager.buildContext(prompt, currentCode, strategyParams, history);
         }
-    } catch (error) {
+    } catch (error: unknown) {
         logger.warn('Web Worker context building failed, using fallback:', error);
         // Fallback to main thread
         return tokenBudgetManager.buildContext(prompt, currentCode, strategyParams, history);
@@ -861,10 +861,10 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
          } else {
              response = extractThinking(rawResponse);
          }
-     } catch (error) {
-         logger.warn('Web Worker response processing failed, using fallback:', error);
-         response = extractThinking(rawResponse);
-     }
+      } catch (error: unknown) {
+          logger.warn('Web Worker response processing failed, using fallback:', error);
+          response = extractThinking(rawResponse);
+      }
      
      // Cache the response with semantic key and longer TTL for similar prompts
      mql5ResponseCache.set(semanticKey, response, 900000); // 15 minutes TTL

@@ -145,7 +145,7 @@ class EdgeRequestCoalescer {
       pending.resolve(result);
       this.pendingRequests.delete(key);
 
-    } catch (error) {
+    } catch (error: unknown) {
       // Reject all related requests
       const relatedRequests = this.findRelatedRequests(key);
       

@@ -125,7 +125,7 @@ class EdgeKVClient {
 
       this.metrics.misses++;
       return null;
-    } catch (error) {
+    } catch (error: unknown) {
       this.metrics.errors++;
       console.error(`EdgeKV get error for key ${fullKey}:`, error);
       return null;
@@ -151,7 +151,7 @@ class EdgeKVClient {
       
       this.metrics.sets++;
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       this.metrics.errors++;
       console.error(`EdgeKV set error for key ${fullKey}:`, error);
       return false;
@@ -167,7 +167,7 @@ class EdgeKVClient {
       this.cache.delete(fullKey);
       this.metrics.deletes++;
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       this.metrics.errors++;
       console.error(`EdgeKV delete error for key ${fullKey}:`, error);
       return false;
@@ -193,7 +193,7 @@ class EdgeKVClient {
       }
       
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       this.metrics.errors++;
       console.error(`EdgeKV clear namespace error for ${namespace}:`, error);
       return false;
@@ -221,7 +221,7 @@ class EdgeKVClient {
       });
       
       return results;
-    } catch (error) {
+    } catch (error: unknown) {
       this.metrics.errors++;
       console.error(`EdgeKV mget error:`, error);
       return {};
@@ -252,7 +252,7 @@ class EdgeKVClient {
       await Promise.all(operations);
       this.metrics.sets += Object.keys(entries).length;
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       this.metrics.errors++;
       console.error(`EdgeKV mset error:`, error);
       return false;
@@ -266,7 +266,7 @@ class EdgeKVClient {
     try {
       const result = await this.client.incrby(fullKey, amount);
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       this.metrics.errors++;
       console.error(`EdgeKV increment error for key ${fullKey}:`, error);
       return null;

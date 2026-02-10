@@ -193,7 +193,7 @@ class LegacyBackendOptimizationManager {
         data: result,
         error: null
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Unknown error occurred'

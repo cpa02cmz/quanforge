@@ -33,7 +33,7 @@ export class RetryLogic implements RetryLogicInterface {
         // Success - reset circuit breaker
         circuitBreaker.recordSuccess();
         return result;
-      } catch (error) {
+      } catch (error: unknown) {
         lastError = error;
         
         // Check if error is retryable

@@ -105,7 +105,7 @@ export class SecurityUtils {
       }
       
       return parsed;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('JSON parsing error:', error);
       return null;
     }

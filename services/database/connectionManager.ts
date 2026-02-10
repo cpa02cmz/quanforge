@@ -206,7 +206,7 @@ class ConnectionManager {
         errorCount: 0,
         responseTime
       };
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'createConnection');
       return null;
     }
@@ -301,7 +301,7 @@ class ConnectionManager {
       connection.isHealthy = true;
       connection.lastUsed = Date.now();
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       connection.errorCount++;
       connection.isHealthy = false;
       connection.lastError = (error as Error).message;

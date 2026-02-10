@@ -330,7 +330,7 @@ private startHealthChecks(): void {
           this.healthStatus.delete(connectionId);
           console.warn(`Removed unhealthy connection: ${connectionId}`);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`Health check failed for connection ${connectionId}:`, error);
       }
     }
@@ -364,7 +364,7 @@ private startHealthChecks(): void {
         // Lightweight warmup query optimized for edge
         await client.from('robots').select('id').limit(1);
         console.log(`Edge connection warmed for region: ${region}`);
-      } catch (error) {
+      } catch (error: unknown) {
         console.warn(`Failed to warm edge connection for ${region}:`, error);
       }
     });
@@ -386,7 +386,7 @@ private startHealthChecks(): void {
 
     try {
       return await this.getClient(edgeConnectionId);
-    } catch (error) {
+    } catch (error: unknown) {
       // Fallback to default connection if edge connection fails
       if (region) {
         console.warn(`Edge connection failed for ${region}, falling back to default:`, error);

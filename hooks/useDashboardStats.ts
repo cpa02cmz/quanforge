@@ -112,7 +112,7 @@ export const useDashboardStats = (options: UseDashboardStatsOptions = {}) => {
         error: null,
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to load dashboard data:', error);
       setStats(prev => ({
         ...prev,

@@ -1,6 +1,7 @@
 import { Robot, StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
 import { SecureStorage } from '../utils/secureStorage';
+import { getErrorMessage } from '../utils/errorHandler';
 import {
   RATE_LIMITING,
   TIME_CONSTANTS,
@@ -167,10 +168,10 @@ class SecurityManager {
         sanitizedData = sqlResult.sanitizedData;
       }
 
-    } catch (error) {
-      errors.push(`Validation error: ${error}`);
-      riskScore += 20;
-    }
+    } catch (error: unknown) {
+       errors.push(`Validation error: ${getErrorMessage(error)}`);
+       riskScore += 20;
+     }
 
     return {
       isValid: errors.length === 0 && riskScore < 70,
@@ -1063,9 +1064,9 @@ private validateRobotData(data: any): ValidationResult {
         },
         body: JSON.stringify(alert)
       });
-    } catch (error) {
-      console.error('Failed to send security alert:', error);
-    }
+    } catch (error: unknown) {
+       console.error('Failed to send security alert:', error);
+     }
   }
 
   // Enhanced rate limiting with adaptive thresholds
@@ -1591,10 +1592,10 @@ private validateRobotData(data: any): ValidationResult {
        }
        
        return parsed;
-     } catch (error) {
-       console.error('JSON parsing error:', error);
-       return null;
-     }
+      } catch (error: unknown) {
+         console.error('JSON parsing error:', error);
+         return null;
+       }
    }
    
    /**

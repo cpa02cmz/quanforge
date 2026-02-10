@@ -63,7 +63,7 @@ export class OptimizationApplier {
             message: `Unknown optimization type: ${recommendation}`
           };
       }
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: `Error applying optimization: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -105,7 +105,7 @@ export class OptimizationApplier {
         success: true,
         message: 'General cache optimization applied'
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: `Cache optimization failed: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -131,7 +131,7 @@ export class OptimizationApplier {
         success: true,
         message: 'Database optimization applied'
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: `Database optimization failed: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -159,7 +159,7 @@ export class OptimizationApplier {
         message: 'Query optimization applied',
         metrics: optimizationResult
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: `Query optimization failed: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -192,7 +192,7 @@ export class OptimizationApplier {
         success: true,
         message: 'General edge optimization applied'
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: `Edge optimization failed: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -244,7 +244,7 @@ export class OptimizationApplier {
             message: `Unknown system: ${system}`
           };
       }
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: `System optimization failed: ${error instanceof Error ? error.message : 'Unknown error'}`

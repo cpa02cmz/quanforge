@@ -121,7 +121,7 @@ class CoreSupabaseService {
         logger.error('Failed to initialize Supabase client:', error);
         this.isMockMode = true;
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error initializing Supabase service:', error);
       this.isMockMode = true;
     }

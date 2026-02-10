@@ -116,7 +116,7 @@ self.addEventListener('message', async (event: MessageEvent<WorkerMessage>) => {
       default:
         throw new Error(`Unknown worker message type: ${type}`);
     }
-  } catch (error) {
+  } catch (error: unknown) {
     self.postMessage({
       type: 'error',
       payload: {

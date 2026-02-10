@@ -241,7 +241,7 @@ class RealtimeManager {
           }
         });
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to activate subscription:', error);
       this.handleSubscriptionError(subscription);
     }
@@ -254,7 +254,7 @@ class RealtimeManager {
     try {
       this.client.removeChannel(this.client.channel(`public:${subscription.table}`));
       subscription.isActive = false;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to deactivate subscription:', error);
     }
   }

@@ -92,7 +92,7 @@ class RealTimeMonitoring {
       
 this.isInitialized = true;
       // Performance monitoring initialized
-     } catch (error) {
+     } catch (error: unknown) {
        handleError(error as Error, 'initialize', 'RealTimeMonitoring');
      }
   }
@@ -215,7 +215,7 @@ this.isInitialized = true;
       
       observer.observe({ type, buffered: true });
       this.observers.push(observer);
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn(`[RealTimeMonitoring] Failed to observe ${type}:`, error);
     }
   }
@@ -446,7 +446,7 @@ this.isInitialized = true;
         fcp: currentMetrics.vitals.fcp,
         ttfb: currentMetrics.vitals.ttfb
       });
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'reportMetrics', 'RealTimeMonitoring');
     }
   }

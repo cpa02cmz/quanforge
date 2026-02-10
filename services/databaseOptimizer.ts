@@ -513,7 +513,7 @@ class DatabaseOptimizer {
           slowQueryCount: queryAnalysis.slowQueries.length
         }
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: `Comprehensive optimization failed: ${error}`,

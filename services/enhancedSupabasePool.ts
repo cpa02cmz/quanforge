@@ -115,7 +115,7 @@ class EnhancedSupabaseConnectionPool {
     try {
       await Promise.all(promises);
       logger.log(`Enhanced connection pool initialized with ${this.config.minConnections} connections`);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to initialize connection pool:', error);
     }
   }
@@ -208,7 +208,7 @@ class EnhancedSupabaseConnectionPool {
         try {
           connection = await this.createConnection(preferredRegion);
           logger.debug(`Created new connection for region: ${preferredRegion}`);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.warn('Failed to create new connection:', error);
 
           // Fallback: try to create connection without region preference
@@ -379,7 +379,7 @@ class EnhancedSupabaseConnectionPool {
       connection.lastUsed = Date.now(); // Update last used on successful health check
 
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       connection.healthy = false;
       logger.warn(`Connection ${connection.id} health check failed:`, error);
       return false;
@@ -624,7 +624,7 @@ class EnhancedSupabaseConnectionPool {
 
         this.readReplicaClients.set(replicaKey, readClient);
         logger.debug(`Created read replica client for region: ${region || 'default'}`);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn('Failed to create read replica client:', error);
         return null;
       }
@@ -641,7 +641,7 @@ class EnhancedSupabaseConnectionPool {
     const warmUpPromises = regions.map(async (region) => {
       try {
         await this.acquireReadReplica(region);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Failed to warm up read replica for region ${region}:`, error);
       }
     });
@@ -810,7 +810,7 @@ class EnhancedSupabaseConnectionPool {
       await Promise.allSettled(warmupPromises);
       const duration = performance.now() - startTime;
       logger.log(`Enhanced edge connection warm-up completed in ${duration.toFixed(2)}ms`);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('Enhanced edge connection warm-up failed:', error);
     }
   }
@@ -854,7 +854,7 @@ class EnhancedSupabaseConnectionPool {
           logger.debug(`Enhanced warm-up completed for region: ${region} (${priority} priority, attempt ${attempt})`);
           return; // Success, exit retry loop
 
-        } catch (error) {
+        } catch (error: unknown) {
           if (attempt === maxRetries) {
             logger.warn(`Failed to warm up connection for region ${region} after ${maxRetries} attempts (${priority} priority):`, error);
           } else {
@@ -863,7 +863,7 @@ class EnhancedSupabaseConnectionPool {
           }
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn(`Enhanced warm-up failed for region ${region}:`, error);
     }
   }
@@ -924,7 +924,7 @@ class EnhancedSupabaseConnectionPool {
       const duration = performance.now() - startTime;
       logger.debug(`Enhanced warm-up queries completed for region ${region} in ${duration.toFixed(2)}ms`);
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.debug(`Enhanced warm-up queries failed for region ${region}:`, error);
       throw error;
     }
@@ -946,7 +946,7 @@ class EnhancedSupabaseConnectionPool {
           await readClient.from('robots').select('count', { count: 'exact', head: true }).limit(1);
           logger.debug(`Enhanced read replica warm-up completed for region: ${region}`);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Enhanced read replica warm-up failed for region ${region}:`, error);
       }
     });
@@ -997,7 +997,7 @@ class EnhancedSupabaseConnectionPool {
       await Promise.allSettled(warmupPromises);
       const duration = performance.now() - startTime;
       logger.log(`Edge connection warm-up completed in ${duration.toFixed(2)}ms`);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('Edge connection warm-up failed:', error);
     }
   }
@@ -1027,7 +1027,7 @@ class EnhancedSupabaseConnectionPool {
       } else {
         logger.debug(`Skipping warm-up for ${region} - connection pool at capacity`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn(`Failed to warm up connection for region ${region}:`, error);
     }
   }
@@ -1042,7 +1042,7 @@ class EnhancedSupabaseConnectionPool {
         .from('robots')
         .select('count', { count: 'exact', head: true })
         .limit(1);
-    } catch (error) {
+    } catch (error: unknown) {
       // Don't throw error for warm-up failures, just log
       logger.debug('Warm-up query failed:', error);
     }
@@ -1211,7 +1211,7 @@ class EnhancedSupabaseConnectionPool {
       try {
         await this.gracefulShutdownConnection(conn);
         logger.debug(`Drained connection ${conn.id} (healthy: ${conn.healthy}, region: ${conn.region})`);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Failed to drain connection ${conn.id}:`, error);
       }
     });
@@ -1297,7 +1297,7 @@ class EnhancedSupabaseConnectionPool {
       try {
         await this.warmRegionConnectionEnhanced(region, 'high');
         logger.debug(`Predictive warm-up completed for region: ${region}`);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Predictive warm-up failed for region ${region}:`, error);
       }
     });
@@ -1330,7 +1330,7 @@ class EnhancedSupabaseConnectionPool {
       this.updateStats();
 
       logger.debug(`Successfully closed connection ${connectionId}`);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Error closing connection ${connectionId}:`, error);
       // Force remove even if error occurs
       this.connections.delete(connectionId);

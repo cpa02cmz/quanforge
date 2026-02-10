@@ -163,7 +163,7 @@ class PerformanceMonitor {
       });
       clsObserver.observe({ entryTypes: ['layout-shift'] });
       this.observers.push(clsObserver);
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'observeWebVitals');
     }
   }
@@ -178,7 +178,7 @@ class PerformanceMonitor {
       });
       resourceObserver.observe({ entryTypes: ['resource'] });
       this.observers.push(resourceObserver);
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'observeResources');
     }
   }
@@ -193,7 +193,7 @@ class PerformanceMonitor {
       });
       navObserver.observe({ entryTypes: ['navigation'] });
       this.observers.push(navObserver);
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'observeNavigation');
     }
   }

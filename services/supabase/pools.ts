@@ -155,7 +155,7 @@ class SupabaseConnectionPool {
       const connection = await this.createConnection(region);
       this.connections.set(connection.id, connection);
       this.updateStats();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to create connection:', error);
     }
   }
@@ -288,7 +288,7 @@ class SupabaseConnectionPool {
         this.updateStats();
         this.recordAcquireTime(Date.now() - startTime);
         return newConnection;
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Failed to create new connection:', error);
       }
     }

@@ -187,7 +187,7 @@ class MarketDataService {
                        this.twelveDataReconnectAttempts = this.maxReconnectAttempts;
                    }
                }
-           } catch (error) {
+           } catch (error: unknown) {
                logger.error("Twelve Data: Failed to parse message:", error);
            }
       };
@@ -354,7 +354,7 @@ class MarketDataService {
            for (const cb of callbacks) {
                 try {
                     cb(data);
-                } catch (error) {
+                } catch (error: unknown) {
                     logger.error("Error in market data callback:", error);
                     // Remove problematic callback
                     subs.delete(cb);

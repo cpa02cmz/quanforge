@@ -553,7 +553,7 @@ class ModularSupabase implements ModularSupabaseService {
         success: true, 
         message: "Database optimization completed successfully" 
       };
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'optimizeDatabase', 'modularSupabase');
       return { 
         success: false, 
@@ -700,7 +700,7 @@ const index = robots.findIndex((r: Robot) => r.id === id);
         } else {
           successCount++;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         failedCount++;
         errors.push(`Error updating robot ${id}: ${(error as Error).message}`);
       }
@@ -737,7 +737,7 @@ const index = robots.findIndex((r: Robot) => r.id === id);
         success: true, 
         message: `Mock database optimized: ${robots.length - uniqueRobots.length} invalid records removed.` 
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return { 
         success: false, 
         message: `Mock database optimization failed: ${(error as Error).message}` 

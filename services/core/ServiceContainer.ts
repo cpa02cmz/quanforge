@@ -69,7 +69,7 @@ class ServiceContainer {
         await service.initialize();
         this.instances.set(name, service);
         logger.log(`✅ Service '${name}' initialized successfully`);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`❌ Failed to initialize service '${name}':`, error);
         throw error;
       }
@@ -123,7 +123,7 @@ class ServiceContainer {
       try {
         const health = await service.health();
         return { name, ...health };
-      } catch (error) {
+      } catch (error: unknown) {
         return { name, status: 'unhealthy' as const, message: error instanceof Error ? error.message : 'Unknown error' };
       }
     });
@@ -190,7 +190,7 @@ export class ServiceOrchestrator {
       if (health.unhealthy.length > 0) {
         logger.warn('⚠️ Unhealthy services:', health.unhealthy);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Failed to start services:', error);
       throw error;
     }
@@ -205,7 +205,7 @@ export class ServiceOrchestrator {
     try {
       await this.container.disposeAll();
       logger.log('✅ All services stopped gracefully');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('❌ Error stopping services:', error);
       throw error;
     }
@@ -231,7 +231,7 @@ export class ServiceOrchestrator {
       // Re-initialize the service
       await service.initialize();
       logger.log(`✅ Service '${serviceName}' restarted successfully`);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`❌ Failed to restart service '${serviceName}':`, error);
       throw error;
     }

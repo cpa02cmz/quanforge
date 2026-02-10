@@ -194,7 +194,7 @@ export const withErrorHandling = <T extends (...args: unknown[]) => Promise<unkn
         }
         
         return await fn(...args);
-      } catch (error) {
+      } catch (error: unknown) {
         const typedError = error instanceof Error ? error : new Error(String(error));
         lastError = typedError;
         
@@ -338,7 +338,7 @@ export const errorRecovery = {
       const result = await operation();
       cacheSetter(cacheKey, result);
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       // Try to get from cache
       const cached = cacheGetter(cacheKey);
       if (cached !== null) {
@@ -393,7 +393,7 @@ export const errorRecovery = {
         failureCount = 0;
         state = 'CLOSED';
         return result;
-      } catch (error) {
+      } catch (error: unknown) {
         failureCount++;
         lastFailureTime = now;
         

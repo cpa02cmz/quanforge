@@ -358,7 +358,7 @@ self.addEventListener('message', (event: MessageEvent<WorkerMessage>) => {
       default:
         throw new Error(`Unknown message type: ${type}`);
     }
-  } catch (error) {
+  } catch (error: unknown) {
     self.postMessage({
       type: 'ERROR',
       id,

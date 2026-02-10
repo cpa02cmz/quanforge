@@ -158,7 +158,7 @@ export const useGeneratorLogic = (id?: string) => {
                       }
                   }
               }
-          } catch (error) {
+          } catch (error: unknown) {
               if (!controller.signal.aborted) {
                   logger.error('Error loading robot:', error);
                   showToast("Error loading robot", "error");

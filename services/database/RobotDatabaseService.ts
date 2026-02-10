@@ -46,7 +46,7 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
       if (!data || data.length === 0) throw new Error('Failed to save robot');
 
       return data[0].id;
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'saveRobot', 'RobotDatabaseService');
       throw error;
     }
@@ -70,7 +70,7 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
       }
       
       return data as Robot;
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'getRobot', 'RobotDatabaseService');
       throw error;
     }
@@ -88,7 +88,7 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
 
       if (error) throw error;
       return (data || []) as Robot[];
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'getAllRobots', 'RobotDatabaseService');
       throw error;
     }
@@ -107,7 +107,7 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
 
       if (error) throw error;
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'updateRobot', 'RobotDatabaseService');
       throw error;
     }
@@ -124,7 +124,7 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
 
       if (error) throw error;
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'deleteRobot', 'RobotDatabaseService');
       throw error;
     }
@@ -148,7 +148,7 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
       
       if (error) throw error;
       return (data || []) as Robot[];
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'searchRobots', 'RobotDatabaseService');
       throw error;
     }
@@ -166,7 +166,7 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
         count: count || 0,
         storageType: this.getConfig().mode === 'mock' ? 'Browser Local Storage' : 'Supabase Cloud DB'
       };
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'getStats', 'RobotDatabaseService');
       throw error;
     }
@@ -184,7 +184,7 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
       };
 
       return JSON.stringify(exportObj, null, 2);
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'exportDatabase', 'RobotDatabaseService');
       throw error;
     }
@@ -220,7 +220,7 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
         try {
           await this.saveRobot(robot);
           successCount++;
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Failed to import robot:', robot.id, error);
         }
       }
@@ -229,7 +229,7 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
         success: true,
         count: successCount
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
         count: 0,
@@ -248,7 +248,7 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
         success: true,
         message: `Database optimized. Current record count: ${stats.count}. Storage: ${stats.storageType}`
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: `Optimization failed: ${(error as Error).message}`
@@ -265,7 +265,7 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
         .update({ is_active: false, deleted_at: new Date().toISOString() })
         .neq('id', '');
       if (error) throw error;
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'clearAllRobots', 'RobotDatabaseService');
       throw error;
     }

@@ -84,7 +84,7 @@ class CircuitBreaker {
       const result = await operation();
       this.onSuccess();
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       this.onFailure();
       throw error;
     }
@@ -195,7 +195,7 @@ class ResilientSupabaseClient {
       this.recordResponseTime(Date.now() - startTime);
       return result;
 
-    } catch (error) {
+    } catch (error: unknown) {
       this.metrics.failedRequests++;
       this.recordResponseTime(Date.now() - startTime);
       
@@ -526,7 +526,7 @@ eq: (col: string, value: unknown) =>
            totalCircuitBreakers: circuitBreakers.length,
          },
        };
-     } catch (error) {
+     } catch (error: unknown) {
        return {
          healthy: false,
          details: {

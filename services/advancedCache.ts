@@ -85,7 +85,7 @@ export class AdvancedCache {
     if (entry.compressed) {
       try {
         return decompressFromUTF16(entry.data as string) as T;
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Failed to decompress cache entry: ${key}`, error);
         this.cache.delete(key);
         this.stats.misses++;
@@ -120,7 +120,7 @@ export class AdvancedCache {
         processedData = compressToUTF16(serializedData) as T;
         compressed = true;
         this.stats.compressions++;
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Failed to compress cache entry: ${key}`, error);
       }
     }
@@ -197,7 +197,7 @@ export class AdvancedCache {
       try {
         const data = await loader();
         this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Failed to preload cache entry: ${key}`, error);
       }
     });
@@ -219,7 +219,7 @@ export class AdvancedCache {
         try {
           const data = await loader(params);
 this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
-        } catch (error) {
+        } catch (error: unknown) {
           logger.warn(`Failed to warm cache entry: ${key}`, error);
         }
       }
@@ -397,7 +397,7 @@ this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
         }
 
         logger.log(`Edge cache warmed for region: ${region}`);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Failed to warm edge cache for region ${region}:`, error);
       }
     }

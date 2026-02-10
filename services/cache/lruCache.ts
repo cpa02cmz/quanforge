@@ -54,7 +54,7 @@ export class OptimizedLRUCache<T = any> extends BaseCache<T> {
     if (entry.compressed) {
       try {
         return await CompressionUtils.decompress(entry.data, entry.compressed);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Failed to decompress cache entry: ${key}`, error);
         this.cache.delete(key);
         this.recordMiss();
@@ -89,7 +89,7 @@ export class OptimizedLRUCache<T = any> extends BaseCache<T> {
         if (compressed) {
           this.metrics.compressions++;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn('Compression failed:', error);
       }
     }
@@ -207,7 +207,7 @@ export class OptimizedLRUCache<T = any> extends BaseCache<T> {
         if (cleaned > 0 && process.env.NODE_ENV === 'development') {
           logger.log(`LRU Cache cleanup: removed ${cleaned} expired entries`);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn('LRU Cache auto cleanup failed:', error);
       }
     }, intervalMs);

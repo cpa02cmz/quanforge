@@ -77,7 +77,7 @@ export class DatabaseCore implements IDatabaseCore {
       try {
         // Clear connection cache - edgeConnectionPool doesn't have explicit close method
         logger.log('Connection pool cleanup completed');
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Error closing database connections:', error);
       }
     }
@@ -87,7 +87,7 @@ export class DatabaseCore implements IDatabaseCore {
     try {
       const result = await this.checkConnection();
       return result.success;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Health check failed:', error);
       return false;
     }
@@ -117,7 +117,7 @@ export class DatabaseCore implements IDatabaseCore {
     try {
       // Use edge connection pool for better performance
       return await edgeConnectionPool.getClient();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to get database client:', error);
       throw error;
     }

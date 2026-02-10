@@ -164,7 +164,7 @@ export class APISecurityManager {
       }
       
       localStorage.setItem('csp_violations', JSON.stringify(violations));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to store CSP violation:', error);
     }
   }
@@ -202,7 +202,7 @@ export class APISecurityManager {
       }
       
       localStorage.setItem('security_alerts', JSON.stringify(alerts));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to store security alert:', error);
     }
   }
@@ -318,7 +318,7 @@ export class APISecurityManager {
         now - alert.timestamp < 3600000 && alert.priority === 'high'
       );
       highSeverityAlerts = recentAlerts.length;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to get security alerts:', error);
     }
 
