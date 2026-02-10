@@ -67,17 +67,22 @@ export const CustomInputRow = React.memo<CustomInputRowProps>(({
 
   return (
     <div 
-      className="grid grid-cols-12 gap-2 items-center group" 
+      className="relative grid grid-cols-12 gap-2 items-center group -mx-2 px-2 py-1 rounded-lg transition-all duration-200 hover:bg-dark-border/5" 
       role="row"
       aria-label={`Custom input row ${index + 1}`}
     >
+      {/* Left border highlight on hover */}
+      <div 
+        className="absolute left-0 top-2 bottom-2 w-0.5 bg-brand-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200" 
+        aria-hidden="true"
+      />
       <div className="col-span-5">
         <input
           type="text"
           value={input.name}
           onChange={(e) => onNameChange(input.id, e.target.value)}
           onKeyDown={handleKeyDown}
-          className="w-full bg-dark-surface border border-dark-border rounded px-2 py-1 text-xs text-white focus:ring-1 focus:ring-brand-500 outline-none focus:border-brand-500 transition-colors"
+          className="w-full bg-dark-surface border border-dark-border rounded px-2 py-1 text-xs text-white focus:ring-1 focus:ring-brand-500 outline-none focus:border-brand-500 hover:border-gray-500 transition-all duration-200"
           placeholder="Variable name"
           aria-label={`Custom input name ${index + 1}`}
         />
@@ -87,7 +92,7 @@ export const CustomInputRow = React.memo<CustomInputRowProps>(({
           value={input.type}
           onChange={(e) => onTypeChange(input.id, e.target.value as CustomInput['type'])}
           onKeyDown={handleKeyDown}
-          className="w-full bg-dark-surface border border-dark-border rounded px-2 py-1 text-xs text-white focus:ring-1 focus:ring-brand-500 outline-none focus:border-brand-500 transition-colors cursor-pointer"
+          className="w-full bg-dark-surface border border-dark-border rounded px-2 py-1 text-xs text-white focus:ring-1 focus:ring-brand-500 outline-none focus:border-brand-500 hover:border-gray-500 transition-all duration-200 cursor-pointer"
           aria-label={`Custom input type ${index + 1}`}
         >
           {inputTypes.map((type) => (
@@ -101,7 +106,7 @@ export const CustomInputRow = React.memo<CustomInputRowProps>(({
           value={input.value}
           onChange={(e) => onValueChange(input.id, e.target.value)}
           onKeyDown={handleKeyDown}
-          className="w-full bg-dark-surface border border-dark-border rounded px-2 py-1 text-xs text-white focus:ring-1 focus:ring-brand-500 outline-none focus:border-brand-500 transition-colors"
+          className="w-full bg-dark-surface border border-dark-border rounded px-2 py-1 text-xs text-white focus:ring-1 focus:ring-brand-500 outline-none focus:border-brand-500 hover:border-gray-500 transition-all duration-200"
           placeholder="Value"
           aria-label={`Custom input value ${index + 1}`}
         />
@@ -111,7 +116,7 @@ export const CustomInputRow = React.memo<CustomInputRowProps>(({
           type="button"
           onClick={() => onDelete(input.id)}
           onKeyDown={handleDeleteKeyDown}
-          className="text-gray-500 hover:text-red-400 p-1.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-dark-surface"
+          className="text-gray-500 hover:text-red-400 hover:bg-red-500/10 p-1.5 rounded-md transition-all duration-200 ease-out hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-dark-surface"
           aria-label={`Remove custom input ${index + 1}`}
           title={`Remove custom input ${index + 1} (Press Delete key to remove)`}
         >
