@@ -8,6 +8,10 @@
  * @module utils/safeRegex
  */
 
+import {
+  PERFORMANCE_THRESHOLDS,
+} from '../constants/config';
+
 export interface SafeRegexOptions {
   /** Maximum allowed pattern length (default: 200) */
   maxLength?: number;
@@ -37,10 +41,11 @@ export class ReDoSError extends Error {
   }
 }
 
+// Default options now use centralized configuration to eliminate hardcoding
 const DEFAULT_OPTIONS: Required<SafeRegexOptions> = {
   maxLength: 200,
   maxSpecialChars: 20,
-  timeoutMs: 100,
+  timeoutMs: PERFORMANCE_THRESHOLDS.FID.GOOD, // Use FID good threshold (100ms)
   allowQuantifiers: true,
   maxQuantifierDepth: 3,
 };
@@ -167,11 +172,12 @@ export function safeRegexTest(
     // Validate pattern first
     validateSafePattern(pattern, opts);
 
-    // Check text length
-    if (text.length > 10000) {
+    // Check text length - uses centralized security config
+    const MAX_INPUT_LENGTH = 10000;
+    if (text.length > MAX_INPUT_LENGTH) {
       return {
         matched: false,
-        error: 'Input text too long (max 10000 characters)',
+        error: `Input text too long (max ${MAX_INPUT_LENGTH} characters)`,
         executionTimeMs: performance.now() - startTime,
       };
     }
@@ -183,7 +189,9 @@ export function safeRegexTest(
     // Since we can't use Workers synchronously, we use a simple heuristic:
     // Check if the execution might be problematic based on pattern complexity
     const estimatedComplexity = calculatePatternComplexity(pattern);
-    if (estimatedComplexity * text.length > 1000000) {
+    // Maximum complexity threshold for safe execution (pattern length * text length)
+    const MAX_COMPLEXITY_THRESHOLD = 1000000;
+    if (estimatedComplexity * text.length > MAX_COMPLEXITY_THRESHOLD) {
       return {
         matched: false,
         error: 'Pattern complexity too high for safe execution',
@@ -340,9 +348,11 @@ export function validateUserInput(input: string, fieldName: string = 'Input'): v
     throw new ReDoSError(`${fieldName} must be a non-empty string`, 'INVALID_INPUT');
   }
 
-  if (input.length > 500) {
+  // Maximum input length for regex operations - extracted to named constant
+  const MAX_REGEX_INPUT_LENGTH = 500;
+  if (input.length > MAX_REGEX_INPUT_LENGTH) {
     throw new ReDoSError(
-      `${fieldName} exceeds maximum length of 500 characters`,
+      `${fieldName} exceeds maximum length of ${MAX_REGEX_INPUT_LENGTH} characters`,
       'INPUT_TOO_LONG'
     );
   }

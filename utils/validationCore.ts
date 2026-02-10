@@ -6,6 +6,12 @@
 
 import DOMPurify from 'dompurify';
 import { ValidationError } from './validationTypes';
+import {
+  TRADING_CONSTANTS,
+  RATE_LIMITING,
+  VALIDATION_CONFIG,
+  SECURITY_CONFIG,
+} from '../constants/config';
 
 // ========== VALIDATION INTERFACES ==========
 
@@ -28,37 +34,38 @@ export interface RateLimiterEntry {
 }
 
 // ========== VALIDATION CONSTANTS ==========
+// All values are now imported from centralized config to eliminate hardcoding
 
 export const VALIDATION_CONSTANTS = {
   // Timeframe options
-  TIMEFRAMES: ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'],
-  
+  TIMEFRAMES: TRADING_CONSTANTS.TIMEFRAMES,
+
   // Regex patterns
-  SYMBOL_REGEX: /^[A-Z]{3,6}\/?[A-Z]{3,6}$/,
-  NAME_REGEX: /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-  EMAIL_REGEX: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  URL_REGEX: /^https?:\/\/.+/,
-  
-  // Numeric ranges
-  MAX_RISK_PERCENT: 100,
-  MIN_RISK_PERCENT: 0.01,
-  MAX_STOP_LOSS: 1000,
-  MIN_STOP_LOSS: 1,
-  MAX_TAKE_PROFIT: 1000,
-  MIN_TAKE_PROFIT: 1,
-  MAX_MAGIC_NUMBER: 999999,
-  MIN_MAGIC_NUMBER: 1,
-  MAX_INITIAL_DEPOSIT: 10000000,
-  MIN_INITIAL_DEPOSIT: 100,
-  MAX_DURATION: 365,
-  MIN_DURATION: 1,
-  MAX_LEVERAGE: 1000,
-  MIN_LEVERAGE: 1,
-  
-  // Rate limiting
-  RATE_LIMIT_WINDOW: 60000, // 1 minute
-  RATE_LIMIT_MAX_REQUESTS: 10,
-  
+  SYMBOL_REGEX: TRADING_CONSTANTS.SYMBOL_REGEX,
+  NAME_REGEX: VALIDATION_CONFIG.PATTERNS.NAME,
+  EMAIL_REGEX: VALIDATION_CONFIG.PATTERNS.EMAIL,
+  URL_REGEX: VALIDATION_CONFIG.PATTERNS.URL,
+
+  // Numeric ranges - imported from centralized trading constants
+  MAX_RISK_PERCENT: TRADING_CONSTANTS.MAX_RISK_PERCENT,
+  MIN_RISK_PERCENT: TRADING_CONSTANTS.MIN_RISK_PERCENT,
+  MAX_STOP_LOSS: TRADING_CONSTANTS.MAX_STOP_LOSS_PIPS,
+  MIN_STOP_LOSS: TRADING_CONSTANTS.MIN_STOP_LOSS_PIPS,
+  MAX_TAKE_PROFIT: TRADING_CONSTANTS.MAX_TAKE_PROFIT_PIPS,
+  MIN_TAKE_PROFIT: TRADING_CONSTANTS.MIN_TAKE_PROFIT_PIPS,
+  MAX_MAGIC_NUMBER: TRADING_CONSTANTS.MAX_MAGIC_NUMBER,
+  MIN_MAGIC_NUMBER: TRADING_CONSTANTS.MIN_MAGIC_NUMBER,
+  MAX_INITIAL_DEPOSIT: TRADING_CONSTANTS.MAX_INITIAL_DEPOSIT,
+  MIN_INITIAL_DEPOSIT: TRADING_CONSTANTS.MIN_INITIAL_DEPOSIT,
+  MAX_DURATION: TRADING_CONSTANTS.MAX_BACKTEST_DURATION,
+  MIN_DURATION: TRADING_CONSTANTS.MIN_BACKTEST_DURATION,
+  MAX_LEVERAGE: TRADING_CONSTANTS.MAX_LEVERAGE,
+  MIN_LEVERAGE: TRADING_CONSTANTS.MIN_LEVERAGE,
+
+  // Rate limiting - imported from centralized rate limiting config
+  RATE_LIMIT_WINDOW: RATE_LIMITING.DEFAULT_WINDOW,
+  RATE_LIMIT_MAX_REQUESTS: RATE_LIMITING.DEFAULT_MAX_REQUESTS,
+
   // Security patterns
   XSS_PATTERNS: [
     /javascript:/gi,
@@ -66,7 +73,7 @@ export const VALIDATION_CONSTANTS = {
     /data:text\/html/gi,
     /&#x?0*(58|106|0*74|0*42|0*6a);?/gi,
   ],
-  
+
   MQL5_DANGEROUS_PATTERNS: [
     /FileFind\s*\(|FileOpen\s*\(|FileClose\s*\(/i,
     /WebRequest\s*\(|SocketCreate\s*\(|SocketConnect\s*\(/i,
@@ -74,6 +81,11 @@ export const VALIDATION_CONSTANTS = {
     /SendNotification\s*\(|SendMail\s*\(|SendFTP\s*\(/i,
     /OrderSend\s*\(|OrderClose\s*\(|OrderModify\s*\(/i,
   ],
+
+  // Input length limits from centralized security config
+  MAX_INPUT_LENGTH: SECURITY_CONFIG.MAX_INPUT_LENGTH,
+  MAX_API_KEY_LENGTH: SECURITY_CONFIG.MAX_API_KEY_LENGTH,
+  MIN_API_KEY_LENGTH: SECURITY_CONFIG.MIN_API_KEY_LENGTH,
 };
 
 // ========== CORE VALIDATION UTILITIES ==========
@@ -294,9 +306,9 @@ export class InputValidator {
       return { isValid: false, errors, warnings };
     }
 
-    // Length validation
-    if (message.length > 10000) {
-      errors.push({ field: 'message', message: 'Message too long (max 10000 characters)' });
+    // Length validation - uses centralized security config
+    if (message.length > SECURITY_CONFIG.MAX_INPUT_LENGTH) {
+      errors.push({ field: 'message', message: `Message too long (max ${SECURITY_CONFIG.MAX_INPUT_LENGTH} characters)` });
     }
 
     // XSS validation
@@ -328,13 +340,13 @@ export class InputValidator {
       return { isValid: false, errors, warnings };
     }
 
-    // Basic format validation
-    if (apiKey.length < 10) {
-      errors.push({ field: 'apiKey', message: 'API key appears to be too short' });
+    // Basic format validation - uses centralized security config
+    if (apiKey.length < SECURITY_CONFIG.MIN_API_KEY_LENGTH) {
+      errors.push({ field: 'apiKey', message: `API key appears to be too short (min ${SECURITY_CONFIG.MIN_API_KEY_LENGTH} characters)` });
     }
 
-    if (apiKey.length > 500) {
-      errors.push({ field: 'apiKey', message: 'API key is too long' });
+    if (apiKey.length > SECURITY_CONFIG.MAX_API_KEY_LENGTH) {
+      errors.push({ field: 'apiKey', message: `API key is too long (max ${SECURITY_CONFIG.MAX_API_KEY_LENGTH} characters)` });
     }
 
     // Provider-specific validation
@@ -418,8 +430,9 @@ export class UnifiedValidationService {
       errors.push({ field: 'name', message: 'Robot name is required and must be a non-empty string' });
     }
 
-    if (data.code && data.code.length > 1000000) {
-      warnings.push('Robot code is very large and may affect performance');
+    // Code length validation - uses centralized validation config
+    if (data.code && data.code.length > VALIDATION_CONFIG.MAX_CODE_LENGTH) {
+      warnings.push(`Robot code is very large (${data.code.length} chars) and may affect performance. Maximum recommended: ${VALIDATION_CONFIG.MAX_CODE_LENGTH}`);
     }
 
     return {

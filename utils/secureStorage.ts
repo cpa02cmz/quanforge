@@ -7,6 +7,35 @@ interface SecureStorageOptions {
   ttl?: number; // Time to live in milliseconds
 }
 
+// ========== SECURE STORAGE CONSTANTS ==========
+// Centralized constants to eliminate hardcoded values
+const STORAGE_CONSTANTS = {
+  // Encryption settings
+  KEY_LENGTH: 256,
+  ITERATIONS: 100000,
+  IV_LENGTH: 12,
+  SALT_LENGTH: 32,
+
+  // Storage size limits (bytes)
+  MAX_SIZE_DEFAULT: 4 * 1024 * 1024, // 4MB
+  MAX_SIZE_CACHE: 8 * 1024 * 1024,   // 8MB
+  MAX_SIZE_SETTINGS: 1 * 1024 * 1024, // 1MB
+
+  // Compression thresholds
+  COMPRESSION_MIN_LENGTH: 100,
+
+  // Cleanup interval
+  CLEANUP_INTERVAL_MS: 5 * 60 * 1000, // 5 minutes
+
+  // Space estimation
+  SPACE_TEST_CHUNK_SIZE: 1000,
+  SPACE_TEST_MAX_ITERATIONS: 10000,
+
+  // Version
+  STORAGE_VERSION: '2.0',
+  LEGACY_VERSION: '1.0',
+} as const;
+
 interface StorageItem<T = any> {
   data: T; // Can be original data or processed (encrypted/compressed) string
   timestamp: number;
@@ -19,10 +48,10 @@ interface StorageItem<T = any> {
 // Production-grade Web Crypto API implementation
 export class WebCryptoEncryption {
   private static readonly ALGORITHM = 'AES-GCM';
-  private static readonly KEY_LENGTH = 256;
-  private static readonly IV_LENGTH = 12;
-  private static readonly SALT_LENGTH = 32;
-  private static readonly ITERATIONS = 100000;
+  private static readonly KEY_LENGTH = STORAGE_CONSTANTS.KEY_LENGTH;
+  private static readonly IV_LENGTH = STORAGE_CONSTANTS.IV_LENGTH;
+  private static readonly SALT_LENGTH = STORAGE_CONSTANTS.SALT_LENGTH;
+  private static readonly ITERATIONS = STORAGE_CONSTANTS.ITERATIONS;
   
   // Dynamic key generation with environment variable support
   private static get BASE_KEY(): string {
@@ -208,7 +237,7 @@ const SimpleEncryption = {
 // Simple compression (basic run-length encoding)
 class SimpleCompression {
   static compress(text: string): string {
-    if (!text || text.length < 100) return text;
+    if (!text || text.length < STORAGE_CONSTANTS.COMPRESSION_MIN_LENGTH) return text;
     
     try {
       return btoa(text);
@@ -237,7 +266,7 @@ export class SecureStorage {
   
   constructor(options: SecureStorageOptions = {}) {
     this.namespace = options.namespace || 'qf_secure';
-    this.maxSize = options.maxSize || 4 * 1024 * 1024; // 4MB default
+    this.maxSize = options.maxSize || STORAGE_CONSTANTS.MAX_SIZE_DEFAULT;
     this.defaultOptions = {
       encrypt: true,
       compress: true,
@@ -275,8 +304,8 @@ export class SecureStorage {
       throw new Error('Unable to serialize data for storage');
     }
     
-    // Compress if enabled
-    if (options.compress && processedData.length > 100) {
+    // Compress if enabled - uses centralized threshold constant
+    if (options.compress && processedData.length > STORAGE_CONSTANTS.COMPRESSION_MIN_LENGTH) {
       processedData = SimpleCompression.compress(processedData);
     }
     
@@ -291,7 +320,7 @@ export class SecureStorage {
       ttl: options.ttl,
       encrypted: !!options.encrypt,
       compressed: !!options.compress,
-      version: '2.0' // Updated version for new crypto
+      version: STORAGE_CONSTANTS.STORAGE_VERSION
     };
     
     const serialized = JSON.stringify(item);
@@ -323,8 +352,8 @@ export class SecureStorage {
       }
       
       if (item.encrypted) {
-        const isLegacy = item.version === '1.0';
-        
+        const isLegacy = item.version === STORAGE_CONSTANTS.LEGACY_VERSION;
+
         try {
           if (isLegacy) {
             processedData = LegacyXORDecryption.decrypt(processedData);
@@ -500,11 +529,11 @@ export class SecureStorage {
   getRemainingSpace(): number {
     try {
       const testKey = `${this.namespace}_space_test_`;
-      const testData = new Array(1000).join('x');
-      
+      const testData = new Array(STORAGE_CONSTANTS.SPACE_TEST_CHUNK_SIZE).join('x');
+
       let size = 0;
       try {
-        while (size < 10000) { // Prevent infinite loop
+        while (size < STORAGE_CONSTANTS.SPACE_TEST_MAX_ITERATIONS) { // Prevent infinite loop
           localStorage.setItem(testKey + size, testData);
           size += testData.length;
         }
@@ -525,35 +554,35 @@ export class SecureStorage {
   }
 }
 
-// Create default instances
+// Create default instances using centralized constants
 export const secureStorage = new SecureStorage({
   encrypt: true,
   compress: true,
   namespace: 'qf_app',
-  maxSize: 4 * 1024 * 1024 // 4MB
+  maxSize: STORAGE_CONSTANTS.MAX_SIZE_DEFAULT
 });
 
 export const secureCacheStorage = new SecureStorage({
   encrypt: false, // Cache data doesn't need encryption
   compress: true,
   namespace: 'qf_cache',
-  maxSize: 8 * 1024 * 1024 // 8MB for cache
+  maxSize: STORAGE_CONSTANTS.MAX_SIZE_CACHE
 });
 
 export const secureSettingsStorage = new SecureStorage({
   encrypt: true,
   compress: false, // Settings are usually small
   namespace: 'qf_settings',
-  maxSize: 1024 * 1024 // 1MB for settings
+  maxSize: STORAGE_CONSTANTS.MAX_SIZE_SETTINGS
 });
 
-// Auto-cleanup expired items periodically
+// Auto-cleanup expired items periodically - uses centralized constant
 if (SecureStorage.isAvailable()) {
   setInterval(() => {
     secureStorage.cleanup();
     secureCacheStorage.cleanup();
     secureSettingsStorage.cleanup();
-  }, 5 * 60 * 1000); // Every 5 minutes
+  }, STORAGE_CONSTANTS.CLEANUP_INTERVAL_MS);
 }
 
 // Export types
