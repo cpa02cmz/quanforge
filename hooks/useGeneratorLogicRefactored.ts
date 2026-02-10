@@ -128,8 +128,8 @@ export const useGeneratorLogic = (id?: string) => {
       const loadRobot = async () => {
           try {
               // Load robots data
-              const result = await supabase.getRobots();
-               const robots = result.success && result.data ? result.data : [];
+               const result = await supabase.getRobots();
+                const robots = !result.error && result.data ? result.data : [];
               if (controller.signal.aborted) return;
               
               const found = robots.find((r: Robot) => r.id === id);
@@ -208,8 +208,9 @@ export const useGeneratorLogic = (id?: string) => {
           await supabase.updateRobot(id, robotData);
       } else {
           const result = await supabase.saveRobot(robotData);
-          if (result && result.id) {
-              navigate(`/generator/${result.id}`, { replace: true });
+          const savedRobot = result.data?.[0];
+          if (!result.error && savedRobot?.id) {
+              navigate(`/generator/${savedRobot.id}`, { replace: true });
           }
       }
       showToast('Robot saved successfully!', 'success');

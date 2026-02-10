@@ -100,9 +100,10 @@ const mockAuth = {
       } 
     };
   },
-  signInWithPassword: async ({ email }: { email: string }) => {
+  signInWithPassword: async (credentials: { email: string; password?: string }) => {
+    // Password is accepted for interface compatibility but ignored in mock mode
     const session = {
-      user: { id: generateUUID(), email },
+      user: { id: generateUUID(), email: credentials.email },
       access_token: 'mock-token-' + Date.now(),
       expires_in: 3600
     };
@@ -110,15 +111,16 @@ const mockAuth = {
     authListeners.forEach(cb => cb('SIGNED_IN', session));
     return { data: { session }, error: null };
   },
-  signUp: async ({ email }: { email: string }) => {
+  signUp: async (credentials: { email: string; password?: string }) => {
+    // Password is accepted for interface compatibility but ignored in mock mode
     const session = {
-      user: { id: generateUUID(), email },
+      user: { id: generateUUID(), email: credentials.email },
       access_token: 'mock-token-' + Date.now(),
       expires_in: 3600
     };
     trySaveToStorage(STORAGE_KEY, JSON.stringify(session));
     authListeners.forEach(cb => cb('SIGNED_IN', session));
-    return { data: { user: { email }, session }, error: null };
+    return { data: { user: { email: credentials.email }, session }, error: null };
   },
   signOut: async () => {
     storage.remove(STORAGE_KEY);
@@ -129,7 +131,7 @@ const mockAuth = {
 
 const mockClient = {
   auth: mockAuth,
-  from: () => ({
+  from: (_table: string) => ({
     select: () => ({ 
         order: () => Promise.resolve({ data: [], error: null }),
         eq: () => ({ single: () => Promise.resolve({ data: null, error: "Mock single not found" }) })
@@ -213,12 +215,70 @@ window.addEventListener('db-settings-changed', () => {
     getClient(); 
 });
 
-export const supabase = new Proxy({}, {
-    get: async (_target, prop) => {
-        const client = await getClient();
-        return client[prop];
+// Import database operations with proper typing
+import { 
+  getRobots as dbGetRobots, 
+  saveRobot as dbSaveRobot, 
+  updateRobot as dbUpdateRobot, 
+  deleteRobot as dbDeleteRobot, 
+  duplicateRobot as dbDuplicateRobot,
+  getRobotsPaginated as dbGetRobotsPaginated 
+} from './supabase/database';
+
+// Re-export database functions with explicit types to help TypeScript
+export const getRobots = dbGetRobots;
+export const saveRobot = dbSaveRobot;
+export const updateRobot = dbUpdateRobot;
+export const deleteRobot = dbDeleteRobot;
+export const duplicateRobot = dbDuplicateRobot;
+export const getRobotsPaginated = dbGetRobotsPaginated;
+
+// Create a synchronous supabase client that properly exposes auth
+// while maintaining backward compatibility with direct database methods
+const createSupabaseClient = () => {
+  return {
+    // Auth is always available synchronously
+    auth: mockAuth,
+    
+    // Database table access
+    from: (table: string) => {
+      return mockClient.from(table);
+    },
+    
+    // Direct database operations for backward compatibility
+    getRobots: dbGetRobots,
+    saveRobot: dbSaveRobot,
+    updateRobot: dbUpdateRobot,
+    deleteRobot: dbDeleteRobot,
+    duplicateRobot: dbDuplicateRobot,
+    getRobotsPaginated: dbGetRobotsPaginated,
+    
+    // Real-time subscriptions (mock implementation)
+    channel: (_name: string) => ({
+      on: (_event: string, _callback: Function) => ({
+        subscribe: () => ({
+          unsubscribe: () => {}
+        })
+      })
+    }),
+    
+    // Storage operations (mock implementation)
+    storage: {
+      from: (_bucket: string) => ({
+        upload: async (_path: string, _file: File) => ({ data: null, error: { message: 'Storage not implemented in mock mode' } }),
+        download: async (_path: string) => ({ data: null, error: { message: 'Storage not implemented in mock mode' } }),
+        remove: async (_paths: string[]) => ({ data: null, error: { message: 'Storage not implemented in mock mode' } }),
+      })
+    },
+    
+    // Functions (mock implementation)
+    functions: {
+      invoke: async (_functionName: string, _payload?: any) => ({ data: null, error: { message: 'Functions not implemented in mock mode' } })
     }
-}) as any;
+  };
+};
+
+export const supabase = createSupabaseClient();
 
 
 // --- Database Operations Wrapper ---

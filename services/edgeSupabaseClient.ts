@@ -517,8 +517,26 @@ export const createEdgeSupabaseClient = (config: EdgeSupabaseConfig): EdgeSupaba
   return new EdgeSupabaseClient(config);
 };
 
-// Default client instance
-export const edgeSupabase = createEdgeSupabaseClient({
-  url: process.env['VITE_SUPABASE_URL'] || '',
-  anonKey: process.env['VITE_SUPABASE_ANON_KEY'] || '',
-});
+// Default client instance - only create if credentials are available
+const supabaseUrl = typeof process !== 'undefined' ? process.env['VITE_SUPABASE_URL'] : '';
+const supabaseKey = typeof process !== 'undefined' ? process.env['VITE_SUPABASE_ANON_KEY'] : '';
+
+// Create a mock edge supabase client for development without credentials
+const createMockEdgeSupabaseClient = () => {
+  return {
+    from: () => ({
+      select: async () => ({ data: [], error: null }),
+      insert: async () => ({ data: null, error: null }),
+      update: async () => ({ data: null, error: null }),
+      delete: async () => ({ data: null, error: null }),
+    }),
+    auth: {
+      getSession: async () => ({ data: { session: null }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    },
+  } as unknown as EdgeSupabaseClient;
+};
+
+export const edgeSupabase = supabaseUrl && supabaseKey
+  ? createEdgeSupabaseClient({ url: supabaseUrl, anonKey: supabaseKey })
+  : createMockEdgeSupabaseClient();

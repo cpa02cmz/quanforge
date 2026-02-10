@@ -389,7 +389,13 @@ class UXPerformanceMonitor {
     );
 
     const issues = this.identifyIssues();
-    const recommendations = this.generateRecommendations(issues);
+    // Pass the calculated scores to avoid circular dependency
+    const recommendations = this.generateRecommendations(issues, {
+      overall,
+      performance: performanceScore,
+      reliability: reliabilityScore,
+      engagement: engagementScore
+    });
 
     return {
       overall,
@@ -528,7 +534,10 @@ class UXPerformanceMonitor {
   /**
    * Generate recommendations based on issues
    */
-  private generateRecommendations(issues: UXIssue[]): string[] {
+  private generateRecommendations(
+    issues: UXIssue[],
+    scores?: { overall: number; performance: number; reliability: number; engagement: number }
+  ): string[] {
     const recommendations = new Set<string>();
 
     for (const issue of issues) {
@@ -536,20 +545,21 @@ class UXPerformanceMonitor {
     }
 
     // Add general recommendations based on overall performance
-    const score = this.calculateUXScore();
-    
+    // Use provided scores to avoid circular dependency, or default values if not provided
+    const score = scores || { overall: 75, performance: 75, reliability: 75, engagement: 75 };
+
     if (score.overall < 50) {
       recommendations.add('Consider comprehensive performance audit and optimization');
     }
-    
+
     if (score.performance < 60) {
       recommendations.add('Focus on Core Web Vitals optimization');
     }
-    
+
     if (score.reliability < 70) {
       recommendations.add('Improve error handling and monitoring');
     }
-    
+
     if (score.engagement < 60) {
       recommendations.add('Optimize user interaction responsiveness');
     }

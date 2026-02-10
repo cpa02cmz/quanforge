@@ -251,19 +251,10 @@ class FrontendOptimizer {
    * Preload critical scripts for better performance
    */
   private preloadCriticalScripts(): void {
-    const criticalScripts = [
-      { src: 'https://unpkg.com/lz-string@1.5.0/libs/lz-string.min.js', as: 'script' },
-      { src: 'https://unpkg.com/dompurify@3.0.5/dist/purify.min.js', as: 'script' },
-    ];
-
-    criticalScripts.forEach(script => {
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.href = script.src;
-      link.as = script.as;
-      link.crossOrigin = 'anonymous';
-      document.head.appendChild(link);
-    });
+    // Note: lz-string and dompurify are imported as ES modules
+    // Preloading them as scripts causes console warnings since they're
+    // bundled by Vite, not loaded via script tags
+    // Module preloading is handled by Vite's build system automatically
   }
 
   /**

@@ -50,12 +50,12 @@ export const mockDB = {
           
           // Cache management
           const cacheKey = columns ? `robots_${columns}` : 'robots';
-          const cached = globalCache.get(cacheKey);
+          const cached = await globalCache.get<Robot[]>(cacheKey);
           if (cached) {
             return { data: cached, error: null };
           }
           
-          globalCache.set(cacheKey, robots, DB_CONFIG.CACHE_TTL, ['robots']);
+          await globalCache.set(cacheKey, robots, DB_CONFIG.CACHE_TTL, ['robots']);
           return { data: robots, error: null };
         } catch (error) {
           handleError(error instanceof Error ? error : String(error), 'database.operation');
@@ -310,17 +310,17 @@ export const searchRobots = async (searchTerm: string) => {
   }
 };
 
-// Legacy compatibility methods
-export const getRobots = async () => {
-  return mockDB.from('robots').select();
+// Legacy compatibility methods with explicit return types
+export const getRobots = async (): Promise<{ data: Robot[]; error: null } | { data: null; error: unknown }> => {
+  return await mockDB.from('robots').select();
 };
 
-export const saveRobot = async (robot: Partial<Robot>) => {
-  return mockDB.from('robots').insert(robot);
+export const saveRobot = async (robot: Partial<Robot>): Promise<{ data: Robot[]; error: null } | { data: null; error: unknown }> => {
+  return await mockDB.from('robots').insert(robot);
 };
 
-export const updateRobot = async (id: string, updates: Partial<Robot>) => {
-  return mockDB.from('robots').update({ id, ...updates });
+export const updateRobot = async (id: string, updates: Partial<Robot>): Promise<{ data: Robot | null; error: null } | { data: null; error: unknown }> => {
+  return await mockDB.from('robots').update({ id, ...updates });
 };
 
 export const deleteRobot = async (id: string) => {
