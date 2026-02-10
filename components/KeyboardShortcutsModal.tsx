@@ -9,7 +9,18 @@ interface KeyboardShortcutsModalProps {
 export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = memo(({ isOpen, onClose }) => {
   const { t } = useTranslation();
 
-  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+  // Use modern userAgentData API with fallback to userAgent string (navigator.platform is deprecated)
+  const isMac = React.useMemo(() => {
+    // Check for modern userAgentData API (high entropy values)
+    if (typeof navigator !== 'undefined' && 'userAgentData' in navigator) {
+      const uaData = (navigator as Navigator & { userAgentData?: { platform: string } }).userAgentData;
+      if (uaData?.platform) {
+        return uaData.platform.toUpperCase().includes('MAC');
+      }
+    }
+    // Fallback to userAgent string parsing
+    return /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent);
+  }, []);
 
   const shortcuts = [
     {
