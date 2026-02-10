@@ -4,6 +4,9 @@
  */
 
 import { securityManager } from '../securityManager';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('ServiceHelpers');
 
 /**
  * Safe JSON parsing with enhanced security and fallback
@@ -15,7 +18,7 @@ export const safeParse = <T>(data: string | null, fallback: T): T => {
         // Use security manager's safe JSON parsing
         return securityManager.safeJSONParse(data) || fallback;
     } catch (e) {
-        console.error("Failed to parse data from storage:", e);
+        logger.error("Failed to parse data from storage:", e);
         return fallback;
     }
 };

@@ -1,6 +1,9 @@
 import { UserSession } from '../types';
 import { securityManager } from './securityManager';
 import { getLocalStorage, StorageQuotaError } from '../utils/storage';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('MockImplementation');
 
 const STORAGE_KEY = 'mock_session';
 const ROBOTS_KEY = 'mock_robots';
@@ -11,7 +14,7 @@ const safeParse = <T>(data: T | null, fallback: any) => {
     try {
         return securityManager.safeJSONParse(data as string) || fallback;
     } catch (e) {
-        console.error("Failed to parse data from storage:", e);
+        logger.error("Failed to parse data from storage:", e);
         return fallback;
     }
 };
