@@ -84,11 +84,12 @@ export interface InputWrapperProps {
 }
 
 export const InputWrapper = forwardRef<HTMLDivElement, InputWrapperProps>(
-  ({ children, className = '' }, ref) => {
+  ({ children, error = false, className = '' }, ref) => {
     return (
       <div
         ref={ref}
-        className={`relative ${className}`}
+        className={`relative ${error ? 'rounded-lg ring-2 ring-red-500/50 ring-offset-2 ring-offset-transparent animate-pulse' : ''} ${className}`}
+        aria-invalid={error}
       >
         {children}
       </div>
