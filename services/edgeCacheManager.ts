@@ -6,6 +6,7 @@
 import { EdgeCacheCompression } from './edgeCacheCompression';
 import { createSafeWildcardPattern, ReDoSError } from '../utils/safeRegex';
 import { CACHE_CONFIG, TIME_CONSTANTS, EDGE_CONFIG } from '../constants/config';
+import { STAGGER } from './constants';
 
 interface EdgeCacheEntry<T> {
   data: T;
@@ -550,7 +551,7 @@ export class EdgeCacheManager<T = any> {
       
       // Small delay between batches to prevent rate limiting
       if (i + batchSize < sortedKeys.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, STAGGER.DEFAULT_DELAY_MS));
       }
     }
     

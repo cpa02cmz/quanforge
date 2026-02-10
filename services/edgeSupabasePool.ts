@@ -1,5 +1,6 @@
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import { settingsManager } from './settingsManager';
+import { BATCH_SIZES, CACHE_TTLS, RETRY_CONFIG, STAGGER } from './constants';
 
 interface EdgeClientConfig {
   ttl: number;
@@ -18,10 +19,10 @@ class EdgeSupabasePool {
   private static instance: EdgeSupabasePool;
   private clientCache: Map<string, ClientCache> = new Map();
   private config: EdgeClientConfig = {
-    ttl: 60000, // 60 seconds - optimized for edge performance
+    ttl: CACHE_TTLS.ONE_MINUTE, // 60 seconds - optimized for edge performance
     healthCheckInterval: 15000, // 15 seconds for reduced overhead
     connectionTimeout: 1500, // 1.5 seconds for better edge reliability
-    maxRetries: 5, // Reduced retries for faster failure detection
+    maxRetries: RETRY_CONFIG.MAX_ATTEMPTS, // Use modular retry config
   };
   private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -148,7 +149,7 @@ class EdgeSupabasePool {
     const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1', 'syd1', 'nrt1'];
     
     // Process regions in batches for better resource management
-    const batchSize = 4;
+    const batchSize = BATCH_SIZES.PREFETCH_BATCH;
     const results: { region: string; success: boolean; latency: number }[] = [];
     
     for (let i = 0; i < regions.length; i += batchSize) {
@@ -177,7 +178,7 @@ class EdgeSupabasePool {
       
       // Small delay between batches to prevent overwhelming
       if (i + batchSize < regions.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, STAGGER.DEFAULT_DELAY_MS));
       }
     }
     
