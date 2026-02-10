@@ -104,7 +104,7 @@ class PerformanceCore {
       try {
         const key = `perf_${name}`;
         localStorage.setItem(key, value.toString());
-      } catch (e) {
+      } catch (_e) {
         // Ignore storage errors
       }
     }
@@ -213,7 +213,7 @@ class PerformanceCore {
     this.observers.forEach(observer => {
       try {
         observer.disconnect();
-      } catch (e) {
+      } catch (_e) {
         // Ignore errors during cleanup
       }
     });

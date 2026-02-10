@@ -6,7 +6,7 @@
 import { coreSupabase } from './core';
 import { supabasePool } from './pools';
 import { supabaseEdge } from './edge';
-import type { Robot, UserSession } from '../../types';
+import type { Robot } from '../../types';
 import type { ConnectionConfig, Connection, PoolStats } from './pools';
 import type { EdgeConfig, EdgeMetrics } from './edge';
 
@@ -18,7 +18,7 @@ import type { EdgeConfig, EdgeMetrics } from './edge';
 // Create a mock database object that matches the existing interface
 const mockDB = {
   from: (table: string) => ({
-    select: async (columns?: string) => {
+    select: async (_columns?: string) => {
       if (table === 'robots') {
         const robots = await coreSupabase.getRobots();
         return { data: robots, error: null };
@@ -105,7 +105,7 @@ const mockAuth = {
     }
     return { data: { session: null }, error: null };
   },
-  onAuthStateChange: (callback: Function) => {
+  onAuthStateChange: (_callback: Function) => {
     // Simplified listener - in real implementation this would use Supabase listeners
     const unsubscribe = () => {};
     return { data: { subscription: { unsubscribe } } };
@@ -196,8 +196,8 @@ export const supabase = {
   from: (table: string) => mockDB.from(table),
   
   // Real-time subscriptions
-  channel: (name: string) => ({
-    on: (event: string, callback: Function) => ({
+  channel: (_name: string) => ({
+    on: (_event: string, _callback: Function) => ({
       subscribe: () => ({
         unsubscribe: () => {}
       })
@@ -206,16 +206,16 @@ export const supabase = {
   
   // Storage operations
   storage: {
-    from: (bucket: string) => ({
-      upload: async (path: string, file: File) => ({ data: null, error: { message: 'Storage not implemented in adapter' } }),
-      download: async (path: string) => ({ data: null, error: { message: 'Storage not implemented in adapter' } }),
-      remove: async (paths: string[]) => ({ data: null, error: { message: 'Storage not implemented in adapter' } }),
+    from: (_bucket: string) => ({
+      upload: async (_path: string, _file: File) => ({ data: null, error: { message: 'Storage not implemented in adapter' } }),
+      download: async (_path: string) => ({ data: null, error: { message: 'Storage not implemented in adapter' } }),
+      remove: async (_paths: string[]) => ({ data: null, error: { message: 'Storage not implemented in adapter' } }),
     })
   },
   
   // Functions
   functions: {
-    invoke: async (functionName: string, payload?: any) => ({ data: null, error: { message: 'Functions not implemented in adapter' } })
+    invoke: async (_functionName: string, _payload?: any) => ({ data: null, error: { message: 'Functions not implemented in adapter' } })
   }
 };
 

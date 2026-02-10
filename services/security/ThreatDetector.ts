@@ -97,7 +97,7 @@ export class ThreatDetector {
         riskScore += 25;
       }
 
-    } catch (error) {
+    } catch (_error) {
       threats.push('Pattern detection error');
       riskScore += 10;
     }

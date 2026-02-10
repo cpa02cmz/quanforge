@@ -4,7 +4,6 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
-import { backendOptimizationManager } from './backendOptimizationManager';
 import { databaseOptimizer } from './databaseOptimizer';
 import { queryOptimizer } from './queryOptimizer';
 import { robotCache } from './advancedCache';

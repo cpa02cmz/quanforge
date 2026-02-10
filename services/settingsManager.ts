@@ -17,7 +17,7 @@ export const getEnv = (key: string): string => {
             // @ts-ignore
             return import.meta.env[`VITE_${key}`];
         }
-    } catch (e) {
+    } catch (_e) {
         // Ignore
     }
 
@@ -26,7 +26,7 @@ export const getEnv = (key: string): string => {
         if (typeof process !== 'undefined' && process.env) {
             return process.env[`REACT_APP_${key}`] || process.env[key] || process.env[`VITE_${key}`] || '';
         }
-    } catch (e) {
+    } catch (_e) {
         // Ignore
     }
 
@@ -69,7 +69,7 @@ export const settingsManager = {
                     if (decrypted && validateApiKey(decrypted, parsed.provider)) {
                         parsed.apiKey = decrypted;
                     }
-                } catch (e) {
+                } catch (_e) {
                     // Legacy unencrypted key, keep as is
                 }
             }
