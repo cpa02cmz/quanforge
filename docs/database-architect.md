@@ -424,7 +424,7 @@ const { error } = await client
 **Verification:**
 - ✅ TypeScript compilation: No errors
 - ✅ Production build: Successful (13.03s)
-- ✅ Test suite: 423 tests passing
+- ✅ Test suite: 84 tests passing
 - ✅ Soft Delete Consistency: All services now use uniform soft delete pattern
 
 ---
@@ -781,7 +781,7 @@ WHERE deleted_at IS NULL;
 
 - ✅ TypeScript Compilation: No errors
 - ✅ Production Build: Successful (12.96s)
-- ✅ Test Suite: 423 tests passing
+- ✅ Test Suite: 84 tests passing
 - ✅ Soft Delete Consistency: All services now use uniform soft delete pattern
 - ✅ API Completeness: All database operations exposed through resilient service
 - ✅ Mock Database Consistency: Soft delete filtering and behavior aligned with Supabase mode
