@@ -1,5 +1,6 @@
 import { IntegrationType, HealthStatus, getConfig } from './integrationResilience';
 import { createScopedLogger } from '../utils/logger';
+import { MEMORY_LIMITS, TIMEOUTS } from '../constants';
 
 const logger = createScopedLogger('integration-health');
 
@@ -28,10 +29,10 @@ export class IntegrationHealthMonitor {
     consecutiveSuccesses: number;
   }>();
   private healthHistory = new Map<string, HealthCheckResult[]>();
-  private readonly maxHistorySize = 100;
+  private readonly maxHistorySize = MEMORY_LIMITS.MAX_HISTORY_SIZE;
 
   registerHealthCheck(options: HealthCheckOptions): void {
-    const { integrationType, integrationName, check, interval, timeout = 5000, onHealthChange } = options;
+    const { integrationType, integrationName, check, interval, timeout = TIMEOUTS.API_REQUEST, onHealthChange } = options;
     const key = `${integrationType}:${integrationName}`;
 
     if (this.healthChecks.has(key)) {
@@ -278,7 +279,7 @@ export class IntegrationMetrics {
   private operationCounts = new Map<string, number>();
   private operationLatencies = new Map<string, number[]>();
   private operationErrors = new Map<string, number>();
-  private readonly maxLatencyHistory = 100;
+  private readonly maxLatencyHistory = MEMORY_LIMITS.MAX_HISTORY_SIZE;
 
   recordOperation(integrationName: string, operation: string, latency: number, success: boolean): void {
     const key = `${integrationName}:${operation}`;

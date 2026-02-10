@@ -1,6 +1,6 @@
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
-import { PERFORMANCE_MONITORING } from '../constants/timing';
+import { MEMORY_LIMITS, PERFORMANCE_THRESHOLDS, UX_THRESHOLDS } from '../constants';
 
 interface CoreWebVitals {
   lcp: number; // Largest Contentful Paint
@@ -45,16 +45,16 @@ class RealTimeMonitoring {
   private alerts: PerformanceAlert[] = [];
   private observers: PerformanceObserver[] = [];
   private isInitialized = false;
-  private readonly METRICS_RETENTION_LIMIT = PERFORMANCE_MONITORING.MAX_METRICS;
+  private readonly METRICS_RETENTION_LIMIT = MEMORY_LIMITS.MAX_METRICS_RETENTION;
   private readonly ALERT_THRESHOLD = 0.1; // 10% error rate
 
   private readonly PERFORMANCE_BUDGET: PerformanceBudget = {
     bundleSize: 250000, // 250KB
-    lcp: 2500, // 2.5s
-    fid: 100, // 100ms
-    cls: 0.1, // 0.1
+    lcp: UX_THRESHOLDS.LCP_GOOD, // 2.5s
+    fid: UX_THRESHOLDS.FID_GOOD, // 100ms
+    cls: PERFORMANCE_THRESHOLDS.CLS_GOOD, // 0.1
     fcp: 1500, // 1.5s
-    ttfb: 800 // 800ms
+    ttfb: UX_THRESHOLDS.TTFB_GOOD // 800ms
   };
 
   private constructor() {}
