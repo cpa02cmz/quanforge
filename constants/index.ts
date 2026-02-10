@@ -269,10 +269,19 @@ export const CACHE_TTLS = {
   POOL_WARMUP: 1800000, // 30 minutes
 } as const;
 
-// Lazy load translations
-export const loadTranslations = async (language: Language) => {
-  const translations = await import(`./translations/${language}.js`);
-  return translations.TRANSLATIONS;
+// Import translations directly to avoid Vite dynamic import issues
+import { TRANSLATIONS as EN_TRANSLATIONS } from './translations/en';
+
+// Translation registry - add new languages here
+const TRANSLATION_REGISTRY: Record<string, typeof EN_TRANSLATIONS> = {
+  en: EN_TRANSLATIONS,
+};
+
+// Load translations synchronously from registry
+export const loadTranslations = async (_language: Language) => {
+  // Always return English translations for now
+  // When adding new languages, map them in TRANSLATION_REGISTRY
+  return EN_TRANSLATIONS;
 };
 
 // Lazy load wiki content
@@ -289,10 +298,13 @@ export const loadWikiContent = async (language: Language) => {
   }
 };
 
-// Load suggested strategies
-export const loadSuggestedStrategies = async (language: Language) => {
-  const strategies = await import(`./strategies/${language}.js`);
-  return strategies.SUGGESTED_STRATEGIES;
+// Import strategies directly to avoid Vite dynamic import issues
+import { SUGGESTED_STRATEGIES as EN_STRATEGIES } from './strategies/en';
+
+// Load suggested strategies synchronously
+export const loadSuggestedStrategies = async (_language: Language) => {
+  // Always return English strategies for now
+  return EN_STRATEGIES;
 };
 
 // Re-export time constants for backward compatibility

@@ -13,7 +13,6 @@ import { databasePerformanceMonitor } from './services/databasePerformanceMonito
 import { frontendOptimizer } from './services/frontendOptimizer';
 import { edgeAnalytics } from './services/edgeAnalytics';
 import { edgeMonitoring } from './services/edgeMonitoring';
-import { advancedAPICache } from './services/advancedAPICache';
 import { frontendPerformanceOptimizer } from './services/frontendPerformanceOptimizer';
 import { preloadCriticalRoutes } from './utils/loaders';
 
@@ -130,12 +129,9 @@ useEffect(() => {
            logger.info('Edge monitoring status:', monitoringStatus);
          }, 300);
          
-         // Initialize Advanced API Cache (non-blocking)
-         setTimeout(() => {
-           advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
-             logger.warn('API cache prefetch failed:', err)
-           );
-         }, 400);
+          // Initialize Advanced API Cache (non-blocking)
+          // Note: Prefetch disabled for static SPA - no API endpoints to prefetch
+          // In a full-stack deployment, add actual API endpoints here
        } catch (error) {
          logger.warn('Non-critical service initialization failed:', error);
        }

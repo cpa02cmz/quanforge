@@ -259,7 +259,20 @@ private generateKey(url: string, options?: RequestInit): string {
     const response = await fetch(url, options as unknown as globalThis.RequestInit);
     
     if (!response.ok) {
+      // Silently skip caching for non-existent endpoints (e.g., 404)
+      // This prevents console errors for optional API endpoints
+      if (response.status === 404) {
+        logger.debug(`API endpoint not found (skipping cache): ${url}`);
+        throw new Error(`Endpoint not found: ${url}`);
+      }
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    // Check content type before parsing as JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      logger.debug(`Non-JSON response from ${url}, skipping cache`);
+      throw new Error(`Non-JSON response from ${url}`);
     }
     
     const data = await response.json();

@@ -32,6 +32,11 @@ class EdgeSupabaseClient {
   private queryCache: Map<string, { data: any; timestamp: number; ttl: number }> = new Map();
 
   constructor(config: EdgeSupabaseConfig) {
+    // Validate config before proceeding
+    if (!config.url || !config.anonKey || config.url.length < 10 || config.anonKey.length < 10) {
+      throw new Error('Invalid Supabase configuration: url and anonKey are required');
+    }
+
     this.config = {
       ...config,
       region: process.env['VERCEL_REGION'] || 'iad1',
@@ -521,8 +526,24 @@ export const createEdgeSupabaseClient = (config: EdgeSupabaseConfig): EdgeSupaba
   return new EdgeSupabaseClient(config);
 };
 
-// Default client instance
-export const edgeSupabase = createEdgeSupabaseClient({
-  url: process.env['VITE_SUPABASE_URL'] || '',
-  anonKey: process.env['VITE_SUPABASE_ANON_KEY'] || '',
-});
+// Default client instance - only create if valid credentials exist
+const getEnvVar = (key: string): string | undefined => {
+  try {
+    // @ts-ignore
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      // @ts-ignore
+      return import.meta.env[key] || undefined;
+    }
+  } catch (_e) {
+    // Ignore
+  }
+  return undefined;
+};
+
+const supabaseUrl = getEnvVar('VITE_SUPABASE_URL');
+const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY');
+
+// Only create default instance if valid credentials exist
+export const edgeSupabase = (supabaseUrl && supabaseAnonKey)
+  ? createEdgeSupabaseClient({ url: supabaseUrl, anonKey: supabaseAnonKey })
+  : null;

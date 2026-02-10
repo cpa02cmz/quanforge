@@ -98,7 +98,23 @@ export const getClient = (): SupabaseClient | any => {
 
     const settings = settingsManager.getDBSettings();
     
-    if (settings && settings.mode === 'supabase' && settings.url && settings.anonKey) {
+    // Validate settings before creating Supabase client
+    // Check that URL is a valid Supabase URL (starts with https:// and contains .supabase.co)
+    const isValidSupabaseUrl = (url: string): boolean => {
+        return !!url && 
+               url.startsWith('https://') && 
+               url.includes('.supabase.co') &&
+               url.length > 20; // Minimum length for a valid URL
+    };
+    
+    const isValidAnonKey = (key: string): boolean => {
+        return !!key && key.length > 20; // Supabase anon keys are typically long
+    };
+    
+    if (settings && 
+        settings.mode === 'supabase' && 
+        isValidSupabaseUrl(settings.url) && 
+        isValidAnonKey(settings.anonKey)) {
         try {
             activeClient = new SupabaseClient(settings.url, settings.anonKey, {
                 auth: {

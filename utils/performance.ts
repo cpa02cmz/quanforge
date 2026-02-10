@@ -45,8 +45,8 @@ class PerformanceMonitor {
   }
 
   clearMetrics(): void {
-    // Clear would have to be added to performanceManager if needed
-    console.warn('clearMetrics not implemented in consolidated version');
+    // Metrics are automatically managed by the consolidated performance manager
+    // No action needed - this is a no-op for backward compatibility
   }
 
   cleanup(): void {

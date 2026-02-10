@@ -98,8 +98,23 @@ class CoreSupabaseService {
       const supabaseUrl = import.meta.env['VITE_SUPABASE_URL'];
       const supabaseAnonKey = import.meta.env['VITE_SUPABASE_ANON_KEY'];
 
-      if (!supabaseUrl || !supabaseAnonKey) {
-        logger.log('Supabase credentials not found, using mock mode');
+      // Enhanced validation for Supabase credentials
+      const isValidSupabaseUrl = (url: string): boolean => {
+        return !!url && 
+               typeof url === 'string' &&
+               url.startsWith('https://') && 
+               url.includes('.supabase.co') &&
+               url.length > 20;
+      };
+      
+      const isValidAnonKey = (key: string): boolean => {
+        return !!key && 
+               typeof key === 'string' &&
+               key.length > 20;
+      };
+
+      if (!isValidSupabaseUrl(supabaseUrl) || !isValidAnonKey(supabaseAnonKey)) {
+        logger.log('Supabase credentials not found or invalid, using mock mode');
         this.isMockMode = true;
         return;
       }
