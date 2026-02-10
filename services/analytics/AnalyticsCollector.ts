@@ -173,16 +173,16 @@ export class AnalyticsCollector implements IAnalyticsCollector {
     }
   }
 
-  async getAnalytics(): Promise<any[]> {
+  async getAnalytics(): Promise<(AnalyticsEvent | (PerformanceMetric & { type: 'metric' }) | (OperationRecord & { type: 'operation' }))[]> {
     // Combine all analytics data
-    const allData = [
+    const allData: (AnalyticsEvent | (PerformanceMetric & { type: 'metric' }) | (OperationRecord & { type: 'operation' }))[] = [
       ...this.eventQueue,
       ...this.metricsQueue.map(metric => ({
-        type: 'metric',
+        type: 'metric' as const,
         ...metric,
       })),
       ...this.operationQueue.map(operation => ({
-        type: 'operation',
+        type: 'operation' as const,
         ...operation,
       })),
     ];
