@@ -2,6 +2,7 @@
 
 import { UserSession } from '../../../types';
 import { STORAGE_KEYS, safeParse } from './databaseUtils';
+import { logger } from '../../../utils/logger';
 
 // Auth state listeners
 const authListeners: Array<(event: string, session: UserSession | null) => void> = [];
@@ -13,7 +14,7 @@ export const mockAuth = {
       const session = safeParse(storedData, null);
       return { data: { session }, error: null };
     } catch (error) {
-      console.error('Error getting mock session:', error);
+      logger.error('Error getting mock session:', error);
       return { data: { session: null }, error: { message: 'Failed to get session' } };
     }
   },
@@ -52,7 +53,7 @@ export const mockAuth = {
       
       return { data: { user: session.user, session }, error: null };
     } catch (error) {
-      console.error('Error signing in:', error);
+      logger.error('Error signing in:', error);
       return { data: { user: null, session: null }, error: { message: 'Sign in failed' } };
     }
   },
@@ -70,7 +71,7 @@ export const mockAuth = {
       
       return { error: null };
     } catch (error) {
-      console.error('Error signing out:', error);
+      logger.error('Error signing out:', error);
       return { error: { message: 'Sign out failed' } };
     }
   },
@@ -93,7 +94,7 @@ export const mockAuth = {
       authListeners.forEach(listener => listener('SIGNED_IN', session));
       return session;
     } catch (error) {
-      console.error('Error creating mock user:', error);
+      logger.error('Error creating mock user:', error);
       return null;
     }
   },
@@ -104,7 +105,7 @@ export const mockAuth = {
       localStorage.removeItem(STORAGE_KEYS.MOCK_SESSION);
       authListeners.forEach(listener => listener('SIGNED_OUT', null));
     } catch (error) {
-      console.error('Error clearing mock session:', error);
+      logger.error('Error clearing mock session:', error);
     }
   }
 };

@@ -30,8 +30,8 @@ export const safeParse = <T>(data: string | null, fallback: T): T => {
         // Import dynamically to avoid circular dependencies
         const { securityManager } = require('../securityManager');
         return securityManager.safeJSONParse(data) || fallback;
-    } catch (e) {
-        console.error("Failed to parse data from storage:", e);
+    } catch {
+        // Failed to parse data from storage - return fallback
         return fallback;
     }
 };

@@ -622,7 +622,7 @@ export const BACKEND_OPTIMIZATION_CONFIG = {
 
 // Type-safe configuration getter
 export const getConfig = <T>(section: string, key: string): T => {
-  const configMap: Record<string, any> = {
+  const configMap: Record<string, Record<string, unknown>> = {
     TIME_CONSTANTS,
     CACHE_CONFIG,
     RATE_LIMITING,

@@ -25,8 +25,8 @@ const setMockSession = (session: UserSession | null) => {
   authListeners.forEach(listener => {
     try {
       listener(event, session);
-    } catch (e) {
-      console.error('Auth listener error:', e);
+    } catch {
+      // Auth listener errors are suppressed in production
     }
   });
 };
