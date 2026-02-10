@@ -166,7 +166,7 @@ class SupabaseConnectionPool {
     try {
       const startTime = Date.now();
       const { error } = await connection.client.from('_health_check').select('1').limit(1);
-      const latency = Date.now() - startTime;
+      const _latency = Date.now() - startTime;
 
       if (error) {
         connection.healthy = false;
@@ -176,7 +176,7 @@ class SupabaseConnectionPool {
       connection.healthy = true;
       connection.lastUsed = Date.now();
       return true;
-    } catch (error) {
+    } catch (_error) {
       connection.healthy = false;
       return false;
     }

@@ -217,7 +217,7 @@ export class UnifiedCache {
    */
   invalidateByTags(tags: string[]): number {
     try {
-      const stats = this.memoryCache.getStats();
+      const _stats = this.memoryCache.getStats();
       const invalidatedCount = 0;
       
       // This is a simplified implementation
@@ -394,7 +394,7 @@ export class CacheManager {
   }
 
   async getFromAny<T>(key: string): Promise<T | null> {
-    for (const [name, cache] of this.caches) {
+    for (const [_name, cache] of this.caches) {
       const result = await cache.get<T>(key);
       if (result !== null) {
         return result;

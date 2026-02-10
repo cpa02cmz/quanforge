@@ -277,7 +277,7 @@ class SupabaseConnectionPool {
          .limit(1);
        
        const result = await Promise.race([queryPromise, timeoutPromise]) as { data?: any[]; error?: any };
-       const responseTime = Date.now() - startTime;
+       const _responseTime = Date.now() - startTime;
        
        // Check if result has error property
        if (result && result.error) {

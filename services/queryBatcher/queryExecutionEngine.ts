@@ -410,7 +410,7 @@ export class QueryExecutionEngine {
   /**
    * Filter data for specific query
    */
-  private filterDataForQuery(data: any[], query: BatchQuery): any[] {
+  private filterDataForQuery(data: any[], _query: BatchQuery): any[] {
     // This is a simplified implementation
     // In reality, you'd filter the combined data based on the specific query requirements
     return data;
