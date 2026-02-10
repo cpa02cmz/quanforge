@@ -890,13 +890,6 @@ function isExpired(response, maxAge) {
   return (now - cacheTime) > maxAge;
 }
 
-function detectEdgeRegion() {
-  // Simplified edge region detection
-  // In production, this would use actual edge detection logic
-  const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'];
-  return regions[Math.floor(Math.random() * regions.length)];
-}
-
 function updateCacheInBackground(request, cache) {
   fetch(request)
     .then((networkResponse) => {
