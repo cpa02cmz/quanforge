@@ -69,8 +69,8 @@ const trySaveToStorage = (key: string, value: string) => {
         oldKeys.forEach(k => localStorage.removeItem(k));
         // Retry save
         localStorage.setItem(key, value);
-      } catch (cleanupError) {
-        logger.error('Failed to cleanup and save to storage:', cleanupError);
+      } catch (cleanupError: unknown) {
+        logger.error('Failed to cleanup and save to storage:', getErrorMessage(cleanupError));
       }
     }
   }
@@ -534,7 +534,7 @@ return this.executeWithRetry(async () => {
         latency: Date.now() - start,
         mockMode: false,
       };
-    } catch (_error) {
+    } catch (_error: unknown) {
       return {
         status: 'unhealthy',
         latency: Date.now() - start,
