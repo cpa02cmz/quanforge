@@ -286,7 +286,7 @@ export class ErrorManager {
       }
       
       localStorage.setItem('error_history', JSON.stringify(persistent));
-    } catch (e) {
+    } catch (_e) {
       // Silent fail for error storage
     }
   }
@@ -485,7 +485,7 @@ export class ErrorManager {
     this.errorHistory = [];
     try {
       localStorage.removeItem('error_history');
-    } catch (e) {
+    } catch (_e) {
       // Silent fail
     }
   }

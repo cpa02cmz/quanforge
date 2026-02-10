@@ -4,7 +4,6 @@
  */
 
 import { OptimizationMetrics, OptimizationConfig, QueryAnalysis } from './optimizationTypes';
-import { queryOptimizer } from '../queryOptimizer';
 import { BACKEND_OPTIMIZATION_CONFIG } from '../../constants/config';
 
 export class RecommendationEngine {

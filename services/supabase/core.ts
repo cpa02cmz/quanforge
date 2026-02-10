@@ -529,7 +529,7 @@ return this.executeWithRetry(async () => {
         latency: Date.now() - start,
         mockMode: false,
       };
-    } catch (error) {
+    } catch (_error) {
       return {
         status: 'unhealthy',
         latency: Date.now() - start,

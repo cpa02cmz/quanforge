@@ -116,7 +116,7 @@ export class OptimizationApplier {
   /**
    * Apply database optimizations
    */
-  private async applyDatabaseOptimization(recommendation: string): Promise<OptimizationResult> {
+  private async applyDatabaseOptimization(_recommendation: string): Promise<OptimizationResult> {
     if (!this.config.enableDatabaseOptimization) {
       return {
         success: false,
@@ -142,7 +142,7 @@ export class OptimizationApplier {
   /**
    * Apply query optimizations
    */
-  private async applyQueryOptimization(recommendation: string): Promise<OptimizationResult> {
+  private async applyQueryOptimization(_recommendation: string): Promise<OptimizationResult> {
     if (!this.config.enableQueryOptimization) {
       return {
         success: false,
