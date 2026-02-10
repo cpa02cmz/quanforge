@@ -1,3 +1,5 @@
+import { TIMEOUTS, WEB_VITALS_THRESHOLDS, PERFORMANCE_BUDGETS } from './constants';
+
 interface PerformanceMetrics {
   lcp: number; // Largest Contentful Paint
   fid: number; // First Input Delay
@@ -65,21 +67,21 @@ export class RealTimeMonitor {
     this.config = {
       enabled: true,
       thresholds: {
-        buildTime: 10000, // 10 seconds
+        buildTime: TIMEOUTS.EXTENDED, // 10 seconds
         errorRate: 1, // 1%
-        responseTime: 500, // 500ms
+        responseTime: WEB_VITALS_THRESHOLDS.INP.GOOD, // 500ms
         cacheHitRate: 80 // 80%
       },
       ...config
     };
 
     this.budget = {
-      lcp: 2500,
-      fid: 100,
-      cls: 0.1,
-      fcp: 1800,
-      ttfb: 800,
-      bundleSize: 256000 // 250KB
+      lcp: WEB_VITALS_THRESHOLDS.LCP.GOOD,
+      fid: WEB_VITALS_THRESHOLDS.FID.GOOD,
+      cls: WEB_VITALS_THRESHOLDS.CLS.GOOD,
+      fcp: WEB_VITALS_THRESHOLDS.FCP.GOOD,
+      ttfb: WEB_VITALS_THRESHOLDS.TTFB.GOOD,
+      bundleSize: PERFORMANCE_BUDGETS.BUNDLE_SIZE.WARNING // 200KB threshold
     };
 
     // Note: This is a client-side SPA with no REST API endpoints
