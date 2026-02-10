@@ -38,7 +38,7 @@ export const withRetry = async <T>(
                 break;
             }
 
-            console.warn(`Attempt ${attempt + 1} failed for ${operationName}:`, (error as Error).message);
+            // Retry attempt failed - error will be thrown after max retries
         }
     }
     
