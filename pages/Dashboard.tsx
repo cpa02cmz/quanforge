@@ -12,6 +12,7 @@ import { createScopedLogger } from '../utils/logger';
 import { VirtualScrollList } from '../components/VirtualScrollList';
 import { EmptyState } from '../components/EmptyState';
 import { IconButton } from '../components/IconButton';
+import { CopyButton } from '../components/CopyButton';
 import { CardSkeletonLoader } from '../components/LoadingState';
 
 // Debounce utility for search optimization
@@ -140,6 +141,14 @@ const RobotCard: React.FC<RobotCardProps> = memo(({
         </span>
         
         <div className="flex items-center space-x-1">
+          <CopyButton
+            textToCopy={robot.name}
+            variant="subtle"
+            size="sm"
+            aria-label={`Copy robot name "${robot.name}"`}
+            tooltip="Copy robot name"
+          />
+
           <IconButton
             onClick={handleDuplicate}
             variant="primary"
