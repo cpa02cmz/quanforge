@@ -440,7 +440,7 @@ export const AI_CONFIG = {
   MODEL: {
     DEFAULT: 'gemini-3-pro-preview',
     FALLBACK: ['gemini-2-pro', 'gemini-1-pro'],
-    
+
     CONFIGS: {
       'gemini-3-pro-preview': {
         MAX_TOKENS: 8192,
@@ -455,13 +455,13 @@ export const AI_CONFIG = {
       },
     },
   },
-  
+
   // Code generation
   CODE: {
     MAX_LENGTH: 30000,
     CACHE_TTL_MS: 600000,            // 10 minutes
   },
-  
+
   // Worker timeouts
   WORKER_TIMEOUTS: {
     DEFAULT: 30000,
@@ -472,6 +472,139 @@ export const AI_CONFIG = {
     GENERATE_CONTENT: 60000,
     PARSE_RESPONSE: 5000,
     HEALTH_CHECK: 2000,
+  },
+} as const;
+
+// ========== CONNECTION POOL CONFIGURATION ==========
+export const CONNECTION_POOL_CONFIG = {
+  // Edge-optimized defaults
+  EDGE: {
+    MIN_CONNECTIONS: 1,
+    MAX_CONNECTIONS: 3,
+    IDLE_TIMEOUT_MS: 45000,           // 45 seconds
+    HEALTH_CHECK_INTERVAL_MS: 15000,  // 15 seconds
+    CONNECTION_TIMEOUT_MS: 800,       // 0.8 seconds
+    ACQUIRE_TIMEOUT_MS: 300,          // 0.3 seconds
+    RETRY_ATTEMPTS: 2,
+    RETRY_DELAY_MS: 300,              // 0.3 seconds
+  },
+
+  // Standard defaults
+  STANDARD: {
+    MIN_CONNECTIONS: 2,
+    MAX_CONNECTIONS: 10,
+    IDLE_TIMEOUT_MS: 300000,          // 5 minutes
+    HEALTH_CHECK_INTERVAL_MS: 30000,  // 30 seconds
+    CONNECTION_TIMEOUT_MS: 5000,      // 5 seconds
+    ACQUIRE_TIMEOUT_MS: 5000,         // 5 seconds
+    RETRY_ATTEMPTS: 3,
+    RETRY_DELAY_MS: 1000,             // 1 second
+  },
+
+  // Replica selection scoring weights
+  REPLICA_SCORING: {
+    REGION_MATCH_BONUS: 2000,
+    LATENCY_MULTIPLIER: 1000,
+    HEALTHY_BONUS: 500,
+    RECENT_USE_PENALTY: 200,
+    PRIORITY_MULTIPLIER: 10,
+    RECENT_USE_THRESHOLD_MS: 30000,   // 30 seconds
+  },
+
+  // Region latency map (ms)
+  REGION_LATENCIES: {
+    PRIMARY: 50,
+    HKG1: 120,
+    IAD1: 80,
+    SIN1: 100,
+    FRA1: 90,
+    SFO1: 70,
+    UNKNOWN: 150,
+  },
+
+  // Health check thresholds
+  HEALTH: {
+    MAX_FAILED_CHECKS: 3,
+    EDGE_CHECK_INTERVAL_MS: 30000,    // 30 seconds
+  },
+
+  // Edge warming
+  WARMING: {
+    REGIONS: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
+  },
+} as const;
+
+// ========== UNIFIED CACHE CONFIGURATION ==========
+export const UNIFIED_CACHE_CONFIG = {
+  // Compression
+  COMPRESSION: {
+    THRESHOLD_BYTES: 1024,            // 1KB
+    ENABLED: true,
+  },
+
+  // Cleanup intervals
+  CLEANUP: {
+    INTERVAL_MS: 300000,              // 5 minutes
+  },
+
+  // Default TTLs
+  TTL: {
+    DEFAULT_MS: 300000,               // 5 minutes
+    STATIC_MS: 3600000,               // 1 hour
+    SHORT_MS: 120000,                 // 2 minutes
+    MEDIUM_MS: 600000,                // 10 minutes
+    LONG_MS: 900000,                  // 15 minutes
+  },
+
+  // Cache sizes
+  SIZES: {
+    DEFAULT_BYTES: 10 * 1024 * 1024,  // 10MB
+    ROBOT_BYTES: 20 * 1024 * 1024,    // 20MB
+    QUERY_BYTES: 5 * 1024 * 1024,     // 5MB
+    USER_BYTES: 2 * 1024 * 1024,      // 2MB
+  },
+
+  // Preload data
+  PRELOAD: {
+    STRATEGY_TYPES: ['Trend', 'Scalping', 'Grid', 'Martingale', 'Custom'],
+    TIMEFRAMES: ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1'],
+    SYMBOLS: ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD'],
+  },
+} as const;
+
+// ========== UX MONITORING CONFIGURATION ==========
+export const UX_MONITORING_CONFIG = {
+  // Scoring weights
+  WEIGHTS: {
+    PERFORMANCE: 0.4,
+    RELIABILITY: 0.3,
+    ENGAGEMENT: 0.3,
+  },
+
+  // Web Vitals thresholds (ms)
+  THRESHOLDS: {
+    LCP: { GOOD: 2500, NEEDS_IMPROVEMENT: 4000 },
+    FID: { GOOD: 100, NEEDS_IMPROVEMENT: 300 },
+    CLS: { GOOD: 0.1, NEEDS_IMPROVEMENT: 0.25 },
+    TTFB: { GOOD: 800, NEEDS_IMPROVEMENT: 1800 },
+    FCP: { GOOD: 1500, NEEDS_IMPROVEMENT: 3000 },
+    API_RESPONSE: { GOOD: 200, NEEDS_IMPROVEMENT: 1000 },
+    RENDER: { GOOD: 100, NEEDS_IMPROVEMENT: 500 },
+    CLICK_DELAY: { GOOD: 50, NEEDS_IMPROVEMENT: 200 },
+    INPUT_LAG: { GOOD: 16, NEEDS_IMPROVEMENT: 100 },
+  },
+
+  // Monitoring intervals
+  INTERVALS: {
+    MONITORING_MS: 5000,              // 5 seconds
+    SCORE_UPDATE_MS: 10000,           // 10 seconds
+  },
+
+  // Score thresholds
+  SCORES: {
+    EXCELLENT: 90,
+    GOOD: 70,
+    NEEDS_IMPROVEMENT: 50,
   },
 } as const;
 
@@ -558,6 +691,94 @@ export function getRetryConfig(service: keyof typeof RETRY_CONFIGS.SERVICES) {
   return RETRY_CONFIGS.SERVICES[service] ?? RETRY_CONFIGS.STANDARD;
 }
 
+// ========== STORAGE KEYS CONFIGURATION ==========
+export const STORAGE_KEYS = {
+  // Session and authentication
+  SESSION: 'mock_session',
+  MOCK_SESSION: 'mock_session',
+  
+  // Data storage
+  ROBOTS: 'mock_robots',
+  
+  // Settings
+  AI_SETTINGS: 'quantforge_ai_settings',
+  DB_SETTINGS: 'quantforge_db_settings',
+  
+  // API keys
+  API_KEYS: 'api_keys',
+  
+  // Security
+  CSP_VIOLATIONS: 'csp_violations',
+  WAF_TOTAL_REQUESTS: 'waf_total_requests',
+  WAF_BLOCKED_REQUESTS: 'waf_blocked_requests',
+  WAF_TOP_THREATS: 'waf_top_threats',
+  EDGE_REQUESTS: 'edge_requests',
+  
+  // Cache
+  EDGE_CACHE_PREFIX: 'edge-cache-',
+} as const;
+
+// ========== STORAGE PREFIXES ==========
+export const STORAGE_PREFIXES = {
+  MOCK: 'mock_',
+  EDGE: 'edge-',
+  CACHE: 'cache_',
+} as const;
+
+// ========== MAGIC NUMBERS ==========
+export const MAGIC_NUMBERS = {
+  // Time conversions
+  MS_PER_SECOND: 1000,
+  MS_PER_MINUTE: 60000,
+  MS_PER_HOUR: 3600000,
+  MS_PER_DAY: 86400000,
+  MS_PER_WEEK: 604800000,
+  
+  // Size conversions
+  BYTES_PER_KB: 1024,
+  BYTES_PER_MB: 1048576,
+  BYTES_PER_GB: 1073741824,
+  
+  // Common thresholds
+  MAX_SAFE_INTEGER: 9007199254740991,
+  MIN_SAFE_INTEGER: -9007199254740991,
+} as const;
+
+// ========== SCORING WEIGHTS ==========
+export const SCORING_WEIGHTS = {
+  // Pool selection scoring
+  POOL: {
+    REGION_MATCH_BONUS: 2000,
+    HEALTHY_BONUS: 500,
+    RECENT_USE_PENALTY: 200,
+    LATENCY_MULTIPLIER: 1000,
+    MAX_LATENCY_PENALTY: 1000,
+  },
+  
+  // Edge metrics scoring
+  EDGE: {
+    DEFAULT_SCORE: 100,
+    LATENCY_DIVISOR: 1,
+    COMPRESSION_RATIO_PRECISION: 100,
+  },
+} as const;
+
+// ========== THRESHOLD VALUES ==========
+export const THRESHOLDS = {
+  // Usage thresholds
+  RECENT_USAGE_MS: 30000,
+  COLD_START_MS: 500,
+  CONNECTION_AGE_MS: 60000,
+  
+  // String limits
+  STRING_MAX_LENGTH: 1000,
+  STRING_CODE_MAX: 50000,
+  STRING_URL_MAX: 2048,
+  
+  // Compression
+  COMPRESSION_THRESHOLD: 1024,
+} as const;
+
 // Export all configurations as a single object
 export const APP_CONFIG = {
   WEBSOCKET: WEBSOCKET_CONFIG,
@@ -575,6 +796,14 @@ export const APP_CONFIG = {
   AI: AI_CONFIG,
   MEMORY: MEMORY_CONFIG,
   BATCH: BATCH_CONFIG,
+  CONNECTION_POOL: CONNECTION_POOL_CONFIG,
+  UNIFIED_CACHE: UNIFIED_CACHE_CONFIG,
+  UX_MONITORING: UX_MONITORING_CONFIG,
+  STORAGE: STORAGE_KEYS,
+  PREFIXES: STORAGE_PREFIXES,
+  MAGIC: MAGIC_NUMBERS,
+  SCORING: SCORING_WEIGHTS,
+  THRESHOLD: THRESHOLDS,
 } as const;
 
 // Default export
