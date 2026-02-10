@@ -344,8 +344,8 @@ class EdgeAnalytics {
       });
     });
 
-    // Track scrolls
-    let scrollTimeout: ReturnType<typeof setInterval>;
+    // Track scrolls with passive listener for better performance
+    let scrollTimeout: ReturnType<typeof setTimeout>;
     document.addEventListener('scroll', () => {
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
@@ -355,7 +355,7 @@ class EdgeAnalytics {
           documentHeight: document.documentElement.scrollHeight
         });
       }, 100);
-    });
+    }, { passive: true });
 
     // Track form interactions
     document.addEventListener('submit', (event) => {
