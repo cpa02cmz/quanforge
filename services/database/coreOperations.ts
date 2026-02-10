@@ -6,7 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { Robot } from '../../types';
 import { handleError } from '../../utils/errorHandler';
-// import { DATABASE_CONFIG } from '../../constants/config';
+import { BATCH_SIZES } from '../constants';
 
 // Performance monitoring
 const performanceMonitor = {
@@ -205,7 +205,7 @@ export class DatabaseCore implements DatabaseCoreInterface {
 
     try {
       // Process updates in batches to avoid overwhelming the database
-      const batchSize = 10;
+      const batchSize = BATCH_SIZES.DATABASE_OPERATIONS;
       for (let i = 0; i < updates.length; i += batchSize) {
         const batch = updates.slice(i, i + batchSize);
         
