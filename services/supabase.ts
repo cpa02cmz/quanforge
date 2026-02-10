@@ -8,6 +8,9 @@ import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
 import { TIMEOUTS, CACHE_LIMITS, BATCH_SIZES, ERROR_CODES } from '../constants';
 import { getLocalStorage, StorageQuotaError } from '../utils/storage';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('Supabase');
 
 // Enhanced connection retry configuration with exponential backoff
 const RETRY_CONFIG = {
@@ -30,7 +33,7 @@ const safeParse = <T>(data: T | null, fallback: any) => {
     try {
         return securityManager.safeJSONParse(data as string) || fallback;
     } catch (e) {
-        console.error("Failed to parse data from storage:", e);
+        logger.error("Failed to parse data from storage:", e);
         return fallback;
     }
 };
