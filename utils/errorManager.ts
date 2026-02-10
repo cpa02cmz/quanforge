@@ -1,4 +1,5 @@
 import type { Toast } from '../types/toast';
+import { ERROR_DISPLAY } from '../constants/timing';
 
 export enum ErrorSeverity {
   LOW = 'low',
@@ -340,11 +341,11 @@ export class ErrorManager {
     switch (severity) {
       case ErrorSeverity.CRITICAL:
       case ErrorSeverity.HIGH:
-        return 8000; // 8 seconds
+        return ERROR_DISPLAY.DURATION_LONG;
       case ErrorSeverity.MEDIUM:
-        return 5000; // 5 seconds
+        return ERROR_DISPLAY.DURATION_MEDIUM;
       default:
-        return 3000; // 3 seconds
+        return ERROR_DISPLAY.DURATION_SHORT;
     }
   }
 
