@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { StrategyConfig } from '../components/StrategyConfig';
 import { SaveButton } from '../components/SaveButton';
 import { CelebrationAnimation } from '../components/CelebrationAnimation';
+import { ProgressBar } from '../components/ProgressBar';
 import { useGeneratorLogic } from '../hooks/useGeneratorLogic';
 import { useTranslation } from '../services/i18n';
 import { AdvancedSEO } from '../utils/advancedSEO';
@@ -149,9 +150,16 @@ export const Generator: React.FC = memo(() => {
       <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] md:h-screen bg-dark-bg relative" role="main" aria-label="Strategy generator workspace">
       
         {/* Loading Progress Indicator */}
-        {isLoading && loadingProgress && (
-          <div className="absolute top-0 left-0 right-0 h-1 bg-dark-surface z-50">
-            <div className="h-full bg-brand-500 animate-pulse w-full"></div>
+        {isLoading && (
+          <div className="absolute top-0 left-0 right-0 z-50 px-4 py-2 bg-dark-surface/95 backdrop-blur-sm border-b border-dark-border shadow-lg">
+            <ProgressBar 
+              progress={0}
+              status={loadingProgress?.message || 'Generating your trading strategy...'}
+              showPercentage={false}
+              size="sm"
+              indeterminate
+              animated
+            />
           </div>
         )}
       
