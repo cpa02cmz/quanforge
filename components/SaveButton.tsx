@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { KeyboardShortcutHint } from './KeyboardShortcutHint';
 
 export interface SaveButtonProps {
   /** Click handler */
@@ -17,23 +18,36 @@ export interface SaveButtonProps {
   'aria-label'?: string;
   /** Additional CSS classes */
   className?: string;
+  /** Whether to show keyboard shortcut hint on hover (default: true) */
+  showShortcutHint?: boolean;
+  /** Custom keyboard shortcut keys (default: ['Ctrl', 'S']) */
+  shortcutKeys?: string[];
 }
 
 /**
  * SaveButton - A delightful button with micro-interactions for save actions
- * 
+ *
  * Features:
  * - Animated spinner during save operation
  * - Satisfying checkmark animation on success
  * - Smooth state transitions with spring physics
  * - Accessible with proper ARIA states
  * - Disabled state handling
- * 
+ * - Keyboard shortcut hint on hover (Ctrl+S / Cmd+S)
+ *
  * @example
  * <SaveButton
  *   onClick={handleSave}
  *   state={saving ? 'saving' : saved ? 'success' : 'idle'}
  *   disabled={!hasChanges}
+ * />
+ *
+ * @example
+ * // Without keyboard shortcut hint
+ * <SaveButton
+ *   onClick={handleSave}
+ *   state={saveState}
+ *   showShortcutHint={false}
  * />
  */
 export const SaveButton: React.FC<SaveButtonProps> = memo(({
@@ -44,10 +58,15 @@ export const SaveButton: React.FC<SaveButtonProps> = memo(({
   savingText = 'Saving...',
   successText = 'Saved!',
   'aria-label': ariaLabel,
-  className = ''
+  className = '',
+  showShortcutHint = true,
+  shortcutKeys = ['Ctrl', 'S']
 }) => {
 
   const isDisabled = disabled || state === 'saving';
+
+  // Determine if we should show the shortcut hint (only in idle state and not disabled)
+  const shouldShowHint = showShortcutHint && state === 'idle' && !disabled;
 
   // Get button content based on state
   const getContent = () => {
@@ -110,7 +129,8 @@ export const SaveButton: React.FC<SaveButtonProps> = memo(({
     }
   };
 
-  return (
+  // Button element
+  const buttonElement = (
     <button
       onClick={onClick}
       disabled={isDisabled}
@@ -119,8 +139,8 @@ export const SaveButton: React.FC<SaveButtonProps> = memo(({
         px-4 py-2 text-xs font-medium rounded-lg
         transition-all duration-200 ease-out
         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent
-        ${state === 'success' 
-          ? 'bg-green-600 hover:bg-green-500 text-white focus:ring-green-500/50 shadow-lg shadow-green-600/30' 
+        ${state === 'success'
+          ? 'bg-green-600 hover:bg-green-500 text-white focus:ring-green-500/50 shadow-lg shadow-green-600/30'
           : 'bg-brand-600 hover:bg-brand-500 text-white focus:ring-brand-500/50 shadow-lg shadow-brand-600/20'
         }
         ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95 hover:scale-[1.02]'}
@@ -137,7 +157,7 @@ export const SaveButton: React.FC<SaveButtonProps> = memo(({
     >
       {/* Subtle glow effect on hover (idle state only) */}
       {state === 'idle' && !disabled && (
-        <span 
+        <span
           className="absolute inset-0 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"
           style={{
             background: 'radial-gradient(circle at center, rgba(34, 197, 94, 0.3) 0%, transparent 70%)',
@@ -146,10 +166,10 @@ export const SaveButton: React.FC<SaveButtonProps> = memo(({
           aria-hidden="true"
         />
       )}
-      
+
       {/* Success glow effect */}
       {state === 'success' && (
-        <span 
+        <span
           className="absolute inset-0 rounded-lg animate-pulse pointer-events-none"
           style={{
             background: 'radial-gradient(circle at center, rgba(34, 197, 94, 0.5) 0%, transparent 70%)',
@@ -158,13 +178,29 @@ export const SaveButton: React.FC<SaveButtonProps> = memo(({
           aria-hidden="true"
         />
       )}
-      
+
       {/* Button content */}
       <span className="relative flex items-center">
         {getContent()}
       </span>
     </button>
   );
+
+  // Wrap with keyboard shortcut hint if enabled
+  if (shouldShowHint) {
+    return (
+      <KeyboardShortcutHint
+        keys={shortcutKeys}
+        description="Save strategy"
+        position="top"
+        delay={600}
+      >
+        {buttonElement}
+      </KeyboardShortcutHint>
+    );
+  }
+
+  return buttonElement;
 });
 
 SaveButton.displayName = 'SaveButton';
