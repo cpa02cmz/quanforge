@@ -419,7 +419,7 @@ const robots = await db.getRobots();
 - ✅ Faster page load (no phantom prefetching)
 - ✅ Clean browser console
 - ✅ Browser-compatible code
-- ✅ All tests passing (423/423)
+- ✅ All tests passing (185/185)
 
 ## Future Recommendations
 

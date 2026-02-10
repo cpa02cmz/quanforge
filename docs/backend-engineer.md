@@ -111,28 +111,29 @@ Sophisticated caching with compression, encryption, and stale-while-revalidate.
 ```typescript
 import { advancedAPICache } from './services/advancedAPICache';
 
-// Cached fetch with automatic TTL
+// Cached service call with automatic TTL (uses Supabase client, not REST API)
 const data = await advancedAPICache.cachedFetch<MarketData>(
-  '/api/market-data',
-  { method: 'GET' },
+  'market-data', // Cache key, not URL
+  async () => await marketDataService.getQuotes(), // Service function
   300000 // 5 minute TTL
 );
 
 // Stale-while-revalidate pattern
 const { data, isStale } = await advancedAPICache.staleWhileRevalidate<MarketData>(
-  '/api/market-data'
+  'market-data',
+  async () => await marketDataService.getQuotes()
 );
 
-// Batch fetch multiple URLs
+// Batch fetch from services (not REST endpoints)
 const results = await advancedAPICache.batchFetch<Robot[]>([
-  { url: '/api/robots/1' },
-  { url: '/api/robots/2' }
+  { key: 'robot-1', fetcher: async () => await supabaseService.getRobot('1') },
+  { key: 'robot-2', fetcher: async () => await supabaseService.getRobot('2') }
 ]);
 
-// Prefetch for better UX
+// Prefetch service data for better UX
 await advancedAPICache.prefetch([
-  '/api/robots',
-  '/api/market-data'
+  { key: 'robots-list', fetcher: async () => await supabaseService.getRobots() },
+  { key: 'market-data', fetcher: async () => await marketDataService.getQuotes() }
 ]);
 ```
 
