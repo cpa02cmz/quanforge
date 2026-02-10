@@ -147,8 +147,8 @@ class EdgeAnalytics {
 
       // Navigation timing monitoring
       this.observeNavigationTiming();
-    } catch (error) {
-      console.warn('Performance monitoring setup failed:', error);
+    } catch (error: unknown) {
+      console.warn('Performance monitoring setup failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -165,8 +165,8 @@ class EdgeAnalytics {
       
       observer.observe({ entryTypes: ['largest-contentful-paint'] });
       this.observers.push(observer);
-    } catch (error) {
-      console.warn('LCP observation failed:', error);
+    } catch (error: unknown) {
+      console.warn('LCP observation failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -184,8 +184,8 @@ class EdgeAnalytics {
       
       observer.observe({ entryTypes: ['first-input'] });
       this.observers.push(observer);
-    } catch (error) {
-      console.warn('FID observation failed:', error);
+    } catch (error: unknown) {
+      console.warn('FID observation failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -205,8 +205,8 @@ class EdgeAnalytics {
       
       observer.observe({ entryTypes: ['layout-shift'] });
       this.observers.push(observer);
-    } catch (error) {
-      console.warn('CLS observation failed:', error);
+    } catch (error: unknown) {
+      console.warn('CLS observation failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -223,8 +223,8 @@ class EdgeAnalytics {
       
       observer.observe({ entryTypes: ['paint'] });
       this.observers.push(observer);
-    } catch (error) {
-      console.warn('FCP observation failed:', error);
+    } catch (error: unknown) {
+      console.warn('FCP observation failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -241,8 +241,8 @@ class EdgeAnalytics {
       
       observer.observe({ entryTypes: ['navigation'] });
       this.observers.push(observer);
-    } catch (error) {
-      console.warn('TTFB observation failed:', error);
+    } catch (error: unknown) {
+      console.warn('TTFB observation failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -282,8 +282,8 @@ class EdgeAnalytics {
       
       observer.observe({ entryTypes: ['resource'] });
       this.observers.push(observer);
-    } catch (error) {
-      console.warn('Resource timing observation failed:', error);
+    } catch (error: unknown) {
+      console.warn('Resource timing observation failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -318,8 +318,8 @@ class EdgeAnalytics {
       
       observer.observe({ entryTypes: ['navigation'] });
       this.observers.push(observer);
-    } catch (error) {
-      console.warn('Navigation timing observation failed:', error);
+    } catch (error: unknown) {
+      console.warn('Navigation timing observation failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -532,8 +532,8 @@ class EdgeAnalytics {
       if (!isFinal) {
         this.metrics = [];
       }
-    } catch (error) {
-      console.warn('Failed to report analytics:', error);
+    } catch (error: unknown) {
+      console.warn('Failed to report analytics:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -559,8 +559,8 @@ class EdgeAnalytics {
         },
         body: JSON.stringify(errorReport)
       });
-    } catch (error) {
-      console.warn('Failed to report error:', error);
+    } catch (error: unknown) {
+      console.warn('Failed to report error:', error instanceof Error ? error.message : String(error));
     }
   }
 

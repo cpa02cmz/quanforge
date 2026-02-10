@@ -31,8 +31,8 @@ export class CacheLayer implements CacheLayerInterface {
   async get<T>(key: string): Promise<T | null> {
     try {
       return this.cache.get(key) || null;
-    } catch (error) {
-      handleError(error as Error, 'cache.get', 'cacheLayer');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'cache.get', 'cacheLayer');
       return null;
     }
   }
@@ -41,8 +41,8 @@ export class CacheLayer implements CacheLayerInterface {
     try {
       this.cache.set(key, value);
       // Tags functionality not implemented in simple LRU cache
-    } catch (error) {
-      handleError(error as Error, 'cache.set', 'cacheLayer');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'cache.set', 'cacheLayer');
       // Don't throw - cache failures shouldn't break the main flow
     }
   }
@@ -51,8 +51,8 @@ export class CacheLayer implements CacheLayerInterface {
     try {
       // Tags functionality not implemented in simple LRU cache - clear all for now
       this.cache.clear();
-    } catch (error) {
-      handleError(error as Error, 'cache.invalidateByTags', 'cacheLayer');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'cache.invalidateByTags', 'cacheLayer');
       // Don't throw - cache failures shouldn't break the main flow
     }
   }
@@ -63,8 +63,8 @@ export class CacheLayer implements CacheLayerInterface {
       // Convert pattern to appropriate tag
       const tag = pattern.replace(/[^a-zA-Z0-9]/g, '_');
       await this.invalidateByTags([tag]);
-    } catch (error) {
-      handleError(error as Error, 'cache.invalidatePattern', 'cacheLayer');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'cache.invalidatePattern', 'cacheLayer');
       // Don't throw - cache failures shouldn't break the main flow
     }
   }
@@ -72,8 +72,8 @@ export class CacheLayer implements CacheLayerInterface {
   async delete(key: string): Promise<boolean> {
     try {
       return await this.cache.delete(key);
-    } catch (error) {
-      handleError(error as Error, 'cache.delete', 'cacheLayer');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'cache.delete', 'cacheLayer');
       return false;
     }
   }
@@ -81,8 +81,8 @@ export class CacheLayer implements CacheLayerInterface {
   async clear(): Promise<void> {
     try {
       await this.cache.clear();
-    } catch (error) {
-      handleError(error as Error, 'cache.clear', 'cacheLayer');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'cache.clear', 'cacheLayer');
       // Don't throw - cache failures shouldn't break the main flow
     }
   }
@@ -116,8 +116,8 @@ export class CacheLayer implements CacheLayerInterface {
           console.log(`Preloading cache for key: ${key}`);
         }
       }
-    } catch (error) {
-      handleError(error as Error, 'cache.preloadCommonData', 'cacheLayer');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'cache.preloadCommonData', 'cacheLayer');
       // Don't throw - preloading failures shouldn't break the main flow
     }
   }
@@ -186,8 +186,8 @@ export class CacheLayer implements CacheLayerInterface {
       // Since getAllKeys is not available, use tag-based invalidation
       // This is a simplified version that would work with the available API
       await this.invalidateByTags([`dependency_${dependency}`]);
-    } catch (error) {
-      handleError(error as Error, 'cache.smartInvalidate', 'cacheLayer');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'cache.smartInvalidate', 'cacheLayer');
     }
   }
 
@@ -202,8 +202,8 @@ export class CacheLayer implements CacheLayerInterface {
       ];
 
       await Promise.allSettled(warmupOperations);
-    } catch (error) {
-      handleError(error as Error, 'cache.warmupCacheForUser', 'cacheLayer');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'cache.warmupCacheForUser', 'cacheLayer');
     }
   }
 
@@ -212,8 +212,8 @@ export class CacheLayer implements CacheLayerInterface {
       await Promise.allSettled(
         keys.map(key => this.cache.delete(key))
       );
-    } catch (error) {
-      handleError(error as Error, 'cache.batchInvalidate', 'cacheLayer');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'cache.batchInvalidate', 'cacheLayer');
     }
   }
 }
