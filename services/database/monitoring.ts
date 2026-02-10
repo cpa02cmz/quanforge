@@ -64,9 +64,9 @@ export class QueryOptimizer {
       
       DatabaseMonitor.recordOperation(queryName, performance.now() - startTime, true);
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       DatabaseMonitor.recordOperation(queryName, performance.now() - startTime, false);
-      handleError(error, queryName);
+      handleError(error instanceof Error ? error : new Error(String(error)), queryName);
       throw error;
     }
   }
@@ -101,7 +101,7 @@ export class QueryOptimizer {
 
       DatabaseMonitor.recordOperation('batch_query', performance.now() - startTime);
       return successfulResults;
-    } catch (error) {
+    } catch (error: unknown) {
       DatabaseMonitor.recordOperation('batch_query', performance.now() - startTime, false);
       throw error;
     }
@@ -124,9 +124,9 @@ export class ConnectionHealthMonitor {
           logger.log('Database connection restored');
           this.isHealthy = true;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         if (this.isHealthy) {
-          logger.warn('Database connection health check failed:', error);
+          logger.warn('Database connection health check failed:', error instanceof Error ? error.message : String(error));
           this.isHealthy = false;
         }
       }
