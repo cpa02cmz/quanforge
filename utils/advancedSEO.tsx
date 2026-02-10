@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { SEOHead, structuredDataTemplates, useSEOAnalytics } from './seoUnified';
 import { getUrlConfig } from './urls';
+import { WindowWithGtag } from '../types/browser';
 
 interface AdvancedSEOProps {
   title?: string;
@@ -270,12 +271,15 @@ export const AdvancedSEO: React.FC<AdvancedSEOProps> = ({
             const loadTime = navEntry.loadEventEnd - navEntry.loadEventStart;
             
             // Send performance data to analytics
-            if (enableAnalytics && typeof window !== 'undefined' && (window as any).gtag) {
-              (window as any).gtag('event', 'page_load_time', {
-                value: Math.round(loadTime),
-                page_type: pageType,
-                custom_parameter_1: 'quantforge_ai_seo'
-              });
+            if (enableAnalytics && typeof window !== 'undefined') {
+              const win = window as WindowWithGtag;
+              if (win.gtag) {
+                win.gtag('event', 'page_load_time', {
+                  value: Math.round(loadTime),
+                  page_type: pageType,
+                  custom_parameter_1: 'quantforge_ai_seo'
+                });
+              }
             }
           }
         });
