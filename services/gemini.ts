@@ -20,6 +20,7 @@ let GoogleGenAI: GoogleGenAIConstructor | null = null;
 let Type: GenAIType | null = null;
 import { MQL5_SYSTEM_PROMPT, TIMEOUTS, CACHE_TTLS } from "../constants";
 import { AI_CONFIG } from "../constants/config";
+import { VALIDATION_LIMITS } from "../constants/modularConfig";
 import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
 import { settingsManager } from "./settingsManager";
 import { getActiveKey } from "../utils/apiKeyUtils";
@@ -227,19 +228,35 @@ const validateStrategyParams = (params: StrategyParams): StrategyParams => {
   const validated = { ...params };
   
   if (validated.stopLoss !== undefined) {
-    validated.stopLoss = Math.max(1, Math.min(1000, Number(validated.stopLoss) || 50));
+    validated.stopLoss = Math.max(
+      VALIDATION_LIMITS.NUMERIC.STOP_LOSS_PIPS.MIN,
+      Math.min(VALIDATION_LIMITS.NUMERIC.STOP_LOSS_PIPS.MAX,
+        Number(validated.stopLoss) || VALIDATION_LIMITS.NUMERIC.STOP_LOSS_PIPS.DEFAULT)
+    );
   }
-  
+
   if (validated.takeProfit !== undefined) {
-    validated.takeProfit = Math.max(1, Math.min(1000, Number(validated.takeProfit) || 100));
+    validated.takeProfit = Math.max(
+      VALIDATION_LIMITS.NUMERIC.TAKE_PROFIT_PIPS.MIN,
+      Math.min(VALIDATION_LIMITS.NUMERIC.TAKE_PROFIT_PIPS.MAX,
+        Number(validated.takeProfit) || VALIDATION_LIMITS.NUMERIC.TAKE_PROFIT_PIPS.DEFAULT)
+    );
   }
-  
+
   if (validated.riskPercent !== undefined) {
-    validated.riskPercent = Math.max(0.1, Math.min(100, Number(validated.riskPercent) || 2));
+    validated.riskPercent = Math.max(
+      VALIDATION_LIMITS.NUMERIC.RISK_PERCENT.MIN,
+      Math.min(VALIDATION_LIMITS.NUMERIC.RISK_PERCENT.MAX,
+        Number(validated.riskPercent) || VALIDATION_LIMITS.NUMERIC.RISK_PERCENT.DEFAULT)
+    );
   }
-  
+
   if (validated.magicNumber !== undefined) {
-    validated.magicNumber = Math.max(1000, Math.min(999999, Number(validated.magicNumber) || 12345));
+    validated.magicNumber = Math.max(
+      VALIDATION_LIMITS.NUMERIC.MAGIC_NUMBER.MIN,
+      Math.min(VALIDATION_LIMITS.NUMERIC.MAGIC_NUMBER.MAX,
+        Number(validated.magicNumber) || VALIDATION_LIMITS.NUMERIC.MAGIC_NUMBER.DEFAULT)
+    );
   }
   
   return validated;
@@ -262,16 +279,22 @@ export const isValidStrategyParams = (params: Partial<StrategyParams> | Record<s
     }
   }
 
-  // Validate numeric ranges
-  if (typeof p.riskPercent !== 'number' || p.riskPercent < 0.1 || p.riskPercent > 100) {
+  // Validate numeric ranges using modular config
+  if (typeof p.riskPercent !== 'number'
+    || p.riskPercent < VALIDATION_LIMITS.NUMERIC.RISK_PERCENT.MIN
+    || p.riskPercent > VALIDATION_LIMITS.NUMERIC.RISK_PERCENT.MAX) {
     return false;
   }
 
-  if (typeof p.stopLoss !== 'number' || p.stopLoss < 1 || p.stopLoss > 1000) {
+  if (typeof p.stopLoss !== 'number'
+    || p.stopLoss < VALIDATION_LIMITS.NUMERIC.STOP_LOSS_PIPS.MIN
+    || p.stopLoss > VALIDATION_LIMITS.NUMERIC.STOP_LOSS_PIPS.MAX) {
     return false;
   }
 
-  if (typeof p.takeProfit !== 'number' || p.takeProfit < 1 || p.takeProfit > 1000) {
+  if (typeof p.takeProfit !== 'number'
+    || p.takeProfit < VALIDATION_LIMITS.NUMERIC.TAKE_PROFIT_PIPS.MIN
+    || p.takeProfit > VALIDATION_LIMITS.NUMERIC.TAKE_PROFIT_PIPS.MAX) {
     return false;
   }
 
