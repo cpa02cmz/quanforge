@@ -1,5 +1,6 @@
 import { Message } from '../types';
 import { useRef, useEffect, useCallback } from 'react';
+import { MESSAGE_BUFFER, MEMORY } from '../constants/timing';
 
 // Circular buffer for efficient message history management
 export class MessageBuffer {
@@ -8,7 +9,7 @@ export class MessageBuffer {
     private index = 0;
     private isFull = false;
 
-    constructor(maxSize: number = 50) {
+    constructor(maxSize: number = MESSAGE_BUFFER.DEFAULT_MAX_SIZE) {
         this.maxSize = maxSize;
     }
 
@@ -87,7 +88,7 @@ export class MessageBuffer {
             size: this.size(),
             maxSize: this.maxSize,
             isFull: this.isFull,
-            memoryUsageKB: Math.round(this.getMemoryUsage() / 1024)
+            memoryUsageKB: Math.round(this.getMemoryUsage() / MEMORY.KB)
         };
     }
 
@@ -117,23 +118,23 @@ export class MessageBuffer {
 
 // Memory monitoring for message buffer
 export class MessageMemoryMonitor {
-    private static readonly WARNING_THRESHOLD_MB = 5; // Reduced to 5MB for better memory management
-    private static readonly CRITICAL_THRESHOLD_MB = 10; // Reduced to 10MB for better memory management
+    private static readonly WARNING_THRESHOLD_MB = MESSAGE_BUFFER.MEMORY_WARNING_MB;
+    private static readonly CRITICAL_THRESHOLD_MB = MESSAGE_BUFFER.MEMORY_CRITICAL_MB;
     private static checkInterval: ReturnType<typeof setInterval> | null = null;
 
-    static startMonitoring(buffer: MessageBuffer, intervalMs: number = 15000): void { // Check more frequently
+    static startMonitoring(buffer: MessageBuffer, intervalMs: number = MESSAGE_BUFFER.MONITOR_INTERVAL): void {
         this.checkInterval = setInterval(() => {
             const stats = buffer.getStats();
-            const memoryUsageMB = stats.memoryUsageKB / 1024;
+            const memoryUsageMB = stats.memoryUsageKB / MEMORY.KB;
 
             if (memoryUsageMB > this.CRITICAL_THRESHOLD_MB) {
                 // Force aggressive cleanup
-                const recentMessages = buffer.getRecent(10); // Keep only 10 most recent
+                const recentMessages = buffer.getRecent(MESSAGE_BUFFER.KEEP_RECENT_CRITICAL);
                 buffer.clear();
                 recentMessages.forEach(msg => buffer.add(msg));
             } else if (memoryUsageMB > this.WARNING_THRESHOLD_MB) {
                 // Trim older messages more aggressively
-                const cutoffTime = Date.now() - (4 * 60 * 60 * 1000); // 4 hours ago instead of 24
+                const cutoffTime = Date.now() - (MESSAGE_BUFFER.TRIM_CUTOFF_HOURS * 60 * 60 * 1000);
                 buffer.trimOlderThan(cutoffTime);
             }
         }, intervalMs);
@@ -153,7 +154,7 @@ export class MessageMemoryMonitor {
 }
 
 // React hook for using message buffer
-export const useMessageBuffer = (maxSize: number = 50) => {
+export const useMessageBuffer = (maxSize: number = MESSAGE_BUFFER.DEFAULT_MAX_SIZE) => {
     const bufferRef = useRef<MessageBuffer>(new MessageBuffer(maxSize));
 
     useEffect(() => {
@@ -194,9 +195,9 @@ export const useMessageBuffer = (maxSize: number = 50) => {
     // Add a method to manually trigger memory cleanup
     const performMemoryCleanup = useCallback(() => {
         const currentStats = bufferRef.current.getStats();
-        if (currentStats.memoryUsageKB > 2048) { // 2MB threshold
-            // Keep only the most recent 15 messages if memory is high
-            const recentMessages = bufferRef.current.getRecent(15);
+        if (currentStats.memoryUsageKB > MESSAGE_BUFFER.MANUAL_CLEANUP_THRESHOLD_KB) {
+            // Keep only the most recent messages if memory is high
+            const recentMessages = bufferRef.current.getRecent(MESSAGE_BUFFER.KEEP_RECENT_WARNING);
             bufferRef.current.clear();
             recentMessages.forEach(msg => bufferRef.current.add(msg));
             // Manual memory cleanup performed
