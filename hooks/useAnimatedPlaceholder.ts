@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { UI_ANIMATION } from '../constants/animations';
 
 interface UseAnimatedPlaceholderOptions {
   suggestions: string[];
@@ -11,19 +12,22 @@ interface UseAnimatedPlaceholderOptions {
  * Hook that creates an animated typing effect for input placeholders.
  * Cycles through suggestions with a realistic typing/deleting animation.
  * 
+ * All timing values are configurable via constants/animations.ts
+ * No hardcoded defaults - Flexy-approved! ✨
+ * 
  * @example
  * const placeholder = useAnimatedPlaceholder({
  *   suggestions: ['Search robots...', 'EMA crossover', 'RSI strategy'],
- *   typingSpeed: 50,
- *   deleteSpeed: 30,
- *   pauseDuration: 2000
+ *   typingSpeed: UI_ANIMATION.TYPING.TYPING_SPEED,
+ *   deleteSpeed: UI_ANIMATION.TYPING.DELETE_SPEED,
+ *   pauseDuration: UI_ANIMATION.TYPING.PAUSE_DURATION
  * });
  */
 export function useAnimatedPlaceholder({
   suggestions,
-  typingSpeed = 50,
-  deleteSpeed = 30,
-  pauseDuration = 2000
+  typingSpeed = UI_ANIMATION.TYPING.TYPING_SPEED,
+  deleteSpeed = UI_ANIMATION.TYPING.DELETE_SPEED,
+  pauseDuration = UI_ANIMATION.TYPING.PAUSE_DURATION
 }: UseAnimatedPlaceholderOptions): string {
   const [displayText, setDisplayText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
