@@ -324,3 +324,39 @@ export {
   EASING,
   ANIMATION_PERFORMANCE,
 } from './animations';
+
+// ============================================
+// Flexy's Modular Configuration System 🎯
+// ============================================
+// Import all configurations from this single entry point:
+//   import { SERVICE_TIMEOUTS, CACHE_SIZES, RETRY_CONFIGS } from '@/constants';
+// Or import specific modules:
+//   import { SERVICE_TIMEOUTS } from '@/constants/modularConfig';
+
+export {
+  // Main configuration objects
+  WEBSOCKET_CONFIG,
+  CACHE_SIZES as MODULAR_CACHE_SIZES,
+  SERVICE_TIMEOUTS,
+  RETRY_CONFIGS,
+  CIRCUIT_BREAKER_CONFIGS,
+  MONITORING_INTERVALS,
+  POOL_CONFIGS,
+  RATE_LIMITS as MODULAR_RATE_LIMITS,
+  VALIDATION_LIMITS as MODULAR_VALIDATION_LIMITS,
+  TOKEN_CONFIG,
+  BACKUP_CONFIG,
+  EDGE_CONFIG as MODULAR_EDGE_CONFIG,
+  AI_CONFIG as MODULAR_AI_CONFIG,
+  MEMORY_CONFIG,
+  BATCH_CONFIG as MODULAR_BATCH_CONFIG,
+
+  // Helper functions
+  getConfigValue,
+  getTimeout,
+  getCacheSize,
+  getRetryConfig,
+
+  // Combined app config
+  APP_CONFIG as MODULAR_APP_CONFIG,
+} from './modularConfig';
