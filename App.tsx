@@ -130,12 +130,31 @@ useEffect(() => {
            logger.info('Edge monitoring status:', monitoringStatus);
          }, 300);
          
-         // Initialize Advanced API Cache (non-blocking)
-         setTimeout(() => {
-           advancedAPICache.prefetch(['/api/robots', '/api/strategies']).catch((err: Error) => 
-             logger.warn('API cache prefetch failed:', err)
-           );
-         }, 400);
+          // Initialize Advanced API Cache (non-blocking)
+          // Note: API routes removed - this is a Vite SPA, prefetching static assets instead
+          setTimeout(() => {
+            // Prefetch critical static assets instead of API routes
+            const staticAssets = [
+              '/assets/js/react-core.js',
+              '/assets/js/component-ui.js',
+              '/assets/js/route-generator.js'
+            ].filter(path => {
+              // Only prefetch if not already cached
+              return !sessionStorage.getItem(`prefetched_${path}`);
+            });
+            
+            if (staticAssets.length > 0) {
+              advancedAPICache.prefetch(staticAssets).catch((err: Error) => {
+                // Silently fail - assets will be loaded on demand
+                logger.debug('Static asset prefetch skipped:', err.message);
+              });
+              
+              // Mark as prefetched
+              staticAssets.forEach(path => {
+                sessionStorage.setItem(`prefetched_${path}`, 'true');
+              });
+            }
+          }, 400);
        } catch (error) {
          logger.warn('Non-critical service initialization failed:', error);
        }

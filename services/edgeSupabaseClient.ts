@@ -521,8 +521,23 @@ export const createEdgeSupabaseClient = (config: EdgeSupabaseConfig): EdgeSupaba
   return new EdgeSupabaseClient(config);
 };
 
-// Default client instance
-export const edgeSupabase = createEdgeSupabaseClient({
-  url: process.env['VITE_SUPABASE_URL'] || '',
-  anonKey: process.env['VITE_SUPABASE_ANON_KEY'] || '',
-});
+// Lazy-loaded default client instance - only created when env vars are available
+let _edgeSupabaseInstance: EdgeSupabaseClient | null = null;
+
+export const getEdgeSupabase = (): EdgeSupabaseClient | null => {
+  const url = process.env['VITE_SUPABASE_URL'];
+  const anonKey = process.env['VITE_SUPABASE_ANON_KEY'];
+  
+  if (!url || !anonKey) {
+    return null;
+  }
+  
+  if (!_edgeSupabaseInstance) {
+    _edgeSupabaseInstance = createEdgeSupabaseClient({ url, anonKey });
+  }
+  
+  return _edgeSupabaseInstance;
+};
+
+// Export for backward compatibility (deprecated - use getEdgeSupabase instead)
+export const edgeSupabase = getEdgeSupabase();

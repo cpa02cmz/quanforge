@@ -269,10 +269,18 @@ export const CACHE_TTLS = {
   POOL_WARMUP: 1800000, // 30 minutes
 } as const;
 
-// Lazy load translations
+// Lazy load translations with error handling
 export const loadTranslations = async (language: Language) => {
-  const translations = await import(`./translations/${language}.js`);
-  return translations.TRANSLATIONS;
+  try {
+    const translations = await import(`./translations/${language}.ts`);
+    return translations.TRANSLATIONS || {};
+  } catch (_e) {
+    // Fallback to empty translations if file not found
+    if (import.meta.env.DEV) {
+      logger.debug(`Translations not found for language: ${language}`);
+    }
+    return {};
+  }
 };
 
 // Lazy load wiki content
@@ -289,10 +297,18 @@ export const loadWikiContent = async (language: Language) => {
   }
 };
 
-// Load suggested strategies
+// Load suggested strategies with error handling
 export const loadSuggestedStrategies = async (language: Language) => {
-  const strategies = await import(`./strategies/${language}.js`);
-  return strategies.SUGGESTED_STRATEGIES;
+  try {
+    const strategies = await import(`./strategies/${language}.ts`);
+    return strategies.SUGGESTED_STRATEGIES || [];
+  } catch (_e) {
+    // Fallback to empty strategies if file not found
+    if (import.meta.env.DEV) {
+      logger.debug(`Strategies not found for language: ${language}`);
+    }
+    return [];
+  }
 };
 
 // Re-export time constants for backward compatibility
