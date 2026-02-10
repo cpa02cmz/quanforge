@@ -287,11 +287,12 @@ export const PERFORMANCE_BUDGETS = {
 
 // ========== STAGGER & DELAY CONSTANTS ==========
 export const STAGGER = {
-  DEFAULT_DELAY_MS: 100,
-  IMPORT_STAGGER_MS: 1000,
-  HEALTH_CHECK_TIMEOUT_MS: 2000,
-  WARMUP_TIMEOUT_MS: 2000,
-  MAX_EXPONENTIAL_DELAY_MS: 5000,
+  MICRO_DELAY_MS: 10,                           // 10ms - for tight polling loops
+  DEFAULT_DELAY_MS: 100,                        // 100ms - standard stagger delay
+  IMPORT_STAGGER_MS: 1000,                      // 1s - module import staggering
+  HEALTH_CHECK_TIMEOUT_MS: 2000,                // 2s - health check timeout
+  WARMUP_TIMEOUT_MS: 2000,                      // 2s - connection warmup timeout
+  MAX_EXPONENTIAL_DELAY_MS: 5000,               // 5s - max exponential backoff
 } as const;
 
 // ========== BATCH SIZES ==========
