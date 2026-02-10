@@ -20,10 +20,14 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
     const hintId = `${htmlFor}-hint`;
 
     return (
-      <div className={`group/form-field ${className}`} ref={ref}>
+      <div className={`group/form-field focus-within-group ${className}`} ref={ref}>
         <label
           htmlFor={htmlFor}
-          className="block text-xs text-gray-400 mb-1 transition-colors duration-200 group-hover/form-field:text-gray-300"
+          className={`block text-xs mb-1 transition-colors duration-200 group-hover/form-field:text-gray-300 ${
+            hasError 
+              ? 'text-red-400' 
+              : 'text-gray-400 group-focus-within/form-field:text-brand-400'
+          } ${disabled ? 'text-gray-600 cursor-not-allowed group-hover/form-field:text-gray-600' : ''}`}
           aria-disabled={disabled}
         >
           {label}
@@ -81,14 +85,31 @@ export interface InputWrapperProps {
   children: ReactNode;
   error?: boolean;
   className?: string;
+  /**
+   * Disable focus-within effects (useful for special input types)
+   * @default false
+   */
+  disableFocusEffects?: boolean;
 }
 
 export const InputWrapper = forwardRef<HTMLDivElement, InputWrapperProps>(
-  ({ children, error = false, className = '' }, ref) => {
+  ({ children, error = false, className = '', disableFocusEffects = false }, ref) => {
     return (
       <div
         ref={ref}
-        className={`relative ${error ? 'rounded-lg ring-2 ring-red-500/50 ring-offset-2 ring-offset-transparent animate-pulse' : ''} ${className}`}
+        className={`
+          relative rounded-lg
+          transition-all duration-200 ease-out
+          ${!disableFocusEffects ? `
+            focus-within:ring-2 focus-within:ring-brand-500/50 focus-within:ring-offset-2 focus-within:ring-offset-transparent
+            hover:ring-1 hover:ring-gray-600/30
+          ` : ''}
+          ${error 
+            ? 'ring-2 ring-red-500/50 ring-offset-2 ring-offset-transparent animate-pulse' 
+            : ''
+          }
+          ${className}
+        `}
         aria-invalid={error}
       >
         {children}
