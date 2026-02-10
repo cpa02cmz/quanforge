@@ -120,10 +120,14 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         };
     }, []);
 
-    // Handle backdrop click with shake feedback
+    // Handle backdrop click - dismiss modal gracefully (shake only when action is blocked)
     const handleBackdropClick = useCallback(() => {
-        triggerShake();
-    }, [triggerShake]);
+        if (!isLoading) {
+            onCancel(); // Graceful close - expected user behavior
+        } else {
+            triggerShake(); // Only shake if action is blocked (loading state)
+        }
+    }, [isLoading, onCancel, triggerShake]);
 
     if (!isOpen) return null;
 
