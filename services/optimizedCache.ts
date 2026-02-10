@@ -362,7 +362,7 @@ class CacheFactory {
   }
 
   static destroyAll(): void {
-    for (const [name, instance] of this.instances) {
+    for (const [, instance] of this.instances) {
       instance.destroy();
     }
     this.instances.clear();

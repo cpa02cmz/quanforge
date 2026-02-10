@@ -1,6 +1,6 @@
 import { mockDb as originalMockDb, dbUtils as originalDbUtils } from './supabase';
 import * as dbOperations from './database/operations';
-import { withIntegrationResilience } from './integrationWrapper';
+import { withIntegrationResilience, type IntegrationResult } from './integrationWrapper';
 import { IntegrationType } from './integrationResilience';
 import { databaseFallbacks } from './fallbackStrategies';
 import { storage } from '../utils/storage';
@@ -10,7 +10,7 @@ import type { Robot, AuditLog, RobotVersion } from '../types';
 const logger = createScopedLogger('ResilientDb');
 
 export const resilientDb = {
-  async updateRobot(id: string, updates: any) {
+  async updateRobot(id: string, updates: any): Promise<IntegrationResult<any>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -24,10 +24,10 @@ export const resilientDb = {
       logger.error('updateRobot failed:', result.error);
     }
 
-    return result.data;
+    return result;
   },
 
-  async getRobots() {
+  async getRobots(): Promise<IntegrationResult<any[]>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -48,10 +48,10 @@ export const resilientDb = {
       logger.error('getRobots failed:', result.error);
     }
 
-    return result.data;
+    return result;
   },
 
-  async saveRobot(robot: any) {
+  async saveRobot(robot: any): Promise<IntegrationResult<any>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -65,10 +65,10 @@ export const resilientDb = {
       logger.error('saveRobot failed:', result.error);
     }
 
-    return result.data;
+    return result;
   },
 
-  async getRobotsByIds(ids: string[]) {
+  async getRobotsByIds(ids: string[]): Promise<IntegrationResult<any[]>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -81,10 +81,10 @@ export const resilientDb = {
       }
     );
 
-    return result.data;
+    return result;
   },
 
-  async deleteRobot(id: string) {
+  async deleteRobot(id: string): Promise<IntegrationResult<void>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -94,10 +94,10 @@ export const resilientDb = {
       }
     );
 
-    return result.data;
+    return result;
   },
 
-  async duplicateRobot(id: string) {
+  async duplicateRobot(id: string): Promise<IntegrationResult<any>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -107,10 +107,10 @@ export const resilientDb = {
       }
     );
 
-    return result.data;
+    return result;
   },
 
-  async batchUpdateRobots(updates: Array<{id: string, data: any}>) {
+  async batchUpdateRobots(updates: Array<{id: string, data: any}>): Promise<IntegrationResult<any>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -120,11 +120,11 @@ export const resilientDb = {
       }
     );
 
-    return result.data;
+    return result;
   },
 
   // Get a single robot by ID
-  async getRobot(id: string): Promise<Robot | null> {
+  async getRobot(id: string): Promise<IntegrationResult<Robot | null>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -137,7 +137,7 @@ export const resilientDb = {
       }
     );
 
-    return result.data || null;
+    return result;
   },
 
   // Additional operations from database/operations.ts with resilience
@@ -145,7 +145,7 @@ export const resilientDb = {
     userId: string,
     page: number = 1,
     limit: number = 20
-  ): Promise<{ robots: Robot[]; total: number; page: number; totalPages: number }> {
+  ): Promise<IntegrationResult<{ robots: Robot[]; total: number; page: number; totalPages: number }>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -158,10 +158,10 @@ export const resilientDb = {
       }
     );
 
-    return result.data || { robots: [], total: 0, page, totalPages: 0 };
+    return result;
   },
 
-  async getRobotHistory(robotId: string): Promise<RobotVersion[]> {
+  async getRobotHistory(robotId: string): Promise<IntegrationResult<RobotVersion[]>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -174,10 +174,10 @@ export const resilientDb = {
       }
     );
 
-    return result.data || [];
+    return result;
   },
 
-  async getAuditLog(tableName: string, recordId: string): Promise<AuditLog[]> {
+  async getAuditLog(tableName: string, recordId: string): Promise<IntegrationResult<AuditLog[]>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -190,10 +190,10 @@ export const resilientDb = {
       }
     );
 
-    return result.data || [];
+    return result;
   },
 
-  async restoreRobot(id: string): Promise<Robot | null> {
+  async restoreRobot(id: string): Promise<IntegrationResult<Robot | null>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -206,26 +206,28 @@ export const resilientDb = {
       }
     );
 
-    return result.data || null;
+    return result;
   },
 
-  async permanentlyDeleteRobot(id: string): Promise<void> {
-    await withIntegrationResilience(
+  async permanentlyDeleteRobot(id: string): Promise<IntegrationResult<void>> {
+    const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
       async () => {
         await dbOperations.permanentlyDeleteRobot(id);
-        return { data: null, error: null };
+        return undefined;
       },
       {
         operationName: 'permanently_delete_robot'
       }
     );
+
+    return result;
   }
 };
 
 export const resilientDbUtils = {
-  async checkConnection() {
+  async checkConnection(): Promise<IntegrationResult<any>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -235,10 +237,10 @@ export const resilientDbUtils = {
       }
     );
 
-    return result.data;
+    return result;
   },
 
-  async getStats() {
+  async getStats(): Promise<IntegrationResult<any>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -248,10 +250,10 @@ export const resilientDbUtils = {
       }
     );
 
-    return result.data;
+    return result;
   },
 
-  async exportDatabase() {
+  async exportDatabase(): Promise<IntegrationResult<any>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -261,10 +263,10 @@ export const resilientDbUtils = {
       }
     );
 
-    return result.data;
+    return result;
   },
 
-  async importDatabase(jsonString: string, merge: boolean = true) {
+  async importDatabase(jsonString: string, merge: boolean = true): Promise<IntegrationResult<any>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -274,10 +276,10 @@ export const resilientDbUtils = {
       }
     );
 
-    return result.data;
+    return result;
   },
 
-  async migrateMockToSupabase() {
+  async migrateMockToSupabase(): Promise<IntegrationResult<any>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,
       'database',
@@ -287,6 +289,9 @@ export const resilientDbUtils = {
       }
     );
 
-    return result.data;
+    return result;
   }
 };
+
+// Re-export IntegrationResult type for consumers
+export type { IntegrationResult };

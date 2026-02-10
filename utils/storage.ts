@@ -125,7 +125,7 @@ export class BrowserStorage implements IStorage {
           const serializedValue = this.enableSerialization ? JSON.stringify(value) : String(value);
           this.storage.setItem(this.getKey(key), serializedValue);
           return;
-        } catch (retryError) {
+        } catch (_retryError) {
           throw new StorageQuotaError(
             `Storage quota exceeded and cleanup failed. Please delete some data or export/clear your database.`
           );

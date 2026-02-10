@@ -31,8 +31,10 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
 
     const loadStats = async () => {
         try {
-            const s = await dbUtils.getStats();
-            if (s) setStats(s);
+            const result = await dbUtils.getStats();
+            if (result.success && result.data) {
+                setStats(result.data);
+            }
         } catch (e) {
             logger.error(e);
         }
@@ -53,11 +55,11 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
         const result = await dbUtils.checkConnection();
         setIsLoading(false);
 
-        if (result && result.success) {
-            showToast(result.message, 'success');
+        if (result.success && result.data) {
+            showToast(result.data.message, 'success');
             loadStats();
-        } else if (result) {
-            showToast(result.message, 'error');
+        } else if (!result.success && result.error) {
+            showToast(result.error.message, 'error');
         } else {
             showToast('Connection test failed', 'error');
         }
@@ -72,12 +74,12 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
 
         setIsMigrating(true);
         try {
-            const res = await dbUtils.migrateMockToSupabase();
-            if (res && res.success) {
-                showToast(`Successfully migrated ${res.count} robots to Cloud.`, 'success');
+            const result = await dbUtils.migrateMockToSupabase();
+            if (result.success && result.data) {
+                showToast(`Successfully migrated ${result.data.count} robots to Cloud.`, 'success');
                 loadStats();
-            } else if (res) {
-                showToast(`Migration failed: ${res.error}`, 'error');
+            } else if (!result.success && result.error) {
+                showToast(`Migration failed: ${result.error.message}`, 'error');
             } else {
                 showToast('Migration failed', 'error');
             }

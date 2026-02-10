@@ -6,7 +6,7 @@ import { securityManager } from './securityManager';
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
-import { TIMEOUTS, CACHE_LIMITS, BATCH_SIZES } from '../constants';
+import { TIMEOUTS, CACHE_LIMITS, BATCH_SIZES, ERROR_CODES } from '../constants';
 import { getLocalStorage, StorageQuotaError } from '../utils/storage';
 
 // Enhanced connection retry configuration with exponential backoff
@@ -161,7 +161,7 @@ const withRetry = async <T>(
       lastError = error;
       
       // Don't retry on certain errors
-      if (error?.code === 'PGRST116' || error?.status === 404) {
+      if (error?.code === ERROR_CODES.RECORD_NOT_FOUND || error?.status === ERROR_CODES.NOT_FOUND) {
         throw error; // Not found errors shouldn't be retried
       }
       
