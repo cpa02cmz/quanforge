@@ -94,11 +94,25 @@ jobs:
           npm run typecheck
           echo "::endgroup::"
 
+      - name: Lint Check
+        timeout-minutes: 3
+        run: |
+          echo "::group::Lint Check"
+          npm run lint
+          echo "::endgroup::"
+
       - name: Run Tests
         timeout-minutes: 5
         run: |
           echo "::group::Test Execution"
           npm run test:run
+          echo "::endgroup::"
+
+      - name: Security Audit
+        timeout-minutes: 2
+        run: |
+          echo "::group::Security Audit"
+          npm audit --audit-level=moderate
           echo "::endgroup::"
 
       - name: 00 flow
