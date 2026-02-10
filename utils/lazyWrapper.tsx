@@ -37,7 +37,7 @@ export class LazyErrorBoundary extends React.Component<LazyWrapperProps, LazyWra
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
+       
       console.error('Lazy component loading error:', {
         error: error.message,
         stack: error.stack,

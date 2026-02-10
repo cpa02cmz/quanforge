@@ -13,10 +13,10 @@ export type InteractionTrigger = 'hover' | 'click' | 'visible';
  * @returns Lazy-loaded React component
  */
 export function createLazyComponent(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   importFunc: () => Promise<{ default: ComponentType<any> }>,
   componentName: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
 ): React.LazyExoticComponent<ComponentType<any>> {
   return lazy(async () => {
     try {
