@@ -131,8 +131,9 @@
       @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
     </style>
     <!-- Tailwind CSS - Loaded async to prevent render-blocking -->
-    <script src="https://cdn.tailwindcss.com" defer></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com" defer fetchpriority="low"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
     
     <!-- PrismJS for Syntax Highlighting - Async loading to prevent render-blocking -->
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
@@ -678,9 +679,9 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
-    <!-- PrismJS Scripts (Loaded after DOM for simplicity) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
+    <!-- PrismJS Scripts (Loaded async after DOM for performance) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" defer fetchpriority="low"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js" defer fetchpriority="low"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js" defer fetchpriority="low"></script>
   </body>
 </html>
