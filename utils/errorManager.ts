@@ -422,8 +422,8 @@ export class ErrorManager {
   }
 
   // Helper methods
-  private isStructuredError(error: any): error is StructuredError {
-    return error && typeof error === 'object' && 'id' in error && 'category' in error;
+  private isStructuredError(error: unknown): error is StructuredError {
+    return error !== null && typeof error === 'object' && 'id' in error && 'category' in error;
   }
 
   // Public API for accessing error history
@@ -556,7 +556,7 @@ export const handleErrorCompat = (
 };
 
 // Higher-order function for wrapping async functions with retry logic
-export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
+export const withErrorHandling = <T extends (...args: unknown[]) => Promise<unknown>>(
   fn: T,
   operation: string,
   component?: string,
@@ -565,7 +565,7 @@ export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
     fallback?: () => Promise<ReturnType<T>> | ReturnType<T>;
     backoff?: 'linear' | 'exponential';
     backoffBase?: number;
-    shouldRetry?: (error: any) => boolean;
+    shouldRetry?: (error: Error) => boolean;
   } = {}
 ): T => {
   const { 
@@ -577,7 +577,7 @@ export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
   } = options;
   
   return (async (...args: Parameters<T>) => {
-    let lastError: any;
+    let lastError: Error | undefined;
     
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -592,17 +592,18 @@ export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
         
         return await fn(...args);
       } catch (error) {
-        lastError = error;
+        const typedError = error instanceof Error ? error : new Error(String(error));
+        lastError = typedError;
         
         // Log error on each attempt
-        handleErrorCompat(error as Error, `${operation} (attempt ${attempt + 1}/${retries + 1})`, component || 'unknown', { 
+        handleErrorCompat(typedError, `${operation} (attempt ${attempt + 1}/${retries + 1})`, component || 'unknown', { 
           args, 
           attempt: attempt + 1,
-          error: error instanceof Error ? error.message : String(error)
+          error: typedError.message
         });
         
         // Check if we should retry this error
-        if (!shouldRetry(error) || attempt === retries) {
+        if (!shouldRetry(typedError) || attempt === retries) {
           break;
         }
       }

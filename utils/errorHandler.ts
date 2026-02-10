@@ -157,7 +157,7 @@ export const handleError = (error: Error | string, operation: string, component?
 };
 
 // Higher-order function for wrapping async functions with retry logic
-export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
+export const withErrorHandling = <T extends (...args: unknown[]) => Promise<unknown>>(
   fn: T,
   operation: string,
   component?: string,
@@ -166,7 +166,7 @@ export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
     fallback?: () => Promise<ReturnType<T>> | ReturnType<T>;
     backoff?: 'linear' | 'exponential';
     backoffBase?: number;
-    shouldRetry?: (error: any) => boolean;
+    shouldRetry?: (error: Error) => boolean;
   } = {}
 ): T => {
   const { 
@@ -178,7 +178,7 @@ export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
   } = options;
   
   return (async (...args: Parameters<T>) => {
-    let lastError: any;
+    let lastError: Error | undefined;
     
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -193,17 +193,18 @@ export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
         
         return await fn(...args);
       } catch (error) {
-        lastError = error;
+        const typedError = error instanceof Error ? error : new Error(String(error));
+        lastError = typedError;
         
         // Log error on each attempt
-        handleError(error as Error, `${operation} (attempt ${attempt + 1}/${retries + 1})`, component || 'unknown', { 
+        handleError(typedError, `${operation} (attempt ${attempt + 1}/${retries + 1})`, component || 'unknown', { 
           args, 
           attempt: attempt + 1,
-          error: error instanceof Error ? error.message : String(error)
+          error: typedError.message
         });
         
         // Check if we should retry this error
-        if (!shouldRetry(error) || attempt === retries) {
+        if (!shouldRetry(typedError) || attempt === retries) {
           break;
         }
       }
@@ -292,28 +293,29 @@ export const errorRecovery = {
     operation: () => Promise<T>, 
     maxRetries: number = 3,
     baseDelay: number = 1000,
-    shouldRetry?: (error: any) => boolean
+    shouldRetry?: (error: Error) => boolean
   ): Promise<T> {
     let lastError: Error;
     
     for (let i = 0; i <= maxRetries; i++) {
       try {
         return await operation();
-      } catch (error: any) {
-        lastError = error;
+      } catch (error: unknown) {
+        const typedError = error instanceof Error ? error : new Error(String(error));
+        lastError = typedError;
         
         if (i === maxRetries) {
-          throw error;
+          throw typedError;
         }
-        
+
         // Check if this error should be retried
-        if (shouldRetry && !shouldRetry(error)) {
-          throw error;
+        if (shouldRetry && !shouldRetry(typedError)) {
+          throw typedError;
         }
-        
+
         // Don't retry on validation or auth errors
-        if (errorClassifier.isValidationError(error) || errorClassifier.isAuthError(error)) {
-          throw error;
+        if (errorClassifier.isValidationError(typedError) || errorClassifier.isAuthError(typedError)) {
+          throw typedError;
         }
         
         const delay = baseDelay * Math.pow(2, i); // Exponential backoff

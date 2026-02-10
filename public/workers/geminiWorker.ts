@@ -37,17 +37,39 @@ interface Message {
 }
 
 // Worker message types
-interface WorkerMessage {
-  type: 'generate' | 'analyze';
-  payload: any;
+interface GenerateMessage {
+  type: 'generate';
+  payload: StrategyParams;
   id: string;
 }
 
-interface WorkerResponse {
-  type: 'success' | 'error';
-  payload: any;
+interface AnalyzeMessage {
+  type: 'analyze';
+  payload: { code: string };
   id: string;
 }
+
+type WorkerMessage = GenerateMessage | AnalyzeMessage;
+
+interface GenerateSuccessResponse {
+  type: 'success';
+  payload: string;
+  id: string;
+}
+
+interface AnalyzeSuccessResponse {
+  type: 'success';
+  payload: StrategyAnalysis;
+  id: string;
+}
+
+interface ErrorResponse {
+  type: 'error';
+  payload: { message: string };
+  id: string;
+}
+
+type WorkerResponse = GenerateSuccessResponse | AnalyzeSuccessResponse | ErrorResponse;
 
 // Handle messages from main thread with origin validation
 self.addEventListener('message', async (event: MessageEvent<WorkerMessage>) => {
@@ -83,7 +105,7 @@ self.addEventListener('message', async (event: MessageEvent<WorkerMessage>) => {
         break;
 
       case 'analyze':
-        const analysis = await analyzeStrategy(payload);
+        const analysis = await analyzeStrategy(payload.code);
         self.postMessage({
           type: 'success',
           payload: analysis,

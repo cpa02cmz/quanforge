@@ -48,7 +48,7 @@ export const validateApiKey = (apiKey: string): ValidationResult => {
   };
 };
 
-export const validateStrategyParams = (params: any): ValidationResult => {
+export const validateStrategyParams = (params: { symbol?: unknown; timeframe?: unknown; riskPercent?: number }): ValidationResult => {
   const errors: string[] = [];
   
   if (!params) {
