@@ -85,7 +85,7 @@ export class QueryOptimizer {
       );
 
       const successfulResults: T[] = [];
-      const failedResults: any[] = [];
+      const failedResults: unknown[] = [];
       
       results.forEach(result => {
         if (result.status === 'fulfilled') {

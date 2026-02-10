@@ -4,6 +4,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
+import { RETRY_CONFIG } from './constants';
 // Commenting out vercelEdgeOptimizer import since it's not being used properly
 // import { vercelEdgeOptimizer } from './vercelEdgeOptimizer';
 
@@ -385,7 +386,10 @@ class EdgeSupabaseClient {
       }
 
       // Exponential backoff
-      const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
+      const delay = Math.min(
+        RETRY_CONFIG.BASE_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, attempt),
+        RETRY_CONFIG.CAP_DELAY_MS
+      );
       await new Promise(resolve => setTimeout(resolve, delay));
 
       console.warn(`Retrying edge operation ${operationName}, attempt ${attempt + 1}`);

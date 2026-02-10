@@ -1,3 +1,5 @@
+import { CACHE_TTLS, TIMEOUTS } from './constants';
+
 /**
  * Edge Function Optimization and Warming Service
  * Optimizes Vercel Edge Functions for better performance and reduced cold starts
@@ -56,7 +58,7 @@ class EdgeFunctionOptimizer {
         regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
         memory: 512,
         maxDuration: 30,
-        warmupInterval: 5 * 60 * 1000, // 5 minutes - optimized for edge
+        warmupInterval: CACHE_TTLS.FIVE_MINUTES, // 5 minutes - optimized for edge
         priority: 'high',
       },
       {
@@ -64,7 +66,7 @@ class EdgeFunctionOptimizer {
         regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
         memory: 256,
         maxDuration: 10,
-        warmupInterval: 7 * 60 * 1000, // 7 minutes - optimized for edge
+        warmupInterval: 7 * 60 * 1000, // 7 minutes - optimized for edge (custom)
         priority: 'medium',
       },
       {
@@ -72,7 +74,7 @@ class EdgeFunctionOptimizer {
         regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
         memory: 128,
         maxDuration: 5,
-        warmupInterval: 10 * 60 * 1000, // 10 minutes - optimized for edge
+        warmupInterval: CACHE_TTLS.TEN_MINUTES, // 10 minutes - optimized for edge
         priority: 'low',
       },
     ];
@@ -180,7 +182,7 @@ class EdgeFunctionOptimizer {
     for (const request of requests) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUTS.STANDARD); // 5 second timeout
 
         const fetchOptions: RequestInit = {
           method: request.method,
@@ -414,7 +416,7 @@ class EdgeFunctionOptimizer {
       // Increase warming frequency during peak hours for high-priority functions
       if (isPeakHour && config.priority === 'high') {
         const timeSinceLastWarmup = Date.now() - metrics.lastWarmup;
-        if (timeSinceLastWarmup > 3 * 60 * 1000) { // 3 minutes during peak
+        if (timeSinceLastWarmup > 3 * 60 * 1000) { // 3 minutes during peak (custom value)
           await this.warmupFunction(name);
         }
       }

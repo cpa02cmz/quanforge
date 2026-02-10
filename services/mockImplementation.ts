@@ -22,7 +22,7 @@ const safeParse = <T>(data: T | null, fallback: any) => {
 const trySaveToStorage = (key: string, value: any) => {
     try {
         storage.set(key, value);
-    } catch (e: any) {
+    } catch (e: unknown) {
         if (e instanceof StorageQuotaError) {
             throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
         }
