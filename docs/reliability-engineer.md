@@ -551,7 +551,7 @@ Fixed storage abstraction migration issues:
 - Restored safeParse JSON parsing with securityManager
 - Updated tests to use storage abstraction
 - Fixed quota error expectations
-- All 423 tests now passing
+- All 185 tests now passing
 
 ### 2026-01-07 - Storage Abstraction Layer
 

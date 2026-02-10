@@ -287,13 +287,14 @@ if (!session) {
 
 #### Invalid API Key
 ```bash
-# Test API key directly
-curl -H "Authorization: Bearer YOUR_API_KEY" \
-     https://api.openai.com/v1/models
+# Test API key directly (Google Gemini)
+curl -X POST \
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=$VITE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"contents":[{"parts":[{"text":"Hello"]}]}]'
 
-# Check environment variables
-echo $OPENAI_API_KEY
-echo $GEMINI_API_KEY
+# Check environment variable
+echo $VITE_API_KEY
 ```
 
 #### Solution
