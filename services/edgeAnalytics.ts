@@ -3,6 +3,8 @@
  * Provides comprehensive analytics and monitoring for edge deployment
  */
 
+import { WindowWithVercel } from '../types/browser';
+
 interface EdgeAnalyticsConfig {
   enableRealTimeMetrics: boolean;
   enablePerformanceTracking: boolean;
@@ -474,7 +476,8 @@ class EdgeAnalytics {
   private detectRegion(): string {
     // Detect region from various sources
     const cfRay = navigator.userAgent.includes('CF-RAY');
-    const vercelRegion = (window as any).__VERCEL_REGION__;
+    const win = window as WindowWithVercel;
+    const vercelRegion = win.__VERCEL_REGION__ || win.__VERCEL_REGION;
     
     if (vercelRegion) return vercelRegion;
     if (cfRay) return 'cloudflare';
