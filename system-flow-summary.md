@@ -17,14 +17,12 @@
   - `ConnectionPool`: Enhanced connection pooling with health monitoring
   - `AnalyticsCollector`: Event tracking and performance metrics
   - `RobotDatabaseService`: Robot-specific operations extending DatabaseCore
-- `supabase-legacy.ts`: Backward-compatible wrapper maintaining all existing APIs
 
 **AI Layer Refactoring**:
 - `services/gemini.ts` (1,142 lines) → 3 modular services:
   - `AICore`: Centralized AI generation and model management
   - `WorkerManager`: Background task processing with Web Workers
   - `RateLimiter`: Advanced rate limiting with burst control
-- `gemini-legacy.ts`: Backward-compatible wrapper maintaining all AI function exports
 
 ### ✅ Dependency Injection Infrastructure Implemented
 
@@ -123,8 +121,6 @@ import { generateMQL5Code, refineCode, analyzeStrategy } from './services/gemini
 - `services/core/ServiceContainer.ts` - Dependency injection container
 - `services/core/ServiceOrchestrator.ts` - Service management and health monitoring  
 - `services/database/RobotDatabaseService.ts` - Enhanced robot-specific database operations
-- `services/supabase-legacy.ts` - Backward compatibility wrapper for database services
-- `services/gemini-legacy.ts` - Backward compatibility wrapper for AI services
 
 ### Documentation Updated
 - `AGENTS.md` - Added modular architecture completion status
