@@ -1,3 +1,5 @@
+import { TIME_CONSTANTS } from '../constants/config';
+
 // Secure Storage Interface
 interface SecureStorageOptions {
   encrypt?: boolean;
@@ -553,7 +555,7 @@ if (SecureStorage.isAvailable()) {
     secureStorage.cleanup();
     secureCacheStorage.cleanup();
     secureSettingsStorage.cleanup();
-  }, 5 * 60 * 1000); // Every 5 minutes
+  }, TIME_CONSTANTS.CACHE_DEFAULT_TTL); // Every 5 minutes
 }
 
 // Export types

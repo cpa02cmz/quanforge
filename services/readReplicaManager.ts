@@ -2,6 +2,7 @@
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import { getEnv } from './settingsManager';
 import { queryCache } from './advancedCache';
+import { PERFORMANCE_MONITORING } from '../constants/timing';
 
 interface ReadReplicaConfig {
   readonly: boolean;
@@ -20,7 +21,7 @@ class ReadReplicaManager {
    private replicas: Map<string, any> = new Map();
    private primaryClient: any | null = null;
    private metrics: QueryMetrics[] = [];
-  private readonly MAX_METRICS = 1000;
+  private readonly MAX_METRICS = PERFORMANCE_MONITORING.MAX_METRICS;
 
   constructor() {
     // Initialize asynchronously without blocking

@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react';
-import { Message, MessageRole } from '../../types';
+import { Message, MessageRole, StrategyParams } from '../../types';
 import { createScopedLogger } from '../../utils/logger';
 import { loadGeminiService } from '../../services/aiServiceLoader';
 import { ValidationService } from '../../utils/validation';
@@ -12,7 +12,7 @@ interface UseAIMessageHandlingProps {
   setLoadingProgress: (progress: { step: string; message: string } | null) => void;
   addMessage: (message: Message) => void;
   code: string;
-  strategyParams: any;
+  strategyParams: StrategyParams;
   messages: Message[];
   showToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }

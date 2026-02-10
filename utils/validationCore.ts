@@ -6,6 +6,7 @@
 
 import DOMPurify from 'dompurify';
 import { ValidationError } from './validationTypes';
+import { StrategyParams } from '../types';
 
 // ========== VALIDATION INTERFACES ==========
 
@@ -19,7 +20,7 @@ export interface ValidationResult {
 export interface StrategyValidationResult {
   isValid: boolean;
   errors: ValidationError[];
-  sanitizedParams?: any;
+  sanitizedParams?: Partial<StrategyParams>;
 }
 
 export interface RateLimiterEntry {
@@ -196,14 +197,15 @@ export class ValidationCore {
 // ========== SPECIALIZED VALIDATORS ==========
 
 export class StrategyValidator {
-  static validateStrategyParams(params: any): StrategyValidationResult {
+  static validateStrategyParams(params: unknown): StrategyValidationResult {
+    const typedParams = params as Partial<StrategyParams>;
     const errors: ValidationError[] = [];
-    const sanitizedParams = { ...params };
+    const sanitizedParams = { ...typedParams };
 
     // Required field validation
-    if (!params.timeframe) {
+    if (!typedParams.timeframe) {
       errors.push({ field: 'timeframe', message: 'Timeframe is required' });
-    } else if (!VALIDATION_CONSTANTS.TIMEFRAMES.includes(params.timeframe)) {
+    } else if (!VALIDATION_CONSTANTS.TIMEFRAMES.includes(typedParams.timeframe)) {
       errors.push({ 
         field: 'timeframe', 
         message: `Invalid timeframe. Must be one of: ${VALIDATION_CONSTANTS.TIMEFRAMES.join(', ')}` 
@@ -211,22 +213,22 @@ export class StrategyValidator {
     }
 
     // Risk percentage validation
-    if (params.riskPercent !== undefined) {
+    if (typedParams.riskPercent !== undefined) {
       const riskError = ValidationCore.validateRange(
-        params.riskPercent,
+        typedParams.riskPercent,
         'riskPercent',
         VALIDATION_CONSTANTS.MIN_RISK_PERCENT,
         VALIDATION_CONSTANTS.MAX_RISK_PERCENT
       );
       if (riskError) errors.push(riskError);
-      sanitizedParams.riskPercent = Math.max(VALIDATION_CONSTANTS.MIN_RISK_PERCENT, Math.min(VALIDATION_CONSTANTS.MAX_RISK_PERCENT, params.riskPercent));
+      sanitizedParams.riskPercent = Math.max(VALIDATION_CONSTANTS.MIN_RISK_PERCENT, Math.min(VALIDATION_CONSTANTS.MAX_RISK_PERCENT, typedParams.riskPercent));
     }
 
     // Stop loss validation
-    if (params.stopLossPips !== undefined) {
+    if (typedParams.stopLoss !== undefined) {
       const slError = ValidationCore.validateRange(
-        params.stopLossPips,
-        'stopLossPips',
+        typedParams.stopLoss,
+        'stopLoss',
         VALIDATION_CONSTANTS.MIN_STOP_LOSS,
         VALIDATION_CONSTANTS.MAX_STOP_LOSS
       );
@@ -234,10 +236,10 @@ export class StrategyValidator {
     }
 
     // Take profit validation
-    if (params.takeProfitPips !== undefined) {
+    if (typedParams.takeProfit !== undefined) {
       const tpError = ValidationCore.validateRange(
-        params.takeProfitPips,
-        'takeProfitPips',
+        typedParams.takeProfit,
+        'takeProfit',
         VALIDATION_CONSTANTS.MIN_TAKE_PROFIT,
         VALIDATION_CONSTANTS.MAX_TAKE_PROFIT
       );
@@ -245,9 +247,9 @@ export class StrategyValidator {
     }
 
     // Symbol validation
-    if (params.symbol) {
+    if (typedParams.symbol) {
       const symbolError = ValidationCore.validateRegex(
-        params.symbol,
+        typedParams.symbol,
         'symbol',
         VALIDATION_CONSTANTS.SYMBOL_REGEX,
         'Invalid symbol format (e.g., EUR/USD, GBPJPY)'
@@ -256,8 +258,8 @@ export class StrategyValidator {
     }
 
     // Custom inputs validation
-    if (params.customInputs && Array.isArray(params.customInputs)) {
-      params.customInputs.forEach((input: any, index: number) => {
+    if (typedParams.customInputs && Array.isArray(typedParams.customInputs)) {
+      typedParams.customInputs.forEach((input: { name?: string }, index: number) => {
         if (!input.name) {
           errors.push({ field: `customInputs.${index}.name`, message: 'Custom input name is required' });
         } else if (!VALIDATION_CONSTANTS.NAME_REGEX.test(input.name)) {
@@ -410,7 +412,7 @@ export class UnifiedValidationService {
   static validateSymbol = InputValidator.validateSymbol;
   
   // Legacy compatibility
-  static validateRobot = (data: any): ValidationResult => {
+  static validateRobot = (data: { name?: unknown; code?: string }): ValidationResult => {
     const errors: ValidationError[] = [];
     const warnings: string[] = [];
 

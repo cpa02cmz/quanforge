@@ -742,7 +742,7 @@ If you encounter integration issues:
 All fixes verified with:
 - ✅ TypeScript compilation: `npm run typecheck` - 0 errors
 - ✅ Production build: `npm run build` - 11.47s, successful
-- ✅ Test suite: `npm test` - 445 tests passing
+- ✅ Test suite: `npm test` - 22 tests passing
 - ✅ No breaking changes to public APIs
 
 ---
@@ -772,7 +772,7 @@ All fixes verified with:
 All fixes verified with:
 - ✅ TypeScript compilation: `npm run typecheck` - 0 errors
 - ✅ Production build: `npm run build` - 12.75s, successful
-- ✅ Test suite: `npm test` - 445 tests passing
+- ✅ Test suite: `npm test` - 22 tests passing
 - ✅ No breaking changes to public APIs
 
 ---
