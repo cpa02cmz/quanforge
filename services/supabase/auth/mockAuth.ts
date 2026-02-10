@@ -3,6 +3,7 @@
 import { UserSession } from '../../../types';
 import { STORAGE_KEYS, safeParse } from './databaseUtils';
 import { logger } from '../../../utils/logger';
+import { TOKEN_CONFIG } from '../../../constants/modularConfig';
 
 // Auth state listeners
 const authListeners: Array<(event: string, session: UserSession | null) => void> = [];
@@ -43,14 +44,14 @@ export const mockAuth = {
         },
         access_token: 'mock-access-token',
         refresh_token: 'mock-refresh-token',
-        expires_at: Date.now() + 3600000 // 1 hour
+        expires_at: Date.now() + TOKEN_CONFIG.EXPIRY.ACCESS_TOKEN_MS
       };
 
       localStorage.setItem(STORAGE_KEYS.MOCK_SESSION, JSON.stringify(session));
-      
+
       // Notify listeners
       authListeners.forEach(listener => listener('SIGNED_IN', session));
-      
+
       return { data: { user: session.user, session }, error: null };
     } catch (error) {
       logger.error('Error signing in:', error);
@@ -65,10 +66,10 @@ export const mockAuth = {
   signOut: async () => {
     try {
       localStorage.removeItem(STORAGE_KEYS.MOCK_SESSION);
-      
+
       // Notify listeners
       authListeners.forEach(listener => listener('SIGNED_OUT', null));
-      
+
       return { error: null };
     } catch (error) {
       logger.error('Error signing out:', error);
@@ -86,7 +87,7 @@ export const mockAuth = {
       },
       access_token: 'mock-access-token',
       refresh_token: 'mock-refresh-token',
-      expires_at: Date.now() + 3600000
+      expires_at: Date.now() + TOKEN_CONFIG.EXPIRY.ACCESS_TOKEN_MS
     };
 
     try {

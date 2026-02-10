@@ -10,7 +10,7 @@ import { consolidatedCache } from '../consolidatedCacheManager';
 import { createScopedLogger } from '../../utils/logger';
 import { DATABASE, CACHE_TTLS } from '../constants';
 import { getErrorCode, getErrorMessage } from '../../utils/errorHandler';
-import { STORAGE_KEYS } from '../../constants/modularConfig';
+import { STORAGE_KEYS, TOKEN_CONFIG } from '../../constants/modularConfig';
 
 const logger = createScopedLogger('CoreSupabaseService');
 
@@ -183,7 +183,7 @@ class CoreSupabaseService {
       const mockSession: UserSession = {
         user: { id: 'mock-user', email },
         access_token: 'mock-token',
-        expires_in: 3600,
+        expires_in: TOKEN_CONFIG.EXPIRY.ACCESS_TOKEN_MS / 1000,
         refresh_token: 'mock-refresh',
         token_type: 'bearer'
       };
@@ -220,7 +220,7 @@ class CoreSupabaseService {
       const mockSession: UserSession = {
         user: { id: 'mock-user-' + Date.now(), email },
         access_token: 'mock-token',
-        expires_in: 3600,
+        expires_in: TOKEN_CONFIG.EXPIRY.ACCESS_TOKEN_MS / 1000,
         refresh_token: 'mock-refresh',
         token_type: 'bearer'
       };
@@ -286,7 +286,7 @@ return this.executeWithRetry(async () => {
           email: session.user.email || '',
         },
         access_token: session.access_token,
-        expires_in: session.expires_at ? Math.floor((session.expires_at - Date.now()) / 1000) : 3600, // 1 hour default
+        expires_in: session.expires_at ? Math.floor((session.expires_at - Date.now()) / 1000) : TOKEN_CONFIG.EXPIRY.ACCESS_TOKEN_MS / 1000,
         refresh_token: session.refresh_token || '',
         token_type: 'bearer',
       };
