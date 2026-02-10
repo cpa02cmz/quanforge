@@ -90,7 +90,7 @@ Active bugs tracked in `bug.md`:
 3. Add proper type annotations
 
 ### Console Statements
-**Issue**: 1,990 console statements for debugging
+**Issue**: ~210 console statements for debugging in services directory
 **Resolution**: 
 - Replace with scoped logger utility
 - Use `logger.log/warn/error` from `utils/logger.ts`
