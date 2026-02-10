@@ -3,6 +3,8 @@
  * Monitors Vercel Edge performance and CDN metrics
  */
 
+import { EDGE_METRICS, SCORE_CALCULATION, CACHE_TTLS, TIME_CONSTANTS } from '../constants';
+
 interface EdgeMetrics {
   region: string;
   responseTime: number;
@@ -30,7 +32,7 @@ interface PerformanceThresholds {
 class EdgeMetricsCollector {
   private metrics: EdgeMetrics[] = [];
   private cdnMetrics: CDNMetrics[] = [];
-  private readonly maxMetricsSize = 1000;
+  private readonly maxMetricsSize = EDGE_METRICS.MAX_METRICS_SIZE;
   private readonly thresholds: PerformanceThresholds = {
     maxResponseTime: 500, // ms
     minCacheHitRate: 0.8, // 80%
@@ -144,7 +146,7 @@ class EdgeMetricsCollector {
     return this.cdnMetrics.filter(m => m.edgeRegion === region);
   }
 
-  getAverageMetrics(timeWindow: number = 300000): { [key: string]: number } {
+  getAverageMetrics(timeWindow: number = EDGE_METRICS.DEFAULT_TIME_WINDOW): { [key: string]: number } {
     const cutoff = Date.now() - timeWindow;
     const recentMetrics = this.metrics.filter(m => m.timestamp > cutoff);
 
@@ -166,7 +168,7 @@ class EdgeMetricsCollector {
   }
 
   getCachePerformance(): { [status: string]: number } {
-    const recent = this.cdnMetrics.filter(m => Date.now() - m.timestamp < 300000);
+    const recent = this.cdnMetrics.filter(m => Date.now() - m.timestamp < EDGE_METRICS.DEFAULT_TIME_WINDOW);
     const total = recent.length;
 
     if (total === 0) return { hit: 0, miss: 0, stale: 0, revalidated: 0 };
@@ -214,10 +216,10 @@ class EdgeMetricsCollector {
 
   private startPeriodicCleanup(): void {
     setInterval(() => {
-      const cutoff = Date.now() - 3600000; // 1 hour ago
+      const cutoff = Date.now() - TIME_CONSTANTS.HOUR; // 1 hour ago
       this.metrics = this.metrics.filter(m => m.timestamp > cutoff);
       this.cdnMetrics = this.cdnMetrics.filter(m => m.timestamp > cutoff);
-    }, 300000); // Clean up every 5 minutes
+    }, CACHE_TTLS.KV_CLEANUP); // Clean up every 5 minutes
   }
 
   // Export metrics for analysis
@@ -232,7 +234,7 @@ class EdgeMetricsCollector {
   getPerformanceScore(): number {
     const averages = this.getAverageMetrics();
     
-    let score = 100;
+    let score = SCORE_CALCULATION.MAX_SCORE;
     
     // Response time scoring (0-30 points)
     if (averages['avgResponseTime'] > this.thresholds.maxResponseTime) {

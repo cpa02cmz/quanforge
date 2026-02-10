@@ -5,6 +5,7 @@
 
 import { UXMetrics, UXScore, UXConfig } from './uxTypes';
 import { UXScoreCalculator } from './uxScoreCalculator';
+import { MEMORY_LIMITS, UX_THRESHOLDS, API_RESPONSE_THRESHOLDS, SCORE_CALCULATION } from '../../constants';
 
 export interface UXInsights {
   healthStatus: 'excellent' | 'good' | 'needs-improvement' | 'poor';
@@ -28,7 +29,7 @@ export interface UXInsights {
 
 export class UXAnalyzer {
   private scoreHistory: UXScore[] = [];
-  private maxHistorySize = 100;
+  private maxHistorySize = MEMORY_LIMITS.MAX_HISTORY_SIZE;
 
   constructor(
     private scoreCalculator: UXScoreCalculator,
@@ -139,7 +140,7 @@ export class UXAnalyzer {
     const warningIssues = currentScore.issues.filter(issue => issue.type === 'warning').length;
     
     nextPeriodScore -= (criticalIssues * 3) + (warningIssues * 1);
-    nextPeriodScore = Math.max(0, Math.min(100, nextPeriodScore));
+    nextPeriodScore = Math.max(SCORE_CALCULATION.MIN_SCORE, Math.min(SCORE_CALCULATION.MAX_SCORE, nextPeriodScore));
 
     const riskFactors = this.identifyRiskFactors(currentScore, metrics);
     const opportunities = this.identifyOpportunities(currentScore, metrics);
@@ -165,11 +166,11 @@ export class UXAnalyzer {
       riskFactors.push('High error rate may lead to user frustration');
     }
 
-    if (metrics.lcp > 4000) {
+    if (metrics.lcp > UX_THRESHOLDS.LCP_AVERAGE) {
       riskFactors.push('Slow loading times may increase bounce rate');
     }
 
-    if (metrics.fid > 300) {
+    if (metrics.fid > UX_THRESHOLDS.FID_AVERAGE) {
       riskFactors.push('Poor interactivity may affect user engagement');
     }
 
@@ -177,7 +178,7 @@ export class UXAnalyzer {
       riskFactors.push('Layout instability may confuse users');
     }
 
-    if (metrics.apiResponseTime > 2000) {
+    if (metrics.apiResponseTime > API_RESPONSE_THRESHOLDS.POOR) {
       riskFactors.push('Slow API responses may impact user experience');
     }
 
@@ -190,11 +191,11 @@ export class UXAnalyzer {
   private identifyOpportunities(score: UXScore, metrics: UXMetrics): string[] {
     const opportunities: string[] = [];
 
-    if (metrics.lcp > 2500) {
+    if (metrics.lcp > UX_THRESHOLDS.LCP_GOOD) {
       opportunities.push('Optimize LCP for better first impression');
     }
 
-    if (metrics.apiResponseTime > 500) {
+    if (metrics.apiResponseTime > API_RESPONSE_THRESHOLDS.GOOD) {
       opportunities.push('Implement API caching for faster responses');
     }
 
@@ -218,21 +219,21 @@ export class UXAnalyzer {
    */
   private calculateUserImpact(score: UXScore, metrics: UXMetrics): UXInsights['userImpact'] {
     // Calculate estimated user satisfaction based on UX score
-    const satisfaction = Math.max(0, Math.min(100, score.overall + 10));
+    const satisfaction = Math.max(SCORE_CALCULATION.MIN_SCORE, Math.min(SCORE_CALCULATION.MAX_SCORE, score.overall + 10));
 
     // Calculate abandonment risk based on critical issues and poor metrics
     let abandonmentRisk = 0;
     
     if (score.overall < 50) abandonmentRisk += 30;
-    if (metrics.lcp > 4000) abandonmentRisk += 20;
+    if (metrics.lcp > UX_THRESHOLDS.LCP_AVERAGE) abandonmentRisk += 20;
     if (metrics.errorRate > 0.05) abandonmentRisk += 25;
-    if (metrics.fid > 300) abandonmentRisk += 15;
+    if (metrics.fid > UX_THRESHOLDS.FID_AVERAGE) abandonmentRisk += 15;
     if (metrics.cls > 0.25) abandonmentRisk += 10;
 
-    abandonmentRisk = Math.max(0, Math.min(100, abandonmentRisk));
+    abandonmentRisk = Math.max(SCORE_CALCULATION.MIN_SCORE, Math.min(SCORE_CALCULATION.MAX_SCORE, abandonmentRisk));
 
     // Calculate conversion impact (inverse of abandonment risk)
-    const conversionImpact = Math.max(0, 100 - abandonmentRisk);
+    const conversionImpact = Math.max(SCORE_CALCULATION.MIN_SCORE, SCORE_CALCULATION.MAX_SCORE - abandonmentRisk);
 
     return {
       satisfaction,
@@ -246,11 +247,11 @@ export class UXAnalyzer {
    */
   getBenchmarks(): Record<string, { good: number; average: number; poor: number }> {
     return {
-      LCP: { good: 2500, average: 4000, poor: 6000 },
-      FID: { good: 100, average: 300, poor: 500 },
+      LCP: { good: UX_THRESHOLDS.LCP_GOOD, average: UX_THRESHOLDS.LCP_AVERAGE, poor: UX_THRESHOLDS.LCP_POOR },
+      FID: { good: UX_THRESHOLDS.FID_GOOD, average: UX_THRESHOLDS.FID_AVERAGE, poor: UX_THRESHOLDS.FID_POOR },
       CLS: { good: 0.1, average: 0.25, poor: 0.5 },
-      TTFB: { good: 800, average: 1800, poor: 3000 },
-      'API Response Time': { good: 200, average: 1000, poor: 2000 },
+      TTFB: { good: UX_THRESHOLDS.TTFB_GOOD, average: UX_THRESHOLDS.TTFB_AVERAGE, poor: UX_THRESHOLDS.TTFB_POOR },
+      'API Response Time': { good: API_RESPONSE_THRESHOLDS.EXCELLENT, average: API_RESPONSE_THRESHOLDS.NEEDS_IMPROVEMENT, poor: API_RESPONSE_THRESHOLDS.POOR },
     };
   }
 
@@ -289,13 +290,13 @@ export class UXAnalyzer {
    * Calculate API score helper method
    */
   private calculateAPIScore(apiResponseTime: number): number {
-    if (apiResponseTime <= 200) return 100;
-    if (apiResponseTime <= 1000) {
-      const ratio = (apiResponseTime - 200) / 800;
-      return Math.round(100 - (ratio * 50));
+    if (apiResponseTime <= API_RESPONSE_THRESHOLDS.EXCELLENT) return SCORE_CALCULATION.MAX_SCORE;
+    if (apiResponseTime <= API_RESPONSE_THRESHOLDS.NEEDS_IMPROVEMENT) {
+      const ratio = (apiResponseTime - API_RESPONSE_THRESHOLDS.EXCELLENT) / (API_RESPONSE_THRESHOLDS.NEEDS_IMPROVEMENT - API_RESPONSE_THRESHOLDS.EXCELLENT);
+      return Math.round(SCORE_CALCULATION.MAX_SCORE - (ratio * SCORE_CALCULATION.SCORE_RATIO_MULTIPLIER));
     }
-    const excess = apiResponseTime - 1000;
-    const score = Math.max(0, 50 - Math.log10(excess + 1) * 10);
+    const excess = apiResponseTime - API_RESPONSE_THRESHOLDS.NEEDS_IMPROVEMENT;
+    const score = Math.max(SCORE_CALCULATION.MIN_SCORE, 50 - Math.log10(excess + 1) * 10);
     return Math.round(score);
   }
 
