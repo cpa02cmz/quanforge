@@ -28,6 +28,26 @@ export const TIME_CONSTANTS = {
   CLEANUP_LONG_INTERVAL: 5 * 60 * 1000,  // 5 minutes
 };
 
+// ========== WEBSOCKET CONFIGURATION ==========
+export const WEBSOCKET_URLS = {
+  BINANCE: 'wss://stream.binance.com:9443/ws',
+  TWELVE_DATA: 'wss://ws.twelvedata.com/v1/quotes',
+};
+
+export const WEBSOCKET_CONFIG = {
+  // Reconnection settings
+  MAX_RECONNECT_ATTEMPTS: 10,
+  BASE_RECONNECT_DELAY: 1000, // 1 second
+  MAX_RECONNECT_DELAY: 30000, // 30 seconds
+  
+  // Timeout settings
+  CONNECTION_TIMEOUT: 10000, // 10 seconds
+  HEALTH_CHECK_INTERVAL: 30000, // 30 seconds
+  
+  // Jitter settings
+  JITTER_MAX: 1000, // 1 second
+};
+
 // ========== CACHE CONFIGURATION ==========
 export const CACHE_CONFIG = {
   // Size limits
@@ -355,7 +375,17 @@ export const AI_CONFIG = {
     MAX_DELAY: 10000, // 10 seconds
     BACKOFF_MULTIPLIER: 2,
   },
-  
+
+  // Performance settings
+  performance: {
+    temperature: 0.7,
+    maxPromptLength: 10000,
+    minPromptLength: 10,
+    maxContextChars: 100000,
+    minHistoryChars: 1000,
+    maxCodeLength: 30000,
+  },
+
   // Provider-specific endpoints
   ENDPOINTS: {
     OPENAI: 'https://api.openai.com/v1',

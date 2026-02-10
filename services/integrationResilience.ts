@@ -1,4 +1,5 @@
 import { createScopedLogger } from '../utils/logger';
+import { ERROR_CONFIG, API_CONFIG } from '../constants/config';
 
 const logger = createScopedLogger('integration-resilience');
 
@@ -104,9 +105,9 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
       overall: 30000
     },
     retryPolicy: {
-      maxRetries: 3,
+      maxRetries: ERROR_CONFIG.MAX_ERROR_RETRY_ATTEMPTS,
       initialDelay: 500,
-      maxDelay: 10000,
+      maxDelay: ERROR_CONFIG.ERROR_RETRY_DELAY_BASE * 5,
       backoffMultiplier: 2,
       jitter: true,
       retryableErrors: [
@@ -116,11 +117,11 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
       ]
     },
     circuitBreaker: {
-      failureThreshold: 5,
+      failureThreshold: ERROR_CONFIG.CIRCUIT_BREAKER_THRESHOLD,
       successThreshold: 2,
-      timeout: 30000,
+      timeout: API_CONFIG.REQUEST_TIMEOUT,
       halfOpenMaxCalls: 3,
-      resetTimeout: 60000
+      resetTimeout: ERROR_CONFIG.CIRCUIT_BREAKER_TIMEOUT
     },
     fallbackEnabled: true,
     healthCheckInterval: 30000
@@ -135,9 +136,9 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
       overall: 60000
     },
     retryPolicy: {
-      maxRetries: 3,
-      initialDelay: 1000,
-      maxDelay: 15000,
+      maxRetries: ERROR_CONFIG.MAX_ERROR_RETRY_ATTEMPTS,
+      initialDelay: API_CONFIG.RETRY_DELAY_BASE,
+      maxDelay: API_CONFIG.RETRY_DELAY_MAX,
       backoffMultiplier: 1.5,
       jitter: true,
       retryableErrors: [
@@ -150,9 +151,9 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
     circuitBreaker: {
       failureThreshold: 3,
       successThreshold: 2,
-      timeout: 60000,
+      timeout: API_CONFIG.API_TIMEOUT,
       halfOpenMaxCalls: 2,
-      resetTimeout: 120000
+      resetTimeout: API_CONFIG.REQUEST_TIMEOUT * 2
     },
     fallbackEnabled: true,
     healthCheckInterval: 60000

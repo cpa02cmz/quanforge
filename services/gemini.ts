@@ -752,7 +752,7 @@ const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, si
              console.warn("API Key is empty for OpenAI Provider");
         }
 
-        const baseUrl = settings.baseUrl ? settings.baseUrl.replace(/\/$/, '') : 'https://api.openai.com/v1';
+        const baseUrl = settings.baseUrl ? settings.baseUrl.replace(/\/$/, '') : AI_CONFIG.ENDPOINTS.OPENAI;
         const url = `${baseUrl}/chat/completions`;
         const systemInstruction = getEffectiveSystemPrompt(settings);
 
@@ -1043,9 +1043,9 @@ export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promi
        return requestDeduplicator.deduplicate(cacheKey, async () => {
          if (!activeKey && settings.provider === 'google') return { riskScore: 0, profitability: 0, description: "API Key Missing" };
  
-         // Limit code length to prevent token budget issues
-         const maxCodeLength = 30000; // Reduced from 50000 to be more conservative
-         const truncatedCode = code.length > maxCodeLength ? code.substring(0, maxCodeLength) + "..." : code;
+          // Limit code length to prevent token budget issues
+          const maxCodeLength = AI_CONFIG.performance.maxCodeLength;
+          const truncatedCode = code.length > maxCodeLength ? code.substring(0, maxCodeLength) + "..." : code;
          
          const prompt = `Analyze this MQL5 code and return a JSON summary of its potential risk and strategy type. Code: ${truncatedCode}
          
