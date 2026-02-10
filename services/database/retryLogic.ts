@@ -8,7 +8,7 @@ import { DATABASE_CONFIG } from '../../constants/config';
 
 export interface RetryLogicInterface {
   withRetry<T>(operation: () => Promise<T>, operationName: string): Promise<T>;
-  isRetryableError(error: any): boolean;
+  isRetryableError(error: unknown): boolean;
   getCircuitBreakerStatus(operationName: string): { open: boolean; failures: number };
   resetCircuitBreaker(operationName: string): void;
 }
@@ -24,7 +24,7 @@ export class RetryLogic implements RetryLogicInterface {
       throw new Error(`Circuit breaker is open for operation: ${operationName}`);
     }
 
-    let lastError: any;
+    let lastError: unknown;
     
     for (let attempt = 1; attempt <= DATABASE_CONFIG.RETRY.MAX_ATTEMPTS; attempt++) {
       try {
@@ -74,7 +74,7 @@ export class RetryLogic implements RetryLogicInterface {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  isRetryableError(error: any): boolean {
+  isRetryableError(error: unknown): boolean {
     if (!error) return false;
 
     // Check for non-retryable error codes
@@ -103,7 +103,7 @@ export class RetryLogic implements RetryLogicInterface {
     return true;
   }
 
-  private isNetworkError(error: any): boolean {
+  private isNetworkError(error: unknown): boolean {
     return !!(
       error.message?.toLowerCase().includes('network') ||
       error.message?.toLowerCase().includes('fetch') ||
@@ -112,7 +112,7 @@ export class RetryLogic implements RetryLogicInterface {
     );
   }
 
-  private isTimeoutError(error: any): boolean {
+  private isTimeoutError(error: unknown): boolean {
     return !!(
       error.message?.toLowerCase().includes('timeout') ||
       error.name === 'TimeoutError' ||
@@ -120,7 +120,7 @@ export class RetryLogic implements RetryLogicInterface {
     );
   }
 
-  private isRateLimitError(error: any): boolean {
+  private isRateLimitError(error: unknown): boolean {
     return !!(
       error.message?.toLowerCase().includes('rate limit') ||
       error.status === 429 ||

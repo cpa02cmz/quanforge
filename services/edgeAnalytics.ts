@@ -32,7 +32,7 @@ interface UserBehaviorData {
     type: string;
     target: string;
     timestamp: number;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
   }>;
   pageViews: number;
   timeOnPage: number;
@@ -172,9 +172,10 @@ class EdgeAnalytics {
     try {
       const observer = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        entries.forEach((entry: any) => {
-          if (entry.processingStart) {
-            this.updatePerformanceData('fid', entry.processingStart - entry.startTime);
+        entries.forEach((entry: PerformanceEntry) => {
+          const fidEntry = entry as PerformanceEntry & { processingStart?: number };
+          if (fidEntry.processingStart) {
+            this.updatePerformanceData('fid', fidEntry.processingStart - fidEntry.startTime);
           }
         });
       });
@@ -191,9 +192,10 @@ class EdgeAnalytics {
       let clsValue = 0;
       const observer = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        entries.forEach((entry: any) => {
-          if (!entry.hadRecentInput) {
-            clsValue += entry.value;
+        entries.forEach((entry: PerformanceEntry) => {
+          const clsEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+          if (!clsEntry.hadRecentInput) {
+            clsValue += clsEntry.value || 0;
             this.updatePerformanceData('cls', clsValue);
           }
         });
@@ -247,12 +249,13 @@ class EdgeAnalytics {
       const observer = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         
-        entries.forEach((entry: any) => {
+        entries.forEach((entry: PerformanceEntry) => {
+          const resourceEntry = entry as PerformanceResourceTiming;
           const resourceData = {
-            name: entry.name,
-            duration: entry.duration,
-            size: entry.transferSize || 0,
-            cached: entry.transferSize === 0 && entry.decodedBodySize > 0
+            name: resourceEntry.name,
+            duration: resourceEntry.duration,
+            size: resourceEntry.transferSize || 0,
+            cached: resourceEntry.transferSize === 0 && resourceEntry.decodedBodySize > 0
           };
 
           if (!this.performanceData) {
@@ -417,7 +420,7 @@ class EdgeAnalytics {
     });
   }
 
-  private trackUserInteraction(type: string, metadata: any): void {
+  private trackUserInteraction(type: string, metadata: Record<string, unknown> & { tagName?: string }): void {
     if (!this.shouldTrack()) return;
 
     let behaviorData = this.userBehavior.get(this.sessionId);
@@ -447,7 +450,7 @@ class EdgeAnalytics {
     }
   }
 
-  private trackError(type: string, metadata: any): void {
+  private trackError(type: string, metadata: Record<string, unknown>): void {
     if (!this.shouldTrack()) return;
 
     const latestMetric = this.metrics[this.metrics.length - 1];
@@ -531,7 +534,7 @@ class EdgeAnalytics {
     }
   }
 
-  private async sendErrorReport(type: string, metadata: any): Promise<void> {
+  private async sendErrorReport(type: string, metadata: Record<string, unknown>): Promise<void> {
     if (!this.config.endpoint) return;
 
     const errorReport = {
@@ -559,7 +562,7 @@ class EdgeAnalytics {
   }
 
   // Public API methods
-  public trackCustomEvent(name: string, data: any): void {
+  public trackCustomEvent(name: string, data: Record<string, unknown>): void {
     this.trackUserInteraction(`custom_${name}`, data);
   }
 
