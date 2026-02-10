@@ -267,14 +267,14 @@ const supabaseAuth = {
 
 // Create a proxy that has auth synchronously and delegates the rest
 export const supabase = new Proxy({ auth: supabaseAuth } as any, {
-    get: (target, prop) => {
+    get: (target, prop: string | symbol) => {
         // Auth is always synchronous
         if (prop === 'auth') {
             return target.auth;
         }
         // For everything else, use the lazy client
         const client = getClient();
-        return client[prop];
+        return (client as any)[prop];
     }
 });
 
