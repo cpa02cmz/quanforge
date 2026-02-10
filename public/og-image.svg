@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="ogbg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="50%" style="stop-color:#1e293b"/>
+      <stop offset="100%" style="stop-color:#0f172a"/>
+    </linearGradient>
+    <linearGradient id="ogaccent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#22c55e"/>
+      <stop offset="100%" style="stop-color:#4ade80"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#ogbg)"/>
+  <rect x="100" y="285" width="1000" height="80" fill="url(#ogaccent)" rx="16" opacity="0.95"/>
+  <text x="600" y="340" font-family="system-ui, sans-serif" font-size="64" font-weight="800" fill="#0f172a" text-anchor="middle">QUANFORGE AI</text>
+  <text x="600" y="420" font-family="system-ui, sans-serif" font-size="32" fill="#94a3b8" text-anchor="middle">Advanced MQL5 Trading Robot Generator</text>
+  <text x="600" y="480" font-family="system-ui, sans-serif" font-size="24" fill="#64748b" text-anchor="middle">Powered by Google Gemini AI • MetaTrader 5 Ready</text>
+  <circle cx="600" cy="160" r="48" fill="#22c55e" opacity="0.9"/>
+  <path d="M570 160 L600 130 L630 160" stroke="#0f172a" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M600 175 L600 130" stroke="#0f172a" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M200 550 L600 580 L1000 550" stroke="#22c55e" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+</svg>

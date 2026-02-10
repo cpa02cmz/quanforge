@@ -11,15 +11,15 @@
     <meta property="og:title" content="QuantForge AI - Advanced MQL5 Trading Robot Generator" />
     <meta property="og:description" content="Create professional MQL5 trading robots with AI. Visual strategy configuration, real-time simulation, and instant deployment to MetaTrader 5." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image" content="/og-image.svg" />
     <meta property="og:url" content="https://quanforge.ai" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="QuantForge AI - MQL5 Trading Robot Generator" />
     <meta name="twitter:description" content="Generate professional trading robots with AI. Visual configuration, real-time simulation, and MT5 deployment." />
-    <meta name="twitter:image" content="/twitter-image.png" />
+    <meta name="twitter:image" content="/twitter-image.svg" />
     <link rel="canonical" href="https://quanforge.ai" />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/icon-192x192.png" />
+    <link rel="apple-touch-icon" href="/icon-192x192.svg" />
     <meta name="theme-color" content="#22c55e" />
     <meta name="msapplication-TileColor" content="#0f172a" />
     <meta name="msapplication-config" content="/browserconfig.xml" />
@@ -40,7 +40,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="QuantForge AI" />
     <meta name="application-name" content="QuantForge AI" />
-    <meta name="msapplication-TileImage" content="/icon-144x144.png" />
+    <meta name="msapplication-TileImage" content="/icon-192x192.svg" />
     <meta name="referrer" content="no-referrer-when-downgrade" />
     <meta name="pinterest-rich-pin" content="false" />
     <meta name="pinterest-site-verification" content="disabled" />
@@ -130,11 +130,13 @@
       .spinner{border:2px solid #334155;border-top:2px solid #22c55e;border-radius:50%;width:48px;height:48px;animation:spin 1s linear infinite}
       @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
     </style>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS - Loaded async to prevent render-blocking -->
+    <script src="https://cdn.tailwindcss.com" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     
-    <!-- PrismJS for Syntax Highlighting -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <!-- PrismJS for Syntax Highlighting - Async loading to prevent render-blocking -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" /></noscript>
     
     <script>
       tailwind.config = {
