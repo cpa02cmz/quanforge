@@ -4,6 +4,7 @@
  */
 
 import { createScopedLogger } from '../utils/logger';
+import { TIME_CONSTANTS } from '../constants/config';
 
 const logger = createScopedLogger('FrontendOptimizer');
 
@@ -61,7 +62,7 @@ class FrontendOptimizer {
   };
 
   private resourceCache = new Map<string, { data: any; timestamp: number; size: number }>();
-  private readonly CACHE_TTL = 300000; // 5 minutes
+  private readonly CACHE_TTL = TIME_CONSTANTS.MINUTE * 5; // 5 minutes
 
   constructor(config?: Partial<FrontendOptimizationConfig>) {
     if (config) {

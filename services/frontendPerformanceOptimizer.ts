@@ -6,6 +6,7 @@
 import { performanceMonitor } from '../utils/performance';
 import { logger } from '../utils/logger';
 import { storage } from '../utils/storage';
+import { TIME_CONSTANTS, CACHE_CONFIG } from '../constants/config';
 
 interface PerformanceOptimizerConfig {
   enableResourcePrefetching: boolean;
@@ -71,8 +72,8 @@ class FrontendPerformanceOptimizer {
   };
 
   private resourceCache = new Map<string, { data: any; timestamp: number; size: number }>();
-  private readonly CACHE_TTL = 300000; // 5 minutes
-  private readonly MAX_CACHE_SIZE = 100; // Maximum cache entries
+  private readonly CACHE_TTL = TIME_CONSTANTS.MINUTE * 5; // 5 minutes
+  private readonly MAX_CACHE_SIZE = CACHE_CONFIG.MAX_LRU_CACHE_SIZE; // Maximum cache entries
 
   constructor(config?: Partial<PerformanceOptimizerConfig>) {
     if (config) {
@@ -574,7 +575,7 @@ class FrontendPerformanceOptimizer {
   /**
    * Optimize component rendering with memoization
    */
-  memoizeComponent<T>(key: string, component: () => T, ttl: number = 300000): T {
+  memoizeComponent<T>(key: string, component: () => T, ttl: number = TIME_CONSTANTS.MINUTE * 5): T {
     const cacheKey = `component_${key}`;
     const cached = this.resourceCache.get(cacheKey);
     

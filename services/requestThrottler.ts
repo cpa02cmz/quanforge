@@ -4,6 +4,8 @@
  * Enhanced for Vercel Edge deployment
  */
 
+import { API_CONFIG, RATE_LIMITING } from '../constants/config';
+
 interface RequestConfig {
   url: string;
   options?: RequestInit;
@@ -24,11 +26,11 @@ class RequestThrottler {
   private activeRequests = 0;
   private readonly maxConcurrent = 6;
   private readonly rateLimitDelay = 100; // ms between requests
-  private readonly maxRetries = 3;
+  private readonly maxRetries = API_CONFIG.MAX_RETRY_ATTEMPTS;
   private lastRequestTime = 0;
   private requestCounts = new Map<string, number>();
-  private readonly windowMs = 60000; // 1 minute window
-  private readonly maxRequestsPerWindow = 100;
+  private readonly windowMs = RATE_LIMITING.DEFAULT_WINDOW; // 1 minute window
+  private readonly maxRequestsPerWindow = RATE_LIMITING.DEFAULT_MAX_REQUESTS;
 
   constructor() {
     // Clean up old request counts periodically

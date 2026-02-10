@@ -1,4 +1,5 @@
 import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
+import { CACHE_CONFIG, TIME_CONSTANTS } from '../constants/config';
 
 interface SmartCacheEntry<T> {
   data: T;
@@ -44,12 +45,12 @@ export class SmartCache<T = any> {
   };
   private config: SmartCacheConfig = {
     memoryMaxSize: 5 * 1024 * 1024, // 5MB memory cache
-    memoryMaxEntries: 200,
+    memoryMaxEntries: CACHE_CONFIG.MAX_LRU_CACHE_SIZE,
     persistentMaxSize: 20 * 1024 * 1024, // 20MB persistent cache
-    persistentMaxEntries: 1000,
-    defaultTTL: 15 * 60 * 1000, // 15 minutes
-    cleanupInterval: 60000, // 1 minute
-    compressionThreshold: 1024, // 1KB
+    persistentMaxEntries: CACHE_CONFIG.MAX_CACHE_ENTRIES,
+    defaultTTL: TIME_CONSTANTS.MINUTE * 15, // 15 minutes
+    cleanupInterval: TIME_CONSTANTS.MINUTE, // 1 minute
+    compressionThreshold: CACHE_CONFIG.COMPRESSION_THRESHOLD, // 1KB
   };
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
   private dbName = 'smartCache';
