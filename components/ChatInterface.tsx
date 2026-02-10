@@ -5,6 +5,7 @@ import { Message, MessageRole } from '../types';
 import { loadSuggestedStrategies } from '../constants';
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
+import { SendButton } from './SendButton';
 
   const logger = createScopedLogger('ChatInterface');
 
@@ -491,14 +492,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
               </span>
             </div>
             
-            <button
-              type="submit"
-              disabled={!input.trim() || isLoading}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-brand-600 rounded-lg text-white hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-brand-600/20 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-dark-bg hover:scale-105 active:scale-95"
-              aria-label="Send message"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-            </button>
+            <SendButton isLoading={isLoading} disabled={!input.trim() || isLoading} />
           </div>
           
           {/* Helper text - shows when approaching limit */}
