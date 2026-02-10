@@ -350,6 +350,13 @@ export {
   AI_CONFIG as MODULAR_AI_CONFIG,
   MEMORY_CONFIG,
   BATCH_CONFIG as MODULAR_BATCH_CONFIG,
+  
+  // Flexy's new modular configs
+  STORAGE_KEYS,
+  STORAGE_PREFIXES,
+  MAGIC_NUMBERS,
+  SCORING_WEIGHTS,
+  THRESHOLDS,
 
   // Helper functions
   getConfigValue,

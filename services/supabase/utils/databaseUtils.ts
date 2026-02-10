@@ -2,6 +2,7 @@
 
 import { Robot } from '../../../types';
 import { DATABASE, CACHE_TTLS } from '../../constants';
+import { STORAGE_KEYS } from '../../../constants/modularConfig';
 
 // Enhanced connection retry configuration with exponential backoff - using modular constants
 export const RETRY_CONFIG = {
@@ -18,11 +19,8 @@ export const CACHE_CONFIG = {
   maxSize: 200, // Max cached items
 };
 
-// Mock session storage
-export const STORAGE_KEYS = {
-  MOCK_SESSION: 'mock_session',
-  ROBOTS: 'mock_robots'
-} as const;
+// Re-export STORAGE_KEYS from modular config for backward compatibility
+export { STORAGE_KEYS };
 
 // Helper for safe JSON parsing with enhanced security
 export const safeParse = <T>(data: string | null, fallback: T): T => {

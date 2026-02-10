@@ -9,6 +9,7 @@ import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
 import { TIMEOUTS, CACHE_LIMITS, BATCH_SIZES, ERROR_CODES } from '../constants';
 import { getLocalStorage, StorageQuotaError } from '../utils/storage';
 import { createScopedLogger } from '../utils/logger';
+import { STORAGE_KEYS, STORAGE_PREFIXES } from '../constants/modularConfig';
 
 const logger = createScopedLogger('Supabase');
 
@@ -22,10 +23,10 @@ const RETRY_CONFIG = {
 };
 
 
-// Mock session storage
-const STORAGE_KEY = 'mock_session';
-const ROBOTS_KEY = 'mock_robots';
-const storage = getLocalStorage({ prefix: 'mock_', enableSerialization: true });
+// Mock session storage - using Flexy's modular config
+const STORAGE_KEY = STORAGE_KEYS.SESSION;
+const ROBOTS_KEY = STORAGE_KEYS.ROBOTS;
+const storage = getLocalStorage({ prefix: STORAGE_PREFIXES.MOCK, enableSerialization: true });
 
 // Helper for safe JSON parsing with enhanced security
 const safeParse = <T>(data: T | null, fallback: any) => {

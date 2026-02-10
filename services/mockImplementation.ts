@@ -2,12 +2,14 @@ import { UserSession } from '../types';
 import { securityManager } from './securityManager';
 import { getLocalStorage, StorageQuotaError } from '../utils/storage';
 import { createScopedLogger } from '../utils/logger';
+import { STORAGE_KEYS, STORAGE_PREFIXES } from '../constants/modularConfig';
 
 const logger = createScopedLogger('MockImplementation');
 
-const STORAGE_KEY = 'mock_session';
-const ROBOTS_KEY = 'mock_robots';
-const storage = getLocalStorage({ prefix: 'mock_' });
+// Using Flexy's modular storage keys
+const STORAGE_KEY = STORAGE_KEYS.SESSION;
+const ROBOTS_KEY = STORAGE_KEYS.ROBOTS;
+const storage = getLocalStorage({ prefix: STORAGE_PREFIXES.MOCK });
 
 const safeParse = <T>(data: T | null, fallback: any) => {
     if (!data) return fallback;
