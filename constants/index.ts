@@ -296,3 +296,31 @@ export const loadSuggestedStrategies = async (language: Language) => {
 
 // Re-export time constants for backward compatibility
 export { TIME_CONSTANTS } from './config';
+
+// Export modular simulation constants
+export {
+  SIMULATION_CONSTANTS,
+  SIMULATION_TIME,
+  RISK_CONFIG,
+  PROFITABILITY_CONFIG,
+  WIN_RATE_CONFIG,
+  MONTE_CARLO_CONFIG,
+  BALANCE_CONFIG,
+  SIMULATION_PARAMS,
+} from './simulation';
+
+// Export modular animation constants
+export {
+  UI_ANIMATION,
+  TYPING_ANIMATION,
+  FADE_TIMING,
+  STAGGER_ANIMATION,
+  LOADING_ANIMATION,
+  INTERACTIVE_ANIMATION,
+  TOAST_ANIMATION,
+  MODAL_ANIMATION,
+  CHART_ANIMATION,
+  SCROLL_ANIMATION,
+  EASING,
+  ANIMATION_PERFORMANCE,
+} from './animations';
