@@ -1,4 +1,5 @@
 import { performance } from 'perf_hooks';
+import { PERFORMANCE_MONITORING, MEMORY } from '../constants/timing';
 
 // Type definitions for better type safety
 interface PerformanceMemory {
@@ -70,9 +71,9 @@ interface PerformanceReport {
 class PerformanceMonitor {
   private metrics: PerformanceMetrics[] = [];
   private memorySnapshots: number[] = [];
-  private maxMetrics = 500; // Reduced from 1000 for better memory
-  private reportingThreshold = 200; // Increased from 100 to reduce overhead
-  private samplingRate = 0.1; // Sample 10% of operations to reduce overhead
+  private maxMetrics = PERFORMANCE_MONITORING.MAX_METRICS;
+  private reportingThreshold = PERFORMANCE_MONITORING.REPORTING_THRESHOLD;
+  private samplingRate = PERFORMANCE_MONITORING.SAMPLING_RATE;
 
   startTimer(operation: string, metadata?: Record<string, any>): () => PerformanceMetrics {
     // Skip monitoring for some operations to reduce overhead
@@ -112,8 +113,8 @@ class PerformanceMonitor {
     // Add memory snapshot
     if (metric.memoryUsage) {
       this.memorySnapshots.push(metric.memoryUsage);
-      if (this.memorySnapshots.length > 100) {
-        this.memorySnapshots = this.memorySnapshots.slice(-100);
+      if (this.memorySnapshots.length > PERFORMANCE_MONITORING.MAX_MEMORY_SNAPSHOTS) {
+        this.memorySnapshots = this.memorySnapshots.slice(-PERFORMANCE_MONITORING.MAX_MEMORY_SNAPSHOTS);
       }
     }
 
@@ -184,7 +185,7 @@ class PerformanceMonitor {
     
     if (report.memoryTrend.length > 0) {
       const currentMemory = report.memoryTrend[report.memoryTrend.length - 1] || 0;
-      const memoryMB = (currentMemory / 1024 / 1024).toFixed(2);
+      const memoryMB = (currentMemory / MEMORY.MB).toFixed(2);
       console.log(`💾 Current Memory Usage: ${memoryMB} MB`);
     }
 
@@ -198,20 +199,20 @@ class PerformanceMonitor {
     console.groupEnd();
 
     // Log warnings for slow operations
-    if (report.slowestOperation.duration > 1000) {
+    if (report.slowestOperation.duration > PERFORMANCE_MONITORING.SLOW_OPERATION_THRESHOLD) {
       console.warn(`⚠️  Slow operation detected: ${report.slowestOperation.operation} took ${report.slowestOperation.duration.toFixed(2)}ms`);
     }
 
     // Log memory warnings
     if (report.memoryTrend.length > 0) {
       const currentMemory = report.memoryTrend[report.memoryTrend.length - 1] || 0;
-      if (currentMemory > 50 * 1024 * 1024) { // 50MB
-        console.warn(`⚠️  High memory usage: ${(currentMemory / 1024 / 1024).toFixed(2)} MB`);
+      if (currentMemory > PERFORMANCE_MONITORING.HIGH_MEMORY_THRESHOLD_MB * MEMORY.MB) {
+        console.warn(`⚠️  High memory usage: ${(currentMemory / MEMORY.MB).toFixed(2)} MB`);
       }
     }
   }
 
-  getSlowOperations(threshold: number = 500): PerformanceMetrics[] {
+  getSlowOperations(threshold: number = PERFORMANCE_MONITORING.SLOW_OP_SCORE_THRESHOLD): PerformanceMetrics[] {
     return this.metrics.filter(m => m.duration > threshold);
   }
 
@@ -295,19 +296,29 @@ class PerformanceMonitor {
     let score = 100;
     
     // Deduct points for slow operations
-    const slowOps = this.getSlowOperations(500);
-    score -= Math.min(30, slowOps.length * 5);
+    const slowOps = this.getSlowOperations(PERFORMANCE_MONITORING.SLOW_OP_SCORE_THRESHOLD);
+    score -= Math.min(
+      PERFORMANCE_MONITORING.SLOW_OP_MAX_PENALTY, 
+      slowOps.length * PERFORMANCE_MONITORING.SLOW_OP_PENALTY_MULTIPLIER
+    );
     
     // Deduct points for high average duration
-    if (report.averageDuration > 200) {
-      score -= Math.min(20, (report.averageDuration - 200) / 10);
+    if (report.averageDuration > PERFORMANCE_MONITORING.HIGH_AVG_DURATION_THRESHOLD) {
+      score -= Math.min(
+        PERFORMANCE_MONITORING.HIGH_AVG_DURATION_MAX_PENALTY, 
+        (report.averageDuration - PERFORMANCE_MONITORING.HIGH_AVG_DURATION_THRESHOLD) / 10
+      );
     }
     
     // Deduct points for memory usage
     if (report.memoryTrend.length > 0) {
       const currentMemory = report.memoryTrend[report.memoryTrend.length - 1] || 0;
-      if (currentMemory > 30 * 1024 * 1024) { // 30MB
-        score -= Math.min(20, (currentMemory - 30 * 1024 * 1024) / (1024 * 1024));
+      const memoryThreshold = PERFORMANCE_MONITORING.MODERATE_MEMORY_THRESHOLD_MB * MEMORY.MB;
+      if (currentMemory > memoryThreshold) {
+        score -= Math.min(
+          PERFORMANCE_MONITORING.MEMORY_USAGE_MAX_PENALTY, 
+          (currentMemory - memoryThreshold) / MEMORY.MB
+        );
       }
     }
     
@@ -418,7 +429,7 @@ interface LogEntry {
 
 class Logger {
   private logs: LogEntry[] = [];
-  private maxLogs = 1000; // Keep only last 1000 logs
+  private maxLogs = PERFORMANCE_MONITORING.MAX_LOGS;
   private logLevel: 'debug' | 'info' | 'warn' | 'error' = 'info';
   private sessionId: string;
   private userId?: string;

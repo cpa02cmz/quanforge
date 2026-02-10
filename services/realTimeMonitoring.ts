@@ -1,5 +1,6 @@
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
+import { PERFORMANCE_MONITORING } from '../constants/timing';
 
 interface CoreWebVitals {
   lcp: number; // Largest Contentful Paint
@@ -44,7 +45,7 @@ class RealTimeMonitoring {
   private alerts: PerformanceAlert[] = [];
   private observers: PerformanceObserver[] = [];
   private isInitialized = false;
-  private readonly METRICS_RETENTION_LIMIT = 1000;
+  private readonly METRICS_RETENTION_LIMIT = PERFORMANCE_MONITORING.MAX_METRICS;
   private readonly ALERT_THRESHOLD = 0.1; // 10% error rate
 
   private readonly PERFORMANCE_BUDGET: PerformanceBudget = {

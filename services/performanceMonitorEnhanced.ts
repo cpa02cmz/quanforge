@@ -1,3 +1,5 @@
+import { PERFORMANCE_MONITORING } from '../constants/timing';
+
 interface PerformanceMetric {
   name: string;
   value: number;
@@ -75,7 +77,7 @@ class PerformanceMonitor {
     },
     regionPerformance: {}
   };
-  private coldStartThreshold = 1000; // 1 second threshold for cold starts
+  private coldStartThreshold = PERFORMANCE_MONITORING.SLOW_OPERATION_THRESHOLD; // 1 second threshold for cold starts
 
   private constructor() {
     this.initializeMonitoring();
