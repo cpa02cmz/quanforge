@@ -14,6 +14,7 @@ import { EmptyState } from '../components/EmptyState';
 import { IconButton } from '../components/IconButton';
 import { CopyButton } from '../components/CopyButton';
 import { CardSkeletonLoader } from '../components/LoadingState';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 
 // Debounce utility for search optimization
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -252,9 +253,16 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
   
   // Log session for debugging (remove the warning about unused parameter)
   logger.debug('Dashboard session:', !!session);
-  const [robots, setRobots] = useState<Robot[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [processingId, setProcessingId] = useState<string | null>(null);
+    const [robots, setRobots] = useState<Robot[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [processingId, setProcessingId] = useState<string | null>(null);
+    
+    // Confirmation modal state
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        robotId: string;
+        robotName: string;
+    }>({ isOpen: false, robotId: '', robotName: '' });
   
   // Filter States
   const [searchTerm, setSearchTerm] = useState('');
@@ -286,25 +294,35 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
     }
   };
 
-  const handleDelete = useCallback(async (id: string, name: string) => {
-    if (!window.confirm(t('dash_delete_confirm', { name }))) {
-        return;
-    }
+  const handleDeleteRequest = useCallback((id: string, name: string) => {
+    setConfirmModal({ isOpen: true, robotId: id, robotName: name });
+  }, []);
 
-    setProcessingId(id);
+  const handleDeleteConfirm = useCallback(async () => {
+    const { robotId } = confirmModal;
+    if (!robotId) return;
+
+    setProcessingId(robotId);
+    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    
     try {
-        const { error } = await db.deleteRobot(id);
+        const { error } = await db.deleteRobot(robotId);
         if (error) throw error;
         // Optimistic update
-        setRobots(prev => prev.filter(r => r.id !== id));
+        setRobots(prev => prev.filter(r => r.id !== robotId));
         showToast(t('dash_toast_delete_success'), 'success');
     } catch (err) {
         logger.error("Failed to delete robot", err);
         showToast("Failed to delete robot", 'error');
     } finally {
         setProcessingId(null);
+        setConfirmModal({ isOpen: false, robotId: '', robotName: '' });
     }
-  }, [t, showToast]);
+  }, [confirmModal, t, showToast]);
+
+  const handleDeleteCancel = useCallback(() => {
+    setConfirmModal({ isOpen: false, robotId: '', robotName: '' });
+  }, []);
 
   const handleDuplicate = useCallback(async (id: string) => {
       setProcessingId(id);
@@ -475,7 +493,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
           filterType={filterType}
           processingId={processingId}
           onDuplicate={handleDuplicate}
-          onDelete={handleDelete}
+          onDelete={handleDeleteRequest}
           onClearFilters={() => { setSearchTerm(''); setFilterType('All'); }}
           t={t}
         />
@@ -487,13 +505,26 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
               robot={robot}
               processingId={processingId}
               onDuplicate={handleDuplicate}
-              onDelete={handleDelete}
+              onDelete={handleDeleteRequest}
               t={t}
             />
           ))}
         </div>
       )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={t('confirm_delete_title') || 'Delete Robot'}
+        message={t('dash_delete_confirm', { name: confirmModal.robotName })}
+        confirmLabel={t('confirm_delete') || 'Delete'}
+        cancelLabel={t('confirm_cancel') || 'Cancel'}
+        variant="danger"
+        isLoading={processingId === confirmModal.robotId}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
     </>
   );
 });
