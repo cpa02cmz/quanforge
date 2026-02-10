@@ -5,6 +5,9 @@
 
 import { securityManager } from '../securityManager';
 import { UserSession } from '../../types';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('SupabaseStorage');
 
 // Mock session storage
 export const STORAGE_KEYS = {
@@ -20,7 +23,7 @@ export const safeParse = <T>(data: string | null, fallback: T): T => {
         const parsed = securityManager.safeJSONParse(data);
         return (parsed !== null) ? parsed as T : fallback;
     } catch (e) {
-        console.error("Failed to parse data from storage:", e);
+        logger.error("Failed to parse data from storage:", e);
         return fallback;
     }
 };
