@@ -171,9 +171,10 @@ const RobotCard: React.FC<RobotCardProps> = memo(({
             </svg>
           </IconButton>
           
-          <Link 
+          <Link
             to={`/generator/${robot.id}`}
             className="ml-2 px-3 py-1.5 bg-dark-bg border border-dark-border hover:border-brand-500 text-xs font-medium text-gray-300 hover:text-white rounded-md transition-all flex items-center"
+            aria-label={`Edit ${robot.name}`}
           >
             Edit
           </Link>

@@ -11,6 +11,8 @@ export const NumericInput: React.FC<{
     'aria-invalid'?: boolean;
     'aria-describedby'?: string;
     showSteppers?: boolean;
+    label?: string;
+    hideLabel?: boolean;
 }> = memo(({
     value,
     onChange,
@@ -21,7 +23,9 @@ export const NumericInput: React.FC<{
     id,
     'aria-invalid': ariaInvalid,
     'aria-describedby': ariaDescribedby,
-    showSteppers = true
+    showSteppers = true,
+    label,
+    hideLabel = false
 }) => {
     const [localValue, setLocalValue] = useState(value.toString());
     const [isPulsing, setIsPulsing] = useState(false);
@@ -239,12 +243,34 @@ export const NumericInput: React.FC<{
         />
     );
 
+    const wrappedInput = (
+        <>
+            {label && (
+                <label
+                    htmlFor={id}
+                    className={hideLabel ? 'sr-only' : 'block text-sm text-gray-300 mb-1'}
+                >
+                    {label}
+                </label>
+            )}
+            {inputElement}
+        </>
+    );
+
     if (!showSteppers) {
-        return inputElement;
+        return wrappedInput;
     }
 
     return (
         <div className="relative inline-block">
+            {label && (
+                <label
+                    htmlFor={id}
+                    className={hideLabel ? 'sr-only' : 'block text-sm text-gray-300 mb-1'}
+                >
+                    {label}
+                </label>
+            )}
             {inputElement}
             <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col">
                 <button

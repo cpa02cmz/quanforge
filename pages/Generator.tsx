@@ -225,14 +225,22 @@ export const Generator: React.FC = memo(() => {
         )}
 
         {/* Sidebar Tabs */}
-        <div className="flex border-b border-dark-border bg-dark-surface shrink-0">
-            <button 
+        <div className="flex border-b border-dark-border bg-dark-surface shrink-0" role="tablist" aria-label="Sidebar navigation">
+            <button
+                role="tab"
+                aria-selected={activeSidebarTab === 'chat'}
+                aria-controls="chat-panel"
+                tabIndex={activeSidebarTab === 'chat' ? 0 : -1}
                 onClick={() => setActiveSidebarTab('chat')}
                 className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeSidebarTab === 'chat' ? 'border-brand-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
             >
                 {t('gen_tab_chat')}
             </button>
-            <button 
+            <button
+                role="tab"
+                aria-selected={activeSidebarTab === 'settings'}
+                aria-controls="settings-panel"
+                tabIndex={activeSidebarTab === 'settings' ? 0 : -1}
                 onClick={() => setActiveSidebarTab('settings')}
                 className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeSidebarTab === 'settings' ? 'border-brand-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
             >
@@ -242,21 +250,25 @@ export const Generator: React.FC = memo(() => {
 
         <div className="flex-1 overflow-hidden relative bg-dark-surface">
             {activeSidebarTab === 'chat' ? (
-                 <ChatInterface 
-                    messages={messages} 
-                    onSendMessage={handleSendMessage} 
-                    isLoading={isLoading} 
-                    onClear={clearChat}
-                    onStop={stopGeneration}
-                />
+                 <div id="chat-panel" role="tabpanel" aria-labelledby="chat-tab">
+                     <ChatInterface
+                        messages={messages}
+                        onSendMessage={handleSendMessage}
+                        isLoading={isLoading}
+                        onClear={clearChat}
+                        onStop={stopGeneration}
+                    />
+                 </div>
             ) : (
-                <StrategyConfig 
-                    params={strategyParams} 
-                    onChange={setStrategyParams} 
-                    onApply={onApplySettings}
-                    isApplying={isLoading}
-                    onReset={resetConfig}
-                />
+                <div id="settings-panel" role="tabpanel" aria-labelledby="settings-tab">
+                    <StrategyConfig
+                        params={strategyParams}
+                        onChange={setStrategyParams}
+                        onApply={onApplySettings}
+                        isApplying={isLoading}
+                        onReset={resetConfig}
+                    />
+                </div>
             )}
         </div>
       </div>
