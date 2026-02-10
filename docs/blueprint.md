@@ -142,7 +142,7 @@ graph TD
 
 ### Critical Technical Debt (2025-12-20 Analysis)
 - **Build System**: Fixed TypeScript compilation and restored functionality  
-- **Type Safety**: 905 `any` type usages creating runtime risks (priority action)
+- **Type Safety**: 4,380 `any` type usages creating runtime risks (priority action)
 - **Maintainability**: Monolithic services limiting development velocity
 - **Code Quality**: Advanced optimizations implemented, build system restored
 

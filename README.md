@@ -211,7 +211,7 @@ To deploy to Vercel:
 2. Configure environment variables in Vercel dashboard
 3. Deploy automatically on push to main branch
 
- ### Performance Optimizations
+### Performance Optimizations
 
   - **Code Splitting**: Automatic chunking of vendor libraries, components, and pages
   - **Caching**: Intelligent caching strategy for Supabase queries and API responses
