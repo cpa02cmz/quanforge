@@ -7,6 +7,7 @@ import { performanceMonitor } from '../utils/performance';
 import { logger } from '../utils/logger';
 import { storage } from '../utils/storage';
 import { TIME_CONSTANTS, CACHE_CONFIG } from '../constants/config';
+import { WindowWithGC, PerformanceWithMemory } from '../types/browser';
 
 interface PerformanceOptimizerConfig {
   enableResourcePrefetching: boolean;
@@ -462,7 +463,8 @@ class FrontendPerformanceOptimizer {
     
     // Force garbage collection if available (for development/testing)
     if (typeof window !== 'undefined' && 'gc' in window) {
-      (window as any).gc?.();
+      const win = window as WindowWithGC;
+      win.gc?.();
     }
   }
 
@@ -471,7 +473,8 @@ class FrontendPerformanceOptimizer {
    */
   private getCurrentMemoryUsage(): number {
     if ('memory' in performance) {
-      const memory = (performance as any).memory;
+      const perf = performance as PerformanceWithMemory;
+      const memory = perf.memory;
       return memory ? memory.usedJSHeapSize : 0;
     }
     return 0;

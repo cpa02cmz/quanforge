@@ -1,7 +1,7 @@
 
 import { settingsManager } from './settingsManager';
 import { createScopedLogger } from '../utils/logger';
-import { API_CONFIG } from '../constants/config';
+import { API_CONFIG, WEBSOCKET_URLS, WEBSOCKET_CONFIG } from '../constants/config';
 
 const logger = createScopedLogger('MarketDataService');
 
@@ -61,7 +61,7 @@ class MarketDataService {
           this.binanceReconnectTimer = null;
       }
 
-      this.binanceWs = new WebSocket('wss://stream.binance.com:9443/ws');
+      this.binanceWs = new WebSocket(WEBSOCKET_URLS.BINANCE);
       
       this.binanceWs.onopen = () => {
           logger.log("Binance WS Connected");
@@ -95,8 +95,8 @@ class MarketDataService {
 
       // Exponential backoff with jitter
       const delay = Math.min(
-          this.baseReconnectDelay * Math.pow(2, this.binanceReconnectAttempts) + Math.random() * 1000,
-          30000 // Max 30 seconds
+          this.baseReconnectDelay * Math.pow(2, this.binanceReconnectAttempts) + Math.random() * WEBSOCKET_CONFIG.JITTER_MAX,
+          WEBSOCKET_CONFIG.MAX_RECONNECT_DELAY
       );
 
       logger.log(`Binance WS: Reconnecting in ${Math.round(delay / 1000)}s... (Attempt ${this.binanceReconnectAttempts + 1}/${this.maxReconnectAttempts})`);
@@ -165,7 +165,7 @@ class MarketDataService {
           this.twelveDataReconnectTimer = null;
       }
 
-      this.twelveDataWs = new WebSocket(`wss://ws.twelvedata.com/v1/quotes?apikey=${apiKey}`);
+      this.twelveDataWs = new WebSocket(`${WEBSOCKET_URLS.TWELVE_DATA}?apikey=${apiKey}`);
 
       this.twelveDataWs.onopen = () => {
           logger.log("Twelve Data WS Connected");
@@ -213,8 +213,8 @@ class MarketDataService {
 
       // Exponential backoff with jitter
       const delay = Math.min(
-          this.baseReconnectDelay * Math.pow(2, this.twelveDataReconnectAttempts) + Math.random() * 1000,
-          30000 // Max 30 seconds
+          this.baseReconnectDelay * Math.pow(2, this.twelveDataReconnectAttempts) + Math.random() * WEBSOCKET_CONFIG.JITTER_MAX,
+          WEBSOCKET_CONFIG.MAX_RECONNECT_DELAY
       );
 
       logger.log(`Twelve Data WS: Reconnecting in ${Math.round(delay / 1000)}s... (Attempt ${this.twelveDataReconnectAttempts + 1}/${this.maxReconnectAttempts})`);

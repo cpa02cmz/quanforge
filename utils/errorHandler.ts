@@ -175,7 +175,7 @@ export const withErrorHandling = <T extends (...args: unknown[]) => Promise<unkn
     retries = 0, 
     fallback, 
     backoff = 'exponential', 
-    backoffBase = 1000,
+    backoffBase = ERROR_CONFIG.ERROR_RETRY_DELAY_BASE,
     shouldRetry = () => true
   } = options;
   
@@ -293,8 +293,8 @@ export const errorClassifier = {
 export const errorRecovery = {
   async retryWithBackoff<T>(
     operation: () => Promise<T>, 
-    maxRetries: number = 3,
-    baseDelay: number = 1000,
+    maxRetries: number = ERROR_CONFIG.MAX_ERROR_RETRY_ATTEMPTS,
+    baseDelay: number = ERROR_CONFIG.ERROR_RETRY_DELAY_BASE,
     shouldRetry?: (error: Error) => boolean
   ): Promise<T> {
     let lastError: Error;
@@ -358,10 +358,10 @@ export const errorRecovery = {
       resetTimeout?: number;
     } = {}
   ): T {
-    const { 
-      failureThreshold = 5, 
-      timeout = 10000, 
-      resetTimeout = 60000 
+    const {
+      failureThreshold = ERROR_CONFIG.CIRCUIT_BREAKER_THRESHOLD,
+      timeout = ERROR_CONFIG.CIRCUIT_BREAKER_TIMEOUT,
+      resetTimeout = ERROR_CONFIG.CIRCUIT_BREAKER_TIMEOUT
     } = options;
     
     let failureCount = 0;

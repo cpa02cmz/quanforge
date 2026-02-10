@@ -18,7 +18,7 @@ type GenAIType = {
 
 let GoogleGenAI: GoogleGenAIConstructor | null = null;
 let Type: GenAIType | null = null;
-import { MQL5_SYSTEM_PROMPT, TIMEOUTS } from "../constants";
+import { MQL5_SYSTEM_PROMPT, TIMEOUTS, CACHE_TTLS } from "../constants";
 import { AI_CONFIG } from "../constants/config";
 import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
 import { settingsManager } from "./settingsManager";
@@ -752,7 +752,7 @@ const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, si
              console.warn("API Key is empty for OpenAI Provider");
         }
 
-        const baseUrl = settings.baseUrl ? settings.baseUrl.replace(/\/$/, '') : 'https://api.openai.com/v1';
+        const baseUrl = settings.baseUrl ? settings.baseUrl.replace(/\/$/, '') : AI_CONFIG.ENDPOINTS.OPENAI;
         const url = `${baseUrl}/chat/completions`;
         const systemInstruction = getEffectiveSystemPrompt(settings);
 
@@ -1043,9 +1043,9 @@ export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promi
        return requestDeduplicator.deduplicate(cacheKey, async () => {
          if (!activeKey && settings.provider === 'google') return { riskScore: 0, profitability: 0, description: "API Key Missing" };
  
-         // Limit code length to prevent token budget issues
-         const maxCodeLength = 30000; // Reduced from 50000 to be more conservative
-         const truncatedCode = code.length > maxCodeLength ? code.substring(0, maxCodeLength) + "..." : code;
+          // Limit code length to prevent token budget issues
+          const maxCodeLength = AI_CONFIG.performance.maxCodeLength;
+          const truncatedCode = code.length > maxCodeLength ? code.substring(0, maxCodeLength) + "..." : code;
          
          const prompt = `Analyze this MQL5 code and return a JSON summary of its potential risk and strategy type. Code: ${truncatedCode}
          
@@ -1102,13 +1102,13 @@ const response = await ai!.models.generateContent({
 
                    // Cache result in both caches
                    analysisCache.set(cacheKey, result);
-                   enhancedAnalysisCache.set(cacheKey, result, 600000); // 10 minutes TTL for enhanced cache
+                   enhancedAnalysisCache.set(cacheKey, result, CACHE_TTLS.ENHANCED_ANALYSIS); // 10 minutes TTL for enhanced cache
 
                    // Also cache by shorter code snippet for similar code detection
                    const shortCodeHash = createHash(code.substring(0, 1000));
                    const shortCacheKey = `short-${shortCodeHash}-${settings.provider}`;
                    analysisCache.set(shortCacheKey, result);
-                   enhancedAnalysisCache.set(shortCacheKey, result, 600000);
+                   enhancedAnalysisCache.set(shortCacheKey, result, CACHE_TTLS.ENHANCED_ANALYSIS);
               } else {
                  // Return a default response if parsing fails
                  return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };

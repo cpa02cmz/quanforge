@@ -234,12 +234,12 @@ describe('DIContainer', () => {
         throw { custom: 'error' };
       });
       
-      // The DIContainer wraps errors - objects without .message property return undefined
+      // The DIContainer wraps errors - strings are preserved, objects without .message show as 'Unknown error'
       await expect(container.get('StringErrorService')).rejects.toThrow(
-        'Failed to create service StringErrorService: undefined'
+        'Failed to create service StringErrorService: String error'
       );
       await expect(container.get('ObjectErrorService')).rejects.toThrow(
-        'Failed to create service ObjectErrorService: undefined'
+        'Failed to create service ObjectErrorService: Unknown error'
       );
     });
   });

@@ -1,10 +1,11 @@
 /**
  * Dependency Injection Container - Service Management
- * 
+ *
  * Implements IoC pattern for managing service lifecycles and dependencies
  */
 
 import { ServiceContainer, SERVICE_TOKENS, IService } from '../../types/serviceInterfaces';
+import { getErrorMessage } from '../../utils/errorHandler';
 
 export class DIContainer implements ServiceContainer {
   private services = new Map<string, () => any | Promise<any>>();
@@ -52,8 +53,8 @@ export class DIContainer implements ServiceContainer {
       // Cache instance
       this.instances.set(token, instance);
       return instance;
-    } catch (error) {
-      throw new Error(`Failed to create service ${token}: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(`Failed to create service ${token}: ${getErrorMessage(error)}`);
     }
   }
 
