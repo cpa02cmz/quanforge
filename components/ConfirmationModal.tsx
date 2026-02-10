@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { useTranslation } from '../services/i18n';
 
 export interface ConfirmationModalProps {
@@ -28,6 +28,23 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     const confirmButtonRef = useRef<HTMLButtonElement>(null);
     const modalRef = useRef<HTMLDivElement>(null);
     const previouslyFocusedElement = useRef<HTMLElement | null>(null);
+    const [isShaking, setIsShaking] = useState(false);
+    const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Trigger shake animation to indicate user must make a choice
+    const triggerShake = useCallback(() => {
+        setIsShaking(true);
+        
+        // Clear any existing timeout
+        if (shakeTimeoutRef.current) {
+            clearTimeout(shakeTimeoutRef.current);
+        }
+        
+        // Reset shake after animation completes
+        shakeTimeoutRef.current = setTimeout(() => {
+            setIsShaking(false);
+        }, 400);
+    }, []);
 
     // Store previously focused element when modal opens
     useEffect(() => {
@@ -94,6 +111,20 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         return undefined;
     }, [isOpen]);
 
+    // Cleanup shake timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (shakeTimeoutRef.current) {
+                clearTimeout(shakeTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    // Handle backdrop click with shake feedback
+    const handleBackdropClick = useCallback(() => {
+        triggerShake();
+    }, [triggerShake]);
+
     if (!isOpen) return null;
 
     const variantStyles = {
@@ -133,8 +164,8 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         >
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-                onClick={onCancel}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 cursor-pointer"
+                onClick={handleBackdropClick}
                 aria-hidden="true"
             />
 
@@ -145,7 +176,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 aria-modal="true"
                 aria-labelledby="confirm-modal-title"
                 aria-describedby="confirm-modal-message"
-                className="relative bg-dark-surface border border-dark-border rounded-xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200"
+                className={`relative bg-dark-surface border border-dark-border rounded-xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200 ${isShaking ? 'modal-shake' : ''}`}
             >
                 {/* Icon */}
                 <div className="flex justify-center mb-4">
@@ -201,6 +232,18 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                     </button>
                 </div>
             </div>
+
+            {/* CSS for shake animation */}
+            <style>{`
+                @keyframes modal-shake {
+                    0%, 100% { transform: translateX(0); }
+                    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+                    20%, 40%, 60%, 80% { transform: translateX(4px); }
+                }
+                .modal-shake {
+                    animation: modal-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+                }
+            `}</style>
         </div>
     );
 };
