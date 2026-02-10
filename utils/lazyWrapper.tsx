@@ -1,13 +1,6 @@
 import React, { Suspense, ErrorInfo, ReactNode } from 'react';
 import { LoadingComponents } from '../components/LoadingComponents';
 
-interface LazyComponentOptions {
-  fallback?: ReactNode;
-  errorFallback?: ReactNode;
-  onRetry?: () => void;
-  preloadingStrategy?: 'immediate' | 'on-hover' | 'on-viewport' | 'manual';
-}
-
 interface LazyWrapperProps {
   children: ReactNode;
   fallback?: ReactNode;
@@ -21,8 +14,11 @@ interface LazyWrapperState {
   retryKey: number;
 }
 
-// Enhanced error boundary for lazy-loaded components
-class LazyErrorBoundary extends React.Component<LazyWrapperProps, LazyWrapperState> {
+/**
+ * Enhanced error boundary for lazy-loaded components
+ * Exported separately to comply with React Fast Refresh requirements
+ */
+export class LazyErrorBoundary extends React.Component<LazyWrapperProps, LazyWrapperState> {
   constructor(props: LazyWrapperProps) {
     super(props);
     this.state = {
@@ -41,6 +37,7 @@ class LazyErrorBoundary extends React.Component<LazyWrapperProps, LazyWrapperSta
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
       console.error('Lazy component loading error:', {
         error: error.message,
         stack: error.stack,
@@ -94,7 +91,7 @@ class LazyErrorBoundary extends React.Component<LazyWrapperProps, LazyWrapperSta
 
     const key = this.state.retryKey;
     return (
-      <Suspense 
+      <Suspense
         key={key}
         fallback={this.props.fallback || <LoadingComponents.Inline /> }
       >
@@ -104,44 +101,4 @@ class LazyErrorBoundary extends React.Component<LazyWrapperProps, LazyWrapperSta
   }
 }
 
-// Hook for creating lazy components with error handling
-export const createLazyComponent = <T extends React.ComponentType<any>>(
-  importFunc: () => Promise<{ default: T }>,
-  options: LazyComponentOptions = {}
-) => {
-  const LazyComponent = React.lazy(importFunc);
-
-  // Implement preloading strategy
-  let preload: (() => void) | undefined;
-
-  switch (options.preloadingStrategy) {
-    case 'immediate':
-      preload = () => importFunc();
-      preload(); // Start loading immediately
-      break;
-    case 'on-hover':
-    case 'on-viewport':
-    case 'manual':
-      preload = () => importFunc();
-      break;
-  }
-
-  // Return wrapped component with error boundary
-  const WrappedComponent = (props: React.ComponentProps<T>) => (
-    <LazyErrorBoundary 
-      fallback={options.fallback}
-      errorFallback={options.errorFallback}
-      onRetry={options.onRetry}
-    >
-      <LazyComponent {...props} />
-    </LazyErrorBoundary>
-  );
-
-  // Add preload method to the component
-  (WrappedComponent as { preload?: () => void }).preload = preload;
-
-return WrappedComponent;
-};
-
-export { LazyErrorBoundary };
 export default LazyErrorBoundary;
