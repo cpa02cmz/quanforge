@@ -105,6 +105,7 @@ class LazyErrorBoundary extends React.Component<LazyWrapperProps, LazyWrapperSta
 }
 
 // Hook for creating lazy components with error handling
+// eslint-disable-next-line react-refresh/only-export-components
 export const createLazyComponent = <T extends React.ComponentType<any>>(
   importFunc: () => Promise<{ default: T }>,
   options: LazyComponentOptions = {}

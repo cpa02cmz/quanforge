@@ -62,6 +62,7 @@ export const PageMeta: React.FC<PageMetaProps> = ({
 };
 
 // Enhanced structured data generator with more comprehensive schemas
+// eslint-disable-next-line react-refresh/only-export-components
 export const enhancedStructuredData = {
   ...structuredDataTemplates,
   
@@ -671,6 +672,7 @@ export const enhancedStructuredData = {
 };
 
 // Dynamic structured data generator with environment-based URLs
+// eslint-disable-next-line react-refresh/only-export-components
 export const getDynamicStructuredData = (urlConfig = getUrlConfig()) => {
   const socialUrls = urlConfig.getSocialUrls();
   

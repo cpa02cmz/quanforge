@@ -345,6 +345,7 @@ export const SEOHead: React.FC<MetaTagsProps> = ({
 
 // ---------- SEO ANALYTICS HOOK ----------
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSEOAnalytics = ({ pageUrl, pageTitle, pageType = 'other', enabled = true }: SEOAnalyticsProps) => {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
     scrollDepth: 0,
@@ -696,6 +697,7 @@ class SEOMonitorService {
 
 // ---------- EXPORTS ----------
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const seoMonitor = new SEOMonitorService();
 
 // Legacy exports for backward compatibility
@@ -706,6 +708,7 @@ export const SEOAnalytics: React.FC<SEOAnalyticsProps> = ({ pageUrl, pageTitle, 
   return null; // This component only tracks analytics
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAnalytics = useSEOAnalytics;
 
 // Service class exports
@@ -720,6 +723,7 @@ export class SEOService {
 }
 
 // Structured data templates for common use cases
+// eslint-disable-next-line react-refresh/only-export-components
 export const structuredDataTemplates = {
   website: (name: string, description: string, url: string) => ({
     '@context': 'https://schema.org',
@@ -891,6 +895,7 @@ export const structuredDataTemplates = {
 };
 
 // Enhanced structured data templates for better SEO
+// eslint-disable-next-line react-refresh/only-export-components
 export const enhancedStructuredDataTemplates = {
   organization: {
     "@context": "https://schema.org",
