@@ -8,18 +8,24 @@ import { settingsManager } from '../settingsManager';
 import { edgeConnectionPool } from '../edgeSupabasePool';
 import { withRetry } from './retryLogic';
 import { mockClient } from '../mock/mockClient';
+import { logger } from '../../utils/logger';
 
 /**
  * Manages dynamic client creation and switching between Supabase and Mock modes
  */
+interface MockClient extends Record<string, unknown> {
+    from: (table: string) => unknown;
+    auth: unknown;
+}
+
 class ClientManager {
-    private activeClient: SupabaseClient | any = null;
+    private activeClient: SupabaseClient | MockClient | null = null;
 
     /**
      * Get the appropriate client based on current settings
      * Caches the client for performance and updates on settings changes
      */
-    async getClient(): Promise<SupabaseClient | any> {
+    async getClient(): Promise<SupabaseClient | MockClient> {
         if (this.activeClient) return this.activeClient;
 
         const settings = settingsManager.getDBSettings();
@@ -30,13 +36,13 @@ class ClientManager {
                 const client = await withRetry(async () => {
                     return await edgeConnectionPool.getClient('default');
                 }, 'getClient');
-                this.activeClient = client;
+                this.activeClient = client as SupabaseClient;
             } catch (e) {
-                console.error("Connection pool failed, using mock client", e);
-                this.activeClient = mockClient;
+                logger.error("Connection pool failed, using mock client", e);
+                this.activeClient = mockClient as MockClient;
             }
         } else {
-            this.activeClient = mockClient;
+            this.activeClient = mockClient as MockClient;
         }
         return this.activeClient;
     }
@@ -51,7 +57,7 @@ class ClientManager {
     /**
      * Force client reconnection by clearing cache and getting new client
      */
-    async reconnect(): Promise<SupabaseClient | any> {
+    async reconnect(): Promise<SupabaseClient | MockClient> {
         this.clearCache();
         return await this.getClient();
     }
@@ -74,6 +80,6 @@ if (typeof window !== 'undefined') {
 export const supabase = new Proxy({}, {
     get: (_target, prop) => {
         const client = clientManager.getClient();
-        return (client as any)[prop];
+        return (client as Record<string, unknown>)[prop as string];
     }
 }) as SupabaseClient;

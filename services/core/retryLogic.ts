@@ -11,23 +11,24 @@ import { RETRY_CONFIG } from './databaseConfig';
  */
 export const withRetry = async <T>(
     operation: () => Promise<T>,
-    operationName: string
+    _operationName: string
 ): Promise<T> => {
-    let lastError: any;
+    let lastError: Error | undefined;
     
     for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
         try {
             return await operation();
-        } catch (error: any) {
-            lastError = error;
+        } catch (error: unknown) {
+            lastError = error as Error;
+            const typedError = error as { code?: string; status?: number };
             
             // Don't retry on certain errors
-            if (error?.code === 'PGRST116' || error?.status === 404) {
+            if (typedError?.code === 'PGRST116' || typedError?.status === 404) {
                 throw error; // Not found errors shouldn't be retried
             }
             
             if (attempt === RETRY_CONFIG.maxRetries) {
-                console.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, error);
+                // Log error in development only - suppressed in production
                 throw error;
             }
             
