@@ -22,7 +22,6 @@ This document outlines the quality assurance standards, current status, and proc
   - `@typescript-eslint/no-unused-vars`: ~200+ occurrences
 
 ### Recent QA Fixes (2026-02-07)
-- **Fixed**: 3 `prefer-const` warnings in `services/gemini-legacy.ts`
 - **Fixed**: 4 `no-console` warnings in `services/Logger.ts` (intentional - added eslint-disable)
 - **Fixed**: 1 `prefer-const` warning in `services/ai/aiRateLimiter.ts`
 - **Total Warnings Reduced**: ~434 warnings
@@ -226,13 +225,6 @@ npm run typecheck && npm run build && npm test && npm audit
 2. **services/ai/aiRateLimiter.ts**
    - Fixed `prefer-const` warning at line 141
    - Changed `let userLimit` to `const userLimit` (never reassigned)
-
-3. **services/gemini-legacy.ts**
-   - Fixed 3 `prefer-const` warnings
-   - Line 171: `let rawResponse` → `const rawResponse`
-   - Line 245: `let rawResponse` → `const rawResponse`
-   - Line 403: `let rawAnalysis` → `const rawAnalysis`
-   - All variables were never reassigned after initialization
 
 #### Verification
 - ✅ TypeScript compilation: 0 errors
