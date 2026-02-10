@@ -114,6 +114,8 @@ export const PERFORMANCE_THRESHOLDS = {
   PAGE_LOAD_THRESHOLD: 3000, // 3 seconds - page load time warning threshold
   WARNING_SIZE: 200000, // 200KB - bundle size warning
   CRITICAL_SIZE: 300000, // 300KB - bundle size critical
+  CLS_GOOD: 0.1, // Cumulative Layout Shift good threshold
+  CLS_POOR: 0.25, // Cumulative Layout Shift poor threshold
 } as const;
 
 // UI Timing Constants
@@ -167,6 +169,105 @@ export const PERFORMANCE_SCORE_THRESHOLDS = {
   GOOD: 60, // Score >= 60 is considered good
   POOR: 0, // Score < 60 needs improvement
 } as const;
+
+// Connection Pool Configuration
+export const CONNECTION_POOL = {
+  IDLE_TIMEOUT: 45000, // 45 seconds - idle timeout for connections
+  HEALTH_CHECK_INTERVAL: 15000, // 15 seconds - health check interval
+  CONNECTION_TIMEOUT: 800, // 0.8 seconds - connection timeout
+  ACQUIRE_TIMEOUT: 300, // 0.3 seconds - acquire timeout
+  RETRY_DELAY: 300, // 0.3 seconds - retry delay
+  MAX_CONNECTIONS: 100, // Maximum connections in pool
+  RECENT_USAGE_THRESHOLD: 30000, // 30 seconds - recent usage threshold
+  REGION_MATCH_BONUS: 2000, // Score bonus for region match
+  HEALTHY_BONUS: 500, // Score bonus for healthy connection
+  LATENCY_MULTIPLIER: 1000, // Latency calculation multiplier
+} as const;
+
+// Edge Metrics Configuration
+export const EDGE_METRICS = {
+  DEFAULT_TIME_WINDOW: 300000, // 5 minutes default time window
+  MAX_METRICS_SIZE: 1000, // Maximum metrics entries
+  CACHE_EFFICIENCY_BASELINE: 10, // 10ms per request baseline
+  DEFAULT_SCORE: 100, // Default score base
+  COMPRESSION_RATIO_PRECISION: 100, // For rounding
+} as const;
+
+// API Response Time Thresholds (ms)
+export const API_RESPONSE_THRESHOLDS = {
+  EXCELLENT: 200, // Excellent response time
+  GOOD: 500, // Good response time
+  NEEDS_IMPROVEMENT: 1000, // Needs improvement
+  POOR: 2000, // Poor response time
+} as const;
+
+// Score Calculation Constants
+export const SCORE_CALCULATION = {
+  MAX_SCORE: 100, // Maximum score value
+  MIN_SCORE: 0, // Minimum score value
+  PERCENTAGE_MULTIPLIER: 100, // For percentage calculations
+  SCORE_RATIO_MULTIPLIER: 50, // For ratio-based scoring
+} as const;
+
+// Error Codes and Status Codes
+export const ERROR_CODES = {
+  // HTTP Status Codes
+  NOT_FOUND: 404,
+  RATE_LIMIT: 429,
+  SERVER_ERROR: 500,
+  BAD_REQUEST: 400,
+  
+  // Supabase Error Codes
+  CONNECTION_ERROR: 1014,
+  RECORD_NOT_FOUND: 'PGRST116',
+  
+  // Thresholds
+  CLIENT_ERROR_MIN: 400,
+  CLIENT_ERROR_MAX: 499,
+  SERVER_ERROR_MIN: 500,
+} as const;
+
+// Memory and History Limits
+export const MEMORY_LIMITS = {
+  MAX_HISTORY_SIZE: 100, // Maximum history entries
+  MAX_METRICS_RETENTION: 1000, // Maximum metrics to retain
+  MAX_LOGS: 1000, // Maximum log entries
+  MAX_SAMPLES: 100, // Maximum samples for calculations
+} as const;
+
+// Stagger and Delay Configuration
+export const STAGGER_CONFIG = {
+  DEFAULT_DELAY: 100, // Default stagger delay in ms
+  IMPORT_STAGGER: 1000, // Stagger for imports (1 second)
+  HEALTH_CHECK_TIMEOUT: 2000, // Health check timeout (2 seconds)
+  WARMUP_TIMEOUT: 2000, // Warmup timeout (2 seconds)
+  MAX_EXPONENTIAL_DELAY: 5000, // Max exponential backoff delay
+} as const;
+
+// UX and Interaction Thresholds
+export const UX_THRESHOLDS = {
+  LCP_GOOD: 2500, // Largest Contentful Paint - good
+  LCP_AVERAGE: 4000, // Largest Contentful Paint - average
+  LCP_POOR: 6000, // Largest Contentful Paint - poor
+  FID_GOOD: 100, // First Input Delay - good
+  FID_AVERAGE: 300, // First Input Delay - average
+  FID_POOR: 500, // First Input Delay - poor
+  TTFB_GOOD: 800, // Time to First Byte - good
+  TTFB_AVERAGE: 1800, // Time to First Byte - average
+  TTFB_POOR: 3000, // Time to First Byte - poor
+  INP_GOOD: 200, // Interaction to Next Paint - good
+} as const;
+
+// Cache and Storage TTLs
+export const CACHE_TTLS = {
+  SEMANTIC_CACHE: 900000, // 15 minutes
+  MQL5_GENERATION: 1800000, // 30 minutes
+  STRATEGY_ANALYSIS: 7200000, // 2 hours
+  EDGE_CACHE: 30000, // 30 seconds
+  KV_CLEANUP: 300000, // 5 minutes
+  POOL_WARMUP: 1800000, // 30 minutes
+} as const;
+
 // Lazy load translations
 export const loadTranslations = async (language: Language) => {
   const translations = await import(`./translations/${language}.js`);
@@ -192,3 +293,6 @@ export const loadSuggestedStrategies = async (language: Language) => {
   const strategies = await import(`./strategies/${language}.js`);
   return strategies.SUGGESTED_STRATEGIES;
 };
+
+// Re-export time constants for backward compatibility
+export { TIME_CONSTANTS } from './config';

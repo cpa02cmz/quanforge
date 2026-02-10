@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from '../settingsManager';
 import { storage } from '../../utils/storage';
+import { ERROR_CODES } from '../../constants';
 
 // Connection retry configuration
 export const RETRY_CONFIG = {
@@ -57,7 +58,7 @@ export const trySaveToStorage = (key: string, value: any) => {
             e.name === 'QuotaExceededError' || 
             e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
             e.code === 22 ||
-            e.code === 1014
+            e.code === ERROR_CODES.CONNECTION_ERROR
         ) {
             throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
         }
