@@ -515,18 +515,89 @@
          border-width: 0;
        }
 
-       /* Screen reader only class that can be focused */
-       .sr-only-focusable:focus {
-         position: static;
-         width: auto;
-         height: auto;
-         padding: 0;
-         margin: 0;
-         overflow: visible;
-         clip: auto;
-         white-space: normal;
-       }
-     </style>
+        /* Screen reader only class that can be focused */
+        .sr-only-focusable:focus {
+          position: static;
+          width: auto;
+          height: auto;
+          padding: 0;
+          margin: 0;
+          overflow: visible;
+          clip: auto;
+          white-space: normal;
+        }
+
+        /* High Contrast Mode Support - Windows Forced Colors */
+        @media (forced-colors: active) {
+          /* Ensure interactive elements have visible borders */
+          button, a, input, select, textarea {
+            forced-color-adjust: none;
+            border: 2px solid ButtonText !important;
+          }
+
+          /* Focus indicators for high contrast */
+          :focus-visible {
+            outline: 3px solid Highlight !important;
+            outline-offset: 2px !important;
+          }
+
+          /* Ensure buttons look like buttons */
+          button, [role="button"] {
+            background: ButtonFace !important;
+            color: ButtonText !important;
+          }
+
+          /* Links should be identifiable */
+          a, [role="link"] {
+            color: LinkText !important;
+            text-decoration: underline !important;
+          }
+
+          /* Selected/disabled states */
+          [aria-selected="true"] {
+            background: Highlight !important;
+            color: HighlightText !important;
+          }
+
+          [aria-disabled="true"], :disabled {
+            opacity: 1 !important;
+            border-color: GrayText !important;
+            color: GrayText !important;
+          }
+
+          /* Form fields visibility */
+          input, select, textarea {
+            background: Field !important;
+            color: FieldText !important;
+          }
+
+          /* Cards and containers need borders in high contrast */
+          .bg-dark-surface, .bg-dark-bg, [class*="bg-"] {
+            background: Canvas !important;
+            color: CanvasText !important;
+            border: 1px solid ButtonBorder !important;
+          }
+        }
+
+        /* High Contrast Preference Support */
+        @media (prefers-contrast: high) {
+          /* Enhance borders for high contrast preference */
+          .border-dark-border {
+            border-color: rgba(255, 255, 255, 0.6) !important;
+          }
+
+          /* Stronger focus indicators */
+          *:focus-visible {
+            outline: 3px solid #22c55e;
+            outline-offset: 3px;
+          }
+
+          /* Ensure sufficient contrast on interactive elements */
+          button, a {
+            border-width: 2px;
+          }
+        }
+      </style>
   
 </head>
   <body>

@@ -1,5 +1,5 @@
 
-import React, { useState, memo, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, memo, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { AISettingsModal } from './AISettingsModal';
@@ -21,6 +21,8 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
   const [isDbSettingsOpen, setIsDbSettingsOpen] = useState(false);
   const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLElement>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
@@ -38,6 +40,42 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
     return () => {
       document.body.style.overflow = '';
     };
+  }, [isMobileMenuOpen]);
+
+  // Focus trap for mobile menu accessibility
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+
+    const menu = mobileMenuRef.current;
+    if (!menu) return;
+
+    const focusableElements = menu.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstFocusable = focusableElements[0];
+    const lastFocusable = focusableElements[focusableElements.length - 1];
+
+    // Focus first element when menu opens
+    firstFocusable?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsMobileMenuOpen(false);
+        mobileMenuButtonRef.current?.focus();
+      }
+      if (e.key === 'Tab') {
+        if (e.shiftKey && document.activeElement === firstFocusable) {
+          e.preventDefault();
+          lastFocusable?.focus();
+        } else if (!e.shiftKey && document.activeElement === lastFocusable) {
+          e.preventDefault();
+          firstFocusable?.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isMobileMenuOpen]);
 
   // Stable navigation structure to prevent unnecessary re-renders
@@ -90,7 +128,8 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
       )}
 
       {/* Sidebar */}
-      <aside 
+      <aside
+        ref={mobileMenuRef}
         className={`
             fixed md:relative z-30 w-64 h-full bg-dark-surface border-r border-dark-border flex flex-col transition-transform duration-300 ease-in-out
             ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
@@ -199,13 +238,14 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
                >
                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
              </button>
-               <button
-                  onClick={() => setIsMobileMenuOpen(true)}
-                  className="text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 rounded-lg p-3 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors"
-                  aria-label="Open navigation menu"
-                  aria-expanded={isMobileMenuOpen}
-                  aria-controls="mobile-navigation"
-                >
+                <button
+                   ref={mobileMenuButtonRef}
+                   onClick={() => setIsMobileMenuOpen(true)}
+                   className="text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 rounded-lg p-3 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors"
+                   aria-label="Open navigation menu"
+                   aria-expanded={isMobileMenuOpen}
+                   aria-controls="mobile-navigation"
+                 >
                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                </button>
           </div>

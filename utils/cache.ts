@@ -3,6 +3,8 @@
  * Provides efficient in-memory caching with TTL support and automatic eviction
  */
 
+import { CACHE_CONFIG } from '../constants/config';
+
 export interface LRUCacheConfig {
   ttl: number;
   maxSize: number;
@@ -13,7 +15,10 @@ export class LRUCache<T> {
   private readonly ttl: number;
   private readonly maxSize: number;
 
-  constructor(ttl: number = 5 * 60 * 1000, maxSize: number = 100) {
+  constructor(
+    ttl: number = 5 * 60 * 1000, // 5 minutes default
+    maxSize: number = CACHE_CONFIG.MAX_LRU_CACHE_SIZE
+  ) {
     this.ttl = ttl;
     this.maxSize = maxSize;
   }

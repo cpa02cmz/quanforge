@@ -102,8 +102,8 @@ export const EmptyState: React.FC<EmptyStateProps> = memo(({
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           {actions.map((action, index) => {
             const buttonClasses = action.variant === 'primary'
-              ? 'bg-brand-600 hover:bg-brand-500 text-white shadow-lg shadow-brand-600/20'
-              : 'bg-dark-bg border border-dark-border hover:border-brand-500 text-gray-300 hover:text-white';
+              ? 'bg-brand-600 hover:bg-brand-500 text-white shadow-lg shadow-brand-600/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-surface'
+              : 'bg-dark-bg border border-dark-border hover:border-brand-500 text-gray-300 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-surface';
 
             const content = (
               <>

@@ -20,10 +20,10 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
     const hintId = `${htmlFor}-hint`;
 
     return (
-      <div className={className} ref={ref}>
+      <div className={`group/form-field ${className}`} ref={ref}>
         <label
           htmlFor={htmlFor}
-          className="block text-xs text-gray-400 mb-1 transition-colors"
+          className="block text-xs text-gray-400 mb-1 transition-colors duration-200 group-hover/form-field:text-gray-300"
           aria-disabled={disabled}
         >
           {label}
@@ -136,8 +136,8 @@ export const FormLabel = forwardRef<HTMLLabelElement, FormLabelProps>(
       <label
         ref={ref}
         htmlFor={htmlFor}
-        className={`block text-xs text-gray-400 mb-1 transition-colors ${
-          disabled ? 'text-gray-600 cursor-not-allowed' : ''
+        className={`block text-xs text-gray-400 mb-1 transition-colors duration-200 hover:text-gray-300 ${
+          disabled ? 'text-gray-600 cursor-not-allowed hover:text-gray-600' : ''
         } ${className}`}
         aria-disabled={disabled}
       >

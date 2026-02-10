@@ -14,10 +14,12 @@ export interface ErrorInfo {
   url: string;
 }
 
+import { ERROR_CONFIG } from '../constants/config';
+
 export class ErrorHandler {
   private static instance: ErrorHandler;
   private errors: ErrorInfo[] = [];
-  private maxErrors = 50; // Keep only last 50 errors
+  private maxErrors = ERROR_CONFIG.MAX_ERROR_LOG_SIZE;
 
   private constructor() {
     // Store errors in localStorage for debugging

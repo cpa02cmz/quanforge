@@ -1,4 +1,5 @@
 import React, { useState, useCallback, memo, useRef } from 'react';
+import { logger } from '../utils/logger';
 
 export interface CopyButtonProps {
   /** The text to copy to clipboard */
@@ -104,7 +105,7 @@ export const CopyButton: React.FC<CopyButtonProps> = memo(({
         setCopied(false);
       }, 1500);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      logger.error('Failed to copy:', err);
     }
   }, [textToCopy, onCopy, triggerParticleBurst]);
 

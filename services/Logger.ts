@@ -13,10 +13,12 @@ export interface LogEntry {
   metadata?: Record<string, unknown>;
 }
 
+import { ERROR_CONFIG } from '../constants/config';
+
 export class Logger {
   private static instance: Logger;
   private logs: LogEntry[] = [];
-  private maxLogs = 1000;
+  private maxLogs = ERROR_CONFIG.MAX_ERROR_LOG_SIZE;
   private isProduction = process.env['NODE_ENV'] === 'production';
   private minLevel = this.isProduction ? LogLevel.WARN : LogLevel.DEBUG;
 
