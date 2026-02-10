@@ -10,6 +10,7 @@ import { consolidatedCache } from '../consolidatedCacheManager';
 import { createScopedLogger } from '../../utils/logger';
 import { DATABASE, CACHE_TTLS } from '../constants';
 import { getErrorCode, getErrorMessage } from '../../utils/errorHandler';
+import { STORAGE_KEYS } from '../../constants/modularConfig';
 
 const logger = createScopedLogger('CoreSupabaseService');
 
@@ -28,9 +29,9 @@ const CACHE_CONFIG = {
   maxSize: 200,
 };
 
-// Mock storage keys for fallback mode
-const STORAGE_KEY = 'mock_session';
-const ROBOTS_KEY = 'mock_robots';
+// Mock storage keys for fallback mode - using Flexy's modular config
+const STORAGE_KEY = STORAGE_KEYS.SESSION;
+const ROBOTS_KEY = STORAGE_KEYS.ROBOTS;
 
 /**
  * Safe JSON parsing with security validation

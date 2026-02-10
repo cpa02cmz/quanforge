@@ -6,14 +6,12 @@
 import { securityManager } from '../securityManager';
 import { UserSession } from '../../types';
 import { createScopedLogger } from '../../utils/logger';
+import { STORAGE_KEYS } from '../../constants/modularConfig';
 
 const logger = createScopedLogger('SupabaseStorage');
 
-// Mock session storage
-export const STORAGE_KEYS = {
-  SESSION: 'mock_session',
-  ROBOTS: 'mock_robots',
-} as const;
+// Re-export STORAGE_KEYS from modular config for backward compatibility
+export { STORAGE_KEYS };
 
 // Helper for safe JSON parsing with enhanced security
 export const safeParse = <T>(data: string | null, fallback: T): T => {
