@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Robot } from '../types';
 import { MEMORY_LIMITS } from '../constants';
+import { TIME_CONSTANTS } from '../constants/config';
 
 interface QueryOptimization {
   selectFields?: string[];
@@ -21,7 +22,7 @@ interface QueryMetrics {
 class QueryOptimizer {
   private queryCache = new Map<string, { data: any; timestamp: number; ttl: number; hits: number }>();
   private queryMetrics: QueryMetrics[] = [];
-  private readonly DEFAULT_TTL = 600000; // 10 minutes - extended for better cache hit rates
+  private readonly DEFAULT_TTL = TIME_CONSTANTS.MINUTE * 10; // 10 minutes - extended for better cache hit rates
   private readonly MAX_METRICS = MEMORY_LIMITS.MAX_METRICS_RETENTION;
   private totalQueries = 0;
   private cacheHits = 0;
