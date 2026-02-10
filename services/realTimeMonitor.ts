@@ -1,4 +1,4 @@
-import { TIMEOUTS, WEB_VITALS_THRESHOLDS, PERFORMANCE_BUDGETS } from './constants';
+import { TIMEOUTS, WEB_VITALS_THRESHOLDS, PERFORMANCE_BUDGETS, TIME_CONSTANTS } from './constants';
 
 interface PerformanceMetrics {
   lcp: number; // Largest Contentful Paint
@@ -422,7 +422,7 @@ export class RealTimeMonitor {
   }
 
   private calculateErrorRate(): number {
-    const timeWindow = 60000; // 1 minute
+    const timeWindow = TIME_CONSTANTS.MINUTE; // 1 minute
     const now = Date.now();
     const recentErrors = this.errors.filter(e => now - e.timestamp < timeWindow);
     const recentMetrics = this.metrics.filter(m => now - m.timestamp < timeWindow);

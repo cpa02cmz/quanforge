@@ -1,5 +1,6 @@
 import { SecureStorage } from '../../utils/secureStorage';
 import { createScopedLogger } from '../../utils/logger';
+import { TIME_CONSTANTS } from '../../constants/config';
 
 const logger = createScopedLogger('APIKeyManager');
 
@@ -19,7 +20,7 @@ interface StoredKey {
 
 export class APIKeyManager {
   private static readonly STORAGE_KEY = 'api_keys';
-  private static readonly KEY_ROTATION_INTERVAL = 43200000; // 12 hours
+  private static readonly KEY_ROTATION_INTERVAL = TIME_CONSTANTS.HOUR * 12; // 12 hours
   private secureStorage = new SecureStorage({
     namespace: 'qf_api_keys',
     encrypt: true,
@@ -201,7 +202,7 @@ export class APIKeyManager {
 
     // Check if oldest key is approaching expiration (within 1 hour)
     const oldestKey = keys.sort((a: StoredKey, b: StoredKey) => a.expiresAt - b.expiresAt)[0];
-    const oneHour = 60 * 60 * 1000;
+    const oneHour = TIME_CONSTANTS.HOUR;
     
     if (!oldestKey) {
       return false;

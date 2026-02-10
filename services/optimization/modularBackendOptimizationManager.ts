@@ -11,7 +11,7 @@ import { databaseOptimizer } from '../databaseOptimizer';
 
 import { edgeOptimizer } from '../edgeFunctionOptimizer';
 import { databasePerformanceMonitor } from '../databasePerformanceMonitor';
-import { BACKEND_OPTIMIZATION_CONFIG } from '../../constants/config';
+import { BACKEND_OPTIMIZATION_CONFIG, TIME_CONSTANTS } from '../../constants/config';
 
 class BackendOptimizationManager {
   private static instance: BackendOptimizationManager;
@@ -281,7 +281,7 @@ class BackendOptimizationManager {
   }> {
     const startTime = Date.now();
     const priority = options?.priority || 'performance';
-    const maxTime = options?.maxTime || 60000; // 1 minute default
+    const maxTime = options?.maxTime || TIME_CONSTANTS.MINUTE; // 1 minute default
     const targetGain = options?.targetGain || 10;
     
     const optimizationsApplied: string[] = [];

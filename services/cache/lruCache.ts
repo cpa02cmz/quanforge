@@ -215,9 +215,18 @@ export class OptimizedLRUCache<T = any> extends BaseCache<T> {
 }
 
 // Pre-configured cache instances with different configurations
-export const robotCache = new OptimizedLRUCache<any>({maxSize: 200, defaultTTL: 900000}); // 15 minutes
-export const analyticsCache = new OptimizedLRUCache<any>({maxSize: 100, defaultTTL: 600000}); // 10 minutes
-export const marketDataCache = new OptimizedLRUCache<any>({maxSize: 50, defaultTTL: 300000}); // 5 minutes
+export const robotCache = new OptimizedLRUCache<any>({
+  maxSize: CACHE_CONSTANTS.ROBOT_CACHE.MAX_SIZE,
+  defaultTTL: CACHE_CONSTANTS.ROBOT_CACHE.DEFAULT_TTL
+});
+export const analyticsCache = new OptimizedLRUCache<any>({
+  maxSize: CACHE_CONSTANTS.ANALYTICS_CACHE.MAX_SIZE,
+  defaultTTL: CACHE_CONSTANTS.ANALYTICS_CACHE.DEFAULT_TTL
+});
+export const marketDataCache = new OptimizedLRUCache<any>({
+  maxSize: CACHE_CONSTANTS.MARKET_DATA_CACHE.MAX_SIZE,
+  defaultTTL: CACHE_CONSTANTS.MARKET_DATA_CACHE.DEFAULT_TTL
+});
 
 // Start auto cleanup for all caches
 if (typeof window !== 'undefined') {

@@ -1,4 +1,5 @@
 import { CACHE_CONFIG } from './client';
+import { TIME_CONSTANTS } from '../../constants/config';
 
 // LRU Cache implementation for better performance and memory management
 export class LRUCache<T> {
@@ -118,7 +119,7 @@ export const warmCache = async (keys: string[], dataLoader: (key: string) => Pro
 };
 
 // Periodic cache cleanup
-export const startCacheCleanup = (intervalMs: number = 60000): ReturnType<typeof setInterval> => {
+export const startCacheCleanup = (intervalMs: number = TIME_CONSTANTS.MINUTE): ReturnType<typeof setInterval> => {
   return setInterval(() => {
     const cleanedRobots = robotCache.cleanup();
     const cleanedQueries = queryCache.cleanup();

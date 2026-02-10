@@ -4,7 +4,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
-import { RETRY_CONFIG } from './constants';
+import { RETRY_CONFIG, TIME_CONSTANTS } from './constants';
 // Commenting out vercelEdgeOptimizer import since it's not being used properly
 // import { vercelEdgeOptimizer } from './vercelEdgeOptimizer';
 
@@ -263,7 +263,7 @@ class EdgeSupabaseClient {
       };
     } = {}
   ): Promise<{ data: Blob | null; error: any }> {
-    const { cacheKey, cacheTTL = 3600000, transform } = options; // 1 hour default
+    const { cacheKey, cacheTTL = TIME_CONSTANTS.HOUR, transform } = options; // 1 hour default
     const fullCacheKey = cacheKey || `${bucket}_${path}`;
 
     // Check cache first
