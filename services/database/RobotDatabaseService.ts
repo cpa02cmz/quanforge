@@ -259,7 +259,11 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
   private async clearAllRobots(): Promise<void> {
     try {
       const client = await this.getClient();
-      const { error } = await client.from('robots').delete().neq('id', '');
+      // Use soft delete for all robots instead of hard delete
+      const { error } = await client
+        .from('robots')
+        .update({ is_active: false, deleted_at: new Date().toISOString() })
+        .neq('id', '');
       if (error) throw error;
     } catch (error) {
       handleError(error as Error, 'clearAllRobots', 'RobotDatabaseService');
