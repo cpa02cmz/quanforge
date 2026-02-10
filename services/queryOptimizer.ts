@@ -3,6 +3,7 @@ import { Robot } from '../types';
 import { MEMORY_LIMITS } from '../constants';
 import { TIME_CONSTANTS } from '../constants/config';
 import { TIMEOUTS } from './constants';
+import { getErrorMessage, isError } from '../utils/errorHandler';
 
 interface QueryOptimization {
   selectFields?: string[];
@@ -182,25 +183,26 @@ class QueryOptimizer {
 
        this.recordMetrics(metrics);
        return { data, error, metrics };
-     } catch (error: any) {
-       clearTimeout(setTimeout(() => {}, 0)); // Clear timeout if it exists
-       
-       // Handle timeout and other errors
-       const metrics: QueryMetrics = {
-         executionTime: performance.now() - startTime,
-         resultCount: 0,
-         cacheHit: false,
-         queryHash,
-       };
-       
-       this.recordMetrics(metrics);
-       
-       return { 
-         data: null, 
-         error: error.name === 'AbortError' ? new Error('Query timeout exceeded (30s)') : error, 
-         metrics 
-       };
-     }
+      } catch (error: unknown) {
+        clearTimeout(setTimeout(() => {}, 0)); // Clear timeout if it exists
+
+        // Handle timeout and other errors
+        const metrics: QueryMetrics = {
+          executionTime: performance.now() - startTime,
+          resultCount: 0,
+          cacheHit: false,
+          queryHash,
+        };
+
+        this.recordMetrics(metrics);
+
+        const isAbortError = isError(error) && error.name === 'AbortError';
+        return {
+          data: null,
+          error: isAbortError ? new Error('Query timeout exceeded (30s)') : (error instanceof Error ? error : new Error(getErrorMessage(error))),
+          metrics
+        };
+      }
    }
 
   // Optimized robot queries

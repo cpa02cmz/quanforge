@@ -1,5 +1,7 @@
 import { TIMEOUTS } from './constants';
 
+import { getVercelRegion } from '../types/browser';
+
 /**
  * Enhanced Edge Monitoring Service
  * Provides comprehensive monitoring and alerting for edge deployment
@@ -472,11 +474,9 @@ class EdgeMonitoringService {
   }
 
    private detectCurrentRegion(): string {
-     // Try to detect region from various sources
-     return (window as any).__VERCEL_REGION || 
-            (process.env && process.env['VERCEL_REGION']) || 
-            'unknown';
-   }
+      // Try to detect region from various sources
+      return getVercelRegion();
+    }
 
   // Public API methods
   public getHealthStatus(): Record<string, HealthCheckResult> {
