@@ -8,6 +8,7 @@ import { UXMetrics, UXScore, UXConfig } from './uxTypes';
 import { UXMetricsCollector } from './uxMetricsCollector';
 import { UXScoreCalculator } from './uxScoreCalculator';
 import { UXAnalyzer, UXInsights } from './uxAnalyzer';
+import { UX_MONITORING_CONFIG } from '../../constants/modularConfig';
 
 class RealTimeUXScoring {
   private static instance: RealTimeUXScoring;
@@ -22,18 +23,30 @@ class RealTimeUXScoring {
   private constructor(config: Partial<UXConfig> = {}) {
     this.config = {
       scoringWeights: {
-        performance: 0.4,
-        reliability: 0.3,
-        engagement: 0.3,
+        performance: UX_MONITORING_CONFIG.WEIGHTS.PERFORMANCE,
+        reliability: UX_MONITORING_CONFIG.WEIGHTS.RELIABILITY,
+        engagement: UX_MONITORING_CONFIG.WEIGHTS.ENGAGEMENT,
       },
       thresholds: {
-        lcp: { good: 2500, needsImprovement: 4000 },
-        fid: { good: 100, needsImprovement: 300 },
-        cls: { good: 0.1, needsImprovement: 0.25 },
-        ttfb: { good: 800, needsImprovement: 1800 },
+        lcp: {
+          good: UX_MONITORING_CONFIG.THRESHOLDS.LCP.GOOD,
+          needsImprovement: UX_MONITORING_CONFIG.THRESHOLDS.LCP.NEEDS_IMPROVEMENT
+        },
+        fid: {
+          good: UX_MONITORING_CONFIG.THRESHOLDS.FID.GOOD,
+          needsImprovement: UX_MONITORING_CONFIG.THRESHOLDS.FID.NEEDS_IMPROVEMENT
+        },
+        cls: {
+          good: UX_MONITORING_CONFIG.THRESHOLDS.CLS.GOOD,
+          needsImprovement: UX_MONITORING_CONFIG.THRESHOLDS.CLS.NEEDS_IMPROVEMENT
+        },
+        ttfb: {
+          good: UX_MONITORING_CONFIG.THRESHOLDS.TTFB.GOOD,
+          needsImprovement: UX_MONITORING_CONFIG.THRESHOLDS.TTFB.NEEDS_IMPROVEMENT
+        },
       },
       enableRealTimeMonitoring: true,
-      monitoringInterval: 5000, // 5 seconds
+      monitoringInterval: UX_MONITORING_CONFIG.INTERVALS.MONITORING_MS,
       enablePredictiveAnalysis: true,
       ...config
     };
@@ -214,9 +227,9 @@ class RealTimeUXScoring {
    * Get health status based on score
    */
   getHealthStatus(score: number): 'excellent' | 'good' | 'needs-improvement' | 'poor' {
-    if (score >= 90) return 'excellent';
-    if (score >= 70) return 'good';
-    if (score >= 50) return 'needs-improvement';
+    if (score >= UX_MONITORING_CONFIG.SCORES.EXCELLENT) return 'excellent';
+    if (score >= UX_MONITORING_CONFIG.SCORES.GOOD) return 'good';
+    if (score >= UX_MONITORING_CONFIG.SCORES.NEEDS_IMPROVEMENT) return 'needs-improvement';
     return 'poor';
   }
 

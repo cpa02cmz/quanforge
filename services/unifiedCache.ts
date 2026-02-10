@@ -1,6 +1,7 @@
 import { createScopedLogger } from '../utils/logger';
 import { AdvancedCache, CacheFactory } from './advancedCache';
 import { securityManager } from './securityManager';
+import { UNIFIED_CACHE_CONFIG } from '../constants/modularConfig';
 
 const logger = createScopedLogger('UnifiedCache');
 
@@ -54,13 +55,13 @@ export interface CacheMetrics {
 export class UnifiedCache {
   private memoryCache: AdvancedCache;
   private metrics: CacheMetrics;
-  private compressionThreshold = 1024; // 1KB
+  private compressionThreshold = UNIFIED_CACHE_CONFIG.COMPRESSION.THRESHOLD_BYTES;
   private cleanupInterval: ReturnType<typeof setInterval>;
 
   constructor(name: string, options: { maxSize?: number; defaultTTL?: number } = {}) {
     this.memoryCache = CacheFactory.getInstance(name, {
-      maxSize: options.maxSize || 10 * 1024 * 1024, // 10MB default
-      defaultTTL: options.defaultTTL || 300000 // 5 minutes default
+      maxSize: options.maxSize || UNIFIED_CACHE_CONFIG.SIZES.DEFAULT_BYTES,
+      defaultTTL: options.defaultTTL || UNIFIED_CACHE_CONFIG.TTL.DEFAULT_MS
     });
 
     this.metrics = {
@@ -73,10 +74,10 @@ export class UnifiedCache {
       decompressions: 0
     };
 
-    // Cleanup expired entries every 5 minutes
+    // Cleanup expired entries at configured interval
     this.cleanupInterval = setInterval(() => {
       this.cleanup();
-    }, 300000);
+    }, UNIFIED_CACHE_CONFIG.CLEANUP.INTERVAL_MS);
   }
 
   /**
@@ -135,7 +136,7 @@ export class UnifiedCache {
       }
 
       const sanitizedData = validation.sanitizedData || data;
-      const ttl = options.ttl || 300000; // 5 minutes default
+      const ttl = options.ttl || UNIFIED_CACHE_CONFIG.TTL.DEFAULT_MS;
       const tags = options.tags || [];
       const priority = options.priority || 'normal';
       
@@ -287,25 +288,23 @@ export class UnifiedCache {
    * Preload commonly accessed data
    */
   async preloadCommonData(): Promise<void> {
-    const commonLoaders = [
+    await this.warmCache<string[]>([
       {
         key: 'strategy-types',
-        loader: async () => ['Trend', 'Scalping', 'Grid', 'Martingale', 'Custom'],
-        options: { ttl: 3600000, tags: ['static'] } // 1 hour
+        loader: async () => [...UNIFIED_CACHE_CONFIG.PRELOAD.STRATEGY_TYPES],
+        options: { ttl: UNIFIED_CACHE_CONFIG.TTL.STATIC_MS, tags: ['static'] }
       },
       {
         key: 'timeframes',
-        loader: async () => ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1'],
-        options: { ttl: 3600000, tags: ['static'] } // 1 hour
+        loader: async () => [...UNIFIED_CACHE_CONFIG.PRELOAD.TIMEFRAMES],
+        options: { ttl: UNIFIED_CACHE_CONFIG.TTL.STATIC_MS, tags: ['static'] }
       },
       {
         key: 'symbols',
-        loader: async () => ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD'],
-        options: { ttl: 1800000, tags: ['static'] } // 30 minutes
+        loader: async () => [...UNIFIED_CACHE_CONFIG.PRELOAD.SYMBOLS],
+        options: { ttl: UNIFIED_CACHE_CONFIG.TTL.LONG_MS, tags: ['static'] }
       }
-    ];
-
-    await this.warmCache(commonLoaders);
+    ]);
   }
 
   /**
@@ -359,18 +358,18 @@ export class UnifiedCache {
 
 // Global cache instances
 export const unifiedRobotCache = new UnifiedCache('robots', {
-  maxSize: 20 * 1024 * 1024, // 20MB
-  defaultTTL: 600000 // 10 minutes
+  maxSize: UNIFIED_CACHE_CONFIG.SIZES.ROBOT_BYTES,
+  defaultTTL: UNIFIED_CACHE_CONFIG.TTL.MEDIUM_MS
 });
 
 export const unifiedQueryCache = new UnifiedCache('queries', {
-  maxSize: 5 * 1024 * 1024, // 5MB
-  defaultTTL: 120000 // 2 minutes
+  maxSize: UNIFIED_CACHE_CONFIG.SIZES.QUERY_BYTES,
+  defaultTTL: UNIFIED_CACHE_CONFIG.TTL.SHORT_MS
 });
 
 export const unifiedUserCache = new UnifiedCache('users', {
-  maxSize: 2 * 1024 * 1024, // 2MB
-  defaultTTL: 900000 // 15 minutes
+  maxSize: UNIFIED_CACHE_CONFIG.SIZES.USER_BYTES,
+  defaultTTL: UNIFIED_CACHE_CONFIG.TTL.LONG_MS
 });
 
 // Cache manager for coordinating multiple caches
