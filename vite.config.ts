@@ -258,7 +258,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
-    }
+    },
+    dedupe: ['react', 'react-dom', 'react-router', 'react-router-dom'],
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env['NODE_ENV'] || 'development'),
