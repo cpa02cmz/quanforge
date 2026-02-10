@@ -17,6 +17,7 @@
   "author": "QuantForge AI",
   "homepage": "https://quanforge.ai",
   "scripts": {
+    "prepare": "husky",
     "dev": "vite",
     "build": "vite build",
     "build:analyze": "ANALYZE=true vite build",
@@ -88,12 +89,27 @@
     "eslint": "^9.39.2",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.26",
+    "husky": "^9.1.0",
     "jsdom": "^27.4.0",
+    "lint-staged": "^15.5.0",
     "playwright": "^1.58.2",
     "rollup-plugin-visualizer": "^6.0.5",
     "terser": "^5.34.1",
     "typescript": "~5.9.3",
     "vite": "^6.4.1",
     "vitest": "^4.0.16"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
   }
 }
