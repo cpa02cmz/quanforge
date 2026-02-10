@@ -4,6 +4,7 @@
  */
 
 import { getUrlConfig } from '../../utils/urls';
+import { RATE_LIMITS, SECURITY, CACHE_TTLS } from '../constants';
 
 export interface SecurityConfig {
   maxPayloadSize: number;
@@ -46,12 +47,12 @@ export const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
     return urlConfig.getAllowedOrigins();
   })(),
   rateLimiting: {
-    windowMs: 60000, // 1 minute
-    maxRequests: 100,
+    windowMs: RATE_LIMITS.DEFAULT_WINDOW_MS,
+    maxRequests: RATE_LIMITS.REQUESTS.BASIC,
   },
   encryption: {
     algorithm: 'AES-256-GCM',
-    keyRotationInterval: 43200000, // 12 hours
+    keyRotationInterval: 12 * CACHE_TTLS.ONE_HOUR, // 12 hours
   },
   edgeRateLimiting: {
     enabled: true,
@@ -223,17 +224,17 @@ export const SECURITY_HEADERS = {
   'Permissions-Policy': 'geolocation=(), microphone=(), camera=()'
 };
 
-// Token Configuration
-export const TOKEN_EXPIRY_MS = 3600000; // 1 hour
-export const TOKEN_REFRESH_BEFORE_EXPIRY_MS = 300000; // 5 minutes before expiry
+// Token Configuration - using modular constants
+export const TOKEN_EXPIRY_MS = SECURITY.TOKEN_EXPIRY_MS;
+export const TOKEN_REFRESH_BEFORE_EXPIRY_MS = SECURITY.TOKEN_REFRESH_BEFORE_MS;
 
-// Validation Limits
+// Validation Limits - using modular constants
 export const VALIDATION_LIMITS = {
   maxRobotNameLength: 100,
-  maxRobotDescriptionLength: 1000,
-  maxCodeLength: 100000, // 100KB of MQL5 code
+  maxRobotDescriptionLength: SECURITY.MAX_DESCRIPTION_LENGTH,
+  maxCodeLength: SECURITY.MAX_CODE_LENGTH,
   maxParamNameLength: 50,
-  maxParamValueLength: 500,
+  maxParamValueLength: SECURITY.MAX_PARAM_VALUE_LENGTH,
   maxUserEmailLength: 255,
   maxUserNameLength: 100,
   minPasswordLength: 8,

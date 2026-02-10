@@ -8,21 +8,22 @@ import { Robot, UserSession } from '../../types';
 import { securityManager } from '../securityManager';
 import { consolidatedCache } from '../consolidatedCacheManager';
 import { createScopedLogger } from '../../utils/logger';
+import { DATABASE, CACHE_TTLS } from '../constants';
 
 const logger = createScopedLogger('CoreSupabaseService');
 
-// Enhanced connection retry configuration
+// Enhanced connection retry configuration - using modular constants
 const RETRY_CONFIG = {
-  maxRetries: 5,
-  retryDelay: 500,
-  backoffMultiplier: 1.5,
-  maxDelay: 10000,
+  maxRetries: DATABASE.RETRY.MAX_ATTEMPTS,
+  retryDelay: DATABASE.RETRY.BASE_DELAY_MS,
+  backoffMultiplier: DATABASE.RETRY.BACKOFF_MULTIPLIER,
+  maxDelay: DATABASE.RETRY.MAX_DELAY_MS,
   jitter: true,
 };
 
-// Cache configuration optimized for edge performance
+// Cache configuration optimized for edge performance - using modular constants
 const CACHE_CONFIG = {
-  ttl: 15 * 60 * 1000, // 15 minutes
+  ttl: CACHE_TTLS.FIFTEEN_MINUTES,
   maxSize: 200,
 };
 
@@ -281,7 +282,7 @@ return this.executeWithRetry(async () => {
           email: session.user.email || '',
         },
         access_token: session.access_token,
-        expires_in: session.expires_at ? Math.floor((session.expires_at - Date.now()) / 1000) : 3600,
+        expires_in: session.expires_at ? Math.floor((session.expires_at - Date.now()) / 1000) : 3600, // 1 hour default
         refresh_token: session.refresh_token || '',
         token_type: 'bearer',
       };
