@@ -157,13 +157,20 @@ const stopGeneration = useCallback(() => {
          const controller = new AbortController();
          
 // Optimized parallel loading with Promise.all
-           const loadRobot = async () => {
-               try {
-                   // Load robots data
-                   const { data: robots } = await db.getRobots();
-                  if (controller.signal.aborted) return;
-                  
-                  const found = robots.find((r: Robot) => r.id === id);
+            const loadRobot = async () => {
+                try {
+                    // Load robots data
+                    const result = await db.getRobots();
+                    if (controller.signal.aborted) return;
+                    
+                    if (!result.success || !result.data) {
+                        showToast("Failed to load robots", "error");
+                        navigate('/generator');
+                        return;
+                    }
+                    
+                    const robots = result.data;
+                    const found = robots.find((r: Robot) => r.id === id);
                   if (!found) {
                       showToast("Robot not found", "error");
                       navigate('/generator');
@@ -467,15 +474,21 @@ const stopGeneration = useCallback(() => {
       };
 
        try {
-         if (id) {
-             await db.updateRobot(id, robotData);
-         } else {
-             const { data } = await db.saveRobot(robotData);
-            if (data && data[0] && data[0].id) {
-                navigate(`/generator/${data[0].id}`, { replace: true });
-            }
-        }
-        showToast('Robot saved successfully!', 'success');
+          if (id) {
+              const updateResult = await db.updateRobot(id, robotData);
+              if (!updateResult.success) {
+                  throw new Error(updateResult.error?.message || 'Failed to update robot');
+              }
+          } else {
+              const result = await db.saveRobot(robotData);
+              if (!result.success) {
+                  throw new Error(result.error?.message || 'Failed to save robot');
+              }
+              if (result.data && result.data[0] && result.data[0].id) {
+                  navigate(`/generator/${result.data[0].id}`, { replace: true });
+              }
+         }
+         showToast('Robot saved successfully!', 'success');
       } catch (e) {
         logger.error(e);
         showToast('Failed to save robot', 'error');

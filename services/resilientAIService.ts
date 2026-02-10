@@ -1,5 +1,5 @@
 import { loadGeminiService } from './aiServiceLoader';
-import { withIntegrationResilience, isDegraded } from './integrationWrapper';
+import { withIntegrationResilience, isDegraded, type IntegrationResult } from './integrationWrapper';
 import { IntegrationType } from './integrationResilience';
 import { aiServiceFallbacks } from './fallbackStrategies';
 import { createScopedLogger } from '../utils/logger';
@@ -8,7 +8,13 @@ import { storage } from '../utils/storage';
 const logger = createScopedLogger('resilient-ai-service');
 
 export const aiService = {
-  async generateMQL5Code(prompt: string, currentCode?: string, strategyParams?: any, history?: any[], signal?: any) {
+  async generateMQL5Code(
+    prompt: string, 
+    currentCode?: string, 
+    strategyParams?: any, 
+    history?: any[], 
+    signal?: any
+  ): Promise<IntegrationResult<any>> {
     if (isDegraded(IntegrationType.AI_SERVICE)) {
       logger.warn('AI service is in degraded mode, using fallback if available');
     }
@@ -36,10 +42,10 @@ export const aiService = {
       logger.error('AI generation failed:', result.error?.message);
     }
 
-    return result.data;
+    return result;
   },
 
-  async refineCode(currentCode: string, signal?: any) {
+  async refineCode(currentCode: string, signal?: any): Promise<IntegrationResult<any>> {
     const result = await withIntegrationResilience(
       IntegrationType.AI_SERVICE,
       'ai_service',
@@ -52,10 +58,10 @@ export const aiService = {
       }
     );
 
-    return result.data;
+    return result;
   },
 
-  async explainCode(currentCode: string, signal?: any) {
+  async explainCode(currentCode: string, signal?: any): Promise<IntegrationResult<any>> {
     const result = await withIntegrationResilience(
       IntegrationType.AI_SERVICE,
       'ai_service',
@@ -68,10 +74,10 @@ export const aiService = {
       }
     );
 
-    return result.data;
+    return result;
   },
 
-  async testConnection(settings: any) {
+  async testConnection(settings: any): Promise<IntegrationResult<any>> {
     const result = await withIntegrationResilience(
       IntegrationType.AI_SERVICE,
       'ai_service',
@@ -84,10 +90,10 @@ export const aiService = {
       }
     );
 
-    return result.data;
+    return result;
   },
 
-  async analyzeStrategy(code: string, signal?: any) {
+  async analyzeStrategy(code: string, signal?: any): Promise<IntegrationResult<any>> {
     const result = await withIntegrationResilience(
       IntegrationType.AI_SERVICE,
       'ai_service',
@@ -100,6 +106,9 @@ export const aiService = {
       }
     );
 
-    return result.data;
+    return result;
   }
 };
+
+// Re-export IntegrationResult type for consumers
+export type { IntegrationResult };

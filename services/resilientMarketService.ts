@@ -1,5 +1,5 @@
 import { marketService as originalMarketService, MarketData } from './marketData';
-import { withIntegrationResilience, enterDegradedMode, exitDegradedMode, isDegraded } from './integrationWrapper';
+import { withIntegrationResilience, enterDegradedMode, exitDegradedMode, isDegraded, type IntegrationResult } from './integrationWrapper';
 import { IntegrationType } from './integrationResilience';
 import { marketDataFallbacks } from './fallbackStrategies';
 import { createScopedLogger } from '../utils/logger';
@@ -36,12 +36,12 @@ export const resilientMarketService = {
     }
   },
 
-  async getCurrentData(symbol: string): Promise<MarketData | null> {
+  async getCurrentData(symbol: string): Promise<IntegrationResult<MarketData | null>> {
     const result = await withIntegrationResilience(
       IntegrationType.MARKET_DATA,
       'market_data',
       async () => {
-        return new Promise((resolve: any) => {
+        return new Promise<MarketData | null>((resolve) => {
           let lastData: MarketData | null = null;
           const callback = (data: MarketData) => {
             lastData = data;
@@ -70,12 +70,12 @@ export const resilientMarketService = {
             digits: 5,
             timestamp: Date.now(),
             status: 'error'
-          }) as any)
+          }) as MarketData)
         ]
       }
     );
 
-    return (result.data as MarketData | null) || null;
+    return result;
   },
 
   setDegradedMode(level: number = 0.5) {
@@ -90,3 +90,6 @@ export const resilientMarketService = {
     return isDegraded(IntegrationType.MARKET_DATA);
   }
 };
+
+// Re-export IntegrationResult type for consumers
+export type { IntegrationResult };
