@@ -180,8 +180,8 @@ export const checkSupabaseHealth = async () => {
     
     // TODO: Implement real Supabase health check
     return { status: 'not_implemented', message: 'Real Supabase health check not implemented' };
-  } catch (error) {
-    handleError(error as Error, 'supabase.health_check');
+  } catch (error: unknown) {
+    handleError(error instanceof Error ? error : new Error(String(error)), 'supabase.health_check');
     return { status: 'error', message: 'Health check failed' };
   }
 };
