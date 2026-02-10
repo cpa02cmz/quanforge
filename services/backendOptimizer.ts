@@ -8,6 +8,7 @@ import { queryOptimizer } from './queryOptimizer';
 import { databasePerformanceMonitor } from './databasePerformanceMonitor';
 import { robotCache } from './advancedCache';
 import { createScopedLogger } from '../utils/logger';
+import { STAGGER } from './constants';
 
 const logger = createScopedLogger('BackendOptimizer');
 
@@ -186,7 +187,7 @@ class BackendOptimizer {
    */
   private async executeWithConcurrencyLimit<T>(operation: () => Promise<T>): Promise<T> {
     while (this.activeRequests >= this.config.maxConcurrentRequests) {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise(resolve => setTimeout(resolve, STAGGER.MICRO_DELAY_MS));
     }
 
     this.activeRequests++;

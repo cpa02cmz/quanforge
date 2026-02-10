@@ -10,6 +10,7 @@ import { mockDB, getRobotsPaginated, searchRobots, getRobots, saveRobot, updateR
 
 // Auth methods are handled directly in the main interface
 import { handleErrorCompat as handleError } from '../../utils/errorManager';
+import { logger } from '../../utils/logger';
 
 // Define the enhanced supabase interface to include convenience methods
 interface EnhancedSupabaseClient {
@@ -31,20 +32,47 @@ const isMockMode = settingsManager.getDBSettings()?.mode !== 'supabase';
  * Provides consistent API regardless of backend mode
  */
 const supabaseImpl: EnhancedSupabaseClient = {
-  // Authentication
+  // Authentication - with defensive checks to ensure methods exist
   auth: {
     ...mockAuth,
     signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
       // Password is ignored in mock mode, but interface is preserved
+      if (typeof mockAuth.signInWithPassword !== 'function') {
+        logger.error('signInWithPassword is not a function');
+        return { data: { session: null, user: null }, error: { message: 'Auth not initialized' } };
+      }
       return mockAuth.signInWithPassword({ email, password });
     },
     signUp: async ({ email, password }: { email: string; password: string }) => {
       // Password is ignored in mock mode, but interface is preserved
+      if (typeof mockAuth.signUp !== 'function') {
+        logger.error('signUp is not a function');
+        return { data: { session: null, user: null }, error: { message: 'Auth not initialized' } };
+      }
       return mockAuth.signUp({ email, password });
     },
-    signOut: mockAuth.signOut,
-    getSession: mockAuth.getSession,
-    onAuthStateChange: mockAuth.onAuthStateChange,
+    signOut: async () => {
+      if (typeof mockAuth.signOut !== 'function') {
+        logger.error('signOut is not a function');
+        return { error: { message: 'Auth not initialized' } };
+      }
+      return mockAuth.signOut();
+    },
+    getSession: async () => {
+      // Defensive check: ensure getSession is always a function
+      if (typeof mockAuth.getSession !== 'function') {
+        logger.warn('getSession is not a function, returning null session');
+        return { data: { session: null }, error: null };
+      }
+      return mockAuth.getSession();
+    },
+    onAuthStateChange: (callback: (event: string, session: any) => void) => {
+      if (typeof mockAuth.onAuthStateChange !== 'function') {
+        logger.error('onAuthStateChange is not a function');
+        return { data: { subscription: { unsubscribe: () => {} } } };
+      }
+      return mockAuth.onAuthStateChange(callback);
+    },
   },
   
   // Database operations
