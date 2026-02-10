@@ -7,6 +7,7 @@ import { performanceMonitor } from '../utils/performance';
 import { logger } from '../utils/logger';
 import { storage } from '../utils/storage';
 import { TIME_CONSTANTS, CACHE_CONFIG } from '../constants/config';
+import { STAGGER } from './constants';
 import { WindowWithGC, PerformanceWithMemory } from '../types/browser';
 
 interface PerformanceOptimizerConfig {
@@ -504,7 +505,7 @@ class FrontendPerformanceOptimizer {
   async warmUp(): Promise<void> {
     const warmUpTasks = [
       this.preloadNonCriticalModules(),
-      new Promise((resolve) => setTimeout(resolve, 2000)).then(() => {
+      new Promise((resolve) => setTimeout(resolve, STAGGER.WARMUP_TIMEOUT_MS)).then(() => {
         this.optimizeMemoryUsage();
       }),
     ];

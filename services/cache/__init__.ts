@@ -89,7 +89,21 @@ export const CACHE_CONSTANTS = {
     EDGE: 'edge',
     MARKET: 'market',
     ROBOT: 'robot'
-  }
+  },
+
+  // Pre-configured cache instances
+  ROBOT_CACHE: {
+    MAX_SIZE: 200,
+    DEFAULT_TTL: TIME_CONSTANTS.MINUTE * 15, // 15 minutes
+  },
+  ANALYTICS_CACHE: {
+    MAX_SIZE: 100,
+    DEFAULT_TTL: TIME_CONSTANTS.MINUTE * 10, // 10 minutes
+  },
+  MARKET_DATA_CACHE: {
+    MAX_SIZE: 50,
+    DEFAULT_TTL: TIME_CONSTANTS.MINUTE * 5, // 5 minutes
+  },
 };
 
 // Compression utilities

@@ -5,6 +5,7 @@
 
 import { createScopedLogger } from '../utils/logger';
 import { TIME_CONSTANTS } from '../constants/config';
+import { STAGGER } from './constants';
 
 const logger = createScopedLogger('FrontendOptimizer');
 
@@ -395,7 +396,7 @@ class FrontendOptimizer {
   async warmUp(): Promise<void> {
     const warmUpTasks = [
       this.preloadNonCriticalModules(),
-      new Promise((resolve) => setTimeout(resolve, 2000)).then(() => {
+      new Promise((resolve) => setTimeout(resolve, STAGGER.WARMUP_TIMEOUT_MS)).then(() => {
         this.optimizeMemoryUsage();
       }),
     ];

@@ -6,7 +6,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { createScopedLogger } from '../utils/logger';
-import { TIMEOUTS, RETRY_CONFIG, STAGGER } from './constants';
+import { TIMEOUTS, RETRY_CONFIG, STAGGER, TIME_CONSTANTS } from './constants';
 
 const logger = createScopedLogger('AdvancedSupabasePool');
 
@@ -347,7 +347,7 @@ class AdvancedSupabasePool {
 
     const healthyConnections = pool.filter(conn => {
       // Remove connections that are unhealthy or too old
-      const isTooOld = Date.now() - conn.created > 30 * 60 * 1000; // 30 minutes
+      const isTooOld = Date.now() - conn.created > TIME_CONSTANTS.MINUTE * 30; // 30 minutes
       const isIdle = !conn.isInUse && Date.now() - conn.lastUsed > config.idleTimeout;
       
       return conn.isHealthy && !isTooOld && !(isIdle && pool.length > config.minConnections);

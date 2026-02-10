@@ -526,7 +526,7 @@ export class EdgeCacheManager<T = any> {
           const mockData = await Promise.race([
             this.fetchDataForWarmup(key),
             new Promise<null>((_, reject) => 
-              setTimeout(() => reject(new Error('Warmup timeout')), 2000)
+              setTimeout(() => reject(new Error('Warmup timeout')), STAGGER.WARMUP_TIMEOUT_MS)
             )
           ]);
           

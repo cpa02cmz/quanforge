@@ -6,6 +6,9 @@
 
 import { TIME_CONSTANTS } from '../constants/config';
 
+// Re-export TIME_CONSTANTS for convenience
+export { TIME_CONSTANTS };
+
 // ========== CACHE TTL CONSTANTS ==========
 export const CACHE_TTLS = {
   // Short-term caches (seconds to minutes)

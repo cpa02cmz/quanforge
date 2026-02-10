@@ -859,7 +859,7 @@ class EnhancedSupabaseConnectionPool {
             logger.warn(`Failed to warm up connection for region ${region} after ${maxRetries} attempts (${priority} priority):`, error);
           } else {
             logger.debug(`Warm-up attempt ${attempt} failed for region ${region} (${priority} priority), retrying...`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+            await new Promise(resolve => setTimeout(resolve, RETRY_CONFIG.BASE_DELAY_MS * attempt)); // Exponential backoff
           }
         }
       }
