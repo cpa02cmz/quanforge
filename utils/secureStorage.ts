@@ -448,7 +448,7 @@ export class SecureStorage {
               stats.expiredCount++;
             }
           }
-        } catch (error) {
+        } catch (_error) {
           // Skip invalid items
         }
       }
@@ -473,7 +473,7 @@ export class SecureStorage {
               cleaned++;
             }
           }
-        } catch (error) {
+        } catch (_error) {
           // Remove invalid items as well
           localStorage.removeItem(key);
           cleaned++;
@@ -508,7 +508,7 @@ export class SecureStorage {
           localStorage.setItem(testKey + size, testData);
           size += testData.length;
         }
-      } catch (error) {
+      } catch (_error) {
         // Storage is full
       }
       

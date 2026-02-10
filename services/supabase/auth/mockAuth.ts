@@ -1,7 +1,7 @@
 // Mock authentication implementation for development
 
 import { UserSession } from '../../../types';
-import { STORAGE_KEYS, safeParse, trySaveToStorage } from './databaseUtils';
+import { STORAGE_KEYS, safeParse } from './databaseUtils';
 
 // Auth state listeners
 const authListeners: Array<(event: string, session: UserSession | null) => void> = [];
@@ -32,7 +32,7 @@ export const mockAuth = {
     };
   },
 
-  signIn: async (email: string, password: string) => {
+  signIn: async (email: string, _password: string) => {
     try {
       const session: UserSession = {
         user: {

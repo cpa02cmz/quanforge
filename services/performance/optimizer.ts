@@ -117,7 +117,6 @@ class PerformanceOptimizer {
 
   async optimizeAll(): Promise<OptimizationResult[]> {
     const results: OptimizationResult[] = [];
-    const startTime = Date.now();
 
     try {
       // Optimize memory
@@ -260,7 +259,6 @@ class PerformanceOptimizer {
   private async optimizeCache(): Promise<OptimizationResult> {
     const before = globalCache.size();
     const appliedOptimizations: string[] = [];
-    const recommendations: string[] = [];
 
     try {
       // Cache analysis (cleanup is handled automatically)
@@ -513,7 +511,7 @@ class PerformanceOptimizer {
     try {
       const cached = globalCache.get('perf:optimization-results');
       return Array.isArray(cached) ? cached : [];
-    } catch (error) {
+    } catch (_error) {
       return [];
     }
   }

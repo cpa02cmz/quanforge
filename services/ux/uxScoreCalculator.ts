@@ -241,7 +241,6 @@ export class UXScoreCalculator {
     if (scores.length < 3) return 'insufficient-data';
     
     const recentScores = scores.slice(-5).map(s => s.overall);
-    const average = recentScores.reduce((sum, score) => sum + score, 0) / recentScores.length;
     
     const firstHalf = recentScores.slice(0, Math.floor(recentScores.length / 2));
     const secondHalf = recentScores.slice(Math.floor(recentScores.length / 2));

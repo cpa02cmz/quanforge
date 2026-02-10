@@ -4,7 +4,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
-import type { Connection } from './pools';
+
 
 interface EdgeConfig {
   enableRegionOptimization: boolean;

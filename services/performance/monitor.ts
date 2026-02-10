@@ -291,7 +291,7 @@ class PerformanceMonitor {
   private cacheMetric(key: string, data: any): void {
     try {
       globalCache.set(`perf:${key}`, data, 60000); // Cache for 1 minute
-    } catch (error) {
+    } catch (_error) {
       // Ignore cache errors
     }
   }

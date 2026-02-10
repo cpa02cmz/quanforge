@@ -372,7 +372,7 @@ export const useSEOAnalytics = ({ pageUrl, pageTitle, pageType = 'other', enable
           console.debug('Analytics Event:', eventType, data);
         }
         // In production, send to analytics service
-      } catch (error) {
+      } catch (_error) {
         // Silent fail
       }
     }, delay);
@@ -596,7 +596,7 @@ class SEOMonitorService {
     this.observers.forEach(observer => {
       try {
         observer.disconnect();
-      } catch (e) {
+      } catch (_e) {
         // Observer may already be disconnected
       }
     });
@@ -607,7 +607,7 @@ class SEOMonitorService {
       this.eventListeners.forEach(({ event, handler, options }) => {
         try {
           window.removeEventListener(event, handler, options);
-        } catch (e) {
+        } catch (_e) {
           // Listener may already be removed
         }
       });
