@@ -53,7 +53,7 @@ class AIWorkerManager {
             new URL('/workers/geminiWorker.ts', import.meta.url),
             { type: 'module' }
           );
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error('Failed to create Gemini worker with import.meta.url, trying fallback:', error);
           this.worker = new Worker('/workers/geminiWorker.js', { type: 'module' });
         }
@@ -70,7 +70,7 @@ class AIWorkerManager {
         // Worker is ready
         this.isInitialized = true;
         resolve();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Failed to create worker:', error);
         reject(error);
       }
@@ -153,7 +153,7 @@ class AIWorkerManager {
         AI_CONFIG.WORKER_TIMEOUTS.BUILD_CONTEXT
       );
       return result.context;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Context building failed:', error);
       throw error;
     }
@@ -167,7 +167,7 @@ class AIWorkerManager {
         AI_CONFIG.WORKER_TIMEOUTS.PROCESS_RESPONSE
       );
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Response processing failed:', error);
       throw error;
     }
@@ -181,7 +181,7 @@ class AIWorkerManager {
         AI_CONFIG.WORKER_TIMEOUTS.EXTRACT_CODE
       );
       return result.code;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Code extraction failed:', error);
       throw error;
     }
@@ -195,7 +195,7 @@ class AIWorkerManager {
         AI_CONFIG.WORKER_TIMEOUTS.FORMAT_MESSAGE
       );
       return result.formatted;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Message formatting failed:', error);
       throw error;
     }
@@ -210,7 +210,7 @@ class AIWorkerManager {
         AI_CONFIG.WORKER_TIMEOUTS.GENERATE_CONTENT
       );
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Content generation failed:', error);
       throw error;
     }
@@ -224,7 +224,7 @@ class AIWorkerManager {
         AI_CONFIG.WORKER_TIMEOUTS.PARSE_RESPONSE
       );
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Response parsing failed:', error);
       throw error;
     }
@@ -270,7 +270,7 @@ class AIWorkerManager {
     try {
       await this.sendMessage('BUILD_CONTEXT', { prompt: 'test', history: [] }, AI_CONFIG.WORKER_TIMEOUTS.HEALTH_CHECK);
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('Worker health check failed:', error);
       return false;
     }
