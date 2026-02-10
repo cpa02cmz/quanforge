@@ -1,4 +1,6 @@
 import { createScopedLogger } from '../utils/logger';
+import { ERROR_CONFIG, API_CONFIG } from '../constants/config';
+import { TIMEOUTS } from '../constants';
 
 const logger = createScopedLogger('integration-resilience');
 
@@ -98,15 +100,15 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
     type: IntegrationType.DATABASE,
     name: 'Database',
     timeouts: {
-      connect: 5000,
-      read: 10000,
-      write: 15000,
-      overall: 30000
+      connect: TIMEOUTS.POOL_ACQUIRE,
+      read: TIMEOUTS.API_REQUEST,
+      write: TIMEOUTS.CIRCUIT_BREAKER_SLOW,
+      overall: TIMEOUTS.API_TIMEOUT
     },
     retryPolicy: {
-      maxRetries: 3,
+      maxRetries: ERROR_CONFIG.MAX_ERROR_RETRY_ATTEMPTS,
       initialDelay: 500,
-      maxDelay: 10000,
+      maxDelay: ERROR_CONFIG.ERROR_RETRY_DELAY_BASE * 5,
       backoffMultiplier: 2,
       jitter: true,
       retryableErrors: [
@@ -116,28 +118,28 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
       ]
     },
     circuitBreaker: {
-      failureThreshold: 5,
+      failureThreshold: ERROR_CONFIG.CIRCUIT_BREAKER_THRESHOLD,
       successThreshold: 2,
-      timeout: 30000,
+      timeout: API_CONFIG.REQUEST_TIMEOUT,
       halfOpenMaxCalls: 3,
-      resetTimeout: 60000
+      resetTimeout: ERROR_CONFIG.CIRCUIT_BREAKER_TIMEOUT
     },
     fallbackEnabled: true,
-    healthCheckInterval: 30000
+    healthCheckInterval: TIMEOUTS.HEALTH_CHECK
   },
   ai_service: {
     type: IntegrationType.AI_SERVICE,
     name: 'AI Service',
     timeouts: {
-      connect: 5000,
-      read: 30000,
-      write: 10000,
-      overall: 60000
+      connect: TIMEOUTS.POOL_ACQUIRE,
+      read: TIMEOUTS.API_TIMEOUT,
+      write: TIMEOUTS.API_REQUEST,
+      overall: TIMEOUTS.CONNECTION_TIMEOUT * 2
     },
     retryPolicy: {
-      maxRetries: 3,
-      initialDelay: 1000,
-      maxDelay: 15000,
+      maxRetries: ERROR_CONFIG.MAX_ERROR_RETRY_ATTEMPTS,
+      initialDelay: API_CONFIG.RETRY_DELAY_BASE,
+      maxDelay: API_CONFIG.RETRY_DELAY_MAX,
       backoffMultiplier: 1.5,
       jitter: true,
       retryableErrors: [
@@ -150,12 +152,12 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
     circuitBreaker: {
       failureThreshold: 3,
       successThreshold: 2,
-      timeout: 60000,
+      timeout: API_CONFIG.API_TIMEOUT,
       halfOpenMaxCalls: 2,
-      resetTimeout: 120000
+      resetTimeout: API_CONFIG.REQUEST_TIMEOUT * 2
     },
     fallbackEnabled: true,
-    healthCheckInterval: 60000
+    healthCheckInterval: TIMEOUTS.HEALTH_CHECK * 2
   },
   market_data: {
     type: IntegrationType.MARKET_DATA,
@@ -180,12 +182,12 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
     circuitBreaker: {
       failureThreshold: 10,
       successThreshold: 5,
-      timeout: 10000,
+      timeout: TIMEOUTS.API_REQUEST,
       halfOpenMaxCalls: 5,
-      resetTimeout: 30000
+      resetTimeout: TIMEOUTS.CIRCUIT_BREAKER_RESET
     },
     fallbackEnabled: true,
-    healthCheckInterval: 10000
+    healthCheckInterval: TIMEOUTS.API_REQUEST
   },
   cache: {
     type: IntegrationType.CACHE,
@@ -210,21 +212,21 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
     circuitBreaker: {
       failureThreshold: 20,
       successThreshold: 10,
-      timeout: 5000,
+      timeout: TIMEOUTS.QUICK_OPERATION,
       halfOpenMaxCalls: 10,
-      resetTimeout: 60000
+      resetTimeout: TIMEOUTS.HEALTH_CHECK * 2
     },
     fallbackEnabled: false,
-    healthCheckInterval: 60000
+    healthCheckInterval: TIMEOUTS.HEALTH_CHECK * 2
   },
   external_api_slow: {
     type: IntegrationType.EXTERNAL_API,
     name: 'External API (Slow)',
     timeouts: {
-      connect: 10000,
-      read: 30000,
-      write: 30000,
-      overall: 60000
+      connect: TIMEOUTS.API_REQUEST,
+      read: TIMEOUTS.API_TIMEOUT,
+      write: TIMEOUTS.API_TIMEOUT,
+      overall: TIMEOUTS.CONNECTION_TIMEOUT * 2
     },
     retryPolicy: {
       maxRetries: 5,
@@ -242,21 +244,21 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
     circuitBreaker: {
       failureThreshold: 10,
       successThreshold: 5,
-      timeout: 60000,
+      timeout: TIMEOUTS.CONNECTION_TIMEOUT * 2,
       halfOpenMaxCalls: 3,
-      resetTimeout: 120000
+      resetTimeout: TIMEOUTS.HEALTH_CHECK * 4
     },
     fallbackEnabled: true,
-    healthCheckInterval: 60000
+    healthCheckInterval: TIMEOUTS.HEALTH_CHECK * 2
   },
   external_api_fast: {
     type: IntegrationType.EXTERNAL_API,
     name: 'External API (Fast)',
     timeouts: {
-      connect: 2000,
-      read: 5000,
-      write: 5000,
-      overall: 10000
+      connect: TIMEOUTS.RETRY_BASE_DELAY * 2,
+      read: TIMEOUTS.QUICK_OPERATION,
+      write: TIMEOUTS.QUICK_OPERATION,
+      overall: TIMEOUTS.API_REQUEST
     },
     retryPolicy: {
       maxRetries: 1,
@@ -272,21 +274,21 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
     circuitBreaker: {
       failureThreshold: 10,
       successThreshold: 5,
-      timeout: 10000,
+      timeout: TIMEOUTS.API_REQUEST,
       halfOpenMaxCalls: 5,
-      resetTimeout: 30000
+      resetTimeout: TIMEOUTS.CIRCUIT_BREAKER_RESET
     },
     fallbackEnabled: false,
-    healthCheckInterval: 30000
+    healthCheckInterval: TIMEOUTS.HEALTH_CHECK
   },
   webhook: {
     type: IntegrationType.EXTERNAL_API,
     name: 'Webhook Endpoint',
     timeouts: {
-      connect: 2000,
-      read: 3000,
-      write: 3000,
-      overall: 5000
+      connect: TIMEOUTS.RETRY_BASE_DELAY * 2,
+      read: TIMEOUTS.RETRY_BASE_DELAY * 3,
+      write: TIMEOUTS.RETRY_BASE_DELAY * 3,
+      overall: TIMEOUTS.QUICK_OPERATION
     },
     retryPolicy: {
       maxRetries: 0,
@@ -299,12 +301,12 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
     circuitBreaker: {
       failureThreshold: 20,
       successThreshold: 10,
-      timeout: 5000,
+      timeout: TIMEOUTS.QUICK_OPERATION,
       halfOpenMaxCalls: 5,
-      resetTimeout: 60000
+      resetTimeout: TIMEOUTS.HEALTH_CHECK * 2
     },
     fallbackEnabled: false,
-    healthCheckInterval: 60000
+    healthCheckInterval: TIMEOUTS.HEALTH_CHECK * 2
   }
 };
 
