@@ -25,6 +25,7 @@ import { AICore } from '../ai/AICore';
 import { WorkerManager } from '../ai/WorkerManager';
 import { RateLimiter } from '../ai/RateLimiter';
 import { createScopedLogger } from '../../utils/logger';
+import { getErrorMessage } from '../../utils/errorHandler';
 
 const logger = createScopedLogger('ServiceOrchestrator');
 
@@ -383,9 +384,9 @@ export class ServiceOrchestrator implements IServiceOrchestrator {
       };
       
       return stats;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to collect service stats:', error);
-      return { error: error.message };
+      return { error: getErrorMessage(error) };
     }
   }
 }
