@@ -548,6 +548,6 @@ We take security seriously and appreciate your help in keeping QuantForge AI sec
 
 ---
 
-**Last Updated**: December 21, 2025  
-**Security Team**: QuantForge AI Security  
+**Last Updated**: February 10, 2026  
+**Security Team**: QuantForge AI Security
 **Version**: Security Policy v1.6.0
