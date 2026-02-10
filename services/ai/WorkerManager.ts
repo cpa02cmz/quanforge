@@ -33,7 +33,7 @@ export class WorkerManager implements IWorkerManager {
   private config!: WorkerConfig;
   private workers: Array<{ id: string; worker: Worker; isBusy: boolean; lastUsed: number }> = [];
   private taskQueue: WorkerTask[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   private processingTasks = new Map<string, { resolve: (result: any) => void; reject: (error: Error) => void; startTime: number }>();
   private stats = {
     active: 0,
