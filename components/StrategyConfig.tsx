@@ -28,8 +28,8 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
   const [manualImportText, setManualImportText] = useState('');
   const [errors, setErrors] = useState<Partial<Record<keyof StrategyParams, string>>>({});
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const validateField = (field: keyof StrategyParams, value: any): string | undefined => {
+  const validateField = (field: keyof StrategyParams, value: unknown): string | undefined => {
+    const stringValue = typeof value === 'string' ? value : String(value);
     switch (field) {
       case 'symbol':
         if (!value || typeof value !== 'string' || value.trim().length === 0) {
@@ -40,7 +40,7 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
         }
         break;
       case 'riskPercent': {
-        const risk = parseFloat(value);
+        const risk = parseFloat(stringValue);
         if (isNaN(risk) || risk <= 0) {
           return 'Risk percent must be greater than 0';
         }
@@ -50,14 +50,14 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
         break;
       }
       case 'stopLoss': {
-        const sl = parseFloat(value);
+        const sl = parseFloat(stringValue);
         if (isNaN(sl) || sl <= 0) {
           return 'Stop loss must be positive';
         }
         break;
       }
       case 'takeProfit': {
-        const tp = parseFloat(value);
+        const tp = parseFloat(stringValue);
         if (isNaN(tp) || tp <= 0) {
           return 'Take profit must be positive';
         }
@@ -68,7 +68,7 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
         break;
       }
       case 'magicNumber': {
-        const magic = parseInt(value);
+        const magic = parseInt(stringValue);
         if (isNaN(magic) || magic <= 0) {
           return 'Magic number must be a positive integer';
         }
@@ -96,8 +96,7 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
     return Object.keys(newErrors).length === 0;
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleChangeWithValidation = useCallback((field: keyof StrategyParams, value: any) => {
+  const handleChangeWithValidation = useCallback((field: keyof StrategyParams, value: unknown) => {
     const error = validateField(field, value);
     setErrors(prev => ({
       ...prev,
@@ -120,12 +119,9 @@ const sanitizeInput = (input: string): string => {
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleChange = useCallback((field: keyof StrategyParams, value: any) => {
-     if (typeof value === 'string') {
-       value = sanitizeInput(value);
-     }
-     onChange({ ...params, [field]: value });
+  const handleChange = useCallback((field: keyof StrategyParams, value: unknown) => {
+     const sanitizedValue = typeof value === 'string' ? sanitizeInput(value) : value;
+     onChange({ ...params, [field]: sanitizedValue });
    }, [params, onChange]);
 
   const handleInputChange = useCallback((id: string, field: keyof CustomInput, value: string) => {
