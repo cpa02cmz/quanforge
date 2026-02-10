@@ -599,7 +599,77 @@
             border-width: 2px;
           }
         }
-      </style>
+
+        /* ==========================================
+           TOOLTIP ANIMATIONS
+           Smooth fade and scale animations for Tooltip component
+           ========================================== */
+        
+        /* Tooltip entrance animation - fade in with subtle scale */
+        @keyframes tooltip-fade-in {
+          0% {
+            opacity: 0;
+            transform: scale(0.95) translateY(4px);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+
+        /* Tooltip exit animation - fade out with scale down */
+        @keyframes tooltip-fade-out {
+          0% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+          100% {
+            opacity: 0;
+            transform: scale(0.95) translateY(4px);
+          }
+        }
+
+        /* Tooltip utility classes */
+        .tooltip-enter {
+          animation: tooltip-fade-in 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .tooltip-exit {
+          animation: tooltip-fade-out 0.15s cubic-bezier(0.4, 0, 1, 1) forwards;
+        }
+
+        /* Arrow animation - subtle pulse on appear */
+        @keyframes tooltip-arrow-appear {
+          0% {
+            opacity: 0;
+            transform: scale(0.5);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        .tooltip-arrow {
+          animation: tooltip-arrow-appear 0.15s ease-out 0.05s both;
+        }
+
+        /* Reduced motion support for accessibility */
+        @media (prefers-reduced-motion: reduce) {
+          .tooltip-enter,
+          .tooltip-exit {
+            animation: none;
+            opacity: 1;
+            transform: none;
+          }
+          
+          .tooltip-arrow {
+            animation: none;
+            opacity: 1;
+            transform: none;
+          }
+        }
+       </style>
   
 </head>
   <body>
