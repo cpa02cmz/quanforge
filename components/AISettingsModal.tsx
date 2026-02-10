@@ -6,6 +6,7 @@ import { useToast } from './useToast';
 // testAIConnection imported dynamically to avoid bundle issues
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
+import { CharacterCounter } from './CharacterCounter';
 
 const logger = createScopedLogger('AISettingsModal');
 
@@ -253,15 +254,25 @@ return (
 
                             {/* Custom Instructions */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
-                                    {t('settings_custom_instructions')}
-                                </label>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-medium text-gray-300">
+                                        {t('settings_custom_instructions')}
+                                    </label>
+                                    <CharacterCounter
+                                        current={settings.customInstructions?.length || 0}
+                                        max={2000}
+                                        warningThreshold={0.85}
+                                        showRing={true}
+                                        ringSize={18}
+                                    />
+                                </div>
                                 <textarea
                                     value={settings.customInstructions || ''}
                                     onChange={(e) => setSettings({ ...settings, customInstructions: e.target.value })}
                                     className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                                     rows={3}
                                     placeholder={t('settings_custom_instructions_placeholder')}
+                                    aria-describedby="custom-instructions-counter"
                                 />
                             </div>
 
