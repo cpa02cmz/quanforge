@@ -3,6 +3,7 @@ import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import { getEnv } from './settingsManager';
 import { queryCache } from './advancedCache';
 import { PERFORMANCE_MONITORING } from '../constants/timing';
+import { TIMEOUTS } from './constants';
 
 interface ReadReplicaConfig {
   readonly: boolean;
@@ -94,7 +95,7 @@ class ReadReplicaManager {
       const result = await Promise.race([
         client.rpc('execute_analytics_query', { query, params }),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Query timeout')), 30000)
+          setTimeout(() => reject(new Error('Query timeout')), TIMEOUTS.LONG)
         )
       ]) as any;
 

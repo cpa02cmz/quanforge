@@ -1,3 +1,5 @@
+import { TIMEOUTS } from './constants';
+
 /**
  * Enhanced Edge Monitoring Service
  * Provides comprehensive monitoring and alerting for edge deployment
@@ -137,7 +139,7 @@ class EdgeMonitoringService {
           'x-edge-region': region,
           'x-vercel-region': region
         },
-        signal: AbortSignal.timeout(5000) // 5 second timeout
+        signal: AbortSignal.timeout(TIMEOUTS.STANDARD) // 5 second timeout
       });
 
       const responseTime = performance.now() - startTime;

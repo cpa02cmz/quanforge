@@ -1,4 +1,5 @@
 import { createScopedLogger } from '../utils/logger';
+import { TIMEOUTS } from './constants';
 import { getErrorMessage } from '../utils/errorHandler';
 
 const logger = createScopedLogger('fallback-strategies');
@@ -42,7 +43,7 @@ export class FallbackManager {
   private fallbackMetrics = new Map<string, FallbackMetrics>();
 
   async executeWithFallback<T>(options: FallbackOptions<T>): Promise<FallbackResult<T>> {
-    const { integrationName, primaryOperation, fallbacks, fallbackTimeout = 5000, logFallbacks = true } = options;
+    const { integrationName, primaryOperation, fallbacks, fallbackTimeout = TIMEOUTS.STANDARD, logFallbacks = true } = options;
     const metrics = this.getOrCreateMetrics(integrationName);
 
     try {
