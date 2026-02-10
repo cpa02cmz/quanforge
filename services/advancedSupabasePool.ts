@@ -6,6 +6,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { createScopedLogger } from '../utils/logger';
+import { TIMEOUTS, RETRY_CONFIG } from './constants';
 
 const logger = createScopedLogger('AdvancedSupabasePool');
 
@@ -230,7 +231,7 @@ class AdvancedSupabasePool {
   private async performHealthCheck(client: SupabaseClient): Promise<boolean> {
     try {
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Health check timeout')), 3000)
+        setTimeout(() => reject(new Error('Health check timeout')), TIMEOUTS.QUICK)
       );
 
       const healthPromise = client
@@ -558,8 +559,11 @@ class AdvancedSupabasePool {
           throw lastError;
         }
         
-        // Exponential backoff
-        const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
+        // Exponential backoff with modular config
+        const delay = Math.min(
+          RETRY_CONFIG.BASE_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, attempt),
+          RETRY_CONFIG.CAP_DELAY_MS
+        );
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }

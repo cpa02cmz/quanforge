@@ -1,4 +1,6 @@
 import { createScopedLogger } from '../utils/logger';
+import { TIMEOUTS } from './constants';
+import { getErrorMessage } from '../utils/errorHandler';
 
 const logger = createScopedLogger('fallback-strategies');
 
@@ -41,7 +43,7 @@ export class FallbackManager {
   private fallbackMetrics = new Map<string, FallbackMetrics>();
 
   async executeWithFallback<T>(options: FallbackOptions<T>): Promise<FallbackResult<T>> {
-    const { integrationName, primaryOperation, fallbacks, fallbackTimeout = 5000, logFallbacks = true } = options;
+    const { integrationName, primaryOperation, fallbacks, fallbackTimeout = TIMEOUTS.STANDARD, logFallbacks = true } = options;
     const metrics = this.getOrCreateMetrics(integrationName);
 
     try {
@@ -54,9 +56,9 @@ export class FallbackManager {
         data,
         fallbackUsed: false
       };
-    } catch (primaryError: any) {
+    } catch (primaryError: unknown) {
       metrics.primaryFailures++;
-      logger.warn(`Primary operation ${integrationName} failed:`, primaryError.message);
+      logger.warn(`Primary operation ${integrationName} failed:`, getErrorMessage(primaryError));
 
       if (fallbacks.length === 0) {
         return {
@@ -99,9 +101,9 @@ export class FallbackManager {
             fallbackUsed: true,
             fallbackType: fallback.name
           };
-        } catch (fallbackError: any) {
+        } catch (fallbackError: unknown) {
           metrics.fallbackFailures[fallback.name] = (metrics.fallbackFailures[fallback.name] || 0) + 1;
-          logger.warn(`Fallback ${fallback.name} failed for ${integrationName}:`, fallbackError.message);
+          logger.warn(`Fallback ${fallback.name} failed for ${integrationName}:`, getErrorMessage(fallbackError));
           continue;
         }
       }

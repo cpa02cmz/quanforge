@@ -407,7 +407,7 @@ this.isInitialized = true;
   /**
    * Get recent errors
    */
-  private getRecentErrors(_timeWindow: number): any[] {
+  private getRecentErrors(_timeWindow: number): unknown[] {
     // This would typically query a cache or storage for recent errors
     // For now, return a placeholder
     return [];

@@ -684,7 +684,7 @@ export const config = {
 #### Code Repository
 - **Issues**: [GitHub Issues](https://github.com/cpa02cmz/quanforge/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/cpa02cmz/quanforge/discussions)
-- **Wiki**: [GitHub Wiki](https://github.com/cpa02cmz/quanforge/wiki)
+- **Documentation**: [Documentation Index](./DOCUMENTATION_INDEX.md)
 
 ### Community Support
 
@@ -818,6 +818,6 @@ This troubleshooting guide covers the most common issues. For additional help, d
 
 ---
 
-**Last Updated**: December 21, 2025  
-**Version**: v1.6.0  
+**Last Updated**: February 10, 2026  
+**Version**: v1.6.0
 **Maintainers**: QuantForge AI Team

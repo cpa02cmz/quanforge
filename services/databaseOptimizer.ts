@@ -432,11 +432,11 @@ class DatabaseOptimizer {
    * Advanced query optimization with materialized views and performance insights
    */
   async getAdvancedOptimizationInsights(client: SupabaseClient): Promise<{
-    performanceInsights: any[];
+    performanceInsights: unknown[];
     materializedViewRecommendations: string[];
     indexRecommendations: string[];
   }> {
-    const performanceInsights: any[] = [];
+    const performanceInsights: unknown[] = [];
     const materializedViewRecommendations: string[] = [];
     const indexRecommendations: string[] = [];
     
