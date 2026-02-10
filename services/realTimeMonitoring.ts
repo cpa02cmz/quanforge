@@ -1,6 +1,6 @@
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
-import { MEMORY_LIMITS, PERFORMANCE_THRESHOLDS, UX_THRESHOLDS } from '../constants';
+import { MEMORY_LIMITS, PERFORMANCE_THRESHOLDS, UX_THRESHOLDS, TIMEOUTS } from '../constants';
 
 interface CoreWebVitals {
   lcp: number; // Largest Contentful Paint
@@ -158,7 +158,7 @@ this.isInitialized = true;
     if ('memory' in performance) {
       setInterval(() => {
         this.checkMemoryUsage();
-      }, 30000); // Check every 30 seconds
+      }, TIMEOUTS.HEALTH_CHECK); // Check every 30 seconds
     }
   }
 
@@ -286,8 +286,8 @@ this.isInitialized = true;
    * Check error rate
    */
   private checkErrorRate(): void {
-    const recentErrors = this.getRecentErrors(60000); // Last minute
-    const totalRequests = this.getRecentRequests(60000);
+    const recentErrors = this.getRecentErrors(TIMEOUTS.HEALTH_CHECK * 2); // Last minute
+    const totalRequests = this.getRecentRequests(TIMEOUTS.HEALTH_CHECK * 2);
     
     if (totalRequests > 0) {
       const errorRate = recentErrors.length / totalRequests;
