@@ -558,6 +558,94 @@ export function getRetryConfig(service: keyof typeof RETRY_CONFIGS.SERVICES) {
   return RETRY_CONFIGS.SERVICES[service] ?? RETRY_CONFIGS.STANDARD;
 }
 
+// ========== STORAGE KEYS CONFIGURATION ==========
+export const STORAGE_KEYS = {
+  // Session and authentication
+  SESSION: 'mock_session',
+  MOCK_SESSION: 'mock_session',
+  
+  // Data storage
+  ROBOTS: 'mock_robots',
+  
+  // Settings
+  AI_SETTINGS: 'quantforge_ai_settings',
+  DB_SETTINGS: 'quantforge_db_settings',
+  
+  // API keys
+  API_KEYS: 'api_keys',
+  
+  // Security
+  CSP_VIOLATIONS: 'csp_violations',
+  WAF_TOTAL_REQUESTS: 'waf_total_requests',
+  WAF_BLOCKED_REQUESTS: 'waf_blocked_requests',
+  WAF_TOP_THREATS: 'waf_top_threats',
+  EDGE_REQUESTS: 'edge_requests',
+  
+  // Cache
+  EDGE_CACHE_PREFIX: 'edge-cache-',
+} as const;
+
+// ========== STORAGE PREFIXES ==========
+export const STORAGE_PREFIXES = {
+  MOCK: 'mock_',
+  EDGE: 'edge-',
+  CACHE: 'cache_',
+} as const;
+
+// ========== MAGIC NUMBERS ==========
+export const MAGIC_NUMBERS = {
+  // Time conversions
+  MS_PER_SECOND: 1000,
+  MS_PER_MINUTE: 60000,
+  MS_PER_HOUR: 3600000,
+  MS_PER_DAY: 86400000,
+  MS_PER_WEEK: 604800000,
+  
+  // Size conversions
+  BYTES_PER_KB: 1024,
+  BYTES_PER_MB: 1048576,
+  BYTES_PER_GB: 1073741824,
+  
+  // Common thresholds
+  MAX_SAFE_INTEGER: 9007199254740991,
+  MIN_SAFE_INTEGER: -9007199254740991,
+} as const;
+
+// ========== SCORING WEIGHTS ==========
+export const SCORING_WEIGHTS = {
+  // Pool selection scoring
+  POOL: {
+    REGION_MATCH_BONUS: 2000,
+    HEALTHY_BONUS: 500,
+    RECENT_USE_PENALTY: 200,
+    LATENCY_MULTIPLIER: 1000,
+    MAX_LATENCY_PENALTY: 1000,
+  },
+  
+  // Edge metrics scoring
+  EDGE: {
+    DEFAULT_SCORE: 100,
+    LATENCY_DIVISOR: 1,
+    COMPRESSION_RATIO_PRECISION: 100,
+  },
+} as const;
+
+// ========== THRESHOLD VALUES ==========
+export const THRESHOLDS = {
+  // Usage thresholds
+  RECENT_USAGE_MS: 30000,
+  COLD_START_MS: 500,
+  CONNECTION_AGE_MS: 60000,
+  
+  // String limits
+  STRING_MAX_LENGTH: 1000,
+  STRING_CODE_MAX: 50000,
+  STRING_URL_MAX: 2048,
+  
+  // Compression
+  COMPRESSION_THRESHOLD: 1024,
+} as const;
+
 // Export all configurations as a single object
 export const APP_CONFIG = {
   WEBSOCKET: WEBSOCKET_CONFIG,
@@ -575,6 +663,11 @@ export const APP_CONFIG = {
   AI: AI_CONFIG,
   MEMORY: MEMORY_CONFIG,
   BATCH: BATCH_CONFIG,
+  STORAGE: STORAGE_KEYS,
+  PREFIXES: STORAGE_PREFIXES,
+  MAGIC: MAGIC_NUMBERS,
+  SCORING: SCORING_WEIGHTS,
+  THRESHOLD: THRESHOLDS,
 } as const;
 
 // Default export
