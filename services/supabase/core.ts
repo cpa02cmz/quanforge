@@ -9,6 +9,7 @@ import { securityManager } from '../securityManager';
 import { consolidatedCache } from '../consolidatedCacheManager';
 import { createScopedLogger } from '../../utils/logger';
 import { DATABASE, CACHE_TTLS } from '../constants';
+import { getErrorCode, getErrorMessage } from '../../utils/errorHandler';
 
 const logger = createScopedLogger('CoreSupabaseService');
 
@@ -50,12 +51,14 @@ const safeParse = (data: string | null, fallback: any) => {
 const trySaveToStorage = (key: string, value: string) => {
   try {
     localStorage.setItem(key, value);
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const errorCode = getErrorCode(e);
+    const errorMessage = getErrorMessage(e);
     if (
-      e.name === 'QuotaExceededError' || 
-      e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-      e.code === 22 ||
-      e.code === 1014
+      errorMessage.includes('QuotaExceededError') || 
+      errorMessage.includes('NS_ERROR_DOM_QUOTA_REACHED') ||
+      errorCode === '22' ||
+      errorCode === '1014'
     ) {
       logger.warn('Storage quota exceeded, attempting cleanup');
       try {
@@ -149,7 +152,7 @@ class CoreSupabaseService {
     while (this.retryCount <= RETRY_CONFIG.maxRetries) {
       try {
         return await operation();
-      } catch (error: any) {
+      } catch (error: unknown) {
         this.retryCount++;
 
         if (this.retryCount > RETRY_CONFIG.maxRetries) {
