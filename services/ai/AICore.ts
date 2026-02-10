@@ -4,6 +4,26 @@
  * Handles AI model interactions, content generation, and AI operations
  */
 
+// Type definitions for Google GenAI
+interface GoogleGenAIInstance {
+  getGenerativeModel: (config: Record<string, unknown>) => {
+    generateContent: (prompt: string | Array<Record<string, unknown>>, config?: Record<string, unknown>) => Promise<{
+      response?: { text: () => string };
+      text?: () => string;
+    }>;
+  };
+}
+
+interface GoogleGenAIConstructor {
+  new (apiKey: string): GoogleGenAIInstance;
+}
+
+interface GenAIType {
+  OBJECT: string;
+  NUMBER: string;
+  STRING: string;
+}
+
 import { IAICore, AICoreConfig } from '../../types/serviceInterfaces';
 import { settingsManager } from '../settingsManager';
 import { handleError } from '../../utils/errorHandler';
@@ -14,8 +34,8 @@ const logger = createScopedLogger('AI_CORE');
 
 export class AICore implements IAICore {
   private config!: AICoreConfig;
-  private GoogleGenAI: any = null;
-  private Type: any = null; // Keep for future use with token types
+  private GoogleGenAI: GoogleGenAIConstructor | Record<string, unknown> | null = null;
+  private Type: GenAIType | null = null; // Keep for future use with token types
   private isInitialized = false;
 
   async initialize(): Promise<void> {
@@ -175,7 +195,7 @@ export class AICore implements IAICore {
     }
 
     // Initialize the model
-    const genAI = new this.GoogleGenAI(this.config.apiKey);
+    const genAI = new (this.GoogleGenAI as GoogleGenAIConstructor)(this.config.apiKey);
     const model = genAI.getGenerativeModel({ model: this.config.model });
 
     // Prepare the full prompt
@@ -197,7 +217,7 @@ export class AICore implements IAICore {
     if (result.response && result.response.text) {
       return result.response.text();
     } else if (result.text) {
-      return result.text;
+      return result.text();
     } else {
       throw new Error('No response text in result');
     }
@@ -208,14 +228,14 @@ export class AICore implements IAICore {
   async generateWithHistory(
     prompt: string, 
     history: Array<{ role: string; content: string }>,
-    options?: any
+    options?: Record<string, unknown>
   ): Promise<string> {
     if (!this.GoogleGenAI || !this.config.apiKey) {
       throw new Error('Google GenAI not properly initialized');
     }
 
     try {
-      const genAI = new this.GoogleGenAI(this.config.apiKey);
+      const genAI = new (this.GoogleGenAI as GoogleGenAIConstructor)(this.config.apiKey);
       const model = genAI.getGenerativeModel({ model: this.config.model });
 
       // Build conversation history

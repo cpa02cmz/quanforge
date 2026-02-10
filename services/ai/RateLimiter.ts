@@ -17,6 +17,8 @@ export interface RateLimitInfo {
   lastRequest: number;
   isInBurst: boolean;
   burstCount: number;
+  customMaxRequests?: number;
+  customWindowMs?: number;
 }
 
 export interface RateLimitResult {
@@ -364,8 +366,8 @@ export class RateLimiter implements IRateLimiter {
     }
     
     // Store custom limit in the info object
-    (info as any).customMaxRequests = maxRequests;
-    (info as any).customWindowMs = windowMs || this.config.windowMs;
+    info.customMaxRequests = maxRequests;
+    info.customWindowMs = windowMs || this.config.windowMs;
     
     logger.info(`Set custom rate limit for ${identifier}: ${maxRequests} requests per ${windowMs || this.config.windowMs}ms`);
   }
