@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { PerformanceWithMemory } from '../types/browser';
 
 // ========== INTERFACES ==========
 
@@ -390,7 +391,8 @@ class MemoryUtilities {
   // Memory usage snapshot
   captureMemorySnapshot(): void {
     if (typeof window !== 'undefined' && 'performance' in window && 'memory' in performance) {
-      const memory = (performance as any).memory;
+      const perf = performance as PerformanceWithMemory;
+      const memory = perf.memory;
       if (memory) {
         this.core.recordMetric('memory_used', memory.usedJSHeapSize);
         this.core.recordMetric('memory_total', memory.totalJSHeapSize);
@@ -401,13 +403,16 @@ class MemoryUtilities {
 
   getMemoryUsage(): { used: number; total: number; limit: number; utilization: number } | null {
     if (typeof window !== 'undefined' && 'performance' in window && 'memory' in performance) {
-      const memory = (performance as any).memory;
-      return {
-        used: memory.usedJSHeapSize,
-        total: memory.totalJSHeapSize,
-        limit: memory.jsHeapSizeLimit,
-        utilization: memory.usedJSHeapSize / memory.jsHeapSizeLimit * 100,
-      };
+      const perf = performance as PerformanceWithMemory;
+      const memory = perf.memory;
+      if (memory) {
+        return {
+          used: memory.usedJSHeapSize,
+          total: memory.totalJSHeapSize,
+          limit: memory.jsHeapSizeLimit,
+          utilization: memory.usedJSHeapSize / memory.jsHeapSizeLimit * 100,
+        };
+      }
     }
     return null;
   }

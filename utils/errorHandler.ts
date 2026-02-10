@@ -454,3 +454,116 @@ if (typeof window !== 'undefined') {
     });
   });
 }
+
+/**
+ * Type-safe error handling utilities for catch blocks
+ * Replaces 'catch (e: any)' with 'catch (e: unknown)' pattern
+ */
+
+/**
+ * Get error message from unknown error type safely
+ * @param error - The error caught in a catch block (typed as unknown)
+ * @returns The error message string
+ */
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return 'Unknown error';
+}
+
+/**
+ * Check if unknown value is an Error instance
+ * @param error - The error caught in a catch block
+ * @returns Type predicate indicating if error is an Error instance
+ */
+export function isError(error: unknown): error is Error {
+  return error instanceof Error;
+}
+
+/**
+ * Get error code from unknown error type safely
+ * @param error - The error caught in a catch block
+ * @returns The error code string or undefined
+ */
+export function getErrorCode(error: unknown): string | undefined {
+  if (error && typeof error === 'object') {
+    if ('code' in error) {
+      return String((error as { code: unknown }).code);
+    }
+    if ('name' in error) {
+      return String((error as { name: unknown }).name);
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Get error status from unknown error type safely
+ * @param error - The error caught in a catch block
+ * @returns The error status code number or undefined
+ */
+export function getErrorStatus(error: unknown): number | undefined {
+  if (error && typeof error === 'object' && 'status' in error) {
+    const status = (error as { status: unknown }).status;
+    if (typeof status === 'number') {
+      return status;
+    }
+    if (typeof status === 'string') {
+      const parsed = parseInt(status, 10);
+      if (!isNaN(parsed)) {
+        return parsed;
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Convert unknown error to Error instance
+ * @param error - The error caught in a catch block
+ * @returns An Error instance
+ */
+export function toError(error: unknown): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+  if (typeof error === 'string') {
+    return new Error(error);
+  }
+  return new Error(String(error));
+}
+
+/**
+ * Type-safe error handler for service operations
+ * Provides consistent error handling with proper type guards
+ * @param error - The unknown error from catch block
+ * @param context - Additional context about where the error occurred
+ * @returns Standardized error object
+ */
+export function handleUnknownError(
+  error: unknown,
+  context?: { operation?: string; component?: string }
+): { message: string; code?: string; status?: number; original: unknown } {
+  const result = {
+    message: getErrorMessage(error),
+    code: getErrorCode(error),
+    status: getErrorStatus(error),
+    original: error,
+  };
+
+  if (context) {
+    handleError(result.message, context.operation || 'Unknown Operation', context.component || 'Unknown', {
+      code: result.code,
+      status: result.status,
+    });
+  }
+
+  return result;
+}

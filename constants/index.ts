@@ -297,3 +297,74 @@ export const loadSuggestedStrategies = async (language: Language) => {
 
 // Re-export time constants for backward compatibility
 export { TIME_CONSTANTS } from './config';
+
+// Export modular simulation constants
+export {
+  SIMULATION_CONSTANTS,
+  SIMULATION_TIME,
+  RISK_CONFIG,
+  PROFITABILITY_CONFIG,
+  WIN_RATE_CONFIG,
+  MONTE_CARLO_CONFIG,
+  BALANCE_CONFIG,
+  SIMULATION_PARAMS,
+} from './simulation';
+
+// Export modular animation constants
+export {
+  UI_ANIMATION,
+  TYPING_ANIMATION,
+  FADE_TIMING,
+  STAGGER_ANIMATION,
+  LOADING_ANIMATION,
+  INTERACTIVE_ANIMATION,
+  TOAST_ANIMATION,
+  MODAL_ANIMATION,
+  CHART_ANIMATION,
+  SCROLL_ANIMATION,
+  EASING,
+  ANIMATION_PERFORMANCE,
+} from './animations';
+
+// ============================================
+// Flexy's Modular Configuration System 🎯
+// ============================================
+// Import all configurations from this single entry point:
+//   import { SERVICE_TIMEOUTS, CACHE_SIZES, RETRY_CONFIGS } from '@/constants';
+// Or import specific modules:
+//   import { SERVICE_TIMEOUTS } from '@/constants/modularConfig';
+
+export {
+  // Main configuration objects
+  WEBSOCKET_CONFIG,
+  CACHE_SIZES as MODULAR_CACHE_SIZES,
+  SERVICE_TIMEOUTS,
+  RETRY_CONFIGS,
+  CIRCUIT_BREAKER_CONFIGS,
+  MONITORING_INTERVALS,
+  POOL_CONFIGS,
+  RATE_LIMITS as MODULAR_RATE_LIMITS,
+  VALIDATION_LIMITS as MODULAR_VALIDATION_LIMITS,
+  TOKEN_CONFIG,
+  BACKUP_CONFIG,
+  EDGE_CONFIG as MODULAR_EDGE_CONFIG,
+  AI_CONFIG as MODULAR_AI_CONFIG,
+  MEMORY_CONFIG,
+  BATCH_CONFIG as MODULAR_BATCH_CONFIG,
+  
+  // Flexy's new modular configs
+  STORAGE_KEYS,
+  STORAGE_PREFIXES,
+  MAGIC_NUMBERS,
+  SCORING_WEIGHTS,
+  THRESHOLDS,
+
+  // Helper functions
+  getConfigValue,
+  getTimeout,
+  getCacheSize,
+  getRetryConfig,
+
+  // Combined app config
+  APP_CONFIG as MODULAR_APP_CONFIG,
+} from './modularConfig';

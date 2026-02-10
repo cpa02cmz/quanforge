@@ -17,7 +17,6 @@ import {
 import { integrationHealthMonitor, integrationMetrics } from './integrationHealthMonitor';
 import { createScopedLogger } from '../utils/logger';
 import { dbUtils } from './supabase';
-import { testAIConnection } from './gemini';
 import { marketService } from './marketData';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { settingsManager } from './settingsManager';
@@ -323,6 +322,7 @@ export class IntegrationHealthChecker {
                   error: 'AI API key not configured'
                 };
               }
+              const { testAIConnection } = await import('./gemini');
               await testAIConnection(settings);
               return {
                 success: true,

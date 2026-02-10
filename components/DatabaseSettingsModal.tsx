@@ -6,6 +6,7 @@ import { dbUtils } from '../services';
 import { useToast } from './useToast';
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
+import { ConfirmationModal } from './ConfirmationModal';
 
 const logger = createScopedLogger('DatabaseSettingsModal');
 
@@ -21,6 +22,7 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
     const [stats, setStats] = useState<{ count: number; storageType: string } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isMigrating, setIsMigrating] = useState(false);
+    const [showMigrationConfirm, setShowMigrationConfirm] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -69,9 +71,12 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
 
   
 
-    const handleMigration = async () => {
-        if (!window.confirm("This will upload all local robots to your Supabase account. Continue?")) return;
+    const handleMigrationRequest = () => {
+        setShowMigrationConfirm(true);
+    };
 
+    const handleMigrationConfirm = async () => {
+        setShowMigrationConfirm(false);
         setIsMigrating(true);
         try {
             const result = await dbUtils.migrateMockToSupabase();
@@ -89,6 +94,10 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
         } finally {
             setIsMigrating(false);
         }
+    };
+
+    const handleMigrationCancel = () => {
+        setShowMigrationConfirm(false);
     };
 
     if (!isOpen) return null;
@@ -200,7 +209,7 @@ return (
 
                         {settings.mode === 'mock' && (stats?.count ?? 0) > 0 && (
                             <button
-                                onClick={handleMigration}
+                                onClick={handleMigrationRequest}
                                 disabled={isMigrating}
                                 className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -226,6 +235,19 @@ return (
                     </div>
                 </div>
             </div>
+
+            {/* Migration Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showMigrationConfirm}
+                title={t('confirm_migration_title') || 'Migrate to Cloud'}
+                message={t('confirm_migration_message') || 'This will upload all local robots to your Supabase account. This action cannot be undone.'}
+                confirmLabel={t('confirm_migrate') || 'Migrate'}
+                cancelLabel={t('confirm_cancel') || 'Cancel'}
+                variant="warning"
+                isLoading={isMigrating}
+                onConfirm={handleMigrationConfirm}
+                onCancel={handleMigrationCancel}
+            />
         </div>
     );
 });

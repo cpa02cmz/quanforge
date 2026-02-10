@@ -6,6 +6,7 @@
 
 // Import React hooks
 import { useState, useEffect, useCallback } from 'react';
+import { WEB_VITALS_THRESHOLDS, API_THRESHOLDS, SCORING, MEMORY, MONITORING } from './constants';
 
 interface UXMetrics {
   // Core Web Vitals
@@ -81,7 +82,7 @@ class UXPerformanceMonitor {
   private observers: PerformanceObserver[] = [];
   private monitoringTimer?: ReturnType<typeof setInterval>;
   private scoreHistory: UXScore[] = [];
-  private maxHistorySize = 100;
+  private maxHistorySize = MEMORY.MAX_HISTORY_SIZE;
 
   constructor(config: Partial<UXConfig> = {}) {
     this.config = {
@@ -91,13 +92,13 @@ class UXPerformanceMonitor {
         engagement: 0.3,
       },
       thresholds: {
-        lcp: { good: 2500, needsImprovement: 4000 },
-        fid: { good: 100, needsImprovement: 300 },
-        cls: { good: 0.1, needsImprovement: 0.25 },
-        ttfb: { good: 800, needsImprovement: 1800 },
+        lcp: { good: WEB_VITALS_THRESHOLDS.LCP.GOOD, needsImprovement: WEB_VITALS_THRESHOLDS.LCP.NEEDS_IMPROVEMENT },
+        fid: { good: WEB_VITALS_THRESHOLDS.FID.GOOD, needsImprovement: WEB_VITALS_THRESHOLDS.FID.NEEDS_IMPROVEMENT },
+        cls: { good: WEB_VITALS_THRESHOLDS.CLS.GOOD, needsImprovement: WEB_VITALS_THRESHOLDS.CLS.NEEDS_IMPROVEMENT },
+        ttfb: { good: WEB_VITALS_THRESHOLDS.TTFB.GOOD, needsImprovement: WEB_VITALS_THRESHOLDS.TTFB.NEEDS_IMPROVEMENT },
       },
       enableRealTimeMonitoring: true,
-      monitoringInterval: 5000, // 5 seconds
+      monitoringInterval: MONITORING.INTERVALS.FAST, // 5 seconds
       enablePredictiveAnalysis: true,
       ...config,
     };
@@ -295,7 +296,8 @@ class UXPerformanceMonitor {
         const entries = list.getEntries();
         for (const entry of entries) {
           if (entry.entryType === 'longtask') {
-            totalBlockingTime += entry.duration - 50;
+            const longTaskThreshold = 50;
+          totalBlockingTime += entry.duration - longTaskThreshold;
           }
         }
         this.metrics.tbt = totalBlockingTime;
@@ -423,7 +425,7 @@ class UXPerformanceMonitor {
   private calculateReliabilityScore(): number {
     const errorScore = Math.max(0, 100 - (this.metrics.errorRate * 100));
     const crashScore = Math.max(0, 100 - (this.metrics.crashRate * 100));
-    const apiScore = this.scoreMetric(this.metrics.apiResponseTime, { good: 200, needsImprovement: 1000 });
+    const apiScore = this.scoreMetric(this.metrics.apiResponseTime, { good: API_THRESHOLDS.RESPONSE_TIME.EXCELLENT, needsImprovement: API_THRESHOLDS.RESPONSE_TIME.NEEDS_IMPROVEMENT });
     
     return Math.round((errorScore + crashScore + apiScore) / 3);
   }
@@ -433,7 +435,7 @@ class UXPerformanceMonitor {
    */
   private calculateEngagementScore(): number {
     const clickScore = this.scoreMetric(this.metrics.clickDelay, { good: 50, needsImprovement: 200 });
-    const scrollScore = Math.min(100, this.metrics.scrollPerformance * 10);
+    const scrollScore = Math.min(SCORING.MAX_SCORE, this.metrics.scrollPerformance * 10);
     const inputScore = this.scoreMetric(this.metrics.inputLag, { good: 16, needsImprovement: 100 });
     
     return Math.round((clickScore + scrollScore + inputScore) / 3);
@@ -444,15 +446,15 @@ class UXPerformanceMonitor {
    */
   private scoreMetric(value: number, thresholds: { good: number; needsImprovement: number }): number {
     if (value <= thresholds.good) {
-      return 100;
+      return SCORING.MAX_SCORE;
     } else if (value <= thresholds.needsImprovement) {
       // Linear interpolation between good and needs improvement
       const ratio = (value - thresholds.good) / (thresholds.needsImprovement - thresholds.good);
-      return Math.round(100 - (ratio * 50));
+      return Math.round(SCORING.MAX_SCORE - (ratio * SCORING.RATIO_MULTIPLIER));
     } else {
       // Linear interpolation beyond needs improvement
       const ratio = Math.min((value - thresholds.needsImprovement) / thresholds.needsImprovement, 1);
-      return Math.round(50 - (ratio * 50));
+      return Math.round(SCORING.RATIO_MULTIPLIER - (ratio * SCORING.RATIO_MULTIPLIER));
     }
   }
 
@@ -511,12 +513,13 @@ class UXPerformanceMonitor {
     }
 
     // Check error rate
-    if (this.metrics.errorRate > 0.05) {
+    const errorRateThreshold = 0.05;
+    if (this.metrics.errorRate > errorRateThreshold) {
       issues.push({
         type: 'critical',
         metric: 'Error Rate',
         value: this.metrics.errorRate,
-        threshold: 0.05,
+        threshold: errorRateThreshold,
         description: 'High error rate detected',
         recommendation: 'Improve error handling, add better validation, monitor backend health',
       });
@@ -538,19 +541,19 @@ class UXPerformanceMonitor {
     // Add general recommendations based on overall performance
     const score = this.calculateUXScore();
     
-    if (score.overall < 50) {
+    if (score.overall < SCORING.RATIO_MULTIPLIER) {
       recommendations.add('Consider comprehensive performance audit and optimization');
     }
-    
-    if (score.performance < 60) {
+
+    if (score.performance < SCORING.GOOD) {
       recommendations.add('Focus on Core Web Vitals optimization');
     }
-    
-    if (score.reliability < 70) {
+
+    if (score.reliability < SCORING.EXCELLENT) {
       recommendations.add('Improve error handling and monitoring');
     }
-    
-    if (score.engagement < 60) {
+
+    if (score.engagement < SCORING.GOOD) {
       recommendations.add('Optimize user interaction responsiveness');
     }
 
@@ -616,9 +619,10 @@ class UXPerformanceMonitor {
     const change = recentAvg - olderAvg;
     let trend: 'improving' | 'declining' | 'stable';
     
-    if (change > 5) {
+    const trendThreshold = 5;
+    if (change > trendThreshold) {
       trend = 'improving';
-    } else if (change < -5) {
+    } else if (change < -trendThreshold) {
       trend = 'declining';
     } else {
       trend = 'stable';
@@ -688,7 +692,7 @@ class UXPerformanceMonitor {
 // Global instance
 export const uxPerformanceMonitor = new UXPerformanceMonitor({
   enableRealTimeMonitoring: true,
-  monitoringInterval: 5000,
+  monitoringInterval: MONITORING.INTERVALS.FAST,
   enablePredictiveAnalysis: true,
 });
 

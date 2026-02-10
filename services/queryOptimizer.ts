@@ -2,6 +2,8 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Robot } from '../types';
 import { MEMORY_LIMITS } from '../constants';
 import { TIME_CONSTANTS } from '../constants/config';
+import { TIMEOUTS } from './constants';
+import { getErrorMessage, isError } from '../utils/errorHandler';
 
 interface QueryOptimization {
   selectFields?: string[];
@@ -106,7 +108,7 @@ class QueryOptimizer {
      try {
        // Create AbortController for timeout handling
        const controller = new AbortController();
-       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUTS.LONG); // 30 second timeout
 
     // Build query with optimizations - need to cast properly to handle Supabase types
     const queryBuilder = client.from(table);
@@ -181,25 +183,26 @@ class QueryOptimizer {
 
        this.recordMetrics(metrics);
        return { data, error, metrics };
-     } catch (error: any) {
-       clearTimeout(setTimeout(() => {}, 0)); // Clear timeout if it exists
-       
-       // Handle timeout and other errors
-       const metrics: QueryMetrics = {
-         executionTime: performance.now() - startTime,
-         resultCount: 0,
-         cacheHit: false,
-         queryHash,
-       };
-       
-       this.recordMetrics(metrics);
-       
-       return { 
-         data: null, 
-         error: error.name === 'AbortError' ? new Error('Query timeout exceeded (30s)') : error, 
-         metrics 
-       };
-     }
+      } catch (error: unknown) {
+        clearTimeout(setTimeout(() => {}, 0)); // Clear timeout if it exists
+
+        // Handle timeout and other errors
+        const metrics: QueryMetrics = {
+          executionTime: performance.now() - startTime,
+          resultCount: 0,
+          cacheHit: false,
+          queryHash,
+        };
+
+        this.recordMetrics(metrics);
+
+        const isAbortError = isError(error) && error.name === 'AbortError';
+        return {
+          data: null,
+          error: isAbortError ? new Error('Query timeout exceeded (30s)') : (error instanceof Error ? error : new Error(getErrorMessage(error))),
+          metrics
+        };
+      }
    }
 
   // Optimized robot queries
@@ -253,10 +256,10 @@ class QueryOptimizer {
     table: string,
     records: T[],
     batchSize: number = 100
-  ): Promise<{ data: T[] | null; error: any; metrics: QueryMetrics }> {
+  ): Promise<{ data: T[] | null; error: unknown; metrics: QueryMetrics }> {
     const startTime = performance.now();
     const results: T[] = [];
-    const errors: any[] = [];
+    const errors: unknown[] = [];
 
     // Process in batches to avoid payload limits
     for (let i = 0; i < records.length; i += batchSize) {

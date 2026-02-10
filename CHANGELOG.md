@@ -290,6 +290,6 @@ See [bug.md](./bug.md) for complete list of resolved bugs and their solutions.
 
 ---
 
-**Changelog maintained by:** QuantForge AI Team  
-**Last Updated:** December 21, 2025  
+**Changelog maintained by:** QuantForge AI Team
+**Last Updated:** February 10, 2026
  **Format:** Keep a Changelog v1.0.0

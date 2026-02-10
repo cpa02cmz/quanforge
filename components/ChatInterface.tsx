@@ -5,6 +5,7 @@ import { Message, MessageRole } from '../types';
 import { loadSuggestedStrategies } from '../constants';
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
+import { SendButton } from './SendButton';
 
   const logger = createScopedLogger('ChatInterface');
 
@@ -410,25 +411,105 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
       <div className="p-4 border-t border-dark-border bg-dark-surface">
         <form onSubmit={handleSubmit} className="relative">
           <label htmlFor="chat-input" className="sr-only">{t('chat_placeholder')}</label>
-          <input
-            id="chat-input"
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={t('chat_placeholder')}
-            className="w-full bg-dark-bg border border-dark-border rounded-xl pl-4 pr-12 py-3 text-sm text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all placeholder-gray-500 shadow-inner"
-            disabled={isLoading}
-            aria-describedby={isLoading ? 'typing-indicator' : undefined}
-            autoComplete="off"
-          />
-          <button
-            type="submit"
-            disabled={!input.trim() || isLoading}
-            className="absolute right-2 top-2 p-1.5 bg-brand-600 rounded-lg text-white hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-brand-600/20 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-dark-bg"
-            aria-label="Send message"
+          <div className="relative">
+            <input
+              id="chat-input"
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={t('chat_placeholder')}
+              maxLength={1000}
+              className="w-full bg-dark-bg border border-dark-border rounded-xl pl-4 pr-20 py-3 text-sm text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all placeholder-gray-500 shadow-inner"
+              disabled={isLoading}
+              aria-describedby={isLoading ? 'typing-indicator' : 'char-count'}
+              autoComplete="off"
+            />
+            
+            {/* Character Count - appears smoothly when typing */}
+            <div 
+              id="char-count"
+              className={`absolute right-12 top-1/2 -translate-y-1/2 flex items-center gap-1.5 transition-all duration-300 ${
+                input.length > 0 
+                  ? 'opacity-100 translate-x-0' 
+                  : 'opacity-0 translate-x-2 pointer-events-none'
+              }`}
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {/* Circular progress indicator */}
+              <svg 
+                className="w-5 h-5 -rotate-90" 
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+              >
+                {/* Background track */}
+                <circle
+                  cx="10"
+                  cy="10"
+                  r="8"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="text-dark-border"
+                  opacity="0.3"
+                />
+                {/* Progress arc */}
+                <circle
+                  cx="10"
+                  cy="10"
+                  r="8"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  className={`transition-all duration-300 ${
+                    input.length > 900 
+                      ? 'text-amber-500' 
+                      : input.length > 950 
+                        ? 'text-red-500' 
+                        : 'text-brand-500'
+                  }`}
+                  style={{
+                    strokeDasharray: `${2 * Math.PI * 8}`,
+                    strokeDashoffset: `${2 * Math.PI * 8 * (1 - input.length / 1000)}`,
+                    transition: 'stroke-dashoffset 0.3s ease-out, stroke 0.3s ease'
+                  }}
+                />
+              </svg>
+              
+              {/* Character count text */}
+              <span 
+                className={`text-xs font-medium tabular-nums transition-colors duration-200 ${
+                  input.length > 900 
+                    ? 'text-amber-400' 
+                    : input.length > 950 
+                      ? 'text-red-400' 
+                      : 'text-gray-500'
+                }`}
+              >
+                {input.length}
+                <span className="text-gray-600">/1000</span>
+              </span>
+            </div>
+            
+            <SendButton isLoading={isLoading} disabled={!input.trim() || isLoading} />
+          </div>
+          
+          {/* Helper text - shows when approaching limit */}
+          <div 
+            className={`mt-1.5 text-xs transition-all duration-300 overflow-hidden ${
+              input.length > 900 
+                ? 'opacity-100 max-h-6' 
+                : 'opacity-0 max-h-0'
+            }`}
+            aria-live="polite"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-          </button>
+            <span className={input.length > 950 ? 'text-red-400' : 'text-amber-400'}>
+              {input.length > 950 
+                ? '⚠️ Approaching character limit' 
+                : '💡 Character limit approaching'}
+            </span>
+          </div>
         </form>
       </div>
     </div>

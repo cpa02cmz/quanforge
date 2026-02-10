@@ -3,11 +3,15 @@ import { settingsManager } from './settingsManager';
 import { Robot, UserSession } from '../types';
 import { edgeConnectionPool } from './edgeSupabasePool';
 import { securityManager } from './securityManager';
-import { handleError } from '../utils/errorHandler';
+import { handleError, getErrorMessage } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
 import { TIMEOUTS, CACHE_LIMITS, BATCH_SIZES, ERROR_CODES } from '../constants';
 import { getLocalStorage, StorageQuotaError } from '../utils/storage';
+import { createScopedLogger } from '../utils/logger';
+import { STORAGE_KEYS, STORAGE_PREFIXES } from '../constants/modularConfig';
+
+const logger = createScopedLogger('Supabase');
 
 // Enhanced connection retry configuration with exponential backoff
 const RETRY_CONFIG = {
@@ -19,10 +23,10 @@ const RETRY_CONFIG = {
 };
 
 
-// Mock session storage
-const STORAGE_KEY = 'mock_session';
-const ROBOTS_KEY = 'mock_robots';
-const storage = getLocalStorage({ prefix: 'mock_', enableSerialization: true });
+// Mock session storage - using Flexy's modular config
+const STORAGE_KEY = STORAGE_KEYS.SESSION;
+const ROBOTS_KEY = STORAGE_KEYS.ROBOTS;
+const storage = getLocalStorage({ prefix: STORAGE_PREFIXES.MOCK, enableSerialization: true });
 
 // Helper for safe JSON parsing with enhanced security
 const safeParse = <T>(data: T | null, fallback: any) => {
@@ -30,7 +34,7 @@ const safeParse = <T>(data: T | null, fallback: any) => {
     try {
         return securityManager.safeJSONParse(data as string) || fallback;
     } catch (e) {
-        console.error("Failed to parse data from storage:", e);
+        logger.error("Failed to parse data from storage:", e);
         return fallback;
     }
 };
@@ -152,16 +156,18 @@ const withRetry = async <T>(
   operation: () => Promise<T>,
   operationName: string
 ): Promise<T> => {
-  let lastError: any;
+  let lastError: unknown;
   
   for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
     try {
       return await operation();
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
       
       // Don't retry on certain errors
-      if (error?.code === ERROR_CODES.RECORD_NOT_FOUND || error?.status === ERROR_CODES.NOT_FOUND) {
+      const errorCode = error && typeof error === 'object' && 'code' in error ? (error as { code: unknown }).code : undefined;
+      const errorStatus = error && typeof error === 'object' && 'status' in error ? (error as { status: unknown }).status : undefined;
+      if (errorCode === ERROR_CODES.RECORD_NOT_FOUND || errorStatus === ERROR_CODES.NOT_FOUND) {
         throw error; // Not found errors shouldn't be retried
       }
       
@@ -396,7 +402,7 @@ async getRobots() {
        }
         
         const cacheKey = 'robots_list';
-const cached = await consolidatedCache.get<Robot[]>(cacheKey);
+ const cached = await consolidatedCache.get<Robot[]>(cacheKey);
         if (cached) {
           // Create index for performance
           robotIndexManager.getIndex(cached);
@@ -406,12 +412,13 @@ const cached = await consolidatedCache.get<Robot[]>(cacheKey);
           return { data: cached, error: null };
         }
         
-return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
+ return DEFAULT_CIRCUIT_BREAKERS.database.execute(async () => {
           return withRetry(async () => {
             const client = await getClient();
             const result = await client
               .from('robots')
               .select('*')
+              .eq('is_active', true)
               .order('created_at', { ascending: false })
               .limit(CACHE_LIMITS.DEFAULT_QUERY_LIMIT); // Use centralized limit
             
@@ -575,7 +582,8 @@ if (index !== -1) {
           // Build query with optimized filters - single query builder pattern
           let query = client
             .from('robots')
-            .select('*', { count: 'exact', head: false });
+            .select('*', { count: 'exact', head: false })
+            .eq('is_active', true);
           
           // Apply filters in the most efficient order
           if (filterType && filterType !== 'All') {
@@ -742,10 +750,10 @@ if (index !== -1) {
             await consolidatedCache.invalidateByTags(['robots', 'list']);
             
             return { data: [newRobot], error: null };
-        } catch (e: any) {
+        } catch (e: unknown) {
             const duration = performance.now() - startTime;
             performanceMonitor.record('saveRobot', duration);
-            return { data: null, error: e.message };
+            return { data: null, error: getErrorMessage(e) };
         }
       }
       
@@ -795,10 +803,10 @@ if (index !== -1) {
               performanceMonitor.record('updateRobot', duration);
               robotIndexManager.clear(); // Clear index since data changed
               return { data: updatedRobot, error: null };
-          } catch (e: any) {
+          } catch (e: unknown) {
               const duration = performance.now() - startTime;
               performanceMonitor.record('updateRobot', duration);
-              return { data: null, error: e.message };
+              return { data: null, error: getErrorMessage(e) };
           }
       }
       
@@ -845,16 +853,20 @@ if (index !== -1) {
               performanceMonitor.record('deleteRobot', duration);
               robotIndexManager.clear(); // Clear index since data changed
               return { data: true, error: null };
-          } catch (e: any) {
+          } catch (e: unknown) {
               const duration = performance.now() - startTime;
               performanceMonitor.record('deleteRobot', duration);
-              return { error: e.message };
+              return { error: getErrorMessage(e) };
           }
       }
       
       return withRetry(async () => {
         const client = await getClient();
-        const result = await client.from('robots').delete().match({ id });
+        // Use soft delete instead of hard delete for data integrity
+        const result = await client
+          .from('robots')
+          .update({ is_active: false, deleted_at: new Date().toISOString() })
+          .match({ id });
         
         const duration = performance.now() - startTime;
         performanceMonitor.record('deleteRobot', duration);
@@ -899,16 +911,16 @@ if (index !== -1) {
               performanceMonitor.record('duplicateRobot', duration);
               robotIndexManager.clear(); // Clear index since data changed
               return { data: [newRobot], error: null };
-          } catch (e: any) {
+          } catch (e: unknown) {
               const duration = performance.now() - startTime;
               performanceMonitor.record('duplicateRobot', duration);
-              return { data: null, error: e.message };
+              return { data: null, error: getErrorMessage(e) };
           }
       }
       
       return withRetry(async () => {
         const client = await getClient();
-        const { data: original, error } = await client.from('robots').select('*').eq('id', id).single();
+        const { data: original, error } = await client.from('robots').select('*').eq('id', id).eq('is_active', true).single();
         if (error || !original) {
           const duration = performance.now() - startTime;
           performanceMonitor.record('duplicateRobot', duration);
@@ -957,8 +969,8 @@ export const dbUtils = {
             
             if (error) throw error;
             return { success: true, message: `Connected to Supabase. Found ${count} records.`, mode: 'supabase' };
-        } catch (e: any) {
-            return { success: false, message: `Connection Failed: ${e.message || e}`, mode: 'supabase' };
+        } catch (e: unknown) {
+            return { success: false, message: `Connection Failed: ${getErrorMessage(e)}`, mode: 'supabase' };
         }
     },
 
@@ -1074,8 +1086,8 @@ export const dbUtils = {
                 return importResult;
             }
 
-        } catch (e: any) {
-            return { success: false, count: 0, error: e.message };
+        } catch (e: unknown) {
+            return { success: false, count: 0, error: getErrorMessage(e) };
         }
     },
 
@@ -1142,10 +1154,10 @@ export const dbUtils = {
             if (failCount > 0) {
                 migrationResult.error = `Migrated ${successCount}, Failed ${failCount}. Last error: ${lastError}`;
             }
-            
+
             return migrationResult;
-        } catch (e: any) {
-            return { success: false, count: 0, error: e.message };
+        } catch (e: unknown) {
+            return { success: false, count: 0, error: getErrorMessage(e) };
         }
     },
     
@@ -1202,7 +1214,7 @@ export const dbUtils = {
             } else {
                 // For Supabase, use database queries
                 const client = await getClient();
-                let query = client.from('robots').select('*');
+                let query = client.from('robots').select('*').eq('is_active', true);
                 
                 if (searchTerm) {
                     query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
@@ -1317,10 +1329,10 @@ export const dbUtils = {
                     }
                     
                     return batchResult;
-                } catch (e: any) {
+                } catch (e: unknown) {
                     const duration = performance.now() - startTime;
                     performanceMonitor.record('batchUpdateRobots', duration);
-                    return { success: 0, failed: updates.length, errors: [e.message] };
+                    return { success: 0, failed: updates.length, errors: [getErrorMessage(e)] };
                 }
             } else {
                 // For Supabase, process in batches to avoid query limits
@@ -1346,9 +1358,9 @@ export const dbUtils = {
                                 successCount++;
                             }
                         }
-                    } catch (e: any) {
+                    } catch (e: unknown) {
                         failedCount += batch.length;
-                        errors.push(e.message);
+                        errors.push(getErrorMessage(e));
                     }
                 }
                 
@@ -1448,14 +1460,14 @@ export const dbUtils = {
                 }
                 
                 return { 
-                    success: true, 
-                    message: "Database optimization commands issued successfully" 
+                    success: true,
+                    message: "Database optimization commands issued successfully"
                 };
             }
-        } catch (e: any) {
-            return { 
-                success: false, 
-                message: `Database optimization failed: ${e.message}` 
+        } catch (e: unknown) {
+            return {
+                success: false,
+                message: `Database optimization failed: ${getErrorMessage(e)}`
             };
         }
     },

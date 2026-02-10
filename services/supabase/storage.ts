@@ -5,12 +5,13 @@
 
 import { securityManager } from '../securityManager';
 import { UserSession } from '../../types';
+import { createScopedLogger } from '../../utils/logger';
+import { STORAGE_KEYS } from '../../constants/modularConfig';
 
-// Mock session storage
-export const STORAGE_KEYS = {
-  SESSION: 'mock_session',
-  ROBOTS: 'mock_robots',
-} as const;
+const logger = createScopedLogger('SupabaseStorage');
+
+// Re-export STORAGE_KEYS from modular config for backward compatibility
+export { STORAGE_KEYS };
 
 // Helper for safe JSON parsing with enhanced security
 export const safeParse = <T>(data: string | null, fallback: T): T => {
@@ -20,7 +21,7 @@ export const safeParse = <T>(data: string | null, fallback: T): T => {
         const parsed = securityManager.safeJSONParse(data);
         return (parsed !== null) ? parsed as T : fallback;
     } catch (e) {
-        console.error("Failed to parse data from storage:", e);
+        logger.error("Failed to parse data from storage:", e);
         return fallback;
     }
 };

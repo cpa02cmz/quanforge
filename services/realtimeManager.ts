@@ -197,7 +197,11 @@ class RealtimeManager {
           .match({ id: change.data.id });
         break;
       case 'DELETE':
-        await this.client.from('robots').delete().match({ id: change.data.id });
+        // Use soft delete instead of hard delete for data integrity
+        await this.client
+          .from('robots')
+          .update({ is_active: false, deleted_at: new Date().toISOString() })
+          .match({ id: change.data.id });
         break;
       default:
         throw new Error(`Unknown sync type: ${change.type}`);

@@ -11,15 +11,15 @@
     <meta property="og:title" content="QuantForge AI - Advanced MQL5 Trading Robot Generator" />
     <meta property="og:description" content="Create professional MQL5 trading robots with AI. Visual strategy configuration, real-time simulation, and instant deployment to MetaTrader 5." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image" content="/og-image.svg" />
     <meta property="og:url" content="https://quanforge.ai" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="QuantForge AI - MQL5 Trading Robot Generator" />
     <meta name="twitter:description" content="Generate professional trading robots with AI. Visual configuration, real-time simulation, and MT5 deployment." />
-    <meta name="twitter:image" content="/twitter-image.png" />
+    <meta name="twitter:image" content="/twitter-image.svg" />
     <link rel="canonical" href="https://quanforge.ai" />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/icon-192x192.png" />
+    <link rel="apple-touch-icon" href="/icon-192x192.svg" />
     <meta name="theme-color" content="#22c55e" />
     <meta name="msapplication-TileColor" content="#0f172a" />
     <meta name="msapplication-config" content="/browserconfig.xml" />
@@ -40,7 +40,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="QuantForge AI" />
     <meta name="application-name" content="QuantForge AI" />
-    <meta name="msapplication-TileImage" content="/icon-144x144.png" />
+    <meta name="msapplication-TileImage" content="/icon-192x192.svg" />
     <meta name="referrer" content="no-referrer-when-downgrade" />
     <meta name="pinterest-rich-pin" content="false" />
     <meta name="pinterest-site-verification" content="disabled" />
@@ -130,66 +130,72 @@
       .spinner{border:2px solid #334155;border-top:2px solid #22c55e;border-radius:50%;width:48px;height:48px;animation:spin 1s linear infinite}
       @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
     </style>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS - Loaded async to prevent render-blocking -->
+    <script src="https://cdn.tailwindcss.com" defer fetchpriority="low"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
     
-    <!-- PrismJS for Syntax Highlighting -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <!-- PrismJS for Syntax Highlighting - Async loading to prevent render-blocking -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" /></noscript>
     
     <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              mono: ['JetBrains Mono', 'monospace'],
-            },
-            colors: {
-              brand: {
-                50: '#f0fdf4',
-                100: '#dcfce7',
-                200: '#bbf7d0',
-                300: '#86efac',
-                400: '#4ade80',
-                500: '#22c55e',
-                600: '#16a34a',
-                700: '#15803d',
-                800: '#166534',
-                900: '#14532d',
+      // Configure Tailwind only after it loads
+      if (typeof tailwind !== 'undefined') {
+        tailwind.config = {
+          darkMode: 'class',
+          theme: {
+            extend: {
+              fontFamily: {
+                sans: ['Inter', 'sans-serif'],
+                mono: ['JetBrains Mono', 'monospace'],
               },
-              dark: {
-                bg: '#0f172a',
-                surface: '#1e293b',
-                border: '#334155'
+              colors: {
+                brand: {
+                  50: '#f0fdf4',
+                  100: '#dcfce7',
+                  200: '#bbf7d0',
+                  300: '#86efac',
+                  400: '#4ade80',
+                  500: '#22c55e',
+                  600: '#16a34a',
+                  700: '#15803d',
+                  800: '#166534',
+                  900: '#14532d',
+                },
+                dark: {
+                  bg: '#0f172a',
+                  surface: '#1e293b',
+                  border: '#334155'
+                }
+              },
+              animation: {
+                'fade-in-up': 'fadeInUp 0.3s ease-out',
+                'fade-out-down': 'fadeOutDown 0.3s ease-in',
+                'scale-in': 'scaleIn 0.2s ease-out',
+                'draw-check': 'drawCheck 0.3s ease-out 0.1s both',
+              },
+              keyframes: {
+                fadeInUp: {
+                  '0%': { opacity: '0', transform: 'translateY(10px)' },
+                  '100%': { opacity: '1', transform: 'translateY(0)' },
+                },
+                fadeOutDown: {
+                  '0%': { opacity: '1', transform: 'translateY(0)' },
+                  '100%': { opacity: '0', transform: 'translateY(10px)' },
+                },
+                scaleIn: {
+                  '0%': { opacity: '0', transform: 'scale(0.8)' },
+                  '100%': { opacity: '1', transform: 'scale(1)' },
+                },
+                drawCheck: {
+                  '0%': { strokeDasharray: '24', strokeDashoffset: '24' },
+                  '100%': { strokeDasharray: '24', strokeDashoffset: '0' },
+                },
               }
             },
-            animation: {
-              'fade-in-up': 'fadeInUp 0.3s ease-out',
-              'fade-out-down': 'fadeOutDown 0.3s ease-in',
-              'scale-in': 'scaleIn 0.2s ease-out',
-              'draw-check': 'drawCheck 0.3s ease-out 0.1s both',
-            },
-            keyframes: {
-              fadeInUp: {
-                '0%': { opacity: '0', transform: 'translateY(10px)' },
-                '100%': { opacity: '1', transform: 'translateY(0)' },
-              },
-              fadeOutDown: {
-                '0%': { opacity: '1', transform: 'translateY(0)' },
-                '100%': { opacity: '0', transform: 'translateY(10px)' },
-              },
-              scaleIn: {
-                '0%': { opacity: '0', transform: 'scale(0.8)' },
-                '100%': { opacity: '1', transform: 'scale(1)' },
-              },
-              drawCheck: {
-                '0%': { strokeDasharray: '24', strokeDashoffset: '24' },
-                '100%': { strokeDasharray: '24', strokeDashoffset: '0' },
-              },
-            }
           },
-        },
+        };
       }
     </script>
     
@@ -597,15 +603,85 @@
             border-width: 2px;
           }
         }
-      </style>
+
+        /* ==========================================
+           TOOLTIP ANIMATIONS
+           Smooth fade and scale animations for Tooltip component
+           ========================================== */
+        
+        /* Tooltip entrance animation - fade in with subtle scale */
+        @keyframes tooltip-fade-in {
+          0% {
+            opacity: 0;
+            transform: scale(0.95) translateY(4px);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+
+        /* Tooltip exit animation - fade out with scale down */
+        @keyframes tooltip-fade-out {
+          0% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+          100% {
+            opacity: 0;
+            transform: scale(0.95) translateY(4px);
+          }
+        }
+
+        /* Tooltip utility classes */
+        .tooltip-enter {
+          animation: tooltip-fade-in 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .tooltip-exit {
+          animation: tooltip-fade-out 0.15s cubic-bezier(0.4, 0, 1, 1) forwards;
+        }
+
+        /* Arrow animation - subtle pulse on appear */
+        @keyframes tooltip-arrow-appear {
+          0% {
+            opacity: 0;
+            transform: scale(0.5);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        .tooltip-arrow {
+          animation: tooltip-arrow-appear 0.15s ease-out 0.05s both;
+        }
+
+        /* Reduced motion support for accessibility */
+        @media (prefers-reduced-motion: reduce) {
+          .tooltip-enter,
+          .tooltip-exit {
+            animation: none;
+            opacity: 1;
+            transform: none;
+          }
+          
+          .tooltip-arrow {
+            animation: none;
+            opacity: 1;
+            transform: none;
+          }
+        }
+       </style>
   
 </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
-    <!-- PrismJS Scripts (Loaded after DOM for simplicity) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
+    <!-- PrismJS Scripts (Loaded async after DOM for performance) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" defer fetchpriority="low"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js" defer fetchpriority="low"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js" defer fetchpriority="low"></script>
   </body>
 </html>

@@ -1,17 +1,22 @@
 import { UserSession } from '../types';
 import { securityManager } from './securityManager';
 import { getLocalStorage, StorageQuotaError } from '../utils/storage';
+import { createScopedLogger } from '../utils/logger';
+import { STORAGE_KEYS, STORAGE_PREFIXES } from '../constants/modularConfig';
 
-const STORAGE_KEY = 'mock_session';
-const ROBOTS_KEY = 'mock_robots';
-const storage = getLocalStorage({ prefix: 'mock_' });
+const logger = createScopedLogger('MockImplementation');
+
+// Using Flexy's modular storage keys
+const STORAGE_KEY = STORAGE_KEYS.SESSION;
+const ROBOTS_KEY = STORAGE_KEYS.ROBOTS;
+const storage = getLocalStorage({ prefix: STORAGE_PREFIXES.MOCK });
 
 const safeParse = <T>(data: T | null, fallback: any) => {
     if (!data) return fallback;
     try {
         return securityManager.safeJSONParse(data as string) || fallback;
     } catch (e) {
-        console.error("Failed to parse data from storage:", e);
+        logger.error("Failed to parse data from storage:", e);
         return fallback;
     }
 };
@@ -19,7 +24,7 @@ const safeParse = <T>(data: T | null, fallback: any) => {
 const trySaveToStorage = (key: string, value: any) => {
     try {
         storage.set(key, value);
-    } catch (e: any) {
+    } catch (e: unknown) {
         if (e instanceof StorageQuotaError) {
             throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
         }

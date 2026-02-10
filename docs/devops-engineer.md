@@ -170,48 +170,46 @@ npm run build:analyze
 
 ### Standard CI Workflow
 
-**File**: `.github/workflows/ci.yml`
+**File**: `.github/workflows/on-push.yml`
 
 Standard CI validation workflow for pull requests and pushes:
 
 ```yaml
-name: CI
+name: on-push
 
 on:
+  workflow_dispatch:
   push:
-    branches: [main, devops-engineer]
-  pull_request:
-    branches: [main]
 
 jobs:
-  build-and-test:
-    name: Build and Test
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [20.x, 22.x]
+  analyze:
+    name: on-push
+    runs-on: ubuntu-24.04-arm
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # ... other env vars
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '20'
           cache: 'npm'
       - run: npm ci --prefer-offline --no-audit
       - run: npm run typecheck
-      - run: npm run lint
       - run: npm run test:run
-      - run: npm run build
       - run: npm audit --audit-level=moderate
+      - run: npm run lint
+      - run: npm run build
 ```
 
 **Features**:
-- Multi-version Node.js testing (20.x, 22.x)
-- Concurrent job cancellation for efficiency
-- Type checking, linting, testing, and building
+- Type checking, testing, building
 - Security audit with moderate threshold
-- Build status reporting
+- Lint checking
+- Build verification
+- OpenCode automation flows
 
-### Legacy Workflows
+### Workflow Files
 
 **File**: `.github/workflows/on-push.yml`
 
@@ -632,11 +630,11 @@ npm run build:analyze
 
 ### CI/CD Improvements (2026-02-07)
 
-#### New CI Workflow
-- **File**: `.github/workflows/ci.yml`
+#### CI Workflow Updates
+- **File**: `.github/workflows/on-push.yml`
 - **Purpose**: Standard CI validation on PRs and pushes
 - **Jobs**:
-  - Build and Test (Node 20.x, 22.x)
+  - Build and Test (Node 20.x)
   - Type checking
   - Lint validation
   - Test execution
@@ -662,9 +660,9 @@ Updated 48 packages with safe patch/minor versions:
 ## Changelog
 
 ### 2026-02-07 - DevOps Engineer Improvements
-- **CI/CD Enhancement**: Created standard CI workflow (`.github/workflows/ci.yml`)
+- **CI/CD Enhancement**: Updated standard CI workflow (`.github/workflows/on-push.yml`)
   - Automated build, test, lint, and security audit on PRs
-  - Multi-version Node.js testing (20.x, 22.x)
+  - Node.js 20.x testing
   - Build status reporting
 - **Dependency Updates**: Updated 48 packages to latest safe versions
   - Security patches and bug fixes

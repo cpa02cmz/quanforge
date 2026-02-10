@@ -6,6 +6,7 @@
 
 import { IWorkerManager, WorkerConfig } from '../../types/serviceInterfaces';
 import { createScopedLogger } from '../../utils/logger';
+import { TIMEOUTS } from '../constants';
 
 const logger = createScopedLogger('WorkerManager');
 
@@ -33,7 +34,7 @@ export class WorkerManager implements IWorkerManager {
   private config!: WorkerConfig;
   private workers: Array<{ id: string; worker: Worker; isBusy: boolean; lastUsed: number }> = [];
   private taskQueue: WorkerTask[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   private processingTasks = new Map<string, { resolve: (result: any) => void; reject: (error: Error) => void; startTime: number }>();
   private stats = {
     active: 0,
@@ -45,7 +46,7 @@ export class WorkerManager implements IWorkerManager {
   async initialize(): Promise<void> {
     this.config = {
       maxWorkers: 4,
-      timeout: 30000,
+      timeout: TIMEOUTS.LONG,
       retryAttempts: 3,
     };
 
@@ -81,7 +82,7 @@ export class WorkerManager implements IWorkerManager {
         type: 'health-check',
         data: { test: true },
         priority: 'urgent' as const,
-        timeout: 5000,
+        timeout: TIMEOUTS.STANDARD,
         createdAt: Date.now(),
         retries: 0,
         maxRetries: 1,

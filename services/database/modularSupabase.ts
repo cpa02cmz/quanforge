@@ -14,9 +14,10 @@ import { connectionManager, ConnectionManagerInterface } from './simpleConnectio
 import { cacheLayer, CacheLayerInterface } from './cacheLayer';
 import { retryLogic, RetryLogicInterface } from './retryLogic';
 import { analyticsCollector, AnalyticsCollectorInterface } from './analyticsCollector';
+import { STORAGE_KEYS } from '../../constants/modularConfig';
 
-// Mock session storage constants
-const ROBOTS_KEY = 'mock_robots';
+// Mock session storage constants - using Flexy's modular config
+const ROBOTS_KEY = STORAGE_KEYS.ROBOTS;
 
 // Helper for safe JSON parsing
 const safeParse = <T = unknown>(data: string | null, fallback: T): T => {

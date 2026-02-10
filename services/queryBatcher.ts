@@ -5,6 +5,7 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { createListenerManager, ListenerManager } from '../utils/listenerManager';
+import { BATCH_SIZES, RETRY_CONFIG, STAGGER } from './constants';
 
 interface BatchQuery {
   id: string;
@@ -41,12 +42,12 @@ class QueryBatcher {
     startTime: number;
   }> = new Map();
   private config: BatchConfig = {
-    maxBatchSize: 10,
+    maxBatchSize: BATCH_SIZES.DATABASE_OPERATIONS,
     batchTimeout: 50, // 50ms
-    maxWaitTime: 500, // 500ms max wait
+    maxWaitTime: STAGGER.DEFAULT_DELAY_MS * 5, // 500ms max wait
     priorityQueues: true,
-    retryAttempts: 3,
-    retryDelay: 100
+    retryAttempts: RETRY_CONFIG.MAX_ATTEMPTS,
+    retryDelay: RETRY_CONFIG.DELAYS.SHORT
   };
   private batchTimer: number | null = null;
   private stats = {
@@ -597,7 +598,7 @@ class QueryBatcher {
       if (this.batchQueue.length > 0) {
         this.processBatch();
       }
-    }, 1000);
+    }, STAGGER.DEFAULT_DELAY_MS * 10);
   }
 
   /**

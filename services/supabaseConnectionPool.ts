@@ -1,6 +1,8 @@
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
+import { getErrorMessage } from '../utils/errorHandler';
+import { CONNECTION_POOL_CONFIG } from '../constants/modularConfig';
 
 interface ConnectionPoolConfig {
   minConnections: number;
@@ -35,14 +37,14 @@ class SupabaseConnectionPool {
   private readReplicas: Map<string, ReadReplicaConfig> = new Map();
   private healthStatus: Map<string, ConnectionHealth> = new Map();
   private config: ConnectionPoolConfig = {
-    minConnections: 1, // Optimized for edge serverless
-    maxConnections: 3, // Further reduced for edge constraints
-    idleTimeout: 45000, // 45 seconds (optimized for edge)
-    healthCheckInterval: 15000, // 15 seconds (faster health checks)
-    connectionTimeout: 800, // 0.8 seconds (faster failover)
-    acquireTimeout: 300, // 0.3 seconds (quicker acquisition)
-    retryAttempts: 2, // Reduced retries for edge reliability
-    retryDelay: 300, // Faster retry for edge environments
+    minConnections: CONNECTION_POOL_CONFIG.EDGE.MIN_CONNECTIONS,
+    maxConnections: CONNECTION_POOL_CONFIG.EDGE.MAX_CONNECTIONS,
+    idleTimeout: CONNECTION_POOL_CONFIG.EDGE.IDLE_TIMEOUT_MS,
+    healthCheckInterval: CONNECTION_POOL_CONFIG.EDGE.HEALTH_CHECK_INTERVAL_MS,
+    connectionTimeout: CONNECTION_POOL_CONFIG.EDGE.CONNECTION_TIMEOUT_MS,
+    acquireTimeout: CONNECTION_POOL_CONFIG.EDGE.ACQUIRE_TIMEOUT_MS,
+    retryAttempts: CONNECTION_POOL_CONFIG.EDGE.RETRY_ATTEMPTS,
+    retryDelay: CONNECTION_POOL_CONFIG.EDGE.RETRY_DELAY_MS,
   };
   private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
   private readReplicaIndex = 0;
@@ -218,44 +220,46 @@ class SupabaseConnectionPool {
 
   private calculateReplicaScore(replica: ReadReplicaConfig): number {
     let score = 0;
-    
+
     // Geographic proximity scoring (increased priority for region match)
     const currentRegion = typeof window !== 'undefined'
       ? 'client'
       : process.env['VERCEL_REGION'] || 'unknown';
-    
+
     if (replica.region === currentRegion) {
-      score += 2000; // Increased priority for region match
+      score += CONNECTION_POOL_CONFIG.REPLICA_SCORING.REGION_MATCH_BONUS;
     }
-    
+
     // Latency-based scoring
     const regionLatency = this.getRegionLatency(replica.region);
-    score += Math.max(0, 1000 - regionLatency);
-    
+    score += Math.max(0, CONNECTION_POOL_CONFIG.REPLICA_SCORING.LATENCY_MULTIPLIER - regionLatency);
+
     // Connection age and health
-    if (replica.isHealthy) score += 500;
+    if (replica.isHealthy) score += CONNECTION_POOL_CONFIG.REPLICA_SCORING.HEALTHY_BONUS;
     const timeSinceLastUse = Date.now() - replica.lastUsed;
-    if (timeSinceLastUse > 30000) score += 200; // Prefer connections that haven't been used recently
-    
+    if (timeSinceLastUse > CONNECTION_POOL_CONFIG.REPLICA_SCORING.RECENT_USE_THRESHOLD_MS) {
+      score += CONNECTION_POOL_CONFIG.REPLICA_SCORING.RECENT_USE_PENALTY;
+    }
+
     // Priority-based scoring
-    score += (100 - replica.priority) * 10;
-    
+    score += (100 - replica.priority) * CONNECTION_POOL_CONFIG.REPLICA_SCORING.PRIORITY_MULTIPLIER;
+
     return score;
   }
 
   private getRegionLatency(region: string): number {
-    // Simulated region latencies in ms (in production, these would be measured)
+    // Use modular configuration for region latencies
     const latencyMap: Record<string, number> = {
-      'primary': 50,
-      'hkg1': 120,
-      'iad1': 80,
-      'sin1': 100,
-      'fra1': 90,
-      'sfo1': 70,
-      'unknown': 150,
+      'primary': CONNECTION_POOL_CONFIG.REGION_LATENCIES.PRIMARY,
+      'hkg1': CONNECTION_POOL_CONFIG.REGION_LATENCIES.HKG1,
+      'iad1': CONNECTION_POOL_CONFIG.REGION_LATENCIES.IAD1,
+      'sin1': CONNECTION_POOL_CONFIG.REGION_LATENCIES.SIN1,
+      'fra1': CONNECTION_POOL_CONFIG.REGION_LATENCIES.FRA1,
+      'sfo1': CONNECTION_POOL_CONFIG.REGION_LATENCIES.SFO1,
+      'unknown': CONNECTION_POOL_CONFIG.REGION_LATENCIES.UNKNOWN,
     };
-    
-    return latencyMap[region] || 150;
+
+    return latencyMap[region] || CONNECTION_POOL_CONFIG.REGION_LATENCIES.UNKNOWN;
   }
 
   // Get write client (always uses primary)
@@ -283,11 +287,11 @@ class SupabaseConnectionPool {
          return false;
        }
        
-       return true;
-     } catch (error: any) {
-       console.error('Connection health check failed:', error?.message || error);
-       return false;
-     }
+        return true;
+      } catch (error: unknown) {
+        console.error('Connection health check failed:', getErrorMessage(error));
+        return false;
+      }
    }
 
 private startHealthChecks(): void {
@@ -320,8 +324,8 @@ private startHealthChecks(): void {
           errorCount: isHealthy ? 0 : currentHealth.errorCount + 1,
         });
 
-        // Remove unhealthy connections after 3 failed checks
-        if (!isHealthy && currentHealth.errorCount >= 2) {
+        // Remove unhealthy connections after max failed checks
+        if (!isHealthy && currentHealth.errorCount >= CONNECTION_POOL_CONFIG.HEALTH.MAX_FAILED_CHECKS - 1) {
           this.clients.delete(connectionId);
           this.healthStatus.delete(connectionId);
           console.warn(`Removed unhealthy connection: ${connectionId}`);
@@ -352,8 +356,8 @@ private startHealthChecks(): void {
 
   // Add connection warming for edge regions with optimized warmup queries
   async warmEdgeConnections(): Promise<void> {
-    const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'];
-    
+    const regions = CONNECTION_POOL_CONFIG.WARMING.REGIONS;
+
     const warmupPromises = regions.map(async (region) => {
       try {
         const client = await this.getClient(`edge_${region}`);
@@ -376,7 +380,7 @@ private startHealthChecks(): void {
     const existingClient = this.clients.get(edgeConnectionId);
     const health = this.healthStatus.get(edgeConnectionId);
     
-    if (existingClient && health?.isHealthy && (Date.now() - health.lastCheck) < 30000) {
+    if (existingClient && health?.isHealthy && (Date.now() - health.lastCheck) < CONNECTION_POOL_CONFIG.HEALTH.EDGE_CHECK_INTERVAL_MS) {
       return existingClient;
     }
 
@@ -395,31 +399,33 @@ private startHealthChecks(): void {
   // Get optimal connection with geographic scoring
   private getOptimalConnection(region?: string): { connection: SupabaseClient; score: number } | null {
     const candidates: Array<{ connection: SupabaseClient; score: number; connectionId: string }> = [];
-    
+
     for (const [connectionId, connection] of this.clients) {
       const health = this.healthStatus.get(connectionId);
       if (!connection || !health?.isHealthy) continue;
-      
+
       let score = 0;
-      
+
       // Geographic proximity scoring
       if (region && connectionId.includes(region)) {
-        score += 2000; // Increased priority for region match
+        score += CONNECTION_POOL_CONFIG.REPLICA_SCORING.REGION_MATCH_BONUS;
       }
-      
+
       // Latency-based scoring
       const regionLatency = this.getRegionLatency(region || 'unknown');
-      score += Math.max(0, 1000 - regionLatency);
-      
+      score += Math.max(0, CONNECTION_POOL_CONFIG.REPLICA_SCORING.LATENCY_MULTIPLIER - regionLatency);
+
       // Connection age and health
-      if (health.isHealthy) score += 500;
-      if (Date.now() - health.lastCheck > 30000) score += 200;
-      
+      if (health.isHealthy) score += CONNECTION_POOL_CONFIG.REPLICA_SCORING.HEALTHY_BONUS;
+      if (Date.now() - health.lastCheck > CONNECTION_POOL_CONFIG.REPLICA_SCORING.RECENT_USE_THRESHOLD_MS) {
+        score += CONNECTION_POOL_CONFIG.REPLICA_SCORING.RECENT_USE_PENALTY;
+      }
+
       candidates.push({ connection, score, connectionId });
     }
-    
+
     if (candidates.length === 0) return null;
-    
+
     const best = candidates.sort((a, b) => b.score - a.score)[0];
     return { connection: best.connection, score: best.score };
   }

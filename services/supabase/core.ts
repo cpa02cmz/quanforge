@@ -8,27 +8,30 @@ import { Robot, UserSession } from '../../types';
 import { securityManager } from '../securityManager';
 import { consolidatedCache } from '../consolidatedCacheManager';
 import { createScopedLogger } from '../../utils/logger';
+import { DATABASE, CACHE_TTLS } from '../constants';
+import { getErrorCode, getErrorMessage } from '../../utils/errorHandler';
+import { STORAGE_KEYS } from '../../constants/modularConfig';
 
 const logger = createScopedLogger('CoreSupabaseService');
 
-// Enhanced connection retry configuration
+// Enhanced connection retry configuration - using modular constants
 const RETRY_CONFIG = {
-  maxRetries: 5,
-  retryDelay: 500,
-  backoffMultiplier: 1.5,
-  maxDelay: 10000,
+  maxRetries: DATABASE.RETRY.MAX_ATTEMPTS,
+  retryDelay: DATABASE.RETRY.BASE_DELAY_MS,
+  backoffMultiplier: DATABASE.RETRY.BACKOFF_MULTIPLIER,
+  maxDelay: DATABASE.RETRY.MAX_DELAY_MS,
   jitter: true,
 };
 
-// Cache configuration optimized for edge performance
+// Cache configuration optimized for edge performance - using modular constants
 const CACHE_CONFIG = {
-  ttl: 15 * 60 * 1000, // 15 minutes
+  ttl: CACHE_TTLS.FIFTEEN_MINUTES,
   maxSize: 200,
 };
 
-// Mock storage keys for fallback mode
-const STORAGE_KEY = 'mock_session';
-const ROBOTS_KEY = 'mock_robots';
+// Mock storage keys for fallback mode - using Flexy's modular config
+const STORAGE_KEY = STORAGE_KEYS.SESSION;
+const ROBOTS_KEY = STORAGE_KEYS.ROBOTS;
 
 /**
  * Safe JSON parsing with security validation
@@ -49,12 +52,14 @@ const safeParse = (data: string | null, fallback: any) => {
 const trySaveToStorage = (key: string, value: string) => {
   try {
     localStorage.setItem(key, value);
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const errorCode = getErrorCode(e);
+    const errorMessage = getErrorMessage(e);
     if (
-      e.name === 'QuotaExceededError' || 
-      e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-      e.code === 22 ||
-      e.code === 1014
+      errorMessage.includes('QuotaExceededError') || 
+      errorMessage.includes('NS_ERROR_DOM_QUOTA_REACHED') ||
+      errorCode === '22' ||
+      errorCode === '1014'
     ) {
       logger.warn('Storage quota exceeded, attempting cleanup');
       try {
@@ -148,7 +153,7 @@ class CoreSupabaseService {
     while (this.retryCount <= RETRY_CONFIG.maxRetries) {
       try {
         return await operation();
-      } catch (error: any) {
+      } catch (error: unknown) {
         this.retryCount++;
 
         if (this.retryCount > RETRY_CONFIG.maxRetries) {
@@ -281,7 +286,7 @@ return this.executeWithRetry(async () => {
           email: session.user.email || '',
         },
         access_token: session.access_token,
-        expires_in: session.expires_at ? Math.floor((session.expires_at - Date.now()) / 1000) : 3600,
+        expires_in: session.expires_at ? Math.floor((session.expires_at - Date.now()) / 1000) : 3600, // 1 hour default
         refresh_token: session.refresh_token || '',
         token_type: 'bearer',
       };

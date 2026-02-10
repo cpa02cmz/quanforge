@@ -2,10 +2,15 @@
 import { AISettings, DBSettings } from "../types";
 import { encryptApiKey, decryptApiKey, validateApiKey } from "../utils/encryption";
 import { getLocalStorage } from "../utils/storage";
+import { createScopedLogger } from "../utils/logger";
+import { STORAGE_KEYS, STORAGE_PREFIXES } from "../constants/modularConfig";
 
-const AI_SETTINGS_KEY = 'quantforge_ai_settings';
-const DB_SETTINGS_KEY = 'quantforge_db_settings';
-const storage = getLocalStorage({ prefix: 'quantforge_' });
+const logger = createScopedLogger('SettingsManager');
+
+// Using Flexy's modular storage keys
+const AI_SETTINGS_KEY = STORAGE_KEYS.AI_SETTINGS;
+const DB_SETTINGS_KEY = STORAGE_KEYS.DB_SETTINGS;
+const storage = getLocalStorage({ prefix: STORAGE_PREFIXES.MOCK });
 
 // Safe Environment Variable Access
 export const getEnv = (key: string): string => {
@@ -77,7 +82,7 @@ export const settingsManager = {
             // Merge with defaults to ensure new fields like 'language' exist on old saved data
             return { ...DEFAULT_AI_SETTINGS, ...parsed };
         } catch (e) {
-            console.error("Failed to load AI settings", e);
+            logger.error("Failed to load AI settings", e);
             return DEFAULT_AI_SETTINGS;
         }
     },
@@ -93,7 +98,7 @@ export const settingsManager = {
             storage.set(AI_SETTINGS_KEY, settingsToSave);
             window.dispatchEvent(new Event('ai-settings-changed'));
         } catch (e) {
-            console.error("Failed to save AI settings", e);
+            logger.error("Failed to save AI settings", e);
         }
     },
 
@@ -111,7 +116,7 @@ export const settingsManager = {
             const parsed = stored;
             return { ...DEFAULT_DB_SETTINGS, ...parsed };
         } catch (e) {
-            console.error("Failed to load DB settings", e);
+            logger.error("Failed to load DB settings", e);
             return DEFAULT_DB_SETTINGS;
         }
     },
@@ -122,7 +127,7 @@ export const settingsManager = {
             // Dispatch event to notify Supabase service to re-init
             window.dispatchEvent(new Event('db-settings-changed'));
         } catch (e) {
-            console.error("Failed to save DB settings", e);
+            logger.error("Failed to save DB settings", e);
         }
     }
 };

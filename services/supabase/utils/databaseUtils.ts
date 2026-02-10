@@ -1,27 +1,26 @@
 // Database utilities and helper functions for Supabase operations
 
 import { Robot } from '../../../types';
+import { DATABASE, CACHE_TTLS } from '../../constants';
+import { STORAGE_KEYS } from '../../../constants/modularConfig';
 
-// Enhanced connection retry configuration with exponential backoff
+// Enhanced connection retry configuration with exponential backoff - using modular constants
 export const RETRY_CONFIG = {
-  maxRetries: 5,
-  retryDelay: 500,
-  backoffMultiplier: 1.5,
-  maxDelay: 10000, // Cap at 10 seconds
+  maxRetries: DATABASE.RETRY.MAX_ATTEMPTS,
+  retryDelay: DATABASE.RETRY.BASE_DELAY_MS,
+  backoffMultiplier: DATABASE.RETRY.BACKOFF_MULTIPLIER,
+  maxDelay: DATABASE.RETRY.MAX_DELAY_MS,
   jitter: true, // Add jitter to prevent thundering herd
 };
 
-// Cache configuration
+// Cache configuration - using modular constants
 export const CACHE_CONFIG = {
-  ttl: 15 * 60 * 1000, // 15 minutes for better edge performance
+  ttl: CACHE_TTLS.FIFTEEN_MINUTES,
   maxSize: 200, // Max cached items
 };
 
-// Mock session storage
-export const STORAGE_KEYS = {
-  MOCK_SESSION: 'mock_session',
-  ROBOTS: 'mock_robots'
-} as const;
+// Re-export STORAGE_KEYS from modular config for backward compatibility
+export { STORAGE_KEYS };
 
 // Helper for safe JSON parsing with enhanced security
 export const safeParse = <T>(data: string | null, fallback: T): T => {

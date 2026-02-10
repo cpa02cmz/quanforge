@@ -7,6 +7,7 @@ import { performanceMonitor } from '../utils/performance';
 import { logger } from '../utils/logger';
 import { storage } from '../utils/storage';
 import { TIME_CONSTANTS, CACHE_CONFIG } from '../constants/config';
+import { WindowWithGC, PerformanceWithMemory } from '../types/browser';
 
 interface PerformanceOptimizerConfig {
   enableResourcePrefetching: boolean;
@@ -340,22 +341,12 @@ class FrontendPerformanceOptimizer {
 
   /**
    * Preload critical scripts for better performance
+   * Note: Libraries are bundled by Vite, no need for CDN preloads
    */
   private preloadCriticalScripts(): void {
-    const criticalScripts = [
-      { src: 'https://unpkg.com/lz-string@1.5.0/libs/lz-string.min.js', as: 'script' },
-      { src: 'https://unpkg.com/dompurify@3.0.5/dist/purify.min.js', as: 'script' },
-    ];
-
-    criticalScripts.forEach(script => {
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.href = script.src;
-      link.as = script.as;
-      link.crossOrigin = 'anonymous';
-      document.head.appendChild(link);
-      performanceMonitor.recordMetric('script_preloaded', 1);
-    });
+    // Libraries (lz-string, dompurify) are bundled by Vite into security-vendor chunk
+    // No CDN preloads needed - prevents "unused preload" warnings
+    performanceMonitor.recordMetric('script_preloaded', 0);
   }
 
   /**
@@ -472,7 +463,8 @@ class FrontendPerformanceOptimizer {
     
     // Force garbage collection if available (for development/testing)
     if (typeof window !== 'undefined' && 'gc' in window) {
-      (window as any).gc?.();
+      const win = window as WindowWithGC;
+      win.gc?.();
     }
   }
 
@@ -481,7 +473,8 @@ class FrontendPerformanceOptimizer {
    */
   private getCurrentMemoryUsage(): number {
     if ('memory' in performance) {
-      const memory = (performance as any).memory;
+      const perf = performance as PerformanceWithMemory;
+      const memory = perf.memory;
       return memory ? memory.usedJSHeapSize : 0;
     }
     return 0;
