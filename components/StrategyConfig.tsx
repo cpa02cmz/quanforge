@@ -8,6 +8,7 @@ import { useToast } from './useToast';
 import { NumericInput } from './NumericInput';
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
+import { announceFormValidation } from '../utils/announcer';
 import { FormField } from './FormField';
 import { CustomInputRow } from './CustomInputRow';
 
@@ -93,6 +94,13 @@ export const StrategyConfig: React.FC<StrategyConfigProps> = memo(({ params, onC
     });
 
     setErrors(newErrors);
+    
+    // Announce validation errors to screen readers for accessibility (WCAG 4.1.3)
+    const errorMessages = Object.values(newErrors).filter(Boolean);
+    if (errorMessages.length > 0) {
+      announceFormValidation(errorMessages, 'Strategy Configuration');
+    }
+    
     return Object.keys(newErrors).length === 0;
   };
 

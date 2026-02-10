@@ -197,7 +197,7 @@
 - ✅ Strong timeout coverage: Most async operations have timeouts
 - ✅ Good retry logic: Exponential backoff widely used
 - ✅ Circuit breaker pattern: Properly implemented for resilience
-- ✅ Test coverage: 423 tests covering critical reliability paths
+- ✅ Test coverage: 185 tests covering critical reliability paths
 - 📝 Cleanup patterns: Generally good but needs ongoing monitoring
 - ⚠️ High-complexity services: enhancedSupabasePool.ts requires careful review
 
@@ -214,7 +214,7 @@
 **Build Verification**:
 - Build: ✅ 11.75s (successful)
 - Lint: ✅ 0 errors (1650 warnings remaining)
-- Tests: ✅ 423/423 passing
+- Tests: ✅ 185/185 passing
 - Typecheck: ✅ 0 errors
 
 **Future Reliability Recommendations**:

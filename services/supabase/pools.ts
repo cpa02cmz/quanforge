@@ -5,6 +5,7 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { DATABASE_CONFIG } from '../../constants/config';
+import { STAGGER } from '../constants';
 
 interface ConnectionConfig {
   maxConnections: number;
@@ -402,7 +403,7 @@ class SupabaseConnectionPool {
     
     // Wait for all connections to be released
     while (this.stats.activeConnections > 0) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, STAGGER.DEFAULT_DELAY_MS));
     }
 
     // Clear health check timer

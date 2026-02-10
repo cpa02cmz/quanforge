@@ -24,8 +24,11 @@ jobs:
     timeout-minutes: 30
 
     env:
-      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       IFLOW_API_KEY: ${{ secrets.IFLOW_API_KEY }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY }}
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
 
     steps:
       - name: Wait in Queue
@@ -34,14 +37,14 @@ jobs:
           poll-interval-seconds: 30
           same-branch-only: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout Code
         uses: actions/checkout@v6
         continue-on-error: true
         with:
           fetch-depth: 0
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -60,7 +63,13 @@ jobs:
           curl -fsSL https://opencode.ai/install | bash
           echo "$HOME/.opencode/bin" >> $GITHUB_PATH
 
-      - name: Auto-fix CI Failures
+      - name: On-Pull
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IFLOW_API_KEY: ${{ secrets.IFLOW_API_KEY }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
         run: |
           opencode run /ulw-loop "$(cat <<'PROMPT'
           YOU ARE AN AUTONOMOUS SOFTWARE ENGINEERING AGENT. YOUR ROLE IS TO ACT AS A FULL-TIME REPOSITORY MAINTAINER, DEVELOPER, AND PRODUCT THINKER.
@@ -156,6 +165,14 @@ jobs:
                - If not trivial → comment with explanation and CLOSE that PR
              - All comments must be resolved.
              - Run build and test suite
+                - If build or test FAILS after rebasing to DEFAULT_BRANCH:
+                  - Determine if failure is caused by missing files, broken imports, or API/contract changes
+                  - If YES:
+                    - DO NOT refactor or adapt large code
+                    - Comment reason: "PR outdated due to semantic changes in default branch"
+                    - CLOSE the PR
+                    - STOP processing this PR
+
              - Fix:
                 - Lint errors
                 - Warnings (all warnings must be fixed, not just errors)
@@ -211,7 +228,32 @@ jobs:
             - Close duplicates with reference
             - Group similiar small issues into 1 meaningfull issues
             - Do NOT lose information        
-                    
+ 
+          STEP 4 — REPAIR MODE
+          **Objective:** Solve ONE github issue with highest-priority.
+            1. SELECTION
+            - If: there is P0/P1 issue 
+              → Select highest-priority issue.
+            - Else:
+              → Select lowest-scoring DOMAIN
+              → Then lowest-scoring CRITERION
+
+            2. IMPLEMENTATION RULES
+            - Must up to date with default branch before and after fix, to minimaze conflicts
+            - Minimal, atomic changes only.
+            - No speculative refactors.
+            - No unrelated improvements.
+
+            3. VERIFICATION
+            - Re-run Build, Lint, Test.
+            - On failure:
+              - Revert
+              - Comment on issue body with detailed progress, and solve suggestion.
+            - On Success:
+              - Commit changes
+              - Pull from DEFAULT BRANCH, solve any conflict
+              - Push and create pr linked to issue.
+              
           ========================
           PHASE 1: DIAGNOSTIC & COMPREHENSIVE SCORING (AUDIT MODE)
           ========================
@@ -319,31 +361,7 @@ jobs:
               - Issue label: Category and priority
                    
           ========================
-          PHASE 2 — TARGETED EXECUTION (REPAIR MODE)
-          ========================
-             
-            **Objective:** Solve ONE github issue with highest-priority.
-
-            ### 1. SELECTION
-            - If: there is P0/P1 issue 
-              → Select highest-priority issue.
-            - Else:
-              → Select lowest-scoring DOMAIN
-              → Then lowest-scoring CRITERION
-
-            ### 2. IMPLEMENTATION RULES
-            - Minimal, atomic changes only.
-            - No speculative refactors.
-            - No unrelated improvements.
-
-            ### 3. VERIFICATION
-            - Re-run Build, Lint, Test.
-            - On failure:
-              - Revert
-              - Comment on issue body with detailed progress, and solve suggestion.
-
-          ========================
-          PHASE 3: FEATURE HARDENING & INTEGRATION (NON-COSMETIC)
+          PHASE 2: FEATURE HARDENING & INTEGRATION (NON-COSMETIC)
           ========================
 
             **Objective:** Strengthen and connect EXISTING features.
@@ -370,7 +388,7 @@ jobs:
               - Issue label: Category and priority
 
           ========================
-          PHASE 4: STRATEGIC EXPANSION (PRODUCT MODE - NON COSMETIC)
+          PHASE 3: STRATEGIC EXPANSION (PRODUCT MODE - NON COSMETIC)
           ========================
 
             **Objective:** Add ONE high-leverage functional capability.

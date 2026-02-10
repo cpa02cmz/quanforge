@@ -6,7 +6,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { createScopedLogger } from '../utils/logger';
-import { TIMEOUTS, RETRY_CONFIG } from './constants';
+import { TIMEOUTS, RETRY_CONFIG, STAGGER } from './constants';
 
 const logger = createScopedLogger('AdvancedSupabasePool');
 
@@ -262,7 +262,7 @@ class AdvancedSupabasePool {
       }
       
       // Wait 100ms before checking again
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, STAGGER.DEFAULT_DELAY_MS));
     }
     
     return undefined;
