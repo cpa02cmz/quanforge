@@ -5,6 +5,7 @@
  */
 
 import { API_CONFIG, RATE_LIMITING } from '../constants/config';
+import { RATE_LIMITS, RETRY_CONFIG } from './constants';
 
 interface RequestConfig {
   url: string;
@@ -25,7 +26,7 @@ class RequestThrottler {
   private queue: QueuedRequest[] = [];
   private activeRequests = 0;
   private readonly maxConcurrent = 6;
-  private readonly rateLimitDelay = 100; // ms between requests
+  private readonly rateLimitDelay = RATE_LIMITS.RATE_LIMIT_DELAY_MS; // ms between requests
   private readonly maxRetries = API_CONFIG.MAX_RETRY_ATTEMPTS;
   private lastRequestTime = 0;
   private requestCounts = new Map<string, number>();
@@ -92,8 +93,8 @@ class RequestThrottler {
       const response = await fetch(request.config.url, request.config.options);
       
       if (!response.ok && request.retryCount < this.maxRetries) {
-        // Retry with exponential backoff
-        const delay = Math.pow(2, request.retryCount) * 1000;
+        // Retry with exponential backoff using modular config
+        const delay = Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, request.retryCount) * RETRY_CONFIG.BASE_DELAY_MS;
         setTimeout(() => {
           this.activeRequests--;
           request.retryCount++;
@@ -107,8 +108,8 @@ class RequestThrottler {
       request.resolve(response);
     } catch (error) {
       if (request.retryCount < this.maxRetries) {
-        // Retry with exponential backoff
-        const delay = Math.pow(2, request.retryCount) * 1000;
+        // Retry with exponential backoff using modular config
+        const delay = Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, request.retryCount) * RETRY_CONFIG.BASE_DELAY_MS;
         setTimeout(() => {
           this.activeRequests--;
           request.retryCount++;

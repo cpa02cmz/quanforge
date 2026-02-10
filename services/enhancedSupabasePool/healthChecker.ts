@@ -2,11 +2,12 @@
 
 import { Connection, HealthCheckResult } from './types';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { TIMEOUTS, RETRY_CONFIG, STAGGER } from '../constants';
 
 export class ConnectionHealthChecker {
-  private checkTimeout: number = 5000; // 5 seconds
-  private maxRetries: number = 3;
-  private retryDelay: number = 1000; // 1 second
+  private checkTimeout: number = TIMEOUTS.STANDARD; // 5 seconds
+  private maxRetries: number = RETRY_CONFIG.MAX_ATTEMPTS;
+  private retryDelay: number = RETRY_CONFIG.BASE_DELAY_MS; // 1 second
 
   async checkConnection(connection: Connection): Promise<HealthCheckResult> {
     const startTime = Date.now();
@@ -132,7 +133,7 @@ export class ConnectionHealthChecker {
   async quickPing(client: SupabaseClient): Promise<boolean> {
     try {
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Ping timeout')), 2000); // 2 second timeout
+        setTimeout(() => reject(new Error('Ping timeout')), STAGGER.HEALTH_CHECK_TIMEOUT_MS); // 2 second timeout
       });
 
       const pingPromise = client
