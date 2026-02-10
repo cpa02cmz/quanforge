@@ -94,6 +94,13 @@ jobs:
           npm run typecheck
           echo "::endgroup::"
 
+      - name: Run Tests
+        timeout-minutes: 5
+        run: |
+          echo "::group::Test Execution"
+          npm run test:run
+          echo "::endgroup::"
+
       - name: 00 flow
         timeout-minutes: 30
         run: |
