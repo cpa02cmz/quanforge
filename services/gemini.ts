@@ -18,7 +18,7 @@ type GenAIType = {
 
 let GoogleGenAI: GoogleGenAIConstructor | null = null;
 let Type: GenAIType | null = null;
-import { MQL5_SYSTEM_PROMPT, TIMEOUTS } from "../constants";
+import { MQL5_SYSTEM_PROMPT, TIMEOUTS, CACHE_TTLS } from "../constants";
 import { AI_CONFIG } from "../constants/config";
 import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
 import { settingsManager } from "./settingsManager";
@@ -1102,13 +1102,13 @@ const response = await ai!.models.generateContent({
 
                    // Cache result in both caches
                    analysisCache.set(cacheKey, result);
-                   enhancedAnalysisCache.set(cacheKey, result, 600000); // 10 minutes TTL for enhanced cache
+                   enhancedAnalysisCache.set(cacheKey, result, CACHE_TTLS.ENHANCED_ANALYSIS); // 10 minutes TTL for enhanced cache
 
                    // Also cache by shorter code snippet for similar code detection
                    const shortCodeHash = createHash(code.substring(0, 1000));
                    const shortCacheKey = `short-${shortCodeHash}-${settings.provider}`;
                    analysisCache.set(shortCacheKey, result);
-                   enhancedAnalysisCache.set(shortCacheKey, result, 600000);
+                   enhancedAnalysisCache.set(shortCacheKey, result, CACHE_TTLS.ENHANCED_ANALYSIS);
               } else {
                  // Return a default response if parsing fails
                  return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };

@@ -263,6 +263,7 @@ export const CACHE_TTLS = {
   SEMANTIC_CACHE: 900000, // 15 minutes
   MQL5_GENERATION: 1800000, // 30 minutes
   STRATEGY_ANALYSIS: 7200000, // 2 hours
+  ENHANCED_ANALYSIS: 600000, // 10 minutes
   EDGE_CACHE: 30000, // 30 seconds
   KV_CLEANUP: 300000, // 5 minutes
   POOL_WARMUP: 1800000, // 30 minutes

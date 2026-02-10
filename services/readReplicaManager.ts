@@ -3,6 +3,7 @@ import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import { getEnv } from './settingsManager';
 import { queryCache } from './advancedCache';
 import { PERFORMANCE_MONITORING } from '../constants/timing';
+import { TIMEOUTS } from '../constants';
 
 interface ReadReplicaConfig {
   readonly: boolean;
@@ -94,7 +95,7 @@ class ReadReplicaManager {
       const result = await Promise.race([
         client.rpc('execute_analytics_query', { query, params }),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Query timeout')), 30000)
+          setTimeout(() => reject(new Error('Query timeout')), TIMEOUTS.API_TIMEOUT)
         )
       ]) as any;
 
@@ -111,7 +112,7 @@ class ReadReplicaManager {
         queryCache.set(cacheKey, {
           data: result.data,
           timestamp: Date.now(),
-          ttl: options.cacheTTL || 300000 // 5 minutes default
+          ttl: options.cacheTTL || TIMEOUTS.CACHE_TTL // 5 minutes default
         });
       }
 
@@ -155,7 +156,7 @@ class ReadReplicaManager {
     const replicaMetrics = this.metrics.filter(m => 
       m.replicaUsed !== 'cache' && 
       m.replicaUsed !== 'primary' &&
-      Date.now() - m.timestamp < 300000 // Last 5 minutes
+      Date.now() - m.timestamp < TIMEOUTS.CACHE_TTL // Last 5 minutes
     );
 
     if (replicaMetrics.length === 0) {
@@ -235,7 +236,7 @@ class ReadReplicaManager {
 
     return this.executeAnalyticsQuery(query, [robotId], {
       useCache: true,
-      cacheTTL: 60000 // 1 minute for analytics
+      cacheTTL: TIMEOUTS.HEALTH_CHECK // 1 minute for analytics
     });
   }
 
@@ -256,7 +257,7 @@ class ReadReplicaManager {
 
     return this.executeAnalyticsQuery(query, [], {
       useCache: true,
-      cacheTTL: 300000 // 5 minutes
+      cacheTTL: TIMEOUTS.CACHE_TTL // 5 minutes
     });
   }
 
@@ -276,7 +277,7 @@ class ReadReplicaManager {
 
     return this.executeAnalyticsQuery(query, [], {
       useCache: true,
-      cacheTTL: 600000 // 10 minutes
+      cacheTTL: TIMEOUTS.MONITORING_INTERVAL // 10 minutes
     });
   }
 
