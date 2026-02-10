@@ -11,7 +11,7 @@ import { RETRY_CONFIG } from './databaseConfig';
  */
 export const withRetry = async <T>(
     operation: () => Promise<T>,
-    operationName: string
+    _operationName: string
 ): Promise<T> => {
     let lastError: Error | undefined;
     

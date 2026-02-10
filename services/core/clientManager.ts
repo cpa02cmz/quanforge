@@ -13,7 +13,6 @@ import { logger } from '../../utils/logger';
 /**
  * Manages dynamic client creation and switching between Supabase and Mock modes
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface MockClient extends Record<string, unknown> {
     from: (table: string) => unknown;
     auth: unknown;
@@ -81,7 +80,6 @@ if (typeof window !== 'undefined') {
 export const supabase = new Proxy({}, {
     get: (_target, prop) => {
         const client = clientManager.getClient();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (client as Record<string, unknown>)[prop as string];
     }
 }) as SupabaseClient;
