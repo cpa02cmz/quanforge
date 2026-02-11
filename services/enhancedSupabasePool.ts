@@ -82,6 +82,7 @@ class EnhancedSupabaseConnectionPool {
   private edgeWarmingTimer: number | null = null;
   private acquireTimes: number[] = [];
   private edgeRegions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'];
+  private timers: Set<number> = new Set(); // Track all timers for cleanup
 
   private constructor() {
     this.initializePool();
@@ -404,6 +405,7 @@ class EnhancedSupabaseConnectionPool {
       await Promise.allSettled(healthCheckPromises);
       this.updateStats();
     }, this.config.healthCheckInterval);
+    this.timers.add(this.healthCheckTimer);
   }
 
   private startCleanup(): void {
@@ -411,6 +413,7 @@ class EnhancedSupabaseConnectionPool {
       this.cleanupIdleConnections();
       this.cleanupWaitingQueue();
     }, 60000); // Run cleanup every minute
+    this.timers.add(this.cleanupTimer);
   }
 
   private cleanupIdleConnections(): void {
@@ -705,9 +708,11 @@ class EnhancedSupabaseConnectionPool {
       // Re-calculate interval for next cycle
       if (this.edgeWarmingTimer) {
         window.clearInterval(this.edgeWarmingTimer);
+        this.timers.delete(this.edgeWarmingTimer);
         this.scheduleAdaptiveWarming();
       }
     }, adaptiveInterval);
+    this.timers.add(this.edgeWarmingTimer);
   }
 
   /**
@@ -734,9 +739,10 @@ class EnhancedSupabaseConnectionPool {
    */
   private schedulePredictiveWarming(): void {
     // Schedule predictive warming every 15 minutes
-    window.setInterval(() => {
+    const predictiveTimer = window.setInterval(() => {
       this.predictiveWarming();
     }, 900000);
+    this.timers.add(predictiveTimer);
     
     // Schedule time-based warming for business hours
     this.scheduleBusinessHoursWarming();
@@ -760,7 +766,8 @@ class EnhancedSupabaseConnectionPool {
     };
     
     // Check every 30 minutes during business hours
-    window.setInterval(checkAndWarm, 1800000);
+    const businessHoursTimer = window.setInterval(checkAndWarm, 1800000);
+    this.timers.add(businessHoursTimer);
   }
 
   /**
@@ -1403,6 +1410,52 @@ class EnhancedSupabaseConnectionPool {
         coldStartRate: this.calculateColdStartRate()
       }
     };
+  }
+
+  /**
+   * Destroy the connection pool and cleanup all resources
+   * Fixes Issue #600: Database Connection Pool Resource Leak Risk
+   */
+  destroy(): void {
+    // Clear all tracked timers
+    this.timers.forEach(timer => {
+      clearInterval(timer);
+      clearTimeout(timer);
+    });
+    this.timers.clear();
+
+    // Clear individual timer references
+    if (this.healthCheckTimer) {
+      clearInterval(this.healthCheckTimer);
+      this.healthCheckTimer = null;
+    }
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+    if (this.edgeWarmingTimer) {
+      clearInterval(this.edgeWarmingTimer);
+      this.edgeWarmingTimer = null;
+    }
+
+    // Clear connections
+    this.connections.clear();
+    this.readReplicaClients.clear();
+    this.waitingQueue = [];
+    this.acquireTimes = [];
+
+    // Reset stats
+    this.stats = {
+      totalConnections: 0,
+      activeConnections: 0,
+      idleConnections: 0,
+      unhealthyConnections: 0,
+      waitingRequests: 0,
+      avgAcquireTime: 0,
+      hitRate: 0
+    };
+
+    logger.log('Connection pool destroyed and all resources cleaned up');
   }
 }
 

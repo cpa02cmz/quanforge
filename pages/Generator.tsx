@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, memo, useMemo, lazy, Suspense, useCallback } from 'react';
+import React, { useState, useEffect, memo, useMemo, lazy, Suspense, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { StrategyConfig } from '../components/StrategyConfig';
 import { SaveButton } from '../components/SaveButton';
@@ -27,6 +27,11 @@ export const Generator: React.FC = memo(() => {
        performanceMonitor.cleanup();
        // Reset frontend performance optimizer on unmount
        frontendPerformanceOptimizer.reset();
+       // Fix Issue #604: Cleanup save timeout to prevent memory leak
+       if (saveTimeoutRef.current) {
+         clearTimeout(saveTimeoutRef.current);
+         saveTimeoutRef.current = null;
+       }
      };
    }, []);
   
@@ -66,21 +71,22 @@ export const Generator: React.FC = memo(() => {
    const [saveState, setSaveState] = useState<'idle' | 'saving' | 'success'>('idle');
    const [showCelebration, setShowCelebration] = useState(false);
    const [prevLoading, setPrevLoading] = useState(isLoading);
+   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Fix Issue #604
    
-   // Enhanced save handler with success state
-   const handleSaveWithState = useCallback(async () => {
-     setSaveState('saving');
-     try {
-       await handleSave();
-       setSaveState('success');
-       // Reset to idle after showing success
-       setTimeout(() => {
+    // Enhanced save handler with success state
+    const handleSaveWithState = useCallback(async () => {
+      setSaveState('saving');
+      try {
+        await handleSave();
+        setSaveState('success');
+        // Reset to idle after showing success - Fix Issue #604: Store timeout in ref for cleanup
+        saveTimeoutRef.current = setTimeout(() => {
+          setSaveState('idle');
+        }, 2000);
+       } catch {
          setSaveState('idle');
-       }, 2000);
-      } catch {
-        setSaveState('idle');
-      }
-   }, [handleSave]);
+       }
+    }, [handleSave]);
    
      // Keyboard shortcuts
      useEffect(() => {
