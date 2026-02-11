@@ -52,6 +52,8 @@ class RealtimeManager {
   };
   private syncTimer: ReturnType<typeof setInterval> | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private onlineHandler: (() => void) | null = null; // Fix Issue #601
+  private offlineHandler: (() => void) | null = null; // Fix Issue #601
 
   private constructor() {
     this.setupNetworkListeners();
@@ -295,15 +297,19 @@ class RealtimeManager {
 
   // Setup network listeners
   private setupNetworkListeners(): void {
-    window.addEventListener('online', () => {
+    // Fix Issue #601: Store handler references for cleanup
+    this.onlineHandler = () => {
       this.syncStatus.isOnline = true;
       this.processSyncQueue();
       this.reconnectSubscriptions();
-    });
+    };
 
-    window.addEventListener('offline', () => {
+    this.offlineHandler = () => {
       this.syncStatus.isOnline = false;
-    });
+    };
+
+    window.addEventListener('online', this.onlineHandler);
+    window.addEventListener('offline', this.offlineHandler);
   }
 
   // Reconnect all subscriptions
@@ -380,6 +386,16 @@ class RealtimeManager {
     
     this.subscriptions.clear();
     this.syncQueue = [];
+
+    // Fix Issue #601: Remove event listeners to prevent memory leak
+    if (this.onlineHandler) {
+      window.removeEventListener('online', this.onlineHandler);
+      this.onlineHandler = null;
+    }
+    if (this.offlineHandler) {
+      window.removeEventListener('offline', this.offlineHandler);
+      this.offlineHandler = null;
+    }
   }
 }
 

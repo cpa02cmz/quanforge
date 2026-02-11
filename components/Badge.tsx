@@ -71,6 +71,7 @@ export const Badge: React.FC<BadgeProps> = memo(({
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const prevValueRef = useRef(children);
   const badgeRef = useRef<HTMLSpanElement>(null);
+  const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Fix Issue #616
 
   // Check for reduced motion preference
   useEffect(() => {
@@ -91,7 +92,8 @@ export const Badge: React.FC<BadgeProps> = memo(({
       // Animate value change
       if (!prefersReducedMotion && badgeRef.current) {
         badgeRef.current.style.transform = 'scale(1.2)';
-        setTimeout(() => {
+        // Fix Issue #616: Store timeout in ref for cleanup
+        animationTimeoutRef.current = setTimeout(() => {
           if (badgeRef.current) {
             badgeRef.current.style.transform = 'scale(1)';
           }
@@ -101,6 +103,14 @@ export const Badge: React.FC<BadgeProps> = memo(({
       setDisplayValue(children);
       prevValueRef.current = children;
     }
+
+    // Cleanup timeout on unmount or before next effect run
+    return () => {
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+        animationTimeoutRef.current = null;
+      }
+    };
   }, [children, prefersReducedMotion]);
 
   // Handle "new" entrance animation
