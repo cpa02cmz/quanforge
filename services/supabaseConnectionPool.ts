@@ -268,18 +268,23 @@ class SupabaseConnectionPool {
   }
 
   private async testConnection(client: SupabaseClient): Promise<boolean> {
-     try {
-       const timeoutPromise = new Promise((_, reject) => 
-         setTimeout(() => reject(new Error('Connection timeout')), this.config.connectionTimeout)
-       );
-       
-       // Use a lightweight query for connection testing
-       const queryPromise = client
-         .from('robots')
-         .select('id')
-         .limit(1);
-       
-        const result = await Promise.race([queryPromise, timeoutPromise]) as { data?: any[]; error?: any };
+      try {
+        let timeoutId: ReturnType<typeof setTimeout>;
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error('Connection timeout')), this.config.connectionTimeout);
+        });
+        
+        // Use a lightweight query for connection testing
+        const queryPromise = client
+          .from('robots')
+          .select('id')
+          .limit(1)
+          .then((value: any) => {
+            clearTimeout(timeoutId);
+            return value;
+          });
+        
+         const result = await Promise.race([queryPromise, timeoutPromise]) as { data?: any[]; error?: any };
         
         // Check if result has error property
        if (result && result.error) {

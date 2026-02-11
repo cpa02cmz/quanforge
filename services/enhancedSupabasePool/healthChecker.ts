@@ -37,11 +37,15 @@ export class ConnectionHealthChecker {
   }
 
   private async performHealthCheck(client: SupabaseClient): Promise<void> {
+    let timeoutId: ReturnType<typeof setTimeout>;
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Health check timeout')), this.checkTimeout);
+      timeoutId = setTimeout(() => reject(new Error('Health check timeout')), this.checkTimeout);
     });
 
-    const healthCheckPromise = this.retryHealthCheck(client);
+    const healthCheckPromise = this.retryHealthCheck(client).then((value: any) => {
+      clearTimeout(timeoutId);
+      return value;
+    });
     
     await Promise.race([healthCheckPromise, timeoutPromise]);
   }
@@ -132,14 +136,19 @@ export class ConnectionHealthChecker {
   // Quick ping for connection validation
   async quickPing(client: SupabaseClient): Promise<boolean> {
     try {
+      let timeoutId: ReturnType<typeof setTimeout>;
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Ping timeout')), STAGGER.HEALTH_CHECK_TIMEOUT_MS); // 2 second timeout
+        timeoutId = setTimeout(() => reject(new Error('Ping timeout')), STAGGER.HEALTH_CHECK_TIMEOUT_MS); // 2 second timeout
       });
 
       const pingPromise = client
         .from('robots')
         .select('count')
-        .limit(1);
+        .limit(1)
+        .then((value: any) => {
+          clearTimeout(timeoutId);
+          return value;
+        });
 
       await Promise.race([pingPromise, timeoutPromise]);
       return true;
