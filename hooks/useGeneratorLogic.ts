@@ -196,7 +196,7 @@ const stopGeneration = useCallback(() => {
                           }
                       }
                   }
-              } catch (error) {
+              } catch (error: unknown) {
                   if (!controller.signal.aborted) {
                       logger.error('Error loading robot:', error);
                       showToast("Error loading robot", "error");
@@ -488,11 +488,11 @@ const stopGeneration = useCallback(() => {
                   navigate(`/generator/${result.data[0].id}`, { replace: true });
               }
          }
-         showToast('Robot saved successfully!', 'success');
-      } catch (e) {
-        logger.error(e);
-        showToast('Failed to save robot', 'error');
-      } finally {
+          showToast('Robot saved successfully!', 'success');
+       } catch (e: unknown) {
+         logger.error(e);
+         showToast('Failed to save robot', 'error');
+       } finally {
         dispatch({ type: 'SET_SAVING', payload: false });
       }
   };
@@ -525,10 +525,10 @@ const stopGeneration = useCallback(() => {
               const res = runMonteCarloSimulation(state.analysis, state.backtestSettings);
               dispatch({ type: 'SET_SIMULATION_RESULT', payload: res });
               showToast("Simulation completed", 'success');
-          } catch (e) {
-              logger.error(e);
-              showToast("Simulation failed", 'error');
-          } finally {
+          } catch (e: unknown) {
+               logger.error(e);
+               showToast("Simulation failed", 'error');
+           } finally {
               dispatch({ type: 'SET_SIMULATING', payload: false });
           }
       }, 500);

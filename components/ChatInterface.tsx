@@ -125,7 +125,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
               }
             }
           }
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error('Memory monitoring error:', error);
         }
       }, interval);

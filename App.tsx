@@ -155,7 +155,7 @@ useEffect(() => {
               });
             }
           }, 400);
-       } catch (error) {
+       } catch (error: unknown) {
          logger.warn('Non-critical service initialization failed:', error);
        }
      };

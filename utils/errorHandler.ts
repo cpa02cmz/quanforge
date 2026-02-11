@@ -39,7 +39,7 @@ export class ErrorHandler {
       if (stored) {
         this.errors = JSON.parse(stored);
       }
-    } catch (e) {
+    } catch (e: unknown) {
       console.warn('Failed to load stored errors:', e);
     }
   }
@@ -47,7 +47,7 @@ export class ErrorHandler {
   private storeErrors(): void {
     try {
       localStorage.setItem('app_errors', JSON.stringify(this.errors));
-    } catch (e) {
+    } catch (e: unknown) {
       console.warn('Failed to store errors:', e);
     }
   }
@@ -122,7 +122,7 @@ export class ErrorHandler {
         //   body: JSON.stringify(error) 
         // });
       }
-    } catch (e) {
+    } catch (e: unknown) {
       console.warn('Failed to report error:', e);
     }
   }
