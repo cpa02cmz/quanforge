@@ -523,11 +523,15 @@ export class EdgeCacheManager<T = any> {
           }
 
           // Fetch data with timeout
+          let timeoutId: ReturnType<typeof setTimeout>;
           const mockData = await Promise.race([
-            this.fetchDataForWarmup(key),
-            new Promise<null>((_, reject) => 
-              setTimeout(() => reject(new Error('Warmup timeout')), STAGGER.WARMUP_TIMEOUT_MS)
-            )
+            this.fetchDataForWarmup(key).then((value: any) => {
+              clearTimeout(timeoutId);
+              return value;
+            }),
+            new Promise<null>((_, reject) => {
+              timeoutId = setTimeout(() => reject(new Error('Warmup timeout')), STAGGER.WARMUP_TIMEOUT_MS);
+            })
           ]);
           
           if (mockData) {
