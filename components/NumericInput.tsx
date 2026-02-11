@@ -1,4 +1,5 @@
 import React, { useState, useEffect, memo, useCallback, useRef } from 'react';
+import { INTERACTIVE_ANIMATION, LOADING_ANIMATION } from '../constants/animations';
 
 export const NumericInput: React.FC<{
     value: number;
@@ -89,7 +90,7 @@ export const NumericInput: React.FC<{
     // Trigger pulse animation on input value
     const triggerPulse = useCallback(() => {
         setIsPulsing(true);
-        setTimeout(() => setIsPulsing(false), 200);
+        setTimeout(() => setIsPulsing(false), LOADING_ANIMATION.VALUE_PULSE);
     }, []);
 
     const increment = useCallback(() => {
@@ -116,11 +117,12 @@ export const NumericInput: React.FC<{
     
     // Long-press functionality with progressive speed
     const getRepeatDelay = (count: number): number => {
-        // Start slow (400ms), then speed up to fast (50ms)
-        if (count < 5) return 400;
-        if (count < 10) return 200;
-        if (count < 20) return 100;
-        return 50;
+        // Start slow, then speed up progressively
+        const { LONG_PRESS_INTERVALS, LONG_PRESS_THRESHOLDS } = INTERACTIVE_ANIMATION;
+        if (count < LONG_PRESS_THRESHOLDS.TO_MEDIUM) return LONG_PRESS_INTERVALS.SLOW;
+        if (count < LONG_PRESS_THRESHOLDS.TO_FAST) return LONG_PRESS_INTERVALS.MEDIUM;
+        if (count < LONG_PRESS_THRESHOLDS.TO_VERY_FAST) return LONG_PRESS_INTERVALS.FAST;
+        return LONG_PRESS_INTERVALS.VERY_FAST;
     };
     
     const startLongPress = useCallback((type: 'increment' | 'decrement') => {
@@ -159,11 +161,11 @@ export const NumericInput: React.FC<{
             }, nextDelay);
         };
         
-        // Initial delay before starting rapid changes (600ms to distinguish from click)
+        // Initial delay before starting rapid changes (to distinguish from click)
         const delayRef = type === 'increment' ? incrementDelayRef : decrementDelayRef;
         delayRef.current = setTimeout(() => {
             performAction();
-        }, 600);
+        }, INTERACTIVE_ANIMATION.LONG_PRESS_DELAY);
     }, [increment, decrement]);
     
     const stopLongPress = useCallback((type: 'increment' | 'decrement') => {
@@ -183,13 +185,13 @@ export const NumericInput: React.FC<{
     // Handle button press animation and click
     const handleIncrementPress = useCallback(() => {
         setIsIncrementPressed(true);
-        setTimeout(() => setIsIncrementPressed(false), 150);
+        setTimeout(() => setIsIncrementPressed(false), INTERACTIVE_ANIMATION.BUTTON_PRESS_ANIMATION);
         increment();
     }, [increment]);
 
     const handleDecrementPress = useCallback(() => {
         setIsDecrementPressed(true);
-        setTimeout(() => setIsDecrementPressed(false), 150);
+        setTimeout(() => setIsDecrementPressed(false), INTERACTIVE_ANIMATION.BUTTON_PRESS_ANIMATION);
         decrement();
     }, [decrement]);
     
