@@ -349,7 +349,7 @@ export const Tooltip: React.FC<TooltipProps> = memo(({
             maxWidth: `${maxWidth}px`,
             animation: isExiting 
               ? 'tooltip-fade-out 0.15s ease-out forwards' 
-              : 'tooltip-fade-in 0.2s ease-out forwards'
+              : 'tooltip-elastic-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards'
           }}
           role="tooltip"
           aria-live="polite"
@@ -373,3 +373,61 @@ export const Tooltip: React.FC<TooltipProps> = memo(({
 Tooltip.displayName = 'Tooltip';
 
 export default Tooltip;
+
+// CSS Animations for tooltip micro-interactions
+// Note: These are injected globally to ensure they're available
+if (typeof document !== 'undefined') {
+  const styleId = 'tooltip-animations';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      /* Elastic bounce entrance animation */
+      @keyframes tooltip-elastic-in {
+        0% {
+          opacity: 0;
+          transform: scale(0.3) translateY(10px);
+        }
+        40% {
+          opacity: 1;
+          transform: scale(1.05) translateY(-2px);
+        }
+        60% {
+          transform: scale(0.95) translateY(1px);
+        }
+        80% {
+          transform: scale(1.02) translateY(-0.5px);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+      
+      /* Fade out animation */
+      @keyframes tooltip-fade-out {
+        from {
+          opacity: 1;
+          transform: scale(1);
+        }
+        to {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+      }
+      
+      /* Respect reduced motion preference */
+      @media (prefers-reduced-motion: reduce) {
+        [role="tooltip"] {
+          animation: tooltip-fade-in 0.1s ease-out forwards !important;
+        }
+        
+        @keyframes tooltip-fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
