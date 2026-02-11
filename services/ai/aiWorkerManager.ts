@@ -48,7 +48,7 @@ export class AIWorkerManager {
       
       logger.info('AI Worker initialized');
       this.workerReady = true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize AI Worker:', error);
       this.status.status = 'error';
       this.status.lastError = error instanceof Error ? error.message : 'Unknown error';
@@ -114,7 +114,7 @@ export class AIWorkerManager {
         type: this.currentTask.type,
         data: this.currentTask.data
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to send task to worker:', error);
       this.handleTaskError(error);
     }

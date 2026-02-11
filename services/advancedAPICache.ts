@@ -312,7 +312,7 @@ const response = await fetch(url, options as unknown as globalThis.RequestInit);
         const data = await response.json();
         await this.set(cacheKey, data, ttl);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('Revalidation failed:', error);
       // Keep the stale data in cache
     }
@@ -355,7 +355,7 @@ const response = await fetch(url, options as unknown as globalThis.RequestInit);
       } else {
         regex = pattern;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ReDoSError) {
         logger.warn(`Unsafe cache invalidation pattern: ${error.message}`);
         // Fall back to simple string matching

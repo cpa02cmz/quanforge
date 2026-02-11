@@ -150,7 +150,7 @@ class RealTimeUXScoring {
       // Log current score for debugging
       const currentScore = this.scoreCalculator.calculateScore(this.metrics);
       console.log(`UX Score: ${currentScore.overall} (${this.getHealthStatus(currentScore.overall)})`);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error during periodic UX assessment:', error);
     }
   }

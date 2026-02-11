@@ -101,7 +101,7 @@ class EdgeSupabaseClient {
       this.logQueryPerformance(table, query, duration, result.data?.length || 0, priority);
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Edge query failed for ${table}.${query}:`, error);
       return { data: null, error };
     }
@@ -154,7 +154,7 @@ class EdgeSupabaseClient {
           this.invalidateCacheForTable(op.table);
 
           return { data: result.data, error: result.error };
-        } catch (error) {
+        } catch (error: unknown) {
           return { data: null, error };
         }
       });
@@ -241,7 +241,7 @@ class EdgeSupabaseClient {
       this.logUploadPerformance(bucket, path, file.size, duration);
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Edge upload failed for ${bucket}/${path}:`, error);
       return { data: null, error };
     }
@@ -296,7 +296,7 @@ class EdgeSupabaseClient {
        }
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Edge download failed for ${bucket}/${path}:`, error);
       return { data: null, error };
     }
@@ -310,7 +310,7 @@ class EdgeSupabaseClient {
         // Simple query execution - the complex parsing was causing type issues
         const { data, error } = await this.client.from(table).select('*');
         return { data, error };
-      } catch (error) {
+      } catch (error: unknown) {
         return { data: null, error };
       }
     }
@@ -364,7 +364,7 @@ class EdgeSupabaseClient {
       }
 
       return results;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Transaction failed:', error);
       return operations.map(() => ({ data: null, error }));
     }
@@ -380,7 +380,7 @@ class EdgeSupabaseClient {
   ): Promise<T> {
     try {
       return await operation();
-    } catch (error) {
+    } catch (error: unknown) {
       if (attempt >= (this.config.maxRetries || 3)) {
         throw error;
       }

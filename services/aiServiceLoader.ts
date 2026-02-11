@@ -23,7 +23,7 @@ export const loadGeminiService = async (): Promise<typeof import('./gemini')> =>
       const service = await import('./gemini');
       geminiService = service;
       return service;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to load gemini service:', error);
       // Reset the promise on error to allow retry
       serviceLoadPromise = null;
