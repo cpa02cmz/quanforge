@@ -40,7 +40,7 @@ interface SecurityConfig {
 interface ValidationResult {
   isValid: boolean;
   errors: string[];
-  sanitizedData?: any;
+  sanitizedData?: Record<string, unknown>;
   riskScore: number;
 }
 
@@ -1580,7 +1580,7 @@ private validateRobotData(data: any): ValidationResult {
   }
 
    // Safe JSON parsing with prototype pollution protection
-   safeJSONParse(jsonString: string): any {
+   safeJSONParse(jsonString: string): unknown {
      try {
        // First, parse the JSON
        const parsed = JSON.parse(jsonString);
