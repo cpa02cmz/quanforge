@@ -171,7 +171,7 @@ class EdgeAnalytics {
     try {
       const observer = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        const lastEntry = entries[entries.length - 1] as any;
+        const lastEntry = entries[entries.length - 1] as PerformanceEntry | undefined;
         
         if (lastEntry) {
           this.updatePerformanceData('lcp', lastEntry.startTime);
@@ -247,7 +247,7 @@ class EdgeAnalytics {
     try {
       const observer = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        const navEntry = entries.find(entry => entry.entryType === 'navigation') as any;
+        const navEntry = entries.find(entry => entry.entryType === 'navigation') as PerformanceNavigationTiming | undefined;
         
         if (navEntry && navEntry.responseStart) {
           this.updatePerformanceData('ttfb', navEntry.responseStart - navEntry.requestStart);
@@ -306,12 +306,14 @@ class EdgeAnalytics {
     try {
       const observer = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        const navEntry = entries.find(entry => entry.entryType === 'navigation') as any;
+        const navEntry = entries.find(entry => entry.entryType === 'navigation') as PerformanceNavigationTiming | undefined;
         
         if (navEntry) {
+          // Use startTime as base for calculations (navigationStart equivalent)
+          const navStart = navEntry.startTime;
           const navTiming = {
-            domContentLoaded: navEntry.domContentLoadedEventEnd - navEntry.navigationStart,
-            loadComplete: navEntry.loadEventEnd - navEntry.navigationStart,
+            domContentLoaded: navEntry.domContentLoadedEventEnd - navStart,
+            loadComplete: navEntry.loadEventEnd - navStart,
             redirectTime: navEntry.redirectEnd - navEntry.redirectStart,
             dnsTime: navEntry.domainLookupEnd - navEntry.domainLookupStart,
             connectTime: navEntry.connectEnd - navEntry.connectStart,
@@ -419,9 +421,16 @@ class EdgeAnalytics {
     window.addEventListener('error', (event) => {
       if (event.target !== window) {
         const target = event.target as HTMLElement;
+        // Type guard to safely get src or href
+        let srcOrHref: string | undefined;
+        if ('src' in target) {
+          srcOrHref = (target as HTMLImageElement | HTMLScriptElement).src;
+        } else if ('href' in target) {
+          srcOrHref = (target as HTMLLinkElement | HTMLAnchorElement).href;
+        }
         this.trackError('resource_error', {
           tagName: target.tagName,
-          src: (target as any).src || (target as any).href
+          src: srcOrHref
         });
       }
     }, true);

@@ -18,7 +18,7 @@ interface PerformanceMetrics {
   connection: string;
   vitals: CoreWebVitals;
   resources: PerformanceResourceTiming[];
-  memory?: any;
+  memory?: MemoryInfo;
   navigation: PerformanceNavigationTiming;
 }
 
@@ -119,16 +119,19 @@ this.isInitialized = true;
 
     // First Input Delay (FID)
     this.observePerformanceObserver('first-input', (entries) => {
-      const firstEntry = entries[0] as any;
-      this.updateMetric('fid', firstEntry.processingStart - firstEntry.startTime);
+      const firstEntry = entries[0] as PerformanceEntry & { processingStart?: number };
+      if (firstEntry.processingStart) {
+        this.updateMetric('fid', firstEntry.processingStart - firstEntry.startTime);
+      }
     });
 
     // Cumulative Layout Shift (CLS)
     let clsValue = 0;
     this.observePerformanceObserver('layout-shift', (entries) => {
       for (const entry of entries) {
-        if (!(entry as any).hadRecentInput) {
-          clsValue += (entry as any).value;
+        const clsEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+        if (!clsEntry.hadRecentInput) {
+          clsValue += clsEntry.value || 0;
         }
       }
       this.updateMetric('cls', clsValue);
@@ -235,10 +238,10 @@ this.isInitialized = true;
   /**
    * Update metric value
    */
-  private updateMetric(name: string, value: number): void {
+  private updateMetric(name: keyof CoreWebVitals, value: number): void {
     const currentMetrics = this.getCurrentMetrics();
     if (currentMetrics) {
-      (currentMetrics.vitals as any)[name] = value;
+      currentMetrics.vitals[name] = value;
       this.checkThreshold(name, value);
     }
   }
@@ -266,7 +269,7 @@ this.isInitialized = true;
    */
   private checkMemoryUsage(): void {
     if ('memory' in performance) {
-      const memory = (performance as any).memory;
+      const memory = (performance as unknown as { memory: MemoryInfo }).memory;
       const usageRatio = memory.usedJSHeapSize / memory.jsHeapSizeLimit;
 
       if (usageRatio > 0.9) { // 90% memory usage
@@ -278,7 +281,7 @@ this.isInitialized = true;
   /**
    * Record error
    */
-  private async recordError(type: string, details: any): Promise<void> {
+  private async recordError(type: string, details: Record<string, unknown>): Promise<void> {
     const errorData = {
       type,
       details,
@@ -392,7 +395,7 @@ this.isInitialized = true;
       timestamp: Date.now(),
       url: window.location.href,
       userAgent: navigator.userAgent,
-      connection: (navigator as any).connection?.effectiveType || 'unknown',
+      connection: (navigator as unknown as { connection?: { effectiveType?: string } }).connection?.effectiveType || 'unknown',
       vitals: {
         lcp: 0,
         fid: 0,
@@ -401,7 +404,7 @@ this.isInitialized = true;
         ttfb: 0
       },
       resources,
-      memory: (performance as any).memory,
+      memory: (performance as unknown as { memory?: MemoryInfo }).memory,
       navigation
     };
   }

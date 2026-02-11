@@ -30,7 +30,7 @@ interface HealthCheckResult {
   timestamp: number;
   region: string;
   error?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface PerformanceMetrics {
@@ -336,9 +336,10 @@ class EdgeMonitoringService {
     let clsValue = 0;
     const clsObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      entries.forEach((entry: any) => {
-        if (!entry.hadRecentInput) {
-          clsValue += entry.value;
+      entries.forEach((entry) => {
+        const clsEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+        if (!clsEntry.hadRecentInput) {
+          clsValue += clsEntry.value || 0;
           
           if (clsValue > 0.1) { // CLS should be < 0.1
             this.createAlert({
@@ -570,7 +571,10 @@ class EdgeMonitoringService {
       if (!healthByRegion[hc.region]) {
         healthByRegion[hc.region] = { healthy: 0, degraded: 0, unhealthy: 0 };
       }
-       (healthByRegion[hc.region] as any)[hc.status]++;
+      const regionStats = healthByRegion[hc.region];
+      if (regionStats) {
+        regionStats[hc.status]++;
+      }
     });
 
      const performanceByRegion: Record<string, { avgResponseTime: number; avgErrorRate: number; count: number }> = {};
