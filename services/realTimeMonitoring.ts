@@ -1,6 +1,7 @@
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { MEMORY_LIMITS, PERFORMANCE_THRESHOLDS, UX_THRESHOLDS, TIMEOUTS } from '../constants';
+import { CACHE_TTLS, PERFORMANCE_BUDGETS } from './constants';
 
 interface CoreWebVitals {
   lcp: number; // Largest Contentful Paint
@@ -49,7 +50,7 @@ class RealTimeMonitoring {
   private readonly ALERT_THRESHOLD = 0.1; // 10% error rate
 
   private readonly PERFORMANCE_BUDGET: PerformanceBudget = {
-    bundleSize: 250000, // 250KB
+    bundleSize: PERFORMANCE_BUDGETS.BUNDLE_SIZE.WARNING, // 200KB warning threshold
     lcp: UX_THRESHOLDS.LCP_GOOD, // 2.5s
     fid: UX_THRESHOLDS.FID_GOOD, // 100ms
     cls: PERFORMANCE_THRESHOLDS.CLS_GOOD, // 0.1
@@ -193,12 +194,12 @@ this.isInitialized = true;
     // Report metrics every 5 minutes
     setInterval(() => {
       this.reportMetrics();
-    }, 5 * 60 * 1000);
+    }, CACHE_TTLS.FIVE_MINUTES);
 
     // Check performance budgets every minute
     setInterval(() => {
       this.checkPerformanceBudgets();
-    }, 60 * 1000);
+    }, CACHE_TTLS.ONE_MINUTE);
   }
 
   /**
