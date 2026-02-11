@@ -20,11 +20,8 @@ This comprehensive troubleshooting guide helps you diagnose and resolve common i
 
 ## Quick Diagnostics
 
-### Health Check Script
+### Health Check Commands
 ```bash
-# Run comprehensive diagnostics
-npm run health-check
-
 # Manual health checks
 npm run typecheck  # TypeScript compilation
 npm run lint       # Code quality
