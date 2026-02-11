@@ -137,7 +137,7 @@ export function createSafeRegExp(
   
   try {
     return new RegExp(pattern, flags);
-  } catch (error) {
+  } catch (error: unknown) {
     throw new ReDoSError(
       `Invalid regex pattern: ${error instanceof Error ? error.message : String(error)}`,
       'INVALID_REGEX'
@@ -208,7 +208,7 @@ export function safeRegexTest(
       matched,
       executionTimeMs,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     return {
       matched: false,
       error: error instanceof ReDoSError ? error.message : `Regex error: ${String(error)}`,

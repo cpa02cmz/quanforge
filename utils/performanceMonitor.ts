@@ -370,7 +370,7 @@ export function measurePerformance(operationName?: string) {
           endTimer();
           return result;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         endTimer();
         throw error;
       }
@@ -410,7 +410,7 @@ export function measure<T>(
     const result = fn();
     endTimer();
     return result;
-  } catch (error) {
+  } catch (error: unknown) {
     endTimer();
     throw error;
   }
