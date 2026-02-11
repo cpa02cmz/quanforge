@@ -279,7 +279,7 @@ class SecurityManager {
   safeJSONParse(jsonString: string): any {
     try {
       return JSON.parse(jsonString);
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Invalid JSON:', error);
       return null;
     }

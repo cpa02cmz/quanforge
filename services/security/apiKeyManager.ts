@@ -46,7 +46,7 @@ export class APIKeyManager {
         expiresAt,
         provider: 'google'
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('API key rotation failed:', error);
       return null;
     }
@@ -64,7 +64,7 @@ export class APIKeyManager {
         .sort((a: StoredKey, b: StoredKey) => b.expiresAt - a.expiresAt)[0];
 
       return validKey?.key || null;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to get current API key:', error);
       return null;
     }
@@ -95,7 +95,7 @@ export class APIKeyManager {
 
       // Use secure storage with encryption instead of localStorage
       await this.secureStorage.set(APIKeyManager.STORAGE_KEY, keys);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to store API key:', error);
     }
   }
@@ -105,7 +105,7 @@ export class APIKeyManager {
     try {
       const keys = await this.secureStorage.get<StoredKey[]>(APIKeyManager.STORAGE_KEY, []);
       return keys || [];
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to get stored keys:', error);
       return [];
     }
@@ -120,7 +120,7 @@ export class APIKeyManager {
 
       // Use secure storage instead of localStorage
       await this.secureStorage.set(APIKeyManager.STORAGE_KEY, validKeys);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to cleanup expired keys:', error);
     }
   }
@@ -261,7 +261,7 @@ export class APIKeyManager {
       };
 
       return btoa(JSON.stringify(exportData));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to export keys:', error);
       return null;
     }
@@ -281,7 +281,7 @@ export class APIKeyManager {
       // Would decrypt and import keys in real implementation
       logger.log('Keys imported successfully');
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to import keys:', error);
       return false;
     }
