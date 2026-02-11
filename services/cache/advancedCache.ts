@@ -196,7 +196,7 @@ export class AdvancedCache extends BaseCache {
     const promises = entries.map(async ({ key, loader, ttl, tags }) => {
       try {
         const data = await loader();
-        await this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
+          await this.set(key, data, { ttl: ttl || TIME_CONSTANTS.CACHE_DEFAULT_TTL, tags: tags || [] });
       } catch (error) {
          if (process.env.NODE_ENV === 'development') {
            logger.warn(`Failed to preload cache entry: ${key}`, error);
@@ -220,7 +220,7 @@ export class AdvancedCache extends BaseCache {
         const key = `${pattern}:${JSON.stringify(params)}`;
         try {
           const data = await loader(params);
-          await this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
+        await this.set(key, data, { ttl: ttl || TIME_CONSTANTS.CACHE_DEFAULT_TTL, tags: tags || [] });
         } catch (error) {
           logger.warn(`Failed to warm cache entry: ${key}`, error);
         }
@@ -352,7 +352,7 @@ export class AdvancedCache extends BaseCache {
             lastAccess: Date.now()
           }
         }, {
-          ttl: 300000, // 5 minutes
+          ttl: TIME_CONSTANTS.CACHE_DEFAULT_TTL, // 5 minutes
           tags: ['edge', region, 'warm']
         });
 
@@ -369,7 +369,7 @@ export class AdvancedCache extends BaseCache {
             region,
             timestamp: Date.now()
           }, {
-            ttl: 180000, // 3 minutes
+            ttl: TIME_CONSTANTS.CACHE_MEDIUM_TTL, // 3 minutes
             tags: ['edge', region, 'query']
           });
         }

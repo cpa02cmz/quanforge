@@ -5,6 +5,7 @@
  */
 
 import { createClient, type VercelKV } from '@vercel/kv';
+import { TIME_CONSTANTS } from '../constants/config';
 
 // Edge KV configuration
 const KV_CONFIG = {
@@ -303,7 +304,7 @@ class EdgeKVClient {
 const edgeKVClient = new EdgeKVClient();
 
 // Cleanup expired entries every 5 minutes
-setInterval(() => edgeKVClient.cleanup(), 300000);
+setInterval(() => edgeKVClient.cleanup(), TIME_CONSTANTS.CLEANUP_LONG_INTERVAL);
 
 // Edge KV Service with specialized methods
 export const edgeKVService = {
