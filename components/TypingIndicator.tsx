@@ -1,4 +1,5 @@
 import React, { memo, useState, useEffect } from 'react';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 interface TypingIndicatorProps {
   /** Number of dots to display (default: 3) */
@@ -44,24 +45,12 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = memo(({
   className = '',
   'aria-label': ariaLabel = 'Typing'
 }) => {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const [mounted, setMounted] = useState(false);
 
-  // Check for reduced motion preference
+  // Trigger mount animation
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-    
-    const handleChange = (e: MediaQueryListEvent) => {
-      setPrefersReducedMotion(e.matches);
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    
-    // Trigger mount animation
     setMounted(true);
-    
-    return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
   // Variant color configurations
