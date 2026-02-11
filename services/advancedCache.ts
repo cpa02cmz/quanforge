@@ -28,6 +28,7 @@ interface CacheStats {
 
 import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
 import { createScopedLogger } from '../utils/logger';
+import { CACHE_TTLS, TIME_CONSTANTS, CACHE_SIZES } from './constants';
 
 const logger = createScopedLogger('AdvancedCache');
 
@@ -40,10 +41,10 @@ export class AdvancedCache {
     compressions: 0,
   };
   private config: CacheConfig = {
-    maxSize: 10 * 1024 * 1024, // 10MB (reduced for edge)
+    maxSize: CACHE_SIZES.LARGE_MB, // 10MB (reduced for edge)
     maxEntries: 500, // Reduced entries
-    defaultTTL: 180000, // 3 minutes (shorter for edge)
-    cleanupInterval: 30000, // 30 seconds
+    defaultTTL: CACHE_TTLS.THREE_MINUTES, // 3 minutes (shorter for edge)
+    cleanupInterval: TIME_CONSTANTS.SECOND * 30, // 30 seconds
     compressionThreshold: 512, // 0.5KB (more aggressive)
   };
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
@@ -196,7 +197,7 @@ export class AdvancedCache {
     const promises = entries.map(async ({ key, loader, ttl, tags }) => {
       try {
         const data = await loader();
-        this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
+        this.set(key, data, { ttl: ttl || CACHE_TTLS.FIVE_MINUTES, tags: tags || [] });
       } catch (error: unknown) {
         logger.warn(`Failed to preload cache entry: ${key}`, error);
       }
@@ -374,7 +375,7 @@ this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
             lastAccess: Date.now()
           }
         }, {
-          ttl: 300000, // 5 minutes
+          ttl: CACHE_TTLS.FIVE_MINUTES,
           tags: ['edge', region, 'warm']
         });
 
@@ -391,7 +392,7 @@ this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
             region,
             timestamp: Date.now()
           }, {
-            ttl: 180000, // 3 minutes
+            ttl: CACHE_TTLS.THREE_MINUTES,
             tags: ['edge', region, 'query']
           });
         }
@@ -442,18 +443,18 @@ export class CacheFactory {
 
 // Pre-configured cache instances
 export const robotCache = CacheFactory.getInstance('robots', {
-  maxSize: 10 * 1024 * 1024, // 10MB
-  defaultTTL: 300000, // 5 minutes
+  maxSize: CACHE_SIZES.LARGE_MB, // 10MB
+  defaultTTL: CACHE_TTLS.FIVE_MINUTES,
 });
 
 export const queryCache = CacheFactory.getInstance('queries', {
-  maxSize: 5 * 1024 * 1024, // 5MB
-  defaultTTL: 60000, // 1 minute
+  maxSize: CACHE_SIZES.MEDIUM_MB, // 5MB
+  defaultTTL: CACHE_TTLS.ONE_MINUTE,
 });
 
 export const userCache = CacheFactory.getInstance('users', {
-  maxSize: 2 * 1024 * 1024, // 2MB
-  defaultTTL: 900000, // 15 minutes
+  maxSize: CACHE_SIZES.SMALL_MB, // 2MB
+  defaultTTL: CACHE_TTLS.FIFTEEN_MINUTES,
 });
 
 // Cleanup on page unload to prevent memory leaks
