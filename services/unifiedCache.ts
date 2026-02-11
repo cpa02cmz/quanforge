@@ -116,7 +116,7 @@ export class UnifiedCache {
       logger.debug(`Cache hit for key: ${key}`);
       return data as T;
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Cache get error for key: ${key}`, error);
       this.metrics.misses++;
       return null;
@@ -166,7 +166,7 @@ export class UnifiedCache {
       
       logger.debug(`Cache set for key: ${key} (compressed: ${shouldCompress})`);
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Cache set error for key: ${key}`, error);
     }
   }
@@ -182,7 +182,7 @@ export class UnifiedCache {
         logger.debug(`Cache delete for key: ${key}`);
       }
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Cache delete error for key: ${key}`, error);
       return false;
     }
@@ -194,7 +194,7 @@ export class UnifiedCache {
   has(key: string): boolean {
     try {
       return this.memoryCache.get(key) !== undefined;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Cache has error for key: ${key}`, error);
       return false;
     }
@@ -208,7 +208,7 @@ export class UnifiedCache {
       this.memoryCache.destroy();
       this.metrics.deletes += 1; // Approximate
       logger.info('Cache cleared');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Cache clear error', error);
     }
   }
@@ -228,7 +228,7 @@ export class UnifiedCache {
       });
       
       return invalidatedCount;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Cache invalidate by tags error', error);
       return 0;
     }
@@ -275,7 +275,7 @@ export class UnifiedCache {
         const data = await loader();
         await this.set(key, data, options);
         logger.debug(`Cache warmed for key: ${key}`);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Failed to warm cache for key: ${key}`, error);
       }
     });
@@ -315,7 +315,7 @@ export class UnifiedCache {
       const stats = this.memoryCache.getStats();
       // The underlying cache should handle cleanup automatically
       logger.debug('Cache cleanup completed', { entryCount: stats.totalEntries });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Cache cleanup error', error);
     }
   }

@@ -14,7 +14,7 @@ export const resilientMarketService = {
 
     try {
       return originalMarketService.subscribe(symbol, callback);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Market data subscription failed:', error);
       throw error;
     }
@@ -23,7 +23,7 @@ export const resilientMarketService = {
   unsubscribe(symbol: string, callback: (data: MarketData) => void) {
     try {
       originalMarketService.unsubscribe(symbol, callback);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Market data unsubscribe failed:', error);
     }
   },
@@ -31,7 +31,7 @@ export const resilientMarketService = {
   cleanup() {
     try {
       originalMarketService.cleanup();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Market data cleanup failed:', error);
     }
   },
