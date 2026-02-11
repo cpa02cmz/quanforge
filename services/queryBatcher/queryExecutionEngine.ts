@@ -28,7 +28,7 @@ export class QueryExecutionEngine {
       try {
         const operationResults = await this.executeOperation(operation, queries);
         results.push(...operationResults);
-      } catch (error) {
+      } catch (error: unknown) {
         // Handle operation-level errors
         const errorResults = queries.map(query => ({
           id: query.id,
@@ -70,7 +70,7 @@ export class QueryExecutionEngine {
         
         results.push(...combinedResults);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       return this.createErrorResults(queries, error as any);
     }
 
@@ -87,7 +87,7 @@ export class QueryExecutionEngine {
       try {
         const result = await this.executeSingleQuery(query);
         results.push(result);
-      } catch (error) {
+      } catch (error: unknown) {
         results.push(this.createErrorResult(query, error as any));
       }
     }
@@ -105,7 +105,7 @@ export class QueryExecutionEngine {
       try {
         const result = await this.executeSingleQuery(query);
         results.push(result);
-      } catch (error) {
+      } catch (error: unknown) {
         results.push(this.createErrorResult(query, error as any));
       }
     }
@@ -123,7 +123,7 @@ export class QueryExecutionEngine {
       try {
         const result = await this.executeSingleQuery(query);
         results.push(result);
-      } catch (error) {
+      } catch (error: unknown) {
         results.push(this.createErrorResult(query, error as any));
       }
     }
@@ -166,7 +166,7 @@ export class QueryExecutionEngine {
         data: result.data,
         executionTime
       };
-    } catch (error) {
+    } catch (error: unknown) {
       const executionTime = performance.now() - startTime;
       
       // Check if we should retry
@@ -296,7 +296,7 @@ export class QueryExecutionEngine {
           executionTime: executionTime / combined.originalQueries.length
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       return this.createErrorResults(combined.originalQueries, error as any);
     }
 

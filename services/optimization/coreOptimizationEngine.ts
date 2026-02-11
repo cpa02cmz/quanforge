@@ -82,7 +82,7 @@ export class CoreOptimizationEngine {
       }
       
       console.log(`Optimization cycle completed. Applied ${recommendations.length} optimizations.`);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error during optimization cycle:', error);
     }
   }

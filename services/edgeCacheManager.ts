@@ -237,7 +237,7 @@ export class EdgeCacheManager<T = any> {
             return entry;
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.debug('CDN cache lookup failed:', error);
       }
     }
@@ -312,7 +312,7 @@ export class EdgeCacheManager<T = any> {
         });
         
         await cache.put(cdnKey, response);
-      } catch (error) {
+      } catch (error: unknown) {
         console.debug('CDN cache storage failed:', error);
       }
     }
@@ -379,7 +379,7 @@ export class EdgeCacheManager<T = any> {
             replicate: true,
           });
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.debug(`Background refresh failed for key ${originalKey}:`, error);
       }
     }, 0);
@@ -541,7 +541,7 @@ export class EdgeCacheManager<T = any> {
           } else {
             failed++;
           }
-        } catch (error) {
+        } catch (error: unknown) {
           console.warn(`Failed to warmup cache for key ${key}:`, error);
           failed++;
         }
@@ -715,7 +715,7 @@ export class EdgeCacheManager<T = any> {
       try {
         const regex = createSafeWildcardPattern(pattern);
         return regex.test(key);
-      } catch (error) {
+      } catch (error: unknown) {
         // Fall back to simple string matching if pattern is unsafe
         if (error instanceof ReDoSError) {
           console.warn('Unsafe cache pattern detected:', error.message);
@@ -804,7 +804,7 @@ export class EdgeCacheManager<T = any> {
           replicate: true
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn(`Failed to warm cache pattern: ${pattern}`, error);
     }
   }
@@ -819,7 +819,7 @@ export class EdgeCacheManager<T = any> {
           priority: 'high'
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn(`Failed to warm critical path: ${path}`, error);
     }
   }
@@ -840,7 +840,7 @@ export class EdgeCacheManager<T = any> {
       }
       
       return null;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Failed to fetch data for warmup key ${key}:`, error);
       return null;
     }

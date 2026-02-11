@@ -62,7 +62,7 @@ export class WorkerManager implements IWorkerManager {
       try {
         worker.terminate();
         logger.info(`Terminated worker: ${id}`);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`Error terminating worker ${id}:`, error);
       }
     }
@@ -90,7 +90,7 @@ export class WorkerManager implements IWorkerManager {
 
       const result = await this.executeTask(testTask) as WorkerResult;
       return result.success;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Worker Manager health check failed:', error);
       return false;
     }
@@ -155,7 +155,7 @@ export class WorkerManager implements IWorkerManager {
       
       // Create new worker to maintain pool size
       await this.createWorker();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error terminating worker ${workerId}:`, error);
       throw error;
     }
@@ -175,7 +175,7 @@ export class WorkerManager implements IWorkerManager {
     for (let i = 0; i < this.config.maxWorkers; i++) {
       try {
         await this.createWorker();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`Failed to initialize worker ${i}:`, error);
       }
     }
@@ -207,7 +207,7 @@ export class WorkerManager implements IWorkerManager {
       
       this.stats.active++;
       logger.info(`Created worker: ${workerId}`);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Failed to create worker:`, error);
       throw error;
     }
@@ -317,7 +317,7 @@ export class WorkerManager implements IWorkerManager {
     try {
       await this.createWorker();
       logger.info(`Recreated worker to replace ${failedWorkerId}`);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Failed to recreate worker:`, error);
     }
   }

@@ -184,7 +184,7 @@ class EdgeMonitoringService {
         });
       }
 
-    } catch (error) {
+    } catch (error: unknown) {
       const responseTime = performance.now() - startTime;
       
       const result: HealthCheckResult = {
@@ -395,7 +395,7 @@ class EdgeMonitoringService {
         }
         
         return response;
-      } catch (error) {
+      } catch (error: unknown) {
         this.createAlert({
           type: 'error',
           severity: 'medium',
@@ -463,7 +463,7 @@ class EdgeMonitoringService {
         },
         body: JSON.stringify(alert)
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to send webhook notification:', error);
     }
   }

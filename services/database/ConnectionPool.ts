@@ -65,7 +65,7 @@ export class ConnectionPool implements IConnectionPool {
     // Close all connections
     try {
       logger.log('Closing all connections...');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error closing connections:', error);
     }
   }
@@ -83,7 +83,7 @@ export class ConnectionPool implements IConnectionPool {
       
       // Connection test should complete quickly (<5 seconds)
       return duration < 5000;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Health check failed:', error);
       return false;
     }
@@ -113,7 +113,7 @@ export class ConnectionPool implements IConnectionPool {
       
       this.poolStats.acquired++;
       return connection;
-    } catch (error) {
+    } catch (error: unknown) {
       this.poolStats.errors++;
       logger.error('Failed to acquire connection:', error);
       throw error;
@@ -125,7 +125,7 @@ export class ConnectionPool implements IConnectionPool {
       // Edge connection pool manages its own pooling
       // Just mark as released in stats
       this.poolStats.released++;
-    } catch (error) {
+    } catch (error: unknown) {
       this.poolStats.errors++;
       logger.error('Failed to release connection:', error);
       throw error;
@@ -142,7 +142,7 @@ export class ConnectionPool implements IConnectionPool {
         idle: edgeStats.idle || 0,
         total: edgeStats.total || 0,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to get pool stats:', error);
       return { active: 0, idle: 0, total: 0 };
     }
@@ -163,7 +163,7 @@ export class ConnectionPool implements IConnectionPool {
           const connection = await this.acquire();
           connections.push(connection);
           this.poolStats.created++;
-        } catch (error) {
+        } catch (error: unknown) {
           logger.warn(`Failed to pre-warm connection ${i}:`, error);
         }
       }
@@ -172,13 +172,13 @@ export class ConnectionPool implements IConnectionPool {
       for (const connection of connections) {
         try {
           await this.release(connection);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error('Error releasing pre-warmed connection:', error);
         }
       }
       
       logger.log(`Initialized with ${connections.length}/${this.config.minConnections} connections`);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize edge pool:', error);
     }
   }
@@ -205,7 +205,7 @@ export class ConnectionPool implements IConnectionPool {
       if (duration > 1000) {
         logger.warn(`Slow health check: ${duration}ms`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Health check failed:', error);
       this.poolStats.errors++;
     }
@@ -230,7 +230,7 @@ export class ConnectionPool implements IConnectionPool {
     try {
       logger.log('Applying configuration changes');
       // This would need to be implemented based on edge pool capabilities
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to apply config changes:', error);
     }
   }
@@ -259,7 +259,7 @@ export class ConnectionPool implements IConnectionPool {
       }
       
       logger.warn('Pool drain timeout');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error draining pool:', error);
     }
   }
@@ -318,7 +318,7 @@ export class ConnectionPool implements IConnectionPool {
         logger.log('Expanding pool size...');
         await this.initializeEdgePool();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Pool optimization failed:', error);
     }
   }

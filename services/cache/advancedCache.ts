@@ -71,7 +71,7 @@ export class AdvancedCache extends BaseCache {
     if (entry.compressed) {
       try {
         return await CompressionUtils.decompress(entry.data, entry.compressed);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Failed to decompress cache entry: ${key}`, error);
         this.cache.delete(key);
         this.recordMiss();
@@ -119,7 +119,7 @@ export class AdvancedCache extends BaseCache {
         if (compressed) {
           this.metrics.compressions++;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Failed to compress cache entry: ${key}`, error);
       }
     }
@@ -196,8 +196,8 @@ export class AdvancedCache extends BaseCache {
     const promises = entries.map(async ({ key, loader, ttl, tags }) => {
       try {
         const data = await loader();
-          await this.set(key, data, { ttl: ttl || TIME_CONSTANTS.CACHE_DEFAULT_TTL, tags: tags || [] });
-      } catch (error) {
+        await this.set(key, data, { ttl: ttl || TIME_CONSTANTS.CACHE_DEFAULT_TTL, tags: tags || [] });
+      } catch (error: unknown) {
          if (process.env.NODE_ENV === 'development') {
            logger.warn(`Failed to preload cache entry: ${key}`, error);
          }
@@ -220,8 +220,8 @@ export class AdvancedCache extends BaseCache {
         const key = `${pattern}:${JSON.stringify(params)}`;
         try {
           const data = await loader(params);
-        await this.set(key, data, { ttl: ttl || TIME_CONSTANTS.CACHE_DEFAULT_TTL, tags: tags || [] });
-        } catch (error) {
+          await this.set(key, data, { ttl: ttl || TIME_CONSTANTS.CACHE_DEFAULT_TTL, tags: tags || [] });
+        } catch (error: unknown) {
           logger.warn(`Failed to warm cache entry: ${key}`, error);
         }
       }
@@ -375,7 +375,7 @@ export class AdvancedCache extends BaseCache {
         }
 
         logger.log(`Edge cache warmed for region: ${region}`);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Failed to warm edge cache for region ${region}:`, error);
       }
     }

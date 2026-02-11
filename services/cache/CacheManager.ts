@@ -44,7 +44,7 @@ export class CacheManager implements ICacheManager {
       await this.invalidate(testKey);
       
       return retrieved === testValue;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Cache health check failed:', error);
       return false;
     }
@@ -69,7 +69,7 @@ export class CacheManager implements ICacheManager {
       
       this.stats.misses++;
       return null;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Cache get failed for key ${key}:`, error);
       this.stats.misses++;
       return null;
@@ -80,7 +80,7 @@ export class CacheManager implements ICacheManager {
     try {
       await consolidatedCache.set(key, value, 'api', tags);
       this.stats.sets++;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Cache set failed for key ${key}:`, error);
       throw error;
     }
@@ -96,7 +96,7 @@ export class CacheManager implements ICacheManager {
       }
       
       this.stats.invalidations += patterns.length;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Cache invalidation failed for pattern ${pattern}:`, error);
       throw error;
     }
@@ -107,7 +107,7 @@ export class CacheManager implements ICacheManager {
       // Clear all cache - this would need to be implemented in consolidated cache
       logger.log('Clearing all cache');
       this.stats.invalidations++;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Cache clear failed:', error);
       throw error;
     }
@@ -148,7 +148,7 @@ export class CacheManager implements ICacheManager {
       logger.log(`Invalidating cache by tags: ${tags.join(', ')}`);
       // This would need to be implemented in the consolidated cache
       this.stats.invalidations += tags.length;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Cache tag invalidation failed:`, error);
       throw error;
     }
@@ -190,7 +190,7 @@ export class CacheManager implements ICacheManager {
         cleaned: 0, // Would need to be calculated from actual cache
         errors: 0,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Cache cleanup failed:', error);
       return { cleaned: 0, errors: 1 };
     }

@@ -54,7 +54,7 @@ export class ServiceOrchestrator implements IServiceOrchestrator {
       
       this.isInitialized = true;
       logger.info('Service Orchestrator initialized successfully');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize Service Orchestrator:', error);
       throw error;
     }
@@ -78,7 +78,7 @@ export class ServiceOrchestrator implements IServiceOrchestrator {
       this.healthStatus = {};
       
       logger.info('Service Orchestrator destroyed successfully');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error destroying Service Orchestrator:', error);
     }
   }
@@ -92,7 +92,7 @@ export class ServiceOrchestrator implements IServiceOrchestrator {
       const totalServices = Object.keys(health).length;
       
       return healthyServices === totalServices;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Service Orchestrator health check failed:', error);
       return false;
     }
@@ -181,11 +181,11 @@ export class ServiceOrchestrator implements IServiceOrchestrator {
         };
         
         health[token] = isHealthy !== false;
-      } catch (error) {
+      } catch (error: unknown) {
         this.healthStatus[token] = {
           healthy: false,
           lastCheck: new Date(),
-          error: (error as Error).message,
+          error: error instanceof Error ? error.message : String(error),
         };
         health[token] = false;
       }
@@ -247,7 +247,7 @@ export class ServiceOrchestrator implements IServiceOrchestrator {
       } else {
         logger.debug('All services healthy');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error during health checks:', error);
     }
   }
@@ -267,7 +267,7 @@ export class ServiceOrchestrator implements IServiceOrchestrator {
           this.healthStatus[token].healthy = true;
           this.healthStatus[token].error = undefined;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`Failed to recover service ${token}:`, error);
       }
     }

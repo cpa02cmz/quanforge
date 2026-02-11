@@ -691,7 +691,7 @@ class ConfigurationService {
       ConfigValidator.validateWebSocketConfig(this.config.websockets);
       ConfigValidator.validateDatabaseConfig(this.config.database);
       ConfigValidator.validateAIConfig(this.config.ai);
-    } catch (error) {
+    } catch (error: unknown) {
       // In production, use proper logging. For now, rethrow with context
       throw new Error(`Invalid configuration: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -791,25 +791,25 @@ class ConfigurationService {
     
     try {
       ConfigValidator.validateSecurityConfig(this.config.security);
-    } catch (error) {
+    } catch (error: unknown) {
       errors.push(`Security config: ${error}`);
     }
     
     try {
       ConfigValidator.validatePerformanceConfig(this.config.performance);
-    } catch (error) {
+    } catch (error: unknown) {
       errors.push(`Performance config: ${error}`);
     }
     
     try {
       ConfigValidator.validateInfrastructureConfig(this.config.infrastructure);
-    } catch (error) {
+    } catch (error: unknown) {
       errors.push(`Infrastructure config: ${error}`);
     }
     
     try {
       ConfigValidator.validateMonitoringConfig(this.config.monitoring);
-    } catch (error) {
+    } catch (error: unknown) {
       errors.push(`Monitoring config: ${error}`);
     }
     
