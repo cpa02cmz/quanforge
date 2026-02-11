@@ -381,12 +381,17 @@ export const errorRecovery = {
         throw new Error('Circuit breaker is OPEN');
       }
       
+      let timeoutId: ReturnType<typeof setTimeout>;
+      
       try {
         const result = await Promise.race([
-          operation(...args),
-          new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Circuit breaker timeout')), timeout)
-          )
+          operation(...args).then((value: any) => {
+            clearTimeout(timeoutId);
+            return value;
+          }),
+          new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error('Circuit breaker timeout')), timeout);
+          })
         ]);
         
         // Success - reset failure count and close circuit

@@ -214,10 +214,21 @@ const getClient = async () => {
     return activeClient;
 };
 
-window.addEventListener('db-settings-changed', () => {
+// Store event listener reference for cleanup
+const dbSettingsChangeHandler = () => {
     activeClient = null;
-    getClient(); 
-});
+    getClient();
+};
+window.addEventListener('db-settings-changed', dbSettingsChangeHandler);
+
+/**
+ * Cleanup function to remove global event listeners - prevents memory leaks
+ * Call this when the application is unmounting or during testing
+ */
+export const cleanupSupabaseListeners = (): void => {
+    window.removeEventListener('db-settings-changed', dbSettingsChangeHandler);
+    clearAllAuthListeners();
+};
 
 // Fixed supabase export - auth accessible synchronously, rest lazy-loaded
 const supabaseAuth = {
