@@ -68,6 +68,13 @@ class EdgeMonitoringService {
   private monitoringIntervals: Map<string, ReturnType<typeof setInterval>> = new Map();
   private isMonitoring = false;
 
+  // Event listener references for cleanup
+  private errorHandler: ((event: ErrorEvent) => void) | null = null;
+  private rejectionHandler: ((event: PromiseRejectionEvent) => void) | null = null;
+
+  // Original fetch reference for cleanup
+  private originalFetch: typeof window.fetch | null = null;
+
   private constructor() {
     this.config = {
       enableRealTimeMonitoring: process.env['VITE_ENABLE_PERFORMANCE_MONITORING'] === 'true',
@@ -353,35 +360,37 @@ class EdgeMonitoringService {
     if (!this.config.enableErrorTracking) return;
 
     // Track JavaScript errors
-    window.addEventListener('error', (event) => {
-       this.createAlert({
-         type: 'error',
-         severity: 'medium',
-         message: `JavaScript error: ${(event as ErrorEvent).message}`,
-         region: this.detectCurrentRegion(),
-         metrics: {
-           lineNumber: (event as ErrorEvent).lineno || 0,
-           columnNumber: (event as ErrorEvent).colno || 0,
-           filenameLength: (event as ErrorEvent).filename ? (event as ErrorEvent).filename.length : 0
-         }
-       });
-    });
+    this.errorHandler = (event: ErrorEvent) => {
+      this.createAlert({
+        type: 'error',
+        severity: 'medium',
+        message: `JavaScript error: ${event.message}`,
+        region: this.detectCurrentRegion(),
+        metrics: {
+          lineNumber: event.lineno || 0,
+          columnNumber: event.colno || 0,
+          filenameLength: event.filename ? event.filename.length : 0
+        }
+      });
+    };
+    window.addEventListener('error', this.errorHandler);
 
     // Track promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
+    this.rejectionHandler = (event: PromiseRejectionEvent) => {
       this.createAlert({
         type: 'error',
         severity: 'medium',
         message: `Unhandled promise rejection: ${event.reason}`,
         region: this.detectCurrentRegion()
       });
-    });
+    };
+    window.addEventListener('unhandledrejection', this.rejectionHandler);
 
     // Track API errors
-    const originalFetch = window.fetch;
+    this.originalFetch = window.fetch;
     window.fetch = async (...args) => {
       try {
-        const response = await originalFetch(...args);
+        const response = await this.originalFetch!(...args);
         
         if (!response.ok) {
           this.createAlert({
@@ -606,8 +615,26 @@ class EdgeMonitoringService {
   }
 
   public stopMonitoring(): void {
+    // Clear all monitoring intervals
     this.monitoringIntervals.forEach(interval => clearInterval(interval));
     this.monitoringIntervals.clear();
+
+    // Remove event listeners
+    if (this.errorHandler) {
+      window.removeEventListener('error', this.errorHandler);
+      this.errorHandler = null;
+    }
+    if (this.rejectionHandler) {
+      window.removeEventListener('unhandledrejection', this.rejectionHandler);
+      this.rejectionHandler = null;
+    }
+
+    // Restore original fetch
+    if (this.originalFetch) {
+      window.fetch = this.originalFetch;
+      this.originalFetch = null;
+    }
+
     this.isMonitoring = false;
     console.log('Edge monitoring service stopped');
   }

@@ -76,6 +76,21 @@ class EdgeAnalytics {
   private startTime: number;
   private observers: PerformanceObserver[] = [];
 
+  // Timer references for cleanup
+  private metricsInterval: ReturnType<typeof setInterval> | null = null;
+
+  // Event listener references for cleanup
+  private visibilityHandler: (() => void) | null = null;
+  private clickHandler: ((event: MouseEvent) => void) | null = null;
+  private scrollHandler: (() => void) | null = null;
+  private submitHandler: ((event: SubmitEvent) => void) | null = null;
+  private errorHandler: ((event: ErrorEvent) => void) | null = null;
+  private rejectionHandler: ((event: PromiseRejectionEvent) => void) | null = null;
+  private beforeUnloadHandler: (() => void) | null = null;
+
+  // Scroll timeout for cleanup
+  private scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+
   private constructor() {
     this.config = {
       enableRealTimeMetrics: process.env['VITE_ENABLE_ANALYTICS'] === 'true',
@@ -331,15 +346,16 @@ class EdgeAnalytics {
 
   private setupUserBehaviorTracking(): void {
     // Track page visibility changes
-    document.addEventListener('visibilitychange', () => {
+    this.visibilityHandler = () => {
       this.trackUserInteraction('visibility_change', {
         hidden: document.hidden,
         timestamp: Date.now()
       });
-    });
+    };
+    document.addEventListener('visibilitychange', this.visibilityHandler);
 
     // Track clicks
-    document.addEventListener('click', (event) => {
+    this.clickHandler = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       this.trackUserInteraction('click', {
         tagName: target.tagName,
@@ -347,35 +363,39 @@ class EdgeAnalytics {
         id: target.id,
         textContent: target.textContent?.substring(0, 50)
       });
-    });
+    };
+    document.addEventListener('click', this.clickHandler);
 
     // Track scrolls with passive listener for better performance
-    let scrollTimeout: ReturnType<typeof setTimeout>;
-    document.addEventListener('scroll', () => {
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => {
+    this.scrollHandler = () => {
+      if (this.scrollTimeout) {
+        clearTimeout(this.scrollTimeout);
+      }
+      this.scrollTimeout = setTimeout(() => {
         this.trackUserInteraction('scroll', {
           scrollY: window.scrollY,
           scrollX: window.scrollX,
           documentHeight: document.documentElement.scrollHeight
         });
       }, 100);
-    }, { passive: true });
+    };
+    document.addEventListener('scroll', this.scrollHandler, { passive: true });
 
     // Track form interactions
-    document.addEventListener('submit', (event) => {
+    this.submitHandler = (event: SubmitEvent) => {
       const target = event.target as HTMLFormElement;
       this.trackUserInteraction('form_submit', {
         formId: target.id,
         formName: target.name,
         action: target.action
       });
-    });
+    };
+    document.addEventListener('submit', this.submitHandler);
   }
 
   private setupErrorTracking(): void {
     // Track JavaScript errors
-    window.addEventListener('error', (event) => {
+    this.errorHandler = (event: ErrorEvent) => {
       this.trackError('javascript_error', {
         message: event.message,
         filename: event.filename,
@@ -383,15 +403,17 @@ class EdgeAnalytics {
         colno: event.colno,
         stack: event.error?.stack
       });
-    });
+    };
+    window.addEventListener('error', this.errorHandler);
 
     // Track promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
+    this.rejectionHandler = (event: PromiseRejectionEvent) => {
       this.trackError('promise_rejection', {
         reason: event.reason,
         stack: event.reason?.stack
       });
-    });
+    };
+    window.addEventListener('unhandledrejection', this.rejectionHandler);
 
     // Track resource loading errors
     window.addEventListener('error', (event) => {
@@ -493,14 +515,15 @@ class EdgeAnalytics {
 
   private setupPeriodicReporting(): void {
     // Report metrics every 30 seconds
-    setInterval(() => {
+    this.metricsInterval = setInterval(() => {
       this.reportMetrics();
     }, 30000);
 
     // Report on page unload
-    window.addEventListener('beforeunload', () => {
+    this.beforeUnloadHandler = () => {
       this.reportMetrics(true);
-    });
+    };
+    window.addEventListener('beforeunload', this.beforeUnloadHandler);
   }
 
   private async reportMetrics(isFinal = false): Promise<void> {
@@ -597,6 +620,48 @@ class EdgeAnalytics {
     // Disconnect all observers
     this.observers.forEach(observer => observer.disconnect());
     this.observers = [];
+
+    // Clear interval
+    if (this.metricsInterval) {
+      clearInterval(this.metricsInterval);
+      this.metricsInterval = null;
+    }
+
+    // Clear scroll timeout
+    if (this.scrollTimeout) {
+      clearTimeout(this.scrollTimeout);
+      this.scrollTimeout = null;
+    }
+
+    // Remove all event listeners
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
+    }
+    if (this.clickHandler) {
+      document.removeEventListener('click', this.clickHandler);
+      this.clickHandler = null;
+    }
+    if (this.scrollHandler) {
+      document.removeEventListener('scroll', this.scrollHandler);
+      this.scrollHandler = null;
+    }
+    if (this.submitHandler) {
+      document.removeEventListener('submit', this.submitHandler);
+      this.submitHandler = null;
+    }
+    if (this.errorHandler) {
+      window.removeEventListener('error', this.errorHandler);
+      this.errorHandler = null;
+    }
+    if (this.rejectionHandler) {
+      window.removeEventListener('unhandledrejection', this.rejectionHandler);
+      this.rejectionHandler = null;
+    }
+    if (this.beforeUnloadHandler) {
+      window.removeEventListener('beforeunload', this.beforeUnloadHandler);
+      this.beforeUnloadHandler = null;
+    }
 
     // Send final report
     this.reportMetrics(true);

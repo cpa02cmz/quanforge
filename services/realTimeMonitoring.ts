@@ -49,6 +49,15 @@ class RealTimeMonitoring {
   private readonly METRICS_RETENTION_LIMIT = MEMORY_LIMITS.MAX_METRICS_RETENTION;
   private readonly ALERT_THRESHOLD = 0.1; // 10% error rate
 
+  // Timer references for cleanup
+  private memoryCheckInterval: ReturnType<typeof setInterval> | null = null;
+  private reportingInterval: ReturnType<typeof setInterval> | null = null;
+  private budgetCheckInterval: ReturnType<typeof setInterval> | null = null;
+
+  // Event listener references for cleanup
+  private errorHandler: ((event: ErrorEvent) => void) | null = null;
+  private rejectionHandler: ((event: PromiseRejectionEvent) => void) | null = null;
+
   private readonly PERFORMANCE_BUDGET: PerformanceBudget = {
     bundleSize: PERFORMANCE_BUDGETS.BUNDLE_SIZE.WARNING, // 200KB warning threshold
     lcp: UX_THRESHOLDS.LCP_GOOD, // 2.5s
@@ -157,7 +166,7 @@ this.isInitialized = true;
    */
   private initializeMemoryMonitoring(): void {
     if ('memory' in performance) {
-      setInterval(() => {
+      this.memoryCheckInterval = setInterval(() => {
         this.checkMemoryUsage();
       }, TIMEOUTS.HEALTH_CHECK); // Check every 30 seconds
     }
@@ -168,7 +177,7 @@ this.isInitialized = true;
    */
   private initializeErrorMonitoring(): void {
     // Monitor JavaScript errors
-    window.addEventListener('error', (event) => {
+    this.errorHandler = (event: ErrorEvent) => {
       this.recordError('javascript', {
         message: event.message,
         filename: event.filename,
@@ -176,15 +185,17 @@ this.isInitialized = true;
         colno: event.colno,
         stack: event.error?.stack
       }).catch(err => console.error('Failed to record error:', err));
-    });
+    };
+    window.addEventListener('error', this.errorHandler);
 
     // Monitor promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
+    this.rejectionHandler = (event: PromiseRejectionEvent) => {
       this.recordError('promise', {
         reason: event.reason,
         stack: event.reason?.stack
       }).catch(err => console.error('Failed to record rejection:', err));
-    });
+    };
+    window.addEventListener('unhandledrejection', this.rejectionHandler);
   }
 
   /**
@@ -192,12 +203,12 @@ this.isInitialized = true;
    */
   private setupPeriodicReporting(): void {
     // Report metrics every 5 minutes
-    setInterval(() => {
+    this.reportingInterval = setInterval(() => {
       this.reportMetrics();
     }, CACHE_TTLS.FIVE_MINUTES);
 
     // Check performance budgets every minute
-    setInterval(() => {
+    this.budgetCheckInterval = setInterval(() => {
       this.checkPerformanceBudgets();
     }, CACHE_TTLS.ONE_MINUTE);
   }
@@ -537,11 +548,37 @@ this.isInitialized = true;
   }
 
   /**
-   * Destroy monitoring
+   * Destroy monitoring and clean up all resources to prevent memory leaks
    */
   destroy(): void {
+    // Disconnect all PerformanceObservers
     this.observers.forEach(observer => observer.disconnect());
     this.observers = [];
+
+    // Clear all intervals
+    if (this.memoryCheckInterval) {
+      clearInterval(this.memoryCheckInterval);
+      this.memoryCheckInterval = null;
+    }
+    if (this.reportingInterval) {
+      clearInterval(this.reportingInterval);
+      this.reportingInterval = null;
+    }
+    if (this.budgetCheckInterval) {
+      clearInterval(this.budgetCheckInterval);
+      this.budgetCheckInterval = null;
+    }
+
+    // Remove all event listeners
+    if (this.errorHandler) {
+      window.removeEventListener('error', this.errorHandler);
+      this.errorHandler = null;
+    }
+    if (this.rejectionHandler) {
+      window.removeEventListener('unhandledrejection', this.rejectionHandler);
+      this.rejectionHandler = null;
+    }
+
     this.isInitialized = false;
   }
 }
