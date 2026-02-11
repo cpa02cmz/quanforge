@@ -141,33 +141,10 @@ class PerformanceMonitor {
   }
 
   private monitorEdgePerformance(): void {
-    if (!('PerformanceObserver' in window)) return;
-
-    const observer = new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) {
-        if (entry.name.includes('/api/') || entry.name.includes('/edge/')) {
-          const resource = entry as PerformanceResourceTiming;
-          
-          const edgeMetric: EdgeMetric = {
-            url: entry.name,
-            method: 'GET', // Default, could be enhanced with custom headers
-            status: 200, // Would need to be captured from fetch
-            duration: resource.duration,
-            size: resource.transferSize || 0,
-            cache: this.getCacheStatus(resource),
-            region: this.detectEdgeRegion()
-          };
-          
-          this.edgeMetrics.push(edgeMetric);
-          this.sendMetric('edge-performance', edgeMetric);
-          
-          // Update region performance metrics
-          this.updateRegionPerformance(edgeMetric);
-        }
-      }
-    });
-
-    observer.observe({ entryTypes: ['resource'] });
+    // Note: Edge performance monitoring disabled - this is a client-side SPA
+    // with service-layer architecture (no REST API or edge endpoints)
+    // If deployed to Vercel Edge in the future, this can be re-enabled
+    return;
   }
 
   /**
@@ -231,33 +208,6 @@ class PerformanceMonitor {
     this.edgePerformanceMetrics.cacheEfficiency.hitRate = (cacheHits / totalRequests) * 100;
     this.edgePerformanceMetrics.cacheEfficiency.missRate = (cacheMisses / totalRequests) * 100;
     this.edgePerformanceMetrics.cacheEfficiency.staleRate = (cacheStale / totalRequests) * 100;
-  }
-
-  /**
-   * Update region performance metrics
-   */
-  private updateRegionPerformance(metric: EdgeMetric): void {
-    const region = metric.region;
-    
-    if (!this.edgePerformanceMetrics.regionPerformance[region]) {
-      this.edgePerformanceMetrics.regionPerformance[region] = {
-        averageResponseTime: 0,
-        errorRate: 0,
-        requestCount: 0
-      };
-    }
-
-    const regionMetrics = this.edgePerformanceMetrics.regionPerformance[region];
-    regionMetrics.requestCount++;
-    
-    // Update average response time
-    regionMetrics.averageResponseTime = 
-      (regionMetrics.averageResponseTime * (regionMetrics.requestCount - 1) + metric.duration) / regionMetrics.requestCount;
-    
-    // Update error rate (status >= 400)
-    if (metric.status >= 400) {
-      regionMetrics.errorRate = ((regionMetrics.errorRate * (regionMetrics.requestCount - 1)) + 1) / regionMetrics.requestCount;
-    }
   }
 
   private monitorBundleLoading(): void {
@@ -335,15 +285,6 @@ class PerformanceMonitor {
     };
     
     window.addEventListener('popstate', recordRouteChange);
-  }
-
-  private getCacheStatus(resource: PerformanceResourceTiming): 'hit' | 'miss' | 'stale' {
-    const transferSize = resource.transferSize;
-    const encodedSize = resource.encodedBodySize;
-    
-    if (transferSize === 0 && encodedSize > 0) return 'hit';
-    if (transferSize === encodedSize) return 'miss';
-    return 'stale';
   }
 
   private detectEdgeRegion(): string {
