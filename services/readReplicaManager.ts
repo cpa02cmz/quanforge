@@ -92,12 +92,17 @@ class ReadReplicaManager {
 
     try {
       // Execute query with timeout
-      const result = await Promise.race([
-        client.rpc('execute_analytics_query', { query, params }),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Query timeout')), TIMEOUTS.API_TIMEOUT)
-        )
-      ]) as any;
+      let timeoutId: ReturnType<typeof setTimeout>;
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('Query timeout')), TIMEOUTS.API_TIMEOUT);
+      });
+      
+      const queryPromise = client.rpc('execute_analytics_query', { query, params }).then((value: any) => {
+        clearTimeout(timeoutId);
+        return value;
+      });
+      
+      const result = await Promise.race([queryPromise, timeoutPromise]) as any;
 
       const executionTime = Date.now() - startTime;
       const metrics: QueryMetrics = {
