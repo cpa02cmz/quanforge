@@ -30,7 +30,7 @@ interface HealthCheckResult {
   timestamp: number;
   region: string;
   error?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface PerformanceMetrics {
@@ -67,6 +67,13 @@ class EdgeMonitoringService {
   private alerts: Map<string, Alert> = new Map();
   private monitoringIntervals: Map<string, ReturnType<typeof setInterval>> = new Map();
   private isMonitoring = false;
+
+  // Event listener references for cleanup
+  private errorHandler: ((event: ErrorEvent) => void) | null = null;
+  private rejectionHandler: ((event: PromiseRejectionEvent) => void) | null = null;
+
+  // Original fetch reference for cleanup
+  private originalFetch: typeof window.fetch | null = null;
 
   private constructor() {
     this.config = {
@@ -329,9 +336,10 @@ class EdgeMonitoringService {
     let clsValue = 0;
     const clsObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      entries.forEach((entry: any) => {
-        if (!entry.hadRecentInput) {
-          clsValue += entry.value;
+      entries.forEach((entry) => {
+        const clsEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+        if (!clsEntry.hadRecentInput) {
+          clsValue += clsEntry.value || 0;
           
           if (clsValue > 0.1) { // CLS should be < 0.1
             this.createAlert({
@@ -353,35 +361,37 @@ class EdgeMonitoringService {
     if (!this.config.enableErrorTracking) return;
 
     // Track JavaScript errors
-    window.addEventListener('error', (event) => {
-       this.createAlert({
-         type: 'error',
-         severity: 'medium',
-         message: `JavaScript error: ${(event as ErrorEvent).message}`,
-         region: this.detectCurrentRegion(),
-         metrics: {
-           lineNumber: (event as ErrorEvent).lineno || 0,
-           columnNumber: (event as ErrorEvent).colno || 0,
-           filenameLength: (event as ErrorEvent).filename ? (event as ErrorEvent).filename.length : 0
-         }
-       });
-    });
+    this.errorHandler = (event: ErrorEvent) => {
+      this.createAlert({
+        type: 'error',
+        severity: 'medium',
+        message: `JavaScript error: ${event.message}`,
+        region: this.detectCurrentRegion(),
+        metrics: {
+          lineNumber: event.lineno || 0,
+          columnNumber: event.colno || 0,
+          filenameLength: event.filename ? event.filename.length : 0
+        }
+      });
+    };
+    window.addEventListener('error', this.errorHandler);
 
     // Track promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
+    this.rejectionHandler = (event: PromiseRejectionEvent) => {
       this.createAlert({
         type: 'error',
         severity: 'medium',
         message: `Unhandled promise rejection: ${event.reason}`,
         region: this.detectCurrentRegion()
       });
-    });
+    };
+    window.addEventListener('unhandledrejection', this.rejectionHandler);
 
     // Track API errors
-    const originalFetch = window.fetch;
+    this.originalFetch = window.fetch;
     window.fetch = async (...args) => {
       try {
-        const response = await originalFetch(...args);
+        const response = await this.originalFetch!(...args);
         
         if (!response.ok) {
           this.createAlert({
@@ -561,7 +571,10 @@ class EdgeMonitoringService {
       if (!healthByRegion[hc.region]) {
         healthByRegion[hc.region] = { healthy: 0, degraded: 0, unhealthy: 0 };
       }
-       (healthByRegion[hc.region] as any)[hc.status]++;
+      const regionStats = healthByRegion[hc.region];
+      if (regionStats) {
+        regionStats[hc.status]++;
+      }
     });
 
      const performanceByRegion: Record<string, { avgResponseTime: number; avgErrorRate: number; count: number }> = {};
@@ -606,8 +619,26 @@ class EdgeMonitoringService {
   }
 
   public stopMonitoring(): void {
+    // Clear all monitoring intervals
     this.monitoringIntervals.forEach(interval => clearInterval(interval));
     this.monitoringIntervals.clear();
+
+    // Remove event listeners
+    if (this.errorHandler) {
+      window.removeEventListener('error', this.errorHandler);
+      this.errorHandler = null;
+    }
+    if (this.rejectionHandler) {
+      window.removeEventListener('unhandledrejection', this.rejectionHandler);
+      this.rejectionHandler = null;
+    }
+
+    // Restore original fetch
+    if (this.originalFetch) {
+      window.fetch = this.originalFetch;
+      this.originalFetch = null;
+    }
+
     this.isMonitoring = false;
     console.log('Edge monitoring service stopped');
   }

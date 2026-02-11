@@ -18,7 +18,7 @@ interface PerformanceMetrics {
   connection: string;
   vitals: CoreWebVitals;
   resources: PerformanceResourceTiming[];
-  memory?: any;
+  memory?: MemoryInfo;
   navigation: PerformanceNavigationTiming;
 }
 
@@ -48,6 +48,15 @@ class RealTimeMonitoring {
   private isInitialized = false;
   private readonly METRICS_RETENTION_LIMIT = MEMORY_LIMITS.MAX_METRICS_RETENTION;
   private readonly ALERT_THRESHOLD = 0.1; // 10% error rate
+
+  // Timer references for cleanup
+  private memoryCheckInterval: ReturnType<typeof setInterval> | null = null;
+  private reportingInterval: ReturnType<typeof setInterval> | null = null;
+  private budgetCheckInterval: ReturnType<typeof setInterval> | null = null;
+
+  // Event listener references for cleanup
+  private errorHandler: ((event: ErrorEvent) => void) | null = null;
+  private rejectionHandler: ((event: PromiseRejectionEvent) => void) | null = null;
 
   private readonly PERFORMANCE_BUDGET: PerformanceBudget = {
     bundleSize: PERFORMANCE_BUDGETS.BUNDLE_SIZE.WARNING, // 200KB warning threshold
@@ -110,16 +119,19 @@ this.isInitialized = true;
 
     // First Input Delay (FID)
     this.observePerformanceObserver('first-input', (entries) => {
-      const firstEntry = entries[0] as any;
-      this.updateMetric('fid', firstEntry.processingStart - firstEntry.startTime);
+      const firstEntry = entries[0] as PerformanceEntry & { processingStart?: number };
+      if (firstEntry.processingStart) {
+        this.updateMetric('fid', firstEntry.processingStart - firstEntry.startTime);
+      }
     });
 
     // Cumulative Layout Shift (CLS)
     let clsValue = 0;
     this.observePerformanceObserver('layout-shift', (entries) => {
       for (const entry of entries) {
-        if (!(entry as any).hadRecentInput) {
-          clsValue += (entry as any).value;
+        const clsEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+        if (!clsEntry.hadRecentInput) {
+          clsValue += clsEntry.value || 0;
         }
       }
       this.updateMetric('cls', clsValue);
@@ -157,7 +169,7 @@ this.isInitialized = true;
    */
   private initializeMemoryMonitoring(): void {
     if ('memory' in performance) {
-      setInterval(() => {
+      this.memoryCheckInterval = setInterval(() => {
         this.checkMemoryUsage();
       }, TIMEOUTS.HEALTH_CHECK); // Check every 30 seconds
     }
@@ -168,7 +180,7 @@ this.isInitialized = true;
    */
   private initializeErrorMonitoring(): void {
     // Monitor JavaScript errors
-    window.addEventListener('error', (event) => {
+    this.errorHandler = (event: ErrorEvent) => {
       this.recordError('javascript', {
         message: event.message,
         filename: event.filename,
@@ -176,15 +188,17 @@ this.isInitialized = true;
         colno: event.colno,
         stack: event.error?.stack
       }).catch(err => console.error('Failed to record error:', err));
-    });
+    };
+    window.addEventListener('error', this.errorHandler);
 
     // Monitor promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
+    this.rejectionHandler = (event: PromiseRejectionEvent) => {
       this.recordError('promise', {
         reason: event.reason,
         stack: event.reason?.stack
       }).catch(err => console.error('Failed to record rejection:', err));
-    });
+    };
+    window.addEventListener('unhandledrejection', this.rejectionHandler);
   }
 
   /**
@@ -192,12 +206,12 @@ this.isInitialized = true;
    */
   private setupPeriodicReporting(): void {
     // Report metrics every 5 minutes
-    setInterval(() => {
+    this.reportingInterval = setInterval(() => {
       this.reportMetrics();
     }, CACHE_TTLS.FIVE_MINUTES);
 
     // Check performance budgets every minute
-    setInterval(() => {
+    this.budgetCheckInterval = setInterval(() => {
       this.checkPerformanceBudgets();
     }, CACHE_TTLS.ONE_MINUTE);
   }
@@ -224,10 +238,10 @@ this.isInitialized = true;
   /**
    * Update metric value
    */
-  private updateMetric(name: string, value: number): void {
+  private updateMetric(name: keyof CoreWebVitals, value: number): void {
     const currentMetrics = this.getCurrentMetrics();
     if (currentMetrics) {
-      (currentMetrics.vitals as any)[name] = value;
+      currentMetrics.vitals[name] = value;
       this.checkThreshold(name, value);
     }
   }
@@ -255,7 +269,7 @@ this.isInitialized = true;
    */
   private checkMemoryUsage(): void {
     if ('memory' in performance) {
-      const memory = (performance as any).memory;
+      const memory = (performance as unknown as { memory: MemoryInfo }).memory;
       const usageRatio = memory.usedJSHeapSize / memory.jsHeapSizeLimit;
 
       if (usageRatio > 0.9) { // 90% memory usage
@@ -267,7 +281,7 @@ this.isInitialized = true;
   /**
    * Record error
    */
-  private async recordError(type: string, details: any): Promise<void> {
+  private async recordError(type: string, details: Record<string, unknown>): Promise<void> {
     const errorData = {
       type,
       details,
@@ -381,7 +395,7 @@ this.isInitialized = true;
       timestamp: Date.now(),
       url: window.location.href,
       userAgent: navigator.userAgent,
-      connection: (navigator as any).connection?.effectiveType || 'unknown',
+      connection: (navigator as unknown as { connection?: { effectiveType?: string } }).connection?.effectiveType || 'unknown',
       vitals: {
         lcp: 0,
         fid: 0,
@@ -390,7 +404,7 @@ this.isInitialized = true;
         ttfb: 0
       },
       resources,
-      memory: (performance as any).memory,
+      memory: (performance as unknown as { memory?: MemoryInfo }).memory,
       navigation
     };
   }
@@ -537,11 +551,37 @@ this.isInitialized = true;
   }
 
   /**
-   * Destroy monitoring
+   * Destroy monitoring and clean up all resources to prevent memory leaks
    */
   destroy(): void {
+    // Disconnect all PerformanceObservers
     this.observers.forEach(observer => observer.disconnect());
     this.observers = [];
+
+    // Clear all intervals
+    if (this.memoryCheckInterval) {
+      clearInterval(this.memoryCheckInterval);
+      this.memoryCheckInterval = null;
+    }
+    if (this.reportingInterval) {
+      clearInterval(this.reportingInterval);
+      this.reportingInterval = null;
+    }
+    if (this.budgetCheckInterval) {
+      clearInterval(this.budgetCheckInterval);
+      this.budgetCheckInterval = null;
+    }
+
+    // Remove all event listeners
+    if (this.errorHandler) {
+      window.removeEventListener('error', this.errorHandler);
+      this.errorHandler = null;
+    }
+    if (this.rejectionHandler) {
+      window.removeEventListener('unhandledrejection', this.rejectionHandler);
+      this.rejectionHandler = null;
+    }
+
     this.isInitialized = false;
   }
 }
