@@ -29,7 +29,7 @@ const base64Encode = (str: string): string => {
       return btoa(String.fromCharCode(...uint8Array));
     }
     return btoa(unescape(encodeURIComponent(str)));
-  } catch (e) {
+  } catch (e: unknown) {
     console.error('Base64 encode failed:', e);
     return str;
   }
@@ -48,7 +48,7 @@ const base64Decode = (str: string): string => {
       return decoder.decode(bytes);
     }
     return decodeURIComponent(escape(atob(str)));
-  } catch (e) {
+  } catch (e: unknown) {
     console.error('Base64 decode failed:', e);
     return str;
   }
@@ -59,7 +59,7 @@ export const encryptApiKey = (apiKey: string): string => {
   try {
     const xorred = xorCipher(apiKey, ENCRYPTION_KEY);
     return base64Encode(xorred);
-  } catch (e) {
+  } catch (e: unknown) {
     console.error('Encryption failed:', e);
     return '';
   }
@@ -70,7 +70,7 @@ export const decryptApiKey = (encryptedKey: string): string => {
   try {
     const decoded = base64Decode(encryptedKey);
     return xorCipher(decoded, ENCRYPTION_KEY);
-  } catch (e) {
+  } catch (e: unknown) {
     console.error('Decryption failed:', e);
     return '';
   }

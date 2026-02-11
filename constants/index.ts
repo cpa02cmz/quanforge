@@ -289,7 +289,7 @@ export const loadWikiContent = async (language: Language) => {
   try {
     const wiki = await import(`./wiki/${language}.js`);
     return wiki.WIKI_CONTENT || [];
-  } catch (e) {
+  } catch (e: unknown) {
     if (import.meta.env.DEV) {
       logger.warn(`Wiki content not found for language: ${language}`, e);
     }

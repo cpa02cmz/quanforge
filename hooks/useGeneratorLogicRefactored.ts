@@ -158,7 +158,7 @@ export const useGeneratorLogic = (id?: string) => {
                       }
                   }
               }
-          } catch (error) {
+          } catch (error: unknown) {
               if (!controller.signal.aborted) {
                   logger.error('Error loading robot:', error);
                   showToast("Error loading robot", "error");
@@ -213,7 +213,7 @@ export const useGeneratorLogic = (id?: string) => {
           }
       }
       showToast('Robot saved successfully!', 'success');
-    } catch (e) {
+    } catch (e: unknown) {
       logger.error(e);
       showToast('Failed to save robot', 'error');
     } finally {
@@ -252,7 +252,7 @@ export const useGeneratorLogic = (id?: string) => {
             const res = runMonteCarloSimulation(strategyState.analysis, strategyState.backtestSettings);
             strategyState.setSimulationResult(res);
             showToast("Simulation completed", "success");
-        } catch (e) {
+        } catch (e: unknown) {
             logger.error(e);
             showToast("Simulation failed", "error");
         } finally {
