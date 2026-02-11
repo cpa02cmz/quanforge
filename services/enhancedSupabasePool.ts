@@ -8,6 +8,7 @@ import { settingsManager } from './settingsManager';
 import { createScopedLogger } from '../utils/logger';
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import { TIMEOUTS, RETRY_CONFIG, STAGGER } from './constants';
+import { getErrorMessage } from '../utils/errorHandler';
 
 const logger = createScopedLogger('EnhancedConnectionPool');
 
@@ -115,8 +116,8 @@ class EnhancedSupabaseConnectionPool {
     try {
       await Promise.all(promises);
       logger.log(`Enhanced connection pool initialized with ${this.config.minConnections} connections`);
-    } catch (error) {
-      console.error('Failed to initialize connection pool:', error);
+    } catch (error: unknown) {
+      logger.error('Failed to initialize connection pool:', getErrorMessage(error));
     }
   }
 
@@ -208,15 +209,15 @@ class EnhancedSupabaseConnectionPool {
         try {
           connection = await this.createConnection(preferredRegion);
           logger.debug(`Created new connection for region: ${preferredRegion}`);
-        } catch (error) {
-          logger.warn('Failed to create new connection:', error);
+        } catch (error: unknown) {
+          logger.warn('Failed to create new connection:', getErrorMessage(error));
 
           // Fallback: try to create connection without region preference
           if (this.stats.totalConnections < this.config.maxConnections) {
             try {
               connection = await this.createConnection();
-            } catch (fallbackError) {
-              logger.warn('Fallback connection creation failed:', fallbackError);
+            } catch (fallbackError: unknown) {
+              logger.warn('Fallback connection creation failed:', getErrorMessage(fallbackError));
             }
           }
         }
@@ -379,9 +380,9 @@ class EnhancedSupabaseConnectionPool {
       connection.lastUsed = Date.now(); // Update last used on successful health check
 
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       connection.healthy = false;
-      logger.warn(`Connection ${connection.id} health check failed:`, error);
+      logger.warn(`Connection ${connection.id} health check failed:`, getErrorMessage(error));
       return false;
     }
   }
@@ -624,8 +625,8 @@ class EnhancedSupabaseConnectionPool {
 
         this.readReplicaClients.set(replicaKey, readClient);
         logger.debug(`Created read replica client for region: ${region || 'default'}`);
-      } catch (error) {
-        logger.warn('Failed to create read replica client:', error);
+      } catch (error: unknown) {
+        logger.warn('Failed to create read replica client:', getErrorMessage(error));
         return null;
       }
     }
@@ -641,8 +642,8 @@ class EnhancedSupabaseConnectionPool {
     const warmUpPromises = regions.map(async (region) => {
       try {
         await this.acquireReadReplica(region);
-      } catch (error) {
-        logger.warn(`Failed to warm up read replica for region ${region}:`, error);
+      } catch (error: unknown) {
+        logger.warn(`Failed to warm up read replica for region ${region}:`, getErrorMessage(error));
       }
     });
 
@@ -810,8 +811,8 @@ class EnhancedSupabaseConnectionPool {
       await Promise.allSettled(warmupPromises);
       const duration = performance.now() - startTime;
       logger.log(`Enhanced edge connection warm-up completed in ${duration.toFixed(2)}ms`);
-    } catch (error) {
-      logger.warn('Enhanced edge connection warm-up failed:', error);
+    } catch (error: unknown) {
+      logger.warn('Enhanced edge connection warm-up failed:', getErrorMessage(error));
     }
   }
 
@@ -854,17 +855,17 @@ class EnhancedSupabaseConnectionPool {
           logger.debug(`Enhanced warm-up completed for region: ${region} (${priority} priority, attempt ${attempt})`);
           return; // Success, exit retry loop
 
-        } catch (error) {
+        } catch (error: unknown) {
           if (attempt === maxRetries) {
-            logger.warn(`Failed to warm up connection for region ${region} after ${maxRetries} attempts (${priority} priority):`, error);
+            logger.warn(`Failed to warm up connection for region ${region} after ${maxRetries} attempts (${priority} priority):`, getErrorMessage(error));
           } else {
             logger.debug(`Warm-up attempt ${attempt} failed for region ${region} (${priority} priority), retrying...`);
             await new Promise(resolve => setTimeout(resolve, RETRY_CONFIG.BASE_DELAY_MS * attempt)); // Exponential backoff
           }
         }
       }
-    } catch (error) {
-      logger.warn(`Enhanced warm-up failed for region ${region}:`, error);
+    } catch (error: unknown) {
+      logger.warn(`Enhanced warm-up failed for region ${region}:`, getErrorMessage(error));
     }
   }
 
@@ -924,8 +925,8 @@ class EnhancedSupabaseConnectionPool {
       const duration = performance.now() - startTime;
       logger.debug(`Enhanced warm-up queries completed for region ${region} in ${duration.toFixed(2)}ms`);
 
-    } catch (error) {
-      logger.debug(`Enhanced warm-up queries failed for region ${region}:`, error);
+    } catch (error: unknown) {
+      logger.debug(`Enhanced warm-up queries failed for region ${region}:`, getErrorMessage(error));
       throw error;
     }
   }
@@ -946,8 +947,8 @@ class EnhancedSupabaseConnectionPool {
           await readClient.from('robots').select('count', { count: 'exact', head: true }).limit(1);
           logger.debug(`Enhanced read replica warm-up completed for region: ${region}`);
         }
-      } catch (error) {
-        logger.warn(`Enhanced read replica warm-up failed for region ${region}:`, error);
+      } catch (error: unknown) {
+        logger.warn(`Enhanced read replica warm-up failed for region ${region}:`, getErrorMessage(error));
       }
     });
 
@@ -997,8 +998,8 @@ class EnhancedSupabaseConnectionPool {
       await Promise.allSettled(warmupPromises);
       const duration = performance.now() - startTime;
       logger.log(`Edge connection warm-up completed in ${duration.toFixed(2)}ms`);
-    } catch (error) {
-      logger.warn('Edge connection warm-up failed:', error);
+    } catch (error: unknown) {
+      logger.warn('Edge connection warm-up failed:', getErrorMessage(error));
     }
   }
 
@@ -1027,8 +1028,8 @@ class EnhancedSupabaseConnectionPool {
       } else {
         logger.debug(`Skipping warm-up for ${region} - connection pool at capacity`);
       }
-    } catch (error) {
-      logger.warn(`Failed to warm up connection for region ${region}:`, error);
+    } catch (error: unknown) {
+      logger.warn(`Failed to warm up connection for region ${region}:`, getErrorMessage(error));
     }
   }
 
@@ -1042,9 +1043,9 @@ class EnhancedSupabaseConnectionPool {
         .from('robots')
         .select('count', { count: 'exact', head: true })
         .limit(1);
-    } catch (error) {
+    } catch (error: unknown) {
       // Don't throw error for warm-up failures, just log
-      logger.debug('Warm-up query failed:', error);
+      logger.debug('Warm-up query failed:', getErrorMessage(error));
     }
   }
 
@@ -1211,8 +1212,8 @@ class EnhancedSupabaseConnectionPool {
       try {
         await this.gracefulShutdownConnection(conn);
         logger.debug(`Drained connection ${conn.id} (healthy: ${conn.healthy}, region: ${conn.region})`);
-      } catch (error) {
-        logger.warn(`Failed to drain connection ${conn.id}:`, error);
+      } catch (error: unknown) {
+        logger.warn(`Failed to drain connection ${conn.id}:`, getErrorMessage(error));
       }
     });
 
@@ -1297,8 +1298,8 @@ class EnhancedSupabaseConnectionPool {
       try {
         await this.warmRegionConnectionEnhanced(region, 'high');
         logger.debug(`Predictive warm-up completed for region: ${region}`);
-      } catch (error) {
-        logger.warn(`Predictive warm-up failed for region ${region}:`, error);
+      } catch (error: unknown) {
+        logger.warn(`Predictive warm-up failed for region ${region}:`, getErrorMessage(error));
       }
     });
 
@@ -1330,8 +1331,8 @@ class EnhancedSupabaseConnectionPool {
       this.updateStats();
 
       logger.debug(`Successfully closed connection ${connectionId}`);
-    } catch (error) {
-      console.error(`Error closing connection ${connectionId}:`, error);
+    } catch (error: unknown) {
+      logger.error(`Error closing connection ${connectionId}:`, getErrorMessage(error));
       // Force remove even if error occurs
       this.connections.delete(connectionId);
       this.updateStats();
