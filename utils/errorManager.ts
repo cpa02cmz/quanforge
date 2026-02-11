@@ -592,7 +592,7 @@ export const withErrorHandling = <T extends (...args: unknown[]) => Promise<unkn
         }
         
         return await fn(...args);
-      } catch (error) {
+      } catch (error: unknown) {
         const typedError = error instanceof Error ? error : new Error(String(error));
         lastError = typedError;
         
@@ -720,7 +720,7 @@ export class CircuitBreaker {
       }
       
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       this.failures++;
       this.lastFailureTime = now;
       

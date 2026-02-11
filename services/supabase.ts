@@ -491,7 +491,7 @@ async getRobots() {
            return result;
           }, 'getRobots');
         });
-     } catch (error) {
+     } catch (error: unknown) {
        const duration = performance.now() - startTime;
        performanceMonitor.record('getRobots', duration);
        handleError(error as Error, 'getRobots', 'mockDb');
@@ -545,7 +545,7 @@ if (index !== -1) {
            error: results.some(r => r.error) ? results.find(r => r.error)?.error : null 
          };
        }, 'batchUpdateRobots');
-     } catch (error) {
+     } catch (error: unknown) {
        const duration = performance.now() - startTime;
        performanceMonitor.record('batchUpdateRobots', duration);
        handleError(error as Error, 'batchUpdateRobots', 'mockDb');
@@ -687,7 +687,7 @@ if (index !== -1) {
           performanceMonitor.record('getRobotsPaginated_error', duration);
           return { data: [], pagination: { page, limit, totalCount: 0, totalPages: 0, hasNext: false, hasPrev: false }, error: result.error };
         }, 'getRobotsPaginated');
-      } catch (error) {
+      } catch (error: unknown) {
         const duration = performance.now() - startTime;
         performanceMonitor.record('getRobotsPaginated_exception', duration);
         handleError(error as Error, 'getRobotsPaginated', 'mockDb');
@@ -752,7 +752,7 @@ if (index !== -1) {
           performanceMonitor.record('getRobotsByIds', duration);
           return result;
         }, 'getRobotsByIds');
-      } catch (error) {
+      } catch (error: unknown) {
         const duration = performance.now() - startTime;
         performanceMonitor.record('getRobotsByIds', duration);
         handleError(error as Error, 'getRobotsByIds', 'mockDb');
@@ -821,7 +821,7 @@ if (index !== -1) {
         
         return result;
       }, 'saveRobot');
-    } catch (error) {
+    } catch (error: unknown) {
       const duration = performance.now() - startTime;
       performanceMonitor.record('saveRobot', duration);
       throw error;
@@ -875,7 +875,7 @@ if (index !== -1) {
         
         return result;
       }, 'updateRobot');
-    } catch (error) {
+    } catch (error: unknown) {
       const duration = performance.now() - startTime;
       performanceMonitor.record('updateRobot', duration);
       throw error;
@@ -925,7 +925,7 @@ if (index !== -1) {
         
         return result;
       }, 'deleteRobot');
-    } catch (error) {
+    } catch (error: unknown) {
       const duration = performance.now() - startTime;
       performanceMonitor.record('deleteRobot', duration);
       throw error;
@@ -994,7 +994,7 @@ if (index !== -1) {
         performanceMonitor.record('duplicateRobot', duration);
         return result;
       }, 'duplicateRobot');
-    } catch (error) {
+    } catch (error: unknown) {
       const duration = performance.now() - startTime;
       performanceMonitor.record('duplicateRobot', duration);
       throw error;
@@ -1285,7 +1285,7 @@ export const dbUtils = {
                 performanceMonitor.record('searchRobots', duration);
                 return data || [];
             }
-        } catch (error) {
+        } catch (error: unknown) {
             const duration = performance.now() - startTime;
             performanceMonitor.record('searchRobots', duration);
             throw error;
@@ -1328,7 +1328,7 @@ export const dbUtils = {
                 performanceMonitor.record('getStrategyTypes', duration);
                 return types;
             }
-        } catch (error) {
+        } catch (error: unknown) {
             const duration = performance.now() - startTime;
             performanceMonitor.record('getStrategyTypes', duration);
             throw error;
@@ -1429,7 +1429,7 @@ export const dbUtils = {
                 
                 return supabaseBatchResult;
             }
-        } catch (error) {
+        } catch (error: unknown) {
             const duration = performance.now() - startTime;
             performanceMonitor.record('batchUpdateRobots', duration);
             throw error;

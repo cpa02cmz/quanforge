@@ -272,7 +272,7 @@ class SupabaseEdgeOptimizations {
       const efficiency = Math.max(0, 100 - (avgTimePerRequest / 10)); // Arbitrary baseline of 10ms per request
       this.metrics.batchEfficiency = (this.metrics.batchEfficiency * 0.9) + (efficiency * 0.1);
 
-    } catch (error) {
+    } catch (error: unknown) {
       // Reject all requests in batch on error
       batch.forEach(request => {
         request.reject(error);
@@ -321,7 +321,7 @@ class SupabaseEdgeOptimizations {
         
         return btoa(String.fromCharCode(...compressed));
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Compression failed, using uncompressed data:', error);
     }
 
@@ -368,7 +368,7 @@ class SupabaseEdgeOptimizations {
           return JSON.parse(new TextDecoder().decode(decompressed));
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Decompression failed, trying direct JSON parse:', error);
     }
 
@@ -439,7 +439,7 @@ class SupabaseEdgeOptimizations {
         // This would need to be implemented based on actual data needs
         // const data = await this.getCommonData(key);
         // this.setEdgeCache(key, data);
-      } catch (error) {
+      } catch (error: unknown) {
         console.warn(`Failed to warm cache for key ${key}:`, error);
       }
     }

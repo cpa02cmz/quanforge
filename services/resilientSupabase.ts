@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { handleError } from '../utils/errorHandler';
+import { handleError, isError } from '../utils/errorHandler';
 import { DATABASE_CONFIG, CIRCUIT_BREAKER_CONFIG } from '../constants/config';
 
 // Type definitions for better type safety
@@ -84,7 +84,7 @@ class CircuitBreaker {
       const result = await operation();
       this.onSuccess();
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       this.onFailure();
       throw error;
     }
@@ -195,11 +195,11 @@ class ResilientSupabaseClient {
       this.recordResponseTime(Date.now() - startTime);
       return result;
 
-    } catch (error) {
+    } catch (error: unknown) {
       this.metrics.failedRequests++;
       this.recordResponseTime(Date.now() - startTime);
       
-      handleError(error, operationName, 'ResilientSupabaseClient', {
+      handleError(isError(error) ? error : String(error), operationName, 'ResilientSupabaseClient', {
         retryAttempts: this.metrics.retryAttempts,
         circuitBreakerState: this.getCircuitBreaker(operationName).getState(),
       });
@@ -215,7 +215,7 @@ class ResilientSupabaseClient {
     customRetryConfig?: Partial<RetryConfig>
   ): Promise<T> {
     const config = { ...this.retryConfig, ...customRetryConfig };
-    let lastError: any;
+    let lastError: unknown;
 
     for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
       try {
@@ -526,16 +526,16 @@ eq: (col: string, value: unknown) =>
            totalCircuitBreakers: circuitBreakers.length,
          },
        };
-     } catch (error) {
-       return {
-         healthy: false,
-         details: {
-           error: error instanceof Error ? error.message : 'Unknown error',
-           metrics: this.getMetrics(),
-           circuitBreakers: this.getCircuitBreakerStates(),
-         },
-       };
-     }
+      } catch (error: unknown) {
+        return {
+          healthy: false,
+          details: {
+            error: isError(error) ? error.message : 'Unknown error',
+            metrics: this.getMetrics(),
+            circuitBreakers: this.getCircuitBreakerStates(),
+          },
+        };
+      }
    }
 }
 
