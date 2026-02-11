@@ -60,6 +60,50 @@ export const LOADING_ANIMATION = {
   SHIMMER_DURATION: 1500,
   /** Minimum time to show loading state (ms) */
   MIN_DISPLAY_TIME: 500,
+  /** Quick pulse for value changes (ms) */
+  VALUE_PULSE: 200,
+} as const;
+
+/**
+ * Form and Input Animations
+ */
+export const FORM_ANIMATION = {
+  /** Shake animation duration for errors (ms) */
+  SHAKE_DURATION: 500,
+  /** Error shake keyframe offsets (px) */
+  SHAKE_OFFSET: 4,
+} as const;
+
+/**
+ * Particle and Effect Animations
+ */
+export const PARTICLE_ANIMATION = {
+  /** Number of particles in a burst */
+  BURST_COUNT: 6,
+  /** Particle animation duration (ms) */
+  DURATION: 500,
+  /** Particle travel distance (px) */
+  TRAVEL_DISTANCE: 20,
+  /** Particle size (px) */
+  PARTICLE_SIZE: 3,
+  /** Angle between particles (degrees) */
+  ANGLE_STEP: 60,
+  /** Angle randomness variation (degrees) */
+  ANGLE_VARIATION: 15,
+} as const;
+
+/**
+ * Copy Button Specific Animations
+ */
+export const COPY_BUTTON_ANIMATION = {
+  /** Success state display duration (ms) */
+  SUCCESS_DURATION: 1500,
+  /** Checkmark draw animation duration (ms) */
+  CHECKMARK_DRAW: 250,
+  /** Scale in animation duration (ms) */
+  SCALE_IN: 200,
+  /** Glow fade in duration (ms) */
+  GLOW_FADE: 150,
 } as const;
 
 /**
@@ -68,12 +112,29 @@ export const LOADING_ANIMATION = {
 export const INTERACTIVE_ANIMATION = {
   /** Button press feedback duration (ms) */
   BUTTON_PRESS: 100,
+  /** Button press animation duration (ms) - for visual feedback */
+  BUTTON_PRESS_ANIMATION: 150,
   /** Hover transition duration (ms) */
   HOVER_TRANSITION: 200,
   /** Focus ring animation duration (ms) */
   FOCUS_RING: 150,
   /** Scale effect for interactive elements */
   SCALE_EFFECT: 0.98,
+  /** Long press initial delay before rapid changes (ms) */
+  LONG_PRESS_DELAY: 600,
+  /** Long press rapid change intervals (ms) - progressively faster */
+  LONG_PRESS_INTERVALS: {
+    SLOW: 400,
+    MEDIUM: 200,
+    FAST: 100,
+    VERY_FAST: 50,
+  },
+  /** Long press speed change thresholds (number of repeats) */
+  LONG_PRESS_THRESHOLDS: {
+    TO_MEDIUM: 5,
+    TO_FAST: 10,
+    TO_VERY_FAST: 20,
+  },
 } as const;
 
 /**
@@ -171,6 +232,9 @@ export const UI_ANIMATION = {
   MODAL: MODAL_ANIMATION,
   CHART: CHART_ANIMATION,
   SCROLL: SCROLL_ANIMATION,
+  FORM: FORM_ANIMATION,
+  PARTICLE: PARTICLE_ANIMATION,
+  COPY_BUTTON: COPY_BUTTON_ANIMATION,
   EASING,
   PERFORMANCE: ANIMATION_PERFORMANCE,
 } as const;
