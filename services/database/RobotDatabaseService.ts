@@ -46,8 +46,8 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
       if (!data || data.length === 0) throw new Error('Failed to save robot');
 
       return data[0].id;
-    } catch (error) {
-      handleError(error as Error, 'saveRobot', 'RobotDatabaseService');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'saveRobot', 'RobotDatabaseService');
       throw error;
     }
   }
@@ -70,8 +70,8 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
       }
       
       return data as Robot;
-    } catch (error) {
-      handleError(error as Error, 'getRobot', 'RobotDatabaseService');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'getRobot', 'RobotDatabaseService');
       throw error;
     }
   }
@@ -88,8 +88,8 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
 
       if (error) throw error;
       return (data || []) as Robot[];
-    } catch (error) {
-      handleError(error as Error, 'getAllRobots', 'RobotDatabaseService');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'getAllRobots', 'RobotDatabaseService');
       throw error;
     }
   }
@@ -107,8 +107,8 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
 
       if (error) throw error;
       return true;
-    } catch (error) {
-      handleError(error as Error, 'updateRobot', 'RobotDatabaseService');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'updateRobot', 'RobotDatabaseService');
       throw error;
     }
   }
@@ -124,8 +124,8 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
 
       if (error) throw error;
       return true;
-    } catch (error) {
-      handleError(error as Error, 'deleteRobot', 'RobotDatabaseService');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'deleteRobot', 'RobotDatabaseService');
       throw error;
     }
   }
@@ -148,8 +148,8 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
       
       if (error) throw error;
       return (data || []) as Robot[];
-    } catch (error) {
-      handleError(error as Error, 'searchRobots', 'RobotDatabaseService');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'searchRobots', 'RobotDatabaseService');
       throw error;
     }
   }
@@ -166,8 +166,8 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
         count: count || 0,
         storageType: this.getConfig().mode === 'mock' ? 'Browser Local Storage' : 'Supabase Cloud DB'
       };
-    } catch (error) {
-      handleError(error as Error, 'getStats', 'RobotDatabaseService');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'getStats', 'RobotDatabaseService');
       throw error;
     }
   }
@@ -184,8 +184,8 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
       };
 
       return JSON.stringify(exportObj, null, 2);
-    } catch (error) {
-      handleError(error as Error, 'exportDatabase', 'RobotDatabaseService');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'exportDatabase', 'RobotDatabaseService');
       throw error;
     }
   }
@@ -220,7 +220,7 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
         try {
           await this.saveRobot(robot);
           successCount++;
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Failed to import robot:', robot.id, error);
         }
       }
@@ -229,11 +229,11 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
         success: true,
         count: successCount
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
         count: 0,
-        error: (error as Error).message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -248,10 +248,10 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
         success: true,
         message: `Database optimized. Current record count: ${stats.count}. Storage: ${stats.storageType}`
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
-        message: `Optimization failed: ${(error as Error).message}`
+        message: `Optimization failed: ${error instanceof Error ? error.message : String(error)}`
       };
     }
   }
@@ -265,8 +265,8 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
         .update({ is_active: false, deleted_at: new Date().toISOString() })
         .neq('id', '');
       if (error) throw error;
-    } catch (error) {
-      handleError(error as Error, 'clearAllRobots', 'RobotDatabaseService');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'clearAllRobots', 'RobotDatabaseService');
       throw error;
     }
   }

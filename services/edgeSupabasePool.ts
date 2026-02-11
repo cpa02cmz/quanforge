@@ -99,7 +99,7 @@ class EdgeSupabasePool {
       const result = await Promise.race([healthPromise, timeoutPromise]) as { error?: any };
       
       return !result?.error;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Health check failed:', error);
       return false;
     }
@@ -131,7 +131,7 @@ class EdgeSupabasePool {
           if (!isHealthy) {
             expiredKeys.push(key);
           }
-        } catch (error) {
+        } catch (error: unknown) {
           console.warn(`Health check failed for ${key}:`, error);
           expiredKeys.push(key);
         }
@@ -162,7 +162,7 @@ class EdgeSupabasePool {
           const latency = Date.now() - startTime;
           console.log(`✅ Edge connection warmed for region: ${region} (${latency}ms)`);
           return { region, success: true, latency };
-        } catch (error) {
+        } catch (error: unknown) {
           const latency = Date.now() - startTime;
           console.warn(`❌ Failed to warm edge connection for ${region}:`, error);
           return { region, success: false, latency };

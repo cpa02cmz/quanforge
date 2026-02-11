@@ -167,7 +167,7 @@ class PerformanceOptimizer {
       }
       
       return this.metrics;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error collecting performance metrics:', error);
       return this.metrics;
     }
@@ -312,7 +312,7 @@ class PerformanceOptimizer {
     try {
       logger.log('Optimizing database performance...');
       await databaseOptimizer.runDatabaseMaintenance({} as SupabaseClient);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Database optimization failed:', error);
     }
   }
@@ -325,7 +325,7 @@ class PerformanceOptimizer {
       logger.log('Optimizing cache performance...');
       // Clear old entries and optimize cache - using available method
       robotCache.destroy();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Cache optimization failed:', error);
     }
   }
@@ -337,7 +337,7 @@ class PerformanceOptimizer {
     try {
       logger.log('Optimizing edge performance...');
       // This would typically call edge optimizer methods
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Edge optimization failed:', error);
     }
   }

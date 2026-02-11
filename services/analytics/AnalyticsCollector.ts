@@ -77,7 +77,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
       this.eventQueue.pop(); // Remove test event
       
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Analytics health check failed:', error);
       return false;
     }
@@ -111,7 +111,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
       if (this.eventQueue.length >= this.config.batchSize) {
         await this.processEventQueue();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Failed to track event ${event}:`, error);
     }
   }
@@ -140,7 +140,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
       if (this.metricsQueue.length >= this.config.batchSize) {
         await this.processMetricsQueue();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Failed to track metric ${name}:`, error);
     }
   }
@@ -168,7 +168,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
       if (this.operationQueue.length >= this.config.batchSize) {
         await this.processOperationQueue();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Failed to track operation ${operation}:`, error);
     }
   }
@@ -211,7 +211,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
         this.processMetricsQueue(),
         this.processOperationQueue(),
       ]);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error during batch processing:', error);
     } finally {
       this.isProcessing = false;

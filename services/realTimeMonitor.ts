@@ -344,7 +344,7 @@ export class RealTimeMonitor {
         },
         body: JSON.stringify({ type: 'metric', data: metric })
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Failed to send performance metric:', error);
     }
   }
@@ -360,7 +360,7 @@ export class RealTimeMonitor {
         },
         body: JSON.stringify({ type: 'error', data: error })
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Failed to send error metric:', error);
     }
   }
@@ -409,7 +409,7 @@ export class RealTimeMonitor {
         },
         body: JSON.stringify(report)
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Failed to send performance report:', error);
     }
   }
@@ -485,7 +485,7 @@ export class RealTimeMonitor {
         },
         body: JSON.stringify(alert)
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Failed to send alert:', error);
     }
   }

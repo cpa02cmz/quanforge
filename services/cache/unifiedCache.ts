@@ -88,7 +88,7 @@ export class UnifiedCacheManager extends BaseCache {
       try {
         const decompressed = await CompressionUtils.decompress(entry.data, entry.compressed);
         data = decompressed;
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn('Failed to decompress cached data:', error);
         this.cache.delete(key);
         this.recordMiss();
@@ -134,7 +134,7 @@ export class UnifiedCacheManager extends BaseCache {
         if (compressed) {
           this.metrics.compressions++;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn('Compression failed:', error);
       }
     }
@@ -332,7 +332,7 @@ export class UnifiedCacheManager extends BaseCache {
           }
         ]);
         localStorage.setItem(this.storageKey, JSON.stringify(serializable));
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Failed to save cache to storage:', error);
       }
     }
@@ -354,7 +354,7 @@ export class UnifiedCacheManager extends BaseCache {
           ]));
           this.updateMemoryUsage();
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Failed to load cache from storage:', error);
       }
     }
@@ -373,7 +373,7 @@ export class UnifiedCacheManager extends BaseCache {
           }
         ]));
         this.updateMemoryUsage();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Failed to sync cache from storage:', error);
       }
     }

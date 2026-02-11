@@ -109,7 +109,7 @@ export const warmCache = async (keys: string[], dataLoader: (key: string) => Pro
       try {
         const data = await dataLoader(key);
         robotCache.set(key, data);
-      } catch (error) {
+      } catch (error: unknown) {
         console.warn(`Failed to warm cache for key ${key}:`, error);
       }
     }

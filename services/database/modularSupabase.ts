@@ -117,7 +117,7 @@ class ModularSupabase implements ModularSupabaseService {
       return createSuccessResponse(result.data);
     } catch (error: unknown) {
       this.analytics.recordOperation('getSession', endTimer(), error);
-      handleError(error as Error, 'getSession', 'modularSupabase');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'getSession', 'modularSupabase');
       return createErrorResponse(
         error instanceof Error ? error.message : 'Session retrieval failed',
         error instanceof Error && 'code' in error ? String(error.code) : undefined
@@ -162,7 +162,7 @@ class ModularSupabase implements ModularSupabaseService {
       return result as any;
     } catch (error: unknown) {
       this.analytics.recordOperation('signInWithPassword', endTimer(), error);
-      handleError(error as Error, 'signInWithPassword', 'modularSupabase');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'signInWithPassword', 'modularSupabase');
       return { 
         data: { session: null, user: null }, 
         error: error instanceof Error ? error.message : 'Sign in failed' 
@@ -203,7 +203,7 @@ class ModularSupabase implements ModularSupabaseService {
       return result as any;
     } catch (error: unknown) {
       this.analytics.recordOperation('signUp', endTimer(), error);
-      handleError(error as Error, 'signUp', 'modularSupabase');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'signUp', 'modularSupabase');
       return { 
         data: { session: null, user: null }, 
         error: error instanceof Error ? error.message : 'Sign up failed' 
@@ -224,7 +224,7 @@ class ModularSupabase implements ModularSupabaseService {
       return createSuccessResponse(null);
     } catch (error: unknown) {
       this.analytics.recordOperation('signOut', endTimer(), error);
-      handleError(error as Error, 'signOut', 'modularSupabase');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'signOut', 'modularSupabase');
       return createErrorResponse(
         error instanceof Error ? error.message : 'Sign out failed',
         error instanceof Error && 'code' in error ? String(error.code) : undefined
@@ -266,7 +266,7 @@ class ModularSupabase implements ModularSupabaseService {
       return createSuccessResponse(result.data || []);
     } catch (error: unknown) {
       this.analytics.recordOperation('getRobots', endTimer(), error);
-      handleError(error as Error, 'getRobots', 'modularSupabase');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'getRobots', 'modularSupabase');
       return createErrorResponse(
         error instanceof Error ? error.message : 'Failed to get robots',
         error instanceof Error && 'code' in error ? String(error.code) : undefined
@@ -310,7 +310,7 @@ class ModularSupabase implements ModularSupabaseService {
       return createSuccessResponse(result.data);
     } catch (error: unknown) {
       this.analytics.recordOperation('getRobotById', endTimer(), error);
-      handleError(error as Error, 'getRobotById', 'modularSupabase');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'getRobotById', 'modularSupabase');
       return createErrorResponse(
         error instanceof Error ? error.message : 'Failed to get robot',
         error instanceof Error && 'code' in error ? String(error.code) : undefined
@@ -348,7 +348,7 @@ class ModularSupabase implements ModularSupabaseService {
       return createSuccessResponse(robots);
     } catch (error: unknown) {
       this.analytics.recordOperation('getRobotsByIds', endTimer(), error);
-      handleError(error as Error, 'getRobotsByIds', 'modularSupabase');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'getRobotsByIds', 'modularSupabase');
       return createErrorResponse(
         error instanceof Error ? error.message : 'Failed to get robots by IDs',
         error instanceof Error && 'code' in error ? String(error.code) : undefined
@@ -402,7 +402,7 @@ class ModularSupabase implements ModularSupabaseService {
       return createSuccessResponse(result.data || []);
     } catch (error: unknown) {
       this.analytics.recordOperation('saveRobot', endTimer(), error);
-      handleError(error as Error, 'saveRobot', 'modularSupabase');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'saveRobot', 'modularSupabase');
       return createErrorResponse(
         error instanceof Error ? error.message : 'Failed to save robot',
         error instanceof Error && 'code' in error ? String(error.code) : undefined
@@ -437,7 +437,7 @@ class ModularSupabase implements ModularSupabaseService {
       return createSuccessResponse(result.data || []);
     } catch (error: unknown) {
       this.analytics.recordOperation('updateRobot', endTimer(), error);
-      handleError(error as Error, 'updateRobot', 'modularSupabase');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'updateRobot', 'modularSupabase');
       return createErrorResponse(
         error instanceof Error ? error.message : 'Failed to update robot',
         error instanceof Error && 'code' in error ? String(error.code) : undefined
@@ -472,7 +472,7 @@ class ModularSupabase implements ModularSupabaseService {
       return createSuccessResponse(Boolean(result.data));
     } catch (error: unknown) {
       this.analytics.recordOperation('deleteRobot', endTimer(), error);
-      handleError(error as Error, 'deleteRobot', 'modularSupabase');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'deleteRobot', 'modularSupabase');
       return createErrorResponse(
         error instanceof Error ? error.message : 'Failed to delete robot',
         error instanceof Error && 'code' in error ? String(error.code) : undefined
@@ -506,7 +506,7 @@ class ModularSupabase implements ModularSupabaseService {
       });
     } catch (error: unknown) {
       this.analytics.recordOperation('batchUpdateRobots', endTimer(), error);
-      handleError(error as Error, 'batchUpdateRobots', 'modularSupabase');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'batchUpdateRobots', 'modularSupabase');
       return createErrorResponse(
         error instanceof Error ? error.message : 'Failed to batch update robots',
         error instanceof Error && 'code' in error ? String(error.code) : undefined
@@ -553,11 +553,11 @@ class ModularSupabase implements ModularSupabaseService {
         success: true, 
         message: "Database optimization completed successfully" 
       };
-    } catch (error) {
-      handleError(error as Error, 'optimizeDatabase', 'modularSupabase');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'optimizeDatabase', 'modularSupabase');
       return { 
         success: false, 
-        message: `Database optimization failed: ${(error as Error).message}` 
+        message: `Database optimization failed: ${error instanceof Error ? error.message : String(error)}` 
       };
     }
   }
@@ -700,9 +700,9 @@ const index = robots.findIndex((r: Robot) => r.id === id);
         } else {
           successCount++;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         failedCount++;
-        errors.push(`Error updating robot ${id}: ${(error as Error).message}`);
+        errors.push(`Error updating robot ${id}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
@@ -737,10 +737,10 @@ const index = robots.findIndex((r: Robot) => r.id === id);
         success: true, 
         message: `Mock database optimized: ${robots.length - uniqueRobots.length} invalid records removed.` 
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return { 
         success: false, 
-        message: `Mock database optimization failed: ${(error as Error).message}` 
+        message: `Mock database optimization failed: ${error instanceof Error ? error.message : String(error)}` 
       };
     }
   }

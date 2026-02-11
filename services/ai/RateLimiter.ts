@@ -76,7 +76,7 @@ export class RateLimiter implements IRateLimiter {
       // Test rate limiting with a test identifier
       const testResult = await this.checkRateLimit('health-check-test');
       return testResult.allowed;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Rate Limiter health check failed:', error);
       return false;
     }
@@ -138,7 +138,7 @@ export class RateLimiter implements IRateLimiter {
         remaining: remaining - 1,
         resetTime: info.resetTime,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Rate limit check failed for ${identifier}:`, error);
       // On error, allow request to prevent blocking legitimate traffic
       return {

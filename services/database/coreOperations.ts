@@ -83,10 +83,10 @@ export class DatabaseCore implements DatabaseCoreInterface {
       this.performanceMonitor.record('getRobots', duration);
       
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       const duration = performance.now() - startTime;
       this.performanceMonitor.record('getRobots', duration);
-      handleError(error as Error, 'getRobots', 'databaseCore');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'getRobots', 'databaseCore');
       throw error;
     }
   }
@@ -105,10 +105,10 @@ export class DatabaseCore implements DatabaseCoreInterface {
       this.performanceMonitor.record('getRobotById', duration);
       
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       const duration = performance.now() - startTime;
       this.performanceMonitor.record('getRobotById', duration);
-      handleError(error as Error, 'getRobotById', 'databaseCore');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'getRobotById', 'databaseCore');
       throw error;
     }
   }
@@ -138,10 +138,10 @@ export class DatabaseCore implements DatabaseCoreInterface {
       this.performanceMonitor.record('saveRobot', duration);
       
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       const duration = performance.now() - startTime;
       this.performanceMonitor.record('saveRobot', duration);
-      handleError(error as Error, 'saveRobot', 'databaseCore');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'saveRobot', 'databaseCore');
       throw error;
     }
   }
@@ -165,10 +165,10 @@ export class DatabaseCore implements DatabaseCoreInterface {
       this.performanceMonitor.record('updateRobot', duration);
       
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       const duration = performance.now() - startTime;
       this.performanceMonitor.record('updateRobot', duration);
-      handleError(error as Error, 'updateRobot', 'databaseCore');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'updateRobot', 'databaseCore');
       throw error;
     }
   }
@@ -186,10 +186,10 @@ export class DatabaseCore implements DatabaseCoreInterface {
       this.performanceMonitor.record('deleteRobot', duration);
       
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       const duration = performance.now() - startTime;
       this.performanceMonitor.record('deleteRobot', duration);
-      handleError(error as Error, 'deleteRobot', 'databaseCore');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'deleteRobot', 'databaseCore');
       throw error;
     }
   }
@@ -218,9 +218,9 @@ export class DatabaseCore implements DatabaseCoreInterface {
             } else {
               successCount++;
             }
-          } catch (error) {
+          } catch (error: unknown) {
             failedCount++;
-            errors.push(`Error updating robot ${id}: ${(error as Error).message}`);
+            errors.push(`Error updating robot ${id}: ${error instanceof Error ? error.message : String(error)}`);
           }
         }
       }
@@ -233,10 +233,10 @@ export class DatabaseCore implements DatabaseCoreInterface {
         failed: failedCount,
         errors: errors.length > 0 ? errors : undefined
       };
-    } catch (error) {
+    } catch (error: unknown) {
       const duration = performance.now() - startTime;
       this.performanceMonitor.record('batchUpdateRobots', duration);
-      handleError(error as Error, 'batchUpdateRobots', 'databaseCore');
+      handleError(error instanceof Error ? error : new Error(String(error)), 'batchUpdateRobots', 'databaseCore');
       throw error;
     }
   }

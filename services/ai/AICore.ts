@@ -53,7 +53,7 @@ export class AICore implements IAICore {
       // Test with a simple generation
       const result = await this.generateContent('Test', { maxTokens: 10 });
       return result.length > 0;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('AI Core health check failed:', error);
       return false;
     }
@@ -90,10 +90,10 @@ export class AICore implements IAICore {
       } else {
         throw new Error(`Unsupported provider: ${this.config.provider}`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const duration = Date.now() - startTime;
       logger.error(`Content generation failed after ${duration}ms:`, error);
-      throw handleError(error as Error, 'AIContentGeneration', 'AICore');
+      throw handleError(error instanceof Error ? error : new Error(String(error)), 'AIContentGeneration', 'AICore');
     }
   }
 
@@ -114,7 +114,7 @@ export class AICore implements IAICore {
       } else {
         return { success: false, message: 'No response from model' };
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return { 
         success: false, 
@@ -163,7 +163,7 @@ export class AICore implements IAICore {
       };
       
       logger.info('Mock Google GenAI loaded successfully');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to load Google GenAI mock:', error);
       throw new Error('Failed to initialize AI service');
     }
@@ -243,9 +243,9 @@ export class AICore implements IAICore {
       } else {
         throw new Error('No response text in conversation result');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Generation with history failed:', error);
-      throw handleError(error as Error, 'AIHistoryGeneration', 'AICore');
+      throw handleError(error instanceof Error ? error : new Error(String(error)), 'AIHistoryGeneration', 'AICore');
     }
   }
 
