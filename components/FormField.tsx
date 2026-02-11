@@ -1,4 +1,5 @@
 import { forwardRef, ReactNode, useState, useEffect, useRef } from 'react';
+import { FORM_ANIMATION } from '../constants/animations';
 
 export interface FormFieldProps {
   label: string;
@@ -41,7 +42,7 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
     useEffect(() => {
       if (shakeOnError && !prefersReducedMotion && error && !prevErrorRef.current) {
         setIsShaking(true);
-        const timer = setTimeout(() => setIsShaking(false), 500);
+        const timer = setTimeout(() => setIsShaking(false), FORM_ANIMATION.SHAKE_DURATION);
         return () => clearTimeout(timer);
       }
       prevErrorRef.current = error;
@@ -82,11 +83,11 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
           <style>{`
             @keyframes form-shake {
               0%, 100% { transform: translateX(0); }
-              10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
-              20%, 40%, 60%, 80% { transform: translateX(4px); }
+              10%, 30%, 50%, 70%, 90% { transform: translateX(-${FORM_ANIMATION.SHAKE_OFFSET}px); }
+              20%, 40%, 60%, 80% { transform: translateX(${FORM_ANIMATION.SHAKE_OFFSET}px); }
             }
             .animate-form-shake {
-              animation: form-shake 0.5s cubic-bezier(0.36, 0, 0.66, -0.56) both;
+              animation: form-shake ${FORM_ANIMATION.SHAKE_DURATION}ms cubic-bezier(0.36, 0, 0.66, -0.56) both;
             }
           `}</style>
         )}

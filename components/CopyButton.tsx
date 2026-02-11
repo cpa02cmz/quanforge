@@ -1,5 +1,6 @@
 import React, { useState, useCallback, memo, useRef } from 'react';
 import { logger } from '../utils/logger';
+import { PARTICLE_ANIMATION, COPY_BUTTON_ANIMATION } from '../constants/animations';
 
 export interface CopyButtonProps {
   /** The text to copy to clipboard */
@@ -65,30 +66,30 @@ export const CopyButton: React.FC<CopyButtonProps> = memo(({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const particleIdRef = useRef(0);
 
-  // Generate particle burst effect for delightful feedback
-  const triggerParticleBurst = useCallback(() => {
-    if (!buttonRef.current) return;
-    
-    const rect = buttonRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
+    // Generate particle burst effect for delightful feedback
+    const triggerParticleBurst = useCallback(() => {
+        if (!buttonRef.current) return;
+        
+        const rect = buttonRef.current.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
 
-    // Create 6 particles radiating outward
-    const newParticles: Particle[] = Array.from({ length: 6 }, (_, i) => ({
-      id: particleIdRef.current++,
-      x: centerX,
-      y: centerY,
-      angle: (i * 60) + (Math.random() * 30 - 15), // 6 directions with slight randomness
-      color: i % 2 === 0 ? '#22c55e' : '#4ade80', // Alternate brand colors
-    }));
+        // Create particles radiating outward
+        const newParticles: Particle[] = Array.from({ length: PARTICLE_ANIMATION.BURST_COUNT }, (_, i) => ({
+            id: particleIdRef.current++,
+            x: centerX,
+            y: centerY,
+            angle: (i * PARTICLE_ANIMATION.ANGLE_STEP) + (Math.random() * (PARTICLE_ANIMATION.ANGLE_VARIATION * 2) - PARTICLE_ANIMATION.ANGLE_VARIATION),
+            color: i % 2 === 0 ? '#22c55e' : '#4ade80', // Alternate brand colors
+        }));
 
-    setParticles(newParticles);
+        setParticles(newParticles);
 
-    // Clear particles after animation completes
-    setTimeout(() => {
-      setParticles([]);
-    }, 500);
-  }, []);
+        // Clear particles after animation completes
+        setTimeout(() => {
+            setParticles([]);
+        }, PARTICLE_ANIMATION.DURATION);
+    }, []);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -103,7 +104,7 @@ export const CopyButton: React.FC<CopyButtonProps> = memo(({
       // Reset to idle after showing success
       setTimeout(() => {
         setCopied(false);
-      }, 1500);
+      }, COPY_BUTTON_ANIMATION.SUCCESS_DURATION);
     } catch (err) {
       logger.error('Failed to copy:', err);
     }
@@ -159,11 +160,11 @@ export const CopyButton: React.FC<CopyButtonProps> = memo(({
           style={{
             left: particle.x,
             top: particle.y,
-            width: '3px',
-            height: '3px',
+            width: `${PARTICLE_ANIMATION.PARTICLE_SIZE}px`,
+            height: `${PARTICLE_ANIMATION.PARTICLE_SIZE}px`,
             backgroundColor: particle.color,
             borderRadius: '50%',
-            animation: 'particle-burst 0.5s ease-out forwards',
+            animation: `particle-burst ${PARTICLE_ANIMATION.DURATION}ms ease-out forwards`,
             transform: `rotate(${particle.angle}deg)`,
           }}
           aria-hidden="true"
@@ -275,11 +276,11 @@ export const CopyButton: React.FC<CopyButtonProps> = memo(({
             opacity: 1;
           }
           100% {
-            transform: rotate(var(--angle, 0deg)) translateX(20px) scale(0);
+            transform: rotate(var(--angle, 0deg)) translateX(${PARTICLE_ANIMATION.TRAVEL_DISTANCE}px) scale(0);
             opacity: 0;
           }
         }
-        
+
         @keyframes drawCheck {
           from {
             stroke-dashoffset: 24;
@@ -288,7 +289,7 @@ export const CopyButton: React.FC<CopyButtonProps> = memo(({
             stroke-dashoffset: 0;
           }
         }
-        
+
         @keyframes scaleIn {
           from {
             transform: scale(0);
@@ -299,7 +300,7 @@ export const CopyButton: React.FC<CopyButtonProps> = memo(({
             opacity: 1;
           }
         }
-        
+
         @keyframes fade-in {
           from {
             opacity: 0;
