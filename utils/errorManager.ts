@@ -1,5 +1,6 @@
 import type { Toast } from '../types/toast';
 import { ERROR_DISPLAY } from '../constants/timing';
+import { TIME_CONSTANTS } from '../constants/config';
 
 export enum ErrorSeverity {
   LOW = 'low',
@@ -468,7 +469,7 @@ export class ErrorManager {
       bySeverity[error.severity] = (bySeverity[error.severity] || 0) + 1;
     });
     
-    const oneHourAgo = Date.now() - (60 * 60 * 1000);
+    const oneHourAgo = Date.now() - TIME_CONSTANTS.HOUR;
     const recent = this.errorHistory.filter(error => error.timestamp > oneHourAgo);
     const critical = this.errorHistory.filter(error => error.severity === ErrorSeverity.CRITICAL);
     
@@ -572,7 +573,7 @@ export const withErrorHandling = <T extends (...args: unknown[]) => Promise<unkn
     retries = 0, 
     fallback, 
     backoff = 'exponential', 
-    backoffBase = 1000,
+    backoffBase = TIME_CONSTANTS.SECOND,
     shouldRetry = () => true
   } = options;
   
@@ -678,7 +679,7 @@ export const errorClassifier = {
 // Circuit breaker pattern for resilience
 export class CircuitBreaker {
   private failureThreshold = 5;
-  private recoveryTimeout = 60000; // 1 minute
+  private recoveryTimeout = TIME_CONSTANTS.MINUTE; // 1 minute
   private failures = 0;
   private lastFailureTime = 0;
   private state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';

@@ -1,3 +1,5 @@
+import { TIME_CONSTANTS } from '../constants/config';
+
 // Synchronous hash using a simple algorithm for browser compatibility
 function simpleHash(str: string): string {
   let hash = 5381;
@@ -26,7 +28,7 @@ export class EnhancedRateLimiter {
   private cleanupInterval: ReturnType<typeof setInterval>;
   
   constructor(private config: RateLimitConfig = {
-    windowMs: 60000, // 1 minute
+    windowMs: TIME_CONSTANTS.MINUTE, // 1 minute
     maxRequests: 30,
     skipSuccessfulRequests: false,
     skipFailedRequests: false
@@ -34,7 +36,7 @@ export class EnhancedRateLimiter {
     // Cleanup old entries every 5 minutes
     this.cleanupInterval = setInterval(() => {
       this.cleanup();
-    }, 5 * 60 * 1000);
+    }, TIME_CONSTANTS.MINUTE * 5);
   }
 
   private generateKey(identifier: string): string {
@@ -53,7 +55,7 @@ export class EnhancedRateLimiter {
     
     for (const [key, entry] of this.store.entries()) {
       // Remove entries that haven't been accessed for 10 minutes
-      if (now - entry.lastAccess > 10 * 60 * 1000) {
+      if (now - entry.lastAccess > TIME_CONSTANTS.MINUTE * 10) {
         keysToDelete.push(key);
       }
     }
@@ -103,7 +105,7 @@ export class EnhancedRateLimiter {
       allowed,
       remaining: Math.max(0, maxRequests - entry.count),
       resetTime: entry.resetTime,
-      retryAfter: allowed ? undefined : Math.ceil((entry.resetTime - now) / 1000)
+      retryAfter: allowed ? undefined : Math.ceil((entry.resetTime - now) / TIME_CONSTANTS.SECOND)
     };
   }
 
@@ -144,7 +146,7 @@ export class EnhancedRateLimiter {
     const countDistribution = new Map<number, number>();
     
     for (const entry of this.store.values()) {
-      if (now - entry.lastAccess < 60000) {
+      if (now - entry.lastAccess < TIME_CONSTANTS.MINUTE) {
         activeLastMinute++;
       }
       
@@ -179,7 +181,7 @@ export class EnhancedRateLimiter {
   public validateConfig(config: RateLimitConfig): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     
-    if (!config.windowMs || config.windowMs < 1000) {
+    if (!config.windowMs || config.windowMs < TIME_CONSTANTS.SECOND) {
       errors.push('windowMs must be at least 1000ms');
     }
     
@@ -187,7 +189,7 @@ export class EnhancedRateLimiter {
       errors.push('maxRequests must be at least 1');
     }
     
-    if (config.maxRequests > 1000) {
+    if (config.maxRequests > TIME_CONSTANTS.SECOND) {
       errors.push('maxRequests should not exceed 1000 for performance');
     }
     
@@ -211,7 +213,7 @@ export function getRateLimiter(): EnhancedRateLimiter {
 // User-specific rate limiter for AI requests
 export function getAIRateLimiter(): EnhancedRateLimiter {
   return new EnhancedRateLimiter({
-    windowMs: 60000, // 1 minute
+    windowMs: TIME_CONSTANTS.MINUTE, // 1 minute
     maxRequests: 10, // 10 AI requests per minute
     keyGenerator: (identifier: string) => {
       const hash = simpleHash(`ai_${identifier}`);

@@ -8,6 +8,8 @@
  * @see {@link https://www.w3.org/WAI/WCAG21/Understanding/status-messages.html}
  */
 
+import { TIME_CONSTANTS } from '../constants/config';
+
 /**
  * Announces a message to screen readers using ARIA live regions
  * 
@@ -37,7 +39,7 @@ export const announceToScreenReader = (
     if (announcement.parentNode) {
       document.body.removeChild(announcement);
     }
-  }, 1000);
+  }, TIME_CONSTANTS.SECOND);
 };
 
 /**
