@@ -124,26 +124,10 @@ export class UXMetricsCollector {
    */
   private observeResources(): void {
     try {
-      const observer = new PerformanceObserver((list) => {
-        const entries = list.getEntries();
-        let totalApiTime = 0;
-        let apiCount = 0;
-        
-        for (const entry of entries) {
-          if (entry.entryType === 'resource') {
-            const resource = entry as PerformanceResourceTiming;
-            
-            // Check if it's an API call
-            if (resource.name.includes('/api/')) {
-              totalApiTime += resource.responseEnd - resource.requestStart;
-              apiCount++;
-            }
-          }
-        }
-        
-        if (apiCount > 0) {
-          this.metrics.apiResponseTime = totalApiTime / apiCount;
-        }
+      const observer = new PerformanceObserver(() => {
+        // Note: API endpoint monitoring removed - this is a client-side SPA
+        // with service-layer architecture (no REST API endpoints)
+        // Service call timing is tracked via performance.mark/measure instead
       });
       
       observer.observe({ entryTypes: ['resource'] });
