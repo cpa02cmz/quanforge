@@ -126,13 +126,14 @@ export class ServiceOrchestrator implements IServiceOrchestrator {
         };
         
         logger.info(`Service ${token} initialized${isHealthy === false ? ' with warnings' : ' successfully'}`);
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         this.healthStatus[token] = {
           healthy: false,
           lastCheck: new Date(),
-          error: error.message,
+          error: errorMessage,
         };
-        logger.error(`Failed to initialize service ${token}:`, error);
+        logger.error(`Failed to initialize service ${token}:`, errorMessage);
         
         // Continue with other services - don't let one failure stop everything
       }
@@ -158,8 +159,9 @@ export class ServiceOrchestrator implements IServiceOrchestrator {
 
     try {
       return await globalContainer.get<T>(token);
-    } catch (error: any) {
-      logger.error(`Failed to get service ${token}:`, error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(`Failed to get service ${token}:`, errorMessage);
       throw error;
     }
   }
@@ -337,12 +339,13 @@ export class ServiceOrchestrator implements IServiceOrchestrator {
       };
       
       logger.info(`Service ${token} restarted${isHealthy === false ? ' with issues' : ' successfully'}`);
-    } catch (error: any) {
-      logger.error(`Failed to restart service ${token}:`, error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(`Failed to restart service ${token}:`, errorMessage);
       this.healthStatus[token] = {
         healthy: false,
         lastCheck: new Date(),
-        error: error.message,
+        error: errorMessage,
       };
       throw error;
     }

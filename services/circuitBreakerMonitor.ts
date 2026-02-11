@@ -57,7 +57,7 @@ class CircuitBreaker {
       const result = await operation();
       this.onSuccess();
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.onFailure(error);
       throw error;
     } finally {
@@ -79,7 +79,7 @@ class CircuitBreaker {
     }
   }
 
-  private onFailure(error: any): void {
+  private onFailure(error: unknown): void {
     const errorCategory = classifyError(error);
     
     if (errorCategory === ErrorCategory.CLIENT_ERROR || errorCategory === ErrorCategory.VALIDATION) {

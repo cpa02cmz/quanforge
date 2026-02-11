@@ -77,7 +77,7 @@ export class IntegrationWrapper {
         }
         
         return { result, attempts: attempt + 1 };
-      } catch (error: any) {
+      } catch (error: unknown) {
         lastError = error;
         const errorCategory = classifyError(error);
         
@@ -195,7 +195,7 @@ export class IntegrationWrapper {
         }
       };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       const totalTime = Date.now() - startTime;
       const errorCategory = classifyError(error);
 
@@ -206,21 +206,27 @@ export class IntegrationWrapper {
         false
       );
 
+      // Safely extract error properties using type guards
+      const errorCode = typeof error === 'object' && error !== null && 'code' in error 
+        ? String((error as { code: unknown }).code) 
+        : 'INTEGRATION_ERROR';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown integration error';
+
       const standardizedError = createStandardizedError(
-        error.code || 'INTEGRATION_ERROR',
+        errorCode,
         errorCategory,
-        error.message || 'Unknown integration error',
-        error,
+        errorMessage,
+        error instanceof Error ? error : new Error(String(error)),
         undefined,
         options.integrationType
       );
 
-      if ((error as any).circuitBreakerOpen) {
+      if (typeof error === 'object' && error !== null && 'circuitBreakerOpen' in error && (error as { circuitBreakerOpen: unknown }).circuitBreakerOpen) {
         circuitBreakerTripped = true;
         logger.warn(`Circuit breaker tripped for ${options.integrationName} during ${opName}`);
       }
 
-      logger.error(`Integration operation ${opName} failed:`, error.message);
+      logger.error(`Integration operation ${opName} failed:`, errorMessage);
 
       return {
         success: false,

@@ -350,11 +350,14 @@ export function getConfig(integrationKey: string): IntegrationConfig {
   return config;
 }
 
-export function classifyError(error: any): ErrorCategory {
+export function classifyError(error: unknown): ErrorCategory {
   if (!error) return ErrorCategory.UNKNOWN;
 
-  const message = (error.message || '').toLowerCase();
-  const status = error.status || error.statusCode;
+  // Safely extract message and status from unknown error
+  const message = error instanceof Error ? error.message.toLowerCase() : '';
+  const status = typeof error === 'object' && error !== null 
+    ? (error as { status?: number; statusCode?: number }).status || (error as { status?: number; statusCode?: number }).statusCode 
+    : undefined;
 
   if (message.includes('timeout') || message.includes('timed out')) {
     return ErrorCategory.TIMEOUT;
