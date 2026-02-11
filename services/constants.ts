@@ -16,9 +16,11 @@ export const CACHE_TTLS = {
   SHORT: 30 * TIME_CONSTANTS.SECOND,            // 30 seconds
   ONE_MINUTE: TIME_CONSTANTS.MINUTE,            // 1 minute
   TWO_MINUTES: 2 * TIME_CONSTANTS.MINUTE,       // 2 minutes
+  THREE_MINUTES: 3 * TIME_CONSTANTS.MINUTE,     // 3 minutes
   
   // Medium-term caches (5-15 minutes)
   FIVE_MINUTES: 5 * TIME_CONSTANTS.MINUTE,      // 5 minutes
+  SEVEN_MINUTES: 7 * TIME_CONSTANTS.MINUTE,     // 7 minutes
   TEN_MINUTES: 10 * TIME_CONSTANTS.MINUTE,      // 10 minutes
   FIFTEEN_MINUTES: 15 * TIME_CONSTANTS.MINUTE,  // 15 minutes
   

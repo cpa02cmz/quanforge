@@ -1,4 +1,4 @@
-import { CACHE_TTLS, TIMEOUTS } from './constants';
+import { CACHE_TTLS, TIMEOUTS, TIME_CONSTANTS } from './constants';
 
 /**
  * Edge Function Optimization and Warming Service
@@ -66,7 +66,7 @@ class EdgeFunctionOptimizer {
         regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
         memory: 256,
         maxDuration: 10,
-        warmupInterval: 7 * 60 * 1000, // 7 minutes - optimized for edge (custom)
+        warmupInterval: CACHE_TTLS.SEVEN_MINUTES, // 7 minutes - optimized for edge
         priority: 'medium',
       },
       {
@@ -223,7 +223,7 @@ class EdgeFunctionOptimizer {
           this.warmupFunction(name);
         }
       });
-    }, 5 * 60 * 1000);
+    }, CACHE_TTLS.FIVE_MINUTES);
 
     // Warm up medium priority functions every 10 minutes - optimized for edge
     setInterval(() => {
@@ -232,7 +232,7 @@ class EdgeFunctionOptimizer {
           this.warmupFunction(name);
         }
       });
-    }, 10 * 60 * 1000);
+    }, CACHE_TTLS.TEN_MINUTES);
 
     // Warm up low priority functions every 15 minutes - optimized for edge
     setInterval(() => {
@@ -241,7 +241,7 @@ class EdgeFunctionOptimizer {
           this.warmupFunction(name);
         }
       });
-    }, 15 * 60 * 1000);
+    }, CACHE_TTLS.FIFTEEN_MINUTES);
   }
 
   /**
@@ -416,7 +416,7 @@ class EdgeFunctionOptimizer {
       // Increase warming frequency during peak hours for high-priority functions
       if (isPeakHour && config.priority === 'high') {
         const timeSinceLastWarmup = Date.now() - metrics.lastWarmup;
-        if (timeSinceLastWarmup > 3 * 60 * 1000) { // 3 minutes during peak (custom value)
+        if (timeSinceLastWarmup > CACHE_TTLS.THREE_MINUTES) { // 3 minutes during peak
           await this.warmupFunction(name);
         }
       }
@@ -488,7 +488,7 @@ class EdgeFunctionOptimizer {
       const coldStartRate = metrics.coldStartCount / metrics.requestCount;
       if (coldStartRate > 0.1) {
         // Reduce warmup interval by 25%
-        config.warmupInterval = Math.max(config.warmupInterval * 0.75, 60000); // Minimum 1 minute
+        config.warmupInterval = Math.max(config.warmupInterval * 0.75, TIME_CONSTANTS.MINUTE); // Minimum 1 minute
         this.scheduleWarmup(name);
         console.log(`Reduced warmup interval for ${name} to ${config.warmupInterval}ms`);
       }
