@@ -7,6 +7,7 @@
 import DOMPurify from 'dompurify';
 import { ValidationError } from './validationTypes';
 import { StrategyParams } from '../types';
+import { TIME_CONSTANTS, SECURITY_CONFIG, VALIDATION_CONFIG } from '../constants/config';
 
 // ========== VALIDATION INTERFACES ==========
 
@@ -57,7 +58,7 @@ export const VALIDATION_CONSTANTS = {
   MIN_LEVERAGE: 1,
   
   // Rate limiting
-  RATE_LIMIT_WINDOW: 60000, // 1 minute
+  RATE_LIMIT_WINDOW: TIME_CONSTANTS.MINUTE, // 1 minute
   RATE_LIMIT_MAX_REQUESTS: 10,
   
   // Security patterns
@@ -180,7 +181,7 @@ export class ValidationCore {
     if (entry.count >= VALIDATION_CONSTANTS.RATE_LIMIT_MAX_REQUESTS) {
       return {
         field: 'rate_limit',
-        message: `Rate limit exceeded. Please wait ${Math.ceil((entry.resetTime - now) / 1000)} seconds.`
+        message: `Rate limit exceeded. Please wait ${Math.ceil((entry.resetTime - now) / TIME_CONSTANTS.SECOND)} seconds.`
       };
     }
 
@@ -297,8 +298,8 @@ export class InputValidator {
     }
 
     // Length validation
-    if (message.length > 10000) {
-      errors.push({ field: 'message', message: 'Message too long (max 10000 characters)' });
+    if (message.length > SECURITY_CONFIG.MAX_INPUT_LENGTH) {
+      errors.push({ field: 'message', message: `Message too long (max ${SECURITY_CONFIG.MAX_INPUT_LENGTH} characters)` });
     }
 
     // XSS validation
@@ -420,7 +421,7 @@ export class UnifiedValidationService {
       errors.push({ field: 'name', message: 'Robot name is required and must be a non-empty string' });
     }
 
-    if (data.code && data.code.length > 1000000) {
+    if (data.code && data.code.length > VALIDATION_CONFIG.MAX_CODE_LENGTH) {
       warnings.push('Robot code is very large and may affect performance');
     }
 

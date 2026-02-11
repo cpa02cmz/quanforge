@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { PerformanceWithMemory } from '../types/browser';
+import { TIME_CONSTANTS } from '../constants/config';
 
 // ========== INTERFACES ==========
 
@@ -270,7 +271,7 @@ class TimingUtilities {
         this.core.recordMetric(`api_${name}_error_${errorType}`, 1);
       }
       
-      if (duration > 1000) {
+      if (duration > TIME_CONSTANTS.SECOND) {
         console.warn(`Slow API call detected: ${name} took ${duration.toFixed(2)}ms`);
       }
     }
@@ -306,7 +307,7 @@ class TimingUtilities {
         this.core.recordMetric(`db_${name}_error_${errorType}`, 1);
       }
       
-      if (duration > 500) {
+      if (duration > TIME_CONSTANTS.SECOND / 2) {
         console.warn(`Slow DB operation detected: ${name} took ${duration.toFixed(2)}ms, result size: ${resultSize}`);
       }
     }
@@ -330,7 +331,7 @@ class TimingUtilities {
       this.core.recordMetric(`edge_${name}_memory`, this.getMemoryUsage());
       this.core.recordMetric(`edge_${name}_cold_start`, coldStart ? 1 : 0);
       
-      if (import.meta.env.DEV && duration > 1000) {
+      if (import.meta.env.DEV && duration > TIME_CONSTANTS.SECOND) {
         console.warn(`Slow edge function ${name}: ${duration.toFixed(2)}ms in region ${region}`);
       }
       
@@ -418,7 +419,7 @@ class MemoryUtilities {
   }
 
   // Monitor memory usage over time
-  monitorMemoryUsage(intervalMs: number = 30000): () => void {
+  monitorMemoryUsage(intervalMs: number = TIME_CONSTANTS.SECOND * 30): () => void {
     if (typeof window === 'undefined' || !('performance' in window) || !('memory' in performance)) {
       if (import.meta.env.DEV) {
         console.warn('Memory monitoring not supported in this environment');
@@ -525,7 +526,7 @@ class EnhancedMonitor {
 
     this.updateQueryMetrics(executionTime, success);
 
-    if (executionTime > 1000) {
+    if (executionTime > TIME_CONSTANTS.SECOND) {
       this.createAlert('slow_query', 'medium', `Slow query detected: ${executionTime}ms`, {
         query: this.sanitizeQuery(query),
         executionTime,
@@ -546,10 +547,10 @@ class EnhancedMonitor {
       ? recentQueries.reduce((sum, q) => sum + q.time, 0) / recentQueries.length 
       : 0;
 
-    const oneMinuteAgo = Date.now() - 60000;
+    const oneMinuteAgo = Date.now() - TIME_CONSTANTS.MINUTE;
     const queriesInLastMinute = this.queryHistory.filter(q => q.timestamp > oneMinuteAgo).length;
     this.dbMetrics.throughput = queriesInLastMinute / 60;
-    this.dbMetrics.slowQueries = this.queryHistory.filter(q => q.time > 1000).length;
+    this.dbMetrics.slowQueries = this.queryHistory.filter(q => q.time > TIME_CONSTANTS.SECOND).length;
   }
 
   private createAlert(
