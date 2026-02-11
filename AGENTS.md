@@ -2,6 +2,53 @@
 
 ## Agent Insights & Decisions
 
+### Palette Micro-UX Enhancement (2026-02-11)
+**Context**: Implemented micro-UX improvement as Palette Agent via /ulw-loop command
+
+**UX Improvement Implemented**:
+- **Component**: Toast notification system (`components/Toast.tsx`)
+- **Feature**: Added "Clear All" button when 2+ toasts are displayed
+- **Purpose**: Reduce user friction when multiple notifications appear simultaneously
+
+**Implementation Details**:
+- Added `clearAllToasts()` function to dismiss all notifications at once
+- Button appears dynamically when toast count ≥ 2
+- Displays notification count: "Clear all (N)"
+- Includes smooth exit animations for all toasts
+- Fully accessible with ARIA labels and keyboard support
+- Follows existing design system (colors, shadows, transitions)
+
+**UX Benefits**:
+- **Efficiency**: Users can dismiss multiple notifications with single click
+- **Control**: Provides user agency over notification management
+- **Accessibility**: Proper ARIA labels for screen reader users
+- **Delight**: Smooth animations maintain pleasant experience
+- **Intuitive**: Appears only when needed (2+ toasts)
+
+**Technical Implementation**:
+- Added `clearAllToasts` callback using React.useCallback
+- Clears all timers to prevent memory leaks
+- Triggers exit animation for all toasts simultaneously
+- Uses `animate-fade-in-up` for consistent entrance animation
+- Button positioned above toast stack for logical flow
+
+**Quality Verification**:
+- Build: ✅ 13.01s (successful)
+- Lint: ✅ 0 errors (732 pre-existing warnings)
+- Typecheck: ✅ 0 errors
+- No regressions: All existing functionality preserved
+
+**Design Decisions**:
+- Show button only when 2+ toasts (avoids clutter for single notifications)
+- Positioned at top-right of toast stack (natural reading flow)
+- Uses subtle styling matching existing UI components
+- Includes X icon for visual clarity
+- Maintains focus ring for keyboard accessibility
+
+**Status**: ✅ COMPLETED - Micro-UX enhancement committed to feature branch
+
+---
+
 ### RepoKeeper Repository Maintenance (2026-02-11 - Run 7 - FINAL)
 **Context**: Comprehensive repository maintenance as RepoKeeper Agent via /ulw-loop command
 
@@ -73,7 +120,6 @@
    ```
 
 ---
-
 ### RepoKeeper Repository Maintenance (2026-02-11 - Run 6 - FINAL)
 **Context**: Comprehensive repository maintenance as RepoKeeper Agent via /ulw-loop command
 

@@ -79,6 +79,25 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     removeToast(id);
   }, [removeToast]);
 
+  // Clear all toasts at once - UX improvement for multiple notifications
+  const clearAllToasts = useCallback(() => {
+    // Mark all toasts as exiting for animation
+    setToasts((prev) =>
+      prev.map((t) => ({ ...t, isExiting: true }))
+    );
+
+    // Clear all timers
+    exitTimersRef.current.forEach((timer) => clearTimeout(timer));
+    exitTimersRef.current.clear();
+
+    // Actually remove all after exit animation completes
+    const exitTimer = setTimeout(() => {
+      setToasts([]);
+    }, 300); // Match CSS animation duration
+
+    exitTimersRef.current.set('exit-all', exitTimer);
+  }, []);
+
   // Cleanup timers on unmount
   useEffect(() => {
     return () => {
@@ -97,6 +116,43 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         aria-live="polite"
         aria-atomic="false"
       >
+        {/* Clear All button - appears when 2+ toasts are shown */}
+        {toasts.length >= 2 && (
+          <button
+            onClick={clearAllToasts}
+            className="
+              pointer-events-auto self-end mb-1
+              px-3 py-1.5 text-xs font-medium
+              bg-dark-surface border border-dark-border
+              text-gray-400 hover:text-white hover:border-gray-500
+              rounded-lg shadow-lg
+              transition-all duration-200 ease-out
+              focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:ring-offset-2 focus:ring-offset-transparent
+              animate-fade-in-up
+            "
+            aria-label={`Dismiss all ${toasts.length} notifications`}
+            title="Dismiss all notifications"
+            type="button"
+          >
+            <span className="flex items-center gap-1.5">
+              <svg 
+                className="w-3.5 h-3.5" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M6 18L18 6M6 6l12 12" 
+                />
+              </svg>
+              Clear all ({toasts.length})
+            </span>
+          </button>
+        )}
         {toasts.map((toast) => (
           <div
             key={toast.id}
