@@ -1,3 +1,5 @@
+/// <reference types="../../vite-env.d.ts" />
+
 /**
  * Supabase Edge Optimizations Service
  * Edge-specific functionality and optimizations for Supabase operations
@@ -119,8 +121,8 @@ class SupabaseEdgeOptimizations {
    * Edge-aware client factory with optimizations
    */
   async createOptimizedClient(region?: string): Promise<SupabaseClient> {
-    const supabaseUrl = process.env['SUPABASE_URL'];
-    const supabaseAnonKey = process.env['SUPABASE_ANON_KEY'];
+    const supabaseUrl = import.meta.env['VITE_SUPABASE_URL'];
+    const supabaseAnonKey = import.meta.env['VITE_SUPABASE_ANON_KEY'];
 
     if (!supabaseUrl || !supabaseAnonKey) {
       throw new Error('Supabase credentials not available');
