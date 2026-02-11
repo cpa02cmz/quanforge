@@ -129,7 +129,7 @@ class RealUserMonitoring {
 
       this.isInitialized = true;
       console.debug('RUM: Initialized successfully');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('RUM: Initialization failed:', error);
     }
   }
@@ -271,7 +271,7 @@ class RealUserMonitoring {
       
       observer.observe({ type, buffered: true });
       this.observers.push(observer);
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn(`RUM: Failed to observe ${type}:`, error);
     }
   }
@@ -415,7 +415,7 @@ class RealUserMonitoring {
         }
         
         console.debug(`RUM: Flushed ${metricsToSend.length} metrics`);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('RUM: Failed to flush metrics:', error);
         // Re-add metrics to queue on failure
         this.metrics.unshift(...metricsToSend);

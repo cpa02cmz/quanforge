@@ -106,7 +106,7 @@ class RequestThrottler {
       }
 
       request.resolve(response);
-    } catch (error) {
+    } catch (error: unknown) {
       if (request.retryCount < this.maxRetries) {
         // Retry with exponential backoff using modular config
         const delay = Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, request.retryCount) * RETRY_CONFIG.BASE_DELAY_MS;

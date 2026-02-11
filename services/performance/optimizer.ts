@@ -155,7 +155,7 @@ class PerformanceOptimizer {
       globalCache.set('perf:optimization-results', results, 300000); // 5 minutes
       
       return results;
-    } catch (error) {
+    } catch (error: unknown) {
       handleError(error as Error, 'optimizeAll');
       throw error;
     }
@@ -200,7 +200,7 @@ class PerformanceOptimizer {
         recommendations: this.generateMemoryRecommendations(after, recommendations),
         appliedOptimizations
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         category: 'memory',
         success: false,
@@ -245,7 +245,7 @@ class PerformanceOptimizer {
         recommendations,
         appliedOptimizations: ['Bundle analysis completed']
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         category: 'bundle',
         success: false,
@@ -291,7 +291,7 @@ class PerformanceOptimizer {
         recommendations: this.generateCacheRecommendations(),
         appliedOptimizations
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         category: 'cache',
         success: false,
@@ -332,7 +332,7 @@ class PerformanceOptimizer {
         recommendations,
         appliedOptimizations
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         category: 'edge',
         success: false,
@@ -378,7 +378,7 @@ class PerformanceOptimizer {
         recommendations,
         appliedOptimizations
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         category: 'database',
         success: false,
@@ -463,7 +463,7 @@ class PerformanceOptimizer {
         // Memory optimization triggered
         try {
           await this.optimizeMemory();
-        } catch (error) {
+        } catch (error: unknown) {
           handleError(error as Error, 'automaticMemoryOptimization');
         }
       }

@@ -140,7 +140,7 @@ export const dbUtils = {
     try {
       const { data, error } = await mockDB.from('robots').select();
       if (error) throw error;
-      return { success: true, message: `Connected to Supabase. Found ${(data as any)?.length || 0} records.`, mode: 'supabase' };
+      return { success: true, message: `Connected to Supabase. Found ${(Array.isArray(data) ? data.length : 0)} records.`, mode: 'supabase' };
     } catch (e: unknown) {
       const error = e as Error;
       return { success: false, message: `Connection Failed: ${error.message || error}`, mode: 'supabase' };
@@ -151,10 +151,10 @@ export const dbUtils = {
     const settings = settingsManager.getDBSettings();
     if (!settings || settings.mode === 'mock') {
       const { data: robots } = await mockDB.from('robots').select();
-      return { count: (robots as any)?.length || 0, storageType: 'Browser Local Storage' };
+      return { count: (Array.isArray(robots) ? robots.length : 0), storageType: 'Browser Local Storage' };
     } else {
       const { data } = await mockDB.from('robots').select();
-      return { count: (data as any)?.length || 0, storageType: 'Supabase Cloud DB' };
+      return { count: (Array.isArray(data) ? data.length : 0), storageType: 'Supabase Cloud DB' };
     }
   },
 

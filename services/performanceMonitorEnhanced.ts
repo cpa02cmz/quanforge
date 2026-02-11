@@ -135,7 +135,7 @@ class PerformanceMonitor {
 
       // FID was replaced by INP in web-vitals v3+
       webVitals.onINP(recordMetric);
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Failed to load web-vitals:', error);
     }
   }
@@ -400,7 +400,7 @@ class PerformanceMonitor {
         // Local metrics storage instead of API endpoint
         console.debug(`[Metric] ${name}:`, data);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       // Silently fail to not impact user experience
       console.debug('Failed to send metric:', error);
     }
