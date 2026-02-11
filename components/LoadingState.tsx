@@ -4,12 +4,15 @@ interface LoadingStateProps {
   message?: string;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  /** Whether to show the breathing glow effect (default: true) */
+  showGlow?: boolean;
 }
 
 export const LoadingState: React.FC<LoadingStateProps> = memo(({
   message = 'Loading...',
   size = 'md',
-  className = ''
+  className = '',
+  showGlow = true
 }) => {
   const sizeClasses = {
     sm: 'h-4 w-4 border-2',
@@ -23,6 +26,13 @@ export const LoadingState: React.FC<LoadingStateProps> = memo(({
     lg: 'h-6 w-6'
   };
 
+  // Glow size scales with spinner size
+  const glowSizes = {
+    sm: 'w-12 h-12',
+    md: 'w-20 h-20',
+    lg: 'w-28 h-28'
+  };
+
   return (
     <div
       className={`flex flex-col items-center justify-center p-8 ${className}`}
@@ -30,16 +40,28 @@ export const LoadingState: React.FC<LoadingStateProps> = memo(({
       aria-live="polite"
       aria-busy="true"
     >
-      {/* Dual-ring gradient spinner for modern visual polish */}
+      {/* Dual-ring gradient spinner with breathing glow effect */}
       <div className="relative" aria-hidden="true">
+        {/* Breathing glow halo - adds subtle visual depth and delight */}
+        {showGlow && (
+          <div
+            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${glowSizes[size]} rounded-full animate-breathe-glow pointer-events-none`}
+            style={{
+              background: 'radial-gradient(circle, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.05) 40%, transparent 70%)',
+              filter: 'blur(8px)'
+            }}
+          />
+        )}
+
         {/* Outer ring */}
         <div
-          className={`${sizeClasses[size]} rounded-full border-brand-500/30 border-t-brand-500 animate-spin`}
+          className={`${sizeClasses[size]} rounded-full border-brand-500/30 border-t-brand-500 animate-spin relative z-10`}
           style={{ animationDuration: '1s' }}
         ></div>
+
         {/* Inner ring - counter rotation for visual interest */}
         <div
-          className={`absolute inset-0 flex items-center justify-center`}
+          className={`absolute inset-0 flex items-center justify-center z-10`}
         >
           <div
             className={`${innerSizeClasses[size]} rounded-full border-brand-400/40 border-b-brand-400 animate-spin`}
@@ -49,6 +71,26 @@ export const LoadingState: React.FC<LoadingStateProps> = memo(({
       </div>
       {message && (
         <p className="mt-4 text-gray-400 text-sm animate-pulse" aria-live="polite">{message}</p>
+      )}
+
+      {/* CSS animation for breathing glow effect */}
+      {showGlow && (
+        <style>{`
+          @keyframes breathe-glow {
+            0%, 100% {
+              transform: translate(-50%, -50%) scale(0.8);
+              opacity: 0.6;
+            }
+            50% {
+              transform: translate(-50%, -50%) scale(1.2);
+              opacity: 1;
+            }
+          }
+          
+          .animate-breathe-glow {
+            animation: breathe-glow 2s ease-in-out infinite;
+          }
+        `}</style>
       )}
     </div>
   );
