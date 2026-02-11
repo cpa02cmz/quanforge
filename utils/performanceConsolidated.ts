@@ -125,7 +125,7 @@ class PerformanceCore {
       this.setupLCPObserver();
       this.setupCLSObserver();
       this.setupFIDObserver();
-    } catch (e) {
+    } catch (e: unknown) {
       if (import.meta.env.DEV) {
         console.warn('Performance monitoring not fully supported:', e);
       }

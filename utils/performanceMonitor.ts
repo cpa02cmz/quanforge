@@ -505,7 +505,7 @@ class Logger {
       // In a real implementation, you would send to a logging service like LogRocket, Sentry, etc.
       // For now, we'll just log to console to avoid external dependencies
       console.log('External logging service call:', logEntry);
-    } catch (e) {
+    } catch (e: unknown) {
       console.warn('Failed to send log to external service:', e);
     }
   }

@@ -59,7 +59,7 @@ export class BrowserStorage implements IStorage {
       storage.setItem(testKey, 'test');
       storage.removeItem(testKey);
       return storage;
-    } catch (e) {
+    } catch (e: unknown) {
       logger.warn(`Storage (${this.storageType}) not available:`, e);
       return null;
     }
