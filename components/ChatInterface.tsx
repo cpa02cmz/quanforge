@@ -6,6 +6,7 @@ import { loadSuggestedStrategies } from '../constants';
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
 import { SendButton } from './SendButton';
+import { TypingIndicator } from './TypingIndicator';
 
   const logger = createScopedLogger('ChatInterface');
 
@@ -387,12 +388,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
             <MemoizedMessage key={getMessageKey(msg, index)} msg={msg} formatMessageContent={formatMessageContent} />
         ))}
         {isLoading && (
-          <div className="flex justify-start items-center gap-2" role="status" aria-label="AI is typing">
-            <div className="bg-dark-bg border border-dark-border rounded-2xl rounded-bl-none px-4 py-3 flex items-center space-x-2" aria-hidden="true">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-            </div>
+          <div className="flex justify-start items-center gap-2">
+            <TypingIndicator 
+              aria-label={t('chat_typing') || 'AI is typing'}
+              variant="brand"
+            />
             {onStop && (
                 <button
                     onClick={onStop}
