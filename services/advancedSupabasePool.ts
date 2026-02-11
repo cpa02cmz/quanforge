@@ -230,15 +230,20 @@ class AdvancedSupabasePool {
    */
   private async performHealthCheck(client: SupabaseClient): Promise<boolean> {
     try {
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Health check timeout')), TIMEOUTS.QUICK)
-      );
+      let timeoutId: ReturnType<typeof setTimeout>;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('Health check timeout')), TIMEOUTS.QUICK);
+      });
 
       const healthPromise = client
         .from('robots')
         .select('id')
         .limit(1)
-        .single();
+        .single()
+        .then((value: any) => {
+          clearTimeout(timeoutId);
+          return value;
+        });
 
       const result = await Promise.race([healthPromise, timeoutPromise]);
       return !('error' in result && result.error);

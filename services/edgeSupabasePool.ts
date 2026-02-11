@@ -87,14 +87,19 @@ class EdgeSupabasePool {
 
   private async quickHealthCheck(client: any): Promise<boolean> {
     try {
-      const timeoutPromise = new Promise<boolean>((_, reject) => 
-        setTimeout(() => reject(new Error('Health check timeout')), this.config.connectionTimeout)
-      );
+      let timeoutId: ReturnType<typeof setTimeout>;
+      const timeoutPromise = new Promise<boolean>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('Health check timeout')), this.config.connectionTimeout);
+      });
 
       const healthPromise = client
         .from('robots')
         .select('id')
-        .limit(1);
+        .limit(1)
+        .then((value: any) => {
+          clearTimeout(timeoutId);
+          return value;
+        });
 
       const result = await Promise.race([healthPromise, timeoutPromise]) as { error?: any };
       
