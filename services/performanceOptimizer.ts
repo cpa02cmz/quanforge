@@ -8,6 +8,7 @@ import { databaseOptimizer } from './databaseOptimizer';
 import { queryOptimizer } from './queryOptimizer';
 import { robotCache } from './advancedCache';
 import { createScopedLogger } from '../utils/logger';
+import { TIME_CONSTANTS } from '../constants/config';
 
 const logger = createScopedLogger('PerformanceOptimizer');
 
@@ -59,8 +60,8 @@ class PerformanceOptimizer {
     enablePredictiveOptimization: true,
     enableResourceOptimization: true,
     enablePerformanceAnalytics: true,
-    monitoringInterval: 15000, // 15 seconds
-    predictionWindow: 300000, // 5 minutes
+    monitoringInterval: 15 * TIME_CONSTANTS.SECOND, // 15 seconds
+    predictionWindow: TIME_CONSTANTS.MINUTE * 5, // 5 minutes
     optimizationThreshold: 75, // 75% threshold for triggering optimizations
   };
 
@@ -494,10 +495,10 @@ class PerformanceOptimizer {
     // Adjust monitoring interval based on performance
     if (metrics.overallScore < 50) {
       // Increase monitoring frequency for poor performance
-      this.config.monitoringInterval = Math.max(5000, this.config.monitoringInterval / 2);
+      this.config.monitoringInterval = Math.max(5 * TIME_CONSTANTS.SECOND, this.config.monitoringInterval / 2);
     } else if (metrics.overallScore > 85) {
       // Decrease monitoring frequency for good performance
-      this.config.monitoringInterval = Math.min(30000, this.config.monitoringInterval * 1.5);
+      this.config.monitoringInterval = Math.min(30 * TIME_CONSTANTS.SECOND, this.config.monitoringInterval * 1.5);
     }
     
     // Restart monitoring with new interval
@@ -517,7 +518,7 @@ if (typeof window !== 'undefined') {
     performanceOptimizer.initialize().catch(error => {
       logger.error('Failed to initialize performance optimizer:', error);
     });
-  }, 3000); // Initialize after other optimizers
+  }, 3 * TIME_CONSTANTS.SECOND); // Initialize after other optimizers
 }
 
 export { PerformanceOptimizer, PerformanceOptimizerConfig, PerformanceMetrics };
