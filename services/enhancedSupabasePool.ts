@@ -7,7 +7,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { createScopedLogger } from '../utils/logger';
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
-import { TIMEOUTS, RETRY_CONFIG, STAGGER } from './constants';
+import { TIMEOUTS, RETRY_CONFIG, STAGGER, TIME_CONSTANTS } from './constants';
 import { getErrorMessage } from '../utils/errorHandler';
 
 const logger = createScopedLogger('EnhancedConnectionPool');
@@ -58,11 +58,11 @@ class EnhancedSupabaseConnectionPool {
   private config: ConnectionConfig = {
     maxConnections: 4, // Optimized for edge performance
     minConnections: 1, // Reduced minimum for edge efficiency
-    acquireTimeout: 1000, // Faster timeout for edge failover
-    idleTimeout: 180000, // 3 minutes - optimized for serverless
-    healthCheckInterval: 30000, // 30 seconds - balanced for edge
-    retryAttempts: 2, // Fewer retries for edge environment
-    retryDelay: 500, // Optimized retry for edge recovery
+    acquireTimeout: TIMEOUTS.POOL.ACQUIRE, // Faster timeout for edge failover
+    idleTimeout: 3 * TIME_CONSTANTS.MINUTE, // 3 minutes - optimized for serverless
+    healthCheckInterval: TIMEOUTS.POOL.HEALTH_CHECK, // 30 seconds - balanced for edge
+    retryAttempts: RETRY_CONFIG.MAX_ATTEMPTS, // Fewer retries for edge environment
+    retryDelay: RETRY_CONFIG.DELAYS.SHORT, // Optimized retry for edge recovery
     // Add missing edge optimizations
     enableConnectionDraining: true,
     regionAffinity: true,
@@ -719,13 +719,13 @@ class EnhancedSupabaseConnectionPool {
     
     // More frequent warming if high cold start rate
     if (coldStartRate > 0.3) {
-      return 120000; // 2 minutes
+      return 2 * TIME_CONSTANTS.MINUTE; // 2 minutes
     } else if (coldStartRate > 0.1) {
-      return 180000; // 3 minutes
+      return 3 * TIME_CONSTANTS.MINUTE; // 3 minutes
     } else if (stats.hitRate < 0.8) {
-      return 240000; // 4 minutes
+      return 4 * TIME_CONSTANTS.MINUTE; // 4 minutes
     } else {
-      return 300000; // 5 minutes (default)
+      return TIME_CONSTANTS.CACHE_DEFAULT_TTL; // 5 minutes (default)
     }
   }
 
@@ -736,7 +736,7 @@ class EnhancedSupabaseConnectionPool {
     // Schedule predictive warming every 15 minutes
     window.setInterval(() => {
       this.predictiveWarming();
-    }, 900000);
+    }, 15 * TIME_CONSTANTS.MINUTE);
     
     // Schedule time-based warming for business hours
     this.scheduleBusinessHoursWarming();
@@ -760,7 +760,7 @@ class EnhancedSupabaseConnectionPool {
     };
     
     // Check every 30 minutes during business hours
-    window.setInterval(checkAndWarm, 1800000);
+    window.setInterval(checkAndWarm, 30 * TIME_CONSTANTS.MINUTE);
   }
 
   /**
@@ -1068,8 +1068,8 @@ class EnhancedSupabaseConnectionPool {
       enabled: this.config.connectionWarming || false,
       regions: this.edgeRegions,
       warmedRegions,
-      lastWarmup: this.edgeWarmingTimer ? Date.now() - 300000 : undefined,
-      nextWarmup: this.edgeWarmingTimer ? Date.now() + 300000 : undefined
+      lastWarmup: this.edgeWarmingTimer ? Date.now() - TIME_CONSTANTS.CACHE_DEFAULT_TTL : undefined,
+      nextWarmup: this.edgeWarmingTimer ? Date.now() + TIME_CONSTANTS.CACHE_DEFAULT_TTL : undefined
     } as {
       enabled: boolean;
       regions: string[];
@@ -1165,7 +1165,7 @@ class EnhancedSupabaseConnectionPool {
       }
 
       // Remove if idle for more than 30 seconds or unhealthy
-      if (!connection.healthy || (now - connection.lastUsed) > 30000) {
+      if (!connection.healthy || (now - connection.lastUsed) > 30 * TIME_CONSTANTS.SECOND) {
         connectionsToRemove.push(id);
       }
     }

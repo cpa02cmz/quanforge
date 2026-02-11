@@ -1,4 +1,5 @@
 import { secureStorage } from '../../utils/secureStorage';
+import { TIME_CONSTANTS } from '../../constants/config';
 
 export class APISecurityManager {
   private apiKeys = new Map<string, { key: string; type: string; expiresAt: number; rotations: number }>();
@@ -308,14 +309,14 @@ export class APISecurityManager {
   } {
     const now = Date.now();
     const recentViolations = this.cspViolations.filter(
-      violation => now - violation.timestamp < 3600000 // Last hour
+      violation => now - violation.timestamp < TIME_CONSTANTS.HOUR // Last hour
     ).length;
 
     let highSeverityAlerts = 0;
     try {
       const alerts = JSON.parse(localStorage.getItem('security_alerts') || '[]');
       const recentAlerts = alerts.filter((alert: any) => 
-        now - alert.timestamp < 3600000 && alert.priority === 'high'
+        now - alert.timestamp < TIME_CONSTANTS.HOUR && alert.priority === 'high'
       );
       highSeverityAlerts = recentAlerts.length;
     } catch (error: unknown) {

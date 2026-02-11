@@ -36,7 +36,7 @@ class EdgeSupabaseClient {
       ...config,
       region: process.env['VERCEL_REGION'] || 'iad1',
       enableEdgeCache: true,
-      cacheTTL: 300000, // 5 minutes
+      cacheTTL: TIME_CONSTANTS.CACHE_DEFAULT_TTL, // 5 minutes
       enableRetry: true,
       maxRetries: 3,
     };
@@ -292,7 +292,7 @@ class EdgeSupabaseClient {
 
        // Cache successful downloads
        if (result.data && !result.error) {
-         this.setCache(fullCacheKey, result.data, cacheTTL || 3600000); // Default to 1 hour
+         this.setCache(fullCacheKey, result.data, cacheTTL || TIME_CONSTANTS.CACHE_LONG_TTL); // Default to 1 hour
        }
 
       return result;
