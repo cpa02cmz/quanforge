@@ -23,7 +23,7 @@ export class ConnectionHealthChecker {
         latency,
         timestamp: Date.now()
       };
-    } catch (error) {
+    } catch (error: unknown) {
       const latency = Date.now() - startTime;
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
@@ -63,7 +63,7 @@ export class ConnectionHealthChecker {
         }
         
         return; // Success
-      } catch (error) {
+      } catch (error: unknown) {
         if (attempt === this.maxRetries) {
           throw error;
         }

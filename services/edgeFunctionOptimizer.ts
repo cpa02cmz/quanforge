@@ -136,7 +136,7 @@ class EdgeFunctionOptimizer {
       metrics.lastWarmup = Date.now();
 
       console.log(`Edge function ${functionName} warmed up successfully`);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Failed to warm up edge function ${functionName}:`, error);
     } finally {
       this.isWarmingUp.delete(functionName);
@@ -205,7 +205,7 @@ class EdgeFunctionOptimizer {
         if (!response.ok) {
           throw new Error(`Warmup request failed: ${response.status}`);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         // Log but don't throw - warmup failures shouldn't crash the app
         console.warn(`Warmup request failed for region ${region}:`, error);
       }
@@ -378,7 +378,7 @@ class EdgeFunctionOptimizer {
       }
       
       console.log('Performance monitoring and auto-optimization completed');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Performance monitoring failed:', error);
     }
   }

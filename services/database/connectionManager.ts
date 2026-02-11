@@ -206,8 +206,8 @@ class ConnectionManager {
         errorCount: 0,
         responseTime
       };
-    } catch (error) {
-      handleError(error as Error, 'createConnection');
+    } catch (error: unknown) {
+      handleError(error instanceof Error ? error : new Error(String(error)), 'createConnection');
       return null;
     }
   }
@@ -301,10 +301,10 @@ class ConnectionManager {
       connection.isHealthy = true;
       connection.lastUsed = Date.now();
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       connection.errorCount++;
       connection.isHealthy = false;
-      connection.lastError = (error as Error).message;
+      connection.lastError = error instanceof Error ? error.message : String(error);
       return false;
     }
   }

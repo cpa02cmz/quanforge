@@ -115,7 +115,7 @@ export const getClient = (): SupabaseClient | any => {
                 },
             });
             return activeClient;
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Failed to create Supabase client:', error);
         }
     }

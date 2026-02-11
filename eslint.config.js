@@ -44,8 +44,8 @@ export default [
         caughtErrorsIgnorePattern: '^_',
       }],
       'no-var': 'error',
-      // Disabled - too many warnings to fix at once, will address gradually
-      '@typescript-eslint/no-explicit-any': 'off',
+      // Type safety enforcement - catch blocks must be typed
+      '@typescript-eslint/no-explicit-any': 'warn',
       'no-console': 'off',
       'prefer-const': 'off',
       // Disabled - handled by TypeScript or not applicable

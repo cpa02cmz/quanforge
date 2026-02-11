@@ -250,7 +250,7 @@ class QueryBatcher {
         errors,
         avgExecutionTime: executionTime
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Batch processing failed:', error);
       
       // Create error results for all queries
