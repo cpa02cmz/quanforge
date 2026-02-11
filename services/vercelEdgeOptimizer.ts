@@ -222,7 +222,7 @@ class VercelEdgeOptimizer {
         });
         clsObserver.observe({ entryTypes: ['layout-shift'] });
         this.listenerManager.addObserver(clsObserver);
-      } catch (error) {
+      } catch (error: unknown) {
         console.warn('Performance monitoring setup failed:', error);
       }
     }
@@ -267,7 +267,7 @@ class VercelEdgeOptimizer {
       this.recordApiMetrics(url, responseTime, response.ok);
 
       return data;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Optimized API call failed:', error);
       throw error;
     }
@@ -486,7 +486,7 @@ class VercelEdgeOptimizer {
       this.setOptimizedCache(cacheKey, data, ttl);
       
       return data;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Optimized fetch failed for ${url}:`, error);
       throw error;
     }
@@ -522,7 +522,7 @@ class VercelEdgeOptimizer {
         ttl,
       };
       localStorage.setItem(`edge-cache-${key}`, JSON.stringify(cacheData));
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Failed to cache data:', error);
     }
   }

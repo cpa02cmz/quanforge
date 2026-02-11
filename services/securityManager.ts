@@ -167,7 +167,7 @@ class SecurityManager {
         sanitizedData = sqlResult.sanitizedData;
       }
 
-    } catch (error) {
+    } catch (error: unknown) {
       errors.push(`Validation error: ${error}`);
       riskScore += 20;
     }
@@ -1063,7 +1063,7 @@ private validateRobotData(data: any): ValidationResult {
         },
         body: JSON.stringify(alert)
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to send security alert:', error);
     }
   }
@@ -1591,7 +1591,7 @@ private validateRobotData(data: any): ValidationResult {
        }
        
        return parsed;
-     } catch (error) {
+     } catch (error: unknown) {
        console.error('JSON parsing error:', error);
        return null;
      }
