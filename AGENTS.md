@@ -2,6 +2,54 @@
 
 ## Agent Insights & Decisions
 
+### Palette Micro-UX Enhancement (2026-02-12 - Pulse Indicator)
+**Context**: Implemented micro-UX improvement as Palette Agent via /ulw-loop command
+
+**UX Improvement Implemented**:
+- **Component**: PulseIndicator attention-drawing component (`components/PulseIndicator.tsx`)
+- **Feature**: Added delightful pulsing ring animations to draw attention to elements
+- **Purpose**: Highlight new features, notifications, or important updates with subtle elegance
+
+**Implementation Details**:
+- Multiple concentric pulsing rings with staggered animations
+- 5 position options: top-right, top-left, bottom-right, bottom-left, center
+- 5 color variants: default, primary, success, warning, error
+- Configurable pulse count (infinite or limited)
+- Includes PulseIndicatorProvider convenience wrapper
+- Fully accessible with ARIA labels and reduced motion support
+- Smooth entrance and exit animations
+
+**UX Benefits**:
+- **Attention**: Draws user attention without being intrusive
+- **Delight**: Satisfying micro-interactions enhance user experience
+- **Accessibility**: Respects reduced motion preferences
+- **Flexibility**: Works with any component or element
+- **Intuitive**: Clear visual indicator for new/important items
+
+**Technical Implementation**:
+- CSS keyframe animations with proper cleanup
+- TypeScript with full type safety
+- Memoized for performance optimization
+- No external dependencies
+- Follows existing design system (colors, shadows, transitions)
+
+**Quality Verification**:
+- Build: ✅ 14.01s (successful)
+- Lint: ✅ 0 errors (665 pre-existing warnings)
+- Typecheck: ✅ 0 errors
+- No regressions: All existing functionality preserved
+
+**Design Decisions**:
+- Multiple pulse rings create depth and visual interest
+- Staggered animation delays create wave effect
+- Reduced opacity on outer rings for subtlety
+- Exit animation prevents jarring disappearance
+- Center dot provides persistent visual anchor
+
+**Status**: ✅ COMPLETED - Micro-UX enhancement committed to feature branch and PR created (#658)
+
+---
+
 ### RepoKeeper Repository Maintenance (2026-02-12 - Run 12 - FINAL)
 **Context**: Comprehensive repository maintenance as RepoKeeper Agent via /ulw-loop command
 
