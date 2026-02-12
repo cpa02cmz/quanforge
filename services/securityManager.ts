@@ -46,6 +46,7 @@ interface ValidationResult {
 
 class SecurityManager {
   private static instance: SecurityManager;
+  private edgeThreatTimer: ReturnType<typeof setInterval> | null = null;
   private config: SecurityConfig = {
     maxPayloadSize: 5 * 1024 * 1024, // 5MB for better security - defined locally for flexibility
     allowedOrigins: [
@@ -1190,9 +1191,19 @@ private validateRobotData(data: any): ValidationResult {
   private monitorEdgeThreats(): void {
     // Monitor request patterns for edge abuse
     if (typeof window !== 'undefined') {
-      setInterval(() => {
+      this.edgeThreatTimer = setInterval(() => {
         this.analyzeEdgeRequestPatterns();
       }, TIME_CONSTANTS.CLEANUP_SHORT_INTERVAL); // Check every 30 seconds
+    }
+  }
+
+  /**
+   * Cleanup method to clear timers and prevent memory leaks
+   */
+  destroy(): void {
+    if (this.edgeThreatTimer) {
+      clearInterval(this.edgeThreatTimer);
+      this.edgeThreatTimer = null;
     }
   }
 
