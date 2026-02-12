@@ -9,17 +9,17 @@ import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
 import { TIMEOUTS, CACHE_LIMITS, BATCH_SIZES, ERROR_CODES } from '../constants';
 import { getLocalStorage, StorageQuotaError } from '../utils/storage';
 import { createScopedLogger } from '../utils/logger';
-import { STORAGE_KEYS, STORAGE_PREFIXES } from '../constants/modularConfig';
+import { STORAGE_KEYS, STORAGE_PREFIXES, RETRY_CONFIGS } from '../constants/modularConfig';
 
 const logger = createScopedLogger('Supabase');
 
-// Enhanced connection retry configuration with exponential backoff
+// Enhanced connection retry configuration with exponential backoff - using modular config
 const RETRY_CONFIG = {
-  maxRetries: 5,
-  retryDelay: 500,
-  backoffMultiplier: 1.5,
-  maxDelay: 10000, // Cap at 10 seconds
-  jitter: true, // Add jitter to prevent thundering herd
+  maxRetries: RETRY_CONFIGS.AGGRESSIVE.MAX_ATTEMPTS,
+  retryDelay: RETRY_CONFIGS.AGGRESSIVE.BASE_DELAY_MS,
+  backoffMultiplier: RETRY_CONFIGS.AGGRESSIVE.BACKOFF_MULTIPLIER,
+  maxDelay: RETRY_CONFIGS.AGGRESSIVE.MAX_DELAY_MS,
+  jitter: RETRY_CONFIGS.AGGRESSIVE.USE_JITTER,
 };
 
 

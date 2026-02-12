@@ -8,6 +8,7 @@ import { IDatabaseCore, DatabaseConfig } from '../../types/serviceInterfaces';
 import { APIResponse } from '../../types/common';
 import { settingsManager } from '../settingsManager';
 import { edgeConnectionPool } from '../edgeSupabasePool';
+import { RETRY_CONFIGS } from '../../constants/modularConfig';
 
 import { createScopedLogger } from '../../utils/logger';
 
@@ -52,12 +53,12 @@ const createErrorResponse = <T>(message: string, status?: number): APIResponse<T
 
 export class DatabaseCore implements IDatabaseCore {
   private config!: DatabaseConfig;
-  private retryConfig = {
-    maxRetries: 5,
-    retryDelay: 500,
-    backoffMultiplier: 1.5,
-    maxDelay: 10000,
-    jitter: true,
+  private retryConfig: { maxRetries: number; retryDelay: number; backoffMultiplier: number; maxDelay: number; jitter: boolean } = {
+    maxRetries: RETRY_CONFIGS.AGGRESSIVE.MAX_ATTEMPTS,
+    retryDelay: RETRY_CONFIGS.AGGRESSIVE.BASE_DELAY_MS,
+    backoffMultiplier: RETRY_CONFIGS.AGGRESSIVE.BACKOFF_MULTIPLIER,
+    maxDelay: RETRY_CONFIGS.AGGRESSIVE.MAX_DELAY_MS,
+    jitter: RETRY_CONFIGS.AGGRESSIVE.USE_JITTER,
   };
 
   async initialize(): Promise<void> {

@@ -3,18 +3,20 @@ import { settingsManager } from '../settingsManager';
 import { storage } from '../../utils/storage';
 import { ERROR_CODES } from '../../constants';
 import { getErrorCode, getErrorMessage } from '../../utils/errorHandler';
+import { RETRY_CONFIGS, CACHE_SIZES } from '../../constants/modularConfig';
+import { CACHE_TTLS } from '../constants';
 
-// Connection retry configuration
+// Connection retry configuration - using modular config
 export const RETRY_CONFIG = {
-  maxRetries: 5,
-  retryDelay: 500,
-  backoffMultiplier: 1.5,
+  maxRetries: RETRY_CONFIGS.AGGRESSIVE.MAX_ATTEMPTS,
+  retryDelay: RETRY_CONFIGS.AGGRESSIVE.BASE_DELAY_MS,
+  backoffMultiplier: RETRY_CONFIGS.AGGRESSIVE.BACKOFF_MULTIPLIER,
 };
 
-// Cache configuration
+// Cache configuration - using modular config
 export const CACHE_CONFIG = {
-  ttl: 15 * 60 * 1000, // 15 minutes for better edge performance
-  maxSize: 200, // Max cached items
+  ttl: CACHE_TTLS.FIFTEEN_MINUTES,
+  maxSize: CACHE_SIZES.ENTRIES.MEDIUM,
 };
 
 // Mock session storage
