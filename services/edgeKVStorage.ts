@@ -6,7 +6,9 @@
 
 import { createClient, type VercelKV } from '@vercel/kv';
 import { TIME_CONSTANTS } from '../constants/config';
-import { logger } from '../utils/logger';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('EdgeKVStorage');
 
 // Edge KV configuration
 const KV_CONFIG = {
@@ -58,7 +60,7 @@ class EdgeKVClient {
       try {
         return JSON.stringify({ compressed: true, data: this.gzipCompress(data) });
       } catch (e) {
-        console.warn('Compression failed, storing uncompressed:', e);
+        logger.warn('Compression failed, storing uncompressed:', e);
         return data;
       }
     }
@@ -197,7 +199,7 @@ class EdgeKVClient {
       return true;
     } catch (error: unknown) {
       this.metrics.errors++;
-      console.error(`EdgeKV clear namespace error for ${namespace}:`, error);
+      logger.error(`EdgeKV clear namespace error for ${namespace}:`, error);
       return false;
     }
   }
@@ -256,7 +258,7 @@ class EdgeKVClient {
       return true;
     } catch (error: unknown) {
       this.metrics.errors++;
-      console.error(`EdgeKV mset error:`, error);
+      logger.error(`EdgeKV mset error:`, error);
       return false;
     }
   }

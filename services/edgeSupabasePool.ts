@@ -1,7 +1,9 @@
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import { settingsManager } from './settingsManager';
 import { BATCH_SIZES, CACHE_TTLS, RETRY_CONFIG, STAGGER } from './constants';
-import { logger } from '../utils/logger';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('EdgeSupabasePool');
 
 interface EdgeClientConfig {
   ttl: number;
@@ -106,7 +108,7 @@ class EdgeSupabasePool {
       
       return !result?.error;
     } catch (error: unknown) {
-      console.error('Health check failed:', error);
+      logger.error('Health check failed:', error);
       return false;
     }
   }
@@ -166,11 +168,11 @@ class EdgeSupabasePool {
         try {
           await this.getEdgeClient('warmup', region);
           const latency = Date.now() - startTime;
-          console.log(`✅ Edge connection warmed for region: ${region} (${latency}ms)`);
+          logger.log(`✅ Edge connection warmed for region: ${region} (${latency}ms)`);
           return { region, success: true, latency };
         } catch (error: unknown) {
           const latency = Date.now() - startTime;
-          console.warn(`❌ Failed to warm edge connection for ${region}:`, error);
+          logger.warn(`❌ Failed to warm edge connection for ${region}:`, error);
           return { region, success: false, latency };
         }
       });
@@ -191,7 +193,7 @@ class EdgeSupabasePool {
     // Log warming summary
     const successCount = results.filter(r => r.success).length;
     const avgLatency = results.reduce((sum, r) => sum + r.latency, 0) / results.length;
-    console.log(`🔥 Edge warming completed: ${successCount}/${regions.length} regions successful, avg latency: ${avgLatency.toFixed(2)}ms`);
+    logger.log(`🔥 Edge warming completed: ${successCount}/${regions.length} regions successful, avg latency: ${avgLatency.toFixed(2)}ms`);
     
     return;
   }
