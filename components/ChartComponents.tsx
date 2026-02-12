@@ -47,8 +47,8 @@ const AccessibleDataTable: React.FC<AccessibleDataTableProps> = ({ data, totalRe
           </tr>
         </thead>
         <tbody>
-          {data.slice(0, 100).map((row, index) => (
-            <tr key={index}>
+          {data.slice(0, 100).map((row) => (
+            <tr key={row.date}>
               <td>{row.date}</td>
               <td className={profitClass}>{formatNumber(row.balance)}</td>
             </tr>
@@ -97,10 +97,10 @@ const AccessiblePieTable: React.FC<AccessiblePieTableProps> = ({ riskData, analy
           </tr>
         </thead>
         <tbody>
-          {riskData.map((item, index) => {
+          {riskData.map((item) => {
             const percentage = totalValue > 0 ? ((item.value / totalValue) * 100).toFixed(1) : '0.0';
             return (
-              <tr key={index}>
+              <tr key={item.name}>
                 <td>{item.name}</td>
                 <td>{item.value}</td>
                 <td>{percentage}%</td>

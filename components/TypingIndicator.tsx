@@ -80,7 +80,7 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = memo(({
     
     return (
       <div
-        key={index}
+        key={`typing-dot-${index}`}
         className="relative flex items-center justify-center"
         style={{
           width: dotSize,
