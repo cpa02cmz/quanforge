@@ -7,6 +7,9 @@
 // Import React hooks
 import { useState, useEffect, useCallback } from 'react';
 import { WEB_VITALS_THRESHOLDS, API_THRESHOLDS, SCORING, MEMORY, MONITORING } from './constants';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('RealTimeUXScoring');
 
 interface UXMetrics {
   // Core Web Vitals
@@ -177,7 +180,7 @@ class UXPerformanceMonitor {
       observer.observe({ entryTypes: ['largest-contentful-paint'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('LCP observation not supported:', error);
+      logger.warn('LCP observation not supported:', error);
     }
   }
 
@@ -199,7 +202,7 @@ class UXPerformanceMonitor {
       observer.observe({ entryTypes: ['first-input'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('FID observation not supported:', error);
+      logger.warn('FID observation not supported:', error);
     }
   }
 
@@ -223,7 +226,7 @@ class UXPerformanceMonitor {
       observer.observe({ entryTypes: ['layout-shift'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('CLS observation not supported:', error);
+      logger.warn('CLS observation not supported:', error);
     }
   }
 
@@ -247,7 +250,7 @@ class UXPerformanceMonitor {
       observer.observe({ entryTypes: ['navigation'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('Navigation timing observation not supported:', error);
+      logger.warn('Navigation timing observation not supported:', error);
     }
   }
 
@@ -265,7 +268,7 @@ class UXPerformanceMonitor {
       observer.observe({ entryTypes: ['resource'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('Resource timing observation not supported:', error);
+      logger.warn('Resource timing observation not supported:', error);
     }
   }
 
@@ -290,7 +293,7 @@ class UXPerformanceMonitor {
       observer.observe({ entryTypes: ['longtask'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('Long task observation not supported:', error);
+      logger.warn('Long task observation not supported:', error);
     }
   }
 

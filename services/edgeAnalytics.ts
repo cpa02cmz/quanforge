@@ -4,6 +4,9 @@
  */
 
 import { WindowWithVercel } from '../types/browser';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('EdgeAnalytics');
 
 interface EdgeAnalyticsConfig {
   enableRealTimeMetrics: boolean;
@@ -163,7 +166,7 @@ class EdgeAnalytics {
       // Navigation timing monitoring
       this.observeNavigationTiming();
     } catch (error: unknown) {
-      console.warn('Performance monitoring setup failed:', error instanceof Error ? error.message : String(error));
+      logger.warn('Performance monitoring setup failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -181,7 +184,7 @@ class EdgeAnalytics {
       observer.observe({ entryTypes: ['largest-contentful-paint'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('LCP observation failed:', error instanceof Error ? error.message : String(error));
+      logger.warn('LCP observation failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -200,7 +203,7 @@ class EdgeAnalytics {
       observer.observe({ entryTypes: ['first-input'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('FID observation failed:', error instanceof Error ? error.message : String(error));
+      logger.warn('FID observation failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -221,7 +224,7 @@ class EdgeAnalytics {
       observer.observe({ entryTypes: ['layout-shift'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('CLS observation failed:', error instanceof Error ? error.message : String(error));
+      logger.warn('CLS observation failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -239,7 +242,7 @@ class EdgeAnalytics {
       observer.observe({ entryTypes: ['paint'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('FCP observation failed:', error instanceof Error ? error.message : String(error));
+      logger.warn('FCP observation failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -257,7 +260,7 @@ class EdgeAnalytics {
       observer.observe({ entryTypes: ['navigation'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('TTFB observation failed:', error instanceof Error ? error.message : String(error));
+      logger.warn('TTFB observation failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -298,7 +301,7 @@ class EdgeAnalytics {
       observer.observe({ entryTypes: ['resource'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('Resource timing observation failed:', error instanceof Error ? error.message : String(error));
+      logger.warn('Resource timing observation failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -336,7 +339,7 @@ class EdgeAnalytics {
       observer.observe({ entryTypes: ['navigation'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('Navigation timing observation failed:', error instanceof Error ? error.message : String(error));
+      logger.warn('Navigation timing observation failed:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -565,7 +568,7 @@ class EdgeAnalytics {
         this.metrics = [];
       }
     } catch (error: unknown) {
-      console.warn('Failed to report analytics:', error instanceof Error ? error.message : String(error));
+      logger.warn('Failed to report analytics:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -592,7 +595,7 @@ class EdgeAnalytics {
         body: JSON.stringify(errorReport)
       });
     } catch (error: unknown) {
-      console.warn('Failed to report error:', error instanceof Error ? error.message : String(error));
+      logger.warn('Failed to report error:', error instanceof Error ? error.message : String(error));
     }
   }
 
