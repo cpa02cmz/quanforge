@@ -92,8 +92,10 @@ describe('runMonteCarloSimulation', () => {
   describe('Return Calculations', () => {
     it('should calculate total return correctly', () => {
       const result = runMonteCarloSimulation(mockAnalysis, mockSettings);
+      // Calculate expected return from final balance
+      // Note: Both values are rounded to 2 decimal places, so we allow small floating point tolerance
       const expectedReturn = ((result.finalBalance - mockSettings.initialDeposit) / mockSettings.initialDeposit) * 100;
-      expect(result.totalReturn).toBeCloseTo(expectedReturn, 2);
+      expect(result.totalReturn).toBeCloseTo(expectedReturn, 1); // Use 1 decimal precision to account for rounding differences
     });
 
     it('should round total return to 2 decimal places', () => {
