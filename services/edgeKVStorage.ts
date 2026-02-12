@@ -6,6 +6,7 @@
 
 import { createClient, type VercelKV } from '@vercel/kv';
 import { TIME_CONSTANTS } from '../constants/config';
+import { logger } from '../utils/logger';
 
 // Edge KV configuration
 const KV_CONFIG = {
@@ -128,7 +129,7 @@ class EdgeKVClient {
       return null;
     } catch (error: unknown) {
       this.metrics.errors++;
-      console.error(`EdgeKV get error for key ${fullKey}:`, error);
+      logger.error(`EdgeKV get error for key ${fullKey}:`, error);
       return null;
     }
   }
@@ -154,7 +155,7 @@ class EdgeKVClient {
       return true;
     } catch (error: unknown) {
       this.metrics.errors++;
-      console.error(`EdgeKV set error for key ${fullKey}:`, error);
+      logger.error(`EdgeKV set error for key ${fullKey}:`, error);
       return false;
     }
   }
@@ -170,7 +171,7 @@ class EdgeKVClient {
       return true;
     } catch (error: unknown) {
       this.metrics.errors++;
-      console.error(`EdgeKV delete error for key ${fullKey}:`, error);
+      logger.error(`EdgeKV delete error for key ${fullKey}:`, error);
       return false;
     }
   }
@@ -216,7 +217,7 @@ class EdgeKVClient {
             const decompressed = this.decompress(value as string);
             results[key] = JSON.parse(decompressed);
           } catch (e) {
-            console.warn(`Failed to parse cached value for key ${key}:`, e);
+            logger.warn(`Failed to parse cached value for key ${key}:`, e);
           }
         }
       });
@@ -224,7 +225,7 @@ class EdgeKVClient {
       return results;
     } catch (error: unknown) {
       this.metrics.errors++;
-      console.error(`EdgeKV mget error:`, error);
+      logger.error(`EdgeKV mget error:`, error);
       return {};
     }
   }
@@ -269,7 +270,7 @@ class EdgeKVClient {
       return result;
     } catch (error: unknown) {
       this.metrics.errors++;
-      console.error(`EdgeKV increment error for key ${fullKey}:`, error);
+      logger.error(`EdgeKV increment error for key ${fullKey}:`, error);
       return null;
     }
   }

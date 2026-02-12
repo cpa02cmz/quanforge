@@ -7,6 +7,7 @@ import { EdgeCacheCompression } from './edgeCacheCompression';
 import { createSafeWildcardPattern, ReDoSError } from '../utils/safeRegex';
 import { CACHE_CONFIG, TIME_CONSTANTS, EDGE_CONFIG } from '../constants/config';
 import { STAGGER } from './constants';
+import { logger } from '../utils/logger';
 
 interface EdgeCacheEntry<T> {
   data: T;
@@ -380,7 +381,7 @@ export class EdgeCacheManager<T = any> {
           });
         }
       } catch (error: unknown) {
-        console.debug(`Background refresh failed for key ${originalKey}:`, error);
+        logger.debug(`Background refresh failed for key ${originalKey}:`, error);
       }
     }, 0);
   }
@@ -546,7 +547,7 @@ export class EdgeCacheManager<T = any> {
             failed++;
           }
         } catch (error: unknown) {
-          console.warn(`Failed to warmup cache for key ${key}:`, error);
+          logger.warn(`Failed to warmup cache for key ${key}:`, error);
           failed++;
         }
       });
@@ -845,7 +846,7 @@ export class EdgeCacheManager<T = any> {
       
       return null;
     } catch (error: unknown) {
-      console.error(`Failed to fetch data for warmup key ${key}:`, error);
+      logger.error(`Failed to fetch data for warmup key ${key}:`, error);
       return null;
     }
   }
@@ -1034,9 +1035,9 @@ export class EdgeCacheManager<T = any> {
     if (predictedKeys.length === 0) {
       return { warmed: 0, failed: 0 };
     }
-    
-    console.log(`Predictive warmup for region ${targetRegion}: ${predictedKeys.length} keys`);
-    
+
+    logger.log(`Predictive warmup for region ${targetRegion}: ${predictedKeys.length} keys`);
+
     return this.warmup(predictedKeys, {
       region: targetRegion,
       priority: 'normal',

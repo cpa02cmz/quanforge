@@ -1,6 +1,7 @@
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import { settingsManager } from './settingsManager';
 import { BATCH_SIZES, CACHE_TTLS, RETRY_CONFIG, STAGGER } from './constants';
+import { logger } from '../utils/logger';
 
 interface EdgeClientConfig {
   ttl: number;
@@ -137,7 +138,7 @@ class EdgeSupabasePool {
             expiredKeys.push(key);
           }
         } catch (error: unknown) {
-          console.warn(`Health check failed for ${key}:`, error);
+          logger.warn(`Health check failed for ${key}:`, error);
           expiredKeys.push(key);
         }
       }
