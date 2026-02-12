@@ -172,7 +172,7 @@ const withRetry = async <T>(
       }
       
       if (attempt === RETRY_CONFIG.maxRetries) {
-        console.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, error);
+        logger.error(`Operation ${operationName} failed after ${RETRY_CONFIG.maxRetries} retries:`, error);
         throw error;
       }
       
@@ -205,7 +205,7 @@ const getClient = async () => {
             }, 'getClient');
             activeClient = client;
         } catch (e) {
-            console.error("Connection pool failed, using mock client", e);
+            logger.error("Connection pool failed, using mock client", e);
             activeClient = mockClient;
         }
     } else {
@@ -319,11 +319,10 @@ class PerformanceMonitor {
   // Log performance metrics periodically
   logMetrics() {
     const allMetrics = this.getAllMetrics();
-    console.group('Database Performance Metrics');
+    logger.log('Database Performance Metrics:');
     for (const [operation, metric] of Object.entries(allMetrics)) {
-      console.log(`${operation}: ${metric.count} calls, avg: ${metric.avgTime.toFixed(2)}ms`);
+      logger.log(`  ${operation}: ${metric.count} calls, avg: ${metric.avgTime.toFixed(2)}ms`);
     }
-    console.groupEnd();
   }
 }
 
@@ -494,10 +493,10 @@ async getRobots() {
            const duration = performance.now() - startTime;
            performanceMonitor.record('getRobots', duration);
            
-           // Log slow operations only in development
-           if (import.meta.env.DEV && duration > 500) {
-             console.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
-           }
+            // Log slow operations only in development
+            if (import.meta.env.DEV && duration > 500) {
+              logger.warn(`Slow getRobots operation: ${duration.toFixed(2)}ms`);
+            }
            
            return result;
           }, 'getRobots');
@@ -686,10 +685,10 @@ if (index !== -1) {
             const duration = performance.now() - startTime;
             performanceMonitor.record('getRobotsPaginated_supabase', duration);
             
-            // Log slow queries in development
-            if (import.meta.env.DEV && duration > 1000) {
-              console.warn(`Slow getRobotsPaginated query: ${duration.toFixed(2)}ms for ${result.count} results`);
-            }
+             // Log slow queries in development
+             if (import.meta.env.DEV && duration > 1000) {
+               logger.warn(`Slow getRobotsPaginated query: ${duration.toFixed(2)}ms for ${result.count} results`);
+             }
             
             return response;
           }
@@ -1197,7 +1196,7 @@ export const dbUtils = {
                 const chunk = payload.slice(i, i + batchSize);
                 const { error } = await client.from('robots').insert(chunk);
                 if (error) {
-                    console.error("Batch migration failed", error);
+                    logger.error("Batch migration failed", error);
                     failCount += chunk.length;
                     lastError = error.message;
                 } else {
@@ -1518,7 +1517,7 @@ export const dbUtils = {
                 const { error } = await client.rpc('pg_stat_reset');
                 
                 if (error) {
-                    console.warn("Could not run database optimization:", error.message);
+                    logger.warn("Could not run database optimization:", error.message);
                     // Non-critical error, just return success with warning
                 }
                 
@@ -1610,6 +1609,6 @@ export const dbUtils = {
      */
     destroy(): void {
         clearAllAuthListeners();
-        console.log('Supabase service destroyed and resources cleaned up');
+        logger.log('Supabase service destroyed and resources cleaned up');
     }
 };
