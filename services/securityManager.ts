@@ -1198,7 +1198,7 @@ private validateRobotData(data: any): ValidationResult {
   }
 
   /**
-   * Cleanup method to clear timers and prevent memory leaks
+   * Clean up timers and resources
    */
   destroy(): void {
     if (this.edgeThreatTimer) {

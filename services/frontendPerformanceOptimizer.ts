@@ -74,6 +74,7 @@ class FrontendPerformanceOptimizer {
   };
 
   private resourceCache = new Map<string, { data: any; timestamp: number; size: number }>();
+  private memoryOptimizationTimer: ReturnType<typeof setInterval> | null = null;
   private readonly CACHE_TTL = TIME_CONSTANTS.MINUTE * 5; // 5 minutes
   private readonly MAX_CACHE_SIZE = CACHE_CONFIG.MAX_LRU_CACHE_SIZE; // Maximum cache entries
 
@@ -282,9 +283,19 @@ class FrontendPerformanceOptimizer {
    */
   private setupMemoryOptimization(): void {
     // Set up memory cleanup intervals
-    setInterval(() => {
+    this.memoryOptimizationTimer = setInterval(() => {
       this.optimizeMemoryUsage();
     }, 30000); // Every 30 seconds
+  }
+
+  /**
+   * Clean up timers and resources
+   */
+  destroy(): void {
+    if (this.memoryOptimizationTimer) {
+      clearInterval(this.memoryOptimizationTimer);
+      this.memoryOptimizationTimer = null;
+    }
   }
 
   /**

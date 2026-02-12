@@ -32,10 +32,11 @@ class RequestThrottler {
   private requestCounts = new Map<string, number>();
   private readonly windowMs = RATE_LIMITING.DEFAULT_WINDOW; // 1 minute window
   private readonly maxRequestsPerWindow = RATE_LIMITING.DEFAULT_MAX_REQUESTS;
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     // Clean up old request counts periodically
-    setInterval(() => this.cleanupRequestCounts(), this.windowMs);
+    this.cleanupTimer = setInterval(() => this.cleanupRequestCounts(), this.windowMs);
   }
 
   async request(config: RequestConfig): Promise<Response> {
@@ -162,6 +163,18 @@ class RequestThrottler {
       request.reject(new Error('Request cancelled due to queue clear'));
     });
     this.queue = [];
+  }
+
+  /**
+   * Clean up timers and resources
+   */
+  destroy(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+    this.clearQueue();
+    this.requestCounts.clear();
   }
 }
 

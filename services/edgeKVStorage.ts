@@ -307,7 +307,15 @@ class EdgeKVClient {
 const edgeKVClient = new EdgeKVClient();
 
 // Cleanup expired entries every 5 minutes
-setInterval(() => edgeKVClient.cleanup(), TIME_CONSTANTS.CLEANUP_LONG_INTERVAL);
+const cleanupTimer = setInterval(() => edgeKVClient.cleanup(), TIME_CONSTANTS.CLEANUP_LONG_INTERVAL);
+
+/**
+ * Cleanup function to stop the cleanup timer
+ * Call this when the application is shutting down or to prevent memory leaks
+ */
+export function stopCleanupTimer(): void {
+  clearInterval(cleanupTimer);
+}
 
 // Edge KV Service with specialized methods
 export const edgeKVService = {
