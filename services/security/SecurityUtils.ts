@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+import { STRING_LIMITS } from '../constants';
 
 /**
  * Core security utilities and helper functions
@@ -14,7 +15,7 @@ export class SecurityUtils {
       .replace(/[<>]/g, '')
       .replace(/javascript:/gi, '')
       .replace(/on\w+\s*=/gi, '')
-      .substring(0, 1000); // Prevent extremely long strings
+      .substring(0, STRING_LIMITS.MAX_LENGTH); // Prevent extremely long strings
   }
 
   /**
