@@ -1,23 +1,4 @@
 
-// Dynamic import for Google GenAI to reduce initial bundle size
-type GoogleGenAIConstructor = new (options: { apiKey: string }) => {
-  models: {
-    generateContent: (options: {
-      model: string;
-      contents: string;
-      config?: Record<string, unknown>;
-    }) => Promise<{ text?: string }>;
-  };
-};
-
-type GenAIType = {
-  OBJECT: string;
-  NUMBER: string;
-  STRING: string;
-};
-
-let GoogleGenAI: GoogleGenAIConstructor | null = null;
-let Type: GenAIType | null = null;
 import { MQL5_SYSTEM_PROMPT, TIMEOUTS, CACHE_TTLS } from "../constants";
 import { AI_CONFIG } from "../constants/config";
 import { VALIDATION_LIMITS } from "../constants/modularConfig";
@@ -31,6 +12,7 @@ import { aiWorkerManager } from "./aiWorkerManager";
 import { getAIRateLimiter } from "../utils/enhancedRateLimit";
 import { getLocalStorage, getSessionStorage } from "../utils/storage";
 import { LRUCache } from "../utils/cache";
+import { importGoogleGenAI, importAIGenerationTypes } from "./ai/aiImports";
 
 const logger = createScopedLogger('gemini');
 
@@ -722,23 +704,12 @@ const getEffectiveSystemPrompt = (settings: AISettings): string => {
 /**
  * Executes a call to the Google Gemini API.
  */
-// Dynamic loader for GoogleGenAI to reduce initial bundle size
-const getGoogleGenAI = async () => {
-  if (!GoogleGenAI) {
-    const module = await import("@google/genai");
-    GoogleGenAI = module.GoogleGenAI;
-    Type = module.Type;
-  }
-  return GoogleGenAI;
-};
-
 const callGoogleGenAI = async (settings: AISettings, fullPrompt: string, signal?: AbortSignal, temperature?: number) => {
     return withRetry(async () => {
         const activeKey = getActiveKey(settings.apiKey);
         if (!activeKey) throw new Error("Google API Key missing in settings.");
         
-        const GoogleGenAIClass = await getGoogleGenAI();
-        if (!GoogleGenAIClass) throw new Error('Failed to load Google GenAI');
+        const GoogleGenAIClass = await importGoogleGenAI();
         const ai = new GoogleGenAIClass({ apiKey: activeKey });
         const systemInstruction = getEffectiveSystemPrompt(settings);
         
@@ -1090,27 +1061,29 @@ export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promi
                      // Pass jsonMode: true for OpenAI/DeepSeek
                      textResponse = await callOpenAICompatible(settings, prompt, signal, 0.5, true);
  } else {
-                      const GoogleGenAIClass = await getGoogleGenAI();
-                      if (!GoogleGenAIClass) throw new Error('Failed to load Google GenAI');
-                      const ai = new GoogleGenAIClass({ apiKey: activeKey });
-                     
-                     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+                      const [GoogleGenAIClass, GenAIType] = await Promise.all([
+                           importGoogleGenAI(),
+                           importAIGenerationTypes()
+                       ]);
+                       const ai = new GoogleGenAIClass({ apiKey: activeKey });
+                      
+                      if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
-const response = await ai!.models.generateContent({
-                          model: settings.modelName || 'gemini-2.5-flash', 
-                          contents: prompt,
-                          config: {
-                              responseMimeType: "application/json",
-                              responseSchema: {
-                                  type: Type!.OBJECT,
-                                  properties: {
-                                      riskScore: { type: Type!.NUMBER, description: "1-10 risk rating" },
-                                      profitability: { type: Type!.NUMBER, description: "1-10 potential profit rating" },
-                                      description: { type: Type!.STRING, description: "Short summary of strategy logic" }
-                                  }
-                              }
-                          }
-                      });
+ const response = await ai!.models.generateContent({
+                           model: settings.modelName || 'gemini-2.5-flash', 
+                           contents: prompt,
+                           config: {
+                               responseMimeType: "application/json",
+                               responseSchema: {
+                                   type: GenAIType.OBJECT,
+                                   properties: {
+                                       riskScore: { type: GenAIType.NUMBER, description: "1-10 risk rating" },
+                                       profitability: { type: GenAIType.NUMBER, description: "1-10 potential profit rating" },
+                                       description: { type: GenAIType.STRING, description: "Short summary of strategy logic" }
+                                   }
+                               }
+                           }
+                       });
                      textResponse = response.text || "{}";
                  }
              });
