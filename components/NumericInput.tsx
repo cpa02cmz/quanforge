@@ -39,6 +39,8 @@ export const NumericInput: React.FC<{
     const decrementIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const incrementDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const decrementDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pulseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const buttonPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const repeatCountRef = useRef(0);
 
     // Sync local state if external value changes significantly (e.g. reset or load)
@@ -50,11 +52,17 @@ export const NumericInput: React.FC<{
         }
     }, [value]);
     
-    // Cleanup long-press intervals on unmount
+    // Cleanup long-press intervals and timeouts on unmount
     useEffect(() => {
         return () => {
             stopLongPress('increment');
             stopLongPress('decrement');
+            if (pulseTimeoutRef.current) {
+                clearTimeout(pulseTimeoutRef.current);
+            }
+            if (buttonPressTimeoutRef.current) {
+                clearTimeout(buttonPressTimeoutRef.current);
+            }
         };
     }, []);
 
@@ -90,7 +98,10 @@ export const NumericInput: React.FC<{
     // Trigger pulse animation on input value
     const triggerPulse = useCallback(() => {
         setIsPulsing(true);
-        setTimeout(() => setIsPulsing(false), LOADING_ANIMATION.VALUE_PULSE);
+        if (pulseTimeoutRef.current) {
+            clearTimeout(pulseTimeoutRef.current);
+        }
+        pulseTimeoutRef.current = setTimeout(() => setIsPulsing(false), LOADING_ANIMATION.VALUE_PULSE);
     }, []);
 
     const increment = useCallback(() => {
@@ -185,13 +196,19 @@ export const NumericInput: React.FC<{
     // Handle button press animation and click
     const handleIncrementPress = useCallback(() => {
         setIsIncrementPressed(true);
-        setTimeout(() => setIsIncrementPressed(false), INTERACTIVE_ANIMATION.BUTTON_PRESS_ANIMATION);
+        if (buttonPressTimeoutRef.current) {
+            clearTimeout(buttonPressTimeoutRef.current);
+        }
+        buttonPressTimeoutRef.current = setTimeout(() => setIsIncrementPressed(false), INTERACTIVE_ANIMATION.BUTTON_PRESS_ANIMATION);
         increment();
     }, [increment]);
 
     const handleDecrementPress = useCallback(() => {
         setIsDecrementPressed(true);
-        setTimeout(() => setIsDecrementPressed(false), INTERACTIVE_ANIMATION.BUTTON_PRESS_ANIMATION);
+        if (buttonPressTimeoutRef.current) {
+            clearTimeout(buttonPressTimeoutRef.current);
+        }
+        buttonPressTimeoutRef.current = setTimeout(() => setIsDecrementPressed(false), INTERACTIVE_ANIMATION.BUTTON_PRESS_ANIMATION);
         decrement();
     }, [decrement]);
     

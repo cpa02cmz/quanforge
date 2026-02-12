@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo, useRef } from 'react';
+import React, { useState, useCallback, memo, useRef, useEffect } from 'react';
 import { logger } from '../utils/logger';
 import { PARTICLE_ANIMATION, COPY_BUTTON_ANIMATION } from '../constants/animations';
 
@@ -65,6 +65,20 @@ export const CopyButton: React.FC<CopyButtonProps> = memo(({
   const [isPressed, setIsPressed] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const particleIdRef = useRef(0);
+  const particleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeouts on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (particleTimeoutRef.current) {
+        clearTimeout(particleTimeoutRef.current);
+      }
+      if (copiedTimeoutRef.current) {
+        clearTimeout(copiedTimeoutRef.current);
+      }
+    };
+  }, []);
 
     // Generate particle burst effect for delightful feedback
     const triggerParticleBurst = useCallback(() => {
@@ -86,7 +100,7 @@ export const CopyButton: React.FC<CopyButtonProps> = memo(({
         setParticles(newParticles);
 
         // Clear particles after animation completes
-        setTimeout(() => {
+        particleTimeoutRef.current = setTimeout(() => {
             setParticles([]);
         }, PARTICLE_ANIMATION.DURATION);
     }, []);
@@ -102,7 +116,7 @@ export const CopyButton: React.FC<CopyButtonProps> = memo(({
       }
 
       // Reset to idle after showing success
-      setTimeout(() => {
+      copiedTimeoutRef.current = setTimeout(() => {
         setCopied(false);
       }, COPY_BUTTON_ANIMATION.SUCCESS_DURATION);
     } catch (err) {

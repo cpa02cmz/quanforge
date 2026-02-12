@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, memo, useEffect } from 'react';
 
 interface SendButtonProps {
   /** Whether the message is being sent */
@@ -29,6 +29,16 @@ export const SendButton: React.FC<SendButtonProps> = memo(({
   const [ripple, setRipple] = useState<{ x: number; y: number; id: number } | null>(null);
   const buttonRef = React.useRef<HTMLButtonElement>(null);
   const rippleIdRef = React.useRef(0);
+  const rippleTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (rippleTimeoutRef.current) {
+        clearTimeout(rippleTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handlePressStart = useCallback(() => {
     if (!disabled && !isLoading) {
@@ -53,7 +63,7 @@ export const SendButton: React.FC<SendButtonProps> = memo(({
       setRipple({ x, y, id });
 
       // Remove ripple after animation
-      setTimeout(() => {
+      rippleTimeoutRef.current = setTimeout(() => {
         setRipple(null);
       }, 600);
     }
