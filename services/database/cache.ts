@@ -1,5 +1,8 @@
 import { CACHE_CONFIG } from './client';
 import { TIME_CONSTANTS } from '../../constants/config';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('Cache');
 
 // LRU Cache implementation for better performance and memory management
 export class LRUCache<T> {
@@ -110,7 +113,7 @@ export const warmCache = async (keys: string[], dataLoader: (key: string) => Pro
         const data = await dataLoader(key);
         robotCache.set(key, data);
       } catch (error: unknown) {
-        console.warn(`Failed to warm cache for key ${key}:`, error);
+        logger.warn(`Failed to warm cache for key ${key}:`, error);
       }
     }
   });
@@ -126,7 +129,7 @@ export const startCacheCleanup = (intervalMs: number = TIME_CONSTANTS.MINUTE): R
     const cleanedSessions = sessionCache.cleanup();
     
     if (cleanedRobots > 0 || cleanedQueries > 0 || cleanedSessions > 0) {
-      console.log(`Cache cleanup: ${cleanedRobots} robots, ${cleanedQueries} queries, ${cleanedSessions} sessions`);
+      logger.log(`Cache cleanup: ${cleanedRobots} robots, ${cleanedQueries} queries, ${cleanedSessions} sessions`);
     }
   }, intervalMs);
 };
