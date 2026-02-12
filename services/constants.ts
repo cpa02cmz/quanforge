@@ -361,6 +361,65 @@ export const MEMORY = {
   MAX_HISTORY_SIZE: 100,
 } as const;
 
+// ========== STRING LENGTH LIMITS ==========
+export const STRING_LIMITS = {
+  // General string limits
+  MAX_LENGTH: 1000,                              // 1KB - general max
+  MAX_CODE_LENGTH: 50000,                        // 50KB - code strings
+  MAX_DESCRIPTION_LENGTH: 2000,                  // 2KB - descriptions
+  MAX_INPUT_LENGTH: 10000,                       // 10KB - user inputs
+  MAX_HASH_LENGTH: 5000,                         // 5KB - hash inputs
+  
+  // Hash/Key substring limits
+  HASH_SHORT: 8,                                 // Very short hash prefix
+  HASH_MIN: 16,                                  // Short hash for keys
+  HASH_MEDIUM: 32,                               // Medium hash length
+  HASH_STANDARD: 50,                             // Standard hash display
+  HASH_LONG: 100,                                // Long hash prefix
+  HASH_EXTENDED: 200,                            // Extended hash for cache keys
+  HASH_MAX: 500,                                 // Maximum hash length
+  HASH_FULL: 1000,                               // Near-full hash for code
+  
+  // Display/Logging limits
+  DISPLAY_SHORT: 10,                             // Very short display
+  DISPLAY_SMALL: 50,                             // Short display text
+  DISPLAY_MEDIUM: 100,                           // Medium display text
+  DISPLAY_STANDARD: 200,                         // Standard display limit
+  DISPLAY_LONG: 254,                             // Long display text
+  DISPLAY_MAX: 2048,                             // Maximum display length
+  
+  // Cache key limits
+  CACHE_KEY_SHORT: 100,                          // Short cache key
+  CACHE_KEY_MEDIUM: 500,                         // Medium cache key
+} as const;
+
+// ========== ARRAY/HISTORY LIMITS ==========
+export const ARRAY_LIMITS = {
+  // Metric history sizes
+  METRICS_TINY: 10,                              // Tiny metric sample
+  METRICS_SMALL: 50,                             // Small metric sample
+  METRICS_STANDARD: 100,                         // Standard metric history
+  METRICS_LARGE: 1000,                           // Large metric history
+  
+  // Error/Alert limits
+  ERRORS_RECENT: 10,                             // Recent errors to show
+  ERRORS_STANDARD: 50,                           // Standard error history
+  ALERTS_RECENT: 10,                             // Recent alerts
+  ALERTS_STANDARD: 50,                           // Standard alert history
+  ALERTS_MAX: 100,                               // Maximum alert retention
+  
+  // Query/Operation limits
+  QUERY_HISTORY: 100,                            // Query history size
+  QUERY_RECENT: 10,                              // Recent queries
+  SAMPLES_STANDARD: 100,                         // Standard sample size
+  SCORE_HISTORY: 10,                             // Score history size
+  
+  // Pool/Connection limits
+  ACQUIRE_TIMES: 100,                            // Connection acquire times
+  REGION_PRIORITY: 3,                            // Priority regions count
+  REGION_LOW_PRIORITY: 2,                        // Low priority regions
+} as const;
+
 // ========== WEBSOCKET CONSTANTS ==========
 export const WEBSOCKET = {
   // Reconnect configuration
@@ -417,4 +476,6 @@ export const SERVICE_CONSTANTS = {
   MEMORY,
   WEBSOCKET,
   DATABASE,
+  STRING_LIMITS,
+  ARRAY_LIMITS,
 } as const;

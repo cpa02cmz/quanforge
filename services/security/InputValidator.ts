@@ -1,4 +1,5 @@
 import { SecurityConfig } from '../configurationService';
+import { STRING_LIMITS } from '../constants';
 
 export interface ValidationResult {
   isValid: boolean;
@@ -247,11 +248,11 @@ export class InputValidator {
   }
 
   private sanitizeString(input: string): string {
-    return input.replace(/<[^>]*>/g, '').substring(0, 1000);
+    return input.replace(/<[^>]*>/g, '').substring(0, STRING_LIMITS.MAX_LENGTH);
   }
 
   private sanitizeSymbol(symbol: string): string {
-    return symbol.replace(/[^A-Z0-9_]/g, '').toUpperCase().substring(0, 10);
+    return symbol.replace(/[^A-Z0-9_]/g, '').toUpperCase().substring(0, STRING_LIMITS.DISPLAY_SHORT);
   }
 
   private isValidDate(dateString: string): boolean {
