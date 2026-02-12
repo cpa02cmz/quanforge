@@ -89,8 +89,8 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = mem
                 className="flex items-center justify-between py-3 px-4 bg-dark-bg rounded-lg border border-dark-border"
               >
                 <div className="flex items-center space-x-2">
-                  {shortcut.keys.map((key, keyIndex) => (
-                    <React.Fragment key={keyIndex}>
+                  {shortcut.keys.map((key) => (
+                    <React.Fragment key={`${shortcut.description}-${key}`}>
                       <kbd
                         className="px-3 py-1.5 text-xs font-mono font-medium bg-dark-surface border border-dark-border rounded-md text-gray-300"
                         aria-label={`Keyboard key: ${key}`}
