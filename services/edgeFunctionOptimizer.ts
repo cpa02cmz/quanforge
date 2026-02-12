@@ -36,6 +36,7 @@ class EdgeFunctionOptimizer {
   private configs: Map<string, EdgeFunctionConfig> = new Map();
   private metrics: Map<string, EdgeMetrics> = new Map();
   private warmupTimers: Map<string, ReturnType<typeof setInterval>> = new Map();
+  private periodicWarmupTimers: ReturnType<typeof setInterval>[] = [];
   private isWarmingUp: Set<string> = new Set();
 
   private constructor() {
@@ -217,31 +218,37 @@ class EdgeFunctionOptimizer {
    */
   private startPeriodicWarmups(): void {
     // Warm up high priority functions every 5 minutes - optimized for edge
-    setInterval(() => {
-      this.configs.forEach((config, name) => {
-        if (config.priority === 'high') {
-          this.warmupFunction(name);
-        }
-      });
-    }, CACHE_TTLS.FIVE_MINUTES);
+    this.periodicWarmupTimers.push(
+      setInterval(() => {
+        this.configs.forEach((config, name) => {
+          if (config.priority === 'high') {
+            this.warmupFunction(name);
+          }
+        });
+      }, CACHE_TTLS.FIVE_MINUTES)
+    );
 
     // Warm up medium priority functions every 10 minutes - optimized for edge
-    setInterval(() => {
-      this.configs.forEach((config, name) => {
-        if (config.priority === 'medium') {
-          this.warmupFunction(name);
-        }
-      });
-    }, CACHE_TTLS.TEN_MINUTES);
+    this.periodicWarmupTimers.push(
+      setInterval(() => {
+        this.configs.forEach((config, name) => {
+          if (config.priority === 'medium') {
+            this.warmupFunction(name);
+          }
+        });
+      }, CACHE_TTLS.TEN_MINUTES)
+    );
 
     // Warm up low priority functions every 15 minutes - optimized for edge
-    setInterval(() => {
-      this.configs.forEach((config, name) => {
-        if (config.priority === 'low') {
-          this.warmupFunction(name);
-        }
-      });
-    }, CACHE_TTLS.FIFTEEN_MINUTES);
+    this.periodicWarmupTimers.push(
+      setInterval(() => {
+        this.configs.forEach((config, name) => {
+          if (config.priority === 'low') {
+            this.warmupFunction(name);
+          }
+        });
+      }, CACHE_TTLS.FIFTEEN_MINUTES)
+    );
   }
 
   /**
@@ -553,8 +560,19 @@ class EdgeFunctionOptimizer {
     this.warmupTimers.forEach(timer => clearTimeout(timer));
     this.warmupTimers.clear();
 
+    // Clear periodic warmup timers
+    this.periodicWarmupTimers.forEach(timer => clearInterval(timer));
+    this.periodicWarmupTimers = [];
+
     // Clear warming flags
     this.isWarmingUp.clear();
+  }
+
+  /**
+   * Alias for cleanup - provides consistent destroy interface
+   */
+  destroy(): void {
+    this.cleanup();
   }
 }
 
