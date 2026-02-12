@@ -7,7 +7,9 @@ import { EdgeCacheCompression } from './edgeCacheCompression';
 import { createSafeWildcardPattern, ReDoSError } from '../utils/safeRegex';
 import { CACHE_CONFIG, TIME_CONSTANTS, EDGE_CONFIG } from '../constants/config';
 import { STAGGER } from './constants';
-import { logger } from '../utils/logger';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('EdgeCacheManager');
 
 interface EdgeCacheEntry<T> {
   data: T;
@@ -239,7 +241,7 @@ export class EdgeCacheManager<T = any> {
           }
         }
       } catch (error: unknown) {
-        console.debug('CDN cache lookup failed:', error);
+        logger.debug('CDN cache lookup failed:', error);
       }
     }
     
@@ -314,7 +316,7 @@ export class EdgeCacheManager<T = any> {
         
         await cache.put(cdnKey, response);
       } catch (error: unknown) {
-        console.debug('CDN cache storage failed:', error);
+        logger.debug('CDN cache storage failed:', error);
       }
     }
     
@@ -493,7 +495,7 @@ export class EdgeCacheManager<T = any> {
 
     // Trigger predictive warming if enabled
     if (options?.predictive) {
-      this.predictiveCacheWarming().catch(console.error);
+      this.predictiveCacheWarming().catch((err) => logger.error('Predictive cache warming failed', err));
     }
 
     // Sort keys by priority if predictive warming is enabled
@@ -723,7 +725,7 @@ export class EdgeCacheManager<T = any> {
       } catch (error: unknown) {
         // Fall back to simple string matching if pattern is unsafe
         if (error instanceof ReDoSError) {
-          console.warn('Unsafe cache pattern detected:', error.message);
+          logger.warn('Unsafe cache pattern detected:', error.message);
           return key.includes(pattern.replace(/\*/g, ''));
         }
         return false;
@@ -810,7 +812,7 @@ export class EdgeCacheManager<T = any> {
         });
       }
     } catch (error: unknown) {
-      console.warn(`Failed to warm cache pattern: ${pattern}`, error);
+      logger.warn(`Failed to warm cache pattern: ${pattern}`, error);
     }
   }
 
@@ -825,7 +827,7 @@ export class EdgeCacheManager<T = any> {
         });
       }
     } catch (error: unknown) {
-      console.warn(`Failed to warm critical path: ${path}`, error);
+      logger.warn(`Failed to warm critical path: ${path}`, error);
     }
   }
 
@@ -1169,7 +1171,7 @@ export class EdgeCacheManager<T = any> {
     // Optimize replication factor based on regional performance
     this.optimizeReplicationFactor(stats);
     
-    console.log('Cache configuration optimized:', {
+    logger.log('Cache configuration optimized:', {
       defaultTTL: this.config.defaultTTL,
       compressionThreshold: this.config.compressionThreshold,
       hitRate: stats.hitRate,
