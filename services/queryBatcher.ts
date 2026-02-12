@@ -6,6 +6,9 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { createListenerManager, ListenerManager } from '../utils/listenerManager';
 import { BATCH_SIZES, RETRY_CONFIG, STAGGER } from './constants';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('QueryBatcher');
 
 interface BatchQuery {
   id: string;
@@ -632,7 +635,7 @@ class QueryBatcher {
    */
   configure(config: Partial<BatchConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('Query batcher configuration updated:', this.config);
+    logger.log('Query batcher configuration updated:', this.config);
   }
 
   /**
@@ -673,7 +676,7 @@ class QueryBatcher {
   destroy(): void {
     this.clearQueue();
     this.listenerManager.cleanup();
-    console.log('QueryBatcher destroyed and resources cleaned up');
+    logger.log('QueryBatcher destroyed and resources cleaned up');
   }
 }
 
