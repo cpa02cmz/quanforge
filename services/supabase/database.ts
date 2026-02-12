@@ -9,16 +9,18 @@ import { Robot } from '../../types';
 import { STORAGE_KEYS, safeParse, trySaveToStorage, generateUUID } from './storage';
 import { createSafeSQLPattern, ReDoSError } from '../../utils/safeRegex';
 import { getErrorMessage } from '../../utils/errorHandler';
+import { RETRY_CONFIGS, CACHE_SIZES } from '../../constants/modularConfig';
+import { CACHE_TTLS } from '../constants';
 
-// Database configurations
+// Database configurations - using modular config
 export const DB_CONFIG = {
-  CACHE_TTL: 15 * 60 * 1000, // 15 minutes
-  CACHE_SIZE: 200, // Max cached items
+  CACHE_TTL: CACHE_TTLS.FIFTEEN_MINUTES,
+  CACHE_SIZE: CACHE_SIZES.ENTRIES.MEDIUM,
   RETRY_CONFIG: {
-    maxRetries: 3,
-    retryDelay: 1000,
-    backoffMultiplier: 1.5,
-    maxDelay: 5000,
+    maxRetries: RETRY_CONFIGS.STANDARD.MAX_ATTEMPTS,
+    retryDelay: RETRY_CONFIGS.STANDARD.BASE_DELAY_MS,
+    backoffMultiplier: RETRY_CONFIGS.STANDARD.BACKOFF_MULTIPLIER,
+    maxDelay: RETRY_CONFIGS.STANDARD.MAX_DELAY_MS,
   }
 };
 
