@@ -29,6 +29,12 @@ import { getErrorMessage } from '../../utils/errorHandler';
 
 const logger = createScopedLogger('ServiceOrchestrator');
 
+// Interface for services that support health checks
+interface HealthCheckable {
+  isHealthy?(): boolean | Promise<boolean>;
+  destroy?(): void | Promise<void>;
+}
+
 export class ServiceOrchestrator implements IServiceOrchestrator {
   private isInitialized = false;
   private healthStatus: ServiceHealthStatus = {};
@@ -117,7 +123,7 @@ export class ServiceOrchestrator implements IServiceOrchestrator {
         const service = await globalContainer.get(token);
         
         // Health check after initialization
-        const isHealthy = await (service as any).isHealthy?.();
+        const isHealthy = await (service as HealthCheckable).isHealthy?.();
         const isServiceHealthy = typeof isHealthy === 'boolean' ? isHealthy : true;
         this.healthStatus[token] = {
           healthy: isServiceHealthy,
@@ -173,7 +179,7 @@ export class ServiceOrchestrator implements IServiceOrchestrator {
 // Do a quick health check
       try {
         const service = await globalContainer.get(token);
-        const isHealthy = await (service as any).isHealthy?.();
+        const isHealthy = await (service as HealthCheckable).isHealthy?.();
         
         // Update status
         this.healthStatus[token] = {
@@ -262,7 +268,7 @@ export class ServiceOrchestrator implements IServiceOrchestrator {
         // For now, we'll just update the health status
         // In a full implementation, you might restart services
         const service = await globalContainer.get(token);
-        const isHealthy = await (service as any).isHealthy?.();
+        const isHealthy = await (service as HealthCheckable).isHealthy?.();
         
         if (isHealthy !== false) {
           logger.info(`Service ${token} recovered successfully`);
@@ -323,14 +329,15 @@ export class ServiceOrchestrator implements IServiceOrchestrator {
       
       // Get and destroy the service
       const service = await globalContainer.get(token);
-      await (service as any).destroy?.();
+      await (service as HealthCheckable).destroy?.();
       
       // Clear the instance from container
-      (globalContainer as any).instances.delete(token);
+      type ContainerWithInstances = { instances: Map<string, unknown> };
+      (globalContainer as unknown as ContainerWithInstances).instances.delete(token);
       
       // Re-initialize the service
       const newService = await globalContainer.get(token);
-      const isHealthy = await (newService as any).isHealthy?.();
+      const isHealthy = await (newService as HealthCheckable).isHealthy?.();
       
       this.healthStatus[token] = {
         healthy: isHealthy !== false,
