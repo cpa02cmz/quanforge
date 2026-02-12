@@ -3,6 +3,12 @@
  * Monitors real user performance and experience metrics
  */
 
+import { 
+  WEB_VITALS_THRESHOLDS, 
+  MONITORING,
+  BATCH_SIZES 
+} from './constants';
+
 interface WebVitals {
   LCP?: number; // Largest Contentful Paint
   FID?: number; // First Input Delay
@@ -66,11 +72,11 @@ interface RUMConfig {
 class RealUserMonitoring {
   private static instance: RealUserMonitoring;
   private config: RUMConfig = {
-    sampleRate: 0.1, // 10% sampling
-    maxErrors: 50,
-    maxMetrics: 100,
-    batchSize: 10,
-    flushInterval: 30000, // 30 seconds
+    sampleRate: 0.1, // 10% sampling - business logic, kept as-is
+    maxErrors: MONITORING.MAX_METRICS,
+    maxMetrics: MONITORING.MAX_METRICS,
+    batchSize: BATCH_SIZES.DATABASE_OPERATIONS,
+    flushInterval: MONITORING.FLUSH_INTERVAL_MS,
     enableWebVitals: true,
     enableErrorTracking: true,
     enableResourceTiming: true,
@@ -460,12 +466,12 @@ class RealUserMonitoring {
   isPerformanceGood(): boolean {
     const { vitals } = this.currentMetrics;
     const thresholds = {
-      LCP: 2500,
-      FID: 100,
-      CLS: 0.1,
-      FCP: 1800,
-      TTFB: 800,
-      INP: 200
+      LCP: WEB_VITALS_THRESHOLDS.LCP.GOOD,
+      FID: WEB_VITALS_THRESHOLDS.FID.GOOD,
+      CLS: WEB_VITALS_THRESHOLDS.CLS.GOOD,
+      FCP: WEB_VITALS_THRESHOLDS.FCP.GOOD,
+      TTFB: WEB_VITALS_THRESHOLDS.TTFB.GOOD,
+      INP: WEB_VITALS_THRESHOLDS.INP.GOOD
     };
 
     return Object.entries(thresholds).every(([metric, threshold]) => {
@@ -480,12 +486,12 @@ class RealUserMonitoring {
   getPerformanceGrade(): 'A' | 'B' | 'C' | 'D' | 'F' {
     const { vitals } = this.currentMetrics;
     const thresholds = {
-      LCP: [2500, 4000],
-      FID: [100, 300],
-      CLS: [0.1, 0.25],
-      FCP: [1800, 3000],
-      TTFB: [800, 1800],
-      INP: [200, 500]
+      LCP: [WEB_VITALS_THRESHOLDS.LCP.GOOD, WEB_VITALS_THRESHOLDS.LCP.NEEDS_IMPROVEMENT],
+      FID: [WEB_VITALS_THRESHOLDS.FID.GOOD, WEB_VITALS_THRESHOLDS.FID.NEEDS_IMPROVEMENT],
+      CLS: [WEB_VITALS_THRESHOLDS.CLS.GOOD, WEB_VITALS_THRESHOLDS.CLS.NEEDS_IMPROVEMENT],
+      FCP: [WEB_VITALS_THRESHOLDS.FCP.GOOD, WEB_VITALS_THRESHOLDS.FCP.NEEDS_IMPROVEMENT],
+      TTFB: [WEB_VITALS_THRESHOLDS.TTFB.GOOD, WEB_VITALS_THRESHOLDS.TTFB.NEEDS_IMPROVEMENT],
+      INP: [WEB_VITALS_THRESHOLDS.INP.GOOD, WEB_VITALS_THRESHOLDS.INP.NEEDS_IMPROVEMENT]
     };
 
     let score = 0;
