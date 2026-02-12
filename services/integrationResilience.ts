@@ -1,6 +1,10 @@
 import { createScopedLogger } from '../utils/logger';
-import { ERROR_CONFIG, API_CONFIG } from '../constants/config';
-import { TIMEOUTS } from '../constants';
+import {
+  SERVICE_TIMEOUTS,
+  RETRY_CONFIGS,
+  CIRCUIT_BREAKER_CONFIGS,
+  MONITORING_INTERVALS,
+} from '../constants/modularConfig';
 
 const logger = createScopedLogger('integration-resilience');
 
@@ -100,16 +104,16 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
     type: IntegrationType.DATABASE,
     name: 'Database',
     timeouts: {
-      connect: TIMEOUTS.POOL_ACQUIRE,
-      read: TIMEOUTS.API_REQUEST,
-      write: TIMEOUTS.CIRCUIT_BREAKER_SLOW,
-      overall: TIMEOUTS.API_TIMEOUT
+      connect: SERVICE_TIMEOUTS.SERVICES.DB_CONNECTION,
+      read: SERVICE_TIMEOUTS.STANDARD,
+      write: SERVICE_TIMEOUTS.MEDIUM,
+      overall: SERVICE_TIMEOUTS.SERVICES.DB_QUERY
     },
     retryPolicy: {
-      maxRetries: ERROR_CONFIG.MAX_ERROR_RETRY_ATTEMPTS,
-      initialDelay: 500,
-      maxDelay: ERROR_CONFIG.ERROR_RETRY_DELAY_BASE * 5,
-      backoffMultiplier: 2,
+      maxRetries: RETRY_CONFIGS.SERVICES.DATABASE.MAX_ATTEMPTS,
+      initialDelay: RETRY_CONFIGS.SERVICES.DATABASE.BASE_DELAY_MS,
+      maxDelay: RETRY_CONFIGS.SERVICES.DATABASE.MAX_DELAY_MS,
+      backoffMultiplier: RETRY_CONFIGS.SERVICES.DATABASE.BACKOFF_MULTIPLIER,
       jitter: true,
       retryableErrors: [
         ErrorCategory.TIMEOUT,
@@ -118,29 +122,29 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
       ]
     },
     circuitBreaker: {
-      failureThreshold: ERROR_CONFIG.CIRCUIT_BREAKER_THRESHOLD,
-      successThreshold: 2,
-      timeout: API_CONFIG.REQUEST_TIMEOUT,
-      halfOpenMaxCalls: 3,
-      resetTimeout: ERROR_CONFIG.CIRCUIT_BREAKER_TIMEOUT
+      failureThreshold: CIRCUIT_BREAKER_CONFIGS.SERVICES.DATABASE.FAILURE_THRESHOLD,
+      successThreshold: CIRCUIT_BREAKER_CONFIGS.SERVICES.DATABASE.SUCCESS_THRESHOLD,
+      timeout: SERVICE_TIMEOUTS.SERVICES.DB_QUERY,
+      halfOpenMaxCalls: CIRCUIT_BREAKER_CONFIGS.SERVICES.DATABASE.HALF_OPEN_MAX_CALLS,
+      resetTimeout: CIRCUIT_BREAKER_CONFIGS.SERVICES.DATABASE.RESET_TIMEOUT_MS
     },
     fallbackEnabled: true,
-    healthCheckInterval: TIMEOUTS.HEALTH_CHECK
+    healthCheckInterval: MONITORING_INTERVALS.HEALTH_CHECK.NORMAL
   },
   ai_service: {
     type: IntegrationType.AI_SERVICE,
     name: 'AI Service',
     timeouts: {
-      connect: TIMEOUTS.POOL_ACQUIRE,
-      read: TIMEOUTS.API_TIMEOUT,
-      write: TIMEOUTS.API_REQUEST,
-      overall: TIMEOUTS.CONNECTION_TIMEOUT * 2
+      connect: SERVICE_TIMEOUTS.QUICK,
+      read: SERVICE_TIMEOUTS.SERVICES.AI_GENERATION,
+      write: SERVICE_TIMEOUTS.STANDARD,
+      overall: SERVICE_TIMEOUTS.MEDIUM
     },
     retryPolicy: {
-      maxRetries: ERROR_CONFIG.MAX_ERROR_RETRY_ATTEMPTS,
-      initialDelay: API_CONFIG.RETRY_DELAY_BASE,
-      maxDelay: API_CONFIG.RETRY_DELAY_MAX,
-      backoffMultiplier: 1.5,
+      maxRetries: RETRY_CONFIGS.SERVICES.AI_SERVICE.MAX_ATTEMPTS,
+      initialDelay: RETRY_CONFIGS.SERVICES.AI_SERVICE.BASE_DELAY_MS,
+      maxDelay: RETRY_CONFIGS.SERVICES.AI_SERVICE.MAX_DELAY_MS,
+      backoffMultiplier: RETRY_CONFIGS.SERVICES.AI_SERVICE.BACKOFF_MULTIPLIER,
       jitter: true,
       retryableErrors: [
         ErrorCategory.TIMEOUT,
@@ -150,29 +154,29 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
       ]
     },
     circuitBreaker: {
-      failureThreshold: 3,
-      successThreshold: 2,
-      timeout: API_CONFIG.API_TIMEOUT,
-      halfOpenMaxCalls: 2,
-      resetTimeout: API_CONFIG.REQUEST_TIMEOUT * 2
+      failureThreshold: CIRCUIT_BREAKER_CONFIGS.SERVICES.AI_SERVICE.FAILURE_THRESHOLD,
+      successThreshold: CIRCUIT_BREAKER_CONFIGS.SERVICES.AI_SERVICE.SUCCESS_THRESHOLD,
+      timeout: SERVICE_TIMEOUTS.SERVICES.AI_GENERATION,
+      halfOpenMaxCalls: CIRCUIT_BREAKER_CONFIGS.SERVICES.AI_SERVICE.HALF_OPEN_MAX_CALLS,
+      resetTimeout: CIRCUIT_BREAKER_CONFIGS.SERVICES.AI_SERVICE.RESET_TIMEOUT_MS
     },
     fallbackEnabled: true,
-    healthCheckInterval: TIMEOUTS.HEALTH_CHECK * 2
+    healthCheckInterval: MONITORING_INTERVALS.HEALTH_CHECK.SLOW
   },
   market_data: {
     type: IntegrationType.MARKET_DATA,
     name: 'Market Data',
     timeouts: {
-      connect: 2000,
-      read: 5000,
-      write: 2000,
-      overall: 10000
+      connect: SERVICE_TIMEOUTS.QUICK,
+      read: SERVICE_TIMEOUTS.SHORT,
+      write: SERVICE_TIMEOUTS.QUICK,
+      overall: SERVICE_TIMEOUTS.STANDARD
     },
     retryPolicy: {
-      maxRetries: 2,
-      initialDelay: 200,
-      maxDelay: 2000,
-      backoffMultiplier: 1.5,
+      maxRetries: RETRY_CONFIGS.SERVICES.MARKET_DATA.MAX_ATTEMPTS,
+      initialDelay: RETRY_CONFIGS.SERVICES.MARKET_DATA.BASE_DELAY_MS,
+      maxDelay: SERVICE_TIMEOUTS.SHORT,
+      backoffMultiplier: RETRY_CONFIGS.SERVICES.MARKET_DATA.BACKOFF_MULTIPLIER,
       jitter: true,
       retryableErrors: [
         ErrorCategory.TIMEOUT,
@@ -180,28 +184,28 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
       ]
     },
     circuitBreaker: {
-      failureThreshold: 10,
-      successThreshold: 5,
-      timeout: TIMEOUTS.API_REQUEST,
-      halfOpenMaxCalls: 5,
-      resetTimeout: TIMEOUTS.CIRCUIT_BREAKER_RESET
+      failureThreshold: CIRCUIT_BREAKER_CONFIGS.SERVICES.MARKET_DATA.FAILURE_THRESHOLD,
+      successThreshold: CIRCUIT_BREAKER_CONFIGS.SERVICES.MARKET_DATA.SUCCESS_THRESHOLD,
+      timeout: SERVICE_TIMEOUTS.STANDARD,
+      halfOpenMaxCalls: CIRCUIT_BREAKER_CONFIGS.SERVICES.MARKET_DATA.HALF_OPEN_MAX_CALLS,
+      resetTimeout: CIRCUIT_BREAKER_CONFIGS.SERVICES.MARKET_DATA.RESET_TIMEOUT_MS
     },
     fallbackEnabled: true,
-    healthCheckInterval: TIMEOUTS.API_REQUEST
+    healthCheckInterval: MONITORING_INTERVALS.HEALTH_CHECK.NORMAL
   },
   cache: {
     type: IntegrationType.CACHE,
     name: 'Cache',
     timeouts: {
-      connect: 1000,
-      read: 2000,
-      write: 2000,
-      overall: 5000
+      connect: SERVICE_TIMEOUTS.QUICK,
+      read: SERVICE_TIMEOUTS.QUICK,
+      write: SERVICE_TIMEOUTS.QUICK,
+      overall: SERVICE_TIMEOUTS.SHORT
     },
     retryPolicy: {
-      maxRetries: 1,
-      initialDelay: 100,
-      maxDelay: 500,
+      maxRetries: RETRY_CONFIGS.CONSERVATIVE.MAX_ATTEMPTS,
+      initialDelay: RETRY_CONFIGS.CONSERVATIVE.BASE_DELAY_MS / 20, // 100ms
+      maxDelay: RETRY_CONFIGS.CONSERVATIVE.BASE_DELAY_MS / 4, // 500ms
       backoffMultiplier: 1,
       jitter: false,
       retryableErrors: [
@@ -210,29 +214,29 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
       ]
     },
     circuitBreaker: {
-      failureThreshold: 20,
-      successThreshold: 10,
-      timeout: TIMEOUTS.QUICK_OPERATION,
-      halfOpenMaxCalls: 10,
-      resetTimeout: TIMEOUTS.HEALTH_CHECK * 2
+      failureThreshold: CIRCUIT_BREAKER_CONFIGS.SERVICES.CACHE.FAILURE_THRESHOLD,
+      successThreshold: CIRCUIT_BREAKER_CONFIGS.SERVICES.CACHE.SUCCESS_THRESHOLD,
+      timeout: SERVICE_TIMEOUTS.QUICK,
+      halfOpenMaxCalls: CIRCUIT_BREAKER_CONFIGS.SERVICES.CACHE.HALF_OPEN_MAX_CALLS,
+      resetTimeout: CIRCUIT_BREAKER_CONFIGS.SERVICES.CACHE.RESET_TIMEOUT_MS
     },
     fallbackEnabled: false,
-    healthCheckInterval: TIMEOUTS.HEALTH_CHECK * 2
+    healthCheckInterval: MONITORING_INTERVALS.HEALTH_CHECK.SLOW
   },
   external_api_slow: {
     type: IntegrationType.EXTERNAL_API,
     name: 'External API (Slow)',
     timeouts: {
-      connect: TIMEOUTS.API_REQUEST,
-      read: TIMEOUTS.API_TIMEOUT,
-      write: TIMEOUTS.API_TIMEOUT,
-      overall: TIMEOUTS.CONNECTION_TIMEOUT * 2
+      connect: SERVICE_TIMEOUTS.STANDARD,
+      read: SERVICE_TIMEOUTS.SERVICES.EXTERNAL_API,
+      write: SERVICE_TIMEOUTS.SERVICES.EXTERNAL_API,
+      overall: SERVICE_TIMEOUTS.LONG
     },
     retryPolicy: {
-      maxRetries: 5,
-      initialDelay: 1000,
-      maxDelay: 30000,
-      backoffMultiplier: 2,
+      maxRetries: RETRY_CONFIGS.AGGRESSIVE.MAX_ATTEMPTS,
+      initialDelay: RETRY_CONFIGS.AGGRESSIVE.BASE_DELAY_MS,
+      maxDelay: RETRY_CONFIGS.AGGRESSIVE.MAX_DELAY_MS,
+      backoffMultiplier: RETRY_CONFIGS.AGGRESSIVE.BACKOFF_MULTIPLIER,
       jitter: true,
       retryableErrors: [
         ErrorCategory.TIMEOUT,
@@ -242,29 +246,29 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
       ]
     },
     circuitBreaker: {
-      failureThreshold: 10,
-      successThreshold: 5,
-      timeout: TIMEOUTS.CONNECTION_TIMEOUT * 2,
-      halfOpenMaxCalls: 3,
-      resetTimeout: TIMEOUTS.HEALTH_CHECK * 4
+      failureThreshold: CIRCUIT_BREAKER_CONFIGS.SERVICES.EXTERNAL_API.FAILURE_THRESHOLD,
+      successThreshold: CIRCUIT_BREAKER_CONFIGS.SERVICES.EXTERNAL_API.SUCCESS_THRESHOLD,
+      timeout: SERVICE_TIMEOUTS.LONG,
+      halfOpenMaxCalls: CIRCUIT_BREAKER_CONFIGS.SERVICES.EXTERNAL_API.HALF_OPEN_MAX_CALLS,
+      resetTimeout: CIRCUIT_BREAKER_CONFIGS.SERVICES.EXTERNAL_API.RESET_TIMEOUT_MS
     },
     fallbackEnabled: true,
-    healthCheckInterval: TIMEOUTS.HEALTH_CHECK * 2
+    healthCheckInterval: MONITORING_INTERVALS.HEALTH_CHECK.SLOW
   },
   external_api_fast: {
     type: IntegrationType.EXTERNAL_API,
     name: 'External API (Fast)',
     timeouts: {
-      connect: TIMEOUTS.RETRY_BASE_DELAY * 2,
-      read: TIMEOUTS.QUICK_OPERATION,
-      write: TIMEOUTS.QUICK_OPERATION,
-      overall: TIMEOUTS.API_REQUEST
+      connect: SERVICE_TIMEOUTS.QUICK,
+      read: SERVICE_TIMEOUTS.QUICK,
+      write: SERVICE_TIMEOUTS.QUICK,
+      overall: SERVICE_TIMEOUTS.STANDARD
     },
     retryPolicy: {
-      maxRetries: 1,
-      initialDelay: 200,
-      maxDelay: 1000,
-      backoffMultiplier: 1.5,
+      maxRetries: RETRY_CONFIGS.CONSERVATIVE.MAX_ATTEMPTS,
+      initialDelay: RETRY_CONFIGS.CONSERVATIVE.BASE_DELAY_MS / 10, // 200ms
+      maxDelay: SERVICE_TIMEOUTS.QUICK,
+      backoffMultiplier: RETRY_CONFIGS.CONSERVATIVE.BACKOFF_MULTIPLIER,
       jitter: true,
       retryableErrors: [
         ErrorCategory.TIMEOUT,
@@ -272,23 +276,23 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
       ]
     },
     circuitBreaker: {
-      failureThreshold: 10,
-      successThreshold: 5,
-      timeout: TIMEOUTS.API_REQUEST,
-      halfOpenMaxCalls: 5,
-      resetTimeout: TIMEOUTS.CIRCUIT_BREAKER_RESET
+      failureThreshold: CIRCUIT_BREAKER_CONFIGS.SERVICES.EXTERNAL_API.FAILURE_THRESHOLD,
+      successThreshold: CIRCUIT_BREAKER_CONFIGS.SERVICES.EXTERNAL_API.SUCCESS_THRESHOLD,
+      timeout: SERVICE_TIMEOUTS.STANDARD,
+      halfOpenMaxCalls: CIRCUIT_BREAKER_CONFIGS.SERVICES.EXTERNAL_API.HALF_OPEN_MAX_CALLS,
+      resetTimeout: CIRCUIT_BREAKER_CONFIGS.SERVICES.EXTERNAL_API.RESET_TIMEOUT_MS
     },
     fallbackEnabled: false,
-    healthCheckInterval: TIMEOUTS.HEALTH_CHECK
+    healthCheckInterval: MONITORING_INTERVALS.HEALTH_CHECK.NORMAL
   },
   webhook: {
     type: IntegrationType.EXTERNAL_API,
     name: 'Webhook Endpoint',
     timeouts: {
-      connect: TIMEOUTS.RETRY_BASE_DELAY * 2,
-      read: TIMEOUTS.RETRY_BASE_DELAY * 3,
-      write: TIMEOUTS.RETRY_BASE_DELAY * 3,
-      overall: TIMEOUTS.QUICK_OPERATION
+      connect: SERVICE_TIMEOUTS.QUICK,
+      read: SERVICE_TIMEOUTS.SHORT,
+      write: SERVICE_TIMEOUTS.SHORT,
+      overall: SERVICE_TIMEOUTS.QUICK
     },
     retryPolicy: {
       maxRetries: 0,
@@ -299,14 +303,14 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
       retryableErrors: []
     },
     circuitBreaker: {
-      failureThreshold: 20,
-      successThreshold: 10,
-      timeout: TIMEOUTS.QUICK_OPERATION,
-      halfOpenMaxCalls: 5,
-      resetTimeout: TIMEOUTS.HEALTH_CHECK * 2
+      failureThreshold: CIRCUIT_BREAKER_CONFIGS.SERVICES.CACHE.FAILURE_THRESHOLD,
+      successThreshold: CIRCUIT_BREAKER_CONFIGS.SERVICES.CACHE.SUCCESS_THRESHOLD,
+      timeout: SERVICE_TIMEOUTS.QUICK,
+      halfOpenMaxCalls: CIRCUIT_BREAKER_CONFIGS.DEFAULT.HALF_OPEN_MAX_CALLS,
+      resetTimeout: CIRCUIT_BREAKER_CONFIGS.DEFAULT.RESET_TIMEOUT_MS
     },
     fallbackEnabled: false,
-    healthCheckInterval: TIMEOUTS.HEALTH_CHECK * 2
+    healthCheckInterval: MONITORING_INTERVALS.HEALTH_CHECK.SLOW
   }
 };
 
@@ -323,28 +327,28 @@ export function getConfig(integrationKey: string): IntegrationConfig {
       type: IntegrationType.EXTERNAL_API,
       name: integrationKey,
       timeouts: {
-        connect: 5000,
-        read: 10000,
-        write: 10000,
-        overall: 20000
+        connect: SERVICE_TIMEOUTS.QUICK,
+        read: SERVICE_TIMEOUTS.STANDARD,
+        write: SERVICE_TIMEOUTS.STANDARD,
+        overall: SERVICE_TIMEOUTS.MEDIUM
       },
       retryPolicy: {
-        maxRetries: 2,
-        initialDelay: 500,
-        maxDelay: 5000,
-        backoffMultiplier: 1.5,
+        maxRetries: RETRY_CONFIGS.STANDARD.MAX_ATTEMPTS,
+        initialDelay: RETRY_CONFIGS.STANDARD.BASE_DELAY_MS / 2,
+        maxDelay: SERVICE_TIMEOUTS.QUICK,
+        backoffMultiplier: RETRY_CONFIGS.STANDARD.BACKOFF_MULTIPLIER,
         jitter: true,
         retryableErrors: [ErrorCategory.TIMEOUT, ErrorCategory.NETWORK, ErrorCategory.SERVER_ERROR]
       },
       circuitBreaker: {
-        failureThreshold: 5,
-        successThreshold: 2,
-        timeout: 10000,
-        halfOpenMaxCalls: 3,
-        resetTimeout: 60000
+        failureThreshold: CIRCUIT_BREAKER_CONFIGS.DEFAULT.FAILURE_THRESHOLD,
+        successThreshold: CIRCUIT_BREAKER_CONFIGS.DEFAULT.SUCCESS_THRESHOLD,
+        timeout: SERVICE_TIMEOUTS.STANDARD,
+        halfOpenMaxCalls: CIRCUIT_BREAKER_CONFIGS.DEFAULT.HALF_OPEN_MAX_CALLS,
+        resetTimeout: CIRCUIT_BREAKER_CONFIGS.DEFAULT.RESET_TIMEOUT_MS
       },
       fallbackEnabled: false,
-      healthCheckInterval: 30000
+      healthCheckInterval: MONITORING_INTERVALS.HEALTH_CHECK.NORMAL
     };
   }
   return config;
