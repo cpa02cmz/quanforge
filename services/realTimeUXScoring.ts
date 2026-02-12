@@ -367,7 +367,7 @@ class UXPerformanceMonitor {
     const performanceScore = this.calculatePerformanceScore();
     const reliabilityScore = this.calculateReliabilityScore();
     const engagementScore = this.calculateEngagementScore();
-    
+
     const overall = Math.round(
       performanceScore * this.config.scoringWeights.performance +
       reliabilityScore * this.config.scoringWeights.reliability +
@@ -375,7 +375,13 @@ class UXPerformanceMonitor {
     );
 
     const issues = this.identifyIssues();
-    const recommendations = this.generateRecommendations(issues);
+    const recommendations = this.generateRecommendations(
+      issues,
+      performanceScore,
+      reliabilityScore,
+      engagementScore,
+      overall
+    );
 
     return {
       overall,
@@ -513,9 +519,15 @@ class UXPerformanceMonitor {
   }
 
   /**
-   * Generate recommendations based on issues
+   * Generate recommendations based on issues and scores
    */
-  private generateRecommendations(issues: UXIssue[]): string[] {
+  private generateRecommendations(
+    issues: UXIssue[],
+    performanceScore: number,
+    reliabilityScore: number,
+    engagementScore: number,
+    overallScore: number
+  ): string[] {
     const recommendations = new Set<string>();
 
     for (const issue of issues) {
@@ -523,21 +535,19 @@ class UXPerformanceMonitor {
     }
 
     // Add general recommendations based on overall performance
-    const score = this.calculateUXScore();
-    
-    if (score.overall < SCORING.RATIO_MULTIPLIER) {
+    if (overallScore < SCORING.RATIO_MULTIPLIER) {
       recommendations.add('Consider comprehensive performance audit and optimization');
     }
 
-    if (score.performance < SCORING.GOOD) {
+    if (performanceScore < SCORING.GOOD) {
       recommendations.add('Focus on Core Web Vitals optimization');
     }
 
-    if (score.reliability < SCORING.EXCELLENT) {
+    if (reliabilityScore < SCORING.EXCELLENT) {
       recommendations.add('Improve error handling and monitoring');
     }
 
-    if (score.engagement < SCORING.GOOD) {
+    if (engagementScore < SCORING.GOOD) {
       recommendations.add('Optimize user interaction responsiveness');
     }
 
