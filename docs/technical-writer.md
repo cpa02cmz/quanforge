@@ -70,8 +70,8 @@ docs/
 **Example Fix:**
 ```markdown
 <!-- Before (incorrect) -->
-- [README](README.md)
-- [Coding Standards](coding_standard.md)
+- ~~[README](README.md)~~
+- ~~[Coding Standards](coding_standard.md)~~
 
 <!-- After (correct) -->
 - [README](../README.md)
