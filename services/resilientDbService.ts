@@ -223,6 +223,38 @@ export const resilientDb = {
     );
 
     return result;
+  },
+
+  async rollbackRobot(robotId: string, version: number): Promise<IntegrationResult<{ robotId: string; version: number; success: boolean; message: string }>> {
+    const result = await withIntegrationResilience(
+      IntegrationType.DATABASE,
+      'database',
+      async () => await dbOperations.rollbackRobot(robotId, version, ''),
+      {
+        operationName: 'rollback_robot',
+        fallbacks: [
+          databaseFallbacks.mockData({ robotId, version, success: false, message: 'Rollback failed' })
+        ]
+      }
+    );
+
+    return result;
+  },
+
+  async searchRobots(searchTerm: string, filterType?: string): Promise<IntegrationResult<Robot[]>> {
+    const result = await withIntegrationResilience(
+      IntegrationType.DATABASE,
+      'database',
+      async () => await originalDbUtils.searchRobots(searchTerm, filterType),
+      {
+        operationName: 'search_robots',
+        fallbacks: [
+          databaseFallbacks.mockData([])
+        ]
+      }
+    );
+
+    return result;
   }
 };
 
@@ -286,6 +318,75 @@ export const resilientDbUtils = {
       async () => await originalDbUtils.migrateMockToSupabase(),
       {
         operationName: 'migrate_mock_to_supabase'
+      }
+    );
+
+    return result;
+  },
+
+  async clearDatabase(): Promise<IntegrationResult<boolean>> {
+    const result = await withIntegrationResilience(
+      IntegrationType.DATABASE,
+      'database',
+      async () => await originalDbUtils.clearDatabase(),
+      {
+        operationName: 'clear_database'
+      }
+    );
+
+    return result;
+  },
+
+  async getStrategyTypes(): Promise<IntegrationResult<string[]>> {
+    const result = await withIntegrationResilience(
+      IntegrationType.DATABASE,
+      'database',
+      async () => await originalDbUtils.getStrategyTypes(),
+      {
+        operationName: 'get_strategy_types',
+        fallbacks: [
+          databaseFallbacks.mockData([])
+        ]
+      }
+    );
+
+    return result;
+  },
+
+  async optimizeDatabase(): Promise<IntegrationResult<{ success: boolean; message: string }>> {
+    const result = await withIntegrationResilience(
+      IntegrationType.DATABASE,
+      'database',
+      async () => await originalDbUtils.optimizeDatabase(),
+      {
+        operationName: 'optimize_database'
+      }
+    );
+
+    return result;
+  },
+
+  async getDatabaseStats(): Promise<IntegrationResult<{
+    totalRecords: number;
+    totalSizeKB: number;
+    avgRecordSizeKB: number;
+    lastOptimized?: string;
+    duplicateRecords?: number;
+    invalidRecords?: number;
+  }>> {
+    const result = await withIntegrationResilience(
+      IntegrationType.DATABASE,
+      'database',
+      async () => await originalDbUtils.getDatabaseStats(),
+      {
+        operationName: 'get_database_stats',
+        fallbacks: [
+          databaseFallbacks.mockData({
+            totalRecords: 0,
+            totalSizeKB: 0,
+            avgRecordSizeKB: 0
+          })
+        ]
       }
     );
 
