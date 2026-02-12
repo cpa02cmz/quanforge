@@ -48,8 +48,16 @@ export interface BatchStats {
 export interface CombinedQuery {
   table: string;
   originalQueries: BatchQuery[];
-  combinedFilters?: Array<{ column: string; operator: string; value: any }>;
+  combinedFilters?: Array<{ column: string; operator: string; value: unknown }>;
   selectColumns?: string;
+}
+
+export interface QueryError {
+  code: string;
+  message: string;
+  type: string;
+  status: number;
+  details?: Record<string, unknown>;
 }
 
 export interface QueryBatch {
