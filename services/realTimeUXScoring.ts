@@ -280,8 +280,8 @@ class UXPerformanceMonitor {
         const entries = list.getEntries();
         for (const entry of entries) {
           if (entry.entryType === 'longtask') {
-            const longTaskThreshold = 50;
-          totalBlockingTime += entry.duration - longTaskThreshold;
+            const longTaskThreshold = WEB_VITALS_THRESHOLDS.LONG_TASK.THRESHOLD_MS;
+            totalBlockingTime += entry.duration - longTaskThreshold;
           }
         }
         this.metrics.tbt = totalBlockingTime;

@@ -2,7 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Robot } from '../types';
 import { MEMORY_LIMITS } from '../constants';
 import { TIME_CONSTANTS } from '../constants/config';
-import { TIMEOUTS } from './constants';
+import { TIMEOUTS, BATCH_SIZES } from './constants';
 import { getErrorMessage, isError } from '../utils/errorHandler';
 
 interface QueryOptimization {
@@ -255,7 +255,7 @@ class QueryOptimizer {
     client: SupabaseClient,
     table: string,
     records: T[],
-    batchSize: number = 100
+    batchSize: number = BATCH_SIZES.DATABASE_OPERATIONS
   ): Promise<{ data: T[] | null; error: unknown; metrics: QueryMetrics }> {
     const startTime = performance.now();
     const results: T[] = [];

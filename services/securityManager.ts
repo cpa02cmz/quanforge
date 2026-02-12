@@ -6,7 +6,8 @@ import {
   TIME_CONSTANTS,
   DEV_SERVER_CONFIG,
   TRADING_CONSTANTS,
-  VALIDATION_CONFIG
+  VALIDATION_CONFIG,
+  SECURITY_CONFIG
 } from '../constants/config';
 
 interface SecurityConfig {
@@ -108,13 +109,13 @@ class SecurityManager {
       const payloadSize = new Blob([JSON.stringify(data)]).size;
       if (payloadSize > this.config.maxPayloadSize) {
         errors.push(`Payload too large: ${payloadSize} bytes (max: ${this.config.maxPayloadSize})`);
-        riskScore += 50;
+        riskScore += SECURITY_CONFIG.RISK_SCORES.PAYLOAD_TOO_LARGE;
       }
 
       // Basic structure validation
       if (!data || typeof data !== 'object') {
         errors.push('Invalid data structure');
-        return { isValid: false, errors, riskScore: 100 };
+        return { isValid: false, errors, riskScore: SECURITY_CONFIG.RISK_SCORES.INVALID_DATA_STRUCTURE };
       }
 
       // Type-specific validation
@@ -186,12 +187,12 @@ private validateRobotData(data: any): ValidationResult {
      let riskScore = 0;
      const sanitized: Partial<Robot> = {};
 
-     // Prevent prototype pollution
-     if (this.isPrototypePollution(data)) {
-       errors.push('Prototype pollution detected');
-       riskScore += 100;
-       return { isValid: false, errors, riskScore: 100 };
-     }
+      // Prevent prototype pollution
+      if (this.isPrototypePollution(data)) {
+        errors.push('Prototype pollution detected');
+        riskScore += SECURITY_CONFIG.RISK_SCORES.PROTOTYPE_POLLUTION;
+        return { isValid: false, errors, riskScore: SECURITY_CONFIG.RISK_SCORES.MAX_RISK_SCORE };
+      }
 
      // Name validation
      if (data.name) {
@@ -878,7 +879,7 @@ private validateRobotData(data: any): ValidationResult {
     suspiciousUAPatterns.forEach(pattern => {
       if (pattern.test(userAgent)) {
         threats.push('Suspicious User-Agent');
-        riskScore += 50;
+        riskScore += SECURITY_CONFIG.RISK_SCORES.SUSPICIOUS_PATTERN;
       }
     });
 

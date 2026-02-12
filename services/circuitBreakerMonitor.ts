@@ -1,6 +1,6 @@
-import { 
-  CircuitBreakerState, 
-  CircuitBreakerConfig, 
+import {
+  CircuitBreakerState,
+  CircuitBreakerConfig,
   CircuitBreakerMetrics,
   HealthStatus,
   getConfig,
@@ -8,6 +8,7 @@ import {
   ErrorCategory
 } from './integrationResilience';
 import { createScopedLogger } from '../utils/logger';
+import { ARRAY_LIMITS } from './constants';
 
 const logger = createScopedLogger('circuit-breaker-monitor');
 
@@ -157,7 +158,7 @@ class CircuitBreakerMonitor {
   private circuitBreakers = new Map<string, CircuitBreaker>();
   private healthStatuses = new Map<string, HealthStatus>();
   private responseTimes = new Map<string, number[]>();
-  private readonly maxResponseTimeHistory = 100;
+  private readonly maxResponseTimeHistory = ARRAY_LIMITS.METRICS_STANDARD;
 
   registerCircuitBreaker(name: string, config: CircuitBreakerConfig, options?: Partial<CircuitBreakerOptions>): CircuitBreaker {
     if (this.circuitBreakers.has(name)) {

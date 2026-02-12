@@ -88,40 +88,45 @@ export const WEB_VITALS_THRESHOLDS = {
     NEEDS_IMPROVEMENT: 4000,
     POOR: 6000,
   },
-  
+
   // First Contentful Paint (ms)
   FCP: {
     GOOD: 1800,
     NEEDS_IMPROVEMENT: 3000,
     POOR: 4500,
   },
-  
+
   // Time to First Byte (ms)
   TTFB: {
     GOOD: 800,
     NEEDS_IMPROVEMENT: 1800,
     POOR: 3000,
   },
-  
+
   // First Input Delay (ms)
   FID: {
     GOOD: 100,
     NEEDS_IMPROVEMENT: 300,
     POOR: 500,
   },
-  
+
   // Interaction to Next Paint (ms)
   INP: {
     GOOD: 200,
     NEEDS_IMPROVEMENT: 500,
     POOR: 800,
   },
-  
+
   // Cumulative Layout Shift
   CLS: {
     GOOD: 0.1,
     NEEDS_IMPROVEMENT: 0.25,
     POOR: 0.5,
+  },
+
+  // Long Task threshold (ms)
+  LONG_TASK: {
+    THRESHOLD_MS: 50,
   },
 } as const;
 
@@ -195,17 +200,26 @@ export const SECURITY = {
   TOKEN_EXPIRY_MS: TIME_CONSTANTS.HOUR,          // 1 hour
   TOKEN_REFRESH_BEFORE_MS: 5 * TIME_CONSTANTS.MINUTE, // 5 minutes before expiry
   CSRF_VIOLATION_AGE_MS: TIME_CONSTANTS.DAY,     // 24 hours
-  
+
   // String limits
   MAX_STRING_LENGTH: 1000,
   MAX_CODE_LENGTH: 100000,                       // 100KB
   MAX_DESCRIPTION_LENGTH: 1000,
   MAX_PARAM_VALUE_LENGTH: 500,
   MAX_INPUT_LENGTH: 10000,
-  
+
   // API key
   MIN_API_KEY_LENGTH: 10,
   MAX_API_KEY_LENGTH: 500,
+
+  // Risk scoring weights
+  RISK_SCORES: {
+    PAYLOAD_TOO_LARGE: 50,
+    INVALID_DATA_STRUCTURE: 100,
+    PROTOTYPE_POLLUTION: 100,
+    SUSPICIOUS_PATTERN: 50,
+    MAX_RISK_SCORE: 100,
+  },
 } as const;
 
 // ========== CACHE SIZE CONSTANTS ==========
@@ -229,20 +243,36 @@ export const SCORING = {
   MIN_SCORE: 0,
   MAX_SCORE: 100,
   DEFAULT_SCORE: 100,
-  
+
   // Thresholds
   EXCELLENT: 80,
   GOOD: 60,
   POOR: 0,
-  
+
   // Multipliers
   PERCENTAGE_MULTIPLIER: 100,
   RATIO_MULTIPLIER: 50,
   ACCESS_FREQUENCY_MULTIPLIER: 100,
-  
+
   // Penalties
   SLOW_OP_PENALTY_MULTIPLIER: 5,
   SLOW_OP_MAX_PENALTY: 30,
+
+  // Connection pool scoring weights
+  POOL_SCORING: {
+    REGION_MATCH_BONUS: 1000,
+    IDLE_TIME_MAX_POINTS: 100,
+    IDLE_TIME_DIVISOR: 1000, // Convert ms to seconds
+    CONNECTION_AGE_BONUS: 50,
+    CONNECTION_AGE_THRESHOLD_MS: 60000, // 1 minute
+  },
+
+  // RUM (Real User Monitoring) scoring
+  RUM: {
+    GOOD_METRIC_SCORE: 100,
+    AVERAGE_METRIC_SCORE: 50,
+    POOR_METRIC_SCORE: 0,
+  },
 } as const;
 
 // ========== ERROR CODES ==========

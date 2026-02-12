@@ -3,6 +3,8 @@
  * Monitors real user performance and experience metrics
  */
 
+import { SCORING } from './constants';
+
 interface WebVitals {
   LCP?: number; // Largest Contentful Paint
   FID?: number; // First Input Delay
@@ -496,11 +498,11 @@ class RealUserMonitoring {
       if (value !== undefined) {
         totalMetrics++;
         if (good !== undefined && value <= good) {
-          score += 100;
+          score += SCORING.RUM.GOOD_METRIC_SCORE;
         } else if (poor !== undefined && value <= poor) {
-          score += 50;
+          score += SCORING.RUM.AVERAGE_METRIC_SCORE;
         } else {
-          score += 0;
+          score += SCORING.RUM.POOR_METRIC_SCORE;
         }
       }
     }
