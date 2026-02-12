@@ -7,6 +7,7 @@
 import { IAnalyticsCollector, AnalyticsConfig } from '../../types/serviceInterfaces';
 import { supabase } from '../supabase';
 import { createScopedLogger } from '../../utils/logger';
+import { BATCH_SIZES, MONITORING } from '../constants';
 
 const logger = createScopedLogger('AnalyticsCollector');
 
@@ -48,7 +49,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
     this.config = {
       enabled: true,
       sampleRate: 1.0, // 100% sampling by default
-      batchSize: 50,
+      batchSize: BATCH_SIZES.METRICS_BATCH,
     };
 
     // Start batch processing
@@ -197,7 +198,7 @@ export class AnalyticsCollector implements IAnalyticsCollector {
       if (this.isProcessing) return;
       
       await this.flushQueues();
-    }, 5000); // Process every 5 seconds
+    }, MONITORING.FLUSH_INTERVAL_MS); // Use modular constant
   }
 
   private async flushQueues(): Promise<void> {

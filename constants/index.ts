@@ -326,6 +326,21 @@ export {
   SIMULATION_PARAMS,
 } from './simulation';
 
+// Export UI constants (Flexy's modular system)
+export {
+  UI_CONSTANTS,
+  ANIMATION_TIMINGS,
+  UI_DURATIONS,
+  INPUT_TIMINGS,
+  POLLING_INTERVALS,
+  UI_DIMENSIONS,
+  VIRTUAL_SCROLL_CONFIG,
+  PAGINATION_CONFIG,
+  SCROLL_CONFIG,
+  FORM_CONFIG,
+  UPLOAD_CONFIG,
+} from './ui';
+
 // Export modular animation constants
 export {
   UI_ANIMATION,
