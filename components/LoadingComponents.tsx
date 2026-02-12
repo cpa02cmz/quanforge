@@ -67,7 +67,7 @@ export const LoadingComponents = {
           <div className="flex-1 space-y-2">
             {Array.from({ length: 12 }, (_, i) => (
               <SkeletonLoader 
-                key={i}
+                key={`code-line-${i}`}
                 variant="text" 
                 width={i % 3 === 0 ? '90%' : i % 3 === 1 ? '75%' : '85%'}
                 height={16} 
@@ -128,7 +128,7 @@ export const LoadingComponents = {
       {/* Stats row */}
       <div className="grid grid-cols-4 gap-4">
         {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="bg-dark-surface border border-dark-border rounded-lg p-4">
+          <div key={`stat-card-${i}`} className="bg-dark-surface border border-dark-border rounded-lg p-4">
             <SkeletonLoader variant="text" width="60%" height={14} animation="shimmer" className="mb-2" />
             <SkeletonLoader variant="text" width="80%" height={28} animation="shimmer" />
           </div>

@@ -99,7 +99,7 @@ export const KeyboardShortcutHint: React.FC<KeyboardShortcutHintProps> = memo(({
         )}
         <div className="flex items-center gap-1">
           {formattedKeys.map((key, index) => (
-            <React.Fragment key={index}>
+            <React.Fragment key={key}>
               <kbd className="px-1.5 py-0.5 text-xs font-mono font-medium bg-dark-bg border border-dark-border rounded text-gray-300 min-w-[1.25rem] text-center">
                 {key}
               </kbd>

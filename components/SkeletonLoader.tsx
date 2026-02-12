@@ -168,7 +168,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = memo(({
     <div className="flex flex-col" style={{ gap: `${lineGap}px` }}>
       {Array.from({ length: lines }, (_, index) => (
         <SkeletonElement 
-          key={index}
+          key={`skeleton-line-${index}`}
           customWidth={variant === 'text' ? getLineWidth(index, lines) : undefined}
           isLast={index === lines - 1}
         />
@@ -245,7 +245,7 @@ export const ListSkeleton: React.FC<ListSkeletonProps> = memo(({
     <div className={`space-y-3 ${className}`}>
       {Array.from({ length: items }, (_, index) => (
         <div 
-          key={index}
+          key={`list-item-${index}`}
           className="flex items-center gap-3 bg-dark-surface border border-dark-border rounded-lg p-3"
         >
           <SkeletonLoader variant="circular" width={40} height={40} animation={animation} />
@@ -288,7 +288,7 @@ export const ChartSkeleton: React.FC<ChartSkeletonProps> = memo(({
           const heightPercent = 30 + Math.random() * 60;
           return (
             <SkeletonLoader 
-              key={index}
+              key={`chart-bar-${index}`}
               variant="rounded" 
               width="100%" 
               height={`${heightPercent}%`}
@@ -303,7 +303,7 @@ export const ChartSkeleton: React.FC<ChartSkeletonProps> = memo(({
       <div className="flex justify-between mt-4">
         {Array.from({ length: 4 }, (_, index) => (
           <SkeletonLoader 
-            key={index}
+            key={`x-label-${index}`}
             variant="text" 
             width={60}
             animation={animation}

@@ -83,9 +83,9 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = mem
         {/* Content */}
         <div className="p-6">
           <div className="space-y-3">
-            {shortcuts.map((shortcut, index) => (
+            {shortcuts.map((shortcut) => (
               <div
-                key={index}
+                key={shortcut.description}
                 className="flex items-center justify-between py-3 px-4 bg-dark-bg rounded-lg border border-dark-border"
               >
                 <div className="flex items-center space-x-2">

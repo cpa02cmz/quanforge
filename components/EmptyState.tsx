@@ -84,9 +84,9 @@ export const EmptyState: React.FC<EmptyStateProps> = memo(({
             Try saying:
           </p>
           <div className="flex flex-wrap justify-center gap-2">
-            {tips.map((tip, index) => (
+            {tips.map((tip) => (
               <div
-                key={index}
+                key={tip.text}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-dark-bg border border-dark-border rounded-full text-sm text-gray-300 hover:border-brand-500/50 hover:text-brand-400 transition-all cursor-default group"
               >
                 <span className="text-lg" aria-hidden="true">{tip.icon}</span>
@@ -100,7 +100,7 @@ export const EmptyState: React.FC<EmptyStateProps> = memo(({
       {/* Action Buttons */}
       {actions.length > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          {actions.map((action, index) => {
+          {actions.map((action) => {
             const buttonClasses = action.variant === 'primary'
               ? 'bg-brand-600 hover:bg-brand-500 text-white shadow-lg shadow-brand-600/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-surface'
               : 'bg-dark-bg border border-dark-border hover:border-brand-500 text-gray-300 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-surface';
@@ -126,7 +126,7 @@ export const EmptyState: React.FC<EmptyStateProps> = memo(({
             if (action.href) {
               return (
                 <Link
-                  key={index}
+                  key={`${action.label}-link`}
                   to={action.href}
                   className={`inline-flex items-center justify-center px-6 py-3 rounded-xl font-medium transition-all group ${buttonClasses}`}
                 >
@@ -137,7 +137,7 @@ export const EmptyState: React.FC<EmptyStateProps> = memo(({
 
             return (
               <button
-                key={index}
+                key={`${action.label}-button`}
                 onClick={action.onClick}
                 className={`inline-flex items-center justify-center px-6 py-3 rounded-xl font-medium transition-all group ${buttonClasses}`}
               >

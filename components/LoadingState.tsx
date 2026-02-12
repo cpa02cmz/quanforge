@@ -145,7 +145,7 @@ export const CardSkeletonLoader: React.FC<CardSkeletonProps> = memo(({
       >
         {Array.from({ length: count }).map((_, i) => (
           <div
-            key={i}
+            key={`loading-card-${i}`}
             className="bg-dark-surface border border-dark-border rounded-xl p-6 hover:border-dark-border/80 transition-colors duration-300"
             aria-hidden="true"
             style={{
