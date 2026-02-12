@@ -168,8 +168,9 @@ class PerformanceOptimizer {
 
     try {
       // Force garbage collection if available
-      if ((globalThis as any).gc) {
-        (globalThis as any).gc();
+      const globalWithGC = globalThis as { gc?: () => void };
+      if (typeof globalWithGC.gc === 'function') {
+        globalWithGC.gc();
         appliedOptimizations.push('Forced garbage collection');
       }
 
@@ -390,8 +391,11 @@ class PerformanceOptimizer {
   }
 
   private getCurrentMemoryUsage(): number {
-    if ((performance as any).memory) {
-      const memory = (performance as any).memory;
+    const perfWithMemory = performance as Performance & {
+      memory?: { usedJSHeapSize: number };
+    };
+    if (perfWithMemory.memory) {
+      const memory = perfWithMemory.memory;
       return Math.round(memory.usedJSHeapSize / 1024 / 1024 * 100) / 100;
     }
     return 0;

@@ -4,7 +4,12 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
-import { BatchQuery, BatchResult, CombinedQuery } from './queryTypes';
+import { BatchQuery, BatchResult, CombinedQuery, QueryError } from './queryTypes';
+
+// Type guard for error handling
+function isError(error: unknown): error is Error {
+  return error instanceof Error;
+}
 
 export class QueryExecutionEngine {
   private retryCount = new Map<string, number>();
@@ -30,15 +35,16 @@ export class QueryExecutionEngine {
         results.push(...operationResults);
       } catch (error: unknown) {
         // Handle operation-level errors
+        const errorMessage = isError(error) ? error.message : 'Unknown error';
         const errorResults = queries.map(query => ({
           id: query.id,
           error: {
             code: 'OPERATION_FAILED',
-            message: `Failed to execute ${operation}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            message: `Failed to execute ${operation}: ${errorMessage}`,
             type: 'database',
             status: 500,
-            details: { operation, originalError: error instanceof Error ? error.message : error }
-          } as any,
+            details: { operation, originalError: errorMessage }
+          } as QueryError,
           executionTime: 0
         }));
         results.push(...errorResults);
@@ -71,7 +77,7 @@ export class QueryExecutionEngine {
         results.push(...combinedResults);
       }
     } catch (error: unknown) {
-      return this.createErrorResults(queries, error as any);
+      return this.createErrorResults(queries, error);
     }
 
     return results;
@@ -88,7 +94,7 @@ export class QueryExecutionEngine {
         const result = await this.executeSingleQuery(query);
         results.push(result);
       } catch (error: unknown) {
-        results.push(this.createErrorResult(query, error as any));
+        results.push(this.createErrorResult(query, error));
       }
     }
 
@@ -106,7 +112,7 @@ export class QueryExecutionEngine {
         const result = await this.executeSingleQuery(query);
         results.push(result);
       } catch (error: unknown) {
-        results.push(this.createErrorResult(query, error as any));
+        results.push(this.createErrorResult(query, error));
       }
     }
 
@@ -124,7 +130,7 @@ export class QueryExecutionEngine {
         const result = await this.executeSingleQuery(query);
         results.push(result);
       } catch (error: unknown) {
-        results.push(this.createErrorResult(query, error as any));
+        results.push(this.createErrorResult(query, error));
       }
     }
 
@@ -139,7 +145,7 @@ export class QueryExecutionEngine {
     const retryKey = `${query.id}_${Date.now()}`;
 
     try {
-      let result: any;
+      let result: { data: unknown } | undefined;
 
       switch (query.operation) {
         case 'select':
@@ -189,16 +195,16 @@ export class QueryExecutionEngine {
           type: 'database',
           status: 500,
           details: { query: query.query, retries: currentRetries }
-        } as any,
+        } as QueryError,
         executionTime
       };
     }
   }
 
-/**
+  /**
    * Execute SELECT query
    */
-  private async executeSelect(query: BatchQuery): Promise<{ data: any }> {
+  private async executeSelect(query: BatchQuery): Promise<{ data: unknown }> {
     const queryBuilder = this.client.from(query.table || 'unknown');
     const result = await queryBuilder.select('*').limit(1000);
     
@@ -212,7 +218,7 @@ export class QueryExecutionEngine {
   /**
    * Execute INSERT query
    */
-  private async executeInsert(query: BatchQuery): Promise<{ data: any }> {
+  private async executeInsert(query: BatchQuery): Promise<{ data: unknown }> {
     if (!query.table) {
       throw new Error('Table name required for INSERT operations');
     }
@@ -231,7 +237,7 @@ export class QueryExecutionEngine {
   /**
    * Execute UPDATE query
    */
-  private async executeUpdate(query: BatchQuery): Promise<{ data: any }> {
+  private async executeUpdate(query: BatchQuery): Promise<{ data: unknown }> {
     if (!query.table) {
       throw new Error('Table name required for UPDATE operations');
     }
@@ -251,7 +257,7 @@ export class QueryExecutionEngine {
   /**
    * Execute DELETE query
    */
-  private async executeDelete(query: BatchQuery): Promise<{ data: any }> {
+  private async executeDelete(query: BatchQuery): Promise<{ data: unknown }> {
     if (!query.table) {
       throw new Error('Table name required for DELETE operations');
     }
@@ -281,7 +287,7 @@ export class QueryExecutionEngine {
       const result = await baseQuery.select('*').limit(1000);
       
       if (result.error) {
-        return this.createErrorResults(combined.originalQueries, result.error as any);
+        return this.createErrorResults(combined.originalQueries, result.error);
       }
 
       const data = result.data;
@@ -297,7 +303,7 @@ export class QueryExecutionEngine {
         });
       }
     } catch (error: unknown) {
-      return this.createErrorResults(combined.originalQueries, error as any);
+      return this.createErrorResults(combined.originalQueries, error);
     }
 
     return results;
@@ -378,8 +384,8 @@ export class QueryExecutionEngine {
   /**
    * Extract filters from queries
    */
-  private extractFilters(queries: BatchQuery[]): Array<{ column: string; operator: string; value: any }> {
-    const filters: Array<{ column: string; operator: string; value: any }> = [];
+  private extractFilters(queries: BatchQuery[]): Array<{ column: string; operator: string; value: unknown }> {
+    const filters: Array<{ column: string; operator: string; value: unknown }> = [];
     
     // This is a simplified implementation
     // In reality, you'd parse the SQL WHERE clauses properly
@@ -410,7 +416,7 @@ export class QueryExecutionEngine {
   /**
    * Filter data for specific query
    */
-  private filterDataForQuery(data: any[], _query: BatchQuery): any[] {
+  private filterDataForQuery(data: unknown[], _query: BatchQuery): unknown[] {
     // This is a simplified implementation
     // In reality, you'd filter the combined data based on the specific query requirements
     return data;
@@ -419,23 +425,23 @@ export class QueryExecutionEngine {
   /**
    * Create error results for multiple queries
    */
-  private createErrorResults(queries: BatchQuery[], error: any): BatchResult[] {
+  private createErrorResults(queries: BatchQuery[], error: unknown): BatchResult[] {
     return queries.map(query => this.createErrorResult(query, error));
   }
 
   /**
    * Create error result for a single query
    */
-  private createErrorResult(query: BatchQuery, error: any): BatchResult {
+  private createErrorResult(query: BatchQuery, error: unknown): BatchResult {
     return {
       id: query.id,
       error: {
         code: 'EXECUTION_ERROR',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: isError(error) ? error.message : 'Unknown error',
         type: 'database',
         status: 500,
-        details: { query: query.query, originalError: error }
-      } as any,
+        details: { query: query.query, originalError: isError(error) ? error.message : error }
+      } as QueryError,
       executionTime: 0
     };
   }

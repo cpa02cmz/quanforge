@@ -7,6 +7,19 @@ import React from 'react';
 import { PerformanceWithMemory } from '../types/browser';
 import { TIME_CONSTANTS } from '../constants/config';
 
+// ========== BROWSER API TYPE EXTENSIONS ==========
+
+// Layout Shift API - not fully typed in standard TypeScript
+interface LayoutShiftEntry extends PerformanceEntry {
+  hadRecentInput: boolean;
+  value: number;
+}
+
+// First Input Delay API - not fully typed in standard TypeScript  
+interface FirstInputEntry extends PerformanceEntry {
+  processingStart: number;
+}
+
 // ========== INTERFACES ==========
 
 interface PerformanceMetric {
@@ -160,8 +173,9 @@ class PerformanceCore {
     let clsValue = 0;
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        if (!(entry as any).hadRecentInput) {
-          clsValue += (entry as any).value;
+        const layoutShift = entry as LayoutShiftEntry;
+        if (!layoutShift.hadRecentInput) {
+          clsValue += layoutShift.value;
         }
       }
       this.recordMetric('cls', clsValue);
@@ -173,7 +187,8 @@ class PerformanceCore {
   private setupFIDObserver(): void {
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        this.recordMetric('fid', (entry as any).processingStart - entry.startTime);
+        const firstInput = entry as FirstInputEntry;
+        this.recordMetric('fid', firstInput.processingStart - entry.startTime);
       }
     });
     observer.observe({ entryTypes: ['first-input'] });
@@ -345,7 +360,7 @@ class TimingUtilities {
   }
 
   private isColdStart(): boolean {
-    return !(globalThis as any)._edgeFunctionInitialized;
+    return !(globalThis as { _edgeFunctionInitialized?: boolean })._edgeFunctionInitialized;
   }
 
   private getMemoryUsage(): number {
@@ -456,11 +471,13 @@ class MemoryUtilities {
   private performEmergencyCleanup(): void {
     try {
       // Clear performance metrics history
-      (this.core as any).metrics.length = 0;
+      type CoreWithMetrics = { metrics: { length: number } };
+      (this.core as unknown as CoreWithMetrics).metrics.length = 0;
       
       // Force garbage collection if available
-      if ('gc' in globalThis) {
-        (globalThis as any).gc();
+      const globalWithGC = globalThis as { gc?: () => void };
+      if (typeof globalWithGC.gc === 'function') {
+        globalWithGC.gc();
       }
       
       console.warn('Emergency memory cleanup performed');

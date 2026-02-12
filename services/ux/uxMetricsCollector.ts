@@ -5,6 +5,20 @@
 
 import { UXMetrics } from './uxTypes';
 
+// Browser API type extensions for performance entries
+interface LayoutShiftEntry extends PerformanceEntry {
+  hadRecentInput: boolean;
+  value: number;
+}
+
+interface FirstInputEntry extends PerformanceEntry {
+  processingStart: number;
+}
+
+interface LargestContentfulPaintEntry extends PerformanceEntry {
+  startTime: number;
+}
+
 export class UXMetricsCollector {
   private observers: PerformanceObserver[] = [];
   
@@ -37,7 +51,7 @@ export class UXMetricsCollector {
     try {
       const observer = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        const lastEntry = entries[entries.length - 1] as any;
+        const lastEntry = entries[entries.length - 1] as LargestContentfulPaintEntry;
         this.metrics.lcp = lastEntry.startTime;
       });
       
@@ -57,7 +71,7 @@ export class UXMetricsCollector {
         const entries = list.getEntries();
         for (const entry of entries) {
           if (entry.entryType === 'first-input') {
-            const fidEntry = entry as any;
+            const fidEntry = entry as FirstInputEntry;
             this.metrics.fid = fidEntry.processingStart - fidEntry.startTime;
             break;
           }
@@ -81,8 +95,9 @@ export class UXMetricsCollector {
       const observer = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         for (const entry of entries) {
-          if (!(entry as any).hadRecentInput) {
-            clsValue += (entry as any).value;
+          const layoutShift = entry as LayoutShiftEntry;
+          if (!layoutShift.hadRecentInput) {
+            clsValue += layoutShift.value;
           }
         }
         this.metrics.cls = clsValue;
