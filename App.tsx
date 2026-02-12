@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './services/supabase';
 import { ToastProvider } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ShortcutDiscoveryProvider } from './components/ShortcutDiscoveryContext';
 import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
@@ -180,7 +181,8 @@ useEffect(() => {
   return (
     <ErrorBoundary>
       <ToastProvider>
-        <BrowserRouter>
+        <ShortcutDiscoveryProvider>
+          <BrowserRouter>
           <SEOHead 
             structuredData={[
               structuredDataTemplates.softwareApplication,
@@ -218,6 +220,7 @@ useEffect(() => {
             </Routes>
           </Suspense>
         </BrowserRouter>
+        </ShortcutDiscoveryProvider>
       </ToastProvider>
     </ErrorBoundary>
   );

@@ -1,5 +1,6 @@
 import React, { memo, useMemo } from 'react';
 import { Tooltip } from './Tooltip';
+import { useShortcutDiscovery } from './ShortcutDiscoveryContext';
 
 export interface KeyboardShortcutHintProps {
   /** The keyboard keys to display */
@@ -43,6 +44,15 @@ export const KeyboardShortcutHint: React.FC<KeyboardShortcutHintProps> = memo(({
   delay = 400,
   disabled = false
 }) => {
+  // Access global shortcut discovery mode
+  let isDiscoveryMode = false;
+  try {
+    const discovery = useShortcutDiscovery();
+    isDiscoveryMode = discovery.isDiscoveryMode;
+  } catch {
+    // Provider not available, discovery mode disabled
+  }
+
   // Detect platform for appropriate key symbols
   const isMac = useMemo(() => {
     if (typeof navigator === 'undefined') return false;
@@ -113,6 +123,25 @@ export const KeyboardShortcutHint: React.FC<KeyboardShortcutHintProps> = memo(({
     return <>{children}</>;
   }
 
+  // Render inline shortcut badge when in discovery mode
+  const shortcutBadge = isDiscoveryMode ? (
+    <span 
+      className="
+        absolute -top-2 -right-2 
+        px-1.5 py-0.5 
+        text-[10px] font-mono font-medium
+        bg-brand-600 text-white 
+        rounded shadow-lg shadow-brand-600/30
+        animate-shortcut-badge-enter
+        z-20 pointer-events-none
+        whitespace-nowrap
+      "
+      aria-hidden="true"
+    >
+      {formattedKeys.join(' ')}
+    </span>
+  ) : null;
+
   return (
     <Tooltip
       content={tooltipContent}
@@ -122,7 +151,10 @@ export const KeyboardShortcutHint: React.FC<KeyboardShortcutHintProps> = memo(({
       maxWidth={200}
       showArrow={true}
     >
-      {children}
+      <span className="relative inline-block">
+        {children}
+        {shortcutBadge}
+      </span>
     </Tooltip>
   );
 });
@@ -130,3 +162,45 @@ export const KeyboardShortcutHint: React.FC<KeyboardShortcutHintProps> = memo(({
 KeyboardShortcutHint.displayName = 'KeyboardShortcutHint';
 
 export default KeyboardShortcutHint;
+
+// CSS animation for shortcut badge entrance
+if (typeof document !== 'undefined') {
+  const styleId = 'shortcut-discovery-animations';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      @keyframes shortcut-badge-enter {
+        0% {
+          transform: scale(0) translateY(4px);
+          opacity: 0;
+        }
+        60% {
+          transform: scale(1.1) translateY(-2px);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(1) translateY(0);
+          opacity: 1;
+        }
+      }
+      
+      .animate-shortcut-badge-enter {
+        animation: shortcut-badge-enter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      }
+      
+      /* Reduced motion support */
+      @media (prefers-reduced-motion: reduce) {
+        .animate-shortcut-badge-enter {
+          animation: fade-in 0.1s ease-out forwards;
+        }
+        
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
