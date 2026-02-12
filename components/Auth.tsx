@@ -4,7 +4,7 @@ import { supabase } from '../services/supabase';
 import { useToast } from './useToast';
 import { useTranslation } from '../services/i18n';
 
-export const Auth: React.FC = memo(() => {
+const AuthComponent: React.FC = memo(() => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -109,3 +109,7 @@ export const Auth: React.FC = memo(() => {
     </div>
   );
 });
+
+// Export as named export for backward compatibility and lazy loading
+export const Auth = AuthComponent;
+export default AuthComponent;
