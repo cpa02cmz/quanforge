@@ -3,6 +3,7 @@ import { ThreatDetector } from './ThreatDetector';
 import { RateLimiter } from './rateLimiter';
 import { APISecurityManager } from './APISecurityManager';
 import { SecurityConfig, securityConfig } from '../configurationService';
+import { STRING_LIMITS, TIME_CONSTANTS } from '../constants';
 
 /**
  * Refactored SecurityManager - Orchestration layer for security modules
@@ -42,7 +43,7 @@ class SecurityManager {
     });
     this.apiSecurityManager = new APISecurityManager({
       apiKeyRotationInterval: this.config.encryption.keyRotationInterval,
-      maxCSRFViolationAge: 24 * 60 * 60 * 1000, // 24 hours
+      maxCSRFViolationAge: TIME_CONSTANTS.DAY, // 24 hours
       maxTokenAge: this.config.csrf.tokenExpiryMs
     });
   }
@@ -226,29 +227,29 @@ class SecurityManager {
     // Type-specific sanitization
     switch (type) {
       case 'text':
-        sanitized = sanitized.replace(/<[^>]*>/g, '').substring(0, 1000);
+        sanitized = sanitized.replace(/<[^>]*>/g, '').substring(0, STRING_LIMITS.MAX_LENGTH);
         break;
-      
+
       case 'code':
         // Basic code sanitization - remove dangerous patterns
         sanitized = sanitized.replace(/system\(.+?\)/gi, '');
         sanitized = sanitized.replace(/exec\(.+?\)/gi, '');
         break;
-      
+
       case 'symbol':
         sanitized = sanitized.replace(/[^A-Z0-9_/]/g, '').toUpperCase();
         break;
-      
+
       case 'url':
         sanitized = sanitized.replace(/[<>'"]/g, '');
         break;
-      
+
       case 'token':
         sanitized = sanitized.replace(/[^a-zA-Z0-9]/g, '');
         break;
-      
+
       case 'search':
-        sanitized = sanitized.replace(/[<>'"]/g, '').substring(0, 200);
+        sanitized = sanitized.replace(/[<>'"]/g, '').substring(0, STRING_LIMITS.DISPLAY_STANDARD);
         break;
       
       case 'email':
