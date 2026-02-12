@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, memo } from 'react';
+import React, { useState, useCallback, useRef, memo, useEffect } from 'react';
 
 export interface IconButtonProps {
   /** Click handler */
@@ -58,6 +58,15 @@ export const IconButton: React.FC<IconButtonProps> = memo(({
   const [ripples, setRipples] = useState<{ x: number; y: number; id: number }[]>([]);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const rippleIdRef = useRef(0);
+  const rippleTimeoutsRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Cleanup timeouts on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      rippleTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      rippleTimeoutsRef.current.clear();
+    };
+  }, []);
 
   // Size configurations
   const sizeClasses = {
@@ -138,9 +147,11 @@ export const IconButton: React.FC<IconButtonProps> = memo(({
       setRipples(prev => [...prev, { x, y, id }]);
 
       // Remove ripple after animation
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         setRipples(prev => prev.filter(r => r.id !== id));
+        rippleTimeoutsRef.current.delete(id);
       }, 600);
+      rippleTimeoutsRef.current.set(id, timeoutId);
     }
 
     onClick();

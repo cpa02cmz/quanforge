@@ -28,6 +28,20 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
   const [fontSize, setFontSize] = useState(14); // Default font size in px
   const [particles, setParticles] = useState<Particle[]>([]);
   const particleIdRef = useRef(0);
+  const particleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeouts on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (particleTimeoutRef.current) {
+        clearTimeout(particleTimeoutRef.current);
+      }
+      if (copiedTimeoutRef.current) {
+        clearTimeout(copiedTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const gutterRef = useRef<HTMLDivElement>(null);
@@ -76,7 +90,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
     setParticles(newParticles);
 
     // Clear particles after animation completes
-    setTimeout(() => {
+    particleTimeoutRef.current = setTimeout(() => {
       setParticles([]);
     }, 600);
   }, []);
@@ -90,7 +104,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
       triggerParticleBurst(copyButtonRef.current);
     }
 
-    setTimeout(() => setCopied(false), UI_TIMING.COPY_FEEDBACK_DURATION);
+    copiedTimeoutRef.current = setTimeout(() => setCopied(false), UI_TIMING.COPY_FEEDBACK_DURATION);
   }, [code, triggerParticleBurst]);
 
   const handleDownload = useCallback(() => {
