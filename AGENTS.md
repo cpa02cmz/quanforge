@@ -1,5 +1,7 @@
 # Development Agent Guidelines
 
+> **Note on Console Statement Counts**: This document contains historical maintenance reports from different dates. Console statement counts vary across runs as they represent snapshots in time during ongoing cleanup efforts. The overall trend shows continuous improvement (from ~201 statements down to ~104), with the most recent count documented in the latest RepoKeeper run.
+
 ## Agent Insights & Decisions
 
 ### RepoKeeper Repository Maintenance (2026-02-12 - Run 16 - FINAL)
