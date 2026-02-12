@@ -8,20 +8,57 @@ interface MarketTickerProps {
   symbol: string;
 }
 
+/**
+ * MarketTicker - Enhanced market data display with micro-UX price flash effects
+ *
+ * Features:
+ * - Price flash animation when bid price changes (green for up, red for down)
+ * - Smooth color transitions with CSS animations
+ * - Reduced motion support for accessibility
+ * - Visual feedback makes market data feel more responsive and professional
+ * - Flash intensity gradually fades for satisfying micro-interaction
+ */
 export const MarketTicker: React.FC<MarketTickerProps> = memo(({ symbol }) => {
   const { t } = useTranslation();
   const [data, setData] = useState<MarketData | null>(null);
   const prevBidRef = useRef<number>(0);
   const [direction, setDirection] = useState<'up' | 'down' | 'neutral'>('neutral');
+  const [flashIntensity, setFlashIntensity] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  // Check for reduced motion preference
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setPrefersReducedMotion(e.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   useEffect(() => {
     // Reset data when symbol changes
     setData(null);
-    
+    setFlashIntensity(0);
+
     const handleUpdate = (newData: MarketData) => {
       if (prevBidRef.current !== 0 && newData.bid !== 0) {
-        if (newData.bid > prevBidRef.current) setDirection('up');
-        else if (newData.bid < prevBidRef.current) setDirection('down');
+        if (newData.bid > prevBidRef.current) {
+          setDirection('up');
+          // Trigger flash effect (unless reduced motion is preferred)
+          if (!prefersReducedMotion) {
+            setFlashIntensity(1);
+          }
+        } else if (newData.bid < prevBidRef.current) {
+          setDirection('down');
+          // Trigger flash effect (unless reduced motion is preferred)
+          if (!prefersReducedMotion) {
+            setFlashIntensity(1);
+          }
+        }
       }
       if (newData.bid !== 0) prevBidRef.current = newData.bid;
       setData(newData);
@@ -35,7 +72,21 @@ export const MarketTicker: React.FC<MarketTickerProps> = memo(({ symbol }) => {
       marketService.unsubscribe(symbol, handleUpdate);
       clearTimeout(timeout);
     };
-  }, [symbol]);
+  }, [symbol, prefersReducedMotion]);
+
+  // Flash fade-out effect
+  useEffect(() => {
+    if (flashIntensity <= 0) return;
+
+    const fadeInterval = setInterval(() => {
+      setFlashIntensity(prev => {
+        const next = prev - 0.1;
+        return next <= 0 ? 0 : next;
+      });
+    }, 50); // Update every 50ms for smooth fade (500ms total fade duration)
+
+    return () => clearInterval(fadeInterval);
+  }, [flashIntensity]);
 
   // Loading / Connecting State
   if (!data || data.status === 'connecting') {
@@ -64,8 +115,26 @@ export const MarketTicker: React.FC<MarketTickerProps> = memo(({ symbol }) => {
   const textColor = direction === 'up' ? 'text-green-500' : direction === 'down' ? 'text-red-500' : 'text-white';
   const bgColor = direction === 'up' ? 'bg-green-500/10' : direction === 'down' ? 'bg-red-500/10' : 'bg-transparent';
 
+  // Calculate flash color and opacity based on direction and intensity
+  const getFlashColor = () => {
+    if (flashIntensity <= 0) return 'transparent';
+    const opacity = flashIntensity * 0.3; // Max 30% opacity
+    return direction === 'up'
+      ? `rgba(34, 197, 94, ${opacity})` // Green flash
+      : `rgba(239, 68, 68, ${opacity})`; // Red flash
+  };
+
   return (
-    <div className={`mt-2 p-3 rounded-lg border transition-colors duration-300 ${bgColor} border-dark-border`}>
+    <div
+      className={`mt-2 p-3 rounded-lg border transition-colors duration-300 ${bgColor} border-dark-border relative overflow-hidden`}
+      style={{
+        // Apply flash effect as box-shadow for a subtle glow
+        boxShadow: flashIntensity > 0
+          ? `inset 0 0 ${20 * flashIntensity}px ${getFlashColor()}`
+          : undefined,
+        transition: 'box-shadow 0.05s ease-out'
+      }}
+    >
       <div className="flex justify-between items-center mb-1">
         <div className="flex items-center gap-2">
              <span className="relative flex h-2 w-2">
@@ -102,3 +171,7 @@ export const MarketTicker: React.FC<MarketTickerProps> = memo(({ symbol }) => {
     </div>
   );
 });
+
+MarketTicker.displayName = 'MarketTicker';
+
+export default MarketTicker;
