@@ -6,6 +6,7 @@
 
 import { handleErrorCompat as handleError } from '../../utils/errorManager';
 import { globalCache } from '../unifiedCacheManager';
+import { ARRAY_LIMITS } from '../constants';
 
 // Unified performance interfaces
 export interface CoreWebVital {
@@ -254,12 +255,12 @@ class PerformanceMonitor {
 
   private recordEdgeMetric(metric: EdgeMetric): void {
     this.edgeMetrics.push(metric);
-    
-    // Keep only last 1000 edge metrics
-    if (this.edgeMetrics.length > 1000) {
-      this.edgeMetrics = this.edgeMetrics.slice(-1000);
+
+    // Keep only last N edge metrics
+    if (this.edgeMetrics.length > ARRAY_LIMITS.METRICS_LARGE) {
+      this.edgeMetrics = this.edgeMetrics.slice(-ARRAY_LIMITS.METRICS_LARGE);
     }
-    
+
     this.cacheMetric('edge', metric);
   }
 
@@ -342,7 +343,7 @@ class PerformanceMonitor {
   }
 
   getEdgeMetrics(): EdgePerformanceMetrics {
-    const recentMetrics = this.edgeMetrics.slice(-100);
+    const recentMetrics = this.edgeMetrics.slice(-ARRAY_LIMITS.METRICS_STANDARD);
     const coldStarts = recentMetrics.filter(m => m.duration > 1000);
     const errors = recentMetrics.filter(m => m.status >= 400);
     

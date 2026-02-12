@@ -1,4 +1,7 @@
 import { TIMEOUTS, WEB_VITALS_THRESHOLDS, PERFORMANCE_BUDGETS, TIME_CONSTANTS } from './constants';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('RealTimeMonitor');
 
 interface PerformanceMetrics {
   lcp: number; // Largest Contentful Paint
@@ -115,7 +118,7 @@ export class RealTimeMonitor {
     // Start periodic reporting
     this.startPeriodicReporting();
 
-    console.log('🔍 Real-time performance monitoring started');
+    logger.log('🔍 Real-time performance monitoring started');
   }
 
   public stopMonitoring(): void {
@@ -130,7 +133,7 @@ export class RealTimeMonitor {
     }
 
     this.isMonitoring = false;
-    console.log('⏹️ Performance monitoring stopped');
+    logger.log('⏹️ Performance monitoring stopped');
   }
 
   private monitorCoreWebVitals(): void {
@@ -345,7 +348,7 @@ export class RealTimeMonitor {
         body: JSON.stringify({ type: 'metric', data: metric })
       });
     } catch (error: unknown) {
-      console.warn('Failed to send performance metric:', error);
+      logger.warn('Failed to send performance metric:', error);
     }
   }
 
@@ -361,7 +364,7 @@ export class RealTimeMonitor {
         body: JSON.stringify({ type: 'error', data: error })
       });
     } catch (error: unknown) {
-      console.warn('Failed to send error metric:', error);
+      logger.warn('Failed to send error metric:', error);
     }
   }
 
@@ -390,7 +393,7 @@ export class RealTimeMonitor {
       }
     };
 
-    console.log('📊 Performance Report:', report);
+    logger.log('📊 Performance Report:', report);
     
     // Send report to analytics
     if (this.reportingEndpoint) {
@@ -410,7 +413,7 @@ export class RealTimeMonitor {
         body: JSON.stringify(report)
       });
     } catch (error: unknown) {
-      console.warn('Failed to send performance report:', error);
+      logger.warn('Failed to send performance report:', error);
     }
   }
 
@@ -466,7 +469,7 @@ export class RealTimeMonitor {
       context
     };
 
-    console.warn(`🚨 Performance Alert: ${metric} (${value}) exceeded threshold (${threshold})`, alert);
+    logger.warn(`🚨 Performance Alert: ${metric} (${value}) exceeded threshold (${threshold})`, alert);
 
     // Send alert if configured
     if (this.config.webhookUrl) {
@@ -486,7 +489,7 @@ export class RealTimeMonitor {
         body: JSON.stringify(alert)
       });
     } catch (error: unknown) {
-      console.warn('Failed to send alert:', error);
+      logger.warn('Failed to send alert:', error);
     }
   }
 
