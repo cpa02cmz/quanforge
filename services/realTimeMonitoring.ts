@@ -1,7 +1,6 @@
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { MEMORY_LIMITS, PERFORMANCE_THRESHOLDS, UX_THRESHOLDS, TIMEOUTS } from '../constants';
-<<<<<<< HEAD
 import { CACHE_TTLS, PERFORMANCE_BUDGETS, API_THRESHOLDS, SCORING, ARRAY_LIMITS } from './constants';
 import { createScopedLogger } from '../utils/logger';
 
