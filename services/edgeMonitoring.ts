@@ -1,6 +1,9 @@
 import { TIMEOUTS } from './constants';
 
 import { getVercelRegion } from '../types/browser';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('EdgeMonitoring');
 
 /**
  * Enhanced Edge Monitoring Service
@@ -110,7 +113,7 @@ class EdgeMonitoringService {
     this.startErrorTracking();
     this.isMonitoring = true;
 
-    console.log('Edge monitoring service initialized');
+    logger.log('Edge monitoring service initialized');
   }
 
   private startHealthChecks(): void {
@@ -444,7 +447,7 @@ class EdgeMonitoringService {
     this.config.notificationChannels.forEach(channel => {
       switch (channel) {
         case 'console':
-          console.warn(`🚨 Edge Alert [${alert.severity.toUpperCase()}]: ${alert.message}`, alert);
+          logger.warn(`🚨 Edge Alert [${alert.severity.toUpperCase()}]: ${alert.message}`, alert);
           break;
         
         case 'webhook':
@@ -480,7 +483,7 @@ class EdgeMonitoringService {
 
   private async sendEmailNotification(alert: Alert): Promise<void> {
     // In a real implementation, this would integrate with an email service
-    console.log(`📧 Email alert sent to ${this.config.emailRecipients?.join(', ')}:`, alert.message);
+    logger.log(`📧 Email alert sent to ${this.config.emailRecipients?.join(', ')}:`, alert.message);
   }
 
    private detectCurrentRegion(): string {
@@ -515,7 +518,7 @@ class EdgeMonitoringService {
       alert.resolved = true;
       alert.resolvedAt = Date.now();
       
-      console.log(`✅ Alert resolved: ${alert.message}`);
+      logger.log(`✅ Alert resolved: ${alert.message}`);
     }
   }
 
@@ -640,7 +643,7 @@ class EdgeMonitoringService {
     }
 
     this.isMonitoring = false;
-    console.log('Edge monitoring service stopped');
+    logger.log('Edge monitoring service stopped');
   }
 
   public restartMonitoring(): void {
