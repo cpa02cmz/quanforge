@@ -17,6 +17,7 @@ import { edgeMonitoring } from './services/edgeMonitoring';
 import { advancedAPICache } from './services/advancedAPICache';
 import { frontendPerformanceOptimizer } from './services/frontendPerformanceOptimizer';
 import { preloadCriticalRoutes } from './utils/loaders';
+import { IntegrationHealthChecker } from './services/integrationWrapper';
 
 // Enhanced lazy loading with route-based code splitting and preloading
 const Auth = lazy(() => 
@@ -132,33 +133,44 @@ useEffect(() => {
          }, 300);
          
           // Initialize Advanced API Cache (non-blocking)
-          // Note: API routes removed - this is a Vite SPA, prefetching static assets instead
-          setTimeout(() => {
-            // Prefetch critical static assets instead of API routes
-            const staticAssets = [
-              '/assets/js/react-core.js',
-              '/assets/js/component-ui.js',
-              '/assets/js/route-generator.js'
-            ].filter(path => {
-              // Only prefetch if not already cached
-              return !sessionStorage.getItem(`prefetched_${path}`);
-            });
-            
-            if (staticAssets.length > 0) {
-              advancedAPICache.prefetch(staticAssets).catch((err: Error) => {
-                // Silently fail - assets will be loaded on demand
-                logger.debug('Static asset prefetch skipped:', err.message);
-              });
-              
-              // Mark as prefetched
-              staticAssets.forEach(path => {
-                sessionStorage.setItem(`prefetched_${path}`, 'true');
-              });
-            }
-          }, 400);
-       } catch (error: unknown) {
-         logger.warn('Non-critical service initialization failed:', error);
-       }
+           // Note: API routes removed - this is a Vite SPA, prefetching static assets instead
+           setTimeout(() => {
+             // Prefetch critical static assets instead of API routes
+             const staticAssets = [
+               '/assets/js/react-core.js',
+               '/assets/js/component-ui.js',
+               '/assets/js/route-generator.js'
+             ].filter(path => {
+               // Only prefetch if not already cached
+               return !sessionStorage.getItem(`prefetched_${path}`);
+             });
+             
+             if (staticAssets.length > 0) {
+               advancedAPICache.prefetch(staticAssets).catch((err: Error) => {
+                 // Silently fail - assets will be loaded on demand
+                 logger.debug('Static asset prefetch skipped:', err.message);
+               });
+               
+               // Mark as prefetched
+               staticAssets.forEach(path => {
+                 sessionStorage.setItem(`prefetched_${path}`, 'true');
+               });
+             }
+           }, 400);
+           
+           // Initialize Integration Health Monitoring (non-blocking)
+           // Sets up periodic health checks for database, AI service, market data, and cache
+           setTimeout(() => {
+             try {
+               IntegrationHealthChecker.setupHealthChecks();
+               logger.info('Integration health monitoring initialized');
+             } catch (err) {
+               logger.warn('Integration health monitoring initialization failed:', err);
+             }
+           }, 500);
+        } catch (error: unknown) {
+          logger.warn('Non-critical service initialization failed:', error);
+        }
      };
      
      // Run initialization in background
