@@ -58,7 +58,7 @@ const AuthComponent: React.FC = memo(() => {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+              className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all min-h-[48px]"
               placeholder="trader@example.com"
               autoComplete="email"
             />
@@ -71,7 +71,7 @@ const AuthComponent: React.FC = memo(() => {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all"
+              className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all min-h-[48px]"
               placeholder="••••••••"
               autoComplete="current-password"
             />
@@ -82,7 +82,7 @@ const AuthComponent: React.FC = memo(() => {
             disabled={loading}
             aria-busy={loading}
             aria-live="polite"
-            className="w-full bg-brand-600 hover:bg-brand-500 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center"
+            className="w-full bg-brand-600 hover:bg-brand-500 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center min-h-[48px]"
           >
             {loading ? (
               <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" aria-hidden="true">
@@ -100,7 +100,7 @@ const AuthComponent: React.FC = memo(() => {
           <button
             onClick={() => setIsLogin(!isLogin)}
             type="button"
-            className="text-sm text-brand-400 hover:text-brand-300 hover:underline"
+            className="text-sm text-brand-400 hover:text-brand-300 hover:underline min-h-[44px] px-4 py-2"
           >
             {isLogin ? t('auth_switch_signup') : t('auth_switch_signin')}
           </button>
