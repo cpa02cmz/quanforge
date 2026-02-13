@@ -226,6 +226,10 @@ class PerformanceCore {
     return vitals;
   }
 
+  clearMetrics(): void {
+    this.metrics = [];
+  }
+
   cleanup(): void {
     this.observers.forEach(observer => {
       try {
@@ -663,6 +667,10 @@ export class PerformanceManager {
 
   getMetrics(): PerformanceMetric[] {
     return this.core.getMetrics();
+  }
+
+  clearMetrics(): void {
+    this.core.clearMetrics();
   }
 
   getWebVitals(): Partial<PageLoadMetrics> {
