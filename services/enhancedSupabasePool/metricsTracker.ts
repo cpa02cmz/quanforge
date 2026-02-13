@@ -1,6 +1,8 @@
 // Connection metrics and analytics for Enhanced Supabase Pool
+// Flexy loves modularity! Using centralized monitoring configuration
 
 import { PoolMetrics } from './types';
+import { METRICS_CONFIG } from '../monitoringConfig';
 
 export class ConnectionMetricsTracker {
   private metrics: PoolMetrics = {
@@ -14,7 +16,7 @@ export class ConnectionMetricsTracker {
   };
   
   private responseTimes: number[] = [];
-  private maxResponseTimeSamples: number = 1000;
+  private maxResponseTimeSamples: number = METRICS_CONFIG.RESPONSE_TIME_SAMPLES_DEFAULT;
   private startTime: number = Date.now();
 
   recordConnectionCreated(): void {

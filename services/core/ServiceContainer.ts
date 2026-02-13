@@ -1,10 +1,12 @@
 /**
  * Dependency Injection Container
  * Provides IoC pattern for service management with lifecycle and health monitoring
+ * Flexy loves modularity! Using centralized monitoring configuration
  */
 
 import type { IService } from './ServiceInterfaces';
 import { createScopedLogger } from '../../utils/logger';
+import { HEALTH_CHECK_CONFIG } from '../monitoringConfig';
 
 const logger = createScopedLogger('ServiceContainer');
 
@@ -81,7 +83,7 @@ class ServiceContainer {
   /**
    * Start health monitoring for all services
    */
-  startHealthMonitoring(intervalMs: number = 30000): void {
+  startHealthMonitoring(intervalMs: number = HEALTH_CHECK_CONFIG.INTERVAL_STANDARD): void {
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval);
     }

@@ -1,12 +1,18 @@
 /**
  * Modular Query Batching Manager
  * Orchestrates all query batching activities through modular components
+ * Flexy loves modularity! All hardcoded values moved to batchConfig.ts
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { BatchQuery, BatchConfig, BatchStats, QueryBatch } from './queryTypes';
 import { QueryQueueManager } from './queryQueueManager';
 import { QueryExecutionEngine } from './queryExecutionEngine';
+import { 
+  DEFAULT_BATCH_CONFIG, 
+  QUEUE_HEALTH_THRESHOLDS, 
+  QUERY_EXECUTION_LIMITS 
+} from './batchConfig';
 
 class QueryBatcher {
   private static instance: QueryBatcher;
@@ -26,16 +32,7 @@ class QueryBatcher {
     client: SupabaseClient,
     config: Partial<BatchConfig> = {}
   ) {
-    const defaultConfig: BatchConfig = {
-      maxBatchSize: 10,
-      batchTimeout: 50, // 50ms
-      maxWaitTime: 500, // 500ms max wait
-      priorityQueues: true,
-      retryAttempts: 3,
-      retryDelay: 100
-    };
-
-    const finalConfig = { ...defaultConfig, ...config };
+    const finalConfig: BatchConfig = { ...DEFAULT_BATCH_CONFIG, ...config };
 
     this.queueManager = new QueryQueueManager(finalConfig);
     this.executionEngine = new QueryExecutionEngine(client, {
@@ -138,23 +135,23 @@ class QueryBatcher {
     let status: 'healthy' | 'warning' | 'critical' = 'healthy';
     const recommendations: string[] = [];
 
-    if (queueStatus.pendingQueries > 50) {
+    if (queueStatus.pendingQueries > QUEUE_HEALTH_THRESHOLDS.PENDING_CRITICAL) {
       status = 'critical';
       recommendations.push('Queue size is very high, consider increasing batch size or timeout');
-    } else if (queueStatus.pendingQueries > 20) {
+    } else if (queueStatus.pendingQueries > QUEUE_HEALTH_THRESHOLDS.PENDING_WARNING) {
       status = 'warning';
       recommendations.push('Monitor queue size for potential bottlenecks');
     }
 
-    if (overdueQueries > 10) {
+    if (overdueQueries > QUEUE_HEALTH_THRESHOLDS.OVERDUE_CRITICAL) {
       status = 'critical';
       recommendations.push('Many overdue queries detected - check database performance');
-    } else if (overdueQueries > 5) {
+    } else if (overdueQueries > QUEUE_HEALTH_THRESHOLDS.OVERDUE_WARNING) {
       status = 'warning';
       recommendations.push('Some queries are waiting too long');
     }
 
-    if (queueStatus.oldestQueryAge > 1000) {
+    if (queueStatus.oldestQueryAge > QUEUE_HEALTH_THRESHOLDS.MAX_WAIT_TIME_WARNING) {
       status = 'warning';
       recommendations.push('Oldest query is waiting too long');
     }
@@ -260,7 +257,7 @@ class QueryBatcher {
           code: 'BATCH_FAILED',
           message: `Batch execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
           type: 'database',
-          status: 500,
+          status: QUERY_EXECUTION_LIMITS.ERROR_STATUS_SERVER,
           details: { batchId: Date.now(), originalError: error }
         } as any,
         executionTime: performance.now() - startTime
