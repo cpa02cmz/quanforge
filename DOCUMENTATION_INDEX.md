@@ -4,7 +4,7 @@
 ## 🚀 Core Documentation (13 Essential Files)
 
 ### **Must Read First (AI-Agent Priority)**
-1. **[blueprint.md](./blueprint.md)** - System architecture & component hierarchy
+1. **[blueprint.md](./docs/blueprint.md)** - System architecture & component hierarchy
 2. **[ROADMAP.md](./ROADMAP.md)** - Development phases & feature timeline  
 3. **[AGENTS.md](./AGENTS.md)** - AI agent guidelines & development patterns
 4. **[README.md](./README.md)** - Project overview & setup instructions
