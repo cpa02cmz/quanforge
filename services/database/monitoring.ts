@@ -1,3 +1,6 @@
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('DatabaseMonitoring');
 import { robotCache, queryCache } from './cache';
 import { getClient } from './client';
 import { handleError } from '../../utils/errorHandler';
@@ -97,7 +100,7 @@ export class QueryOptimizer {
       });
       
       if (failedResults.length > 0) {
-        console.warn(`${failedResults.length} batch queries failed:`, failedResults);
+        logger.warn(`${failedResults.length} batch queries failed:`, failedResults);
       }
 
       DatabaseMonitor.recordOperation('batch_query', performance.now() - startTime);

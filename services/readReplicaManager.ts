@@ -1,3 +1,6 @@
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('ReadReplicaManager');
 // Read Replica Optimization Service for Analytics Queries
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import { getEnv } from './settingsManager';
@@ -34,7 +37,7 @@ class ReadReplicaManager {
     const supabaseAnonKey = getEnv('VITE_SUPABASE_ANON_KEY');
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.warn('Read replicas disabled: Missing Supabase configuration');
+      logger.warn('Read replicas disabled: Missing Supabase configuration');
       return;
     }
 
@@ -132,7 +135,7 @@ class ReadReplicaManager {
     } catch (error: unknown) {
       // Fallback to primary on replica failure
       if (client !== this.primaryClient && this.primaryClient) {
-        console.warn(`Replica ${replicaName} failed, falling back to primary`);
+        logger.warn(`Replica ${replicaName} failed, falling back to primary`);
         return this.executeAnalyticsQuery(query, params, {
           ...options,
           forceReplica: 'primary'

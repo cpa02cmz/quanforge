@@ -1,3 +1,6 @@
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('ModularSupabase');
 /**
  * Modular Supabase Service
  * Consolidates the 5 service modules into a unified interface that matches the original supabase.ts API
@@ -526,7 +529,7 @@ class ModularSupabase implements ModularSupabaseService {
 
   logPerformanceMetrics(): void {
     const report = this.analytics.getPerformanceReport();
-    console.log(report);
+    logger.log(report);
   }
 
   async optimizeDatabase(): Promise<{ success: boolean; message: string }> {
@@ -542,7 +545,7 @@ class ModularSupabase implements ModularSupabaseService {
       const { error } = await client.rpc('pg_stat_reset');
       
       if (error) {
-        console.warn("Could not run database optimization:", error.message);
+        logger.warn("Could not run database optimization:", error.message);
       }
       
       // Clear and warm up caches

@@ -1,3 +1,6 @@
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('PerformanceMonitor');
 import { PERFORMANCE_MONITORING } from '../constants/timing';
 
 interface PerformanceMetric {
@@ -136,7 +139,7 @@ class PerformanceMonitor {
       // FID was replaced by INP in web-vitals v3+
       webVitals.onINP(recordMetric);
     } catch (error: unknown) {
-      console.warn('Failed to load web-vitals:', error);
+      logger.warn('Failed to load web-vitals:', error);
     }
   }
 
@@ -339,11 +342,11 @@ class PerformanceMonitor {
       // Metrics are now collected locally only
       if (process.env['ENABLE_EDGE_METRICS'] === 'true') {
         // Local metrics storage instead of API endpoint
-        console.debug(`[Metric] ${name}:`, data);
+        logger.debug(`[Metric] ${name}:`, data);
       }
     } catch (error: unknown) {
       // Silently fail to not impact user experience
-      console.debug('Failed to send metric:', error);
+      logger.debug('Failed to send metric:', error);
     }
   }
 
