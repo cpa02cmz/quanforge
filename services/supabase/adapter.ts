@@ -9,6 +9,7 @@ import { supabaseEdge } from './edge';
 import type { Robot } from '../../types';
 import type { ConnectionConfig, Connection, PoolStats } from './pools';
 import type { EdgeConfig, EdgeMetrics } from './edge';
+import { TOKEN_CONSTANTS } from '../modularConstants';
 
 /**
  * Legacy adapter that maintains existing API contracts
@@ -66,7 +67,7 @@ const mockAuth = {
         user: session.user, 
         session: {
           access_token: session.access_token,
-          expires_at: Date.now() + (session.expires_in || 3600) * 1000
+          expires_at: Date.now() + (session.expires_in || TOKEN_CONSTANTS.DEFAULT_ACCESS_TOKEN_EXPIRY_S) * 1000
         }
       }, 
       error: null 
@@ -79,7 +80,7 @@ const mockAuth = {
         user: session.user, 
         session: {
           access_token: session.access_token,
-          expires_at: Date.now() + (session.expires_in || 3600) * 1000
+          expires_at: Date.now() + (session.expires_in || TOKEN_CONSTANTS.DEFAULT_ACCESS_TOKEN_EXPIRY_S) * 1000
         }
       }, 
       error: null 
@@ -97,7 +98,7 @@ const mockAuth = {
           user: session.user,
           session: {
             access_token: session.access_token,
-            expires_at: Date.now() + (session.expires_in || 3600) * 1000
+            expires_at: Date.now() + (session.expires_in || TOKEN_CONSTANTS.DEFAULT_ACCESS_TOKEN_EXPIRY_S) * 1000
           }
         },
         error: null

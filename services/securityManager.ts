@@ -1551,7 +1551,7 @@ private validateRobotData(data: any): ValidationResult {
 
   // CSRF token storage
   private csrfTokens = new Map<string, { token: string; expiresAt: number }>();
-  private readonly TOKEN_EXPIRY_MS = 3600000; // 1 hour
+  private readonly TOKEN_EXPIRY_MS = TIME_CONSTANTS.HOUR; // 1 hour
 
   // Hash string for rate limiting and caching
   hashString(input: string): string {

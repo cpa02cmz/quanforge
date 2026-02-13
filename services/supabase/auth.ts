@@ -5,6 +5,7 @@
 
 import { UserSession } from '../../types';
 import { STORAGE_KEYS, safeParse, trySaveToStorage, generateUUID } from './storage';
+import { TOKEN_CONSTANTS } from '../modularConstants';
 
 // Auth state management
 const authListeners: Array<(event: string, session: UserSession | null) => void> = [];
@@ -61,7 +62,7 @@ export const mockAuth = {
       },
       access_token: generateUUID(),
       refresh_token: generateUUID(),
-      expires_in: 3600, // 1 hour
+      expires_in: TOKEN_CONSTANTS.DEFAULT_ACCESS_TOKEN_EXPIRY_S, // 1 hour
       token_type: 'bearer'
     };
     
