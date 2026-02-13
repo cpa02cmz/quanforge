@@ -2,10 +2,13 @@
  * Rate Limiter Service - Advanced Rate Limiting and Request Management
  * 
  * Handles rate limiting, burst control, and request throttling across multiple users
+ * 
+ * Flexy loves modularity - using centralized constants instead of hardcoded values!
  */
 
 import { IRateLimiter, RateLimitConfig } from '../../types/serviceInterfaces';
 import { createScopedLogger } from '../../utils/logger';
+import { RATE_LIMITING, TIME_CONSTANTS } from '../../constants/config';
 
 const logger = createScopedLogger('RateLimiter');
 
@@ -50,8 +53,8 @@ export class RateLimiter implements IRateLimiter {
 
   async initialize(): Promise<void> {
     this.config = {
-      windowMs: 60000, // 1 minute
-      maxRequests: 100,
+      windowMs: RATE_LIMITING.DEFAULT_WINDOW, // 1 minute from config
+      maxRequests: RATE_LIMITING.DEFAULT_MAX_REQUESTS, // 10 requests from config
       skipSuccessfulRequests: false,
       skipFailedRequests: false,
     };
@@ -211,10 +214,10 @@ export class RateLimiter implements IRateLimiter {
   }
 
   private startCleanupTimer(): void {
-    // Run cleanup every few minutes
+    // Run cleanup every few minutes - using centralized constants
     this.cleanupTimer = setInterval(() => {
       this.performCleanup();
-    }, 5 * 60 * 1000); // 5 minutes
+    }, RATE_LIMITING.DEFAULT_WINDOW * 5); // 5 minutes (5x the default window)
   }
 
   private performCleanup(): void {
@@ -225,8 +228,8 @@ export class RateLimiter implements IRateLimiter {
     for (const [key, info] of this.limits.entries()) {
       const timeSinceLastRequest = now - info.lastRequest;
       
-      // Remove entries that haven't been active for an hour
-      if (timeSinceLastRequest > 60 * 60 * 1000) {
+      // Remove entries that haven't been active for an hour - using centralized constants
+      if (timeSinceLastRequest > TIME_CONSTANTS.HOUR) {
         expiredKeys.push(key);
       }
     }
@@ -261,8 +264,8 @@ export class RateLimiter implements IRateLimiter {
     if (info.isInBurst) {
       const timeSinceBurstStart = now - info.burstCount;
       
-      // Reset burst if enough time has passed (e.g., 10 seconds)
-      if (timeSinceBurstStart > 10000) {
+      // Reset burst if enough time has passed - using centralized constants
+      if (timeSinceBurstStart > TIME_CONSTANTS.SECOND * 10) { // 10 seconds
         info.isInBurst = false;
         info.burstCount = 0;
       }

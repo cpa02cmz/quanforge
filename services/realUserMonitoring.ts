@@ -8,6 +8,9 @@ import {
   MONITORING,
   BATCH_SIZES 
 } from './constants';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('RealUserMonitoring');
 
 interface WebVitals {
   LCP?: number; // Largest Contentful Paint
@@ -113,7 +116,7 @@ class RealUserMonitoring {
 
     // Check if this session should be sampled
     if (Math.random() > this.config.sampleRate) {
-      console.debug('RUM: Session not sampled');
+      logger.debug('RUM: Session not sampled');
       return;
     }
 
@@ -134,7 +137,7 @@ class RealUserMonitoring {
       this.startFlushTimer();
 
       this.isInitialized = true;
-      console.debug('RUM: Initialized successfully');
+      logger.debug('RUM: Initialized successfully');
     } catch (error: unknown) {
       console.error('RUM: Initialization failed:', error);
     }
@@ -278,7 +281,7 @@ class RealUserMonitoring {
       observer.observe({ type, buffered: true });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn(`RUM: Failed to observe ${type}:`, error);
+      logger.warn(`RUM: Failed to observe ${type}:`, error);
     }
   }
 
@@ -420,7 +423,7 @@ class RealUserMonitoring {
           });
         }
         
-        console.debug(`RUM: Flushed ${metricsToSend.length} metrics`);
+        logger.debug(`RUM: Flushed ${metricsToSend.length} metrics`);
       } catch (error: unknown) {
         console.error('RUM: Failed to flush metrics:', error);
         // Re-add metrics to queue on failure
@@ -527,7 +530,7 @@ class RealUserMonitoring {
    */
   configure(config: Partial<RUMConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('RUM configuration updated:', this.config);
+    logger.log('RUM configuration updated:', this.config);
   }
 
   /**
