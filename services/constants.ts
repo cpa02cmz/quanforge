@@ -337,6 +337,8 @@ export const UI_TIMING = {
   COPY_FEEDBACK_DURATION: 2000,                  // 2 seconds
   DIRECTION_INDICATOR_DURATION: 800,             // 0.8 seconds
   FADE_TRANSITION_DURATION: 300,                 // 300ms
+  ANIMATION_DURATION: 1000,                      // 1 second - default for animated components
+  ANIMATION_DURATION_SLOW: 1500,                 // 1.5 seconds - slower animation for emphasis
 } as const;
 
 // ========== VIRTUAL SCROLL CONSTANTS ==========
