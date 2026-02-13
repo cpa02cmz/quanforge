@@ -8,8 +8,7 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { 
-  DEFAULT_EDGE_CONFIG_VALUES, 
-  EDGE_CACHE_TTL_CONFIG,
+  DEFAULT_EDGE_CONFIG_VALUES,
   EDGE_SCORING 
 } from './edgeConfig';
 
