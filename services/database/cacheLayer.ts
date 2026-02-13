@@ -7,6 +7,9 @@ import { Robot } from '../../types';
 import { LRUCache } from './cache';
 import { handleError } from '../../utils/errorHandler';
 import { TIME_CONSTANTS } from '../../constants/config';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('CacheLayer');
 
 export interface CacheLayerInterface {
   get<T>(key: string): Promise<T | null>;
@@ -113,7 +116,7 @@ export class CacheLayer implements CacheLayerInterface {
         if (!cached) {
           // Trigger background refresh through appropriate service
           // This would be implemented with proper service integration
-          console.log(`Preloading cache for key: ${key}`);
+          logger.debug('Preloading cache', { key });
         }
       }
     } catch (error: unknown) {
