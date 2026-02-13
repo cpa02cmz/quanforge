@@ -4,6 +4,9 @@
  */
 
 import { UXMetrics } from './uxTypes';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('UXMetricsCollector');
 
 // Browser API type extensions for performance entries
 interface LayoutShiftEntry extends PerformanceEntry {
@@ -58,7 +61,7 @@ export class UXMetricsCollector {
       observer.observe({ entryTypes: ['largest-contentful-paint'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('LCP observation not supported:', error instanceof Error ? error.message : String(error));
+      logger.warn('LCP observation not supported:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -81,7 +84,7 @@ export class UXMetricsCollector {
       observer.observe({ entryTypes: ['first-input'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('FID observation not supported:', error instanceof Error ? error.message : String(error));
+      logger.warn('FID observation not supported:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -106,7 +109,7 @@ export class UXMetricsCollector {
       observer.observe({ entryTypes: ['layout-shift'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('CLS observation not supported:', error instanceof Error ? error.message : String(error));
+      logger.warn('CLS observation not supported:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -130,7 +133,7 @@ export class UXMetricsCollector {
       observer.observe({ entryTypes: ['navigation'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('Navigation timing observation not supported:', error instanceof Error ? error.message : String(error));
+      logger.warn('Navigation timing observation not supported:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -148,7 +151,7 @@ export class UXMetricsCollector {
       observer.observe({ entryTypes: ['resource'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('Resource timing observation not supported:', error instanceof Error ? error.message : String(error));
+      logger.warn('Resource timing observation not supported:', error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -172,7 +175,7 @@ export class UXMetricsCollector {
       observer.observe({ entryTypes: ['longtask'] });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn('Long task observation not supported:', error instanceof Error ? error.message : String(error));
+      logger.warn('Long task observation not supported:', error instanceof Error ? error.message : String(error));
     }
   }
 

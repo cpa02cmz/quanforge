@@ -3,6 +3,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { getErrorMessage } from '../utils/errorHandler';
 import { CONNECTION_POOL_CONFIG } from '../constants/modularConfig';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('SupabaseConnectionPool');
 
 interface ConnectionPoolConfig {
   minConnections: number;
@@ -333,7 +336,7 @@ private startHealthChecks(): void {
         if (!isHealthy && currentHealth.errorCount >= CONNECTION_POOL_CONFIG.HEALTH.MAX_FAILED_CHECKS - 1) {
           this.clients.delete(connectionId);
           this.healthStatus.delete(connectionId);
-          console.warn(`Removed unhealthy connection: ${connectionId}`);
+          logger.warn(`Removed unhealthy connection: ${connectionId}`);
         }
       } catch (error: unknown) {
         console.error(`Health check failed for connection ${connectionId}:`, error);
@@ -368,9 +371,9 @@ private startHealthChecks(): void {
         const client = await this.getClient(`edge_${region}`);
         // Lightweight warmup query optimized for edge
         await client.from('robots').select('id').limit(1);
-        console.log(`Edge connection warmed for region: ${region}`);
+        logger.log(`Edge connection warmed for region: ${region}`);
       } catch (error: unknown) {
-        console.warn(`Failed to warm edge connection for ${region}:`, error);
+        logger.warn(`Failed to warm edge connection for ${region}:`, error);
       }
     });
     
@@ -394,7 +397,7 @@ private startHealthChecks(): void {
     } catch (error: unknown) {
       // Fallback to default connection if edge connection fails
       if (region) {
-        console.warn(`Edge connection failed for ${region}, falling back to default:`, error);
+        logger.warn(`Edge connection failed for ${region}, falling back to default:`, error);
         return this.getClient(connectionId);
       }
       throw error;

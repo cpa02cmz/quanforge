@@ -1,9 +1,12 @@
 import { CACHE_TTLS, TIMEOUTS, TIME_CONSTANTS } from './constants';
+import { createScopedLogger } from '../utils/logger';
 
 /**
  * Edge Function Optimization and Warming Service
  * Optimizes Vercel Edge Functions for better performance and reduced cold starts
  */
+
+const logger = createScopedLogger('EdgeFunctionOptimizer');
 
 interface EdgeFunctionConfig {
   name: string;
@@ -136,9 +139,9 @@ class EdgeFunctionOptimizer {
       const metrics = this.metrics.get(functionName)!;
       metrics.lastWarmup = Date.now();
 
-      console.log(`Edge function ${functionName} warmed up successfully`);
+      logger.log(`Edge function ${functionName} warmed up successfully`);
     } catch (error: unknown) {
-      console.error(`Failed to warm up edge function ${functionName}:`, error);
+      logger.error(`Failed to warm up edge function ${functionName}:`, error);
     } finally {
       this.isWarmingUp.delete(functionName);
     }
@@ -208,7 +211,7 @@ class EdgeFunctionOptimizer {
         }
       } catch (error: unknown) {
         // Log but don't throw - warmup failures shouldn't crash the app
-        console.warn(`Warmup request failed for region ${region}:`, error);
+        logger.warn(`Warmup request failed for region ${region}:`, error);
       }
     }
   }
@@ -384,9 +387,9 @@ class EdgeFunctionOptimizer {
         }
       }
       
-      console.log('Performance monitoring and auto-optimization completed');
+      logger.log('Performance monitoring and auto-optimization completed');
     } catch (error: unknown) {
-      console.error('Performance monitoring failed:', error);
+      logger.error('Performance monitoring failed:', error);
     }
   }
 
@@ -497,7 +500,7 @@ class EdgeFunctionOptimizer {
         // Reduce warmup interval by 25%
         config.warmupInterval = Math.max(config.warmupInterval * 0.75, TIME_CONSTANTS.MINUTE); // Minimum 1 minute
         this.scheduleWarmup(name);
-        console.log(`Reduced warmup interval for ${name} to ${config.warmupInterval}ms`);
+        logger.log(`Reduced warmup interval for ${name} to ${config.warmupInterval}ms`);
       }
     });
   }
@@ -506,7 +509,7 @@ class EdgeFunctionOptimizer {
    * Enable circuit breaker pattern for fault tolerance
    */
   private async enableCircuitBreaker(): Promise<void> {
-    console.log('Circuit breaker enabled due to high error rate');
+    logger.log('Circuit breaker enabled due to high error rate');
     // Implementation would go here
   }
 
@@ -521,7 +524,7 @@ class EdgeFunctionOptimizer {
       if (metrics.averageResponseTime > 500) {
         // Increase memory allocation by 25%
         config.memory = Math.min(config.memory * 1.25, 1024); // Maximum 1GB
-        console.log(`Increased memory allocation for ${name} to ${config.memory}MB`);
+        logger.log(`Increased memory allocation for ${name} to ${config.memory}MB`);
       }
     });
   }
