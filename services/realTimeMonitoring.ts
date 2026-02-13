@@ -1,7 +1,7 @@
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { MEMORY_LIMITS, PERFORMANCE_THRESHOLDS, UX_THRESHOLDS, TIMEOUTS } from '../constants';
-import { CACHE_TTLS, PERFORMANCE_BUDGETS } from './constants';
+import { CACHE_TTLS, PERFORMANCE_BUDGETS, API_THRESHOLDS, SCORING, ARRAY_LIMITS } from './constants';
 
 interface CoreWebVitals {
   lcp: number; // Largest Contentful Paint
@@ -47,7 +47,11 @@ class RealTimeMonitoring {
   private observers: PerformanceObserver[] = [];
   private isInitialized = false;
   private readonly METRICS_RETENTION_LIMIT = MEMORY_LIMITS.MAX_METRICS_RETENTION;
-  private readonly ALERT_THRESHOLD = 0.1; // 10% error rate
+  private readonly ALERT_THRESHOLD = 0.1; // 10% error rate - this is a business logic threshold
+  private readonly SLOW_RESOURCE_THRESHOLD = API_THRESHOLDS.RESPONSE_TIME.POOR; // 2 seconds
+  private readonly LARGE_RESOURCE_THRESHOLD = PERFORMANCE_BUDGETS.RESOURCE_SIZE.WARNING; // 500KB
+  private readonly MEMORY_CRITICAL_THRESHOLD = 0.9; // 90% memory usage
+  private readonly MAX_ALERTS_RETAINED = ARRAY_LIMITS.ALERTS_STANDARD; // 50 alerts
 
   // Timer references for cleanup
   private memoryCheckInterval: ReturnType<typeof setInterval> | null = null;
@@ -63,7 +67,7 @@ class RealTimeMonitoring {
     lcp: UX_THRESHOLDS.LCP_GOOD, // 2.5s
     fid: UX_THRESHOLDS.FID_GOOD, // 100ms
     cls: PERFORMANCE_THRESHOLDS.CLS_GOOD, // 0.1
-    fcp: 1500, // 1.5s
+    fcp: 1800, // 1.8s - aligned with UX_THRESHOLDS pattern (no direct FCP constant available)
     ttfb: UX_THRESHOLDS.TTFB_GOOD // 800ms
   };
 
@@ -253,14 +257,14 @@ this.isInitialized = true;
     const duration = entry.responseEnd - entry.requestStart;
     const size = entry.transferSize || 0;
 
-    // Check for slow resources
-    if (duration > 5000) { // 5 seconds
-      this.createAlert('slow_vitals', 'resource_load_time', duration, 5000, entry.name);
+    // Check for slow resources - using centralized thresholds
+    if (duration > this.SLOW_RESOURCE_THRESHOLD) {
+      this.createAlert('slow_vitals', 'resource_load_time', duration, this.SLOW_RESOURCE_THRESHOLD, entry.name);
     }
 
-    // Check for large resources
-    if (size > 1000000) { // 1MB
-      this.createAlert('budget_exceeded', 'resource_size', size, 1000000, entry.name);
+    // Check for large resources - using centralized thresholds
+    if (size > this.LARGE_RESOURCE_THRESHOLD) {
+      this.createAlert('budget_exceeded', 'resource_size', size, this.LARGE_RESOURCE_THRESHOLD, entry.name);
     }
   }
 
@@ -272,8 +276,8 @@ this.isInitialized = true;
       const memory = (performance as unknown as { memory: MemoryInfo }).memory;
       const usageRatio = memory.usedJSHeapSize / memory.jsHeapSizeLimit;
 
-      if (usageRatio > 0.9) { // 90% memory usage
-        this.createAlert('memory_leak', 'memory_usage', usageRatio, 0.9, window.location.href);
+      if (usageRatio > this.MEMORY_CRITICAL_THRESHOLD) {
+        this.createAlert('memory_leak', 'memory_usage', usageRatio, this.MEMORY_CRITICAL_THRESHOLD, window.location.href);
       }
     }
   }
@@ -373,9 +377,9 @@ this.isInitialized = true;
 
     this.alerts.push(alert);
 
-    // Keep only recent alerts
-    if (this.alerts.length > 100) {
-      this.alerts = this.alerts.slice(-100);
+    // Keep only recent alerts - using centralized limit
+    if (this.alerts.length > this.MAX_ALERTS_RETAINED) {
+      this.alerts = this.alerts.slice(-this.MAX_ALERTS_RETAINED);
     }
 
     // Log warning
@@ -515,7 +519,7 @@ this.isInitialized = true;
       if (threshold) {
         budgetCompliance[metric] = value <= threshold;
         if (value > threshold) {
-          score -= 20; // Deduct points for budget violations
+          score -= SCORING.SLOW_OP_PENALTY_MULTIPLIER * 4; // Deduct points for budget violations (20 points)
         }
       }
     });
