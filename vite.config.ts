@@ -238,7 +238,8 @@ export default defineConfig({
         comments: false,
       }
     },
-    chunkSizeWarningLimit: 100, // More aggressive optimization for edge performance
+    chunkSizeWarningLimit: 300, // Increased to accommodate large vendor libraries (ai-vendor: 248KB, chart-vendor: 213KB)
+                                 // Note: Gzipped sizes are all under 60KB which is optimal for production
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
