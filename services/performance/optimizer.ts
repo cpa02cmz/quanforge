@@ -2,11 +2,14 @@
  * Consolidated Performance Optimization Service
  * Merges functionality from: performanceOptimizer, frontendPerformanceOptimizer, backendOptimizationManager, backendOptimizer
  * Provides unified performance optimization across frontend, backend, and edge
+ * 
+ * Flexy loves modularity - using centralized constants instead of hardcoded values!
  */
 
 import { handleErrorCompat as handleError } from '../../utils/errorManager';
 import { globalCache } from '../unifiedCacheManager';
 import { connectionManager } from '../database/connectionManager';
+import { PERFORMANCE_THRESHOLDS, CACHE_CONFIG, API_CONFIG, TIME_CONSTANTS } from '../../constants/config';
 
 // Optimization interfaces
 export interface OptimizationConfig {
@@ -55,10 +58,10 @@ class PerformanceOptimizer {
       enableCacheOptimization: true,
       enableEdgeOptimization: true,
       enableDatabaseOptimization: true,
-      memoryThreshold: 100, // 100MB
-      cacheSizeLimit: 500, // items
-      bundleSizeLimit: 250, // KB
-      databaseTimeoutLimit: 5000 // 5 seconds
+      memoryThreshold: Math.floor(PERFORMANCE_THRESHOLDS.MAX_MEMORY_USAGE / (1024 * 1024) / 5), // ~100MB based on threshold
+      cacheSizeLimit: CACHE_CONFIG.MAX_LRU_CACHE_SIZE, // 200 items from config
+      bundleSizeLimit: 250, // KB - aligned with bundle optimization targets
+      databaseTimeoutLimit: API_CONFIG.REQUEST_TIMEOUT // 30 seconds from config
     };
     
     this.initializeProfiles();
@@ -85,29 +88,29 @@ class PerformanceOptimizer {
       适用场景: ['local development', 'debugging']
     });
 
-    // Production profile
+    // Production profile - using centralized constants
     this.profiles.set('production', {
       name: 'Production',
       config: {
         ...this.config,
-        memoryThreshold: 80,
-        cacheSizeLimit: 1000,
-        bundleSizeLimit: 200,
-        databaseTimeoutLimit: 3000
+        memoryThreshold: 80, // More aggressive for production
+        cacheSizeLimit: CACHE_CONFIG.MAX_ADVANCED_CACHE_SIZE, // 500 items
+        bundleSizeLimit: 200, // Stricter bundle limit
+        databaseTimeoutLimit: TIME_CONSTANTS.SECOND * 3 // 3 seconds
       },
       description: 'Optimized for production performance',
       适用场景: ['production deployment', 'user-facing applications']
     });
 
-    // Edge optimized profile
+    // Edge optimized profile - using centralized constants
     this.profiles.set('edge', {
       name: 'Edge Optimized',
       config: {
         ...this.config,
-        memoryThreshold: 50,
-        cacheSizeLimit: 200,
-        bundleSizeLimit: 150,
-        databaseTimeoutLimit: 2000,
+        memoryThreshold: 50, // Conservative for edge
+        cacheSizeLimit: CACHE_CONFIG.MAX_CACHE_ENTRIES / 5, // 200 items
+        bundleSizeLimit: 150, // Aggressive bundle optimization
+        databaseTimeoutLimit: TIME_CONSTANTS.SECOND * 2, // 2 seconds
         enableEdgeOptimization: true
       },
       description: 'Optimized for edge computing environments',
@@ -151,8 +154,8 @@ class PerformanceOptimizer {
 
       this.lastOptimizationTime = Date.now();
       
-      // Cache optimization results
-      globalCache.set('perf:optimization-results', results, 300000); // 5 minutes
+      // Cache optimization results using centralized TTL
+      globalCache.set('perf:optimization-results', results, TIME_CONSTANTS.MINUTE * 5); // 5 minutes
       
       return results;
     } catch (error: unknown) {
