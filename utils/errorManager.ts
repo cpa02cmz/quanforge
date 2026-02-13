@@ -1,6 +1,7 @@
 import type { Toast } from '../types/toast';
 import { ERROR_DISPLAY } from '../constants/timing';
 import { TIME_CONSTANTS } from '../constants/config';
+import { ERROR_MANAGEMENT_CONFIG } from '../services/monitoringConfig';
 
 export enum ErrorSeverity {
   LOW = 'low',
@@ -40,7 +41,7 @@ export class ErrorManager {
   private static instance: ErrorManager;
   private errorHandlers: Map<ErrorCategory, ErrorHandler[]> = new Map();
   private errorHistory: StructuredError[] = [];
-  private maxHistorySize = 1000;
+  private maxHistorySize = ERROR_MANAGEMENT_CONFIG.MAX_HISTORY_SIZE;
   private toastNotification?: (toast: { message: string; type: Toast['type']; duration?: number }) => void;
 
   private constructor() {

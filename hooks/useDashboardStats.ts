@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../services/supabase';
 import { Robot } from '../types';
 import { createScopedLogger } from '../utils/logger';
+import { HEALTH_CHECK_CONFIG } from '../services/monitoringConfig';
 
 const logger = createScopedLogger('useDashboardStats');
 
@@ -27,7 +28,7 @@ interface UseDashboardStatsOptions {
 }
 
 export const useDashboardStats = (options: UseDashboardStatsOptions = {}) => {
-  const { refreshInterval = 30000, enabled = true } = options;
+  const { refreshInterval = HEALTH_CHECK_CONFIG.INTERVAL_STANDARD, enabled = true } = options;
   
   const [stats, setStats] = useState<DashboardStats>({
     totalRobots: 0,
