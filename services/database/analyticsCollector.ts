@@ -1,3 +1,6 @@
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('AnalyticsCollector');
 /**
  * Database Analytics Collector
  * Handles performance monitoring, metrics collection, and analytics for database operations
@@ -85,7 +88,7 @@ export class AnalyticsCollector implements AnalyticsCollectorInterface {
       }
     } catch (e) {
       // Don't let analytics failures break the main flow
-      console.warn('Failed to record operation metrics:', e);
+      logger.warn('Failed to record operation metrics:', e);
     }
   }
 

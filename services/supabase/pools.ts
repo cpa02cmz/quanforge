@@ -8,6 +8,9 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { DATABASE_CONFIG } from '../../constants/config';
 import { STAGGER } from '../constants';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('ConnectionPool');
 
 interface ConnectionConfig {
   maxConnections: number;
@@ -205,7 +208,7 @@ class SupabaseConnectionPool {
       async (connection) => {
         const isHealthy = await this.healthCheckConnection(connection);
         if (!isHealthy) {
-          console.warn(`Connection ${connection.id} failed health check`);
+          logger.warn(`Connection ${connection.id} failed health check`);
           this.removeConnection(connection.id);
         }
       }

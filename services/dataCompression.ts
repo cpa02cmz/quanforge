@@ -1,3 +1,6 @@
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('DataCompression');
 import { Robot } from '../types';
 import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
 
@@ -29,7 +32,7 @@ class DataCompressionService {
         compressed = compressToUTF16(originalData);
         compressedSize = new Blob([compressed]).size;
       } catch (_error) {
-        console.warn('Compression failed, using original data:', _error);
+        logger.warn('Compression failed, using original data:', _error);
         // If compression fails, return original with zero savings
         compressed = originalData;
         compressedSize = originalSize;

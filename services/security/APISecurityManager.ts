@@ -1,3 +1,6 @@
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('APISecurityManager');
 import { secureStorage } from '../../utils/secureStorage';
 import { TIME_CONSTANTS } from '../../constants/config';
 
@@ -184,7 +187,7 @@ export class APISecurityManager {
 
   private triggerSecurityAlert(type: string, data: any): void {
     // In a real implementation, you'd send this to your security monitoring service
-    console.warn(`Security Alert [${type}]:`, data);
+    logger.warn(`Security Alert [${type}]:`, data);
     
     // Store high-priority alerts
     try {
