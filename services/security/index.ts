@@ -1,6 +1,7 @@
 // Security services exports
 export { SecurityUtils } from './SecurityUtils';
 export { MQL5SecurityService } from './MQL5SecurityService';
+export { SecurityManager } from './SecurityManager';
 
 // Type exports
 export type {
