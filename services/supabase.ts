@@ -10,6 +10,7 @@ import { TIMEOUTS, CACHE_LIMITS, BATCH_SIZES, ERROR_CODES } from '../constants';
 import { getLocalStorage, StorageQuotaError } from '../utils/storage';
 import { createScopedLogger } from '../utils/logger';
 import { STORAGE_KEYS, STORAGE_PREFIXES, RETRY_CONFIGS } from '../constants/modularConfig';
+import { TOKEN_CONSTANTS } from './modularConstants';
 
 const logger = createScopedLogger('Supabase');
 
@@ -108,7 +109,7 @@ const mockAuth = {
     const session = {
       user: { id: generateUUID(), email },
       access_token: 'mock-token-' + Date.now(),
-      expires_in: 3600
+      expires_in: TOKEN_CONSTANTS.DEFAULT_ACCESS_TOKEN_EXPIRY_S
     };
     trySaveToStorage(STORAGE_KEY, JSON.stringify(session));
     authListeners.forEach(cb => cb('SIGNED_IN', session));
@@ -118,7 +119,7 @@ const mockAuth = {
     const session = {
       user: { id: generateUUID(), email },
       access_token: 'mock-token-' + Date.now(),
-      expires_in: 3600
+      expires_in: TOKEN_CONSTANTS.DEFAULT_ACCESS_TOKEN_EXPIRY_S
     };
     trySaveToStorage(STORAGE_KEY, JSON.stringify(session));
     authListeners.forEach(cb => cb('SIGNED_IN', session));

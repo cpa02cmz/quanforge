@@ -1,0 +1,517 @@
+/**
+ * Modular Service Constants
+ * Flexy's modular configuration system - no more hardcoded values!
+ * 
+ * This module provides a centralized, type-safe configuration system
+ * that eliminates magic numbers and hardcoded values across services.
+ */
+
+import {
+  TIME_CONSTANTS,
+  CACHE_CONFIG,
+  RATE_LIMITING,
+  SECURITY_CONFIG,
+  PERFORMANCE_THRESHOLDS,
+  API_CONFIG,
+  AI_CONFIG,
+  TRADING_CONSTANTS,
+} from '../constants/config';
+
+// Re-export base constants for convenience
+export {
+  TIME_CONSTANTS,
+  CACHE_CONFIG,
+  RATE_LIMITING,
+  SECURITY_CONFIG,
+  PERFORMANCE_THRESHOLDS,
+  API_CONFIG,
+  AI_CONFIG,
+  TRADING_CONSTANTS,
+};
+
+// ========== TOKEN & AUTH CONSTANTS ==========
+export const TOKEN_CONSTANTS = {
+  // Expiry times in seconds (for API compatibility)
+  EXPIRY_SECONDS: {
+    ONE_HOUR: 3600,
+    FOUR_HOURS: 14400,
+    EIGHT_HOURS: 28800,
+    ONE_DAY: 86400,
+    ONE_WEEK: 604800,
+  },
+  
+  // Expiry times in milliseconds
+  EXPIRY_MS: {
+    ONE_HOUR: TIME_CONSTANTS.HOUR,
+    FOUR_HOURS: 4 * TIME_CONSTANTS.HOUR,
+    EIGHT_HOURS: 8 * TIME_CONSTANTS.HOUR,
+    ONE_DAY: TIME_CONSTANTS.DAY,
+    ONE_WEEK: TIME_CONSTANTS.WEEK,
+  },
+  
+  // Default values
+  DEFAULT_ACCESS_TOKEN_EXPIRY_S: 3600,
+  DEFAULT_REFRESH_TOKEN_EXPIRY_S: 604800, // 1 week
+  DEFAULT_SESSION_EXPIRY_MS: TIME_CONSTANTS.HOUR,
+  
+  // Refresh buffer - refresh token before it expires
+  REFRESH_BUFFER_MS: 5 * TIME_CONSTANTS.MINUTE, // 5 minutes
+} as const;
+
+// ========== SIZE & LIMIT CONSTANTS ==========
+export const SIZE_CONSTANTS = {
+  // String lengths
+  STRING: {
+    TINY: 10,
+    SHORT: 50,
+    SMALL: 100,
+    MEDIUM: 500,
+    STANDARD: 1000,
+    LONG: 2000,
+    MAX: 10000,
+  },
+  
+  // Hash/Key lengths
+  HASH: {
+    PREFIX: 8,
+    SHORT: 16,
+    MEDIUM: 32,
+    STANDARD: 50,
+    LONG: 100,
+    EXTENDED: 200,
+    MAX: 500,
+    FULL: 1000,
+  },
+  
+  // Cache key lengths
+  CACHE_KEY: {
+    SHORT: 100,
+    MEDIUM: 500,
+    LONG: 1000,
+  },
+  
+  // Code/Content lengths
+  CODE: {
+    SNIPPET: 1000,
+    SMALL: 5000,
+    MEDIUM: 10000,
+    LARGE: 50000,
+    MAX: 100000,
+  },
+  
+  // Display lengths
+  DISPLAY: {
+    TINY: 10,
+    SHORT: 50,
+    MEDIUM: 100,
+    STANDARD: 200,
+    LONG: 254,
+    MAX: 2048,
+  },
+  
+  // Memory sizes in bytes
+  MEMORY: {
+    KB: 1024,
+    MB: 1024 * 1024,
+    GB: 1024 * 1024 * 1024,
+    TWO_MB: 2 * 1024 * 1024,
+    FIVE_MB: 5 * 1024 * 1024,
+    TEN_MB: 10 * 1024 * 1024,
+    TWENTY_MB: 20 * 1024 * 1024,
+    FIFTY_MB: 50 * 1024 * 1024,
+    HUNDRED_MB: 100 * 1024 * 1024,
+  },
+  
+  // File sizes
+  FILE: {
+    SMALL: 50 * 1024,        // 50KB
+    MEDIUM: 500 * 1024,      // 500KB
+    LARGE: 1024 * 1024,      // 1MB
+    MAX: 50 * 1024 * 1024,   // 50MB
+  },
+} as const;
+
+// ========== THRESHOLD CONSTANTS ==========
+export const THRESHOLD_CONSTANTS = {
+  // Performance thresholds in milliseconds
+  PERFORMANCE: {
+    EXCELLENT: 200,
+    GOOD: 500,
+    NEEDS_IMPROVEMENT: 1000,
+    POOR: 2000,
+    CRITICAL: 3000,
+  },
+  
+  // Query execution time
+  QUERY: {
+    FAST: 100,
+    NORMAL: 500,
+    SLOW: 1000,
+    CRITICAL: 2000,
+  },
+  
+  // Memory thresholds
+  MEMORY: {
+    WARNING_MB: 50,
+    CRITICAL_MB: 100,
+    CLEANUP_PERCENT: 80, // 80%
+  },
+  
+  // API response time
+  API: {
+    FAST: 200,
+    GOOD: 500,
+    SLOW: 1000,
+    TIMEOUT: 5000,
+  },
+  
+  // Error rate thresholds
+  ERROR_RATE: {
+    ACCEPTABLE: 0.01,  // 1%
+    WARNING: 0.05,     // 5%
+    CRITICAL: 0.10,    // 10%
+  },
+  
+  // Cache hit rate
+  CACHE_HIT_RATE: {
+    POOR: 0.5,         // 50%
+    ACCEPTABLE: 0.7,   // 70%
+    GOOD: 0.8,         // 80%
+    EXCELLENT: 0.9,    // 90%
+  },
+} as const;
+
+// ========== COUNT/LIMIT CONSTANTS ==========
+export const COUNT_CONSTANTS = {
+  // Pagination
+  PAGINATION: {
+    DEFAULT: 20,
+    SMALL: 10,
+    MEDIUM: 50,
+    LARGE: 100,
+    MAX: 1000,
+  },
+  
+  // Batch operations
+  BATCH: {
+    SMALL: 10,
+    DEFAULT: 20,
+    LARGE: 50,
+    MAX: 100,
+  },
+  
+  // Retry attempts
+  RETRY: {
+    MIN: 1,
+    DEFAULT: 3,
+    MAX: 5,
+    EXTENDED: 10,
+  },
+  
+  // History/metrics sizes
+  HISTORY: {
+    TINY: 10,
+    SMALL: 50,
+    STANDARD: 100,
+    LARGE: 500,
+    MAX: 1000,
+  },
+  
+  // Cache entries
+  CACHE: {
+    SMALL: 100,
+    MEDIUM: 500,
+    LARGE: 1000,
+    MAX: 5000,
+  },
+  
+  // Alerts/Errors
+  ALERTS: {
+    RECENT: 10,
+    STANDARD: 50,
+    MAX: 100,
+  },
+} as const;
+
+// ========== MULTIPLIER/DIVISOR CONSTANTS ==========
+export const MATH_CONSTANTS = {
+  // Time conversions
+  TIME: {
+    MS_PER_SECOND: 1000,
+    MS_PER_MINUTE: 60 * 1000,
+    MS_PER_HOUR: 60 * 60 * 1000,
+    MS_PER_DAY: 24 * 60 * 60 * 1000,
+    SECONDS_PER_MINUTE: 60,
+    MINUTES_PER_HOUR: 60,
+    HOURS_PER_DAY: 24,
+    DAYS_PER_WEEK: 7,
+  },
+  
+  // Size conversions
+  SIZE: {
+    BYTES_PER_KB: 1024,
+    BYTES_PER_MB: 1024 * 1024,
+    BYTES_PER_GB: 1024 * 1024 * 1024,
+    KB_PER_MB: 1024,
+    MB_PER_GB: 1024,
+  },
+  
+  // Percentage
+  PERCENTAGE: {
+    MIN: 0,
+    MAX: 100,
+    DECIMAL: 100,
+    HALF: 50,
+  },
+  
+  // Scoring
+  SCORE: {
+    MIN: 0,
+    MAX: 100,
+    DEFAULT: 100,
+    EXCELLENT: 80,
+    GOOD: 60,
+    PASS: 50,
+  },
+} as const;
+
+// ========== DELAY/STAGGER CONSTANTS ==========
+export const DELAY_CONSTANTS = {
+  // Micro delays
+  MICRO: 10,
+  TINY: 50,
+  SHORT: 100,
+  
+  // Standard delays
+  DEFAULT: 100,
+  NORMAL: 500,
+  MEDIUM: 1000,
+  LONG: 2000,
+  EXTENDED: 5000,
+  
+  // Specific use cases
+  STAGGER: {
+    IMPORT: 1000,
+    HEALTH_CHECK: 2000,
+    WARMUP: 2000,
+    RETRY_BASE: 1000,
+    RETRY_MAX: 5000,
+  },
+  
+  // Polling intervals
+  POLLING: {
+    FAST: 1000,
+    NORMAL: 5000,
+    SLOW: 10000,
+    VERY_SLOW: 30000,
+    MINUTE: 60000,
+  },
+  
+  // UI delays
+  UI: {
+    TOAST: 3000,
+    COPY_FEEDBACK: 2000,
+    FADE_TRANSITION: 300,
+    ANIMATION: 1000,
+    ANIMATION_SLOW: 1500,
+  },
+} as const;
+
+// ========== HTTP STATUS CONSTANTS ==========
+export const HTTP_CONSTANTS = {
+  // Success
+  OK: 200,
+  CREATED: 201,
+  ACCEPTED: 202,
+  NO_CONTENT: 204,
+  
+  // Client errors
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  METHOD_NOT_ALLOWED: 405,
+  CONFLICT: 409,
+  RATE_LIMITED: 429,
+  
+  // Server errors
+  SERVER_ERROR: 500,
+  BAD_GATEWAY: 502,
+  SERVICE_UNAVAILABLE: 503,
+  GATEWAY_TIMEOUT: 504,
+  
+  // Ranges
+  CLIENT_ERROR_RANGE: { MIN: 400, MAX: 499 },
+  SERVER_ERROR_RANGE: { MIN: 500, MAX: 599 },
+} as const;
+
+// ========== SUPABASE ERROR CODES ==========
+export const SUPABASE_ERRORS = {
+  // Connection
+  CONNECTION_ERROR: '1014',
+  
+  // Not found
+  RECORD_NOT_FOUND: 'PGRST116',
+  
+  // Permission
+  PERMISSION_DENIED: 'PGRST301',
+  INSUFFICIENT_PRIVILEGE: '42501',
+  
+  // Data integrity
+  UNIQUE_VIOLATION: '23505',
+  FOREIGN_KEY_VIOLATION: '23503',
+  
+  // Edge-specific
+  EDGE_FUNCTION_TIMEOUT: 'EDGE_FUNCTION_TIMEOUT',
+  EDGE_MEMORY_LIMIT: 'EDGE_MEMORY_LIMIT',
+  EDGE_RATE_LIMIT: 'EDGE_RATE_LIMIT',
+  
+  // All non-retryable errors
+  NON_RETRYABLE: [
+    'PGRST116',
+    'PGRST301',
+    '42501',
+    '23505',
+    '23503',
+  ],
+} as const;
+
+// ========== WEB VITALS CONSTANTS ==========
+export const WEB_VITALS = {
+  LCP: {
+    GOOD: 2500,
+    NEEDS_IMPROVEMENT: 4000,
+    POOR: 6000,
+  },
+  FCP: {
+    GOOD: 1800,
+    NEEDS_IMPROVEMENT: 3000,
+    POOR: 4500,
+  },
+  FID: {
+    GOOD: 100,
+    NEEDS_IMPROVEMENT: 300,
+    POOR: 500,
+  },
+  INP: {
+    GOOD: 200,
+    NEEDS_IMPROVEMENT: 500,
+    POOR: 800,
+  },
+  CLS: {
+    GOOD: 0.1,
+    NEEDS_IMPROVEMENT: 0.25,
+    POOR: 0.5,
+  },
+  TTFB: {
+    GOOD: 800,
+    NEEDS_IMPROVEMENT: 1800,
+    POOR: 3000,
+  },
+} as const;
+
+// ========== TRADING CONSTANTS ==========
+export const TRADING_DEFAULTS = {
+  RISK: {
+    MIN_PERCENT: 0.01,
+    MAX_PERCENT: 100,
+    DEFAULT_PERCENT: 2,
+  },
+  STOP_LOSS: {
+    MIN_PIPS: 1,
+    MAX_PIPS: 1000,
+    DEFAULT_PIPS: 50,
+  },
+  TAKE_PROFIT: {
+    MIN_PIPS: 1,
+    MAX_PIPS: 1000,
+    DEFAULT_PIPS: 100,
+  },
+  DEPOSIT: {
+    MIN: 100,
+    MAX: 10000000,
+    DEFAULT: 10000,
+  },
+  LEVERAGE: {
+    MIN: 1,
+    MAX: 1000,
+    DEFAULT: 100,
+  },
+  MAGIC_NUMBER: {
+    MIN: 1,
+    MAX: 999999,
+    DEFAULT: 123456,
+  },
+  BACKTEST: {
+    MIN_DAYS: 1,
+    MAX_DAYS: 365,
+    DEFAULT_DAYS: 30,
+    MAX_SIMULATION_DAYS: 3650, // 10 years
+  },
+  TIMEFRAMES: ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'],
+} as const;
+
+// ========== MODULAR EXPORTS ==========
+// Grouped exports for specific use cases
+
+export const AuthConstants = {
+  TOKEN: TOKEN_CONSTANTS,
+  SECURITY: SECURITY_CONFIG,
+} as const;
+
+export const CacheConstants = {
+  CONFIG: CACHE_CONFIG,
+  SIZE: SIZE_CONSTANTS.MEMORY,
+  COUNT: COUNT_CONSTANTS.CACHE,
+  THRESHOLD: THRESHOLD_CONSTANTS.CACHE_HIT_RATE,
+} as const;
+
+export const PerformanceConstants = {
+  THRESHOLDS: THRESHOLD_CONSTANTS.PERFORMANCE,
+  QUERY: THRESHOLD_CONSTANTS.QUERY,
+  MEMORY: THRESHOLD_CONSTANTS.MEMORY,
+  API: THRESHOLD_CONSTANTS.API,
+  WEB_VITALS,
+} as const;
+
+export const ApiConstants = {
+  HTTP: HTTP_CONSTANTS,
+  TIMEOUT: API_CONFIG,
+  RETRY: COUNT_CONSTANTS.RETRY,
+  PAGINATION: COUNT_CONSTANTS.PAGINATION,
+} as const;
+
+export const DatabaseConstants = {
+  ERRORS: SUPABASE_ERRORS,
+  BATCH: COUNT_CONSTANTS.BATCH,
+  HISTORY: COUNT_CONSTANTS.HISTORY,
+} as const;
+
+export const UiConstants = {
+  DELAY: DELAY_CONSTANTS,
+  SIZE: SIZE_CONSTANTS.DISPLAY,
+  STRING: SIZE_CONSTANTS.STRING,
+} as const;
+
+// ========== DEFAULT EXPORT ==========
+export const ModularConstants = {
+  TIME: TIME_CONSTANTS,
+  TOKEN: TOKEN_CONSTANTS,
+  SIZE: SIZE_CONSTANTS,
+  THRESHOLD: THRESHOLD_CONSTANTS,
+  COUNT: COUNT_CONSTANTS,
+  MATH: MATH_CONSTANTS,
+  DELAY: DELAY_CONSTANTS,
+  HTTP: HTTP_CONSTANTS,
+  SUPABASE: SUPABASE_ERRORS,
+  WEB_VITALS,
+  TRADING: TRADING_DEFAULTS,
+  Auth: AuthConstants,
+  Cache: CacheConstants,
+  Performance: PerformanceConstants,
+  Api: ApiConstants,
+  Database: DatabaseConstants,
+  Ui: UiConstants,
+} as const;
+
+export default ModularConstants;

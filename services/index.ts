@@ -41,3 +41,24 @@ export { withIntegrationResilience, createIntegrationOperation, getIntegrationHe
 export { circuitBreakerMonitor } from './circuitBreakerMonitor';
 export { fallbackManager, databaseFallbacks, aiServiceFallbacks, marketDataFallbacks, degradedModeManager } from './fallbackStrategies';
 export { integrationHealthMonitor, integrationMetrics } from './integrationHealthMonitor';
+
+// Flexy's Modular Constants - No more hardcoded values!
+export {
+  ModularConstants,
+  TOKEN_CONSTANTS,
+  SIZE_CONSTANTS,
+  THRESHOLD_CONSTANTS,
+  COUNT_CONSTANTS,
+  MATH_CONSTANTS,
+  DELAY_CONSTANTS,
+  HTTP_CONSTANTS,
+  SUPABASE_ERRORS,
+  WEB_VITALS,
+  TRADING_DEFAULTS,
+  AuthConstants,
+  CacheConstants,
+  PerformanceConstants,
+  ApiConstants,
+  DatabaseConstants,
+  UiConstants,
+} from './modularConstants';
