@@ -45,10 +45,7 @@ class PerformanceMonitor {
   }
 
   clearMetrics(): void {
-    // Clear would have to be added to performanceManager if needed
-    if (process.env['NODE_ENV'] === 'development') {
-      console.warn('clearMetrics not implemented in consolidated version');
-    }
+    performanceManager.clearMetrics();
   }
 
   cleanup(): void {
