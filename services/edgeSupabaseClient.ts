@@ -5,6 +5,9 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { RETRY_CONFIG, TIME_CONSTANTS } from './constants';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('EdgeSupabaseClient');
 // Commenting out vercelEdgeOptimizer import since it's not being used properly
 // import { vercelEdgeOptimizer } from './vercelEdgeOptimizer';
 
@@ -392,7 +395,7 @@ class EdgeSupabaseClient {
       );
       await new Promise(resolve => setTimeout(resolve, delay));
 
-      console.warn(`Retrying edge operation ${operationName}, attempt ${attempt + 1}`);
+      logger.warn(`Retrying edge operation ${operationName}, attempt ${attempt + 1}`);
       return this.executeWithRetry(operation, operationName, attempt + 1);
     }
   }
@@ -453,14 +456,14 @@ class EdgeSupabaseClient {
     priority: string
   ): void {
     if (process.env['NODE_ENV'] === 'development') {
-      console.log(
+      logger.log(
         `Edge Query Performance: ${table}.${query} - ${duration.toFixed(2)}ms, ${resultCount} results, priority: ${priority}`
       );
     }
 
     // Log slow queries
     if (duration > 1000) {
-      console.warn(
+      logger.warn(
         `Slow edge query detected: ${table}.${query} took ${duration.toFixed(2)}ms`
       );
     }
@@ -481,7 +484,7 @@ class EdgeSupabaseClient {
 
   private logUploadPerformance(bucket: string, path: string, fileSize: number, duration: number): void {
     const speed = fileSize / (duration / 1000) / 1024; // KB/s
-    console.log(
+    logger.log(
       `Edge Upload Performance: ${bucket}/${path} - ${(fileSize / 1024).toFixed(2)}KB in ${duration.toFixed(2)}ms (${speed.toFixed(2)}KB/s)`
     );
   }

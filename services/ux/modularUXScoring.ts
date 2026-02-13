@@ -9,6 +9,9 @@ import { UXMetricsCollector } from './uxMetricsCollector';
 import { UXScoreCalculator } from './uxScoreCalculator';
 import { UXAnalyzer, UXInsights } from './uxAnalyzer';
 import { UX_MONITORING_CONFIG } from '../../constants/modularConfig';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('UXScoring');
 
 class RealTimeUXScoring {
   private static instance: RealTimeUXScoring;
@@ -100,7 +103,7 @@ class RealTimeUXScoring {
       this.startPeriodicAssessment();
     }
 
-    console.log('UX monitoring started');
+    logger.log('UX monitoring started');
   }
 
   /**
@@ -117,7 +120,7 @@ class RealTimeUXScoring {
       this.monitoringTimer = undefined;
     }
 
-    console.log('UX monitoring stopped');
+    logger.log('UX monitoring stopped');
   }
 
   /**
@@ -149,7 +152,7 @@ class RealTimeUXScoring {
 
       // Log current score for debugging
       const currentScore = this.scoreCalculator.calculateScore(this.metrics);
-      console.log(`UX Score: ${currentScore.overall} (${this.getHealthStatus(currentScore.overall)})`);
+      logger.log(`UX Score: ${currentScore.overall} (${this.getHealthStatus(currentScore.overall)})`);
     } catch (error: unknown) {
       console.error('Error during periodic UX assessment:', error);
     }
@@ -294,7 +297,7 @@ class RealTimeUXScoring {
   reset(): void {
     this.metricsCollector.resetMetrics();
     this.uxAnalyzer.clearHistory();
-    console.log('UX metrics and history reset');
+    logger.log('UX metrics and history reset');
   }
 
   /**

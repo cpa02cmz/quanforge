@@ -5,6 +5,9 @@
 
 import { TIMEOUTS, CACHE_LIMITS } from '../constants';
 import { createListenerManager, ListenerManager } from '../utils/listenerManager';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('VercelEdgeOptimizer');
 
 interface EdgeConfig {
   enableEdgeRuntime: boolean;
@@ -72,7 +75,7 @@ class VercelEdgeOptimizer {
     // Set up enhanced service worker for edge caching
     if ('serviceWorker' in navigator && this.config.enableEdgeRuntime) {
       navigator.serviceWorker.register('/sw-enhanced.js').then((registration) => {
-        console.log('Enhanced Edge Service Worker registered:', registration);
+        logger.log('Enhanced Edge Service Worker registered:', registration);
         
         // Send message to service worker to skip waiting
         if (registration.active) {
@@ -84,18 +87,18 @@ class VercelEdgeOptimizer {
           (registration as any).periodicSync.register('cache-update', {
             minInterval: 24 * 60 * 60 * 1000 // 24 hours
           }).then(() => {
-            console.log('Periodic cache sync registered');
+            logger.log('Periodic cache sync registered');
           }).catch((error: any) => {
-            console.warn('Periodic sync registration failed:', error);
+            logger.warn('Periodic sync registration failed:', error);
           });
         }
       }).catch((error) => {
-        console.warn('Enhanced Edge Service Worker registration failed:', error);
+        logger.warn('Enhanced Edge Service Worker registration failed:', error);
         // Fallback to basic service worker
         navigator.serviceWorker.register('/sw.js').then((registration) => {
-          console.log('Fallback Service Worker registered:', registration);
+          logger.log('Fallback Service Worker registered:', registration);
         }).catch((fallbackError) => {
-          console.warn('Fallback Service Worker registration failed:', fallbackError);
+          logger.warn('Fallback Service Worker registration failed:', fallbackError);
         });
       });
     }
@@ -223,7 +226,7 @@ class VercelEdgeOptimizer {
         clsObserver.observe({ entryTypes: ['layout-shift'] });
         this.listenerManager.addObserver(clsObserver);
       } catch (error: unknown) {
-        console.warn('Performance monitoring setup failed:', error);
+        logger.warn('Performance monitoring setup failed:', error);
       }
     }
   }
@@ -232,7 +235,7 @@ class VercelEdgeOptimizer {
     // Send metrics to analytics for edge performance monitoring
     if (process.env['VITE_ENABLE_WEB_VITALS'] === 'true') {
       // In production, send to analytics service
-      console.log(`Performance metric ${type}:`, value);
+      logger.log(`Performance metric ${type}:`, value);
     }
   }
 
@@ -330,7 +333,7 @@ class VercelEdgeOptimizer {
       
       criticalComponents.forEach((component) => {
         // In a real implementation, this would trigger edge-side rendering
-        console.log(`Pre-rendering ${component} at edge`);
+        logger.log(`Pre-rendering ${component} at edge`);
       });
     }
   }
@@ -385,7 +388,7 @@ class VercelEdgeOptimizer {
     // All data is handled through client-side services (supabase.ts, etc.)
     // API caching is not needed - services handle their own caching
     // This method is kept for compatibility but does nothing
-    console.debug('API caching skipped - client-side SPA with service-layer architecture');
+    logger.debug('API caching skipped - client-side SPA with service-layer architecture');
   }
 
   private setupStaticAssetCaching(): void {
@@ -415,7 +418,7 @@ class VercelEdgeOptimizer {
     caches.open(cacheName).then((cache) => {
       return cache.addAll(assetsToCache);
     }).catch(() => {
-      console.warn('Application cache not available');
+      logger.warn('Application cache not available');
     });
   }
 
@@ -523,7 +526,7 @@ class VercelEdgeOptimizer {
       };
       localStorage.setItem(`edge-cache-${key}`, JSON.stringify(cacheData));
     } catch (error: unknown) {
-      console.warn('Failed to cache data:', error);
+      logger.warn('Failed to cache data:', error);
     }
   }
 
@@ -600,7 +603,7 @@ class VercelEdgeOptimizer {
     // Mark unused functions for tree shaking
     if (process.env['NODE_ENV'] === 'production') {
       // Enable tree shaking optimizations
-      console.debug('Tree shaking enabled for production build');
+      logger.debug('Tree shaking enabled for production build');
     }
   }
 
@@ -608,7 +611,7 @@ class VercelEdgeOptimizer {
     // Enable minification for production
     if (process.env['NODE_ENV'] === 'production') {
       // Additional minification settings would be handled by build tools
-      console.debug('Minification enabled for production build');
+      logger.debug('Minification enabled for production build');
     }
   }
 
@@ -618,7 +621,7 @@ class VercelEdgeOptimizer {
    */
   destroy(): void {
     this.listenerManager.cleanup();
-    console.log('VercelEdgeOptimizer destroyed and resources cleaned up');
+    logger.log('VercelEdgeOptimizer destroyed and resources cleaned up');
   }
 }
 
