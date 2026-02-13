@@ -17,6 +17,7 @@ export function createLazyComponent(
   importFunc: () => Promise<{ default: ComponentType<any> }>,
   componentName: string
    
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): React.LazyExoticComponent<ComponentType<any>> {
   return lazy(async () => {
     try {

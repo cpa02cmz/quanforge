@@ -2,7 +2,7 @@
 
 import { logger } from './logger';
 
-export interface IStorage<T = any> {
+export interface IStorage<T = unknown> {
   get<K = T>(key: string, fallback?: K): K | undefined;
   set<K = T>(key: string, value: K): void;
   remove(key: string): void;
@@ -71,11 +71,12 @@ export class BrowserStorage implements IStorage {
 
   private isQuotaError(error: unknown): boolean {
     if (error instanceof Error) {
+      const domError = error as { code?: number };
       return (
         error.name === 'QuotaExceededError' ||
         error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-        (error as any).code === 22 ||
-        (error as any).code === 1014
+        domError.code === 22 ||
+        domError.code === 1014
       );
     }
     return false;
