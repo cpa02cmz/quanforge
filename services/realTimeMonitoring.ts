@@ -1,7 +1,11 @@
 import { handleError } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { MEMORY_LIMITS, PERFORMANCE_THRESHOLDS, UX_THRESHOLDS, TIMEOUTS } from '../constants';
+<<<<<<< HEAD
 import { CACHE_TTLS, PERFORMANCE_BUDGETS, API_THRESHOLDS, SCORING, ARRAY_LIMITS } from './constants';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('RealTimeMonitoring');
 
 interface CoreWebVitals {
   lcp: number; // Largest Contentful Paint
@@ -235,7 +239,7 @@ this.isInitialized = true;
       observer.observe({ type, buffered: true });
       this.observers.push(observer);
     } catch (error: unknown) {
-      console.warn(`[RealTimeMonitoring] Failed to observe ${type}:`, error);
+      logger.warn(`Failed to observe ${type}:`, error);
     }
   }
 
@@ -383,7 +387,7 @@ this.isInitialized = true;
     }
 
     // Log warning
-    console.warn(`[RealTimeMonitoring] Performance alert: ${metric} (${value}) exceeds threshold (${threshold})`);
+    logger.warn(`Performance alert: ${metric} (${value}) exceeds threshold (${threshold})`);
   }
 
   /**
@@ -458,7 +462,7 @@ this.isInitialized = true;
         this.metrics = this.metrics.slice(-this.METRICS_RETENTION_LIMIT);
       }
 
-      console.log('[RealTimeMonitoring] Metrics reported:', {
+      logger.log('Metrics reported:', {
         lcp: currentMetrics.vitals.lcp,
         fid: currentMetrics.vitals.fid,
         cls: currentMetrics.vitals.cls,

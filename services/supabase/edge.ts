@@ -11,6 +11,9 @@ import {
   DEFAULT_EDGE_CONFIG_VALUES,
   EDGE_SCORING 
 } from './edgeConfig';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('SupabaseEdge');
 
 
 interface EdgeConfig {
@@ -322,7 +325,7 @@ class SupabaseEdgeOptimizations {
         return btoa(String.fromCharCode(...compressed));
       }
     } catch (error: unknown) {
-      console.warn('Compression failed, using uncompressed data:', error);
+      logger.warn('Compression failed, using uncompressed data:', error);
     }
 
     return jsonString;
@@ -369,7 +372,7 @@ class SupabaseEdgeOptimizations {
         }
       }
     } catch (error: unknown) {
-      console.warn('Decompression failed, trying direct JSON parse:', error);
+      logger.warn('Decompression failed, trying direct JSON parse:', error);
     }
 
     return JSON.parse(compressedData);
@@ -440,7 +443,7 @@ class SupabaseEdgeOptimizations {
         // const data = await this.getCommonData(key);
         // this.setEdgeCache(key, data);
       } catch (error: unknown) {
-        console.warn(`Failed to warm cache for key ${key}:`, error);
+        logger.warn(`Failed to warm cache for key ${key}:`, error);
       }
     }
   }
