@@ -12,6 +12,9 @@ import { databaseOptimizer } from '../databaseOptimizer';
 import { edgeOptimizer } from '../edgeFunctionOptimizer';
 import { databasePerformanceMonitor } from '../databasePerformanceMonitor';
 import { BACKEND_OPTIMIZATION_CONFIG, TIME_CONSTANTS } from '../../constants/config';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('BackendOptimizationManager');
 
 class BackendOptimizationManager {
   private static instance: BackendOptimizationManager;
@@ -106,7 +109,7 @@ class BackendOptimizationManager {
     // Analyze query patterns for the table
     void databasePerformanceMonitor.getPerformanceReport();
     // Note: This would need actual query analysis implementation
-    console.log(`Optimizing queries for table: ${tableName}`);
+    logger.log(`Optimizing queries for table: ${tableName}`);
   }
 
   /**
@@ -116,7 +119,7 @@ class BackendOptimizationManager {
     if (!this.config.enableDatabaseOptimization) return;
     
     await databaseOptimizer.runDatabaseMaintenance(client);
-    console.log('Database maintenance completed');
+    logger.log('Database maintenance completed');
   }
 
   /**
@@ -320,7 +323,7 @@ class BackendOptimizationManager {
       
       // Ensure we haven't exceeded max time
       if (executionTime > maxTime) {
-        console.warn(`Optimization exceeded max time: ${executionTime}ms > ${maxTime}ms`);
+        logger.warn(`Optimization exceeded max time: ${executionTime}ms > ${maxTime}ms`);
       }
 
       return {

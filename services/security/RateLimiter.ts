@@ -1,3 +1,5 @@
+import { RATE_LIMITING } from '../../constants/config';
+
 interface RateLimitEntry {
   count: number;
   resetTime: number;
@@ -9,6 +11,41 @@ interface AdaptiveRateLimitEntry {
   limit: number;
   windowMs: number;
 }
+
+/**
+ * Rate limiter tier configuration using centralized constants
+ * Flexy loves modularity - no more hardcoded values!
+ */
+const TIER_LIMITS = {
+  basic: { 
+    limit: RATE_LIMITING.TIERS.FREE.MAX_REQUESTS, 
+    windowMs: RATE_LIMITING.TIERS.FREE.WINDOW 
+  },
+  premium: { 
+    limit: RATE_LIMITING.TIERS.PRO.MAX_REQUESTS, 
+    windowMs: RATE_LIMITING.TIERS.PRO.WINDOW 
+  },
+  enterprise: { 
+    limit: RATE_LIMITING.TIERS.ENTERPRISE.MAX_REQUESTS, 
+    windowMs: RATE_LIMITING.TIERS.ENTERPRISE.WINDOW 
+  }
+} as const;
+
+/**
+ * Edge rate limiting configuration
+ */
+const EDGE_RATE_LIMIT = {
+  multiplier: 0.7, // 70% of normal limit for edge
+} as const;
+
+/**
+ * Priority multipliers for coalesced rate limiting
+ */
+const PRIORITY_MULTIPLIERS = {
+  low: 0.5,
+  normal: 1.0,
+  high: 2.0
+} as const;
 
 export class RateLimiter {
   private rateLimitMap = new Map<string, RateLimitEntry>();
@@ -58,15 +95,9 @@ export class RateLimiter {
   } {
     const now = Date.now();
     
-    // Rate limits by user tier
-    const tierLimits = {
-      basic: { limit: 100, windowMs: 60000 },    // 100 requests/minute
-      premium: { limit: 500, windowMs: 60000 },  // 500 requests/minute
-      enterprise: { limit: 2000, windowMs: 60000 } // 2000 requests/minute
-    };
-
-    const currentTier = userTier as keyof typeof tierLimits;
-    const { limit, windowMs } = tierLimits[currentTier] || tierLimits.basic;
+    // Rate limits by user tier - now using centralized constants
+    const currentTier = userTier as keyof typeof TIER_LIMITS;
+    const { limit, windowMs } = TIER_LIMITS[currentTier] || TIER_LIMITS.basic;
 
     const entry = this.adaptiveRateLimitMap.get(identifier);
 
@@ -122,7 +153,7 @@ export class RateLimiter {
     const entry = this.edgeRateLimitMap.get(key);
 
     // Edge-specific rate limits (usually stricter)
-    const edgeMaxRequests = Math.floor(this.config.maxRequests * 0.7); // 70% of normal limit
+    const edgeMaxRequests = Math.floor(this.config.maxRequests * EDGE_RATE_LIMIT.multiplier);
     const edgeWindowMs = this.config.windowMs;
 
     if (!entry || now > entry.resetTime) {
@@ -171,15 +202,9 @@ export class RateLimiter {
     const key = `${identifier}:${requestType}`;
     const entry = this.rateLimitMap.get(key);
 
-    // Adjust limits based on priority
-    const priorityMultipliers = {
-      low: 0.5,
-      normal: 1.0,
-      high: 2.0
-    };
-
+    // Adjust limits based on priority - using centralized constants
     const adjustedLimit = Math.floor(
-      this.config.maxRequests * priorityMultipliers[priority]
+      this.config.maxRequests * PRIORITY_MULTIPLIERS[priority]
     );
 
     if (!entry || now > entry.resetTime) {

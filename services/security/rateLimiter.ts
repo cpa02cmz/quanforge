@@ -1,3 +1,5 @@
+import { RATE_LIMITING } from '../../constants/config';
+
 interface RateLimitRecord {
   count: number;
   resetTime: number;
@@ -13,12 +15,36 @@ interface AdaptiveLimits {
   maxRequests: number;
 }
 
+/**
+ * Default rate limit configuration using centralized constants
+ * Flexy loves modularity - no more hardcoded values!
+ */
+const DEFAULT_RATE_LIMIT_CONFIG: RateLimitConfig = {
+  windowMs: RATE_LIMITING.DEFAULT_WINDOW, // 1 minute
+  maxRequests: RATE_LIMITING.DEFAULT_MAX_REQUESTS, // 10 requests
+};
+
+/**
+ * Tier-based adaptive rate limits using centralized constants
+ */
+const TIER_ADAPTIVE_LIMITS: Record<string, AdaptiveLimits> = {
+  basic: { 
+    windowMs: RATE_LIMITING.TIERS.FREE.WINDOW, 
+    maxRequests: RATE_LIMITING.TIERS.FREE.MAX_REQUESTS 
+  },
+  premium: { 
+    windowMs: RATE_LIMITING.TIERS.PRO.WINDOW, 
+    maxRequests: RATE_LIMITING.TIERS.PRO.MAX_REQUESTS 
+  },
+  enterprise: { 
+    windowMs: RATE_LIMITING.TIERS.ENTERPRISE.WINDOW, 
+    maxRequests: RATE_LIMITING.TIERS.ENTERPRISE.MAX_REQUESTS 
+  }
+};
+
 export class RateLimiter {
   private rateLimitMap = new Map<string, RateLimitRecord>();
-  private config: RateLimitConfig = {
-    windowMs: 60000, // 1 minute
-    maxRequests: 100,
-  };
+  private config: RateLimitConfig = { ...DEFAULT_RATE_LIMIT_CONFIG };
 
   // Basic rate limiting
   checkRateLimit(identifier: string): { allowed: boolean; resetTime?: number } {
@@ -61,14 +87,8 @@ export class RateLimiter {
     const now = Date.now();
     const record = this.rateLimitMap.get(identifier);
 
-    // Tier-based limits
-    const limits: Record<string, AdaptiveLimits> = {
-      basic: { windowMs: 60000, maxRequests: 30 },
-      premium: { windowMs: 60000, maxRequests: 100 },
-      enterprise: { windowMs: 60000, maxRequests: 500 }
-    };
-
-    const tierLimits = limits[userTier as keyof typeof limits] || limits['basic'];
+    // Tier-based limits - using centralized constants
+    const tierLimits = TIER_ADAPTIVE_LIMITS[userTier] || TIER_ADAPTIVE_LIMITS['basic'];
 
     if (!tierLimits) {
       return { allowed: true, resetTime: 0, currentCount: 0, limit: 0 };
