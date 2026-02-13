@@ -7,7 +7,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { createScopedLogger } from '../utils/logger';
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
-import { TIMEOUTS, RETRY_CONFIG, STAGGER, TIME_CONSTANTS } from './constants';
+import { TIMEOUTS, RETRY_CONFIG, STAGGER, TIME_CONSTANTS, POOL_CONFIG, SCORING } from './constants';
 import { getErrorMessage } from '../utils/errorHandler';
 
 const logger = createScopedLogger('EnhancedConnectionPool');
@@ -275,17 +275,17 @@ class EnhancedSupabaseConnectionPool {
 
       // Region preference (highest priority)
       if (region && connection.region === region) {
-        score += 1000;
+        score += POOL_CONFIG.SCORING.REGION_MATCH_BONUS;
       }
 
       // Recent usage penalty (prefer less recently used)
       const idleTime = now - connection.lastUsed;
-      score += Math.min(idleTime / 1000, 100); // Max 100 points for idle time
+      score += Math.min(idleTime / 1000, SCORING.MAX_SCORE); // Max points for idle time
 
       // Connection age preference (prefer established connections)
       const age = now - connection.created;
-      if (age > 60000) { // More than 1 minute old
-        score += 50;
+      if (age > POOL_CONFIG.RECENT_USAGE_THRESHOLD_MS) { // More than threshold old
+        score += POOL_CONFIG.SCORING.HEALTHY_BONUS;
       }
 
       candidates.push({ connection, score });

@@ -1,3 +1,6 @@
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('EdgeCacheCompression');
 /**
  * Edge Cache Compression Utilities
  * Compression strategy for edge-optimized cache entries
@@ -27,7 +30,7 @@ export class EdgeCacheCompression {
       const compressed = compressToUTF16(jsonString);
       return compressed as unknown as T;
     } catch (error: unknown) {
-      console.warn('Failed to compress data:', error);
+      logger.warn('Failed to compress data:', error);
       return data;
     }
   }
@@ -38,7 +41,7 @@ export class EdgeCacheCompression {
       const decompressed = decompressFromUTF16(data as string);
       return JSON.parse(decompressed);
     } catch (error: unknown) {
-      console.warn('Failed to decompress data:', error);
+      logger.warn('Failed to decompress data:', error);
       return data;
     }
   }

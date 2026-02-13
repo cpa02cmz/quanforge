@@ -11,6 +11,9 @@ import { createSafeSQLPattern, ReDoSError } from '../../utils/safeRegex';
 import { getErrorMessage } from '../../utils/errorHandler';
 import { RETRY_CONFIGS, CACHE_SIZES } from '../../constants/modularConfig';
 import { CACHE_TTLS } from '../constants';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('DatabaseService');
 
 // Database configurations - using modular config
 export const DB_CONFIG = {
@@ -164,7 +167,7 @@ export const mockDB = {
           } catch (error: unknown) {
             // Handle ReDoS errors gracefully
             if (error instanceof ReDoSError) {
-              console.warn('Unsafe pattern detected in ilike:', error.message);
+              logger.warn('Unsafe pattern detected in ilike:', error.message);
               return { data: [], error: { message: `Invalid search pattern: ${error.message}` } };
             }
             handleError(error instanceof Error ? error : new Error(getErrorMessage(error)), 'database.operation');
@@ -305,7 +308,7 @@ export const searchRobots = async (searchTerm: string) => {
   } catch (error: unknown) {
     // Handle ReDoS errors gracefully
     if (error instanceof ReDoSError) {
-      console.warn('Unsafe search pattern detected:', error.message);
+      logger.warn('Unsafe search pattern detected:', error.message);
       return { data: [], error: { message: `Invalid search pattern: ${error.message}` } };
     }
     handleError(error instanceof Error ? error : new Error(getErrorMessage(error)), 'database.search');

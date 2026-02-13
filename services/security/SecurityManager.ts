@@ -1,3 +1,6 @@
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('SecurityManager');
 import { InputValidator, ValidationResult } from './InputValidator';
 import { ThreatDetector } from './ThreatDetector';
 import { RateLimiter } from './rateLimiter';
@@ -281,7 +284,7 @@ class SecurityManager {
     try {
       return JSON.parse(jsonString);
     } catch (error: unknown) {
-      console.warn('Invalid JSON:', error);
+      logger.warn('Invalid JSON:', error);
       return null;
     }
   }

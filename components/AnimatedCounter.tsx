@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { UI_TIMING } from '../services/constants';
 
 export interface AnimatedCounterProps {
   /** The target number to display */
@@ -67,7 +68,7 @@ export interface AnimatedCounterProps {
  */
 export const AnimatedCounter: React.FC<AnimatedCounterProps> = memo(({
   value,
-  duration = 1000,
+  duration = UI_TIMING.ANIMATION_DURATION,
   decimals = 0,
   prefix = '',
   suffix = '',
@@ -250,7 +251,7 @@ export const StatCard: React.FC<StatCardProps> = memo(({
   value,
   change,
   icon,
-  duration = 1500,
+  duration = UI_TIMING.ANIMATION_DURATION_SLOW,
   prefix = '',
   suffix = '',
   className = ''

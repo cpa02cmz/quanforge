@@ -13,6 +13,9 @@ import {
   QUEUE_HEALTH_THRESHOLDS, 
   QUERY_EXECUTION_LIMITS 
 } from './batchConfig';
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('QueryBatcher');
 
 class QueryBatcher {
   private static instance: QueryBatcher;
@@ -190,7 +193,7 @@ class QueryBatcher {
     
     // Process remaining queries immediately
     this.processBatchImmediate().catch(console.error);
-    console.log('Querybatcher shutting down');
+    logger.log('Querybatcher shutting down');
   }
 
   /**

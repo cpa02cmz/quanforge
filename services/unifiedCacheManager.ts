@@ -1,3 +1,6 @@
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('UnifiedCacheManager');
 // Unified cache interface with enhanced edge optimization
 import { compress, decompress } from 'lz-string';
 import { getLocalStorage } from '../utils/storage';
@@ -139,7 +142,7 @@ export class UnifiedCacheManager {
         const decompressed = await decompress(entry.data);
         data = JSON.parse(decompressed);
       } catch (error: unknown) {
-        console.warn('Failed to decompress cached data:', error);
+        logger.warn('Failed to decompress cached data:', error);
         this.cache.delete(key);
         this.recordMiss(region);
         return null;
@@ -181,7 +184,7 @@ export class UnifiedCacheManager {
           this.metrics.compressions++;
         }
       } catch (error: unknown) {
-        console.warn('Compression failed:', error);
+        logger.warn('Compression failed:', error);
       }
     }
 

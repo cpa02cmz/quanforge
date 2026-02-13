@@ -1,3 +1,6 @@
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('CoreOptimizationEngine');
 /**
  * Core Optimization Engine
  * Central coordination for all optimization activities
@@ -58,7 +61,7 @@ export class CoreOptimizationEngine {
    */
   private async performOptimizationCycle(): Promise<void> {
     try {
-      console.log('Starting optimization cycle...');
+      logger.log('Starting optimization cycle...');
       
       // Collect current metrics
       const metrics = await this.metricsCollector.collectMetrics();
@@ -81,7 +84,7 @@ export class CoreOptimizationEngine {
         this.optimizationHistory = this.optimizationHistory.slice(-this.MAX_OPTIMIZATION_HISTORY);
       }
       
-      console.log(`Optimization cycle completed. Applied ${recommendations.length} optimizations.`);
+      logger.log(`Optimization cycle completed. Applied ${recommendations.length} optimizations.`);
     } catch (error: unknown) {
       console.error('Error during optimization cycle:', error);
     }

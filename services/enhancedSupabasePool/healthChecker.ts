@@ -2,7 +2,7 @@
 
 import { Connection, HealthCheckResult } from './types';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { TIMEOUTS, RETRY_CONFIG, STAGGER } from '../constants';
+import { TIMEOUTS, RETRY_CONFIG, STAGGER, MONITORING } from '../constants';
 
 export class ConnectionHealthChecker {
   private checkTimeout: number = TIMEOUTS.STANDARD; // 5 seconds
@@ -111,7 +111,7 @@ export class ConnectionHealthChecker {
   setupPeriodicHealthCheck(
     connections: Map<string, Connection>,
     onUnhealthyConnection: (id: string, result: HealthCheckResult) => void,
-    interval: number = 30000 // 30 seconds
+    interval: number = MONITORING.INTERVALS.SLOW // 30 seconds
   ): () => void {
     const intervalId = setInterval(async () => {
       const connectionArray = Array.from(connections.values());

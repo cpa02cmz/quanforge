@@ -1,3 +1,6 @@
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('SecurityManager');
 import { Robot, StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
 import { SecureStorage } from '../utils/secureStorage';
@@ -912,7 +915,7 @@ private validateRobotData(data: any): ValidationResult {
        });
      } catch (e) {
        // Fallback for environments where headers.entries() is not available
-       console.warn('Could not check headers for threats:', e);
+       logger.warn('Could not check headers for threats:', e);
      }
 
     // Content-Length abuse
@@ -1001,7 +1004,7 @@ private validateRobotData(data: any): ValidationResult {
         timestamp: Date.now()
       };
 
-      console.warn('🛡️ CSP Violation detected:', violation);
+      logger.warn('🛡️ CSP Violation detected:', violation);
       
       // Store violation for analysis
       this.storeCSPViolation(violation);
