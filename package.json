@@ -61,7 +61,7 @@
     "generate:preload-list": "node scripts/generate-preload-list.js"
   },
   "dependencies": {
-    "@google/genai": "^1.35.0",
+    "@google/genai": "1.41.0",
     "@supabase/supabase-js": "^2.90.1",
     "@types/dompurify": "^3.0.5",
     "@vercel/kv": "^3.0.0",
@@ -79,17 +79,17 @@
     "@playwright/test": "^1.58.2",
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/react": "^16.3.1",
-    "@types/node": "^25.0.5",
-    "@types/react": "^19.2.7",
+    "@types/node": "25.2.3",
+    "@types/react": "19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@typescript-eslint/eslint-plugin": "^8.52.0",
-    "@typescript-eslint/parser": "^8.52.0",
-    "@vitejs/plugin-react": "^5.1.2",
-    "@vitest/ui": "^4.0.16",
+    "@typescript-eslint/eslint-plugin": "8.55.0",
+    "@typescript-eslint/parser": "8.55.0",
+    "@vitejs/plugin-react": "5.1.4",
+    "@vitest/ui": "4.0.18",
     "chrome-launcher": "^1.2.1",
     "eslint": "^9.39.2",
     "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.26",
+    "eslint-plugin-react-refresh": "0.5.0",
     "jsdom": "^27.4.0",
     "lighthouse": "^12.8.2",
     "playwright": "^1.58.2",
@@ -97,6 +97,6 @@
     "terser": "^5.34.1",
     "typescript": "~5.9.3",
     "vite": "^6.4.1",
-    "vitest": "^4.0.16"
+    "vitest": "4.0.18"
   }
 }
