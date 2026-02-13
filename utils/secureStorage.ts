@@ -9,7 +9,7 @@ interface SecureStorageOptions {
   ttl?: number; // Time to live in milliseconds
 }
 
-interface StorageItem<T = any> {
+interface StorageItem<T = unknown> {
   data: T; // Can be original data or processed (encrypted/compressed) string
   timestamp: number;
   ttl?: number;

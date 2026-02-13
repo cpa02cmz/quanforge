@@ -10,7 +10,7 @@ interface PageMetaProps {
   ogUrl?: string;
   canonicalUrl?: string;
   type?: 'website' | 'article' | 'software';
-  structuredData?: Record<string, any>[];
+  structuredData?: Record<string, unknown>[];
   noIndex?: boolean;
   alternateUrls?: Array<{ hrefLang: string; url: string }>;
   lastModified?: string;
