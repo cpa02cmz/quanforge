@@ -2,6 +2,7 @@ import { robotCache, queryCache } from './cache';
 import { getClient } from './client';
 import { handleError } from '../../utils/errorHandler';
 import { createScopedLogger } from '../../utils/logger';
+import { HEALTH_CHECK_CONFIG } from '../monitoringConfig';
 
 const logger = createScopedLogger('DatabaseMonitoring');
 
@@ -113,7 +114,7 @@ export class ConnectionHealthMonitor {
   private static healthCheckInterval: ReturnType<typeof setInterval> | null = null;
   private static isHealthy = true;
 
-  static startHealthCheck(intervalMs: number = 30000): void {
+  static startHealthCheck(intervalMs: number = HEALTH_CHECK_CONFIG.INTERVAL_STANDARD): void {
     this.healthCheckInterval = setInterval(async () => {
       try {
         const client = getClient();

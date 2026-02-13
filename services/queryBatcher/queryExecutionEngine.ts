@@ -1,10 +1,12 @@
 /**
  * Query Execution Engine
  * Handles batched query execution and optimization
+ * Flexy loves modularity! Using centralized batch configuration
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { BatchQuery, BatchResult, CombinedQuery, QueryError } from './queryTypes';
+import { QUERY_EXECUTION_LIMITS } from './batchConfig';
 
 // Type guard for error handling
 function isError(error: unknown): error is Error {
@@ -42,7 +44,7 @@ export class QueryExecutionEngine {
             code: 'OPERATION_FAILED',
             message: `Failed to execute ${operation}: ${errorMessage}`,
             type: 'database',
-            status: 500,
+            status: QUERY_EXECUTION_LIMITS.ERROR_STATUS_SERVER,
             details: { operation, originalError: errorMessage }
           } as QueryError,
           executionTime: 0
@@ -193,7 +195,7 @@ export class QueryExecutionEngine {
           code: 'QUERY_FAILED',
           message: error instanceof Error ? error.message : 'Unknown error',
           type: 'database',
-          status: 500,
+          status: QUERY_EXECUTION_LIMITS.ERROR_STATUS_SERVER,
           details: { query: query.query, retries: currentRetries }
         } as QueryError,
         executionTime
@@ -206,7 +208,7 @@ export class QueryExecutionEngine {
    */
   private async executeSelect(query: BatchQuery): Promise<{ data: unknown }> {
     const queryBuilder = this.client.from(query.table || 'unknown');
-    const result = await queryBuilder.select('*').limit(1000);
+    const result = await queryBuilder.select('*').limit(QUERY_EXECUTION_LIMITS.DEFAULT_SELECT_LIMIT);
     
     if (result.error) {
       throw result.error;
@@ -284,7 +286,7 @@ export class QueryExecutionEngine {
     try {
       // Simplified combined query execution
       const baseQuery = this.client.from(combined.table);
-      const result = await baseQuery.select('*').limit(1000);
+      const result = await baseQuery.select('*').limit(QUERY_EXECUTION_LIMITS.DEFAULT_SELECT_LIMIT);
       
       if (result.error) {
         return this.createErrorResults(combined.originalQueries, result.error);
@@ -439,7 +441,7 @@ export class QueryExecutionEngine {
         code: 'EXECUTION_ERROR',
         message: isError(error) ? error.message : 'Unknown error',
         type: 'database',
-        status: 500,
+        status: QUERY_EXECUTION_LIMITS.ERROR_STATUS_SERVER,
         details: { query: query.query, originalError: isError(error) ? error.message : error }
       } as QueryError,
       executionTime: 0
