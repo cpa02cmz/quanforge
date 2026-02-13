@@ -7,6 +7,7 @@ import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
 import { SendButton } from './SendButton';
 import { TypingIndicator } from './TypingIndicator';
+import { TEXT_INPUT_LIMITS } from '../constants/uiConfig';
 
   const logger = createScopedLogger('ChatInterface');
 
@@ -203,7 +204,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   // Enhanced helper to parse **bold** and `code` with memory optimization
   const parseInlineStyles = useCallback((text: string) => {
     // Limit text length to prevent memory issues
-    const maxLength = 1000;
+    const maxLength = TEXT_INPUT_LIMITS.CHAT_MESSAGE_SHORT;
     const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
     
     // We split by bold markers first using pre-compiled regex
@@ -235,7 +236,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     if (!content) return [];
     
     // Limit content length to prevent memory issues
-    const maxLength = 5000;
+    const maxLength = TEXT_INPUT_LIMITS.CHAT_MESSAGE_MEDIUM;
     const truncatedContent = content.length > maxLength 
       ? content.substring(0, maxLength) + '...' 
       : content;

@@ -3,9 +3,14 @@
 /**
  * Supabase Edge Optimizations Service
  * Edge-specific functionality and optimizations for Supabase operations
+ * Flexy loves modularity! Using centralized edge configuration
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
+import { 
+  DEFAULT_EDGE_CONFIG_VALUES,
+  EDGE_SCORING 
+} from './edgeConfig';
 
 
 interface EdgeConfig {
@@ -36,14 +41,7 @@ interface BatchedRequest {
 }
 
 const DEFAULT_EDGE_CONFIG: EdgeConfig = {
-  enableRegionOptimization: true,
-  enableCompression: true,
-  enableRequestBatching: true,
-  batchSize: 10,
-  batchTimeout: 50, // ms
-  preferredRegions: ['auto', 'us-east-1', 'eu-west-1'],
-  fallbackRegions: ['us-west-1', 'ap-southeast-1'],
-  edgeCacheTTL: 30000, // 30 seconds
+  ...DEFAULT_EDGE_CONFIG_VALUES
 };
 
 class SupabaseEdgeOptimizations {
@@ -86,7 +84,7 @@ class SupabaseEdgeOptimizations {
     
     for (const [region, performance] of this.regionPerformance) {
       const avgLatency = performance.totalLatency / performance.requestCount;
-      const score = 1000 / (avgLatency + 1); // Lower latency = higher score
+      const score = EDGE_SCORING.LATENCY_BASE / (avgLatency + 1); // Lower latency = higher score
       regionScores.set(region, score);
     }
 

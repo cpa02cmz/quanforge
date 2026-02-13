@@ -1,0 +1,82 @@
+/**
+ * Monitoring and Error Management Configuration
+ * Flexy loves modularity! Centralized monitoring configuration
+ */
+
+import { TIME_CONSTANTS } from '../constants/config';
+
+// ========== HEALTH CHECK CONFIGURATION ==========
+export const HEALTH_CHECK_CONFIG = {
+  // Default intervals
+  INTERVAL_FAST: 5 * TIME_CONSTANTS.SECOND,
+  INTERVAL_DEFAULT: 10 * TIME_CONSTANTS.SECOND,
+  INTERVAL_STANDARD: 30 * TIME_CONSTANTS.SECOND,
+  INTERVAL_RELAXED: TIME_CONSTANTS.MINUTE,
+  INTERVAL_SLOW: 2 * TIME_CONSTANTS.MINUTE,
+  
+  // Timeout values
+  TIMEOUT_FAST: 2 * TIME_CONSTANTS.SECOND,
+  TIMEOUT_DEFAULT: 5 * TIME_CONSTANTS.SECOND,
+  TIMEOUT_STANDARD: 10 * TIME_CONSTANTS.SECOND,
+} as const;
+
+// ========== METRICS COLLECTION CONFIGURATION ==========
+export const METRICS_CONFIG = {
+  // Sample sizes
+  RESPONSE_TIME_SAMPLES_DEFAULT: 1000,
+  RESPONSE_TIME_SAMPLES_SMALL: 100,
+  RESPONSE_TIME_SAMPLES_MEDIUM: 500,
+  RESPONSE_TIME_SAMPLES_LARGE: 2000,
+  
+  // History sizes
+  HISTORY_SIZE_DEFAULT: 1000,
+  HISTORY_SIZE_SMALL: 100,
+  HISTORY_SIZE_MEDIUM: 500,
+  HISTORY_SIZE_LARGE: 5000,
+  
+  // Cache sizes
+  MAX_CACHE_SIZE_DEFAULT: 1000,
+  MAX_CACHE_SIZE_SMALL: 100,
+  MAX_CACHE_SIZE_LARGE: 5000,
+} as const;
+
+// ========== ERROR MANAGEMENT CONFIGURATION ==========
+export const ERROR_MANAGEMENT_CONFIG = {
+  // History sizes
+  MAX_HISTORY_SIZE: 1000,
+  MAX_HISTORY_SIZE_SMALL: 100,
+  MAX_HISTORY_SIZE_MEDIUM: 500,
+  MAX_HISTORY_SIZE_LARGE: 2000,
+  
+  // Error tracking limits
+  MAX_UNIQUE_ERRORS: 100,
+  MAX_ERROR_FREQUENCY_SAMPLES: 100,
+  
+  // Cleanup intervals
+  CLEANUP_INTERVAL: 5 * TIME_CONSTANTS.MINUTE,
+} as const;
+
+// ========== POOL HEALTH CONFIGURATION ==========
+export const POOL_HEALTH_CONFIG = {
+  // Check intervals (ms)
+  CHECK_INTERVAL_DEFAULT: 30000,
+  CHECK_INTERVAL_FAST: 15000,
+  CHECK_INTERVAL_SLOW: 60000,
+  
+  // Connection thresholds
+  MIN_HEALTHY_CONNECTIONS: 2,
+  MAX_FAILED_HEALTH_CHECKS: 3,
+} as const;
+
+// Type exports
+export type HealthCheckConfig = typeof HEALTH_CHECK_CONFIG;
+export type MetricsConfig = typeof METRICS_CONFIG;
+export type ErrorManagementConfig = typeof ERROR_MANAGEMENT_CONFIG;
+
+// Default export
+export const MONITORING_CONSTANTS = {
+  HEALTH_CHECK: HEALTH_CHECK_CONFIG,
+  METRICS: METRICS_CONFIG,
+  ERROR_MANAGEMENT: ERROR_MANAGEMENT_CONFIG,
+  POOL_HEALTH: POOL_HEALTH_CONFIG,
+} as const;
