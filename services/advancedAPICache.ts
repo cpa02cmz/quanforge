@@ -6,6 +6,7 @@
 import { storage } from '../utils/storage';
 import { createScopedLogger } from '../utils/logger';
 import { createSafeWildcardPattern, ReDoSError } from '../utils/safeRegex';
+import { SERVICE_CACHE_CONFIG } from './constants';
 
 const logger = createScopedLogger('AdvancedAPICache');
 
@@ -58,11 +59,11 @@ class AdvancedAPICache {
   
   constructor(config?: Partial<CacheConfig>) {
     this.config = {
-      defaultTTL: 300000,        // 5 minutes default
-      maxSize: 1000,             // 1000 entries max
-      compression: true,         // Enable compression
-      encryption: false,         // Disable encryption by default
-      syncAcrossTabs: true,      // Sync across tabs
+      defaultTTL: SERVICE_CACHE_CONFIG.API_CACHE.DEFAULT_TTL_MS,
+      maxSize: SERVICE_CACHE_CONFIG.API_CACHE.MAX_SIZE,
+      compression: SERVICE_CACHE_CONFIG.API_CACHE.COMPRESSION_ENABLED,
+      encryption: SERVICE_CACHE_CONFIG.API_CACHE.ENCRYPTION_ENABLED,
+      syncAcrossTabs: SERVICE_CACHE_CONFIG.API_CACHE.SYNC_ACROSS_TABS,
       ...config
     };
     

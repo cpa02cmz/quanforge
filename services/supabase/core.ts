@@ -8,7 +8,7 @@ import { Robot, UserSession } from '../../types';
 import { securityManager } from '../securityManager';
 import { consolidatedCache } from '../consolidatedCacheManager';
 import { createScopedLogger } from '../../utils/logger';
-import { DATABASE, CACHE_TTLS } from '../constants';
+import { DATABASE, SERVICE_CACHE_CONFIG } from '../constants';
 import { getErrorCode, getErrorMessage } from '../../utils/errorHandler';
 import { STORAGE_KEYS, TOKEN_CONFIG } from '../../constants/modularConfig';
 
@@ -25,8 +25,8 @@ const RETRY_CONFIG = {
 
 // Cache configuration optimized for edge performance - using modular constants
 const CACHE_CONFIG = {
-  ttl: CACHE_TTLS.FIFTEEN_MINUTES,
-  maxSize: 200,
+  ttl: SERVICE_CACHE_CONFIG.SUPABASE_CORE.TTL_MS,
+  maxSize: SERVICE_CACHE_CONFIG.SUPABASE_CORE.MAX_SIZE,
 };
 
 // Mock storage keys for fallback mode - using Flexy's modular config
