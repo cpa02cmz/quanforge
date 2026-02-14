@@ -223,6 +223,42 @@ export const CACHE_SIZES = {
   MAX_MB: 50 * 1024 * 1024,                      // 50MB
 } as const;
 
+// ========== SERVICE-SPECIFIC CACHE CONFIGURATION ==========
+export const SERVICE_CACHE_CONFIG = {
+  // Supabase core cache
+  SUPABASE_CORE: {
+    MAX_SIZE: 200,                               // 200 entries
+    TTL_MS: 15 * TIME_CONSTANTS.MINUTE,          // 15 minutes
+  },
+  
+  // API cache
+  API_CACHE: {
+    DEFAULT_TTL_MS: 5 * TIME_CONSTANTS.MINUTE,   // 5 minutes (300000ms)
+    MAX_SIZE: 1000,                              // 1000 entries
+    COMPRESSION_ENABLED: true,
+    ENCRYPTION_ENABLED: false,
+    SYNC_ACROSS_TABS: true,
+  },
+  
+  // Database utils cache
+  DATABASE_UTILS: {
+    MAX_SIZE: 200,                               // 200 entries
+  },
+} as const;
+
+// ========== PERFORMANCE MONITORING CONFIGURATION ==========
+export const PERFORMANCE_CONFIG = {
+  // Sample sizes
+  SAMPLES: {
+    DEFAULT: 100,                                // Default sample size
+    SMALL: 50,                                   // Small sample size
+    LARGE: 500,                                  // Large sample size
+  },
+  
+  // Metric history
+  METRICS_HISTORY: 100,                          // Keep 100 metrics
+} as const;
+
 // ========== SCORING CONSTANTS ==========
 export const SCORING = {
   // Score ranges
@@ -467,6 +503,8 @@ export const SERVICE_CONSTANTS = {
   RATE_LIMITS,
   SECURITY,
   CACHE_SIZES,
+  SERVICE_CACHE_CONFIG,
+  PERFORMANCE_CONFIG,
   SCORING,
   ERROR_CODES,
   PERFORMANCE_BUDGETS,

@@ -1,4 +1,5 @@
 // Performance monitoring utilities for database operations
+import { PERFORMANCE_CONFIG } from '../../constants';
 
 export interface PerformanceMetric {
   count: number;
@@ -42,7 +43,7 @@ export class PerformanceMonitor {
 // Edge performance tracker for monitoring database operations in edge environments
 export class EdgePerformanceTracker {
   private metrics: Map<string, number[]> = new Map();
-  private readonly maxSamples = 100;
+  private readonly maxSamples = PERFORMANCE_CONFIG.SAMPLES.DEFAULT;
 
   recordMetric(operation: string, duration: number) {
     if (!this.metrics.has(operation)) {

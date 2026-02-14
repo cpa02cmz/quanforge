@@ -1,7 +1,7 @@
 // Database utilities and helper functions for Supabase operations
 
 import { Robot } from '../../../types';
-import { DATABASE, CACHE_TTLS } from '../../constants';
+import { DATABASE, CACHE_TTLS, SERVICE_CACHE_CONFIG } from '../../constants';
 import { STORAGE_KEYS } from '../../../constants/modularConfig';
 
 // Enhanced connection retry configuration with exponential backoff - using modular constants
@@ -16,7 +16,7 @@ export const RETRY_CONFIG = {
 // Cache configuration - using modular constants
 export const CACHE_CONFIG = {
   ttl: CACHE_TTLS.FIFTEEN_MINUTES,
-  maxSize: 200, // Max cached items
+  maxSize: SERVICE_CACHE_CONFIG.DATABASE_UTILS.MAX_SIZE,
 };
 
 // Re-export STORAGE_KEYS from modular config for backward compatibility
