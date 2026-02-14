@@ -58,6 +58,7 @@
     "performance-check": "npm run build && npm run typecheck && npm run lint",
     "health-check": "echo '=== Running Health Checks ===' && npm run typecheck && echo '✓ TypeScript OK' && npm run lint && echo '✓ Lint OK' && npm run test:run && echo '✓ Tests OK' && npm run build && echo '✓ Build OK' && echo '=== All Health Checks Passed ==='",
     "analyze:bundle": "npx @vercel/webpack-bundle-analyzer dist/static/js/*.js",
+    "check:bundle-size": "node scripts/check-bundle-size.cjs",
     "generate:preload-list": "node scripts/generate-preload-list.js"
   },
   "dependencies": {
