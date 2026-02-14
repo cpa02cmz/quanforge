@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, useEffect, memo, useRef } from 'react';
 import { AISettings, AIProvider, Language } from '../types';
 import { settingsManager, DEFAULT_AI_SETTINGS } from '../services/settingsManager';
 import { useToast } from './useToast';
@@ -7,6 +7,7 @@ import { useToast } from './useToast';
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
 import { CharacterCounter } from './CharacterCounter';
+import { useModalAccessibility } from '../hooks/useModalAccessibility';
 
 const logger = createScopedLogger('AISettingsModal');
 
@@ -56,6 +57,14 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, o
     const [isTesting, setIsTesting] = useState(false);
     const [activePreset, setActivePreset] = useState<string>('google');
     const [activeTab, setActiveTab] = useState<'ai' | 'market'>('ai');
+    const modalRef = useRef<HTMLDivElement>(null);
+    const titleId = 'ai-settings-title';
+    
+    const { modalProps } = useModalAccessibility({
+        isOpen,
+        onClose,
+        modalRef,
+    });
 
     useEffect(() => {
         if (isOpen) {
@@ -125,10 +134,15 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, o
 
 return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-dark-surface border border-dark-border rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div
+                ref={modalRef}
+                {...modalProps}
+                aria-labelledby={titleId}
+                className="bg-dark-surface border border-dark-border rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto outline-none"
+            >
                 <form onSubmit={handleSave} className="space-y-6">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-semibold text-white">{t('settings_title')}</h2>
+                        <h2 id={titleId} className="text-xl font-semibold text-white">{t('settings_title')}</h2>
                         <button
                             type="button"
                             onClick={onClose}
