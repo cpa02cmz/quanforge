@@ -1,4 +1,5 @@
 import { TIMEOUTS } from './constants';
+import { DELAY_CONSTANTS, COUNT_CONSTANTS, THRESHOLD_CONSTANTS, WEB_VITALS, TIME_CONSTANTS } from './modularConstants';
 
 import { getVercelRegion } from '../types/browser';
 import { createScopedLogger } from '../utils/logger';
@@ -85,7 +86,7 @@ class EdgeMonitoringService {
       enablePerformanceTracking: true,
       enableErrorTracking: process.env['VITE_ENABLE_ERROR_REPORTING'] === 'true',
       alertThresholds: {
-        responseTime: 1000, // 1 second
+        responseTime: THRESHOLD_CONSTANTS.API.TIMEOUT, // 1 second
         errorRate: 0.05, // 5%
         memoryUsage: 0.8, // 80%
         cpuUsage: 0.8 // 80%
@@ -135,7 +136,7 @@ class EdgeMonitoringService {
           await this.performHealthCheck(endpoint, region);
         }
       }
-    }, 30000);
+    }, DELAY_CONSTANTS.POLLING.VERY_SLOW);
 
     this.monitoringIntervals.set('healthChecks', interval);
   }
@@ -225,7 +226,7 @@ class EdgeMonitoringService {
     // Collect performance metrics every minute
     const interval = setInterval(() => {
       this.collectPerformanceMetrics();
-    }, 60000);
+    }, TIME_CONSTANTS.MINUTE);
 
     this.monitoringIntervals.set('performance', interval);
 
@@ -263,8 +264,8 @@ class EdgeMonitoringService {
     });
 
     // Keep only last 1000 metrics
-    if (this.performanceMetrics.length > 1000) {
-      this.performanceMetrics = this.performanceMetrics.slice(-1000);
+    if (this.performanceMetrics.length > COUNT_CONSTANTS.HISTORY.MAX) {
+      this.performanceMetrics = this.performanceMetrics.slice(-COUNT_CONSTANTS.HISTORY.MAX);
     }
   }
 
@@ -322,7 +323,7 @@ class EdgeMonitoringService {
       const entries = list.getEntries();
       const lastEntry = entries[entries.length - 1];
       
-      if (lastEntry && lastEntry.startTime > 2500) { // LCP should be < 2.5s
+      if (lastEntry && lastEntry.startTime > WEB_VITALS.LCP.GOOD) { // LCP should be < 2.5s
         this.createAlert({
           type: 'performance',
           severity: 'medium',
@@ -344,7 +345,7 @@ class EdgeMonitoringService {
         if (!clsEntry.hadRecentInput) {
           clsValue += clsEntry.value || 0;
           
-          if (clsValue > 0.1) { // CLS should be < 0.1
+          if (clsValue > WEB_VITALS.CLS.GOOD) { // CLS should be < 0.1
             this.createAlert({
               type: 'performance',
               severity: 'medium',
@@ -440,7 +441,7 @@ class EdgeMonitoringService {
       if (existingAlert && !existingAlert.resolved) {
         this.resolveAlert(alert.id);
       }
-    }, 5 * 60 * 1000);
+    }, 5 * TIME_CONSTANTS.MINUTE);
   }
 
   private sendNotifications(alert: Alert): void {

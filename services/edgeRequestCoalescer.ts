@@ -4,6 +4,8 @@
  * Reduces redundant API calls by 15-20%
  */
 
+import { DELAY_CONSTANTS, COUNT_CONSTANTS } from './modularConstants';
+
 interface PendingRequest<T = any> {
   promise: Promise<T>;
   resolve: (value: T) => void;
@@ -35,10 +37,10 @@ class EdgeRequestCoalescer {
 
   constructor(config: Partial<CoalescerConfig> = {}) {
     this.config = {
-      maxWaitTime: 50, // 50ms max wait for coalescing
-      maxBatchSize: 10,
+      maxWaitTime: DELAY_CONSTANTS.TINY, // 50ms max wait for coalescing
+      maxBatchSize: COUNT_CONSTANTS.BATCH.DEFAULT,
       enableMetrics: true,
-      cleanupInterval: 30000, // 30 seconds
+      cleanupInterval: DELAY_CONSTANTS.POLLING.VERY_SLOW, // 30 seconds
       ...config,
     };
 
@@ -299,10 +301,10 @@ class EdgeRequestCoalescer {
 
 // Global instance for edge usage - optimized for performance
 export const edgeRequestCoalescer = new EdgeRequestCoalescer({
-  maxWaitTime: 25, // Reduced for faster response
-  maxBatchSize: 6, // Reduced for edge efficiency
+  maxWaitTime: Math.floor(DELAY_CONSTANTS.TINY / 2), // 25ms - Reduced for faster response
+  maxBatchSize: Math.floor(COUNT_CONSTANTS.BATCH.DEFAULT / 2), // 6 - Reduced for edge efficiency
   enableMetrics: true,
-  cleanupInterval: 15000, // Faster cleanup
+  cleanupInterval: DELAY_CONSTANTS.POLLING.SLOW, // 15 seconds - Faster cleanup
 });
 
 // Export factory function for creating instances

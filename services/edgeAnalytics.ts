@@ -5,6 +5,7 @@
 
 import { WindowWithVercel } from '../types/browser';
 import { createScopedLogger } from '../utils/logger';
+import { DELAY_CONSTANTS } from './modularConstants';
 
 const logger = createScopedLogger('EdgeAnalytics');
 
@@ -529,7 +530,7 @@ class EdgeAnalytics {
     // Report metrics every 30 seconds
     this.metricsInterval = setInterval(() => {
       this.reportMetrics();
-    }, 30000);
+    }, DELAY_CONSTANTS.POLLING.VERY_SLOW);
 
     // Report on page unload
     this.beforeUnloadHandler = () => {
