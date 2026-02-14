@@ -9,6 +9,7 @@ import { DatabaseCore } from './DatabaseCore';
 import type { IDatabaseCore } from '../../types/serviceInterfaces';
 import { Robot } from '../../types';
 import { handleError } from '../../utils/errorHandler';
+import { COUNT_CONSTANTS } from '../modularConstants';
 
 export interface IRobotDatabaseService extends IDatabaseCore {
   saveRobot(robot: Robot): Promise<string>;
@@ -84,7 +85,7 @@ export class RobotDatabaseService extends DatabaseCore implements IRobotDatabase
         .select('*')
         .is('deleted_at', null)  // Filter out soft-deleted records
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(COUNT_CONSTANTS.PAGINATION.LARGE);
 
       if (error) throw error;
       return (data || []) as Robot[];

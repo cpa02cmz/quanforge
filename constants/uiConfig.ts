@@ -48,6 +48,35 @@ export const ANIMATION_TIMING = {
   TRANSITION_DELAY: 100,
 } as const;
 
+// ========== VIRTUAL SCROLL CONFIGURATION ==========
+export const VIRTUAL_SCROLL_CONFIG = {
+  // Window sizes
+  VIEWPORT_SIZE: 20,
+  BUFFER_SIZE: 10,
+  MAX_MESSAGES: 100,
+  
+  // Memory pressure thresholds
+  MEMORY_PRESSURE_MESSAGE_THRESHOLD: 50,
+  
+  // Monitoring intervals (ms)
+  MONITORING_INTERVAL_LARGE: 5000,
+  MONITORING_INTERVAL_NORMAL: 10000,
+  MONITORING_INTERVAL_THRESHOLD: 100,
+} as const;
+
+// ========== CHARACTER COUNT CONFIGURATION ==========
+export const CHARACTER_COUNT_CONFIG = {
+  // Input limits
+  MAX_INPUT_LENGTH: 1000,
+  
+  // Warning thresholds
+  WARNING_THRESHOLD: 900,
+  CRITICAL_THRESHOLD: 950,
+  
+  // Display format
+  DISPLAY_FORMAT: '/1000',
+} as const;
+
 // Type exports
 export type TextInputLimits = typeof TEXT_INPUT_LIMITS;
 export type DisplayLimits = typeof DISPLAY_LIMITS;
@@ -58,4 +87,6 @@ export const UI_CONFIG = {
   TEXT_LIMITS: TEXT_INPUT_LIMITS,
   DISPLAY: DISPLAY_LIMITS,
   ANIMATION: ANIMATION_TIMING,
+  VIRTUAL_SCROLL: VIRTUAL_SCROLL_CONFIG,
+  CHARACTER_COUNT: CHARACTER_COUNT_CONFIG,
 } as const;

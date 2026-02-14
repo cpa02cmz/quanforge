@@ -3,6 +3,7 @@ import { Robot } from '../types';
 import { MEMORY_LIMITS } from '../constants';
 import { TIME_CONSTANTS } from '../constants/config';
 import { TIMEOUTS } from './constants';
+import { COUNT_CONSTANTS } from './modularConstants';
 import { getErrorMessage, isError } from '../utils/errorHandler';
 
 interface QueryOptimization {
@@ -255,7 +256,7 @@ class QueryOptimizer {
     client: SupabaseClient,
     table: string,
     records: T[],
-    batchSize: number = 100
+    batchSize: number = COUNT_CONSTANTS.BATCH.DEFAULT
   ): Promise<{ data: T[] | null; error: unknown; metrics: QueryMetrics }> {
     const startTime = performance.now();
     const results: T[] = [];

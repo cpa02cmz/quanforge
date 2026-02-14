@@ -8,6 +8,7 @@ import {
   ErrorCategory
 } from './integrationResilience';
 import { createScopedLogger } from '../utils/logger';
+import { COUNT_CONSTANTS } from './modularConstants';
 
 const logger = createScopedLogger('circuit-breaker-monitor');
 
@@ -157,7 +158,7 @@ class CircuitBreakerMonitor {
   private circuitBreakers = new Map<string, CircuitBreaker>();
   private healthStatuses = new Map<string, HealthStatus>();
   private responseTimes = new Map<string, number[]>();
-  private readonly maxResponseTimeHistory = 100;
+  private readonly maxResponseTimeHistory = COUNT_CONSTANTS.HISTORY.STANDARD;
 
   registerCircuitBreaker(name: string, config: CircuitBreakerConfig, options?: Partial<CircuitBreakerOptions>): CircuitBreaker {
     if (this.circuitBreakers.has(name)) {
