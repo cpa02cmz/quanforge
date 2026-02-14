@@ -4,6 +4,7 @@
  */
 
 import { TIMEOUTS, CACHE_LIMITS } from '../constants';
+import { MODULE_PRELOAD } from './constants';
 import { createListenerManager, ListenerManager } from '../utils/listenerManager';
 import { createScopedLogger } from '../utils/logger';
 
@@ -595,7 +596,7 @@ class VercelEdgeOptimizer {
         importFn().catch(() => {
           // Handle import errors gracefully
         });
-      }, index * 1000); // Stagger imports
+      }, index * MODULE_PRELOAD.IMPORT_STAGGER_MS);
     });
   }
 
