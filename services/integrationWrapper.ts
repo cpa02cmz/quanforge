@@ -20,6 +20,7 @@ import { dbUtils } from './supabase';
 import { marketService } from './marketData';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { settingsManager } from './settingsManager';
+import { loadGeminiService } from './aiServiceLoader';
 
 const logger = createScopedLogger('integration-wrapper');
 
@@ -328,8 +329,8 @@ export class IntegrationHealthChecker {
                   error: 'AI API key not configured'
                 };
               }
-              const { testAIConnection } = await import('./gemini');
-              await testAIConnection(settings);
+              const geminiService = await loadGeminiService();
+              await geminiService.testAIConnection(settings);
               return {
                 success: true,
                 latency: Date.now() - startTime
