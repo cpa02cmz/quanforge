@@ -125,6 +125,18 @@
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" /></noscript>
     
     <script>
+      // Polyfill for UserActivation API (not available in headless Chrome)
+      if (typeof navigator !== 'undefined' && !navigator.userActivation) {
+        navigator.userActivation = {
+          isActive: false,
+          hasBeenActive: false
+        };
+      }
+      // Polyfill for UserActivation.Activities interface
+      if (typeof navigator !== 'undefined' && navigator.userActivation && !navigator.userActivation.Activities) {
+        navigator.userActivation.Activities = function() {};
+      }
+
       // Configure Tailwind only after it loads
       if (typeof tailwind !== 'undefined') {
         tailwind.config = {

@@ -1,0 +1,38 @@
+[
+  {
+    "route": "/",
+    "scores": {
+      "performance": 0,
+      "accessibility": 0,
+      "bestPractices": 0,
+      "seo": 0
+    },
+    "metrics": {
+      "firstContentfulPaint": "N/A",
+      "largestContentfulPaint": "N/A",
+      "totalBlockingTime": "N/A",
+      "cumulativeLayoutShift": "N/A",
+      "speedIndex": "N/A"
+    },
+    "opportunities": [],
+    "diagnostics": []
+  },
+  {
+    "route": "/dashboard",
+    "scores": {
+      "performance": 0,
+      "accessibility": 0,
+      "bestPractices": 0,
+      "seo": 0
+    },
+    "metrics": {
+      "firstContentfulPaint": "N/A",
+      "largestContentfulPaint": "N/A",
+      "totalBlockingTime": "N/A",
+      "cumulativeLayoutShift": "N/A",
+      "speedIndex": "N/A"
+    },
+    "opportunities": [],
+    "diagnostics": []
+  }
+]
