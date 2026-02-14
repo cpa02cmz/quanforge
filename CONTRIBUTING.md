@@ -289,7 +289,7 @@ Update documentation when you:
 - **README.md**: Project overview, setup, and quick start
 - **docs/QUICK_START.md**: User guide for creating trading strategies
 - **docs/SERVICE_ARCHITECTURE.md**: Technical details of service layer
-- **[blueprint.md](docs/blueprint.md)**: System architecture and design
+- **[blueprint.md](./docs/blueprint.md)**: System architecture and design
 - **./docs/task.md**: Task tracking and completion status
 - **coding_standard.md**: Code style and conventions
 

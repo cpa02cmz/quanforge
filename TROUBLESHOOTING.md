@@ -677,7 +677,7 @@ export const config = {
 - [USER_GUIDE.md](./USER_GUIDE.md) - Complete user documentation
 - [DEPLOYMENT.md](./DEPLOYMENT.md) - Deployment guide
 - [CONTRIBUTING.md](./CONTRIBUTING.md) - Development guide
-- [blueprint.md](docs/blueprint.md) - Technical architecture
+- [blueprint.md](./docs/blueprint.md) - Technical architecture
 
 #### Code Repository
 - **Issues**: [GitHub Issues](https://github.com/cpa02cmz/quanforge/issues)
