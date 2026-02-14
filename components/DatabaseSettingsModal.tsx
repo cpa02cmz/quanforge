@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, useEffect, memo, useRef } from 'react';
 import { DBSettings, DBMode } from '../types';
 import { settingsManager, DEFAULT_DB_SETTINGS } from '../services/settingsManager';
 import { dbUtils } from '../services';
@@ -7,6 +7,7 @@ import { useToast } from './useToast';
 import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
 import { ConfirmationModal } from './ConfirmationModal';
+import { useModalAccessibility } from '../hooks/useModalAccessibility';
 
 const logger = createScopedLogger('DatabaseSettingsModal');
 
@@ -23,6 +24,14 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
     const [isLoading, setIsLoading] = useState(false);
     const [isMigrating, setIsMigrating] = useState(false);
     const [showMigrationConfirm, setShowMigrationConfirm] = useState(false);
+    const modalRef = useRef<HTMLDivElement>(null);
+    const titleId = 'db-settings-title';
+    
+    const { modalProps } = useModalAccessibility({
+        isOpen,
+        onClose,
+        modalRef,
+    });
 
     useEffect(() => {
         if (isOpen) {
@@ -104,9 +113,14 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
 
 return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-dark-surface border border-dark-border rounded-lg p-6 w-full max-w-md">
+            <div
+                ref={modalRef}
+                {...modalProps}
+                aria-labelledby={titleId}
+                className="bg-dark-surface border border-dark-border rounded-lg p-6 w-full max-w-md outline-none"
+            >
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-semibold text-white">{t('settings_db_title')}</h2>
+                    <h2 id={titleId} className="text-xl font-semibold text-white">{t('settings_db_title')}</h2>
                     <button
                         onClick={onClose}
                         className="text-gray-400 hover:text-white"
