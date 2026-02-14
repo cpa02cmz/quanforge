@@ -33,7 +33,8 @@ export * from './requestThrottler';
 export * from './readReplicaManager';
 export * from './queryBatcher';
 export * from './edgeKVStorage';
-export * from './realTimeUXScoring';
+// UX Monitoring (Modular Architecture)
+export * from './ux';
 
 // Integration Hardening System
 export { IntegrationType, ErrorCategory, CircuitBreakerState, getConfig, classifyError, createStandardizedError } from './integrationResilience';
