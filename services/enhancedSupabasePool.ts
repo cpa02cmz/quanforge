@@ -8,6 +8,7 @@ import { settingsManager } from './settingsManager';
 import { createScopedLogger } from '../utils/logger';
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import { TIMEOUTS, RETRY_CONFIG, STAGGER, TIME_CONSTANTS, POOL_CONFIG, SCORING } from './constants';
+import { THRESHOLD_CONSTANTS, DELAY_CONSTANTS } from './modularConstants';
 import { getErrorMessage } from '../utils/errorHandler';
 
 const logger = createScopedLogger('EnhancedConnectionPool');
@@ -248,7 +249,7 @@ class EnhancedSupabaseConnectionPool {
     this.recordAcquireTime(acquireTime);
 
     // Log slow acquisitions
-    if (acquireTime > 1000) {
+    if (acquireTime > THRESHOLD_CONSTANTS.API.TIMEOUT) {
       logger.warn(`Slow connection acquisition: ${acquireTime.toFixed(2)}ms for region ${preferredRegion}`);
     }
 
@@ -363,7 +364,7 @@ class EnhancedSupabaseConnectionPool {
 
       // 2. Performance check - should be fast for healthy connection
       const responseTime = performance.now() - startTime;
-      if (responseTime > 1000) { // 1 second threshold for edge environment
+      if (responseTime > THRESHOLD_CONSTANTS.API.TIMEOUT) { // 1 second threshold for edge environment
         logger.warn(`Connection ${connection.id} slow response: ${responseTime.toFixed(2)}ms`);
         connection.healthy = false;
         return false;
@@ -687,7 +688,7 @@ class EnhancedSupabaseConnectionPool {
     // Delay initial warm-up to allow for application startup
     setTimeout(() => {
       this.warmEdgeConnectionsEnhanced();
-    }, 5000);
+    }, DELAY_CONSTANTS.EXTENDED);
 
     // Schedule periodic warming with adaptive intervals
     this.scheduleAdaptiveWarming();
@@ -800,19 +801,19 @@ class EnhancedSupabaseConnectionPool {
       for (const region of priorityRegions.slice(3)) {
         warmupPromises.push(this.warmRegionConnectionEnhanced(region, 'medium'));
       }
-    }, 1000);
+    }, DELAY_CONSTANTS.MEDIUM);
 
     // Phase 3: Warm remaining regions (lower priority)
     setTimeout(() => {
       for (const region of remainingRegions) {
         warmupPromises.push(this.warmRegionConnectionEnhanced(region, 'low'));
       }
-    }, 2000);
+    }, DELAY_CONSTANTS.LONG);
 
     // Phase 4: Warm read replicas
     setTimeout(() => {
       warmupPromises.push(this.warmUpReadReplicasEnhanced());
-    }, 1500);
+    }, 1500); // 1.5s - specific timing for replica warmup
 
     try {
       await Promise.allSettled(warmupPromises);
@@ -945,7 +946,7 @@ class EnhancedSupabaseConnectionPool {
     const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1'];
     const warmUpPromises = regions.map(async (region, index) => {
       // Stagger the requests to avoid overwhelming the system
-      await new Promise(resolve => setTimeout(resolve, index * 200));
+      await new Promise(resolve => setTimeout(resolve, index * DELAY_CONSTANTS.SHORT));
       
       try {
         const readClient = await this.acquireReadReplica(region);
@@ -1153,7 +1154,7 @@ class EnhancedSupabaseConnectionPool {
     if (this.acquireTimes.length === 0) return 0;
     
     // Consider acquisitions over 500ms as potential cold starts
-    const coldStarts = this.acquireTimes.filter(time => time > 500).length;
+    const coldStarts = this.acquireTimes.filter(time => time > DELAY_CONSTANTS.NORMAL).length;
     return coldStarts / this.acquireTimes.length;
   }
 
@@ -1300,7 +1301,7 @@ class EnhancedSupabaseConnectionPool {
 
     const warmupPromises = predictedRegions.map(async (region, index) => {
       // Stagger warmups to prevent overwhelming system
-      await new Promise(resolve => setTimeout(resolve, index * 500));
+      await new Promise(resolve => setTimeout(resolve, index * DELAY_CONSTANTS.NORMAL));
 
       try {
         await this.warmRegionConnectionEnhanced(region, 'high');
