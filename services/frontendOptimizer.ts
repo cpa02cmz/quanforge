@@ -5,7 +5,7 @@
 
 import { createScopedLogger } from '../utils/logger';
 import { TIME_CONSTANTS } from '../constants/config';
-import { STAGGER } from './constants';
+import { STAGGER, MODULE_PRELOAD } from './constants';
 
 const logger = createScopedLogger('FrontendOptimizer');
 
@@ -245,7 +245,7 @@ class FrontendOptimizer {
         moduleLoader().catch((error) => {
           logger.warn(`Failed to preload module ${index}:`, error);
         });
-      }, 5000 + index * 2000); // Stagger loading
+      }, MODULE_PRELOAD.BASE_DELAY_MS + index * MODULE_PRELOAD.STAGGER_DELAY_MS);
     });
   }
 

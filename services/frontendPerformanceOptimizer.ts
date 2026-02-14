@@ -7,7 +7,7 @@ import { performanceMonitor } from '../utils/performance';
 import { logger } from '../utils/logger';
 import { storage } from '../utils/storage';
 import { TIME_CONSTANTS, CACHE_CONFIG } from '../constants/config';
-import { STAGGER } from './constants';
+import { STAGGER, MODULE_PRELOAD, MEMORY_OPTIMIZATION } from './constants';
 import { WindowWithGC, PerformanceWithMemory } from '../types/browser';
 
 interface PerformanceOptimizerConfig {
@@ -285,7 +285,7 @@ class FrontendPerformanceOptimizer {
     // Set up memory cleanup intervals
     this.memoryOptimizationTimer = setInterval(() => {
       this.optimizeMemoryUsage();
-    }, 30000); // Every 30 seconds
+    }, MEMORY_OPTIMIZATION.CLEANUP_INTERVAL_MS);
   }
 
   /**
@@ -347,7 +347,7 @@ class FrontendPerformanceOptimizer {
         }).catch((error) => {
           logger.warn(`Failed to preload module ${index}:`, error);
         });
-      }, 5000 + index * 2000); // Stagger loading
+      }, MODULE_PRELOAD.BASE_DELAY_MS + index * MODULE_PRELOAD.STAGGER_DELAY_MS);
     });
   }
 

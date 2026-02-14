@@ -336,6 +336,26 @@ export const STAGGER = {
   MAX_EXPONENTIAL_DELAY_MS: 5000,               // 5s - max exponential backoff
 } as const;
 
+// ========== MODULE PRELOADING CONSTANTS ==========
+export const MODULE_PRELOAD = {
+  // Base delay before starting module preloading
+  BASE_DELAY_MS: 5000,                          // 5 seconds - initial delay
+  // Stagger delay between module loads
+  STAGGER_DELAY_MS: 2000,                       // 2 seconds - stagger between modules
+  // Import stagger for edge optimization
+  IMPORT_STAGGER_MS: 1000,                      // 1 second - stagger imports
+} as const;
+
+// ========== MEMORY OPTIMIZATION CONSTANTS ==========
+export const MEMORY_OPTIMIZATION = {
+  // Cleanup interval
+  CLEANUP_INTERVAL_MS: 30000,                   // 30 seconds - memory cleanup interval
+  // Thresholds
+  WARNING_MB: 50,                               // 50MB warning threshold
+  CRITICAL_MB: 100,                             // 100MB critical threshold
+  CLEANUP_THRESHOLD_PERCENT: 0.8,               // 80% - cleanup trigger threshold
+} as const;
+
 // ========== BATCH SIZES ==========
 export const BATCH_SIZES = {
   DATABASE_OPERATIONS: 10,
@@ -518,6 +538,8 @@ export const SERVICE_CONSTANTS = {
   DATABASE,
   STRING_LIMITS,
   ARRAY_LIMITS,
+  MODULE_PRELOAD,
+  MEMORY_OPTIMIZATION,
 } as const;
 
 // ========== MODULAR CONSTANTS EXPORT ==========

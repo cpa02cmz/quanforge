@@ -26,6 +26,7 @@ import { WorkerManager } from '../ai/WorkerManager';
 import { RateLimiter } from '../ai/RateLimiter';
 import { createScopedLogger } from '../../utils/logger';
 import { getErrorMessage } from '../../utils/errorHandler';
+import { MONITORING } from '../constants';
 
 const logger = createScopedLogger('ServiceOrchestrator');
 
@@ -235,7 +236,7 @@ export class ServiceOrchestrator implements IServiceOrchestrator {
     // Run health checks every 30 seconds
     this.healthCheckTimer = setInterval(async () => {
       await this.performHealthChecks();
-    }, 30000);
+    }, MONITORING.INTERVALS.SLOW);
 
     logger.info('Health monitoring started');
   }
