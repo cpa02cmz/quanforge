@@ -1,4 +1,4 @@
-import { TIMEOUTS, WEB_VITALS_THRESHOLDS, PERFORMANCE_BUDGETS, TIME_CONSTANTS } from './constants';
+import { TIMEOUTS, WEB_VITALS_THRESHOLDS, PERFORMANCE_BUDGETS, TIME_CONSTANTS, MONITORING } from './constants';
 import { createScopedLogger } from '../utils/logger';
 
 const logger = createScopedLogger('RealTimeMonitor');
@@ -371,7 +371,7 @@ export class RealTimeMonitor {
   private startPeriodicReporting(): void {
     this.reportInterval = setInterval(() => {
       this.generatePerformanceReport();
-    }, 60000); // Report every minute
+    }, MONITORING.INTERVALS.VERY_SLOW); // Report every minute
   }
 
   private generatePerformanceReport(): void {
