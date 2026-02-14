@@ -2,6 +2,11 @@
 import { MQL5_SYSTEM_PROMPT, TIMEOUTS, CACHE_TTLS } from "../constants";
 import { AI_CONFIG } from "../constants/config";
 import { VALIDATION_LIMITS } from "../constants/modularConfig";
+import { 
+  COUNT_CONSTANTS, 
+  SIZE_CONSTANTS, 
+  ADJUSTMENT_FACTORS
+} from "./modularConstants";
 import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
 import { settingsManager } from "./settingsManager";
 import { getActiveKey } from "../utils/apiKeyUtils";
@@ -290,10 +295,10 @@ export const isValidStrategyParams = (params: Partial<StrategyParams> | Record<s
 
 
 const analysisCache = new LRUCache<StrategyAnalysis>();
-const enhancedAnalysisCache = new EnhancedCache<StrategyAnalysis>(200); // Larger cache size for better performance
+const enhancedAnalysisCache = new EnhancedCache<StrategyAnalysis>(COUNT_CONSTANTS.CACHE.MEDIUM); // Larger cache size for better performance
 
 // Semantic cache for generateMQL5Code responses
-const mql5ResponseCache = new EnhancedCache<{ thinking?: string, content: string }>(300); // Cache for MQL5 generation responses
+const mql5ResponseCache = new EnhancedCache<{ thinking?: string, content: string }>(COUNT_CONSTANTS.CACHE.LARGE); // Cache for MQL5 generation responses
 
 // Create semantic cache key for similar prompts
 const createSemanticCacheKey = (prompt: string, currentCode?: string, strategyParams?: StrategyParams, settings?: AISettings): string => {
@@ -316,7 +321,7 @@ const createSemanticCacheKey = (prompt: string, currentCode?: string, strategyPa
   
   // Create hash from normalized components
   const components = [
-    normalizedPrompt.substring(0, 200), // First 200 chars of normalized prompt
+    normalizedPrompt.substring(0, SIZE_CONSTANTS.HASH.MEDIUM), // First 200 chars of normalized prompt
     currentCode ? currentCode.substring(0, 100) : 'none', // First 100 chars of current code
     JSON.stringify(keyParams),
     settings?.provider || 'google',
@@ -390,7 +395,7 @@ async function withRetry<T>(
             logger.warn(`API Error (${err.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
             // Add jitter to prevent thundering herd
             const jitter = Math.random() * 0.1 * delay;
-            const nextDelay = Math.min(delay * 1.5 + jitter, maxDelay); // Use 1.5 multiplier instead of 2 for gentler backoff
+            const nextDelay = Math.min(delay * ADJUSTMENT_FACTORS.BACKOFF.GENTLE + jitter, maxDelay); // Use gentle backoff multiplier
             await new Promise(resolve => setTimeout(resolve, nextDelay));
             return withRetry(fn, retries - 1, nextDelay, maxDelay);
         }
@@ -529,7 +534,7 @@ async function withRetry<T>(
          // Smart selection algorithm with adaptive truncation
          const selectedMessages = [];
          let usedBudget = 0;
-         const separatorLength = 2; // \n\n
+          const separatorLength = SIZE_CONSTANTS.STRING.TINY; // Separator length for message joining
          
          // First, try to fit as many complete messages as possible
          for (const data of messageData) {
@@ -548,8 +553,8 @@ async function withRetry<T>(
          if (selectedMessages.length === 0 && remainingBudget > TokenBudgetManager.MIN_HISTORY_CHARS && messageData.length > 0) {
              const mostImportant = messageData[0];
              if (mostImportant) {
-                 const availableForContent = remainingBudget - 3; // 3 for "..."
-                 if (availableForContent >= 50) { // Minimum truncation length
+                  const availableForContent = remainingBudget - SIZE_CONSTANTS.STRING.TINY; // Space for "..."
+                  if (availableForContent >= SIZE_CONSTANTS.DISPLAY.SHORT) { // Minimum truncation length
                      const truncatedLength = Math.min(mostImportant.length, availableForContent);
                      const truncatedContent = mostImportant.content.substring(0, truncatedLength) + '...';
                      selectedMessages.push({
@@ -564,7 +569,7 @@ async function withRetry<T>(
          
          // If we still have significant budget remaining and have selected messages,
          // consider adding truncated versions of additional messages
-         if (selectedMessages.length > 0 && (remainingBudget - usedBudget) > 200) {
+          if (selectedMessages.length > 0 && (remainingBudget - usedBudget) > SIZE_CONSTANTS.DISPLAY.STANDARD) {
              for (const data of messageData) {
                  // Skip if already selected
                  if (selectedMessages.some(selected => selected.index === data.index)) {
@@ -572,9 +577,9 @@ async function withRetry<T>(
                  }
                  
                  const availableForTruncation = remainingBudget - usedBudget - separatorLength;
-                 if (availableForTruncation > 50) { // Minimum size for meaningful truncation
-                     const truncatedLength = Math.min(data.length, Math.floor(availableForTruncation * 0.7)); // Use 70% of available space
-                     if (truncatedLength >= 30) { // Minimum meaningful content
+                  if (availableForTruncation > SIZE_CONSTANTS.DISPLAY.SHORT) { // Minimum size for meaningful truncation
+                      const truncatedLength = Math.min(data.length, Math.floor(availableForTruncation * ADJUSTMENT_FACTORS.AI.TRUNCATION_RATIO)); // Use configured ratio of available space
+                      if (truncatedLength >= SIZE_CONSTANTS.DISPLAY.TINY) { // Minimum meaningful content
                          const truncatedContent = data.content.substring(0, truncatedLength) + '...';
                          selectedMessages.push({
                              ...data,
@@ -760,7 +765,7 @@ const payload = {
             ...(jsonMode ? { response_format: { type: "json_object" } } : {})
         };
 
-        const requestInit: import('node-fetch').RequestInit = {
+        const requestInit: RequestInit = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
