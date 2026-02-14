@@ -451,6 +451,134 @@ export const TRADING_DEFAULTS = {
   TIMEFRAMES: ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'],
 } as const;
 
+// ========== ADJUSTMENT & MULTIPLIER CONSTANTS ==========
+export const ADJUSTMENT_FACTORS = {
+  // Moving average weights
+  MOVING_AVERAGE: {
+    HISTORY_WEIGHT: 0.9,  // Weight for historical value
+    NEW_WEIGHT: 0.1,      // Weight for new value
+  },
+  
+  // Jitter for randomized delays
+  JITTER: {
+    MIN: 0.5,             // Minimum jitter multiplier
+    MAX: 1.0,             // Maximum jitter multiplier (0.5 + 0.5)
+    RANGE: 0.5,           // Random range (Math.random() * 0.5)
+  },
+  
+  // TTL multipliers for cache adjustments
+  TTL: {
+    DECREASE_SMALL: 0.5,   // Halve TTL
+    DECREASE_MEDIUM: 0.7,  // 30% reduction
+    DECREASE_LARGE: 0.8,   // 20% reduction
+    INCREASE_SMALL: 1.2,   // 20% increase
+    INCREASE_MEDIUM: 1.5,  // 50% increase
+    ROBOTS_MULTIPLIER: 1.5, // Robots list TTL boost
+    MARKET_MULTIPLIER: 0.5, // Market data TTL reduction
+    SESSION_MULTIPLIER: 0.8, // Session TTL reduction
+  },
+  
+  // Degraded mode levels
+  DEGRADED_MODE: {
+    LIGHT: 0.5,   // 50% capacity
+    MODERATE: 0.75, // 75% capacity
+    SEVERE: 0.25,   // 25% capacity
+  },
+  
+  // Backoff multipliers
+  BACKOFF: {
+    GENTLE: 1.5,   // Gentler backoff
+    STANDARD: 2.0, // Standard exponential backoff
+    AGGRESSIVE: 3.0, // Aggressive backoff
+  },
+  
+  // Percentiles for statistical analysis
+  PERCENTILES: {
+    P50: 0.5,  // Median
+    P75: 0.75, // 75th percentile
+    P90: 0.9,  // 90th percentile
+    P95: 0.95, // 95th percentile
+    P99: 0.99, // 99th percentile
+  },
+  
+  // AI service multipliers
+  AI: {
+    ANALYSIS_WEIGHT: 0.5,    // Analysis counts as half request
+    IMPORTANCE_BOOST: 0.5,   // Importance score boost
+    TRUNCATION_RATIO: 0.7,   // Use 70% of available space
+    IMPROVEMENT_ESTIMATE: 0.9, // Assume 10% improvement
+  },
+  
+  // Performance thresholds
+  PERFORMANCE: {
+    COLD_START_THRESHOLD: 0.9,  // 90% memory usage critical
+    EFFICIENCY_BASELINE: 10,    // 10ms per request baseline
+    HEALTH_CHECK_UNHEALTHY: 0.5, // 50% unhealthy threshold
+    WARMUP_INTERVAL_REDUCTION: 0.75, // Reduce warmup by 25%
+  },
+  
+  // Cache eviction
+  EVICTION: {
+    STALE_THRESHOLD: 0.5,  // Allow 50% past TTL
+    TARGET_SIZE: 0.8,      // Evict to 80% capacity
+    COMPRESSION_THRESHOLD: 0.8, // Reduce threshold by 20%
+  },
+} as const;
+
+// ========== EXTERNAL RESOURCE URLS ==========
+export const EXTERNAL_RESOURCES = {
+  // Font services
+  FONTS: {
+    GOOGLE_FONTS_BASE: 'https://fonts.googleapis.com',
+    GOOGLE_FONTS_STATIC: 'https://fonts.gstatic.com',
+    INTER_FONT_URL: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+    INTER_FONT_PRELOAD: 'https://fonts.gstatic.com/s/inter/v18/UcCo3FwrK3iLTcviYwY.woff2',
+  },
+  
+  // API endpoints
+  APIs: {
+    GEMINI: 'https://generativelanguage.googleapis.com',
+    SUPABASE: 'https://*.supabase.co',
+    TWELVE_DATA: 'https://ws.twelvedata.com',
+    BINANCE_WS: 'wss://stream.binance.com:9443/ws',
+  },
+  
+  // CDN resources
+  CDN: {
+    JSDELIVR: 'https://cdn.jsdelivr.net',
+    UNPKG: 'https://unpkg.com',
+    GOOGLE_ANALYTICS: 'https://www.google-analytics.com',
+  },
+  
+  // Domain configurations
+  DOMAINS: {
+    PRODUCTION: 'https://quanforge.ai',
+    PRODUCTION_WWW: 'https://www.quanforge.ai',
+  },
+  
+  // Allowed protocols
+  PROTOCOLS: {
+    SECURE: ['https:', 'wss:'],
+    STANDARD: ['http:', 'https:'],
+    WEBSOCKET: ['ws:', 'wss:'],
+  },
+} as const;
+
+// ========== FONT CONFIGURATION ==========
+export const FONT_CONFIG = {
+  FAMILY: {
+    PRIMARY: 'Inter',
+    FALLBACK: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  },
+  WEIGHTS: {
+    REGULAR: 400,
+    MEDIUM: 500,
+    SEMIBOLD: 600,
+    BOLD: 700,
+  },
+  DISPLAY: 'swap',
+} as const;
+
 // ========== MODULAR EXPORTS ==========
 // Grouped exports for specific use cases
 
@@ -491,6 +619,26 @@ export const UiConstants = {
   DELAY: DELAY_CONSTANTS,
   SIZE: SIZE_CONSTANTS.DISPLAY,
   STRING: SIZE_CONSTANTS.STRING,
+  FONT: FONT_CONFIG,
+} as const;
+
+export const AdjustmentConstants = {
+  FACTORS: ADJUSTMENT_FACTORS,
+  MOVING_AVERAGE: ADJUSTMENT_FACTORS.MOVING_AVERAGE,
+  JITTER: ADJUSTMENT_FACTORS.JITTER,
+  TTL: ADJUSTMENT_FACTORS.TTL,
+  DEGRADED_MODE: ADJUSTMENT_FACTORS.DEGRADED_MODE,
+  BACKOFF: ADJUSTMENT_FACTORS.BACKOFF,
+  PERCENTILES: ADJUSTMENT_FACTORS.PERCENTILES,
+  AI: ADJUSTMENT_FACTORS.AI,
+} as const;
+
+export const ResourceConstants = {
+  EXTERNAL: EXTERNAL_RESOURCES,
+  FONTS: EXTERNAL_RESOURCES.FONTS,
+  APIs: EXTERNAL_RESOURCES.APIs,
+  CDN: EXTERNAL_RESOURCES.CDN,
+  DOMAINS: EXTERNAL_RESOURCES.DOMAINS,
 } as const;
 
 // ========== DEFAULT EXPORT ==========
@@ -506,12 +654,17 @@ export const ModularConstants = {
   SUPABASE: SUPABASE_ERRORS,
   WEB_VITALS,
   TRADING: TRADING_DEFAULTS,
+  ADJUSTMENT: ADJUSTMENT_FACTORS,
+  RESOURCES: EXTERNAL_RESOURCES,
+  FONT: FONT_CONFIG,
   Auth: AuthConstants,
   Cache: CacheConstants,
   Performance: PerformanceConstants,
   Api: ApiConstants,
   Database: DatabaseConstants,
   Ui: UiConstants,
+  Adjustment: AdjustmentConstants,
+  Resource: ResourceConstants,
 } as const;
 
 export default ModularConstants;

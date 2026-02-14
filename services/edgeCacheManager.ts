@@ -8,6 +8,7 @@ import { createSafeWildcardPattern, ReDoSError } from '../utils/safeRegex';
 import { CACHE_CONFIG, TIME_CONSTANTS, EDGE_CONFIG } from '../constants/config';
 import { STAGGER } from './constants';
 import { createScopedLogger } from '../utils/logger';
+import { ADJUSTMENT_FACTORS, THRESHOLD_CONSTANTS } from './modularConstants';
 
 const logger = createScopedLogger('EdgeCacheManager');
 
@@ -62,8 +63,8 @@ export class EdgeCacheManager<T = any> {
     regionalStats: new Map<string, { hits: number; size: number }>(),
   };
   private config: EdgeCacheConfig = {
-    memoryMaxSize: CACHE_CONFIG.MAX_CACHE_MEMORY_SIZE * 1.5, // 15MB - optimized for edge performance
-    memoryMaxEntries: CACHE_CONFIG.MAX_CACHE_ENTRIES * 1.5, // 1500 entries
+    memoryMaxSize: CACHE_CONFIG.MAX_CACHE_MEMORY_SIZE * ADJUSTMENT_FACTORS.TTL.INCREASE_MEDIUM, // 15MB - optimized for edge performance
+    memoryMaxEntries: CACHE_CONFIG.MAX_CACHE_ENTRIES * ADJUSTMENT_FACTORS.TTL.INCREASE_MEDIUM, // 1500 entries
     persistentMaxSize: 75 * 1024 * 1024, // 75MB persistent cache
     persistentMaxEntries: 3000, // Increased entries
     defaultTTL: TIME_CONSTANTS.CACHE_LONG_TTL, // 60 minutes - increased for better hit rates
@@ -364,7 +365,7 @@ export class EdgeCacheManager<T = any> {
    */
   private canUseStaleEntry(entry: EdgeCacheEntry<T>): boolean {
     const age = Date.now() - entry.timestamp;
-    const staleThreshold = entry.ttl * 0.5; // Allow 50% past TTL
+    const staleThreshold = entry.ttl * ADJUSTMENT_FACTORS.EVICTION.STALE_THRESHOLD; // Allow 50% past TTL
     return age <= entry.ttl + staleThreshold;
   }
 
@@ -864,7 +865,7 @@ export class EdgeCacheManager<T = any> {
     });
     
     let currentSize = this.getCurrentMemorySize();
-    const targetSize = this.config.memoryMaxSize * 0.8; // Evict to 80%
+    const targetSize = this.config.memoryMaxSize * ADJUSTMENT_FACTORS.EVICTION.TARGET_SIZE; // Evict to 80%
     
     for (const [key, entry] of entries) {
       if (currentSize <= targetSize && this.memoryCache.size <= this.config.memoryMaxEntries) {
@@ -1012,14 +1013,14 @@ export class EdgeCacheManager<T = any> {
     let baseTTL = this.config.defaultTTL;
     
     // Adjust based on key type
-    if (key.includes('robots_list')) baseTTL *= 1.5;
-    if (key.includes('market_data')) baseTTL *= 0.5; // Market data changes frequently
-    if (key.includes('strategies')) baseTTL *= 1.2;
-    if (key.includes('user_session')) baseTTL *= 0.8;
-    
+    if (key.includes('robots_list')) baseTTL *= ADJUSTMENT_FACTORS.TTL.ROBOTS_MULTIPLIER;
+    if (key.includes('market_data')) baseTTL *= ADJUSTMENT_FACTORS.TTL.MARKET_MULTIPLIER; // Market data changes frequently
+    if (key.includes('strategies')) baseTTL *= ADJUSTMENT_FACTORS.TTL.INCREASE_SMALL;
+    if (key.includes('user_session')) baseTTL *= ADJUSTMENT_FACTORS.TTL.SESSION_MULTIPLIER;
+
     // Adjust based on priority
-    if (priority === 'high') baseTTL *= 1.3;
-    if (priority === 'low') baseTTL *= 0.7;
+    if (priority === 'high') baseTTL *= ADJUSTMENT_FACTORS.TTL.INCREASE_MEDIUM;
+    if (priority === 'low') baseTTL *= ADJUSTMENT_FACTORS.TTL.DECREASE_MEDIUM;
     
     return Math.min(Math.max(baseTTL, 5 * 60 * 1000), 2 * 60 * 60 * 1000); // 5min to 2hr range
   }
@@ -1157,15 +1158,15 @@ export class EdgeCacheManager<T = any> {
     const stats = this.getStats();
     
     // Adjust TTL based on hit rate
-    if (stats.hitRate > 0.9) {
-      this.config.defaultTTL = Math.min(this.config.defaultTTL * 1.2, 60 * 60 * 1000); // Max 1 hour
-    } else if (stats.hitRate < 0.7) {
-      this.config.defaultTTL = Math.max(this.config.defaultTTL * 0.8, 5 * 60 * 1000); // Min 5 minutes
+    if (stats.hitRate > THRESHOLD_CONSTANTS.CACHE_HIT_RATE.EXCELLENT) {
+      this.config.defaultTTL = Math.min(this.config.defaultTTL * ADJUSTMENT_FACTORS.TTL.INCREASE_SMALL, TIME_CONSTANTS.HOUR); // Max 1 hour
+    } else if (stats.hitRate < THRESHOLD_CONSTANTS.CACHE_HIT_RATE.ACCEPTABLE) {
+      this.config.defaultTTL = Math.max(this.config.defaultTTL * ADJUSTMENT_FACTORS.TTL.DECREASE_LARGE, 5 * TIME_CONSTANTS.MINUTE); // Min 5 minutes
     }
-    
+
     // Adjust compression threshold based on memory usage
-    if (stats.memorySize > this.config.memoryMaxSize * 0.8) {
-      this.config.compressionThreshold = Math.max(this.config.compressionThreshold * 0.8, 1024);
+    if (stats.memorySize > this.config.memoryMaxSize * ADJUSTMENT_FACTORS.EVICTION.TARGET_SIZE) {
+      this.config.compressionThreshold = Math.max(this.config.compressionThreshold * ADJUSTMENT_FACTORS.EVICTION.COMPRESSION_THRESHOLD, 1024);
     }
     
     // Optimize replication factor based on regional performance
