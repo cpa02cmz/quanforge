@@ -9,6 +9,7 @@ import { queryOptimizer } from './queryOptimizer';
 import { robotCache } from './advancedCache';
 import { createScopedLogger } from '../utils/logger';
 import { TIME_CONSTANTS } from '../constants/config';
+import { COUNT_CONSTANTS } from './modularConstants';
 
 const logger = createScopedLogger('PerformanceOptimizer');
 
@@ -99,7 +100,7 @@ class PerformanceOptimizer {
 
   private monitoringTimer: ReturnType<typeof setInterval> | null = null;
   private performanceHistory: PerformanceMetrics[] = [];
-  private readonly MAX_HISTORY = 100;
+  private readonly MAX_HISTORY = COUNT_CONSTANTS.HISTORY.STANDARD;
 
   constructor(config?: Partial<PerformanceOptimizerConfig>) {
     if (config) {

@@ -7,7 +7,7 @@ import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
 import { SendButton } from './SendButton';
 import { TypingIndicator } from './TypingIndicator';
-import { TEXT_INPUT_LIMITS } from '../constants/uiConfig';
+import { TEXT_INPUT_LIMITS, VIRTUAL_SCROLL_CONFIG, CHARACTER_COUNT_CONFIG } from '../constants/uiConfig';
 
   const logger = createScopedLogger('ChatInterface');
 
@@ -101,7 +101,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
       if (memoryMonitorRef.current || signal.aborted) return; // Already monitoring or aborted
       
       // Adaptive monitoring frequency based on message count
-      const interval = messages.length > 100 ? 5000 : 10000; // 5s for large, 10s for normal
+      const interval = messages.length > VIRTUAL_SCROLL_CONFIG.MONITORING_INTERVAL_THRESHOLD 
+        ? VIRTUAL_SCROLL_CONFIG.MONITORING_INTERVAL_LARGE 
+        : VIRTUAL_SCROLL_CONFIG.MONITORING_INTERVAL_NORMAL;
       
       memoryMonitorRef.current = setInterval(() => {
         if (signal.aborted) return;
@@ -285,11 +287,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   }, [language]);
 
 // Optimized virtual scrolling with stable windowing and enhanced memory management
-   const visibleMessages = useMemo(() => {
-     const VIEWPORT_SIZE = 20;
-     const BUFFER_SIZE = 10;
-     const MAX_MESSAGES = 100;
-     const WINDOW_SIZE = VIEWPORT_SIZE + (BUFFER_SIZE * 2);
+    const visibleMessages = useMemo(() => {
+      const VIEWPORT_SIZE = VIRTUAL_SCROLL_CONFIG.VIEWPORT_SIZE;
+      const BUFFER_SIZE = VIRTUAL_SCROLL_CONFIG.BUFFER_SIZE;
+      const MAX_MESSAGES = VIRTUAL_SCROLL_CONFIG.MAX_MESSAGES;
+      const WINDOW_SIZE = VIEWPORT_SIZE + (BUFFER_SIZE * 2);
      
      // Early return for small conversations
      if (messages.length <= WINDOW_SIZE) {
@@ -311,9 +313,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
 // Memory pressure event listener for cleanup coordination
    useEffect(() => {
      const handleMemoryPressure = () => {
-       if (messages.length > 50) {
-         logger.info(`Memory pressure detected: ${messages.length} messages, consider clearing chat`);
-       }
+      if (messages.length > VIRTUAL_SCROLL_CONFIG.MEMORY_PRESSURE_MESSAGE_THRESHOLD) {
+          logger.info(`Memory pressure detected: ${messages.length} messages, consider clearing chat`);
+        }
      };
 
      // Check if memory pressure event is supported
@@ -419,7 +421,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={t('chat_placeholder')}
-              maxLength={1000}
+              maxLength={CHARACTER_COUNT_CONFIG.MAX_INPUT_LENGTH}
               className="w-full bg-dark-bg border border-dark-border rounded-xl pl-4 pr-20 py-3 text-sm text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all placeholder-gray-500 shadow-inner"
               disabled={isLoading}
               aria-describedby={isLoading ? 'typing-indicator' : 'char-count'}
@@ -464,15 +466,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
                   strokeWidth="2"
                   strokeLinecap="round"
                   className={`transition-all duration-300 ${
-                    input.length > 900 
+                    input.length > CHARACTER_COUNT_CONFIG.WARNING_THRESHOLD 
                       ? 'text-amber-500' 
-                      : input.length > 950 
+                      : input.length > CHARACTER_COUNT_CONFIG.CRITICAL_THRESHOLD 
                         ? 'text-red-500' 
                         : 'text-brand-500'
                   }`}
                   style={{
                     strokeDasharray: `${2 * Math.PI * 8}`,
-                    strokeDashoffset: `${2 * Math.PI * 8 * (1 - input.length / 1000)}`,
+                    strokeDashoffset: `${2 * Math.PI * 8 * (1 - input.length / CHARACTER_COUNT_CONFIG.MAX_INPUT_LENGTH)}`,
                     transition: 'stroke-dashoffset 0.3s ease-out, stroke 0.3s ease'
                   }}
                 />
@@ -481,15 +483,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
               {/* Character count text */}
               <span 
                 className={`text-xs font-medium tabular-nums transition-colors duration-200 ${
-                  input.length > 900 
+                  input.length > CHARACTER_COUNT_CONFIG.WARNING_THRESHOLD 
                     ? 'text-amber-400' 
-                    : input.length > 950 
+                    : input.length > CHARACTER_COUNT_CONFIG.CRITICAL_THRESHOLD 
                       ? 'text-red-400' 
                       : 'text-gray-500'
                 }`}
               >
                 {input.length}
-                <span className="text-gray-600">/1000</span>
+                <span className="text-gray-600">{CHARACTER_COUNT_CONFIG.DISPLAY_FORMAT}</span>
               </span>
             </div>
             
@@ -499,14 +501,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
           {/* Helper text - shows when approaching limit */}
           <div 
             className={`mt-1.5 text-xs transition-all duration-300 overflow-hidden ${
-              input.length > 900 
+              input.length > CHARACTER_COUNT_CONFIG.WARNING_THRESHOLD 
                 ? 'opacity-100 max-h-6' 
                 : 'opacity-0 max-h-0'
             }`}
             aria-live="polite"
           >
-            <span className={input.length > 950 ? 'text-red-400' : 'text-amber-400'}>
-              {input.length > 950 
+            <span className={input.length > CHARACTER_COUNT_CONFIG.CRITICAL_THRESHOLD ? 'text-red-400' : 'text-amber-400'}>
+              {input.length > CHARACTER_COUNT_CONFIG.CRITICAL_THRESHOLD 
                 ? '⚠️ Approaching character limit' 
                 : '💡 Character limit approaching'}
             </span>
