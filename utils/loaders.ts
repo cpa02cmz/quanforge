@@ -1,12 +1,15 @@
 /**
  * Dynamic import utilities for lazy loading services and components
  * These are separated from App.tsx to avoid React Fast Refresh warnings
+ * 
+ * NOTE: All AI service loading goes through aiServiceLoader for consistent caching
  */
 
 import { logger } from './logger';
 import { PRELOAD_DELAYS } from '../constants/timing';
 
-export const loadGeminiService = () => import('../services/gemini');
+// Re-export AI service loader from canonical source
+export { loadGeminiService, preloadGeminiService } from '../services/aiServiceLoader';
 
 export const loadSEOUtils = () => import('./seoUnified');
 
