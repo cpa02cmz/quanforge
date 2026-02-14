@@ -22,9 +22,11 @@ QuantForge AI supports multiple deployment targets optimized for different use c
 
 ### 🌐 Production Platforms
 - **Vercel**: Recommended for production with edge optimization
-- **Cloudflare Pages**: Alternative with global edge network
+- **Cloudflare Pages**: Alternative with global edge network (Pages, not Workers)
 - **Netlify**: Static site generation with edge functions
 - **AWS**: Full infrastructure control
+
+> **Note**: Cloudflare Workers is **not supported** for this Vite SPA project. Use Cloudflare Pages instead. See [Issue #584](https://github.com/cpa02cmz/quanforge/issues/584).
 
 ### 🧪 Development Environments
 - **Local Development**: Complete development setup

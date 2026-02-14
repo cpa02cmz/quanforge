@@ -153,16 +153,44 @@ npm run build:analyze
 }
 ```
 
-### Cloudflare Workers (Secondary)
+### Cloudflare Workers (Secondary) - DEPRECATED
 
-**Status**: ⚠️ Dashboard-level configuration required
+**Status**: ⚠️ **Integration Disabled** - See Issue #584
+
+**Decision**: Cloudflare Workers integration has been disabled due to incompatibility with Vite SPA structure.
 
 **Known Issues**:
 - Not compatible with Vite SPA structure
 - Requires different deployment approach
-- Currently failing builds (expected)
+- Consistently failing builds
+- Creating CI noise and confusion
 
-**Note**: Primary deployment target is Vercel. Cloudflare Workers integration is configured at the repository/dashboard level, not actively maintained.
+**Action Required to Fully Remove**:
+Since Cloudflare Workers integration is configured at the GitHub repository/dashboard level, repository admins need to:
+
+1. **Disable GitHub Integration**:
+   - Go to: `https://github.com/cpa02cmz/quanforge/settings/installations`
+   - Find "Cloudflare Workers" integration
+   - Click "Configure" → "Uninstall"
+
+2. **Remove from Repository** (if present):
+   - Delete any `wrangler.toml` or `wrangler.json` files
+   - Remove Cloudflare-specific GitHub Actions workflows
+   - Clean up any worker-related directories
+
+3. **Update Branch Protection** (optional):
+   - Remove "Workers Builds" from required status checks
+   - Keep Vercel as the only required deployment check
+
+**Current State**:
+- ✅ Vercel: Primary deployment target (working correctly)
+- ❌ Cloudflare Workers: Deprecated, should be disabled at dashboard level
+
+**Rationale**:
+- Vite SPA structure is not compatible with Cloudflare Workers edge runtime
+- Maintenance overhead outweighs benefits for this project type
+- Vercel provides superior Vite/React SPA hosting with edge optimization
+- Single deployment target reduces complexity and confusion
 
 ---
 
