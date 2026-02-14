@@ -7,11 +7,12 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
-import { 
+import {
   DEFAULT_EDGE_CONFIG_VALUES,
-  EDGE_SCORING 
+  EDGE_SCORING
 } from './edgeConfig';
 import { createScopedLogger } from '../../utils/logger';
+import { ADJUSTMENT_FACTORS } from '../modularConstants';
 
 const logger = createScopedLogger('SupabaseEdge');
 
@@ -174,7 +175,8 @@ class SupabaseEdgeOptimizations {
       return null;
     }
 
-    this.metrics.cacheHitRate = (this.metrics.cacheHitRate * 0.9) + (1 * 0.1); // Moving average
+    const { HISTORY_WEIGHT, NEW_WEIGHT } = ADJUSTMENT_FACTORS.MOVING_AVERAGE;
+    this.metrics.cacheHitRate = (this.metrics.cacheHitRate * HISTORY_WEIGHT) + (1 * NEW_WEIGHT);
     return cached.data;
   }
 
@@ -272,8 +274,9 @@ class SupabaseEdgeOptimizations {
       // Update metrics
       const processingTime = Date.now() - startTime;
       const avgTimePerRequest = processingTime / batch.length;
-      const efficiency = Math.max(0, 100 - (avgTimePerRequest / 10)); // Arbitrary baseline of 10ms per request
-      this.metrics.batchEfficiency = (this.metrics.batchEfficiency * 0.9) + (efficiency * 0.1);
+      const efficiency = Math.max(0, 100 - (avgTimePerRequest / ADJUSTMENT_FACTORS.PERFORMANCE.EFFICIENCY_BASELINE));
+      const { HISTORY_WEIGHT, NEW_WEIGHT } = ADJUSTMENT_FACTORS.MOVING_AVERAGE;
+      this.metrics.batchEfficiency = (this.metrics.batchEfficiency * HISTORY_WEIGHT) + (efficiency * NEW_WEIGHT);
 
     } catch (error: unknown) {
       // Reject all requests in batch on error
@@ -320,7 +323,8 @@ class SupabaseEdgeOptimizations {
         }
         
         const compressionRatio = jsonString.length / compressed.length;
-        this.metrics.compressionRatio = (this.metrics.compressionRatio * 0.9) + (compressionRatio * 0.1);
+        const { HISTORY_WEIGHT, NEW_WEIGHT } = ADJUSTMENT_FACTORS.MOVING_AVERAGE;
+        this.metrics.compressionRatio = (this.metrics.compressionRatio * HISTORY_WEIGHT) + (compressionRatio * NEW_WEIGHT);
         
         return btoa(String.fromCharCode(...compressed));
       }
