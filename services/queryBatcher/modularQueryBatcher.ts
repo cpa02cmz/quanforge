@@ -8,12 +8,13 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { BatchQuery, BatchConfig, BatchStats, QueryBatch } from './queryTypes';
 import { QueryQueueManager } from './queryQueueManager';
 import { QueryExecutionEngine } from './queryExecutionEngine';
-import { 
-  DEFAULT_BATCH_CONFIG, 
-  QUEUE_HEALTH_THRESHOLDS, 
-  QUERY_EXECUTION_LIMITS 
+import {
+  DEFAULT_BATCH_CONFIG,
+  QUEUE_HEALTH_THRESHOLDS,
+  QUERY_EXECUTION_LIMITS
 } from './batchConfig';
 import { createScopedLogger } from '../../utils/logger';
+import { STATUS_TYPES } from '../../constants/modularConfig';
 
 const logger = createScopedLogger('QueryBatcher');
 
@@ -126,7 +127,7 @@ class QueryBatcher {
    * Get queue health metrics
    */
   getQueueHealth(): {
-    status: 'healthy' | 'warning' | 'critical';
+    status: typeof STATUS_TYPES.HEALTH[keyof typeof STATUS_TYPES.HEALTH];
     pendingQueries: number;
     overdueQueries: number;
     avgWaitTime: number;
@@ -134,28 +135,28 @@ class QueryBatcher {
   } {
     const queueStatus = this.queueManager.getQueueStatus();
     const overdueQueries = this.queueManager.getOverdueQueries().length;
-    
-    let status: 'healthy' | 'warning' | 'critical' = 'healthy';
+
+    let status: typeof STATUS_TYPES.HEALTH[keyof typeof STATUS_TYPES.HEALTH] = STATUS_TYPES.HEALTH.HEALTHY;
     const recommendations: string[] = [];
 
     if (queueStatus.pendingQueries > QUEUE_HEALTH_THRESHOLDS.PENDING_CRITICAL) {
-      status = 'critical';
+      status = STATUS_TYPES.HEALTH.CRITICAL;
       recommendations.push('Queue size is very high, consider increasing batch size or timeout');
     } else if (queueStatus.pendingQueries > QUEUE_HEALTH_THRESHOLDS.PENDING_WARNING) {
-      status = 'warning';
+      status = STATUS_TYPES.HEALTH.WARNING;
       recommendations.push('Monitor queue size for potential bottlenecks');
     }
 
     if (overdueQueries > QUEUE_HEALTH_THRESHOLDS.OVERDUE_CRITICAL) {
-      status = 'critical';
+      status = STATUS_TYPES.HEALTH.CRITICAL;
       recommendations.push('Many overdue queries detected - check database performance');
     } else if (overdueQueries > QUEUE_HEALTH_THRESHOLDS.OVERDUE_WARNING) {
-      status = 'warning';
+      status = STATUS_TYPES.HEALTH.WARNING;
       recommendations.push('Some queries are waiting too long');
     }
 
     if (queueStatus.oldestQueryAge > QUEUE_HEALTH_THRESHOLDS.MAX_WAIT_TIME_WARNING) {
-      status = 'warning';
+      status = STATUS_TYPES.HEALTH.WARNING;
       recommendations.push('Oldest query is waiting too long');
     }
 
