@@ -8,6 +8,8 @@ import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
 import { CharacterCounter } from './CharacterCounter';
 import { useModalAccessibility } from '../hooks/useModalAccessibility';
+import { announceFormValidation } from '../utils/announcer';
+import { FormField } from './FormField';
 
 const logger = createScopedLogger('AISettingsModal');
 
@@ -57,8 +59,10 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, o
     const [isTesting, setIsTesting] = useState(false);
     const [activePreset, setActivePreset] = useState<string>('google');
     const [activeTab, setActiveTab] = useState<'ai' | 'market'>('ai');
+    const [errors, setErrors] = useState<Partial<Record<keyof AISettings, string>>>({});
     const modalRef = useRef<HTMLDivElement>(null);
     const titleId = 'ai-settings-title';
+    const apiKeyInputRef = useRef<HTMLInputElement>(null);
     
     const { modalProps } = useModalAccessibility({
         isOpen,
@@ -93,11 +97,76 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, o
         }
     };
 
+    const validateField = (field: keyof AISettings, value: unknown): string | undefined => {
+        switch (field) {
+            case 'apiKey':
+                if (!value || typeof value !== 'string' || value.trim().length === 0) {
+                    return 'API Key is required';
+                }
+                if (value.trim().length < 10) {
+                    return 'API Key appears to be invalid (too short)';
+                }
+                break;
+            case 'modelName':
+                if (!value || typeof value !== 'string' || value.trim().length === 0) {
+                    return 'Model name is required';
+                }
+                break;
+            case 'baseUrl':
+                if (settings.provider === 'openai' && value) {
+                    const url = String(value);
+                    if (url && !url.match(/^https?:\/\/.+/)) {
+                        return 'Base URL must be a valid HTTP/HTTPS URL';
+                    }
+                }
+                break;
+        }
+        return undefined;
+    };
+
+    const validateForm = (): boolean => {
+        const newErrors: Partial<Record<keyof AISettings, string>> = {};
+        const fields: (keyof AISettings)[] = ['apiKey', 'modelName', 'baseUrl'];
+        
+        fields.forEach(field => {
+            const error = validateField(field, settings[field]);
+            if (error) {
+                newErrors[field] = error;
+            }
+        });
+
+        setErrors(newErrors);
+        
+        // Announce validation errors to screen readers for accessibility (WCAG 4.1.3)
+        const errorMessages = Object.values(newErrors).filter(Boolean);
+        if (errorMessages.length > 0) {
+            announceFormValidation(errorMessages, 'AI Settings');
+            // Focus first error field for accessibility
+            if (newErrors.apiKey && apiKeyInputRef.current) {
+                apiKeyInputRef.current.focus();
+            }
+        }
+        
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!validateForm()) {
+            return;
+        }
         settingsManager.saveSettings(settings);
         showToast('Settings saved successfully', 'success');
         onClose();
+    };
+
+    const handleChangeWithValidation = (field: keyof AISettings, value: unknown) => {
+        const error = validateField(field, value);
+        setErrors(prev => ({
+            ...prev,
+            [field]: error || undefined
+        }));
+        setSettings(prev => ({ ...prev, [field]: value }));
     };
 
     // const handleReset = () => {
@@ -110,6 +179,15 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, o
     // };
 
     const handleTestConnection = async () => {
+        // Validate before testing
+        const apiKeyError = validateField('apiKey', settings.apiKey);
+        if (apiKeyError) {
+            setErrors(prev => ({ ...prev, apiKey: apiKeyError }));
+            announceFormValidation([apiKeyError], 'AI Settings');
+            apiKeyInputRef.current?.focus();
+            return;
+        }
+        
         if (!settings.apiKey && !settings.baseUrl?.includes('localhost')) {
             showToast('Please enter an API Key first', 'error');
             return;
@@ -208,48 +286,71 @@ return (
                             </div>
 
                             {/* API Key */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
-                                    {t('settings_api_key')}
-                                </label>
+                            <FormField
+                                label={t('settings_api_key')}
+                                htmlFor="api-key"
+                                error={errors.apiKey}
+                                required
+                            >
                                 <input
+                                    ref={apiKeyInputRef}
+                                    id="api-key"
                                     type="password"
                                     value={settings.apiKey}
-                                    onChange={(e) => setSettings({ ...settings, apiKey: e.target.value })}
-                                    className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                    onChange={(e) => handleChangeWithValidation('apiKey', e.target.value)}
+                                    className={`w-full px-3 py-2 bg-dark-bg border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500 ${
+                                        errors.apiKey ? 'border-red-500' : 'border-dark-border'
+                                    }`}
                                     placeholder={t('settings_api_key_placeholder')}
+                                    aria-invalid={errors.apiKey ? 'true' : 'false'}
+                                    aria-describedby={errors.apiKey ? 'api-key-error' : undefined}
+                                    required
                                 />
-                            </div>
+                            </FormField>
 
                             {/* Base URL (for OpenAI compatible) */}
                             {settings.provider === 'openai' && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        {t('settings_base_url')}
-                                    </label>
+                                <FormField
+                                    label={t('settings_base_url')}
+                                    htmlFor="base-url"
+                                    error={errors.baseUrl}
+                                >
                                     <input
+                                        id="base-url"
                                         type="url"
                                         value={settings.baseUrl}
-                                        onChange={(e) => setSettings({ ...settings, baseUrl: e.target.value })}
-                                        className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                        onChange={(e) => handleChangeWithValidation('baseUrl', e.target.value)}
+                                        className={`w-full px-3 py-2 bg-dark-bg border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500 ${
+                                            errors.baseUrl ? 'border-red-500' : 'border-dark-border'
+                                        }`}
                                         placeholder="https://api.openai.com/v1"
+                                        aria-invalid={errors.baseUrl ? 'true' : 'false'}
+                                        aria-describedby={errors.baseUrl ? 'base-url-error' : undefined}
                                     />
-                                </div>
+                                </FormField>
                             )}
 
                             {/* Model Name */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
-                                    {t('settings_model')}
-                                </label>
+                            <FormField
+                                label={t('settings_model')}
+                                htmlFor="model-name"
+                                error={errors.modelName}
+                                required
+                            >
                                 <input
+                                    id="model-name"
                                     type="text"
                                     value={settings.modelName}
-                                    onChange={(e) => setSettings({ ...settings, modelName: e.target.value })}
-                                    className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                    onChange={(e) => handleChangeWithValidation('modelName', e.target.value)}
+                                    className={`w-full px-3 py-2 bg-dark-bg border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500 ${
+                                        errors.modelName ? 'border-red-500' : 'border-dark-border'
+                                    }`}
                                     placeholder="gemini-2.5-flash"
+                                    aria-invalid={errors.modelName ? 'true' : 'false'}
+                                    aria-describedby={errors.modelName ? 'model-name-error' : undefined}
+                                    required
                                 />
-                            </div>
+                            </FormField>
 
                             {/* Language */}
                             <div>
