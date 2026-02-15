@@ -142,6 +142,27 @@ class CoreSupabaseService {
   }
 
   /**
+   * Reinitialize client with new settings
+   * Call this when Supabase credentials change
+   */
+  reinitialize(): void {
+    this.client = null;
+    this.isMockMode = false;
+    this.initializeClient();
+    logger.log('Supabase client reinitialized');
+  }
+
+  /**
+   * Force mock mode
+   * Useful for testing or when real client fails
+   */
+  forceMockMode(): void {
+    this.isMockMode = true;
+    this.client = null;
+    logger.log('Forced mock mode enabled');
+  }
+
+  /**
    * Execute operation with retry logic
    */
   private async executeWithRetry<T>(

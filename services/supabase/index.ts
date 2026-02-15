@@ -25,8 +25,15 @@ interface EnhancedSupabaseClient {
   functions: any;
 }
 
-// Determine if we're in mock mode
-const isMockMode = settingsManager.getDBSettings()?.mode !== 'supabase';
+// Dynamic check for mock mode - ensures settings changes are respected
+const checkIsMockMode = (): boolean => {
+  const settings = settingsManager.getDBSettings();
+  // Check both mode setting AND presence of valid credentials
+  if (settings?.mode === 'supabase' && settings?.url && settings?.anonKey) {
+    return false;
+  }
+  return true;
+};
 
 // Get real Supabase client when available
 const getRealClient = (): SupabaseClient | null => {
@@ -83,16 +90,16 @@ const supabaseImpl: EnhancedSupabaseClient = {
   
   // Database operations
   from: (table: string) => {
-    if (isMockMode) {
+    if (checkIsMockMode()) {
       return mockDB.from(table);
     }
-    
+
     // Use real Supabase client
     const realClient = getRealClient();
     if (realClient) {
       return realClient.from(table);
     }
-    
+
     // Fallback to mock if real client not available
     logger.warn('Real Supabase client not available, falling back to mock');
     return mockDB.from(table);
@@ -202,10 +209,10 @@ export type { SupabaseClient };
 // Health check
 export const checkSupabaseHealth = async () => {
   try {
-    if (isMockMode) {
+    if (checkIsMockMode()) {
       return { status: 'mock_mode', message: 'Running in localStorage mock mode' };
     }
-    
+
     // Use core service health check
     const health = await coreSupabase.healthCheck();
     return {
@@ -221,10 +228,10 @@ export const checkSupabaseHealth = async () => {
 
 // Connection management for real mode
 export const getConnectionState = () => {
-  if (isMockMode) {
+  if (checkIsMockMode()) {
     return { connected: true, mode: 'mock', provider: 'localStorage' };
   }
-  
+
   // Check if real client is available
   const realClient = getRealClient();
   return {
@@ -234,3 +241,28 @@ export const getConnectionState = () => {
     hasClient: !!realClient
   };
 };
+
+/**
+ * Reinitialize Supabase service with current settings
+ * Call this after changing database settings to apply new configuration
+ */
+export const reinitializeSupabase = (): void => {
+  coreSupabase.reinitialize();
+  logger.log('Supabase service reinitialized with current settings');
+};
+
+/**
+ * Initialize settings change listener
+ * Automatically reinitializes Supabase when settings change
+ */
+const initializeSettingsListener = (): void => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('db-settings-changed', () => {
+      logger.log('Database settings changed, reinitializing Supabase...');
+      reinitializeSupabase();
+    });
+  }
+};
+
+// Initialize listener on module load
+initializeSettingsListener();
