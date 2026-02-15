@@ -57,7 +57,7 @@ class RealTimeUXScoring {
     this.metrics = this.initializeMetrics();
     this.metricsCollector = new UXMetricsCollector(this.metrics);
     this.scoreCalculator = new UXScoreCalculator(this.config);
-    this.uxAnalyzer = new UXAnalyzer(this.scoreCalculator, this.config);
+    this.uxAnalyzer = new UXAnalyzer(this.scoreCalculator);
   }
 
   static getInstance(config?: Partial<UXConfig>): RealTimeUXScoring {
@@ -217,7 +217,7 @@ class RealTimeUXScoring {
     
     // Recreate components with new config
     this.scoreCalculator = new UXScoreCalculator(this.config);
-    this.uxAnalyzer = new UXAnalyzer(this.scoreCalculator, this.config);
+    this.uxAnalyzer = new UXAnalyzer(this.scoreCalculator);
 
     // Restart monitoring if active
     if (this.isMonitoring) {
