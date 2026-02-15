@@ -829,11 +829,129 @@
              animation: none;
            }
            
-           .animate-skeleton-pulse {
-             opacity: 0.6;
-           }
-         }
-        </style>
+            .animate-skeleton-pulse {
+              opacity: 0.6;
+            }
+          }
+
+        /* High Contrast Mode Support (Windows Forced Colors) */
+        @media (forced-colors: active) {
+          /* Use system colors for interactive elements */
+          button,
+          [role="button"],
+          input,
+          select,
+          textarea {
+            border: 2px solid ButtonText !important;
+            background: ButtonFace !important;
+            color: ButtonText !important;
+            forced-color-adjust: none;
+          }
+
+          /* Ensure focus is highly visible */
+          *:focus-visible {
+            outline: 3px solid Highlight !important;
+            outline-offset: 3px !important;
+          }
+
+          /* Links should use system link colors */
+          a {
+            color: LinkText !important;
+            text-decoration: underline !important;
+          }
+
+          /* Ensure borders are visible */
+          .border,
+          .border-t,
+          .border-b,
+          .border-l,
+          .border-r {
+            border-color: CanvasText !important;
+          }
+
+          /* Form inputs need clear boundaries */
+          input[type="text"],
+          input[type="email"],
+          input[type="password"],
+          input[type="number"],
+          textarea,
+          select {
+            border: 2px solid FieldText !important;
+            background: Field !important;
+            color: FieldText !important;
+          }
+
+          /* Disabled elements */
+          :disabled,
+          [disabled] {
+            border-color: GrayText !important;
+            color: GrayText !important;
+          }
+
+          /* Selected/highlighted elements */
+          [aria-selected="true"],
+          .selected {
+            background: Highlight !important;
+            color: HighlightText !important;
+          }
+
+          /* Charts and visualizations - ensure they don't rely solely on color */
+          canvas,
+          svg {
+            forced-color-adjust: auto;
+          }
+
+          /* Reduce transparency in high contrast mode */
+          .bg-opacity-50,
+          .bg-opacity-75,
+          [class*="opacity-"] {
+            opacity: 1 !important;
+          }
+
+          /* Ensure text remains visible */
+          .sr-only {
+            /* Screen reader only text should remain hidden visually */
+            forced-color-adjust: none;
+          }
+
+          /* Toast notifications */
+          [role="alert"] {
+            border: 2px solid ButtonText !important;
+            background: Window !important;
+            color: WindowText !important;
+          }
+
+          /* Modal dialogs */
+          [role="dialog"] {
+            border: 2px solid ButtonText !important;
+            background: Window !important;
+          }
+
+          /* Navigation items */
+          nav a,
+          [role="navigation"] a {
+            border: 1px solid transparent;
+          }
+
+          nav a:hover,
+          nav a:focus,
+          [role="navigation"] a:hover,
+          [role="navigation"] a:focus {
+            border: 1px solid ButtonText !important;
+          }
+        }
+
+        /* Respect user's motion preferences */
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *::before,
+          *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+          }
+        }
+         </style>
   
 </head>
   <body>
