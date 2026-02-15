@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { securityManager } from './securityManager';
 import type { Robot, StrategyParams, BacktestSettings } from '../types';
 
@@ -198,9 +198,10 @@ describe('SecurityManager', () => {
 
       const result = securityManager.sanitizeAndValidate(backtest, 'backtest');
       // Check if leverage validation error exists or validation passes
-      const hasLeverageError = result.errors.some(e => 
+      const _hasLeverageError = result.errors.some(e => 
         e.toLowerCase().includes('leverage')
       );
+      void _hasLeverageError; // Variable used for documentation
       // Implementation may or may not validate leverage range
       expect(result).toBeDefined();
     });
@@ -213,9 +214,10 @@ describe('SecurityManager', () => {
 
       const result = securityManager.sanitizeAndValidate(backtest, 'backtest');
       // Check if spread validation error exists
-      const hasSpreadError = result.errors.some(e => 
+      const _hasSpreadError = result.errors.some(e => 
         e.toLowerCase().includes('spread')
       );
+      void _hasSpreadError; // Variable used for documentation
       // Implementation may or may not validate spread
       expect(result).toBeDefined();
     });
