@@ -6,6 +6,7 @@
 import { WindowWithVercel } from '../types/browser';
 import { createScopedLogger } from '../utils/logger';
 import { DELAY_CONSTANTS } from './modularConstants';
+import { ANALYTICS_CONFIG } from '../constants/config';
 
 const logger = createScopedLogger('EdgeAnalytics');
 
@@ -101,7 +102,7 @@ class EdgeAnalytics {
       enablePerformanceTracking: process.env['VITE_ENABLE_PERFORMANCE_MONITORING'] === 'true',
       enableUserBehaviorTracking: true,
       enableErrorTracking: process.env['VITE_ENABLE_ERROR_REPORTING'] === 'true',
-      sampleRate: 0.1, // 10% sample rate
+      sampleRate: ANALYTICS_CONFIG.DEFAULT_SAMPLE_RATE, // 10% sample rate
       endpoint: process.env['VITE_ANALYTICS_ENDPOINT'] || undefined
     };
 

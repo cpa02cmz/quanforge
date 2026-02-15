@@ -4,6 +4,7 @@
  */
 
 import { TIMEOUTS, CACHE_LIMITS } from '../constants';
+import { TIME_CONSTANTS, EDGE_CONFIG } from '../constants/config';
 import { MODULE_PRELOAD } from './constants';
 import { createListenerManager, ListenerManager } from '../utils/listenerManager';
 import { createScopedLogger } from '../utils/logger';
@@ -37,8 +38,8 @@ class VercelEdgeOptimizer {
     enableCompression: process.env['VITE_ENABLE_COMPRESSION'] === 'true',
     enablePrefetch: process.env['VITE_ENABLE_PREFETCH'] === 'true',
     enablePreload: process.env['VITE_ENABLE_PRELOAD'] === 'true',
-    cacheTTL: 31536000, // 1 year for static assets
-    edgeRegions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1'],
+    cacheTTL: TIME_CONSTANTS.DAY * 365, // 1 year for static assets
+    edgeRegions: EDGE_CONFIG.REGIONS,
   };
   private metrics: Map<string, EdgeMetrics> = new Map();
 
@@ -86,7 +87,7 @@ class VercelEdgeOptimizer {
         // Set up periodic cache updates
         if ('periodicSync' in registration) {
           (registration as any).periodicSync.register('cache-update', {
-            minInterval: 24 * 60 * 60 * 1000 // 24 hours
+            minInterval: TIME_CONSTANTS.DAY // 24 hours
           }).then(() => {
             logger.log('Periodic cache sync registered');
           }).catch((error: any) => {

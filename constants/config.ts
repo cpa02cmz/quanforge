@@ -248,7 +248,7 @@ export const PERFORMANCE_THRESHOLDS = {
 // ========== EDGE/CDN CONFIGURATION ==========
 export const EDGE_CONFIG = {
   // Supported edge regions
-  REGIONS: ['hkg1', 'iad1', 'sin1', 'cle1', 'fra1'],
+  REGIONS: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'],
   DEFAULT_REGION: 'iad1',
   
 // Edge-specific caching
