@@ -105,6 +105,9 @@
     <link rel="preconnect" href="https://*.supabase.co" crossorigin />
     <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin />
     
+    <!-- Module preloads for critical JavaScript chunks - improves LCP and TTI -->
+    <link rel="modulepreload" href="/index.tsx" />
+    
     <!-- Preload combined font stylesheet for better performance -->
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
     
@@ -603,353 +606,104 @@
           white-space: normal;
         }
 
-        /* High Contrast Mode Support - Windows Forced Colors */
-        @media (forced-colors: active) {
-          /* Ensure interactive elements have visible borders */
-          button, a, input, select, textarea {
-            forced-color-adjust: none;
-            border: 2px solid ButtonText !important;
-          }
-
-          /* Focus indicators for high contrast */
-          :focus-visible {
-            outline: 3px solid Highlight !important;
-            outline-offset: 2px !important;
-          }
-
-          /* Ensure buttons look like buttons */
-          button, [role="button"] {
-            background: ButtonFace !important;
-            color: ButtonText !important;
-          }
-
-          /* Links should be identifiable */
-          a, [role="link"] {
-            color: LinkText !important;
-            text-decoration: underline !important;
-          }
-
-          /* Selected/disabled states */
-          [aria-selected="true"] {
-            background: Highlight !important;
-            color: HighlightText !important;
-          }
-
-          [aria-disabled="true"], :disabled {
-            opacity: 1 !important;
-            border-color: GrayText !important;
-            color: GrayText !important;
-          }
-
-          /* Form fields visibility */
-          input, select, textarea {
-            background: Field !important;
-            color: FieldText !important;
-          }
-
-          /* Cards and containers need borders in high contrast */
-          .bg-dark-surface, .bg-dark-bg, [class*="bg-"] {
-            background: Canvas !important;
-            color: CanvasText !important;
-            border: 1px solid ButtonBorder !important;
-          }
-        }
-
-        /* High Contrast Preference Support */
-        @media (prefers-contrast: high) {
-          /* Enhance borders for high contrast preference */
-          .border-dark-border {
-            border-color: rgba(255, 255, 255, 0.6) !important;
-          }
-
-          /* Stronger focus indicators */
-          *:focus-visible {
-            outline: 3px solid #22c55e;
-            outline-offset: 3px;
-          }
-
-          /* Ensure sufficient contrast on interactive elements */
-          button, a {
-            border-width: 2px;
-          }
-        }
-
         /* ==========================================
-           TOOLTIP ANIMATIONS
-           Smooth fade and scale animations for Tooltip component
+           ANIMATIONS
            ========================================== */
         
-        /* Tooltip entrance animation - fade in with subtle scale */
+        /* Tooltip animations */
         @keyframes tooltip-fade-in {
-          0% {
-            opacity: 0;
-            transform: scale(0.95) translateY(4px);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
+          0% { opacity: 0; transform: scale(0.95) translateY(4px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
         }
-
-        /* Tooltip exit animation - fade out with scale down */
         @keyframes tooltip-fade-out {
-          0% {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
-          100% {
-            opacity: 0;
-            transform: scale(0.95) translateY(4px);
-          }
+          0% { opacity: 1; transform: scale(1) translateY(0); }
+          100% { opacity: 0; transform: scale(0.95) translateY(4px); }
         }
-
-        /* Tooltip utility classes */
-        .tooltip-enter {
-          animation: tooltip-fade-in 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
-
-        .tooltip-exit {
-          animation: tooltip-fade-out 0.15s cubic-bezier(0.4, 0, 1, 1) forwards;
-        }
-
-        /* Arrow animation - subtle pulse on appear */
         @keyframes tooltip-arrow-appear {
-          0% {
-            opacity: 0;
-            transform: scale(0.5);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1);
-          }
+          0% { opacity: 0; transform: scale(0.5); }
+          100% { opacity: 1; transform: scale(1); }
         }
-
-        .tooltip-arrow {
-          animation: tooltip-arrow-appear 0.15s ease-out 0.05s both;
+        .tooltip-enter { animation: tooltip-fade-in 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        .tooltip-exit { animation: tooltip-fade-out 0.15s cubic-bezier(0.4, 0, 1, 1) forwards; }
+        .tooltip-arrow { animation: tooltip-arrow-appear 0.15s ease-out 0.05s both; }
+        
+        /* Skeleton animations */
+        @keyframes skeleton-pulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.8; }
         }
-
-         /* Reduced motion support for accessibility */
-         @media (prefers-reduced-motion: reduce) {
-           .tooltip-enter,
-           .tooltip-exit {
-             animation: none;
-             opacity: 1;
-             transform: none;
-           }
-           
-           .tooltip-arrow {
-             animation: none;
-             opacity: 1;
-             transform: none;
-           }
-         }
-
-         /* ==========================================
-            SKELETON LOADER ANIMATIONS
-            Beautiful loading placeholders with shimmer effects
-            ========================================== */
-         
-         /* Pulse animation - subtle opacity breathing */
-         @keyframes skeleton-pulse {
-           0%, 100% {
-             opacity: 0.4;
-          }
-           50% {
-             opacity: 0.8;
-           }
-         }
-         
-         .animate-skeleton-pulse {
-           animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-         }
-         
-         /* Shimmer animation - elegant light sweep */
-         @keyframes skeleton-shimmer {
-           0% {
-             transform: translateX(-100%);
-           }
-           100% {
-             transform: translateX(200%);
-           }
-         }
-         
-         .skeleton-shimmer {
-           animation: skeleton-shimmer 1.5s ease-in-out infinite;
-         }
-         
-         .animate-skeleton-shimmer {
-           position: relative;
-           overflow: hidden;
-         }
-         
-         .animate-skeleton-shimmer::after {
-           content: '';
-           position: absolute;
-           inset: 0;
-           background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
-           transform: translateX(-100%);
-           animation: skeleton-shimmer 1.5s ease-in-out infinite;
-         }
-         
-         /* Wave animation - brand-colored sweep */
-         @keyframes skeleton-wave {
-           0% {
-             transform: translateX(-100%);
-          }
-           100% {
-             transform: translateX(200%);
-           }
-         }
-         
-         .skeleton-wave {
-           animation: skeleton-wave 2s ease-in-out infinite;
-         }
-         
-         .animate-skeleton-wave {
-           position: relative;
-           overflow: hidden;
-         }
-         
-         .animate-skeleton-wave::after {
-           content: '';
-           position: absolute;
-           inset: 0;
-           background: linear-gradient(90deg, transparent 0%, rgba(34,197,94,0.08) 50%, transparent 100%);
-           transform: translateX(-100%);
-           animation: skeleton-wave 2s ease-in-out infinite;
-         }
-         
-         /* Reduced motion support for skeleton loaders */
-         @media (prefers-reduced-motion: reduce) {
-           .animate-skeleton-pulse,
-           .skeleton-shimmer,
-           .animate-skeleton-shimmer::after,
-           .skeleton-wave,
-           .animate-skeleton-wave::after {
-             animation: none;
-           }
-           
-            .animate-skeleton-pulse {
-              opacity: 0.6;
-            }
-          }
-
-        /* High Contrast Mode Support (Windows Forced Colors) */
+        @keyframes skeleton-shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+        .animate-skeleton-pulse { animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        .animate-skeleton-shimmer { position: relative; overflow: hidden; }
+        .animate-skeleton-shimmer::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
+          transform: translateX(-100%);
+          animation: skeleton-shimmer 1.5s ease-in-out infinite;
+        }
+        .animate-skeleton-wave { position: relative; overflow: hidden; }
+        .animate-skeleton-wave::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, transparent 0%, rgba(34,197,94,0.08) 50%, transparent 100%);
+          transform: translateX(-100%);
+          animation: skeleton-shimmer 2s ease-in-out infinite;
+        }
+        
+        /* High Contrast Mode Support (Windows Forced Colors) - Consolidated */
         @media (forced-colors: active) {
-          /* Use system colors for interactive elements */
-          button,
-          [role="button"],
-          input,
-          select,
-          textarea {
+          button, [role="button"], input, select, textarea {
             border: 2px solid ButtonText !important;
             background: ButtonFace !important;
             color: ButtonText !important;
             forced-color-adjust: none;
           }
-
-          /* Ensure focus is highly visible */
           *:focus-visible {
             outline: 3px solid Highlight !important;
             outline-offset: 3px !important;
           }
-
-          /* Links should use system link colors */
-          a {
-            color: LinkText !important;
-            text-decoration: underline !important;
-          }
-
-          /* Ensure borders are visible */
-          .border,
-          .border-t,
-          .border-b,
-          .border-l,
-          .border-r {
-            border-color: CanvasText !important;
-          }
-
-          /* Form inputs need clear boundaries */
-          input[type="text"],
-          input[type="email"],
-          input[type="password"],
-          input[type="number"],
-          textarea,
-          select {
+          a { color: LinkText !important; text-decoration: underline !important; }
+          .border, .border-t, .border-b, .border-l, .border-r { border-color: CanvasText !important; }
+          input, select, textarea {
             border: 2px solid FieldText !important;
             background: Field !important;
             color: FieldText !important;
           }
-
-          /* Disabled elements */
-          :disabled,
-          [disabled] {
-            border-color: GrayText !important;
-            color: GrayText !important;
-          }
-
-          /* Selected/highlighted elements */
-          [aria-selected="true"],
-          .selected {
-            background: Highlight !important;
-            color: HighlightText !important;
-          }
-
-          /* Charts and visualizations - ensure they don't rely solely on color */
-          canvas,
-          svg {
-            forced-color-adjust: auto;
-          }
-
-          /* Reduce transparency in high contrast mode */
-          .bg-opacity-50,
-          .bg-opacity-75,
-          [class*="opacity-"] {
-            opacity: 1 !important;
-          }
-
-          /* Ensure text remains visible */
-          .sr-only {
-            /* Screen reader only text should remain hidden visually */
-            forced-color-adjust: none;
-          }
-
-          /* Toast notifications */
-          [role="alert"] {
-            border: 2px solid ButtonText !important;
-            background: Window !important;
-            color: WindowText !important;
-          }
-
-          /* Modal dialogs */
-          [role="dialog"] {
-            border: 2px solid ButtonText !important;
-            background: Window !important;
-          }
-
-          /* Navigation items */
-          nav a,
-          [role="navigation"] a {
-            border: 1px solid transparent;
-          }
-
-          nav a:hover,
-          nav a:focus,
-          [role="navigation"] a:hover,
-          [role="navigation"] a:focus {
-            border: 1px solid ButtonText !important;
-          }
+          :disabled, [disabled] { border-color: GrayText !important; color: GrayText !important; }
+          [aria-selected="true"], .selected { background: Highlight !important; color: HighlightText !important; }
+          canvas, svg { forced-color-adjust: auto; }
+          [class*="opacity-"] { opacity: 1 !important; }
+          [role="alert"] { border: 2px solid ButtonText !important; background: Window !important; }
+          [role="dialog"] { border: 2px solid ButtonText !important; background: Window !important; }
         }
-
-        /* Respect user's motion preferences */
+        
+        /* High Contrast Preference Support */
+        @media (prefers-contrast: high) {
+          .border-dark-border { border-color: rgba(255, 255, 255, 0.6) !important; }
+          *:focus-visible { outline: 3px solid #22c55e; outline-offset: 3px; }
+          button, a { border-width: 2px; }
+        }
+        
+        /* Reduced motion support */
         @media (prefers-reduced-motion: reduce) {
-          *,
-          *::before,
-          *::after {
+          *, *::before, *::after {
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
           }
+          .tooltip-enter, .tooltip-exit, .tooltip-arrow,
+          .animate-skeleton-pulse, .animate-skeleton-shimmer::after, .animate-skeleton-wave::after {
+            animation: none;
+            opacity: 1;
+            transform: none;
+          }
+          .animate-skeleton-pulse { opacity: 0.6; }
         }
          </style>
   

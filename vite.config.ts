@@ -254,7 +254,6 @@ export default defineConfig({
     dynamicImportVarsOptions: {
       warnOnError: false
     },
-    
   },
   resolve: {
     alias: {
