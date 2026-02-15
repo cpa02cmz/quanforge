@@ -7,6 +7,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from '../settingsManager';
 import { mockAuth, addAuthListener, removeAuthListener } from './auth';
 import { mockDB, getRobotsPaginated, searchRobots, getRobots, saveRobot, updateRobot, deleteRobot, duplicateRobot } from './database';
+import { coreSupabase } from './core';
 
 // Auth methods are handled directly in the main interface
 import { handleErrorCompat as handleError } from '../../utils/errorManager';
@@ -26,6 +27,11 @@ interface EnhancedSupabaseClient {
 
 // Determine if we're in mock mode
 const isMockMode = settingsManager.getDBSettings()?.mode !== 'supabase';
+
+// Get real Supabase client when available
+const getRealClient = (): SupabaseClient | null => {
+  return coreSupabase.getClient();
+};
 
 /**
  * Main Supabase Client Interface
@@ -81,8 +87,14 @@ const supabaseImpl: EnhancedSupabaseClient = {
       return mockDB.from(table);
     }
     
-    // TODO: Implement real Supabase client operations
-    // For now, delegate to mock implementation
+    // Use real Supabase client
+    const realClient = getRealClient();
+    if (realClient) {
+      return realClient.from(table);
+    }
+    
+    // Fallback to mock if real client not available
+    logger.warn('Real Supabase client not available, falling back to mock');
     return mockDB.from(table);
   },
 
@@ -138,9 +150,18 @@ export const dbUtils = {
     }
 
     try {
-      const { data, error } = await mockDB.from('robots').select();
-      if (error) throw error;
-      return { success: true, message: `Connected to Supabase. Found ${(Array.isArray(data) ? data.length : 0)} records.`, mode: 'supabase' };
+      // Use core service health check for real connections
+      const health = await coreSupabase.healthCheck();
+      if (health.mockMode) {
+        // Fallback to mock if core service is in mock mode
+        const { data, error } = await mockDB.from('robots').select();
+        if (error) throw error;
+        return { success: true, message: `Connected (Mock Fallback). Found ${(Array.isArray(data) ? data.length : 0)} records.`, mode: 'mock' };
+      }
+      
+      // Real Supabase connection
+      const robots = await coreSupabase.getRobots();
+      return { success: true, message: `Connected to Supabase. Found ${robots.length} records.`, mode: 'supabase' };
     } catch (e: unknown) {
       const error = e as Error;
       return { success: false, message: `Connection Failed: ${error.message || error}`, mode: 'supabase' };
@@ -153,8 +174,15 @@ export const dbUtils = {
       const { data: robots } = await mockDB.from('robots').select();
       return { count: (Array.isArray(robots) ? robots.length : 0), storageType: 'Browser Local Storage' };
     } else {
-      const { data } = await mockDB.from('robots').select();
-      return { count: (Array.isArray(data) ? data.length : 0), storageType: 'Supabase Cloud DB' };
+      // Use core service for real stats
+      try {
+        const robots = await coreSupabase.getRobots();
+        return { count: robots.length, storageType: 'Supabase Cloud DB' };
+      } catch (e) {
+        // Fallback to mock on error
+        const { data } = await mockDB.from('robots').select();
+        return { count: (Array.isArray(data) ? data.length : 0), storageType: 'Browser Local Storage (Fallback)' };
+      }
     }
   },
 
@@ -178,8 +206,13 @@ export const checkSupabaseHealth = async () => {
       return { status: 'mock_mode', message: 'Running in localStorage mock mode' };
     }
     
-    // TODO: Implement real Supabase health check
-    return { status: 'not_implemented', message: 'Real Supabase health check not implemented' };
+    // Use core service health check
+    const health = await coreSupabase.healthCheck();
+    return {
+      status: health.status,
+      message: health.mockMode ? 'Running in mock mode' : 'Connected to Supabase',
+      latency: health.latency
+    };
   } catch (error: unknown) {
     handleError(error instanceof Error ? error : new Error(String(error)), 'supabase.health_check');
     return { status: 'error', message: 'Health check failed' };
@@ -189,9 +222,15 @@ export const checkSupabaseHealth = async () => {
 // Connection management for real mode
 export const getConnectionState = () => {
   if (isMockMode) {
-    return { connected: false, mode: 'mock', provider: 'localStorage' };
+    return { connected: true, mode: 'mock', provider: 'localStorage' };
   }
   
-  // TODO: Implement real connection management
-  return { connected: false, mode: 'real', provider: 'supabase' };
+  // Check if real client is available
+  const realClient = getRealClient();
+  return {
+    connected: !!realClient,
+    mode: 'real',
+    provider: 'supabase',
+    hasClient: !!realClient
+  };
 };
