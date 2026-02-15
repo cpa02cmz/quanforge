@@ -454,15 +454,16 @@ async getRobots() {
      try {
        const settings = settingsManager.getDBSettings();
        
-       if (settings.mode === 'mock') {
-         const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
-         const robots = stored;
-         // Create index for performance
-         robotIndexManager.getIndex(robots);
-         const duration = performance.now() - startTime;
-         performanceMonitor.record('getRobots', duration);
-         return { data: robots, error: null };
-       }
+        if (settings.mode === 'mock') {
+          const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
+          // Filter out soft-deleted robots (consistent with Supabase mode behavior)
+          const robots = stored.filter((r: Robot) => !r.deleted_at);
+          // Create index for performance
+          robotIndexManager.getIndex(robots);
+          const duration = performance.now() - startTime;
+          performanceMonitor.record('getRobots', duration);
+          return { data: robots, error: null };
+        }
         
         const cacheKey = 'robots_list';
  const cached = await consolidatedCache.get<Robot[]>(cacheKey);
@@ -587,7 +588,8 @@ if (index !== -1) {
         
         if (settings.mode === 'mock') {
           const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
-          const allRobots = stored;
+          // Filter out soft-deleted robots (consistent with Supabase mode)
+          const allRobots = stored.filter((r: Robot) => !r.deleted_at);
           const index = robotIndexManager.getIndex(allRobots);
           
           let results = index.byDate;
@@ -901,17 +903,19 @@ if (index !== -1) {
       if (settings.mode === 'mock') {
           try {
               const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
-              let robots = stored;
-              const initialLength = robots.length;
-              robots = robots.filter((r: any) => r.id !== id);
+              const robotIndex = stored.findIndex((r: any) => r.id === id);
               
-              if (robots.length === initialLength) {
+              if (robotIndex === -1) {
                   const duration = performance.now() - startTime;
                   performanceMonitor.record('deleteRobot', duration);
                   return { error: "Robot not found" };
               }
 
-              trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
+              // SOFT DELETE: Set deleted_at timestamp and is_active flag
+              (stored[robotIndex] as Robot).deleted_at = new Date().toISOString();
+              (stored[robotIndex] as Robot).is_active = false;
+
+              trySaveToStorage(ROBOTS_KEY, JSON.stringify(stored));
               const duration = performance.now() - startTime;
               performanceMonitor.record('deleteRobot', duration);
               robotIndexManager.clear(); // Clear index since data changed
@@ -1244,15 +1248,16 @@ export const dbUtils = {
             
             if (settings.mode === 'mock') {
                 const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
-                const robots = stored;
+                // Filter out soft-deleted robots (consistent with Supabase mode)
+                const robots = stored.filter((r: Robot) => !r.deleted_at);
                 const index = robotIndexManager.getIndex(robots);
-                
+
                 if (!searchTerm && (!filterType || filterType === 'All')) {
                     const duration = performance.now() - startTime;
                     performanceMonitor.record('searchRobots', duration);
                     return index.byDate;
                 }
-                
+
                 let results = index.byDate; // Start with all if no search term
                 
                 // Apply search filter if provided
