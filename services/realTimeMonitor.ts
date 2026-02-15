@@ -1,5 +1,6 @@
 import { TIMEOUTS, WEB_VITALS_THRESHOLDS, PERFORMANCE_BUDGETS, TIME_CONSTANTS, MONITORING } from './constants';
 import { createScopedLogger } from '../utils/logger';
+import { ARRAY_LIMITS } from '../constants/modularConfig';
 
 const logger = createScopedLogger('RealTimeMonitor');
 
@@ -307,10 +308,10 @@ export class RealTimeMonitor {
 
   private recordMetric(metric: PerformanceMetrics): void {
     this.metrics.push(metric);
-    
+
     // Keep only last 100 metrics to prevent memory issues
-    if (this.metrics.length > 100) {
-      this.metrics = this.metrics.slice(-100);
+    if (this.metrics.length > ARRAY_LIMITS.METRICS) {
+      this.metrics = this.metrics.slice(-ARRAY_LIMITS.METRICS);
     }
 
     // Send to reporting endpoint if available
@@ -321,10 +322,10 @@ export class RealTimeMonitor {
 
   private recordError(error: ErrorMetrics): void {
     this.errors.push(error);
-    
+
     // Keep only last 50 errors
-    if (this.errors.length > 50) {
-      this.errors = this.errors.slice(-50);
+    if (this.errors.length > ARRAY_LIMITS.ERRORS) {
+      this.errors = this.errors.slice(-ARRAY_LIMITS.ERRORS);
     }
 
     // Send to reporting endpoint if available

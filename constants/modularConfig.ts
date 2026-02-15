@@ -769,14 +769,161 @@ export const THRESHOLDS = {
   RECENT_USAGE_MS: 30000,
   COLD_START_MS: 500,
   CONNECTION_AGE_MS: 60000,
-  
+
   // String limits
   STRING_MAX_LENGTH: 1000,
   STRING_CODE_MAX: 50000,
   STRING_URL_MAX: 2048,
-  
+
   // Compression
   COMPRESSION_THRESHOLD: 1024,
+} as const;
+
+// ========== STRING TRUNCATION LENGTHS ==========
+export const STRING_TRUNCATION = {
+  // Log/debug truncation lengths
+  LOG: {
+    SHORT: 50,      // For key/id logging
+    MEDIUM: 100,    // For message summaries
+    LONG: 200,      // For detailed logs
+    DEBUG: 500,     // For debug output
+  },
+
+  // Display truncation lengths
+  DISPLAY: {
+    LABEL: 50,      // UI labels
+    DESCRIPTION: 100, // Description text
+    PREVIEW: 200,   // Content previews
+    CODE_SNIPPET: 500, // Code samples
+    FULL_TEXT: 1000, // Full text content
+  },
+
+  // Hash generation lengths
+  HASH: {
+    SHORT: 500,     // Short hash input
+    STANDARD: 1000, // Standard hash input
+  },
+
+  // Database/Storage limits
+  STORAGE: {
+    QUERY_PREVIEW: 100, // SQL query preview
+    ID_TRUNCATE: 12,    // ID string truncation
+    ERROR_MESSAGE: 1000, // Error message max
+  },
+} as const;
+
+// ========== STATUS TYPE CONSTANTS ==========
+export const STATUS_TYPES = {
+  // Health status
+  HEALTH: {
+    HEALTHY: 'healthy',
+    WARNING: 'warning',
+    CRITICAL: 'critical',
+  } as const,
+
+  // Operation status
+  OPERATION: {
+    IDLE: 'idle',
+    BUSY: 'busy',
+    ERROR: 'error',
+    SUCCESS: 'success',
+    PENDING: 'pending',
+  } as const,
+
+  // Issue/Alert types
+  ISSUE: {
+    CRITICAL: 'critical',
+    WARNING: 'warning',
+    INFO: 'info',
+    ERROR: 'error',
+  } as const,
+
+  // Alert/Monitor types
+  ALERT: {
+    PERFORMANCE: 'performance',
+    AVAILABILITY: 'availability',
+    ERROR: 'error',
+    RESOURCE: 'resource',
+  } as const,
+
+  // Connection status
+  CONNECTION: {
+    CONNECTED: 'connected',
+    DISCONNECTED: 'disconnected',
+    CONNECTING: 'connecting',
+    RECONNECTING: 'reconnecting',
+  } as const,
+} as const;
+
+// ========== ARRAY SIZE LIMITS ==========
+export const ARRAY_LIMITS = {
+  // Small collections
+  SMALL: 50,
+
+  // Standard collections
+  STANDARD: 100,
+
+  // Large collections
+  LARGE: 1000,
+
+  // Specific use cases
+  METRICS: 100,
+  ERRORS: 50,
+  HISTORY: 100,
+  VIOLATIONS: 100,
+  RECENT_REQUESTS: 100,
+  ACCESS_TIMES: 100,
+  OPTIMIZATION_HISTORY: 1000,
+  TOP_OPERATIONS: 10,
+} as const;
+
+// ========== SCORE CALCULATION CONSTANTS ==========
+export const SCORE_CALCULATION = {
+  // Score ranges
+  MIN: 0,
+  MAX: 100,
+
+  // Percentage multiplier
+  PERCENTAGE_MULTIPLIER: 100,
+
+  // Risk/Profit scoring
+  RISK: {
+    MIN: 1,
+    MAX: 10,
+  },
+
+  // Performance scoring weights
+  WEIGHTS: {
+    PERFORMANCE: 40,  // 40%
+    RELIABILITY: 25,  // 25%
+    ENGAGEMENT: 20,   // 20%
+    OTHER: 15,        // 15%
+  },
+
+  // Score thresholds
+  THRESHOLDS: {
+    EXCELLENT: 80,
+    GOOD: 60,
+    NEEDS_IMPROVEMENT: 50,
+  },
+} as const;
+
+// ========== DISPLAY FORMATTING ==========
+export const DISPLAY_FORMAT = {
+  // Decimal places
+  DECIMALS: {
+    DEFAULT: 2,
+    CURRENCY: 2,
+    PERCENTAGE: 1,
+    PRECISION: 4,
+  },
+
+  // Number formatting
+  LARGE_NUMBER: {
+    THOUSAND: 1000,
+    MILLION: 1000000,
+    BILLION: 1000000000,
+  },
 } as const;
 
 // Export all configurations as a single object
@@ -804,6 +951,11 @@ export const APP_CONFIG = {
   MAGIC: MAGIC_NUMBERS,
   SCORING: SCORING_WEIGHTS,
   THRESHOLD: THRESHOLDS,
+  STRING_TRUNCATION,
+  STATUS_TYPES,
+  ARRAY_LIMITS,
+  SCORE_CALCULATION,
+  DISPLAY_FORMAT,
 } as const;
 
 // Default export

@@ -326,6 +326,15 @@ export {
   SIMULATION_PARAMS,
 } from './simulation';
 
+// Export Flexy's new modular constants
+export {
+  STRING_TRUNCATION,
+  STATUS_TYPES,
+  ARRAY_LIMITS,
+  SCORE_CALCULATION as MODULAR_SCORE_CALCULATION,
+  DISPLAY_FORMAT,
+} from './modularConfig';
+
 // Export UI constants (Flexy's modular system)
 export {
   UI_CONSTANTS,

@@ -2,6 +2,7 @@
 import { createScopedLogger } from "../../utils/logger";
 import { StrategyParams, StrategyAnalysis, AISettings } from "../../types";
 import { AI_CONFIG } from "../../constants/config";
+import { STRING_TRUNCATION } from "../../constants/modularConfig";
 
 const logger = createScopedLogger('ai-cache-manager');
 
@@ -54,12 +55,12 @@ export class AICacheManager {
       this.stats.totalHits++;
       this.updateHitRate();
       
-      logger.debug('Cache hit for generation key:', key.substring(0, 50));
+      logger.debug('Cache hit for generation key:', key.substring(0, STRING_TRUNCATION.LOG.SHORT));
       return entry.data;
     }
 
     // Also check short code hash for similar code detection
-    const shortCodeHash = this.createHash(currentCode?.substring(0, 1000) || '');
+    const shortCodeHash = this.createHash(currentCode?.substring(0, STRING_TRUNCATION.HASH.STANDARD) || '');
     const shortKey = `short-${shortCodeHash}-${settings?.provider || 'google'}`;
     const shortEntry = this.generationCache.get(shortKey);
 
@@ -87,7 +88,7 @@ export class AICacheManager {
     ttl?: number
   ): void {
     const key = this.createGenerationCacheKey(prompt, currentCode, strategyParams, settings);
-    const shortCodeHash = this.createHash(currentCode?.substring(0, 1000) || '');
+    const shortCodeHash = this.createHash(currentCode?.substring(0, STRING_TRUNCATION.HASH.STANDARD) || '');
     const shortKey = `short-${shortCodeHash}-${settings?.provider || 'google'}`;
     
     const size = this.estimateSize(data);
@@ -109,7 +110,7 @@ export class AICacheManager {
     this.generationCache.set(shortKey, entry); // Also cache by short code
     this.updateMemoryStats();
     
-    logger.debug('Cached generation with key:', key.substring(0, 50));
+    logger.debug('Cached generation with key:', key.substring(0, STRING_TRUNCATION.LOG.SHORT));
   }
 
   getCachedAnalysis(
@@ -125,12 +126,12 @@ export class AICacheManager {
       this.stats.totalHits++;
       this.updateHitRate();
       
-      logger.debug('Cache hit for analysis key:', key.substring(0, 50));
+      logger.debug('Cache hit for analysis key:', key.substring(0, STRING_TRUNCATION.LOG.SHORT));
       return entry.data;
     }
 
     // Also check short code hash for similar code detection
-    const shortCodeHash = this.createHash(code.substring(0, 1000));
+    const shortCodeHash = this.createHash(code.substring(0, STRING_TRUNCATION.HASH.STANDARD));
     const shortKey = `short-${shortCodeHash}-${settings?.provider || 'google'}`;
     const shortEntry = this.analysisCache.get(shortKey);
 
@@ -156,7 +157,7 @@ export class AICacheManager {
     ttl?: number
   ): void {
     const key = this.createAnalysisCacheKey(code, settings);
-    const shortCodeHash = this.createHash(code.substring(0, 1000));
+    const shortCodeHash = this.createHash(code.substring(0, STRING_TRUNCATION.HASH.STANDARD));
     const shortKey = `short-${shortCodeHash}-${settings?.provider || 'google'}`;
     
     const size = this.estimateSize(analysis);
@@ -178,7 +179,7 @@ export class AICacheManager {
     this.analysisCache.set(shortKey, entry); // Also cache by short code
     this.updateMemoryStats();
     
-    logger.debug('Cached analysis with key:', key.substring(0, 50));
+    logger.debug('Cached analysis with key:', key.substring(0, STRING_TRUNCATION.LOG.SHORT));
   }
 
   private createGenerationCacheKey(
@@ -188,8 +189,8 @@ export class AICacheManager {
     settings?: AISettings
   ): string {
     const components = [
-      prompt.substring(0, 200),
-      currentCode ? currentCode.substring(0, 100) : 'none',
+      prompt.substring(0, STRING_TRUNCATION.LOG.LONG),
+      currentCode ? currentCode.substring(0, STRING_TRUNCATION.DISPLAY.DESCRIPTION) : 'none',
       JSON.stringify(strategyParams || {}),
       settings?.provider || 'google',
       settings?.modelName || 'default'
@@ -199,7 +200,7 @@ export class AICacheManager {
 
   private createAnalysisCacheKey(code: string, settings?: AISettings): string {
     const components = [
-      this.createHash(code.substring(0, 500)), // First 500 chars
+      this.createHash(code.substring(0, STRING_TRUNCATION.HASH.SHORT)), // First 500 chars
       settings?.provider || 'google',
       settings?.modelName || 'default'
     ];

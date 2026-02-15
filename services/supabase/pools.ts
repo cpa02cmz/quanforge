@@ -9,6 +9,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { DATABASE_CONFIG } from '../../constants/config';
 import { STAGGER } from '../constants';
 import { createScopedLogger } from '../../utils/logger';
+import { ARRAY_LIMITS } from '../../constants/modularConfig';
 
 const logger = createScopedLogger('ConnectionPool');
 
@@ -351,8 +352,8 @@ class SupabaseConnectionPool {
    */
   private recordAcquireTime(time: number): void {
     this.acquireTimes.push(time);
-    if (this.acquireTimes.length > 100) {
-      this.acquireTimes = this.acquireTimes.slice(-100);
+    if (this.acquireTimes.length > ARRAY_LIMITS.STANDARD) {
+      this.acquireTimes = this.acquireTimes.slice(-ARRAY_LIMITS.STANDARD);
     }
     this.updateStats();
   }
