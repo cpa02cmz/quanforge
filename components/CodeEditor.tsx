@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback, useLayoutEffect } from 'react';
 import { useTranslation } from '../services/i18n';
 import { UI_TIMING } from '../constants';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 interface CodeEditorProps {
   code: string;
@@ -10,6 +11,8 @@ interface CodeEditorProps {
   onChange?: (newCode: string) => void;
   onRefine?: () => void;
   onExplain?: () => void; // New Prop
+  /** Whether to enable focus mode (Zen Mode) by default */
+  defaultFocusMode?: boolean;
 }
 
 interface Particle {
@@ -20,16 +23,20 @@ interface Particle {
   color: string;
 }
 
-export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnly = false, filename = "ExpertAdvisor", onChange, onRefine, onExplain }) => {
+export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnly = false, filename = "ExpertAdvisor", onChange, onRefine, onExplain, defaultFocusMode = false }) => {
   const { t } = useTranslation();
+  const prefersReducedMotion = useReducedMotion();
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [wordWrap, setWordWrap] = useState(false);
   const [fontSize, setFontSize] = useState(14); // Default font size in px
   const [particles, setParticles] = useState<Particle[]>([]);
+  const [isFocusMode, setIsFocusMode] = useState(defaultFocusMode);
+  const [showFocusModeHint, setShowFocusModeHint] = useState(false);
   const particleIdRef = useRef(0);
   const particleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const focusModeHintTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cleanup timeouts on unmount to prevent memory leaks
   useEffect(() => {
@@ -40,7 +47,55 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
       if (copiedTimeoutRef.current) {
         clearTimeout(copiedTimeoutRef.current);
       }
+      if (focusModeHintTimeoutRef.current) {
+        clearTimeout(focusModeHintTimeoutRef.current);
+      }
     };
+  }, []);
+
+  // Load focus mode preference from localStorage
+  useEffect(() => {
+    const savedFocusMode = localStorage.getItem('codeEditor_focusMode');
+    if (savedFocusMode !== null) {
+      setIsFocusMode(savedFocusMode === 'true');
+    }
+  }, []);
+
+  // Save focus mode preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('codeEditor_focusMode', isFocusMode.toString());
+  }, [isFocusMode]);
+
+  // Toggle focus mode with keyboard shortcut (Ctrl/Cmd + Shift + F)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Toggle focus mode with Ctrl/Cmd + Shift + F
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F') {
+        e.preventDefault();
+        toggleFocusMode();
+      }
+      // Exit focus mode with Escape
+      if (e.key === 'Escape' && isFocusMode) {
+        setIsFocusMode(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFocusMode]);
+
+  const toggleFocusMode = useCallback(() => {
+    setIsFocusMode(prev => {
+      const newValue = !prev;
+      // Show hint when entering focus mode
+      if (newValue) {
+        setShowFocusModeHint(true);
+        focusModeHintTimeoutRef.current = setTimeout(() => {
+          setShowFocusModeHint(false);
+        }, 3000);
+      }
+      return newValue;
+    });
   }, []);
 
   const contentRef = useRef<HTMLDivElement>(null);
@@ -224,10 +279,45 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
       }, [code, isEditing, fontSize]);
 
   return (
-    <div className="flex flex-col h-full bg-[#0d1117] text-gray-300 font-mono text-sm relative">
-      <div className="flex items-center justify-between px-4 py-2 bg-dark-surface border-b border-dark-border shrink-0 z-10">
+    <div className={`flex flex-col h-full bg-[#0d1117] text-gray-300 font-mono text-sm relative transition-all duration-500 ${isFocusMode ? 'ring-2 ring-brand-500/30' : ''}`}>
+      {/* Focus Mode Hint Toast */}
+      {showFocusModeHint && (
+        <div 
+          className={`absolute top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-brand-600/90 text-white text-sm rounded-lg shadow-lg backdrop-blur-sm flex items-center gap-2 ${prefersReducedMotion ? '' : 'animate-fade-in-up'}`}
+          role="status"
+          aria-live="polite"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <span>Focus Mode activated. Press <kbd className="px-1 py-0.5 bg-white/20 rounded text-xs">Esc</kbd> to exit</span>
+        </div>
+      )}
+      <div className={`flex items-center justify-between px-4 py-2 bg-dark-surface border-b border-dark-border shrink-0 z-10 transition-all duration-500 ${isFocusMode ? 'opacity-30 hover:opacity-100' : ''}`}>
         <div className="flex items-center space-x-3">
             <span className="text-xs text-gray-500 font-sans uppercase tracking-wider">{t('editor_source')}</span>
+            
+            {/* Focus Mode Toggle Button */}
+            <button
+              onClick={toggleFocusMode}
+              className={`flex items-center space-x-1 px-2 py-0.5 rounded text-xs transition-all duration-200 border ${
+                isFocusMode
+                  ? 'bg-brand-500/20 text-brand-400 border-brand-500/50 shadow-lg shadow-brand-500/20'
+                  : 'bg-dark-bg text-gray-400 border-dark-border hover:text-white hover:border-gray-500'
+              }`}
+              aria-label={isFocusMode ? 'Exit Focus Mode' : 'Enter Focus Mode'}
+              title={isFocusMode ? 'Exit Focus Mode (Esc)' : 'Enter Focus Mode (Ctrl+Shift+F)'}
+              aria-pressed={isFocusMode}
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                {isFocusMode ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                )}
+              </svg>
+              <span>{isFocusMode ? 'Zen' : 'Focus'}</span>
+            </button>
             {!readOnly && onChange && (
                 <button
                     onClick={() => setIsEditing(!isEditing)}
@@ -379,7 +469,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
       </div>
       
       {/* Editor Body */}
-      <div className="flex flex-1 relative overflow-hidden">
+      <div className={`flex flex-1 relative overflow-hidden transition-all duration-500 ${isFocusMode ? 'bg-[#0a0c10]' : ''}`}>
         
          {/* Line Numbers Gutter */}
          <div 
@@ -445,17 +535,47 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
       </div>
       
       {/* Status bar */}
-      <div className="flex items-center justify-between px-4 py-1 bg-dark-surface border-t border-dark-border text-xs text-gray-500 shrink-0">
+      <div className={`flex items-center justify-between px-4 py-1 bg-dark-surface border-t border-dark-border text-xs text-gray-500 shrink-0 transition-all duration-500 ${isFocusMode ? 'opacity-30 hover:opacity-100' : ''}`}>
         <div className="flex items-center space-x-4">
-          <span>{isEditing ? 'Editing' : 'Viewing'}</span>
+          <span className={`flex items-center gap-1 ${isFocusMode ? 'text-brand-400' : ''}`}>
+            {isFocusMode && (
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            )}
+            {isEditing ? 'Editing' : isFocusMode ? 'Focus Mode' : 'Viewing'}
+          </span>
           <span>{lineNumbers.length} lines</span>
           <span>{code.length} characters</span>
         </div>
         <div className="flex items-center space-x-4">
           <span>Font: {fontSize}px</span>
           <span>Wrap: {wordWrap ? 'On' : 'Off'}</span>
+          {isFocusMode && (
+            <span className="text-brand-400 hidden sm:inline">
+              Press <kbd className="px-1 py-0.5 bg-dark-bg rounded">Esc</kbd> to exit
+            </span>
+          )}
         </div>
       </div>
+      
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translate(-50%, -10px);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+          }
+        }
+        
+        .animate-fade-in-up {
+          animation: fade-in-up 0.3s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 });
