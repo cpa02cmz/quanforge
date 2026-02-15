@@ -2,6 +2,7 @@ import { createScopedLogger } from '../utils/logger';
 
 const logger = createScopedLogger('PerformanceMonitor');
 import { PERFORMANCE_MONITORING } from '../constants/timing';
+import { ANALYTICS_CONFIG } from '../constants/config';
 
 interface PerformanceMetric {
   name: string;
@@ -65,7 +66,7 @@ class PerformanceMonitor {
   private edgeMetrics: EdgeMetric[] = [];
   private bundleMetrics: BundleMetric[] = [];
   private isMonitoring = false;
-  private sampleRate = 0.1; // 10% sampling rate
+  private sampleRate = ANALYTICS_CONFIG.DEFAULT_SAMPLE_RATE; // 10% sampling rate
   // Add missing edge-specific monitoring
   private edgePerformanceMetrics: EdgePerformanceMetrics = {
     coldStartMetrics: {
