@@ -50,8 +50,8 @@ describe('Circuit Breaker', () => {
         .mockResolvedValue('success');
 
       // 2 failures
-      try { await breaker.execute(failingOperation); } catch {}
-      try { await breaker.execute(failingOperation); } catch {}
+      try { await breaker.execute(failingOperation); } catch { /* expected */ }
+      try { await breaker.execute(failingOperation); } catch { /* expected */ }
       
       expect(breaker.getStats().failureCount).toBe(2);
       
@@ -66,8 +66,8 @@ describe('Circuit Breaker', () => {
     it('should track consecutive failures', async () => {
       const operation = vi.fn().mockRejectedValue(new Error('failure'));
       
-      try { await breaker.execute(operation); } catch {}
-      try { await breaker.execute(operation); } catch {}
+      try { await breaker.execute(operation); } catch { /* expected */ }
+      try { await breaker.execute(operation); } catch { /* expected */ }
       
       const stats = breaker.getStats();
       expect(stats.failureCount).toBe(2);
@@ -77,9 +77,9 @@ describe('Circuit Breaker', () => {
       const operation = vi.fn().mockRejectedValue(new Error('failure'));
       
       // 3 failures to reach threshold
-      try { await breaker.execute(operation); } catch {}
-      try { await breaker.execute(operation); } catch {}
-      try { await breaker.execute(operation); } catch {}
+      try { await breaker.execute(operation); } catch { /* expected */ }
+      try { await breaker.execute(operation); } catch { /* expected */ }
+      try { await breaker.execute(operation); } catch { /* expected */ }
       
       expect(breaker.getState()).toBe(CircuitState.OPEN);
     });
@@ -88,9 +88,9 @@ describe('Circuit Breaker', () => {
       const operation = vi.fn().mockRejectedValue(new Error('failure'));
       
       // Open the circuit
-      try { await breaker.execute(operation); } catch {}
-      try { await breaker.execute(operation); } catch {}
-      try { await breaker.execute(operation); } catch {}
+      try { await breaker.execute(operation); } catch { /* expected */ }
+      try { await breaker.execute(operation); } catch { /* expected */ }
+      try { await breaker.execute(operation); } catch { /* expected */ }
       
       expect(breaker.getState()).toBe(CircuitState.OPEN);
       
@@ -108,9 +108,9 @@ describe('Circuit Breaker', () => {
       const operation = vi.fn().mockRejectedValue(new Error('failure'));
       
       // Open the circuit
-      try { await breaker.execute(operation); } catch {}
-      try { await breaker.execute(operation); } catch {}
-      try { await breaker.execute(operation); } catch {}
+      try { await breaker.execute(operation); } catch { /* expected */ }
+      try { await breaker.execute(operation); } catch { /* expected */ }
+      try { await breaker.execute(operation); } catch { /* expected */ }
       
       expect(breaker.getState()).toBe(CircuitState.OPEN);
       
@@ -127,9 +127,9 @@ describe('Circuit Breaker', () => {
       
       // Open it
       const op = vi.fn().mockRejectedValue(new Error('fail'));
-      try { await newBreaker.execute(op); } catch {}
-      try { await newBreaker.execute(op); } catch {}
-      try { await newBreaker.execute(op); } catch {}
+      try { await newBreaker.execute(op); } catch { /* expected */ }
+      try { await newBreaker.execute(op); } catch { /* expected */ }
+      try { await newBreaker.execute(op); } catch { /* expected */ }
       expect(newBreaker.getState()).toBe(CircuitState.OPEN);
       
       // Wait for short timeout
@@ -207,8 +207,8 @@ describe('Circuit Breaker', () => {
       const typeError = vi.fn().mockRejectedValue(new TypeError('type error'));
       const rangeError = vi.fn().mockRejectedValue(new RangeError('range error'));
       
-      try { await breaker.execute(typeError); } catch {}
-      try { await breaker.execute(rangeError); } catch {}
+      try { await breaker.execute(typeError); } catch { /* expected */ }
+      try { await breaker.execute(rangeError); } catch { /* expected */ }
       
       const stats = breaker.getStats();
       expect(stats.failureCount).toBe(2);
@@ -217,7 +217,7 @@ describe('Circuit Breaker', () => {
     it('should handle non-error rejections', async () => {
       const stringRejection = vi.fn().mockRejectedValue('string error');
       
-      try { await breaker.execute(stringRejection); } catch {}
+      try { await breaker.execute(stringRejection); } catch { /* expected */ }
       
       const stats = breaker.getStats();
       expect(stats.failureCount).toBe(1);
