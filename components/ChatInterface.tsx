@@ -8,6 +8,7 @@ import { createScopedLogger } from '../utils/logger';
 import { SendButton } from './SendButton';
 import { TypingIndicator } from './TypingIndicator';
 import { TEXT_INPUT_LIMITS, VIRTUAL_SCROLL_CONFIG, CHARACTER_COUNT_CONFIG } from '../constants/uiConfig';
+import { useChatFocusManagement } from '../hooks/useChatFocusManagement';
 
   const logger = createScopedLogger('ChatInterface');
 
@@ -88,6 +89,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   const abortControllerRef = useRef<AbortController | null>(null);
   const memoryMonitorRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cleanupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Focus management for accessibility
+  const { inputRef, stopButtonRef, focusInput } = useChatFocusManagement({
+    isLoading,
+    messagesLength: messages.length,
+  });
   
 
   // Enhanced memory management with proper cleanup and memory leak prevention
@@ -192,6 +199,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     const sanitizedInput = sanitizeInput(input);
     onSendMessage(sanitizedInput);
     setInput('');
+    // Restore focus to input after sending for keyboard accessibility
+    focusInput();
   };
 
   const handleSuggestionClick = (prompt: string) => {
@@ -398,9 +407,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
             />
             {onStop && (
                 <button
+                    ref={stopButtonRef}
                     onClick={onStop}
                     className="p-2 rounded-full bg-dark-bg border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
                     title={t('chat_stop')}
+                    aria-label={t('chat_stop') || 'Stop generation'}
                 >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" /></svg>
                 </button>
@@ -416,6 +427,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
           <label htmlFor="chat-input" className="sr-only">{t('chat_placeholder')}</label>
           <div className="relative">
             <input
+              ref={inputRef}
               id="chat-input"
               type="text"
               value={input}
