@@ -185,7 +185,7 @@ export const dbUtils = {
       try {
         const robots = await coreSupabase.getRobots();
         return { count: robots.length, storageType: 'Supabase Cloud DB' };
-      } catch (e) {
+      } catch (_e) {
         // Fallback to mock on error
         const { data } = await mockDB.from('robots').select();
         return { count: (Array.isArray(data) ? data.length : 0), storageType: 'Browser Local Storage (Fallback)' };
