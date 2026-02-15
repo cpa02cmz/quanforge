@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+import { RISK_SCORES, CONFIDENCE_SCORES } from '../../constants/scoring';
 
 export class ThreatDetector {
   private wafPatterns: Array<{
@@ -76,16 +77,16 @@ export class ThreatDetector {
           // Calculate risk score based on severity
           switch (threatPattern.severity) {
             case 'critical':
-              riskScore += 50;
+              riskScore += RISK_SCORES.HIGH;
               break;
             case 'high':
-              riskScore += 30;
+              riskScore += RISK_SCORES.MEDIUM;
               break;
             case 'medium':
-              riskScore += 20;
+              riskScore += RISK_SCORES.LOW;
               break;
             case 'low':
-              riskScore += 10;
+              riskScore += RISK_SCORES.MINIMAL;
               break;
           }
         }
@@ -94,16 +95,16 @@ export class ThreatDetector {
       // Additional checks
       if (this.detectSuspiciousUserAgent(userAgent)) {
         threats.push('Suspicious User Agent');
-        riskScore += 25;
+        riskScore += RISK_SCORES.LOW;
       }
 
     } catch (_error) {
       threats.push('Pattern detection error');
-      riskScore += 10;
+      riskScore += RISK_SCORES.MINIMAL;
     }
 
     return {
-      isMalicious: riskScore >= 30,
+      isMalicious: riskScore >= RISK_SCORES.LOW,
       threats,
       riskScore
     };

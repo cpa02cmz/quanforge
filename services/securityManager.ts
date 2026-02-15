@@ -11,6 +11,7 @@ import {
   TRADING_CONSTANTS,
   VALIDATION_CONFIG
 } from '../constants/config';
+import { RISK_SCORES } from '../constants/scoring';
 
 interface SecurityConfig {
   maxPayloadSize: number;
@@ -111,13 +112,13 @@ class SecurityManager {
       const payloadSize = new Blob([JSON.stringify(data)]).size;
       if (payloadSize > this.config.maxPayloadSize) {
         errors.push(`Payload too large: ${payloadSize} bytes (max: ${this.config.maxPayloadSize})`);
-        riskScore += 50;
+        riskScore += RISK_SCORES.HIGH;
       }
 
       // Basic structure validation
       if (!data || typeof data !== 'object') {
         errors.push('Invalid data structure');
-        return { isValid: false, errors, riskScore: 100 };
+        return { isValid: false, errors, riskScore: RISK_SCORES.CRITICAL };
       }
 
       // Type-specific validation
@@ -159,7 +160,7 @@ class SecurityManager {
       const xssResult = this.preventXSS(sanitizedData);
       if (xssResult.hasXSS) {
         errors.push('Potential XSS detected and removed');
-        riskScore += 30;
+        riskScore += RISK_SCORES.MEDIUM;
         sanitizedData = xssResult.sanitizedData;
       }
 
@@ -167,17 +168,17 @@ class SecurityManager {
       const sqlResult = this.preventSQLInjection(sanitizedData);
       if (sqlResult.hasSQLInjection) {
         errors.push('Potential SQL injection detected and removed');
-        riskScore += 40;
+        riskScore += RISK_SCORES.MEDIUM + RISK_SCORES.LOW;
         sanitizedData = sqlResult.sanitizedData;
       }
 
     } catch (error: unknown) {
       errors.push(`Validation error: ${error}`);
-      riskScore += 20;
+      riskScore += RISK_SCORES.LOW;
     }
 
     return {
-      isValid: errors.length === 0 && riskScore < 70,
+      isValid: errors.length === 0 && riskScore < RISK_SCORES.HIGH + RISK_SCORES.MEDIUM,
       errors,
       sanitizedData,
       riskScore,
@@ -190,31 +191,31 @@ private validateRobotData(data: any): ValidationResult {
      const sanitized: Partial<Robot> = {};
 
      // Prevent prototype pollution
-     if (this.isPrototypePollution(data)) {
-       errors.push('Prototype pollution detected');
-       riskScore += 100;
-       return { isValid: false, errors, riskScore: 100 };
-     }
+      if (this.isPrototypePollution(data)) {
+        errors.push('Prototype pollution detected');
+        riskScore += RISK_SCORES.CRITICAL;
+        return { isValid: false, errors, riskScore: RISK_SCORES.CRITICAL };
+      }
 
-     // Name validation
-     if (data.name) {
-       const sanitizedName = this.sanitizeString(data.name);
-       if (sanitizedName.length < 3 || sanitizedName.length > VALIDATION_CONFIG.MAX_STRING_LENGTH) {
-         errors.push(`Robot name must be between 3 and ${VALIDATION_CONFIG.MAX_STRING_LENGTH} characters`);
-         riskScore += 10;
-       }
-       sanitized.name = sanitizedName;
-     } else {
-       errors.push('Robot name is required');
-       riskScore += 15;
-     }
+      // Name validation
+      if (data.name) {
+        const sanitizedName = this.sanitizeString(data.name);
+        if (sanitizedName.length < 3 || sanitizedName.length > VALIDATION_CONFIG.MAX_STRING_LENGTH) {
+          errors.push(`Robot name must be between 3 and ${VALIDATION_CONFIG.MAX_STRING_LENGTH} characters`);
+          riskScore += RISK_SCORES.MINIMAL;
+        }
+        sanitized.name = sanitizedName;
+      } else {
+        errors.push('Robot name is required');
+        riskScore += RISK_SCORES.LOW;
+      }
 
     // Description validation
     if (data.description) {
       const sanitizedDescription = this.sanitizeString(data.description);
       if (sanitizedDescription.length > VALIDATION_CONFIG.MAX_TEXT_AREA_LENGTH) {
         errors.push(`Description too long (max ${VALIDATION_CONFIG.MAX_TEXT_AREA_LENGTH} characters)`);
-        riskScore += 5;
+        riskScore += RISK_SCORES.VERY_LOW;
       }
       sanitized.description = sanitizedDescription;
     }
@@ -224,12 +225,12 @@ private validateRobotData(data: any): ValidationResult {
       const codeValidation = this.validateMQL5Code(data.code);
       if (!codeValidation.isValid) {
         errors.push(...codeValidation.errors);
-        riskScore += 25;
+        riskScore += RISK_SCORES.LOW;
       }
       sanitized.code = codeValidation.sanitizedCode;
     } else {
       errors.push('Robot code is required');
-      riskScore += 20;
+      riskScore += RISK_SCORES.LOW;
     }
 
     // Strategy type validation
@@ -237,7 +238,7 @@ private validateRobotData(data: any): ValidationResult {
       const validTypes = ['Trend', 'Scalping', 'Grid', 'Martingale', 'Custom'];
       if (!validTypes.includes(data.strategy_type)) {
         errors.push('Invalid strategy type');
-        riskScore += 10;
+        riskScore += RISK_SCORES.MINIMAL;
       }
       sanitized.strategy_type = data.strategy_type;
     }
@@ -259,7 +260,7 @@ private validateRobotData(data: any): ValidationResult {
     if (data.timeframe) {
       if (!TRADING_CONSTANTS.TIMEFRAMES.includes(data.timeframe)) {
         errors.push('Invalid timeframe');
-        riskScore += 10;
+        riskScore += RISK_SCORES.MINIMAL;
       }
       sanitized.timeframe = data.timeframe;
     }
@@ -269,7 +270,7 @@ private validateRobotData(data: any): ValidationResult {
       const sanitizedSymbol = this.sanitizeSymbol(data.symbol);
       if (!sanitizedSymbol) {
         errors.push('Invalid symbol format');
-        riskScore += 10;
+        riskScore += RISK_SCORES.MINIMAL;
       }
       sanitized.symbol = sanitizedSymbol;
     }
@@ -278,7 +279,7 @@ private validateRobotData(data: any): ValidationResult {
     if (typeof data.riskPercent === 'number') {
       if (data.riskPercent < TRADING_CONSTANTS.MIN_RISK_PERCENT || data.riskPercent > TRADING_CONSTANTS.MAX_RISK_PERCENT) {
         errors.push(`Risk percent must be between ${TRADING_CONSTANTS.MIN_RISK_PERCENT} and ${TRADING_CONSTANTS.MAX_RISK_PERCENT}`);
-        riskScore += 10;
+        riskScore += RISK_SCORES.MINIMAL;
       }
       sanitized.riskPercent = Math.max(TRADING_CONSTANTS.MIN_RISK_PERCENT, Math.min(TRADING_CONSTANTS.MAX_RISK_PERCENT, data.riskPercent));
     }
@@ -300,7 +301,7 @@ private validateRobotData(data: any): ValidationResult {
     if (typeof data.initialDeposit === 'number') {
       if (data.initialDeposit < TRADING_CONSTANTS.MIN_INITIAL_DEPOSIT || data.initialDeposit > TRADING_CONSTANTS.MAX_INITIAL_DEPOSIT) {
         errors.push(`Initial deposit must be between $${TRADING_CONSTANTS.MIN_INITIAL_DEPOSIT} and $${TRADING_CONSTANTS.MAX_INITIAL_DEPOSIT.toLocaleString()}`);
-        riskScore += 10;
+        riskScore += RISK_SCORES.MINIMAL;
       }
       sanitized.initialDeposit = Math.max(TRADING_CONSTANTS.MIN_INITIAL_DEPOSIT, Math.min(TRADING_CONSTANTS.MAX_INITIAL_DEPOSIT, data.initialDeposit));
     }
@@ -309,7 +310,7 @@ private validateRobotData(data: any): ValidationResult {
     if (typeof data.days === 'number') {
       if (data.days < TRADING_CONSTANTS.MIN_BACKTEST_DURATION || data.days > TRADING_CONSTANTS.MAX_BACKTEST_DURATION) {
         errors.push(`Backtest duration must be between ${TRADING_CONSTANTS.MIN_BACKTEST_DURATION} and ${TRADING_CONSTANTS.MAX_BACKTEST_DURATION} days`);
-        riskScore += 10;
+        riskScore += RISK_SCORES.MINIMAL;
       }
       sanitized.days = Math.max(TRADING_CONSTANTS.MIN_BACKTEST_DURATION, Math.min(TRADING_CONSTANTS.MAX_BACKTEST_DURATION, data.days));
     }
@@ -332,7 +333,7 @@ private validateRobotData(data: any): ValidationResult {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(data.email)) {
         errors.push('Invalid email format');
-        riskScore += 15;
+        riskScore += RISK_SCORES.LOW;
       }
       sanitized.email = data.email.toLowerCase().trim();
     }
@@ -881,7 +882,7 @@ private validateRobotData(data: any): ValidationResult {
     suspiciousUAPatterns.forEach(pattern => {
       if (pattern.test(userAgent)) {
         threats.push('Suspicious User-Agent');
-        riskScore += 50;
+        riskScore += RISK_SCORES.HIGH;
       }
     });
 
@@ -889,7 +890,7 @@ private validateRobotData(data: any): ValidationResult {
     const dangerousMethods = ['TRACE', 'CONNECT', 'TRACK', 'DEBUG'];
     if (dangerousMethods.includes(method.toUpperCase())) {
       threats.push('Dangerous HTTP Method');
-      riskScore += 60;
+      riskScore += RISK_SCORES.HIGH + RISK_SCORES.LOW;
     }
 
      // Check for unusual header patterns
@@ -903,13 +904,13 @@ private validateRobotData(data: any): ValidationResult {
            // Check for header injection
            if (/\r|\n/.test(value)) {
              threats.push('Header Injection');
-             riskScore += 70;
+             riskScore += RISK_SCORES.CRITICAL;
            }
            
            // Check for suspicious headers
            if (this.isPrivateIP(value)) {
              threats.push('IP Spoofing Attempt');
-             riskScore += 65;
+             riskScore += RISK_SCORES.HIGH + RISK_SCORES.MEDIUM;
            }
          }
        });
@@ -922,13 +923,13 @@ private validateRobotData(data: any): ValidationResult {
     const contentLength = request.headers.get('content-length');
     if (contentLength && parseInt(contentLength) > this.config.maxPayloadSize) {
       threats.push('Oversized Payload');
-      riskScore += 40;
+      riskScore += RISK_SCORES.LOW;
     }
 
      return {
-       isMalicious: riskScore > 50,
+       isMalicious: riskScore > RISK_SCORES.HIGH,
        threats: Array.from(new Set(threats)), // Remove duplicates
-       riskScore: Math.min(riskScore, 100)
+       riskScore: Math.min(riskScore, RISK_SCORES.CRITICAL)
      };
    }
 
