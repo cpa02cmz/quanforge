@@ -84,15 +84,18 @@ class CoreSupabaseService {
   private client: SupabaseClient | null = null;
   private isMockMode: boolean = false;
   private retryCount: number = 0;
+  private initializationPromise: Promise<void> | null = null;
+  private initializationComplete: boolean = false;
 
   constructor() {
-    this.initializeClient();
+    this.initializationPromise = this.initializeClient();
   }
 
   /**
    * Initialize Supabase client or mock mode
+   * Returns a promise that resolves when initialization is complete
    */
-  private initializeClient() {
+  private async initializeClient(): Promise<void> {
     try {
       // Use import.meta.env for Vite environment variables
       const supabaseUrl = import.meta.env['VITE_SUPABASE_URL'];
@@ -101,11 +104,13 @@ class CoreSupabaseService {
       if (!supabaseUrl || !supabaseAnonKey) {
         logger.log('Supabase credentials not found, using mock mode');
         this.isMockMode = true;
+        this.initializationComplete = true;
         return;
       }
 
       // Dynamic import to avoid SSR issues
-      import('@supabase/supabase-js').then(({ createClient }) => {
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
         this.client = createClient(supabaseUrl, supabaseAnonKey, {
           auth: {
             persistSession: true,
@@ -117,13 +122,29 @@ class CoreSupabaseService {
             },
           },
         });
-      }).catch(error => {
+        logger.log('Supabase client initialized successfully');
+      } catch (error) {
         logger.error('Failed to initialize Supabase client:', error);
         this.isMockMode = true;
-      });
+      }
     } catch (error: unknown) {
       logger.error('Error initializing Supabase service:', error instanceof Error ? error.message : String(error));
       this.isMockMode = true;
+    } finally {
+      this.initializationComplete = true;
+    }
+  }
+
+  /**
+   * Wait for initialization to complete
+   * Use this when you need to ensure the client is ready before using it
+   */
+  async waitForInitialization(): Promise<void> {
+    if (this.initializationComplete) {
+      return;
+    }
+    if (this.initializationPromise) {
+      await this.initializationPromise;
     }
   }
 

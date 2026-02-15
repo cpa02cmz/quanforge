@@ -41,6 +41,68 @@ const getRealClient = (): SupabaseClient | null => {
 };
 
 /**
+ * Create a proxy that waits for Supabase initialization before executing operations
+ * This ensures that when credentials are configured, real Supabase is used instead of mock
+ */
+const createInitializingProxy = (table: string) => {
+  // Store operations that are called before initialization completes
+  let pendingOperations: Array<{ method: string; args: any[]; resolve: Function; reject: Function }> = [];
+  let initialized = false;
+  let realQueryBuilder: any = null;
+
+  // Start initialization wait
+  coreSupabase.waitForInitialization().then(() => {
+    initialized = true;
+    const client = coreSupabase.getClient();
+    if (client) {
+      realQueryBuilder = client.from(table);
+    }
+
+    // Execute any pending operations
+    pendingOperations.forEach(({ method, args, resolve, reject }) => {
+      if (realQueryBuilder && typeof realQueryBuilder[method] === 'function') {
+        try {
+          const result = realQueryBuilder[method](...args);
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      } else {
+        // Fall back to mock if real client not available
+        try {
+          const mockResult = mockDB.from(table)[method](...args);
+          resolve(mockResult);
+        } catch (error) {
+          reject(error);
+        }
+      }
+    });
+    pendingOperations = [];
+  });
+
+  // Create proxy that intercepts method calls
+  return new Proxy({}, {
+    get(_target, prop: string) {
+      // If already initialized, delegate directly
+      if (initialized) {
+        if (realQueryBuilder) {
+          return realQueryBuilder[prop];
+        }
+        // Fall back to mock if real client failed
+        return mockDB.from(table)[prop];
+      }
+
+      // Return a function that queues the operation
+      return (...args: any[]) => {
+        return new Promise((resolve, reject) => {
+          pendingOperations.push({ method: prop, args, resolve, reject });
+        });
+      };
+    }
+  });
+};
+
+/**
  * Main Supabase Client Interface
  * Provides consistent API regardless of backend mode
  */
@@ -100,9 +162,9 @@ const supabaseImpl: EnhancedSupabaseClient = {
       return realClient.from(table);
     }
 
-    // Fallback to mock if real client not available
-    logger.warn('Real Supabase client not available, falling back to mock');
-    return mockDB.from(table);
+    // If client not yet initialized, return a proxy that waits for initialization
+    logger.warn('Supabase client initializing, operations will be queued');
+    return createInitializingProxy(table);
   },
 
   // Convenience methods for backward compatibility
