@@ -3,6 +3,7 @@ import React, { useState, memo } from 'react';
 import { supabase } from '../services/supabase';
 import { useToast } from './useToast';
 import { useTranslation } from '../services/i18n';
+import { PasswordInput } from './PasswordInput';
 
 const AuthComponent: React.FC = memo(() => {
   const [loading, setLoading] = useState(false);
@@ -63,19 +64,16 @@ const AuthComponent: React.FC = memo(() => {
               autoComplete="email"
             />
           </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">{t('auth_password')}</label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all min-h-[48px]"
-              placeholder="••••••••"
-              autoComplete="current-password"
-            />
-          </div>
+          <PasswordInput
+            value={password}
+            onChange={setPassword}
+            label={t('auth_password')}
+            required
+            placeholder="••••••••"
+            autoComplete="current-password"
+            showStrength={!isLogin}
+            id="password"
+          />
 
           <button
             type="submit"
