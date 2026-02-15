@@ -901,17 +901,19 @@ if (index !== -1) {
       if (settings.mode === 'mock') {
           try {
               const stored = (storage.get<Robot[]>(ROBOTS_KEY) || []) as Robot[];
-              let robots = stored;
-              const initialLength = robots.length;
-              robots = robots.filter((r: any) => r.id !== id);
+              const robotIndex = stored.findIndex((r: any) => r.id === id);
               
-              if (robots.length === initialLength) {
+              if (robotIndex === -1) {
                   const duration = performance.now() - startTime;
                   performanceMonitor.record('deleteRobot', duration);
                   return { error: "Robot not found" };
               }
 
-              trySaveToStorage(ROBOTS_KEY, JSON.stringify(robots));
+              // SOFT DELETE: Set deleted_at timestamp and is_active flag
+              (stored[robotIndex] as Robot).deleted_at = new Date().toISOString();
+              (stored[robotIndex] as Robot).is_active = false;
+
+              trySaveToStorage(ROBOTS_KEY, JSON.stringify(stored));
               const duration = performance.now() - startTime;
               performanceMonitor.record('deleteRobot', duration);
               robotIndexManager.clear(); // Clear index since data changed
