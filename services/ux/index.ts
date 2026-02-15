@@ -14,7 +14,8 @@ export type {
 // Core Components
 export { UXMetricsCollector } from './uxMetricsCollector';
 export { UXScoreCalculator } from './uxScoreCalculator';
-export { UXAnalyzer, UXInsights } from './uxAnalyzer';
+export { UXAnalyzer } from './uxAnalyzer';
+export type { UXInsights } from './uxAnalyzer';
 
 // Main Manager & Hook
 export {

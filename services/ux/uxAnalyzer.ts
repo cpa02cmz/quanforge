@@ -3,7 +3,7 @@
  * Provides advanced analysis and predictive capabilities
  */
 
-import { UXMetrics, UXScore, UXConfig } from './uxTypes';
+import { UXMetrics, UXScore } from './uxTypes';
 import { UXScoreCalculator } from './uxScoreCalculator';
 import { MEMORY_LIMITS, UX_THRESHOLDS, API_RESPONSE_THRESHOLDS, SCORE_CALCULATION } from '../../constants';
 
@@ -32,8 +32,7 @@ export class UXAnalyzer {
   private maxHistorySize = MEMORY_LIMITS.MAX_HISTORY_SIZE;
 
   constructor(
-    private scoreCalculator: UXScoreCalculator,
-    private config: UXConfig
+    private scoreCalculator: UXScoreCalculator
   ) {}
 
   /**
