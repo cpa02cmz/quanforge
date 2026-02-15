@@ -3,7 +3,7 @@ import { supabase, mockDb, cleanupSupabaseListeners } from './supabase';
 import type { Robot } from '../types';
 
 describe('Supabase Service', () => {
-  const mockRobot: Robot = {
+  const _mockRobot: Robot = {
     id: 'test-robot-1',
     name: 'Test Robot',
     description: 'Test description',
@@ -200,7 +200,7 @@ describe('Supabase Service', () => {
           email: 'test@example.com',
           password: 'password123'
         });
-      } catch (e) {
+      } catch (_e) {
         // Expected to fail
       }
       
