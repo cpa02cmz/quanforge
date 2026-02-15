@@ -107,16 +107,55 @@ const supabaseImpl: EnhancedSupabaseClient = {
 
   // Convenience methods for backward compatibility
   getRobots: async () => {
-    const result = await mockDB.from('robots').select();
-    return result;
+    if (checkIsMockMode()) {
+      const result = await mockDB.from('robots').select();
+      return result;
+    }
+
+    // Use real Supabase client
+    try {
+      const robots = await coreSupabase.getRobots();
+      return { data: robots, error: null };
+    } catch (error: unknown) {
+      logger.error('Failed to get robots from Supabase:', error);
+      // Fallback to mock on error
+      const result = await mockDB.from('robots').select();
+      return result;
+    }
   },
   updateRobot: async (id: string, updates: any) => {
-    const result = await mockDB.from('robots').update({ id, ...updates });
-    return result;
+    if (checkIsMockMode()) {
+      const result = await mockDB.from('robots').update({ id, ...updates });
+      return result;
+    }
+
+    // Use real Supabase client
+    try {
+      const robot = await coreSupabase.updateRobot(id, updates);
+      return { data: robot, error: null };
+    } catch (error: unknown) {
+      logger.error('Failed to update robot in Supabase:', error);
+      // Fallback to mock on error
+      const result = await mockDB.from('robots').update({ id, ...updates });
+      return result;
+    }
   },
   saveRobot: async (robot: any) => {
-    const result = await mockDB.from('robots').insert(robot);
-    return result;
+    if (checkIsMockMode()) {
+      const result = await mockDB.from('robots').insert(robot);
+      return result;
+    }
+
+    // Use real Supabase client
+    try {
+      const created = await coreSupabase.createRobot(robot);
+      return { data: [created], error: null };
+    } catch (error: unknown) {
+      logger.error('Failed to save robot to Supabase:', error);
+      // Fallback to mock on error
+      const result = await mockDB.from('robots').insert(robot);
+      return result;
+    }
   },
   
   // Real-time subscriptions (mock implementation)
