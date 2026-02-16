@@ -109,15 +109,7 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
       <AISettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <DatabaseSettingsModal isOpen={isDbSettingsOpen} onClose={() => setIsDbSettingsOpen(false)} />
       <KeyboardShortcutsModal isOpen={isKeyboardShortcutsOpen} onClose={() => setIsKeyboardShortcutsOpen(false)} />
-      
-      {/* Skip to main content link for accessibility */}
-      <a 
-        href="#main-content" 
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-brand-600 text-white px-4 py-2 rounded z-50"
-      >
-        Skip to main content
-      </a>
-      
+
       {/* Mobile Backdrop */}
       {isMobileMenuOpen && (
         <div
@@ -221,7 +213,7 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative" id="main-content">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative" id="main-content" tabIndex={-1}>
         <header className="md:hidden flex items-center justify-between p-4 bg-dark-surface border-b border-dark-border">
           <span className="font-bold text-brand-400">QuantForge</span>
           <div className="flex gap-2">

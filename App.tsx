@@ -5,6 +5,7 @@ import { supabase } from './services/supabase';
 import { ToastProvider } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ShortcutDiscoveryProvider } from './components/ShortcutDiscoveryContext';
+import { SkipLink } from './components/SkipLink';
 import { UserSession } from './types';
 import { performanceMonitor } from './utils/performance';
 import { logger } from './utils/logger';
@@ -194,6 +195,7 @@ useEffect(() => {
     <ErrorBoundary>
       <ToastProvider>
         <ShortcutDiscoveryProvider>
+          <SkipLink targetId="main-content" label="Skip to content" />
           <BrowserRouter>
           <SEOHead 
             structuredData={[
