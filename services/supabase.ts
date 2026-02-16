@@ -6,7 +6,7 @@ import { securityManager } from './securityManager';
 import { handleError, getErrorMessage } from '../utils/errorHandler';
 import { consolidatedCache } from './consolidatedCacheManager';
 import { DEFAULT_CIRCUIT_BREAKERS } from './circuitBreaker';
-import { TIMEOUTS, CACHE_LIMITS, BATCH_SIZES, ERROR_CODES } from '../constants';
+import { TIMEOUTS, CACHE_LIMITS, BATCH_SIZES, ERROR_CODES, TIME_CONSTANTS } from '../constants';
 import { getLocalStorage, StorageQuotaError } from '../utils/storage';
 import { createScopedLogger } from '../utils/logger';
 import { STORAGE_KEYS, STORAGE_PREFIXES, RETRY_CONFIGS } from '../constants/modularConfig';
@@ -631,8 +631,8 @@ if (index !== -1) {
             error: null
           };
           
-          // Cache the result with smart TTL based on data size
-          const ttl = Math.min(TIMEOUTS.CACHE_TTL, Math.max(60000, totalCount * 100)); // 1-5 minutes based on result size
+          // Cache the result with smart TTL based on data size (min 1 minute, max 5 minutes)
+          const ttl = Math.min(TIMEOUTS.CACHE_TTL, Math.max(TIME_CONSTANTS.MINUTE, totalCount * 100));
           await consolidatedCache.set(cacheKey, response, ttl, ['robots', 'paginated']);
           
           const duration = performance.now() - startTime;
@@ -681,15 +681,15 @@ if (index !== -1) {
               error: null
             };
             
-            // Smart caching with adaptive TTL
-            const ttl = Math.min(TIMEOUTS.CACHE_TTL, Math.max(60000, (result.count || 0) * 50));
+            // Smart caching with adaptive TTL (min 1 minute, max 5 minutes)
+            const ttl = Math.min(TIMEOUTS.CACHE_TTL, Math.max(TIME_CONSTANTS.MINUTE, (result.count || 0) * 50));
             await consolidatedCache.set(cacheKey, response, ttl, ['robots', 'paginated']);
             
             const duration = performance.now() - startTime;
             performanceMonitor.record('getRobotsPaginated_supabase', duration);
             
              // Log slow queries in development
-             if (import.meta.env.DEV && duration > 1000) {
+             if (import.meta.env.DEV && duration > TIME_CONSTANTS.SECOND) {
                logger.warn(`Slow getRobotsPaginated query: ${duration.toFixed(2)}ms for ${result.count} results`);
              }
             
