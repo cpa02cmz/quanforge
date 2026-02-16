@@ -11,6 +11,7 @@ import {
   TRADING_CONSTANTS,
   VALIDATION_CONFIG
 } from '../constants/config';
+import { SIZE_CONSTANTS } from './modularConstants';
 
 interface SecurityConfig {
   maxPayloadSize: number;
@@ -621,7 +622,7 @@ private validateRobotData(data: any): ValidationResult {
       .replace(/[<>]/g, '')
       .replace(/javascript:/gi, '')
       .replace(/on\w+\s*=/gi, '')
-      .substring(0, 1000); // Prevent extremely long strings
+      .substring(0, SIZE_CONSTANTS.STRING.STANDARD); // Prevent extremely long strings
   }
 
   private sanitizeSymbol(symbol: string): string {
@@ -1384,7 +1385,7 @@ private validateRobotData(data: any): ValidationResult {
           // Fallback if DOMPurify is not available
           sanitized = sanitized.replace(/<[^>]*>/g, '');
         }
-        sanitized = sanitized.substring(0, 1000);
+        sanitized = sanitized.substring(0, SIZE_CONSTANTS.STRING.STANDARD);
         break;
 
       case 'text':
@@ -1392,20 +1393,20 @@ private validateRobotData(data: any): ValidationResult {
         sanitized = sanitized.replace(/<[^>]*>/g, '');
         sanitized = sanitized.replace(/[<>]/g, '');
         // Limit length
-        sanitized = sanitized.substring(0, 1000);
+        sanitized = sanitized.substring(0, SIZE_CONSTANTS.STRING.STANDARD);
         break;
 
       case 'code':
         // Allow code characters but remove dangerous patterns
         sanitized = sanitized.replace(/<script[^>]*>.*?<\/script>/gis, '');
         sanitized = sanitized.replace(/javascript:/gi, '');
-        sanitized = sanitized.substring(0, 50000);
+        sanitized = sanitized.substring(0, SIZE_CONSTANTS.CODE.MEDIUM);
         break;
 
       case 'symbol':
         // Only allow uppercase letters, numbers, and some special characters
         sanitized = sanitized.toUpperCase().replace(/[^A-Z0-9/]/g, '');
-        sanitized = sanitized.substring(0, 10);
+        sanitized = sanitized.substring(0, SIZE_CONSTANTS.STRING.TINY);
         break;
 
       case 'url':
@@ -1414,25 +1415,25 @@ private validateRobotData(data: any): ValidationResult {
         if (!sanitized.startsWith('http://') && !sanitized.startsWith('https://')) {
           sanitized = 'https://' + sanitized;
         }
-        sanitized = sanitized.substring(0, 2048);
+        sanitized = sanitized.substring(0, SIZE_CONSTANTS.DISPLAY.MAX);
         break;
 
       case 'token':
         // Only allow alphanumeric and some special characters
         sanitized = sanitized.replace(/[^a-zA-Z0-9\-_.]/g, '');
-        sanitized = sanitized.substring(0, 500);
+        sanitized = sanitized.substring(0, SIZE_CONSTANTS.HASH.EXTENDED);
         break;
 
       case 'search':
         // Allow search terms but limit dangerous characters
         sanitized = sanitized.replace(/[<>'"]/g, '');
-        sanitized = sanitized.substring(0, 200);
+        sanitized = sanitized.substring(0, SIZE_CONSTANTS.DISPLAY.STANDARD);
         break;
 
       case 'email':
         // Basic email sanitization
         sanitized = sanitized.toLowerCase().replace(/[^a-z0-9@._-]/g, '');
-        sanitized = sanitized.substring(0, 254);
+        sanitized = sanitized.substring(0, SIZE_CONSTANTS.DISPLAY.LONG);
         break;
     }
 

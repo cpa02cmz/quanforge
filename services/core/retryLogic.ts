@@ -4,6 +4,7 @@
  */
 
 import { RETRY_CONFIG } from './databaseConfig';
+import { HTTP_CONSTANTS } from '../modularConstants';
 
 /**
  * Retry wrapper with exponential backoff and jitter
@@ -23,7 +24,7 @@ export const withRetry = async <T>(
             const typedError = error as { code?: string; status?: number };
             
             // Don't retry on certain errors
-            if (typedError?.code === 'PGRST116' || typedError?.status === 404) {
+            if (typedError?.code === 'PGRST116' || typedError?.status === HTTP_CONSTANTS.NOT_FOUND) {
                 throw error; // Not found errors shouldn't be retried
             }
             

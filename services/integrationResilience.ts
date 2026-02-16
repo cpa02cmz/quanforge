@@ -5,6 +5,7 @@ import {
   CIRCUIT_BREAKER_CONFIGS,
   MONITORING_INTERVALS,
 } from '../constants/modularConfig';
+import { HTTP_CONSTANTS } from './modularConstants';
 
 const logger = createScopedLogger('integration-resilience');
 
@@ -367,7 +368,7 @@ export function classifyError(error: unknown): ErrorCategory {
     return ErrorCategory.TIMEOUT;
   }
 
-  if (status === 429 || message.includes('rate limit') || message.includes('too many requests')) {
+  if (status === HTTP_CONSTANTS.RATE_LIMITED || message.includes('rate limit') || message.includes('too many requests')) {
     return ErrorCategory.RATE_LIMIT;
   }
 
@@ -376,11 +377,11 @@ export function classifyError(error: unknown): ErrorCategory {
     return ErrorCategory.NETWORK;
   }
 
-  if (status && status >= 500) {
+  if (status && status >= HTTP_CONSTANTS.SERVER_ERROR) {
     return ErrorCategory.SERVER_ERROR;
   }
 
-  if (status && status >= 400 && status < 500) {
+  if (status && status >= HTTP_CONSTANTS.BAD_REQUEST && status < HTTP_CONSTANTS.SERVER_ERROR) {
     return ErrorCategory.CLIENT_ERROR;
   }
 

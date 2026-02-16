@@ -2,10 +2,11 @@
 import { MQL5_SYSTEM_PROMPT, TIMEOUTS, CACHE_TTLS } from "../constants";
 import { AI_CONFIG } from "../constants/config";
 import { VALIDATION_LIMITS } from "../constants/modularConfig";
-import { 
-  COUNT_CONSTANTS, 
-  SIZE_CONSTANTS, 
-  ADJUSTMENT_FACTORS
+import {
+  COUNT_CONSTANTS,
+  SIZE_CONSTANTS,
+  ADJUSTMENT_FACTORS,
+  HTTP_CONSTANTS
 } from "./modularConstants";
 import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
 import { settingsManager } from "./settingsManager";
@@ -322,7 +323,7 @@ const createSemanticCacheKey = (prompt: string, currentCode?: string, strategyPa
   // Create hash from normalized components
   const components = [
     normalizedPrompt.substring(0, SIZE_CONSTANTS.HASH.MEDIUM), // First 200 chars of normalized prompt
-    currentCode ? currentCode.substring(0, 100) : 'none', // First 100 chars of current code
+    currentCode ? currentCode.substring(0, SIZE_CONSTANTS.SUBSTRING.MEDIUM) : 'none', // First 100 chars of current code
     JSON.stringify(keyParams),
     settings?.provider || 'google',
     settings?.modelName || 'default'
@@ -382,8 +383,8 @@ async function withRetry<T>(
         if (retries === 0) throw error;
 
         const err = error as Error & { status?: number };
-        const isRateLimit = err.status === 429 || (err.message && err.message.includes('429'));
-        const isServerErr = (err.status || 0) >= 500;
+        const isRateLimit = err.status === HTTP_CONSTANTS.RATE_LIMITED || (err.message && err.message.includes('429'));
+        const isServerErr = (err.status || 0) >= HTTP_CONSTANTS.SERVER_ERROR;
         const isNetworkErr = err.message?.includes('fetch failed') ||
                              err.message?.includes('network') ||
                              err.message?.includes('timeout') ||
@@ -468,7 +469,7 @@ async function withRetry<T>(
     private buildCodeContext(currentCode?: string, maxLength?: number): string {
         if (!currentCode) return '// No code generated yet\n';
         
-        const cacheKey = `code-${currentCode.substring(0, 100)}-${maxLength || 'full'}`;
+        const cacheKey = `code-${currentCode.substring(0, SIZE_CONSTANTS.SUBSTRING.MEDIUM)}-${maxLength || 'full'}`;
         return this.getCachedContext(cacheKey, () => {
             if (maxLength && currentCode.length > maxLength) {
                 return `\nCURRENT MQL5 CODE (truncated to ${maxLength} chars):\n\`\`\`cpp\n${currentCode.substring(0, maxLength)}\n\`\`\`\n`;
@@ -653,8 +654,8 @@ ${footerReminder}
 
     private createContextCacheKey(prompt: string, currentCode?: string, strategyParams?: StrategyParams, history: Message[] = []): string {
         const paramsHash = strategyParams ? JSON.stringify(strategyParams) : '';
-        const codeHash = currentCode ? currentCode.substring(0, 500) : ''; // First 500 chars
-        const historyHash = history.map(m => `${m.role}:${m.content.substring(0, 100)}`).join('|');
+        const codeHash = currentCode ? currentCode.substring(0, SIZE_CONSTANTS.SUBSTRING.LONG) : ''; // First 500 chars
+        const historyHash = history.map(m => `${m.role}:${m.content.substring(0, SIZE_CONSTANTS.SUBSTRING.MEDIUM)}`).join('|');
         return `${prompt.length}:${codeHash}:${paramsHash}:${historyHash}`;
     }
     
@@ -840,8 +841,8 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
      const fullPrompt = await buildContextPrompt(sanitizedPrompt, currentCode, validatedParams, history);
      let rawResponse = "";
 
-     // Create deduplication key for this specific request with more comprehensive parameters
-     const requestKey = createHash(`${prompt}-${currentCode?.substring(0, 200)}-${JSON.stringify(strategyParams)}-${history.length}-${settings.provider}-${settings.modelName}`);
+      // Create deduplication key for this specific request with more comprehensive parameters
+      const requestKey = createHash(`${prompt}-${currentCode?.substring(0, SIZE_CONSTANTS.SUBSTRING.STANDARD)}-${JSON.stringify(strategyParams)}-${history.length}-${settings.provider}-${settings.modelName}`);
      
  // Use request deduplication to prevent duplicate API calls
       rawResponse = await apiDeduplicator.deduplicate(requestKey, async () => {
@@ -937,7 +938,7 @@ Focus on:
 
 CURRENT CODE:
 \`\`\`cpp
-${currentCode.substring(0, 10000)} 
+${currentCode.substring(0, SIZE_CONSTANTS.SUBSTRING.MAX)}
 \`\`\`
 
 Use Markdown formatting (bullet points, bold text) for readability. Do NOT include code blocks in your explanation.
@@ -1023,7 +1024,7 @@ export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promi
       const activeKey = getActiveKey(settings.apiKey);
       
       // Create a more efficient cache key using a proper hash function
-      const codeHash = createHash(code.substring(0, 5000));
+      const codeHash = createHash(code.substring(0, SIZE_CONSTANTS.CODE.SMALL));
       const cacheKey = `${codeHash}-${settings.provider}-${settings.modelName}`;
       
        // Check primary cache first
@@ -1105,11 +1106,11 @@ export const analyzeStrategy = async (code: string, signal?: AbortSignal): Promi
                    analysisCache.set(cacheKey, result);
                    enhancedAnalysisCache.set(cacheKey, result, CACHE_TTLS.ENHANCED_ANALYSIS); // 10 minutes TTL for enhanced cache
 
-                   // Also cache by shorter code snippet for similar code detection
-                   const shortCodeHash = createHash(code.substring(0, 1000));
-                   const shortCacheKey = `short-${shortCodeHash}-${settings.provider}`;
-                   analysisCache.set(shortCacheKey, result);
-                   enhancedAnalysisCache.set(shortCacheKey, result, CACHE_TTLS.ENHANCED_ANALYSIS);
+                    // Also cache by shorter code snippet for similar code detection
+                    const shortCodeHash = createHash(code.substring(0, SIZE_CONSTANTS.CODE.SNIPPET));
+                    const shortCacheKey = `short-${shortCodeHash}-${settings.provider}`;
+                    analysisCache.set(shortCacheKey, result);
+                    enhancedAnalysisCache.set(shortCacheKey, result, CACHE_TTLS.ENHANCED_ANALYSIS);
               } else {
                  // Return a default response if parsing fails
                  return { riskScore: 0, profitability: 0, description: "Analysis Failed: Could not parse AI response." };

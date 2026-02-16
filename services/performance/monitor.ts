@@ -7,6 +7,7 @@
 import { handleErrorCompat as handleError } from '../../utils/errorManager';
 import { globalCache } from '../unifiedCacheManager';
 import { ARRAY_LIMITS } from '../constants';
+import { HTTP_CONSTANTS } from '../modularConstants';
 
 // Unified performance interfaces
 export interface CoreWebVital {
@@ -345,7 +346,7 @@ class PerformanceMonitor {
   getEdgeMetrics(): EdgePerformanceMetrics {
     const recentMetrics = this.edgeMetrics.slice(-ARRAY_LIMITS.METRICS_STANDARD);
     const coldStarts = recentMetrics.filter(m => m.duration > 1000);
-    const errors = recentMetrics.filter(m => m.status >= 400);
+    const errors = recentMetrics.filter(m => m.status >= HTTP_CONSTANTS.BAD_REQUEST);
     
     // Calculate region metrics
     const regionMetrics: Record<string, any> = {};
@@ -355,7 +356,7 @@ class PerformanceMonitor {
       }
       regionMetrics[metric.region].totalTime += metric.duration;
       regionMetrics[metric.region].count++;
-      if (metric.status >= 400) regionMetrics[metric.region].errorCount++;
+      if (metric.status >= HTTP_CONSTANTS.BAD_REQUEST) regionMetrics[metric.region].errorCount++;
     });
     
     Object.keys(regionMetrics).forEach(region => {

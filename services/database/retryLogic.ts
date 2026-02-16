@@ -5,6 +5,7 @@
 
 import { handleError } from '../../utils/errorHandler';
 import { DATABASE_CONFIG } from '../../constants/config';
+import { HTTP_CONSTANTS } from '../modularConstants';
 
 export interface RetryLogicInterface {
   withRetry<T>(operation: () => Promise<T>, operationName: string): Promise<T>;
@@ -121,10 +122,11 @@ export class RetryLogic implements RetryLogicInterface {
   }
 
   private isRateLimitError(error: unknown): boolean {
+    const err = error as { message?: string; status?: number; code?: string };
     return !!(
-      error.message?.toLowerCase().includes('rate limit') ||
-      error.status === 429 ||
-      error.code === 'RATE_LIMIT_EXCEEDED'
+      err.message?.toLowerCase().includes('rate limit') ||
+      err.status === HTTP_CONSTANTS.RATE_LIMITED ||
+      err.code === 'RATE_LIMIT_EXCEEDED'
     );
   }
 

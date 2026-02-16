@@ -5,6 +5,7 @@ import { getActiveKey } from "../../utils/apiKeyUtils";
 import { createScopedLogger } from "../../utils/logger";
 import { AI_CONFIG } from "../../constants/config";
 import { importGoogleGenAI, importAIGenerationTypes } from "./aiImports";
+import { SIZE_CONSTANTS } from "../modularConstants";
 
 const logger = createScopedLogger('ai-core');
 
@@ -220,7 +221,7 @@ export class AICore {
       // Fallback: try to parse entire text as JSON
       return JSON.parse(text);
     } catch {
-      logger.warn('Failed to extract JSON from response:', text.substring(0, 200));
+      logger.warn('Failed to extract JSON from response:', text.substring(0, SIZE_CONSTANTS.DISPLAY.STANDARD));
       return null;
     }
   }

@@ -3,6 +3,7 @@ import { Robot } from '../types';
 import { queryOptimizer } from './queryOptimizer';
 import { securityManager } from './securityManager';
 import { createScopedLogger } from '../utils/logger';
+import { SIZE_CONSTANTS } from './modularConstants';
 
 const logger = createScopedLogger('DatabaseOptimizer');
 
@@ -384,7 +385,7 @@ class DatabaseOptimizer {
         // Check for queries without indexes
         slowQueries.forEach((query: any) => {
           if (query.mean_time > 100 && query.calls > 100) { // Slow and frequently called
-            recommendations.push(`Query taking ${query.mean_time.toFixed(2)}ms avg time with ${query.calls} calls may need indexing: ${query.query.substring(0, 100)}...`);
+            recommendations.push(`Query taking ${query.mean_time.toFixed(2)}ms avg time with ${query.calls} calls may need indexing: ${query.query.substring(0, SIZE_CONSTANTS.STRING.MEDIUM)}...`);
           }
         });
       }
