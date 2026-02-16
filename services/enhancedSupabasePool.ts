@@ -8,7 +8,7 @@ import { settingsManager } from './settingsManager';
 import { createScopedLogger } from '../utils/logger';
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import { TIMEOUTS, RETRY_CONFIG, STAGGER, TIME_CONSTANTS, POOL_CONFIG, SCORING } from './constants';
-import { THRESHOLD_CONSTANTS, DELAY_CONSTANTS } from './modularConstants';
+import { THRESHOLD_CONSTANTS, DELAY_CONSTANTS, ATTEMPT_LIMITS } from './modularConstants';
 import { getErrorMessage } from '../utils/errorHandler';
 
 const logger = createScopedLogger('EnhancedConnectionPool');
@@ -1327,7 +1327,7 @@ class EnhancedSupabaseConnectionPool {
     try {
       // Wait for any in-use operations to complete (with timeout)
       let attempts = 0;
-      const maxAttempts = 10;
+      const maxAttempts = ATTEMPT_LIMITS.CONNECTION.MAX;
       
       while (connection.inUse && attempts < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, STAGGER.DEFAULT_DELAY_MS));

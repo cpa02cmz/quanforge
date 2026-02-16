@@ -991,6 +991,88 @@ export const DISPLAY_FORMAT = {
   },
 } as const;
 
+// ========== CONCURRENCY LIMITS ==========
+export const CONCURRENCY_LIMITS = {
+  // Request throttling
+  REQUESTS: {
+    DEFAULT: 6,
+    MIN: 1,
+    MAX: 20,
+    HIGH: 10,
+    LOW: 3,
+  },
+  
+  // Connection pools
+  CONNECTIONS: {
+    MIN: 1,
+    DEFAULT: 2,
+    MAX: 10,
+    EDGE_MIN: 1,
+    EDGE_MAX: 4,
+  },
+  
+  // Workers
+  WORKERS: {
+    MIN: 1,
+    DEFAULT: 4,
+    MAX: 8,
+  },
+} as const;
+
+// ========== ATTEMPT LIMITS ==========
+export const ATTEMPT_LIMITS = {
+  // Retry attempts
+  RETRY: {
+    MIN: 1,
+    DEFAULT: 3,
+    MAX: 5,
+    EXTENDED: 10,
+  },
+  
+  // Connection attempts
+  CONNECTION: {
+    MIN: 1,
+    DEFAULT: 3,
+    MAX: 10,
+  },
+  
+  // Health check attempts
+  HEALTH_CHECK: {
+    MIN: 1,
+    DEFAULT: 3,
+    MAX: 5,
+  },
+} as const;
+
+// ========== SAFE REGEX CONFIGURATION ==========
+export const SAFE_REGEX_CONFIG = {
+  // Pattern limits
+  PATTERN: {
+    MAX_LENGTH: 200,
+    MAX_SPECIAL_CHARS: 20,
+    MAX_QUANTIFIER_DEPTH: 3,
+  },
+  
+  // Execution timeout
+  TIMEOUT_MS: 100,
+  
+  // Input validation
+  INPUT: {
+    MAX_LENGTH: 500,
+    MAX_TEXT_LENGTH: 10000,
+  },
+  
+  // Complexity thresholds
+  COMPLEXITY: {
+    MAX_ESTIMATED_COMPLEXITY: 1000000,
+    SCORE_PER_LENGTH: 1,
+    SCORE_PER_QUANTIFIER: 10,
+    SCORE_PER_GROUP: 5,
+    SCORE_PER_ALTERNATION: 20,
+    SCORE_PER_NESTED_GROUP: 50,
+  },
+} as const;
+
 // Export all configurations as a single object
 export const APP_CONFIG = {
   WEBSOCKET: WEBSOCKET_CONFIG,
@@ -1024,6 +1106,9 @@ export const APP_CONFIG = {
   ARRAY_LIMITS,
   SCORE_CALCULATION,
   DISPLAY_FORMAT,
+  CONCURRENCY: CONCURRENCY_LIMITS,
+  ATTEMPTS: ATTEMPT_LIMITS,
+  SAFE_REGEX: SAFE_REGEX_CONFIG,
 } as const;
 
 // Default export

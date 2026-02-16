@@ -8,6 +8,8 @@
  * @module utils/safeRegex
  */
 
+import { SAFE_REGEX_CONFIG } from '../constants/modularConfig';
+
 export interface SafeRegexOptions {
   /** Maximum allowed pattern length (default: 200) */
   maxLength?: number;
@@ -38,11 +40,11 @@ export class ReDoSError extends Error {
 }
 
 const DEFAULT_OPTIONS: Required<SafeRegexOptions> = {
-  maxLength: 200,
-  maxSpecialChars: 20,
-  timeoutMs: 100,
+  maxLength: SAFE_REGEX_CONFIG.PATTERN.MAX_LENGTH,
+  maxSpecialChars: SAFE_REGEX_CONFIG.PATTERN.MAX_SPECIAL_CHARS,
+  timeoutMs: SAFE_REGEX_CONFIG.TIMEOUT_MS,
   allowQuantifiers: true,
-  maxQuantifierDepth: 3,
+  maxQuantifierDepth: SAFE_REGEX_CONFIG.PATTERN.MAX_QUANTIFIER_DEPTH,
 };
 
 /**
@@ -168,10 +170,10 @@ export function safeRegexTest(
     validateSafePattern(pattern, opts);
 
     // Check text length
-    if (text.length > 10000) {
+    if (text.length > SAFE_REGEX_CONFIG.INPUT.MAX_TEXT_LENGTH) {
       return {
         matched: false,
-        error: 'Input text too long (max 10000 characters)',
+        error: `Input text too long (max ${SAFE_REGEX_CONFIG.INPUT.MAX_TEXT_LENGTH} characters)`,
         executionTimeMs: performance.now() - startTime,
       };
     }
@@ -183,7 +185,7 @@ export function safeRegexTest(
     // Since we can't use Workers synchronously, we use a simple heuristic:
     // Check if the execution might be problematic based on pattern complexity
     const estimatedComplexity = calculatePatternComplexity(pattern);
-    if (estimatedComplexity * text.length > 1000000) {
+    if (estimatedComplexity * text.length > SAFE_REGEX_CONFIG.COMPLEXITY.MAX_ESTIMATED_COMPLEXITY) {
       return {
         matched: false,
         error: 'Pattern complexity too high for safe execution',
@@ -310,21 +312,22 @@ export function createSafeSQLPattern(
  * @returns Complexity score
  */
 function calculatePatternComplexity(pattern: string): number {
-  let score = pattern.length;
-  
+  const { COMPLEXITY } = SAFE_REGEX_CONFIG;
+  let score = pattern.length * COMPLEXITY.SCORE_PER_LENGTH;
+
   // Quantifiers increase complexity
-  score += (pattern.match(/[+*?]/g) || []).length * 10;
-  
+  score += (pattern.match(/[+*?]/g) || []).length * COMPLEXITY.SCORE_PER_QUANTIFIER;
+
   // Groups increase complexity
-  score += (pattern.match(/\(/g) || []).length * 5;
-  
+  score += (pattern.match(/\(/g) || []).length * COMPLEXITY.SCORE_PER_GROUP;
+
   // Alternations increase complexity significantly
-  score += (pattern.match(/\|/g) || []).length * 20;
-  
+  score += (pattern.match(/\|/g) || []).length * COMPLEXITY.SCORE_PER_ALTERNATION;
+
   // Nested structures are especially complex
   const nestedGroups = (pattern.match(/\([^()]*\(/g) || []).length;
-  score += nestedGroups * 50;
-  
+  score += nestedGroups * COMPLEXITY.SCORE_PER_NESTED_GROUP;
+
   return score;
 }
 
@@ -340,9 +343,9 @@ export function validateUserInput(input: string, fieldName: string = 'Input'): v
     throw new ReDoSError(`${fieldName} must be a non-empty string`, 'INVALID_INPUT');
   }
 
-  if (input.length > 500) {
+  if (input.length > SAFE_REGEX_CONFIG.INPUT.MAX_LENGTH) {
     throw new ReDoSError(
-      `${fieldName} exceeds maximum length of 500 characters`,
+      `${fieldName} exceeds maximum length of ${SAFE_REGEX_CONFIG.INPUT.MAX_LENGTH} characters`,
       'INPUT_TOO_LONG'
     );
   }

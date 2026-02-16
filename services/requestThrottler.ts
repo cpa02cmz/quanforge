@@ -6,6 +6,7 @@
 
 import { API_CONFIG, RATE_LIMITING } from '../constants/config';
 import { RATE_LIMITS, RETRY_CONFIG } from './constants';
+import { CONCURRENCY_LIMITS } from '../constants/modularConfig';
 
 interface RequestConfig {
   url: string;
@@ -25,7 +26,7 @@ interface QueuedRequest {
 class RequestThrottler {
   private queue: QueuedRequest[] = [];
   private activeRequests = 0;
-  private readonly maxConcurrent = 6;
+  private readonly maxConcurrent = CONCURRENCY_LIMITS.REQUESTS.DEFAULT;
   private readonly rateLimitDelay = RATE_LIMITS.RATE_LIMIT_DELAY_MS; // ms between requests
   private readonly maxRetries = API_CONFIG.MAX_RETRY_ATTEMPTS;
   private lastRequestTime = 0;
