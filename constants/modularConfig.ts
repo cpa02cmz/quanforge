@@ -560,7 +560,7 @@ export const UNIFIED_CACHE_CONFIG = {
   SIZES: {
     DEFAULT_BYTES: 10 * 1024 * 1024,  // 10MB
     ROBOT_BYTES: 20 * 1024 * 1024,    // 20MB
-    QUERY_BYTES: 5 * 1024 * 1024,     // 5MB
+    QUERY_BYTES: 25 * 1024 * 1024,    // 25MB - for query optimizer
     USER_BYTES: 2 * 1024 * 1024,      // 2MB
   },
 
@@ -569,6 +569,71 @@ export const UNIFIED_CACHE_CONFIG = {
     STRATEGY_TYPES: ['Trend', 'Scalping', 'Grid', 'Martingale', 'Custom'],
     TIMEFRAMES: ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1'],
     SYMBOLS: ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD'],
+  },
+} as const;
+
+// ========== BACKEND OPTIMIZER CONFIGURATION ==========
+export const BACKEND_OPTIMIZER_CONFIG = {
+  // Request deduplication
+  DEDUPLICATION: {
+    TTL_MS: 5000,                     // 5 seconds
+    CLEANUP_INTERVAL_MS: 10000,       // 10 seconds
+  },
+
+  // Health monitoring
+  HEALTH: {
+    CHECK_INTERVAL_MS: 30000,         // 30 seconds
+    MAX_CONCURRENT_REQUESTS: 10,
+  },
+
+  // Feature toggles
+  FEATURES: {
+    ENABLE_DEDUPLICATION: true,
+    ENABLE_QUERY_ANALYSIS: true,
+    ENABLE_CONNECTION_HEALTH_CHECK: true,
+    ENABLE_BATCH_OPTIMIZATIONS: true,
+  },
+} as const;
+
+// ========== EDGE KV CONFIGURATION ==========
+export const EDGE_KV_CONFIG = {
+  // TTL values in seconds for different data types
+  TTL: {
+    SESSION: 86400,                   // 24 hours
+    CACHE: 300,                       // 5 minutes
+    API_RESPONSE: 180,                // 3 minutes
+    USER_PREFERENCES: 3600,           // 1 hour
+    SEARCH_RESULTS: 600,              // 10 minutes
+    ANALYTICS: 1800,                  // 30 minutes
+    RATE_LIMIT: 60,                   // 1 minute
+  },
+
+  // Memory cache settings
+  MEMORY_CACHE: {
+    TTL_MS: 60000,                    // 1 minute
+    CLEANUP_INTERVAL_MS: 300000,      // 5 minutes
+  },
+
+  // Compression
+  COMPRESSION: {
+    THRESHOLD_BYTES: 1024,            // 1KB
+    MAX_RETRIES: 3,
+    RETRY_DELAY_MS: 100,
+  },
+
+  // Regions
+  REGIONS: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
+} as const;
+
+// ========== DATA COMPRESSION CONFIGURATION ==========
+export const DATA_COMPRESSION_CONFIG = {
+  // Compression threshold in bytes
+  THRESHOLD_BYTES: 1024,              // 1KB
+
+  // Size detection
+  SIZE_DETECTION: {
+    COMPRESSED_LENGTH_THRESHOLD: 100,
+    NULL_CHAR_CHECK: true,
   },
 } as const;
 
@@ -946,6 +1011,9 @@ export const APP_CONFIG = {
   CONNECTION_POOL: CONNECTION_POOL_CONFIG,
   UNIFIED_CACHE: UNIFIED_CACHE_CONFIG,
   UX_MONITORING: UX_MONITORING_CONFIG,
+  BACKEND_OPTIMIZER: BACKEND_OPTIMIZER_CONFIG,
+  EDGE_KV: EDGE_KV_CONFIG,
+  DATA_COMPRESSION: DATA_COMPRESSION_CONFIG,
   STORAGE: STORAGE_KEYS,
   PREFIXES: STORAGE_PREFIXES,
   MAGIC: MAGIC_NUMBERS,
