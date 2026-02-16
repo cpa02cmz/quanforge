@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { SEOHead, structuredDataTemplates, useSEOAnalytics } from './seoUnified';
-import { getUrlConfig } from './urls';
+import { getUrlConfig, DEFAULT_URL_CONFIG } from './urls';
 import { WindowWithGtag } from '../types/browser';
 
 interface AdvancedSEOProps {
@@ -359,11 +359,11 @@ export const AdvancedSEO: React.FC<AdvancedSEOProps> = ({
       */}
       
       {/* Preconnect to external domains for performance */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link rel="preconnect" href="https://www.googletagmanager.com" />
-      <link rel="preconnect" href="https://www.google-analytics.com" />
-      <link rel="preconnect" href="https://*.supabase.co" crossOrigin="anonymous" />
+      <link rel="preconnect" href={DEFAULT_URL_CONFIG.FONTS_GOOGLE} />
+      <link rel="preconnect" href={DEFAULT_URL_CONFIG.FONTS_GSTATIC} crossOrigin="anonymous" />
+      <link rel="preconnect" href={DEFAULT_URL_CONFIG.GTM} />
+      <link rel="preconnect" href={DEFAULT_URL_CONFIG.GA} />
+      <link rel="preconnect" href={DEFAULT_URL_CONFIG.SUPABASE_WILDCARD} crossOrigin="anonymous" />
       
       {/* DNS prefetch for non-critical resources */}
       <link rel="dns-prefetch" href="//cdnjs.cloudflare.com" />
