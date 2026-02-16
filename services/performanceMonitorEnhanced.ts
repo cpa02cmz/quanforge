@@ -82,6 +82,10 @@ class PerformanceMonitor {
     regionPerformance: {}
   };
   private coldStartThreshold = PERFORMANCE_MONITORING.SLOW_OPERATION_THRESHOLD; // 1 second threshold for cold starts
+  // Store references for cleanup
+  private originalPushState?: typeof history.pushState;
+  private originalReplaceState?: typeof history.replaceState;
+  private popstateHandler?: () => void;
 
   private constructor() {
     this.initializeMonitoring();
@@ -266,29 +270,29 @@ class PerformanceMonitor {
 
   private monitorRouteChanges(): void {
     // Monitor client-side route changes
-    let lastNavigationStart = performance.timing.navigationStart;
-    
-    const originalPushState = history.pushState;
-    const originalReplaceState = history.replaceState;
-    
-    const recordRouteChange = () => {
+    let lastNavigationStart = performance.timing?.navigationStart || Date.now();
+
+    this.originalPushState = history.pushState;
+    this.originalReplaceState = history.replaceState;
+
+    this.popstateHandler = () => {
       const now = performance.now();
       const routeChangeTime = now - lastNavigationStart;
       this.sendMetric('route-change', { value: routeChangeTime });
       lastNavigationStart = now;
     };
-    
-    history.pushState = function(...args) {
-      originalPushState.apply(history, args);
-      setTimeout(recordRouteChange, 0);
+
+    history.pushState = (...args) => {
+      this.originalPushState!.apply(history, args);
+      setTimeout(this.popstateHandler!, 0);
     };
-    
-    history.replaceState = function(...args) {
-      originalReplaceState.apply(history, args);
-      setTimeout(recordRouteChange, 0);
+
+    history.replaceState = (...args) => {
+      this.originalReplaceState!.apply(history, args);
+      setTimeout(this.popstateHandler!, 0);
     };
-    
-    window.addEventListener('popstate', recordRouteChange);
+
+    window.addEventListener('popstate', this.popstateHandler);
   }
 
   private detectEdgeRegion(): string {
@@ -490,6 +494,29 @@ class PerformanceMonitor {
 
   setSampleRate(rate: number): void {
     this.sampleRate = Math.max(0, Math.min(1, rate));
+  }
+
+  /**
+   * Destroy performance monitor and cleanup resources
+   */
+  destroy(): void {
+    // Restore original history methods
+    if (this.originalPushState) {
+      history.pushState = this.originalPushState;
+      this.originalPushState = undefined;
+    }
+    if (this.originalReplaceState) {
+      history.replaceState = this.originalReplaceState;
+      this.originalReplaceState = undefined;
+    }
+
+    // Remove popstate listener
+    if (this.popstateHandler) {
+      window.removeEventListener('popstate', this.popstateHandler);
+      this.popstateHandler = undefined;
+    }
+
+    this.isMonitoring = false;
   }
 }
 

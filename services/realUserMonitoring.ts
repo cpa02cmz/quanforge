@@ -91,6 +91,12 @@ class RealUserMonitoring {
   private observers: PerformanceObserver[] = [];
   private flushTimer: number | null = null;
   private isInitialized = false;
+  // Store event listener references for cleanup
+  private errorHandler?: (event: ErrorEvent) => void;
+  private rejectionHandler?: (event: PromiseRejectionEvent) => void;
+  private resourceErrorHandler?: (event: ErrorEvent) => void;
+  private visibilityHandler?: () => void;
+  private beforeUnloadHandler?: () => void;
 
   private constructor() {
     this.sessionId = this.generateSessionId();
@@ -194,27 +200,29 @@ class RealUserMonitoring {
    */
   private initializeErrorTracking(): void {
     // JavaScript errors
-    window.addEventListener('error', (event) => {
+    this.errorHandler = (event: ErrorEvent) => {
       this.trackError({
         message: event.message,
         stack: event.error?.stack,
         timestamp: Date.now(),
         type: 'javascript'
       });
-    });
+    };
+    window.addEventListener('error', this.errorHandler);
 
     // Unhandled promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
+    this.rejectionHandler = (event: PromiseRejectionEvent) => {
       this.trackError({
         message: event.reason?.message || 'Unhandled promise rejection',
         stack: event.reason?.stack,
         timestamp: Date.now(),
         type: 'javascript'
       });
-    });
+    };
+    window.addEventListener('unhandledrejection', this.rejectionHandler);
 
     // Resource loading errors
-    window.addEventListener('error', (event) => {
+    this.resourceErrorHandler = (event: ErrorEvent) => {
       if (event.target !== window) {
         const target = event.target as HTMLElement;
         this.trackError({
@@ -224,7 +232,8 @@ class RealUserMonitoring {
           type: 'resource'
         });
       }
-    }, true);
+    };
+    window.addEventListener('error', this.resourceErrorHandler, true);
   }
 
   /**
@@ -241,16 +250,18 @@ class RealUserMonitoring {
    */
   private initializePageTracking(): void {
     // Track page visibility changes
-    document.addEventListener('visibilitychange', () => {
+    this.visibilityHandler = () => {
       if (document.visibilityState === 'hidden') {
         this.flushMetrics();
       }
-    });
+    };
+    document.addEventListener('visibilitychange', this.visibilityHandler);
 
     // Track page unload
-    window.addEventListener('beforeunload', () => {
+    this.beforeUnloadHandler = () => {
       this.flushMetrics(true);
-    });
+    };
+    window.addEventListener('beforeunload', this.beforeUnloadHandler);
 
     // Track navigation timing
     if ('performance' in window && 'getEntriesByType' in performance) {
@@ -544,6 +555,28 @@ class RealUserMonitoring {
 
     this.observers.forEach(observer => observer.disconnect());
     this.observers = [];
+
+    // Remove event listeners to prevent memory leaks
+    if (this.errorHandler) {
+      window.removeEventListener('error', this.errorHandler);
+      this.errorHandler = undefined;
+    }
+    if (this.rejectionHandler) {
+      window.removeEventListener('unhandledrejection', this.rejectionHandler);
+      this.rejectionHandler = undefined;
+    }
+    if (this.resourceErrorHandler) {
+      window.removeEventListener('error', this.resourceErrorHandler, true);
+      this.resourceErrorHandler = undefined;
+    }
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = undefined;
+    }
+    if (this.beforeUnloadHandler) {
+      window.removeEventListener('beforeunload', this.beforeUnloadHandler);
+      this.beforeUnloadHandler = undefined;
+    }
 
     this.flushMetrics();
     this.isInitialized = false;
