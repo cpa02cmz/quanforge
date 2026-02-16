@@ -117,6 +117,125 @@
       .loading{display:flex;align-items:center;justify-content:center;height:100vh}
       .spinner{border:2px solid #334155;border-top:2px solid #22c55e;border-radius:50%;width:48px;height:48px;animation:spin 1s linear infinite}
       @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+      
+      /* Print Styles - Accessibility for physical copies */
+      @media print {
+        /* Reset dark backgrounds for print */
+        body {
+          background: white !important;
+          color: black !important;
+          font-size: 12pt !important;
+        }
+        
+        /* Hide navigation and interactive elements */
+        nav, header, aside, .sidebar, button, .btn, .no-print,
+        [role="navigation"], [role="banner"] {
+          display: none !important;
+        }
+        
+        /* Ensure all text is black on white for readability */
+        *, *::before, *::after {
+          color: black !important;
+          background: transparent !important;
+          text-shadow: none !important;
+          box-shadow: none !important;
+        }
+        
+        /* Show URLs for links */
+        a[href]:after {
+          content: " (" attr(href) ")";
+          font-size: 0.8em;
+          color: #333 !important;
+        }
+        
+        /* Don't show URLs for internal anchors or javascript */
+        a[href^="#"]:after,
+        a[href^="javascript:"]:after {
+          content: "";
+        }
+        
+        /* Ensure code blocks are readable */
+        pre, code {
+          background: #f5f5f5 !important;
+          border: 1px solid #ddd !important;
+          color: #333 !important;
+          font-family: 'JetBrains Mono', monospace !important;
+          font-size: 10pt !important;
+          white-space: pre-wrap !important;
+          word-wrap: break-word !important;
+        }
+        
+        /* Tables - ensure borders and readability */
+        table {
+          border-collapse: collapse !important;
+          width: 100% !important;
+        }
+        
+        th, td {
+          border: 1px solid #333 !important;
+          padding: 8px !important;
+          text-align: left !important;
+        }
+        
+        th {
+          background: #f5f5f5 !important;
+          font-weight: bold !important;
+        }
+        
+        /* Charts and visualizations */
+        canvas, svg, img {
+          max-width: 100% !important;
+          height: auto !important;
+          page-break-inside: avoid !important;
+        }
+        
+        /* Page breaks */
+        .page-break {
+          page-break-before: always !important;
+        }
+        
+        .page-break-after {
+          page-break-after: always !important;
+        }
+        
+        /* Avoid breaking inside important elements */
+        pre, table, figure, img, svg, .card {
+          page-break-inside: avoid !important;
+        }
+        
+        /* Headings */
+        h1, h2, h3, h4, h5, h6 {
+          page-break-after: avoid !important;
+          color: black !important;
+          margin-top: 1em !important;
+          margin-bottom: 0.5em !important;
+        }
+        
+        /* Lists */
+        ul, ol {
+          margin-left: 1.5em !important;
+        }
+        
+        /* Print margins */
+        @page {
+          margin: 2cm;
+        }
+      }
+      
+      /* Utility class to hide elements in print */
+      .print-only {
+        display: none;
+      }
+      
+      @media print {
+        .print-only {
+          display: block !important;
+        }
+        
+        .no-print {
+          display: none !important;
+        }
+      }
     </style>
     <!-- Tailwind CSS is built into the bundle via PostCSS - no CDN needed -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
