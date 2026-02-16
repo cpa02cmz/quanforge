@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState, useMemo, useCallback, useLayoutEffe
 import { useTranslation } from '../services/i18n';
 import { UI_TIMING } from '../constants';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import CodeEditorErrorBoundary from './CodeEditorErrorBoundary';
 
 interface CodeEditorProps {
   code: string;
@@ -579,3 +580,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
     </div>
   );
 });
+
+// Export wrapped version with error boundary protection
+const CodeEditorWithErrorBoundary: React.FC<CodeEditorProps> = (props) => {
+  return (
+    <CodeEditorErrorBoundary>
+      <CodeEditor {...props} />
+    </CodeEditorErrorBoundary>
+  );
+};
+
+export default CodeEditorWithErrorBoundary;
