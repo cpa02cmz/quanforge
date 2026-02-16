@@ -689,22 +689,220 @@
           button, a { border-width: 2px; }
         }
         
-        /* Reduced motion support */
-        @media (prefers-reduced-motion: reduce) {
-          *, *::before, *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-          }
-          .tooltip-enter, .tooltip-exit, .tooltip-arrow,
-          .animate-skeleton-pulse, .animate-skeleton-shimmer::after, .animate-skeleton-wave::after {
-            animation: none;
-            opacity: 1;
-            transform: none;
-          }
-          .animate-skeleton-pulse { opacity: 0.6; }
-        }
-         </style>
+         /* Reduced motion support */
+         @media (prefers-reduced-motion: reduce) {
+           *, *::before, *::after {
+             animation-duration: 0.01ms !important;
+             animation-iteration-count: 1 !important;
+             transition-duration: 0.01ms !important;
+           }
+           .tooltip-enter, .tooltip-exit, .tooltip-arrow,
+           .animate-skeleton-pulse, .animate-skeleton-shimmer::after, .animate-skeleton-wave::after {
+             animation: none;
+             opacity: 1;
+             transform: none;
+           }
+           .animate-skeleton-pulse { opacity: 0.6; }
+         }
+
+         /* ==========================================
+            PRINT STYLESHEET - Issue #798
+            ========================================== */
+         @media print {
+           /* Reset base styles for print */
+           * {
+             background: transparent !important;
+             color: black !important;
+             box-shadow: none !important;
+             text-shadow: none !important;
+           }
+
+           body {
+             background: white !important;
+             color: black !important;
+             font-size: 12pt;
+             line-height: 1.5;
+           }
+
+           /* Hide navigation and interactive elements */
+           nav, .sidebar, .no-print,
+           button:not(.print-only),
+           [role="navigation"],
+           .toast-container,
+           .tooltip,
+           .modal-overlay,
+           .floating-action-button {
+             display: none !important;
+           }
+
+           /* Show main content areas */
+           main, .main-content, article, .content {
+             display: block !important;
+             width: 100% !important;
+             margin: 0 !important;
+             padding: 0 !important;
+           }
+
+           /* Ensure text is readable on paper */
+           h1, h2, h3, h4, h5, h6 {
+             color: black !important;
+             page-break-after: avoid;
+             margin-top: 1em;
+             margin-bottom: 0.5em;
+           }
+
+           p {
+             color: black !important;
+             orphans: 3;
+             widows: 3;
+           }
+
+           /* Show URLs for links */
+           a[href]:after {
+             content: " (" attr(href) ")";
+             font-size: 0.8em;
+             color: #333 !important;
+             word-wrap: break-word;
+           }
+
+           /* Don't show URLs for internal anchors */
+           a[href^="#"]:after,
+           a[href^="javascript:"]:after {
+             content: "";
+           }
+
+           /* Page breaks */
+           .page-break {
+             page-break-before: always;
+           }
+
+           .page-break-after {
+             page-break-after: always;
+           }
+
+           .no-page-break {
+             page-break-inside: avoid;
+           }
+
+           /* Tables - ensure visibility */
+           table {
+             border-collapse: collapse;
+             width: 100%;
+             page-break-inside: auto;
+           }
+
+           tr {
+             page-break-inside: avoid;
+             page-break-after: auto;
+           }
+
+           thead {
+             display: table-header-group;
+           }
+
+           th, td {
+             border: 1px solid #333 !important;
+             padding: 8px;
+             text-align: left;
+             color: black !important;
+           }
+
+           /* Charts and visualizations - ensure visibility */
+           canvas, svg, img {
+             max-width: 100% !important;
+             height: auto !important;
+             page-break-inside: avoid;
+           }
+
+           /* Code blocks - ensure readability */
+           pre, code {
+             background: #f5f5f5 !important;
+             border: 1px solid #ccc !important;
+             color: #333 !important;
+             font-family: 'JetBrains Mono', 'Courier New', monospace;
+             font-size: 10pt;
+             white-space: pre-wrap;
+             word-wrap: break-word;
+             page-break-inside: avoid;
+           }
+
+           pre {
+             padding: 10px;
+             margin: 10px 0;
+             overflow-x: visible;
+           }
+
+           code {
+             padding: 2px 4px;
+           }
+
+           /* Lists */
+           ul, ol {
+             margin: 10px 0;
+             padding-left: 20px;
+           }
+
+           li {
+             margin: 5px 0;
+           }
+
+           /* Cards and containers */
+           .card, .panel, .container {
+             border: 1px solid #ccc !important;
+             background: white !important;
+             margin: 10px 0;
+             padding: 10px;
+             page-break-inside: avoid;
+           }
+
+           /* Form elements - show values but style minimally */
+           input, select, textarea {
+             border: 1px solid #333 !important;
+             background: white !important;
+             color: black !important;
+             padding: 4px;
+           }
+
+           /* Print-only elements */
+           .print-only {
+             display: block !important;
+           }
+
+           /* Header and footer for printed pages */
+           .print-header {
+             display: block !important;
+             border-bottom: 2px solid #333;
+             margin-bottom: 20px;
+             padding-bottom: 10px;
+           }
+
+           .print-footer {
+             display: block !important;
+             border-top: 1px solid #ccc;
+             margin-top: 20px;
+             padding-top: 10px;
+             font-size: 10pt;
+             color: #666 !important;
+           }
+
+           /* Ensure proper contrast for all text */
+           .text-gray-400, .text-gray-500, .text-gray-600,
+           .text-slate-400, .text-slate-500, .text-slate-600 {
+             color: #333 !important;
+           }
+
+           /* Remove background colors from all elements */
+           .bg-dark-bg, .bg-dark-surface, .bg-slate-800, .bg-slate-900,
+           [class*="bg-"] {
+             background: white !important;
+           }
+
+           /* Ensure borders are visible */
+           .border, [class*="border-"] {
+             border-color: #333 !important;
+           }
+         }
+          </style>
   
 </head>
   <body>
