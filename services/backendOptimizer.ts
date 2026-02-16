@@ -9,6 +9,7 @@ import { databasePerformanceMonitor } from './databasePerformanceMonitor';
 import { robotCache } from './advancedCache';
 import { createScopedLogger } from '../utils/logger';
 import { STAGGER } from './constants';
+import { BACKEND_OPTIMIZER_CONFIG } from '../constants/modularConfig';
 
 const logger = createScopedLogger('BackendOptimizer');
 
@@ -42,13 +43,13 @@ interface HealthCheckResult {
 class BackendOptimizer {
   private static instance: BackendOptimizer;
   private config: BackendOptimizationConfig = {
-    enableRequestDeduplication: true,
-    enableQueryAnalysis: true,
-    enableConnectionHealthCheck: true,
-    enableBatchOptimizations: true,
-    deduplicationTTL: 5000, // 5 seconds
-    healthCheckInterval: 30000, // 30 seconds
-    maxConcurrentRequests: 10,
+    enableRequestDeduplication: BACKEND_OPTIMIZER_CONFIG.FEATURES.ENABLE_DEDUPLICATION,
+    enableQueryAnalysis: BACKEND_OPTIMIZER_CONFIG.FEATURES.ENABLE_QUERY_ANALYSIS,
+    enableConnectionHealthCheck: BACKEND_OPTIMIZER_CONFIG.FEATURES.ENABLE_CONNECTION_HEALTH_CHECK,
+    enableBatchOptimizations: BACKEND_OPTIMIZER_CONFIG.FEATURES.ENABLE_BATCH_OPTIMIZATIONS,
+    deduplicationTTL: BACKEND_OPTIMIZER_CONFIG.DEDUPLICATION.TTL_MS,
+    healthCheckInterval: BACKEND_OPTIMIZER_CONFIG.HEALTH.CHECK_INTERVAL_MS,
+    maxConcurrentRequests: BACKEND_OPTIMIZER_CONFIG.HEALTH.MAX_CONCURRENT_REQUESTS,
   };
   
   private requestCache = new Map<string, RequestDeduplicationEntry>();
@@ -90,7 +91,7 @@ class BackendOptimizer {
           this.requestCache.delete(key);
         }
       }
-    }, 10000); // Clean every 10 seconds
+    }, BACKEND_OPTIMIZER_CONFIG.DEDUPLICATION.CLEANUP_INTERVAL_MS);
   }
 
   private startHealthMonitoring(): void {

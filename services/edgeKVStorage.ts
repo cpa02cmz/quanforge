@@ -6,28 +6,10 @@
 
 import { createClient, type VercelKV } from '@vercel/kv';
 import { TIME_CONSTANTS } from '../constants/config';
+import { EDGE_KV_CONFIG } from '../constants/modularConfig';
 import { createScopedLogger } from '../utils/logger';
 
 const logger = createScopedLogger('EdgeKVStorage');
-
-// Edge KV configuration
-const KV_CONFIG = {
-  // Default TTL values (in seconds)
-  TTL: {
-    SESSION: 86400,        // 24 hours for sessions
-    CACHE: 300,           // 5 minutes for general cache
-    API_RESPONSE: 180,    // 3 minutes for API responses
-    USER_PREFERENCES: 3600, // 1 hour for user preferences
-    SEARCH_RESULTS: 600,  // 10 minutes for search results
-    ANALYTICS: 1800,      // 30 minutes for analytics
-    RATE_LIMIT: 60,       // 1 minute for rate limiting
-  },
-  // Regional replication settings
-  REGIONS: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1'],
-  COMPRESSION_THRESHOLD: 1024, // Compress values > 1KB
-  MAX_RETRIES: 3,
-  RETRY_DELAY: 100, // ms
-};
 
 // Edge KV client with connection pooling
 class EdgeKVClient {
@@ -56,7 +38,7 @@ class EdgeKVClient {
 
   // Compress data if needed
   private compress(data: string): string {
-    if (data.length > KV_CONFIG.COMPRESSION_THRESHOLD) {
+    if (data.length > EDGE_KV_CONFIG.COMPRESSION.THRESHOLD_BYTES) {
       try {
         return JSON.stringify({ compressed: true, data: this.gzipCompress(data) });
       } catch (e) {
@@ -139,7 +121,7 @@ class EdgeKVClient {
   // Set value with automatic compression
   async set(namespace: string, key: string, value: any, ttl?: number): Promise<boolean> {
     const fullKey = this.generateKey(namespace, key);
-    const effectiveTTL = ttl || KV_CONFIG.TTL.CACHE;
+    const effectiveTTL = ttl || EDGE_KV_CONFIG.TTL.CACHE;
     
     try {
       const serialized = JSON.stringify(value);
@@ -234,7 +216,7 @@ class EdgeKVClient {
 
   // Set multiple values (batch operation)
   async mset(namespace: string, entries: Record<string, any>, ttl?: number): Promise<boolean> {
-    const effectiveTTL = ttl || KV_CONFIG.TTL.CACHE;
+    const effectiveTTL = ttl || EDGE_KV_CONFIG.TTL.CACHE;
     
     try {
       const operations: Promise<any>[] = [];
@@ -326,7 +308,7 @@ export const edgeKVService = {
     },
     
     async set(sessionId: string, sessionData: any) {
-      return await edgeKVClient.set('session', sessionId, sessionData, KV_CONFIG.TTL.SESSION);
+      return await edgeKVClient.set('session', sessionId, sessionData, EDGE_KV_CONFIG.TTL.SESSION);
     },
     
     async delete(sessionId: string) {
@@ -351,7 +333,7 @@ export const edgeKVService = {
     
     async set(endpoint: string, data: any, params?: Record<string, any>) {
       const key = params ? `${endpoint}:${JSON.stringify(params)}` : endpoint;
-      return await edgeKVClient.set('api', key, data, KV_CONFIG.TTL.API_RESPONSE);
+      return await edgeKVClient.set('api', key, data, EDGE_KV_CONFIG.TTL.API_RESPONSE);
     },
     
     async invalidate(endpoint: string) {
@@ -370,7 +352,7 @@ export const edgeKVService = {
     },
     
     async set(userId: string, preferences: any) {
-      return await edgeKVClient.set('preferences', userId, preferences, KV_CONFIG.TTL.USER_PREFERENCES);
+      return await edgeKVClient.set('preferences', userId, preferences, EDGE_KV_CONFIG.TTL.USER_PREFERENCES);
     },
     
     async update(userId: string, updates: Partial<any>) {
@@ -389,7 +371,7 @@ export const edgeKVService = {
     
     async set(query: string, results: any, filters?: Record<string, any>) {
       const key = filters ? `${query}:${JSON.stringify(filters)}` : query;
-      return await edgeKVClient.set('search', key, results, KV_CONFIG.TTL.SEARCH_RESULTS);
+      return await edgeKVClient.set('search', key, results, EDGE_KV_CONFIG.TTL.SEARCH_RESULTS);
     },
   },
 
@@ -400,7 +382,7 @@ export const edgeKVService = {
     },
     
     async set(key: string, data: any) {
-      return await edgeKVClient.set('analytics', key, data, KV_CONFIG.TTL.ANALYTICS);
+      return await edgeKVClient.set('analytics', key, data, EDGE_KV_CONFIG.TTL.ANALYTICS);
     },
     
     async increment(metric: string, value: number = 1) {
@@ -417,7 +399,7 @@ export const edgeKVService = {
 
   // Rate limiting
   rateLimit: {
-    async check(identifier: string, limit: number, window: number = KV_CONFIG.TTL.RATE_LIMIT): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
+    async check(identifier: string, limit: number, window: number = EDGE_KV_CONFIG.TTL.RATE_LIMIT): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
       const key = `rate:${identifier}`;
       const current = await edgeKVClient.increment('rate_limit', key, 1);
 
@@ -463,7 +445,7 @@ export const edgeKVService = {
   // Cache warming
   warming: {
     async warmData(data: Record<string, any>, namespace: string = 'warm') {
-      return await edgeKVClient.mset(namespace, data, KV_CONFIG.TTL.CACHE);
+      return await edgeKVClient.mset(namespace, data, EDGE_KV_CONFIG.TTL.CACHE);
     },
     
     async getWarmedData(key: string) {
