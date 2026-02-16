@@ -8,6 +8,7 @@ import { useTranslation } from '../services/i18n';
 import { createScopedLogger } from '../utils/logger';
 import { ConfirmationModal } from './ConfirmationModal';
 import { useModalAccessibility } from '../hooks/useModalAccessibility';
+import { announceFormValidation } from '../utils/announcer';
 
 const logger = createScopedLogger('DatabaseSettingsModal');
 
@@ -24,8 +25,10 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
     const [isLoading, setIsLoading] = useState(false);
     const [isMigrating, setIsMigrating] = useState(false);
     const [showMigrationConfirm, setShowMigrationConfirm] = useState(false);
+    const [errors, setErrors] = useState<Partial<Record<'url' | 'anonKey', string>>>({});
     const modalRef = useRef<HTMLDivElement>(null);
     const titleId = 'db-settings-title';
+    const urlInputRef = useRef<HTMLInputElement>(null);
     
     const { modalProps } = useModalAccessibility({
         isOpen,
@@ -51,8 +54,62 @@ export const DatabaseSettingsModal: React.FC<DatabaseSettingsModalProps> = memo(
         }
     };
 
+    const validateField = (field: 'url' | 'anonKey', value: string): string | undefined => {
+        if (settings.mode !== 'supabase') return undefined;
+        
+        switch (field) {
+            case 'url':
+                if (!value || value.trim().length === 0) {
+                    return 'Supabase URL is required';
+                }
+                if (!value.match(/^https:\/\/[a-z0-9-]+\.supabase\.co$/i)) {
+                    return 'Invalid Supabase URL format (e.g., https://your-project.supabase.co)';
+                }
+                break;
+            case 'anonKey':
+                if (!value || value.trim().length === 0) {
+                    return 'Anonymous key is required';
+                }
+                if (value.trim().length < 20) {
+                    return 'Anonymous key appears to be invalid (too short)';
+                }
+                break;
+        }
+        return undefined;
+    };
+
+    const validateForm = (): boolean => {
+        if (settings.mode !== 'supabase') return true;
+        
+        const newErrors: Partial<Record<'url' | 'anonKey', string>> = {};
+        const urlError = validateField('url', settings.url);
+        const keyError = validateField('anonKey', settings.anonKey);
+        
+        if (urlError) newErrors.url = urlError;
+        if (keyError) newErrors.anonKey = keyError;
+        
+        setErrors(newErrors);
+        
+        // Announce validation errors to screen readers for accessibility (WCAG 4.1.3)
+        const errorMessages = Object.values(newErrors).filter(Boolean);
+        if (errorMessages.length > 0) {
+            announceFormValidation(errorMessages, 'Database Settings');
+            // Focus first error field for accessibility
+            if (newErrors.url && urlInputRef.current) {
+                urlInputRef.current.focus();
+            }
+        }
+        
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (!validateForm()) {
+            return;
+        }
+        
         settingsManager.saveDBSettings(settings);
         showToast('Database Settings saved. Client reloaded.', 'success');
         loadStats();
@@ -174,28 +231,59 @@ return (
                     {settings.mode === 'supabase' && (
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-gray-300 mb-2" htmlFor="db-url">
                                     {t('settings_db_url')}
                                 </label>
                                 <input
+                                    id="db-url"
+                                    ref={urlInputRef}
                                     type="url"
                                     value={settings.url}
-                                    onChange={(e) => setSettings({ ...settings, url: e.target.value })}
-                                    className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                    onChange={(e) => {
+                                        setSettings({ ...settings, url: e.target.value });
+                                        if (errors.url) {
+                                            setErrors(prev => ({ ...prev, url: undefined }));
+                                        }
+                                    }}
+                                    className={`w-full px-3 py-2 bg-dark-bg border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500 ${
+                                        errors.url ? 'border-red-500' : 'border-dark-border'
+                                    }`}
                                     placeholder="https://your-project.supabase.co"
+                                    aria-invalid={errors.url ? 'true' : 'false'}
+                                    aria-describedby={errors.url ? 'db-url-error' : undefined}
                                 />
+                                {errors.url && (
+                                    <p id="db-url-error" role="alert" aria-live="assertive" className="mt-1 text-sm text-red-500">
+                                        {errors.url}
+                                    </p>
+                                )}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-gray-300 mb-2" htmlFor="db-anon-key">
                                     {t('settings_db_anon_key')}
                                 </label>
                                 <input
+                                    id="db-anon-key"
                                     type="password"
                                     value={settings.anonKey}
-                                    onChange={(e) => setSettings({ ...settings, anonKey: e.target.value })}
-                                    className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                    onChange={(e) => {
+                                        setSettings({ ...settings, anonKey: e.target.value });
+                                        if (errors.anonKey) {
+                                            setErrors(prev => ({ ...prev, anonKey: undefined }));
+                                        }
+                                    }}
+                                    className={`w-full px-3 py-2 bg-dark-bg border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-brand-500 ${
+                                        errors.anonKey ? 'border-red-500' : 'border-dark-border'
+                                    }`}
                                     placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                                    aria-invalid={errors.anonKey ? 'true' : 'false'}
+                                    aria-describedby={errors.anonKey ? 'db-anon-key-error' : undefined}
                                 />
+                                {errors.anonKey && (
+                                    <p id="db-anon-key-error" role="alert" aria-live="assertive" className="mt-1 text-sm text-red-500">
+                                        {errors.anonKey}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     )}

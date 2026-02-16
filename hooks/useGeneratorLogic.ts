@@ -11,6 +11,7 @@ import { createScopedLogger } from '../utils/logger';
 import { useMessageBuffer } from '../utils/messageBuffer';
 import { loadGeminiService, preloadGeminiService } from '../services/aiServiceLoader';
 import { frontendPerformanceOptimizer } from '../services/frontendPerformanceOptimizer';
+import { announceFormValidation } from '../utils/announcer';
 
 const logger = createScopedLogger('useGeneratorLogic');
 
@@ -442,21 +443,30 @@ const stopGeneration = useCallback(() => {
       // Validate robot name
       const nameErrors = ValidationService.validateRobotName(state.robotName);
       if (!ValidationService.isValid(nameErrors)) {
+        const errorMessages = nameErrors.map(e => e.message);
         showToast(ValidationService.formatErrors(nameErrors), 'error');
+        // Announce validation errors to screen readers for accessibility (WCAG 4.1.3)
+        announceFormValidation(errorMessages, 'Robot Name');
         return;
       }
 
       // Validate strategy parameters
       const strategyErrors = ValidationService.validateStrategyParams(state.strategyParams);
       if (!ValidationService.isValid(strategyErrors)) {
+        const errorMessages = strategyErrors.map(e => e.message);
         showToast(ValidationService.formatErrors(strategyErrors), 'error');
+        // Announce validation errors to screen readers for accessibility (WCAG 4.1.3)
+        announceFormValidation(errorMessages, 'Strategy Configuration');
         return;
       }
 
       // Validate backtest settings
       const backtestErrors = ValidationService.validateBacktestSettings(state.backtestSettings);
       if (!ValidationService.isValid(backtestErrors)) {
+        const errorMessages = backtestErrors.map(e => e.message);
         showToast(ValidationService.formatErrors(backtestErrors), 'error');
+        // Announce validation errors to screen readers for accessibility (WCAG 4.1.3)
+        announceFormValidation(errorMessages, 'Backtest Settings');
         return;
       }
 
