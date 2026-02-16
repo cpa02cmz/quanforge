@@ -728,6 +728,71 @@ export const SecurityConstants = {
   THRESHOLDS: SECURITY_RISK_SCORES.THRESHOLDS,
 } as const;
 
+// ========== CONCURRENCY LIMITS (Flexy-approved! No hardcoded values) ==========
+export const CONCURRENCY_LIMITS = {
+  REQUESTS: {
+    DEFAULT: 6,
+    MIN: 1,
+    MAX: 20,
+    HIGH: 10,
+    LOW: 3,
+  },
+  CONNECTIONS: {
+    MIN: 1,
+    DEFAULT: 2,
+    MAX: 10,
+    EDGE_MIN: 1,
+    EDGE_MAX: 4,
+  },
+  WORKERS: {
+    MIN: 1,
+    DEFAULT: 4,
+    MAX: 8,
+  },
+} as const;
+
+// ========== ATTEMPT LIMITS (Flexy-approved! No hardcoded values) ==========
+export const ATTEMPT_LIMITS = {
+  RETRY: {
+    MIN: 1,
+    DEFAULT: 3,
+    MAX: 5,
+    EXTENDED: 10,
+  },
+  CONNECTION: {
+    MIN: 1,
+    DEFAULT: 3,
+    MAX: 10,
+  },
+  HEALTH_CHECK: {
+    MIN: 1,
+    DEFAULT: 3,
+    MAX: 5,
+  },
+} as const;
+
+// ========== SAFE REGEX CONFIGURATION (Flexy-approved! No hardcoded values) ==========
+export const SAFE_REGEX_CONFIG = {
+  PATTERN: {
+    MAX_LENGTH: 200,
+    MAX_SPECIAL_CHARS: 20,
+    MAX_QUANTIFIER_DEPTH: 3,
+  },
+  TIMEOUT_MS: 100,
+  INPUT: {
+    MAX_LENGTH: 500,
+    MAX_TEXT_LENGTH: 10000,
+  },
+  COMPLEXITY: {
+    MAX_ESTIMATED_COMPLEXITY: 1000000,
+    SCORE_PER_LENGTH: 1,
+    SCORE_PER_QUANTIFIER: 10,
+    SCORE_PER_GROUP: 5,
+    SCORE_PER_ALTERNATION: 20,
+    SCORE_PER_NESTED_GROUP: 50,
+  },
+} as const;
+
 // ========== DEFAULT EXPORT ==========
 export const ModularConstants = {
   TIME: TIME_CONSTANTS,
@@ -754,6 +819,9 @@ export const ModularConstants = {
   Adjustment: AdjustmentConstants,
   Resource: ResourceConstants,
   Security: SecurityConstants,
+  CONCURRENCY: CONCURRENCY_LIMITS,
+  ATTEMPTS: ATTEMPT_LIMITS,
+  SAFE_REGEX: SAFE_REGEX_CONFIG,
 } as const;
 
 export default ModularConstants;

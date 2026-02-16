@@ -7,6 +7,7 @@
 import { IConnectionPool } from '../../types/serviceInterfaces';
 import { edgeConnectionPool } from '../edgeSupabasePool';
 import { createScopedLogger } from '../../utils/logger';
+import { ATTEMPT_LIMITS } from '../modularConstants';
 
 const logger = createScopedLogger('ConnectionPool');
 
@@ -243,7 +244,7 @@ export class ConnectionPool implements IConnectionPool {
       
       // Wait for all connections to be released
       let attempts = 0;
-      const maxAttempts = 10;
+      const maxAttempts = ATTEMPT_LIMITS.CONNECTION.MAX;
       
       while (attempts < maxAttempts) {
         const stats = this.getPoolStats();
