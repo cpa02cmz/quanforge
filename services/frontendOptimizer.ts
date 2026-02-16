@@ -6,6 +6,7 @@
 import { createScopedLogger } from '../utils/logger';
 import { TIME_CONSTANTS } from '../constants/config';
 import { STAGGER, MODULE_PRELOAD } from './constants';
+import { EXTERNAL_RESOURCES } from './modularConstants';
 
 const logger = createScopedLogger('FrontendOptimizer');
 
@@ -109,7 +110,7 @@ class FrontendOptimizer {
    */
   private setupResourcePrefetching(): void {
     const criticalResources = [
-      'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+      EXTERNAL_RESOURCES.FONTS.INTER_FONT_URL,
     ];
 
     criticalResources.forEach((resource) => {
@@ -153,7 +154,7 @@ class FrontendOptimizer {
   private setupFontOptimization(): void {
     const fontLinks = [
       {
-        href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+        href: EXTERNAL_RESOURCES.FONTS.INTER_FONT_URL,
         rel: 'preload',
         as: 'style',
       },
@@ -184,10 +185,10 @@ class FrontendOptimizer {
    */
   private setupPreconnect(): void {
     const origins = [
-      'https://fonts.googleapis.com',
-      'https://fonts.gstatic.com',
-      'https://*.supabase.co',
-      'https://generativelanguage.googleapis.com',
+      EXTERNAL_RESOURCES.FONTS.GOOGLE_FONTS_BASE,
+      EXTERNAL_RESOURCES.FONTS.GOOGLE_FONTS_STATIC,
+      EXTERNAL_RESOURCES.APIs.SUPABASE,
+      EXTERNAL_RESOURCES.APIs.GEMINI,
     ];
 
     origins.forEach(origin => {
@@ -204,9 +205,9 @@ class FrontendOptimizer {
    */
   private setupDNSPrefetch(): void {
     const origins = [
-      'https://www.google-analytics.com',
-      'https://cdn.jsdelivr.net',
-      'https://unpkg.com',
+      EXTERNAL_RESOURCES.CDN.GOOGLE_ANALYTICS,
+      EXTERNAL_RESOURCES.CDN.JSDELIVR,
+      EXTERNAL_RESOURCES.CDN.UNPKG,
     ];
 
     origins.forEach(origin => {

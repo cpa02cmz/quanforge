@@ -6,6 +6,7 @@
 import { TIMEOUTS, CACHE_LIMITS } from '../constants';
 import { TIME_CONSTANTS, EDGE_CONFIG } from '../constants/config';
 import { MODULE_PRELOAD } from './constants';
+import { EXTERNAL_RESOURCES } from './modularConstants';
 import { createListenerManager, ListenerManager } from '../utils/listenerManager';
 import { createScopedLogger } from '../utils/logger';
 
@@ -111,7 +112,7 @@ class VercelEdgeOptimizer {
     // Note: This is a client-side SPA with no REST API endpoints
     // All data is handled through client-side services
     const criticalResources = [
-      'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700',
+      EXTERNAL_RESOURCES.FONTS.INTER_FONT_URL,
     ];
 
     criticalResources.forEach((resource) => {
