@@ -135,6 +135,8 @@ export const INTERACTIVE_ANIMATION = {
     TO_FAST: 10,
     TO_VERY_FAST: 20,
   },
+  /** Bounce animation duration when hitting input bounds (ms) */
+  BOUNCE_DURATION: 400,
 } as const;
 
 /**

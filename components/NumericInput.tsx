@@ -32,6 +32,8 @@ export const NumericInput: React.FC<{
     const [isPulsing, setIsPulsing] = useState(false);
     const [isIncrementPressed, setIsIncrementPressed] = useState(false);
     const [isDecrementPressed, setIsDecrementPressed] = useState(false);
+    const [isAtMax, setIsAtMax] = useState(false);
+    const [isAtMin, setIsAtMin] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     
     // Long-press state management
@@ -41,6 +43,7 @@ export const NumericInput: React.FC<{
     const decrementDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pulseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const buttonPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const bounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const repeatCountRef = useRef(0);
 
     // Sync local state if external value changes significantly (e.g. reset or load)
@@ -62,6 +65,9 @@ export const NumericInput: React.FC<{
             }
             if (buttonPressTimeoutRef.current) {
                 clearTimeout(buttonPressTimeoutRef.current);
+            }
+            if (bounceTimeoutRef.current) {
+                clearTimeout(bounceTimeoutRef.current);
             }
         };
     }, []);
@@ -104,6 +110,23 @@ export const NumericInput: React.FC<{
         pulseTimeoutRef.current = setTimeout(() => setIsPulsing(false), LOADING_ANIMATION.VALUE_PULSE);
     }, []);
 
+    // Trigger bounce animation when hitting min/max bounds
+    const triggerBounce = useCallback((direction: 'max' | 'min') => {
+        if (direction === 'max') {
+            setIsAtMax(true);
+        } else {
+            setIsAtMin(true);
+        }
+        
+        if (bounceTimeoutRef.current) {
+            clearTimeout(bounceTimeoutRef.current);
+        }
+        bounceTimeoutRef.current = setTimeout(() => {
+            setIsAtMax(false);
+            setIsAtMin(false);
+        }, INTERACTIVE_ANIMATION.BOUNCE_DURATION);
+    }, []);
+
     const increment = useCallback(() => {
         const newValue = value + step;
         if (max === undefined || newValue <= max) {
@@ -112,8 +135,10 @@ export const NumericInput: React.FC<{
             triggerPulse();
             return true;
         }
+        // Trigger bounce animation when hitting max bound
+        triggerBounce('max');
         return false;
-    }, [value, step, max, onChange, triggerPulse]);
+    }, [value, step, max, onChange, triggerPulse, triggerBounce]);
 
     const decrement = useCallback(() => {
         const newValue = value - step;
@@ -123,8 +148,10 @@ export const NumericInput: React.FC<{
             triggerPulse();
             return true;
         }
+        // Trigger bounce animation when hitting min bound
+        triggerBounce('min');
         return false;
-    }, [value, step, min, onChange, triggerPulse]);
+    }, [value, step, min, onChange, triggerPulse, triggerBounce]);
     
     // Long-press functionality with progressive speed
     const getRepeatDelay = (count: number): number => {
@@ -281,7 +308,16 @@ export const NumericInput: React.FC<{
     }
 
     return (
-        <div className="relative inline-block">
+        <div 
+            className={`relative inline-block ${isAtMax ? 'animate-bounce-max' : ''} ${isAtMin ? 'animate-bounce-min' : ''}`}
+            style={{
+                animation: isAtMax 
+                    ? 'bounce-max 0.4s cubic-bezier(0.36, 0, 0.66, -0.56) both'
+                    : isAtMin 
+                        ? 'bounce-min 0.4s cubic-bezier(0.36, 0, 0.66, -0.56) both'
+                        : undefined
+            }}
+        >
             {label && (
                 <label
                     htmlFor={id}
@@ -327,6 +363,95 @@ export const NumericInput: React.FC<{
                     </svg>
                 </button>
             </div>
+            
+            {/* CSS Animations for bounce effects */}
+            <style>{`
+                @keyframes bounce-max {
+                    0% {
+                        transform: translateX(0);
+                    }
+                    25% {
+                        transform: translateX(3px);
+                    }
+                    50% {
+                        transform: translateX(-2px);
+                    }
+                    75% {
+                        transform: translateX(1px);
+                    }
+                    100% {
+                        transform: translateX(0);
+                    }
+                }
+                
+                @keyframes bounce-min {
+                    0% {
+                        transform: translateX(0);
+                    }
+                    25% {
+                        transform: translateX(-3px);
+                    }
+                    50% {
+                        transform: translateX(2px);
+                    }
+                    75% {
+                        transform: translateX(-1px);
+                    }
+                    100% {
+                        transform: translateX(0);
+                    }
+                }
+                
+                @keyframes button-press {
+                    0% {
+                        transform: scale(1);
+                    }
+                    50% {
+                        transform: scale(0.95);
+                    }
+                    100% {
+                        transform: scale(1);
+                    }
+                }
+                
+                @keyframes button-glow {
+                    0% {
+                        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+                    }
+                    100% {
+                        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0);
+                    }
+                }
+                
+                @keyframes value-pulse {
+                    0% {
+                        background-color: rgba(34, 197, 94, 0.1);
+                    }
+                    100% {
+                        background-color: transparent;
+                    }
+                }
+                
+                .animate-bounce-max {
+                    animation: bounce-max 0.4s cubic-bezier(0.36, 0, 0.66, -0.56) both;
+                }
+                
+                .animate-bounce-min {
+                    animation: bounce-min 0.4s cubic-bezier(0.36, 0, 0.66, -0.56) both;
+                }
+                
+                .animate-button-press {
+                    animation: button-press 0.15s cubic-bezier(0.4, 0, 0.2, 1) both;
+                }
+                
+                .animate-button-glow {
+                    animation: button-glow 0.4s ease-out both;
+                }
+                
+                .animate-value-pulse {
+                    animation: value-pulse 0.2s ease-out both;
+                }
+            `}</style>
         </div>
     );
 });
