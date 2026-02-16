@@ -9,6 +9,7 @@ import { useTranslation } from '../services/i18n';
 import { UserSession } from '../types';
 import PerformanceInsights from './PerformanceInsights';
 import { ScrollToTopButton } from './ScrollToTopButton';
+import { KeyboardNavigationIndicator } from './KeyboardNavigationIndicator';
 
 interface LayoutProps {
   session: UserSession | null;
@@ -255,6 +256,7 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
          </div>
          <PerformanceInsights />
          <ScrollToTopButton />
+         <KeyboardNavigationIndicator />
        </main>
      </div>
    );
