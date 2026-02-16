@@ -1,4 +1,5 @@
 import { createScopedLogger } from '../utils/logger';
+import { DATA_COMPRESSION_CONFIG } from '../constants/modularConfig';
 
 const logger = createScopedLogger('DataCompression');
 import { Robot } from '../types';
@@ -15,7 +16,7 @@ export interface CompressionStats {
 }
 
 class DataCompressionService {
-  private compressionThreshold = 1024; // 1KB threshold
+  private compressionThreshold = DATA_COMPRESSION_CONFIG.THRESHOLD_BYTES;
 
   /**
    * Compress robot data for efficient storage
@@ -55,9 +56,9 @@ class DataCompressionService {
   decompressRobot(compressedData: string): Robot | null {
     try {
       // Check if the data appears to be compressed by looking at length ratio
-      const isCompressed = compressedData.length < 100 || 
+      const isCompressed = compressedData.length < DATA_COMPRESSION_CONFIG.SIZE_DETECTION.COMPRESSED_LENGTH_THRESHOLD || 
         compressedData.charCodeAt(0) > 255 || 
-        compressedData.includes('\u0000'); // Check for null chars often found in compressed data
+        (DATA_COMPRESSION_CONFIG.SIZE_DETECTION.NULL_CHAR_CHECK && compressedData.includes('\u0000'));
       
       if (isCompressed) {
         const decompressed = decompressFromUTF16(compressedData);

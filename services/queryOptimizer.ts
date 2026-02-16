@@ -4,6 +4,7 @@ import { MEMORY_LIMITS } from '../constants';
 import { TIME_CONSTANTS } from '../constants/config';
 import { TIMEOUTS } from './constants';
 import { COUNT_CONSTANTS } from './modularConstants';
+import { UNIFIED_CACHE_CONFIG } from '../constants/modularConfig';
 import { getErrorMessage, isError } from '../utils/errorHandler';
 
 interface QueryOptimization {
@@ -54,7 +55,7 @@ class QueryOptimizer {
 
   // Check and maintain cache size limits - optimized for edge
   private maintainCacheSize(newEntrySize: number): void {
-    const maxCacheSize = 25 * 1024 * 1024; // 25MB - increased for better caching
+    const maxCacheSize = UNIFIED_CACHE_CONFIG.SIZES.QUERY_BYTES; // 25MB - configured in modularConfig
     let currentSize = 0;
     
     // Calculate current size
