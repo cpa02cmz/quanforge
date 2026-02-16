@@ -9,6 +9,7 @@ import { SendButton } from './SendButton';
 import { TypingIndicator } from './TypingIndicator';
 import { TEXT_INPUT_LIMITS, VIRTUAL_SCROLL_CONFIG, CHARACTER_COUNT_CONFIG } from '../constants/uiConfig';
 import { useChatFocusManagement } from '../hooks/useChatFocusManagement';
+import ChatErrorBoundary from './ChatErrorBoundary';
 
   const logger = createScopedLogger('ChatInterface');
 
@@ -531,3 +532,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     </Suspense>
   );
 });
+
+// Export wrapped version with error boundary protection
+const ChatInterfaceWithErrorBoundary: React.FC<ChatInterfaceProps> = (props) => {
+  return (
+    <ChatErrorBoundary>
+      <ChatInterface {...props} />
+    </ChatErrorBoundary>
+  );
+};
+
+export default ChatInterfaceWithErrorBoundary;
