@@ -403,11 +403,11 @@ const response = await fetch(url, options as unknown as globalThis.RequestInit);
   }
 }
 
-// Singleton instance
+// Singleton instance - uses centralized constants for maintainability
 export const advancedAPICache = new AdvancedAPICache({
-  defaultTTL: 300000, // 5 minutes
-  maxSize: 500,       // 500 entries max
-  compression: true
+  defaultTTL: SERVICE_CACHE_CONFIG.API_CACHE.DEFAULT_TTL_MS,
+  maxSize: SERVICE_CACHE_CONFIG.API_CACHE.MAX_SIZE,
+  compression: SERVICE_CACHE_CONFIG.API_CACHE.COMPRESSION_ENABLED
 });
 
 export { AdvancedAPICache };
