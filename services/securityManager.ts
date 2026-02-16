@@ -4,6 +4,7 @@ const logger = createScopedLogger('SecurityManager');
 import { Robot, StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
 import { SecureStorage } from '../utils/secureStorage';
+import { getLocalStorage } from '../utils/storage';
 import {
   RATE_LIMITING,
   TIME_CONSTANTS,
@@ -92,6 +93,7 @@ class SecurityManager {
      encrypt: true,
      maxSize: 1024 * 1024 // 1MB limit for security data - local constant for clarity
    });
+  private storage = getLocalStorage({ prefix: 'security_', enableSerialization: true });
 
   private constructor() {}
 
@@ -1021,17 +1023,7 @@ private validateRobotData(data: any): ValidationResult {
 
   private storeCSPViolation(violation: any): void {
     try {
-      const stored = localStorage.getItem('csp_violations') || '[]';
-      let violations: any[] = [];
-      try {
-        violations = JSON.parse(stored);
-        if (!Array.isArray(violations)) {
-          violations = [];
-        }
-      } catch (_parseError) {
-        // Handle corrupted data by resetting
-        violations = [];
-      }
+      const violations = this.storage.get<any[]>('csp_violations') || [];
       violations.push(violation);
 
       // Keep only last 100 violations
@@ -1039,9 +1031,9 @@ private validateRobotData(data: any): ValidationResult {
         violations.splice(0, violations.length - 100);
       }
 
-      localStorage.setItem('csp_violations', JSON.stringify(violations));
+      this.storage.set('csp_violations', violations);
     } catch (storageError) {
-      // Silently fail if localStorage is unavailable
+      // Silently fail if storage is unavailable
       logger.warn('Failed to store CSP violation:', storageError);
     }
   }
@@ -1155,13 +1147,13 @@ private validateRobotData(data: any): ValidationResult {
   } {
     // WAF Statistics
     const wafStats = {
-      totalRequests: parseInt(localStorage.getItem('waf_total_requests') || '0'),
-      blockedRequests: parseInt(localStorage.getItem('waf_blocked_requests') || '0'),
-      topThreats: JSON.parse(localStorage.getItem('waf_top_threats') || '[]')
+      totalRequests: this.storage.get<number>('waf_total_requests') || 0,
+      blockedRequests: this.storage.get<number>('waf_blocked_requests') || 0,
+      topThreats: this.storage.get<any[]>('waf_top_threats') || []
     };
 
     // CSP Statistics
-    const cspViolations = JSON.parse(localStorage.getItem('csp_violations') || '[]');
+    const cspViolations = this.storage.get<any[]>('csp_violations') || [];
     const highSeverityViolations = cspViolations.filter((v: any) => this.isHighSeverityViolation(v));
     
     const directiveCounts = cspViolations.reduce((acc: any, violation: any) => {
@@ -1253,8 +1245,7 @@ private validateRobotData(data: any): ValidationResult {
    */
   private getRecentEdgeRequests(): Array<{ timestamp: number; region: string; endpoint: string }> {
     // In a real implementation, this would pull from edge metrics
-    const stored = localStorage.getItem('edge_requests');
-    return stored ? JSON.parse(stored) : [];
+    return this.storage.get<Array<{ timestamp: number; region: string; endpoint: string }>>('edge_requests') || [];
   }
 
   /**
