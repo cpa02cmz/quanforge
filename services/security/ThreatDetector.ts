@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+import { SECURITY_RISK_SCORES } from '../modularConstants';
 
 export class ThreatDetector {
   private wafPatterns: Array<{
@@ -73,19 +74,19 @@ export class ThreatDetector {
             threatPattern.pattern.test(referer)) {
           threats.push(threatPattern.threat);
           
-          // Calculate risk score based on severity
+          // Calculate risk score based on severity using modular constants
           switch (threatPattern.severity) {
             case 'critical':
-              riskScore += 50;
+              riskScore += SECURITY_RISK_SCORES.SEVERITY.CRITICAL;
               break;
             case 'high':
-              riskScore += 30;
+              riskScore += SECURITY_RISK_SCORES.SEVERITY.HIGH;
               break;
             case 'medium':
-              riskScore += 20;
+              riskScore += SECURITY_RISK_SCORES.SEVERITY.MEDIUM;
               break;
             case 'low':
-              riskScore += 10;
+              riskScore += SECURITY_RISK_SCORES.SEVERITY.LOW;
               break;
           }
         }
@@ -94,16 +95,16 @@ export class ThreatDetector {
       // Additional checks
       if (this.detectSuspiciousUserAgent(userAgent)) {
         threats.push('Suspicious User Agent');
-        riskScore += 25;
+        riskScore += SECURITY_RISK_SCORES.THREATS.SUSPICIOUS_USER_AGENT;
       }
 
     } catch (_error) {
       threats.push('Pattern detection error');
-      riskScore += 10;
+      riskScore += SECURITY_RISK_SCORES.THREATS.PATTERN_DETECTION_ERROR;
     }
 
     return {
-      isMalicious: riskScore >= 30,
+      isMalicious: riskScore >= SECURITY_RISK_SCORES.THRESHOLDS.MALICIOUS,
       threats,
       riskScore
     };

@@ -451,6 +451,84 @@ export const TRADING_DEFAULTS = {
   TIMEFRAMES: ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN1'],
 } as const;
 
+// ========== SECURITY RISK SCORING CONSTANTS ==========
+export const SECURITY_RISK_SCORES = {
+  // Base severity scores for threat detection
+  SEVERITY: {
+    CRITICAL: 50,
+    HIGH: 30,
+    MEDIUM: 20,
+    LOW: 10,
+  },
+
+  // Specific threat type scores
+  THREATS: {
+    // SQL Injection related
+    SQL_INJECTION: 50,
+    SQL_CHARACTERS: 20,
+
+    // XSS related
+    SCRIPT_INJECTION: 50,
+    EVENT_HANDLER_INJECTION: 30,
+    JAVASCRIPT_PROTOCOL: 30,
+
+    // Path/Command Injection
+    PATH_TRAVERSAL: 30,
+    COMMAND_INJECTION: 50,
+
+    // DoS related
+    POTENTIAL_DOS: 20,
+
+    // User agent related
+    SUSPICIOUS_USER_AGENT: 25,
+
+    // Pattern detection errors
+    PATTERN_DETECTION_ERROR: 10,
+  },
+
+  // Input validation scores
+  INPUT_VALIDATION: {
+    ROBOT_NAME_INVALID: 50,
+    ROBOT_NAME_SUSPICIOUS: 30,
+    ROBOT_NAME_PATH_TRAVERSAL: 40,
+    STRATEGY_TYPE_INVALID: 20,
+    STRATEGY_TYPE_SUSPICIOUS: 20,
+    BACKTEST_PARAMS_INVALID: 20,
+    USER_ID_INVALID: 20,
+    USER_ID_MALICIOUS: 30,
+    CODE_LENGTH_EXCEEDED: 10,
+    PARAMS_LENGTH_EXCEEDED: 10,
+    ROBOT_NAME_LENGTH_EXCEEDED: 15,
+  },
+
+  // Security manager scores
+  SECURITY_MANAGER: {
+    PAYLOAD_TOO_LARGE: 50,
+    PAYLOAD_STRUCTURE_INVALID: 30,
+    PAYLOAD_DEPTH_EXCEEDED: 40,
+    XSS_DETECTED: 30,
+    SQL_INJECTION_DETECTED: 30,
+    NO_SQL_INJECTION_DETECTED: 30,
+    COMMAND_INJECTION_DETECTED: 30,
+    PATH_TRAVERSAL_DETECTED: 30,
+    SPECIAL_CHARS_EXCESSIVE: 10,
+    SUSPICIOUS_PATTERN_LENGTH: 10,
+    SUSPICIOUS_PATTERN_STRUCTURE: 10,
+    PROTOTYPE_POLLUTION: 100,
+  },
+
+  // Risk thresholds
+  THRESHOLDS: {
+    MALICIOUS: 30,       // Score >= 30 is considered malicious
+    HIGH_RISK: 50,       // Score >= 50 is high risk
+    SUSPICIOUS: 20,      // Score >= 20 is suspicious
+    LOW_RISK: 10,        // Score >= 10 is low risk
+  },
+
+  // Max possible score for normalization
+  MAX_SCORE: 100,
+} as const;
+
 // ========== ADJUSTMENT & MULTIPLIER CONSTANTS ==========
 export const ADJUSTMENT_FACTORS = {
   // Moving average weights
@@ -641,6 +719,15 @@ export const ResourceConstants = {
   DOMAINS: EXTERNAL_RESOURCES.DOMAINS,
 } as const;
 
+export const SecurityConstants = {
+  RISK: SECURITY_RISK_SCORES,
+  SEVERITY: SECURITY_RISK_SCORES.SEVERITY,
+  THREATS: SECURITY_RISK_SCORES.THREATS,
+  INPUT: SECURITY_RISK_SCORES.INPUT_VALIDATION,
+  MANAGER: SECURITY_RISK_SCORES.SECURITY_MANAGER,
+  THRESHOLDS: SECURITY_RISK_SCORES.THRESHOLDS,
+} as const;
+
 // ========== DEFAULT EXPORT ==========
 export const ModularConstants = {
   TIME: TIME_CONSTANTS,
@@ -657,6 +744,7 @@ export const ModularConstants = {
   ADJUSTMENT: ADJUSTMENT_FACTORS,
   RESOURCES: EXTERNAL_RESOURCES,
   FONT: FONT_CONFIG,
+  SECURITY: SECURITY_RISK_SCORES,
   Auth: AuthConstants,
   Cache: CacheConstants,
   Performance: PerformanceConstants,
@@ -665,6 +753,7 @@ export const ModularConstants = {
   Ui: UiConstants,
   Adjustment: AdjustmentConstants,
   Resource: ResourceConstants,
+  Security: SecurityConstants,
 } as const;
 
 export default ModularConstants;

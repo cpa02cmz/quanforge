@@ -1,5 +1,6 @@
 import { SecurityConfig } from '../configurationService';
 import { STRING_LIMITS } from '../constants';
+import { SECURITY_RISK_SCORES } from '../modularConstants';
 
 export interface ValidationResult {
   isValid: boolean;
@@ -25,13 +26,13 @@ export class InputValidator {
       const payloadSize = new Blob([JSON.stringify(data)]).size;
       if (payloadSize > this.config.maxPayloadSize) {
         errors.push(`Payload too large: ${payloadSize} bytes (max: ${this.config.maxPayloadSize})`);
-        riskScore += 50;
+        riskScore += SECURITY_RISK_SCORES.INPUT_VALIDATION.ROBOT_NAME_INVALID;
       }
 
       // Basic structure validation
       if (!data || typeof data !== 'object') {
         errors.push('Invalid data structure');
-        return { isValid: false, errors, riskScore: 100 };
+        return { isValid: false, errors, riskScore: SECURITY_RISK_SCORES.MAX_SCORE };
       }
 
       // Type-specific validation
@@ -71,7 +72,7 @@ export class InputValidator {
 
     } catch (error: unknown) {
       errors.push(`Validation error: ${error}`);
-      riskScore += 20;
+      riskScore += SECURITY_RISK_SCORES.SEVERITY.MEDIUM;
     }
 
     return {
@@ -89,14 +90,14 @@ export class InputValidator {
     // Check required fields
     if (!data.name || typeof data.name !== 'string') {
       errors.push('Robot name is required and must be a string');
-      riskScore += 20;
+      riskScore += SECURITY_RISK_SCORES.INPUT_VALIDATION.ROBOT_NAME_INVALID;
     }
 
     if (data.code) {
       const codeValidation = this.validateMQL5Code(data.code);
       if (!codeValidation.isValid) {
         errors.push(...codeValidation.errors);
-        riskScore += 30;
+        riskScore += SECURITY_RISK_SCORES.INPUT_VALIDATION.USER_ID_MALICIOUS;
       }
     }
 
@@ -155,12 +156,12 @@ export class InputValidator {
 
     if (!data.timeframe || typeof data.timeframe !== 'string') {
       errors.push('Invalid timeframe');
-      riskScore += 10;
+      riskScore += SECURITY_RISK_SCORES.INPUT_VALIDATION.CODE_LENGTH_EXCEEDED;
     }
 
     if (data.riskLevel && (data.riskLevel < 1 || data.riskLevel > 10)) {
       errors.push('Risk level must be between 1 and 10');
-      riskScore += 15;
+      riskScore += SECURITY_RISK_SCORES.INPUT_VALIDATION.ROBOT_NAME_LENGTH_EXCEEDED;
     }
 
     return {
@@ -177,17 +178,17 @@ export class InputValidator {
 
     if (data.startDate && !this.isValidDate(data.startDate)) {
       errors.push('Invalid start date');
-      riskScore += 10;
+      riskScore += SECURITY_RISK_SCORES.INPUT_VALIDATION.CODE_LENGTH_EXCEEDED;
     }
 
     if (data.endDate && !this.isValidDate(data.endDate)) {
       errors.push('Invalid end date');
-      riskScore += 10;
+      riskScore += SECURITY_RISK_SCORES.INPUT_VALIDATION.CODE_LENGTH_EXCEEDED;
     }
 
     if (data.initialBalance && (data.initialBalance < 0 || !Number.isFinite(data.initialBalance))) {
       errors.push('Invalid initial balance');
-      riskScore += 15;
+      riskScore += SECURITY_RISK_SCORES.INPUT_VALIDATION.ROBOT_NAME_LENGTH_EXCEEDED;
     }
 
     return {
@@ -204,7 +205,7 @@ export class InputValidator {
 
     if (data.email && !this.isValidEmail(data.email)) {
       errors.push('Invalid email format');
-      riskScore += 10;
+      riskScore += SECURITY_RISK_SCORES.INPUT_VALIDATION.CODE_LENGTH_EXCEEDED;
     }
 
     return {
