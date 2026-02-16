@@ -124,13 +124,18 @@ self.addEventListener('activate', (event) => {
 async function preWarmEdgeCaches() {
   try {
     const cache = await caches.open(STATIC_CACHE_NAME);
+    // Only cache static assets - this is a client-side SPA with no REST API endpoints
     const criticalAssets = [
-      '/api/health',
-      '/api/strategies',
+      '/',
+      '/index.html',
+      '/manifest.json',
+      '/dashboard',
+      '/generator',
+      '/wiki'
     ];
-    
+
     await Promise.allSettled(
-      criticalAssets.map(asset => 
+      criticalAssets.map(asset =>
         fetch(asset).then(response => {
           if (response.ok) {
             return cache.put(asset, response);
@@ -140,7 +145,7 @@ async function preWarmEdgeCaches() {
         })
       )
     );
-    
+
     console.log('[SW] Edge caches pre-warmed successfully');
   } catch (error) {
     console.warn('[SW] Edge cache pre-warming failed:', error);
@@ -586,30 +591,31 @@ async function getUserBehaviorPatterns() {
   try {
     // In a real implementation, this would analyze user navigation patterns
     // For now, we'll use common patterns for QuantForge AI
+    // Note: This is a client-side SPA with no REST API endpoints
     return {
-      commonRoutes: ['/dashboard', '/generator', '/api/strategies', '/api/robots'],
+      commonRoutes: ['/dashboard', '/generator', '/wiki'],
       timeBasedPatterns: {
-        morning: ['/dashboard', '/api/robots'],
-        afternoon: ['/generator', '/api/strategies'],
-        evening: ['/wiki', '/api/health']
+        morning: ['/dashboard', '/generator'],
+        afternoon: ['/generator', '/dashboard'],
+        evening: ['/wiki', '/dashboard']
       },
       sequencePatterns: [
         ['/dashboard', '/generator'],
-        ['/generator', '/api/strategies'],
-        ['/dashboard', '/api/robots']
+        ['/generator', '/dashboard'],
+        ['/dashboard', '/wiki']
       ],
-      apiCallPatterns: [
-        '/api/strategies',
-        '/api/robots',
-        '/api/health',
-        '/api/market-data'
+      // External API patterns (these are actual external APIs, not local endpoints)
+      externalApiPatterns: [
+        'supabase.co',
+        'googleapis.com',
+        'twelvedata.com'
       ]
     };
   } catch (error) {
     console.warn('[SW] Failed to get user behavior patterns:', error);
     return {
       commonRoutes: ['/dashboard', '/generator'],
-      apiCallPatterns: ['/api/strategies', '/api/robots']
+      externalApiPatterns: ['supabase.co']
     };
   }
 }
@@ -644,14 +650,14 @@ function generatePredictiveCachePatterns(patterns) {
     }
   });
   
-  // API call predictions
-  patterns.apiCallPatterns.forEach(api => {
+  // External API predictions (only for actual external APIs, not local endpoints)
+  patterns.externalApiPatterns?.forEach(api => {
     if (!predictions.find(p => p.url === api)) {
       predictions.push({
         url: api,
-        type: 'api',
-        priority: 'high',
-        reason: 'api-pattern'
+        type: 'external-api',
+        priority: 'medium',
+        reason: 'external-api-pattern'
       });
     }
   });

@@ -20,12 +20,14 @@ class EnhancedEdgeWarmer {
       { name: 'gru1', priority: 'low', latency: 140 },   // São Paulo
     ];
 
+    // Static assets and routes to warm (client-side SPA with no REST API endpoints)
     this.WARMUP_ENDPOINTS = [
-      '/api/edge/metrics',
-      '/api/robots/route',
-      '/api/market-data/route',
-      '/api/analytics/performance',
-      '/api/health'
+      '/',
+      '/index.html',
+      '/manifest.json',
+      '/dashboard',
+      '/generator',
+      '/wiki'
     ];
 
     this.MAX_CONCURRENT_WARMUPS = 3;

@@ -13,12 +13,13 @@ const CONFIG = {
   baseUrl: process.env.VERCEL_URL || 'https://quanforge.ai',
   regions: ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'],
   endpoints: [
+    // Static routes only - this is a client-side SPA with no REST API endpoints
     '/',
-    '/api/edge/metrics',
-    '/api/edge/warmup',
-    '/api/edge/health',
+    '/index.html',
+    '/manifest.json',
     '/dashboard',
-    '/generator'
+    '/generator',
+    '/wiki'
   ],
   patterns: [
     'robots_list',
@@ -167,25 +168,13 @@ async function warmupEndpoint(url, region, endpoint) {
 
 /**
  * Warm up cache patterns
+ * Note: Client-side SPA - no server-side cache warmup needed
  */
 async function warmupCachePatterns() {
-  console.log('🔄 Starting cache pattern warmup...');
-  
-  try {
-    const response = await makeRequest(`${CONFIG.baseUrl}/api/edge/warmup`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Warmup-Request': 'true'
-      }
-    });
-    
-    console.log('✅ Cache pattern warmup completed');
-    return true;
-  } catch (error) {
-    console.warn('❌ Cache pattern warmup failed:', error.message);
-    return false;
-  }
+  console.log('🔄 Cache pattern warmup skipped (client-side SPA)');
+  // This is a client-side SPA with no REST API endpoints
+  // Caching is handled by service workers and browser cache
+  return true;
 }
 
 /**
@@ -217,114 +206,46 @@ async function executeWithConcurrency(promises, concurrency) {
 
 /**
  * Collect edge metrics
+ * Note: Client-side SPA - no server-side metrics endpoint
  */
 async function collectMetrics() {
-  console.log('📊 Collecting edge metrics...');
-  
-  try {
-    const response = await makeRequest(`${CONFIG.baseUrl}/api/edge/metrics?detailed=true`, {
-      method: 'GET',
-      headers: {
-        'X-Metrics-Request': 'true'
-      }
-    });
-    
-    console.log('✅ Edge metrics collected successfully');
-    return response;
-  } catch (error) {
-    console.warn('❌ Failed to collect edge metrics:', error.message);
-    return null;
-  }
+  console.log('📊 Edge metrics collection skipped (client-side SPA)');
+  // This is a client-side SPA with no REST API endpoints
+  // Metrics are collected via client-side monitoring
+  return null;
 }
 
 /**
  * Warm up database connections
+ * Note: Client-side SPA - database connections managed by Supabase client
  */
 async function warmupDatabaseConnections() {
-  console.log('🗄️  Warming up database connections...');
-  
-  const regions = ['hkg1', 'iad1', 'sin1', 'fra1', 'sfo1', 'arn1', 'gru1', 'cle1'];
-  const warmupPromises = regions.map(async (region) => {
-    try {
-      await makeRequest(`${CONFIG.baseUrl}/api/database/warmup`, {
-        method: 'POST',
-        headers: {
-          'X-Target-Region': region,
-          'X-Warmup-Type': 'database-connection',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          region,
-          connectionCount: 2, // Warm up 2 connections per region
-          timeout: 5000
-        })
-      });
-      console.debug(`✅ Database connections warmed up for region: ${region}`);
-    } catch (error) {
-      console.warn(`❌ Failed to warmup DB connections for region ${region}:`, error.message);
-    }
-  });
-
-  await Promise.allSettled(warmupPromises);
-  console.log('✅ Database connection warm-up completed');
+  console.log('🗄️  Database connection warmup skipped (client-side SPA)');
+  // Database connections are managed by Supabase client library
+  // No server-side warmup endpoints exist in this architecture
+  return true;
 }
 
 /**
  * Warm up Supabase edge functions
+ * Note: Client-side SPA - Supabase functions called directly from client
  */
 async function warmupSupabaseFunctions() {
-  console.log('🔥 Warming up Supabase edge functions...');
-  
-  const functions = [
-    'robots-list',
-    'market-data',
-    'user-session',
-    'strategy-analysis'
-  ];
-  
-  const warmupPromises = functions.map(async (funcName) => {
-    try {
-      await makeRequest(`${CONFIG.baseUrl}/api/supabase/${funcName}`, {
-        method: 'GET',
-        headers: {
-          'X-Warmup-Request': 'true',
-          'X-Function-Name': funcName,
-          'Cache-Control': 'no-cache'
-        }
-      });
-      console.debug(`✅ Supabase function warmed up: ${funcName}`);
-    } catch (error) {
-      console.warn(`❌ Failed to warmup Supabase function ${funcName}:`, error.message);
-    }
-  });
-
-  await Promise.allSettled(warmupPromises);
-  console.log('✅ Supabase edge functions warm-up completed');
+  console.log('🔥 Supabase edge functions warmup skipped (client-side SPA)');
+  // Supabase functions are called directly from the client
+  // No local API endpoints exist for Supabase functions
+  return true;
 }
 
 /**
  * Warm up AI service connections
+ * Note: Client-side SPA - AI services called directly from client
  */
 async function warmupAIServiceConnections() {
-  console.log('🤖 Warming up AI service connections...');
-  
-  try {
-    await makeRequest(`${CONFIG.baseUrl}/api/ai/warmup`, {
-      method: 'POST',
-      headers: {
-        'X-Warmup-Request': 'true',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gemini-pro',
-        prompt: 'warmup',
-        timeout: 3000
-      })
-    });
-    console.log('✅ AI service connections warmed up');
-  } catch (error) {
-    console.warn('❌ Failed to warmup AI service connections:', error.message);
-  }
+  console.log('🤖 AI service connection warmup skipped (client-side SPA)');
+  // AI services (Gemini) are called directly from the client
+  // No local API endpoints exist for AI warmup
+  return true;
 }
 
 /**
@@ -382,11 +303,12 @@ async function main() {
   console.log('');
   
   try {
-    // Update total requests count
-    metrics.totalRequests = CONFIG.endpoints.length * CONFIG.regions.length + 5; // +5 for all warmup routines
-    
-    // Execute warmup sequence
+    // Update total requests count (only static endpoints - no API warmup routines)
+    metrics.totalRequests = CONFIG.endpoints.length * CONFIG.regions.length;
+
+    // Execute warmup sequence (static endpoints only)
     await warmupEndpoints();
+    // Note: Other warmup functions skipped - client-side SPA with no REST API endpoints
     await warmupCachePatterns();
     await warmupDatabaseConnections();
     await warmupSupabaseFunctions();
