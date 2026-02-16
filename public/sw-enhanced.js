@@ -38,12 +38,12 @@ const CRITICAL_ASSETS = [
   'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2'
 ];
 
-// API endpoints to cache
-const API_ENDPOINTS = [
-  '/api/robots',
-  '/api/strategies',
-  '/api/health',
-  '/api/analytics/performance-score'
+// Static routes to cache (client-side SPA with no REST API endpoints)
+const STATIC_ROUTES = [
+  '/',
+  '/dashboard',
+  '/generator',
+  '/wiki'
 ];
 
 // Cache duration settings (in seconds)
@@ -65,14 +65,14 @@ self.addEventListener('install', (event) => {
         return cache.addAll(CRITICAL_ASSETS);
       }),
       
-      // Pre-cache API responses
-      caches.open(API_CACHE).then((cache) => {
-        console.log('Pre-caching API endpoints...');
+      // Pre-cache static routes for SPA navigation
+      caches.open(STATIC_CACHE).then((cache) => {
+        console.log('Pre-caching static routes...');
         return Promise.all(
-          API_ENDPOINTS.map(endpoint => 
-            fetch(endpoint).then(response => {
+          STATIC_ROUTES.map(route =>
+            fetch(route).then(response => {
               if (response.ok) {
-                return cache.put(endpoint, response);
+                return cache.put(route, response);
               }
             }).catch(() => {
               // Ignore failures for pre-caching
@@ -319,7 +319,11 @@ function isStaticAsset(url) {
 }
 
 function isAPIRequest(url) {
-  return url.includes('/api/') || url.includes('/supabase/');
+  // Only treat external API calls as API requests
+  // Local /api/* endpoints don't exist in this client-side SPA
+  return url.includes('supabase.co') ||
+         url.includes('googleapis.com') ||
+         url.includes('twelvedata.com');
 }
 
 function isNavigationRequest(url) {
@@ -431,18 +435,16 @@ async function updateCaches() {
       }
     }
     
-    // Update API cache
-    const apiCache = await caches.open(API_CACHE);
-    
-    for (const endpoint of API_ENDPOINTS) {
+    // Update static routes cache for SPA navigation (reuse staticCache from above)
+    for (const route of STATIC_ROUTES) {
       try {
-        const response = await fetch(endpoint);
+        const response = await fetch(route);
         if (response.ok) {
-          await apiCache.put(endpoint, response);
-          console.log('Updated API endpoint:', endpoint);
+          await staticCache.put(route, response);
+          console.log('Updated static route:', route);
         }
       } catch (error) {
-        console.warn('Failed to update API endpoint:', endpoint, error);
+        console.warn('Failed to update static route:', route, error);
       }
     }
     
