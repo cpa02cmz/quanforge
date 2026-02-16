@@ -1028,7 +1028,7 @@ private validateRobotData(data: any): ValidationResult {
         if (!Array.isArray(violations)) {
           violations = [];
         }
-      } catch (parseError) {
+      } catch (_parseError) {
         // Handle corrupted data by resetting
         violations = [];
       }
