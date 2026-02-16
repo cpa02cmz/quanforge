@@ -866,8 +866,8 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
          response = extractThinking(rawResponse);
      }
      
-     // Cache the response with semantic key and longer TTL for similar prompts
-     mql5ResponseCache.set(semanticKey, response, 900000); // 15 minutes TTL
+      // Cache the response with semantic key - use semantic cache TTL (15 minutes)
+      mql5ResponseCache.set(semanticKey, response, CACHE_TTLS.SEMANTIC_CACHE);
      
       return response;
 

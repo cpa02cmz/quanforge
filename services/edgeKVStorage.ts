@@ -103,7 +103,7 @@ class EdgeKVClient {
         // Cache in memory for faster access
         this.cache.set(fullKey, {
           data: parsed,
-          expiry: Date.now() + 60000, // 1 minute memory cache
+          expiry: Date.now() + TIME_CONSTANTS.MINUTE, // 1 minute memory cache
         });
         
         return parsed;
@@ -129,10 +129,10 @@ class EdgeKVClient {
       
       await this.client.set(fullKey, compressed, { ex: effectiveTTL });
       
-      // Update memory cache
+      // Update memory cache - cap at 1 minute for memory cache freshness
       this.cache.set(fullKey, {
         data: value,
-        expiry: Date.now() + Math.min(effectiveTTL * 1000, 60000),
+        expiry: Date.now() + Math.min(effectiveTTL * TIME_CONSTANTS.SECOND, TIME_CONSTANTS.MINUTE),
       });
       
       this.metrics.sets++;
@@ -228,13 +228,13 @@ class EdgeKVClient {
         
         operations.push(this.client.set(fullKey, compressed, { ex: effectiveTTL }));
         
-        // Update memory cache
+        // Update memory cache - cap at 1 minute for memory cache freshness
         this.cache.set(fullKey, {
           data: value,
-          expiry: Date.now() + Math.min(effectiveTTL * 1000, 60000),
+          expiry: Date.now() + Math.min(effectiveTTL * TIME_CONSTANTS.SECOND, TIME_CONSTANTS.MINUTE),
         });
       }
-      
+
       await Promise.all(operations);
       this.metrics.sets += Object.keys(entries).length;
       return true;
@@ -404,7 +404,7 @@ export const edgeKVService = {
       const current = await edgeKVClient.increment('rate_limit', key, 1);
 
       if (current === null) {
-        return { allowed: false, remaining: 0, resetTime: Date.now() + (window * 1000) };
+        return { allowed: false, remaining: 0, resetTime: Date.now() + (window * TIME_CONSTANTS.SECOND) };
       }
 
       if (current === 1) {
@@ -414,7 +414,7 @@ export const edgeKVService = {
 
       const allowed = current <= limit;
       const remaining = Math.max(0, limit - current);
-      const resetTime = Date.now() + (window * 1000);
+      const resetTime = Date.now() + (window * TIME_CONSTANTS.SECOND);
       
       return { allowed, remaining, resetTime };
     },

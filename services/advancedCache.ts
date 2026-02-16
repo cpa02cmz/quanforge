@@ -219,7 +219,7 @@ export class AdvancedCache {
         const key = `${pattern}:${JSON.stringify(params)}`;
         try {
           const data = await loader(params);
-this.set(key, data, { ttl: ttl || 300000, tags: tags || [] });
+this.set(key, data, { ttl: ttl || CACHE_TTLS.FIVE_MINUTES, tags: tags || [] });
         } catch (error: unknown) {
           logger.warn(`Failed to warm cache entry: ${key}`, error);
         }
