@@ -10,6 +10,7 @@ import { CharacterCounter } from './CharacterCounter';
 import { useModalAccessibility } from '../hooks/useModalAccessibility';
 import { announceFormValidation } from '../utils/announcer';
 import { FormField } from './FormField';
+import { IntegrationHealthDashboard } from './IntegrationHealthDashboard';
 
 const logger = createScopedLogger('AISettingsModal');
 
@@ -58,7 +59,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = memo(({ isOpen, o
     const [settings, setSettings] = useState<AISettings>(DEFAULT_AI_SETTINGS);
     const [isTesting, setIsTesting] = useState(false);
     const [activePreset, setActivePreset] = useState<string>('google');
-    const [activeTab, setActiveTab] = useState<'ai' | 'market'>('ai');
+    const [activeTab, setActiveTab] = useState<'ai' | 'market' | 'health'>('ai');
     const [errors, setErrors] = useState<Partial<Record<keyof AISettings, string>>>({});
     const modalRef = useRef<HTMLDivElement>(null);
     const titleId = 'ai-settings-title';
@@ -257,6 +258,17 @@ return (
                         >
                             {t('settings_market_tab')}
                         </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('health')}
+                            className={`pb-2 px-1 ${
+                                activeTab === 'health'
+                                    ? 'border-b-2 border-brand-500 text-brand-400'
+                                    : 'text-gray-400 hover:text-white'
+                            }`}
+                        >
+                            System Health
+                        </button>
                     </div>
 
                     {/* AI Settings Tab */}
@@ -425,6 +437,13 @@ return (
                                     {t('settings_twelve_data_description')}
                                 </p>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Health Dashboard Tab */}
+                    {activeTab === 'health' && (
+                        <div className="space-y-4">
+                            <IntegrationHealthDashboard />
                         </div>
                     )}
 

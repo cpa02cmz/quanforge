@@ -10,6 +10,7 @@ import { UserSession } from '../types';
 import PerformanceInsights from './PerformanceInsights';
 import { ScrollToTopButton } from './ScrollToTopButton';
 import { KeyboardNavigationIndicator } from './KeyboardNavigationIndicator';
+import { PageTransition } from './PageTransition';
 
 interface LayoutProps {
   session: UserSession | null;
@@ -244,7 +245,9 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
           </div>
         </header>
          <div className="flex-1 overflow-y-auto">
-           <Outlet />
+           <PageTransition>
+             <Outlet />
+           </PageTransition>
          </div>
          <PerformanceInsights />
          <ScrollToTopButton />
