@@ -1,0 +1,163 @@
+{
+  "$schema": "./bundle-size-schema.json",
+  "budgets": {
+    "ai-vendor": {
+      "raw": 300000,
+      "gzip": 60000,
+      "notes": "Google GenAI SDK - third party, limited tree-shaking possible"
+    },
+    "chart-vendor": {
+      "raw": 250000,
+      "gzip": 65000,
+      "notes": "Recharts visualization library - lazy loaded when needed"
+    },
+    "react-core": {
+      "raw": 250000,
+      "gzip": 70000,
+      "notes": "React framework baseline - acceptable overhead"
+    },
+    "react-router": {
+      "raw": 100000,
+      "gzip": 35000,
+      "notes": "React Router - routing functionality"
+    },
+    "vendor-misc": {
+      "raw": 200000,
+      "gzip": 55000,
+      "notes": "Miscellaneous vendor libraries"
+    },
+    "supabase-vendor": {
+      "raw": 150000,
+      "gzip": 45000,
+      "notes": "Supabase client library"
+    },
+    "supabase-realtime": {
+      "raw": 50000,
+      "gzip": 18000,
+      "notes": "Supabase realtime - dynamically loaded"
+    },
+    "supabase-storage": {
+      "raw": 50000,
+      "gzip": 18000,
+      "notes": "Supabase storage - dynamically loaded"
+    },
+    "security-vendor": {
+      "raw": 50000,
+      "gzip": 15000,
+      "notes": "Security utilities (DOMPurify, etc.)"
+    },
+    "services-ai": {
+      "raw": 50000,
+      "gzip": 15000,
+      "notes": "AI service layer"
+    },
+    "services-data": {
+      "raw": 80000,
+      "gzip": 22000,
+      "notes": "Database and edge services"
+    },
+    "services-core": {
+      "raw": 50000,
+      "gzip": 15000,
+      "notes": "Core services (cache, security, auth)"
+    },
+    "services-misc": {
+      "raw": 100000,
+      "gzip": 30000,
+      "notes": "Miscellaneous services"
+    },
+    "component-ui": {
+      "raw": 60000,
+      "gzip": 18000,
+      "notes": "UI components (modals, dialogs, etc.)"
+    },
+    "components-core": {
+      "raw": 120000,
+      "gzip": 35000,
+      "notes": "Core UI components"
+    },
+    "component-chat": {
+      "raw": 30000,
+      "gzip": 10000,
+      "notes": "Chat interface - lazy loaded"
+    },
+    "component-editor": {
+      "raw": 30000,
+      "gzip": 10000,
+      "notes": "Code editor - lazy loaded"
+    },
+    "component-backtest": {
+      "raw": 20000,
+      "gzip": 8000,
+      "notes": "Backtest components - lazy loaded"
+    },
+    "component-charts": {
+      "raw": 20000,
+      "gzip": 8000,
+      "notes": "Chart components - lazy loaded"
+    },
+    "component-config": {
+      "raw": 20000,
+      "gzip": 8000,
+      "notes": "Strategy config - lazy loaded"
+    },
+    "component-trading": {
+      "raw": 15000,
+      "gzip": 6000,
+      "notes": "Trading components - lazy loaded"
+    },
+    "route-generator": {
+      "raw": 20000,
+      "gzip": 8000,
+      "notes": "Generator route - lazy loaded"
+    },
+    "route-dashboard": {
+      "raw": 20000,
+      "gzip": 8000,
+      "notes": "Dashboard route - lazy loaded"
+    },
+    "route-static": {
+      "raw": 60000,
+      "gzip": 18000,
+      "notes": "Static pages (About, FAQ, etc.)"
+    },
+    "utils-performance": {
+      "raw": 40000,
+      "gzip": 12000,
+      "notes": "Performance utilities"
+    },
+    "utils-security": {
+      "raw": 30000,
+      "gzip": 10000,
+      "notes": "Security utilities"
+    },
+    "utils-core": {
+      "raw": 60000,
+      "gzip": 18000,
+      "notes": "Core utility functions"
+    },
+    "assets-constants": {
+      "raw": 30000,
+      "gzip": 10000,
+      "notes": "Constants and translations"
+    },
+    "main": {
+      "raw": 50000,
+      "gzip": 15000,
+      "notes": "Main entry point"
+    },
+    "chunk-default": {
+      "raw": 50000,
+      "gzip": 15000,
+      "notes": "Default chunks"
+    }
+  },
+  "total": {
+    "raw": 2500000,
+    "gzip": 700000,
+    "notes": "Total initial JS payload (excluding lazy-loaded chunks)"
+  },
+  "warningThreshold": 0.9,
+  "errorThreshold": 1.0,
+  "reportPath": "./dist/bundle-size-report.json"
+}
