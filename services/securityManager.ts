@@ -51,6 +51,7 @@ interface ValidationResult {
 class SecurityManager {
   private static instance: SecurityManager;
   private edgeThreatTimer: ReturnType<typeof setInterval> | null = null;
+  private cspViolationHandler?: (event: SecurityPolicyViolationEvent) => void;
   private config: SecurityConfig = {
     maxPayloadSize: 5 * 1024 * 1024, // 5MB for better security - defined locally for flexibility
     allowedOrigins: [
@@ -988,7 +989,7 @@ private validateRobotData(data: any): ValidationResult {
   // Content Security Policy monitoring
   monitorCSPViolations(): void {
     // Listen for CSP violation reports
-    document.addEventListener('securitypolicyviolation', (event) => {
+    this.cspViolationHandler = (event: SecurityPolicyViolationEvent) => {
       const violation = {
         blockedURI: event.blockedURI,
         documentURI: event.documentURI,
@@ -1006,27 +1007,43 @@ private validateRobotData(data: any): ValidationResult {
       };
 
       logger.warn('🛡️ CSP Violation detected:', violation);
-      
+
       // Store violation for analysis
       this.storeCSPViolation(violation);
-      
+
       // Trigger alert if high severity
       if (this.isHighSeverityViolation(violation)) {
         this.triggerSecurityAlert('CSP Violation', violation);
       }
-    });
+    };
+    document.addEventListener('securitypolicyviolation', this.cspViolationHandler);
   }
 
   private storeCSPViolation(violation: any): void {
-    const violations = JSON.parse(localStorage.getItem('csp_violations') || '[]');
-    violations.push(violation);
-    
-    // Keep only last 100 violations
-    if (violations.length > 100) {
-      violations.splice(0, violations.length - 100);
+    try {
+      const stored = localStorage.getItem('csp_violations') || '[]';
+      let violations: any[] = [];
+      try {
+        violations = JSON.parse(stored);
+        if (!Array.isArray(violations)) {
+          violations = [];
+        }
+      } catch (parseError) {
+        // Handle corrupted data by resetting
+        violations = [];
+      }
+      violations.push(violation);
+
+      // Keep only last 100 violations
+      if (violations.length > 100) {
+        violations.splice(0, violations.length - 100);
+      }
+
+      localStorage.setItem('csp_violations', JSON.stringify(violations));
+    } catch (storageError) {
+      // Silently fail if localStorage is unavailable
+      logger.warn('Failed to store CSP violation:', storageError);
     }
-    
-    localStorage.setItem('csp_violations', JSON.stringify(violations));
   }
 
   private isHighSeverityViolation(violation: any): boolean {
@@ -1201,15 +1218,21 @@ private validateRobotData(data: any): ValidationResult {
     }
   }
 
-  /**
-   * Clean up timers and resources
-   */
-  destroy(): void {
-    if (this.edgeThreatTimer) {
-      clearInterval(this.edgeThreatTimer);
-      this.edgeThreatTimer = null;
-    }
-  }
+   /**
+    * Clean up timers and resources
+    */
+   destroy(): void {
+     if (this.edgeThreatTimer) {
+       clearInterval(this.edgeThreatTimer);
+       this.edgeThreatTimer = null;
+     }
+
+     // Remove CSP violation listener to prevent memory leaks
+     if (this.cspViolationHandler) {
+       document.removeEventListener('securitypolicyviolation', this.cspViolationHandler);
+       this.cspViolationHandler = undefined;
+     }
+   }
 
   /**
    * Analyze edge request patterns for anomalies

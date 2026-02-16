@@ -65,6 +65,10 @@ export class RealTimeMonitor {
   private isMonitoring = false;
   private reportingEndpoint?: string;
   private reportInterval: ReturnType<typeof setInterval> | null = null;
+  // Store event listener references for cleanup
+  private errorHandler?: (event: ErrorEvent) => void;
+  private rejectionHandler?: (event: PromiseRejectionEvent) => void;
+  private loadHandler?: () => void;
 
   constructor(config?: Partial<AlertConfig>) {
     this.sessionId = this.generateSessionId();
@@ -131,6 +135,20 @@ export class RealTimeMonitor {
     if (this.reportInterval) {
       clearInterval(this.reportInterval);
       this.reportInterval = null;
+    }
+
+    // Remove event listeners to prevent memory leaks
+    if (this.errorHandler) {
+      window.removeEventListener('error', this.errorHandler);
+      this.errorHandler = undefined;
+    }
+    if (this.rejectionHandler) {
+      window.removeEventListener('unhandledrejection', this.rejectionHandler);
+      this.rejectionHandler = undefined;
+    }
+    if (this.loadHandler) {
+      window.removeEventListener('load', this.loadHandler);
+      this.loadHandler = undefined;
     }
 
     this.isMonitoring = false;
@@ -229,7 +247,7 @@ export class RealTimeMonitor {
 
   private trackErrors(): void {
     // JavaScript errors
-    window.addEventListener('error', (event) => {
+    this.errorHandler = (event: ErrorEvent) => {
       this.recordError({
         message: event.message,
         stack: event.error?.stack,
@@ -242,10 +260,11 @@ export class RealTimeMonitor {
         userId: this.userId,
         sessionId: this.sessionId
       });
-    });
+    };
+    window.addEventListener('error', this.errorHandler);
 
     // Promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
+    this.rejectionHandler = (event: PromiseRejectionEvent) => {
       this.recordError({
         message: `Unhandled Promise Rejection: ${event.reason}`,
         stack: event.reason?.stack,
@@ -255,7 +274,8 @@ export class RealTimeMonitor {
         userId: this.userId,
         sessionId: this.sessionId
       });
-    });
+    };
+    window.addEventListener('unhandledrejection', this.rejectionHandler);
   }
 
   private monitorResourcePerformance(): void {
@@ -280,7 +300,7 @@ export class RealTimeMonitor {
   }
 
   private monitorNavigationTiming(): void {
-    window.addEventListener('load', () => {
+    this.loadHandler = () => {
       const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
       
       this.recordMetric({
@@ -303,7 +323,8 @@ export class RealTimeMonitor {
         this.triggerAlert('DOM Content Loaded', 
           navigation.domContentLoadedEventEnd - navigation.fetchStart, 3000);
       }
-    });
+    };
+    window.addEventListener('load', this.loadHandler);
   }
 
   private recordMetric(metric: PerformanceMetrics): void {
