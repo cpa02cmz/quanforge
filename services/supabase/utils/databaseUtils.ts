@@ -3,6 +3,7 @@
 import { Robot } from '../../../types';
 import { DATABASE, CACHE_TTLS, SERVICE_CACHE_CONFIG } from '../../constants';
 import { STORAGE_KEYS } from '../../../constants/modularConfig';
+import { HTTP_CONSTANTS } from '../../modularConstants';
 
 // Enhanced connection retry configuration with exponential backoff - using modular constants
 export const RETRY_CONFIG = {
@@ -87,7 +88,7 @@ export const shouldNotRetry = (error: unknown): boolean => {
     const err = error as RetryError;
 
     // Don't retry client errors (4xx)
-    if (err.status && err.status >= 400 && err.status < 500) {
+    if (err.status && err.status >= HTTP_CONSTANTS.BAD_REQUEST && err.status < HTTP_CONSTANTS.SERVER_ERROR) {
         return true;
     }
 

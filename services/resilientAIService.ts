@@ -4,6 +4,7 @@ import { IntegrationType } from './integrationResilience';
 import { aiServiceFallbacks } from './fallbackStrategies';
 import { createScopedLogger } from '../utils/logger';
 import { storage } from '../utils/storage';
+import { SIZE_CONSTANTS } from './modularConstants';
 
 const logger = createScopedLogger('resilient-ai-service');
 
@@ -29,7 +30,7 @@ export const aiService = {
       {
         operationName: 'generate_mql5_code',
         fallbacks: [
-          aiServiceFallbacks.cachedResponse('gen_' + prompt.substring(0, 50), (key: string) => {
+          aiServiceFallbacks.cachedResponse('gen_' + prompt.substring(0, SIZE_CONSTANTS.STRING.SHORT), (key: string) => {
             const cached = storage.get(key);
             return cached !== undefined ? cached : null;
           }),

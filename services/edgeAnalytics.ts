@@ -5,7 +5,7 @@
 
 import { WindowWithVercel } from '../types/browser';
 import { createScopedLogger } from '../utils/logger';
-import { DELAY_CONSTANTS } from './modularConstants';
+import { DELAY_CONSTANTS, SIZE_CONSTANTS } from './modularConstants';
 import { ANALYTICS_CONFIG } from '../constants/config';
 
 const logger = createScopedLogger('EdgeAnalytics');
@@ -368,7 +368,7 @@ class EdgeAnalytics {
         tagName: target.tagName,
         className: target.className,
         id: target.id,
-        textContent: target.textContent?.substring(0, 50)
+        textContent: target.textContent?.substring(0, SIZE_CONSTANTS.STRING.SHORT)
       });
     };
     document.addEventListener('click', this.clickHandler);

@@ -108,6 +108,18 @@ export const SIZE_CONSTANTS = {
     LONG: 254,
     MAX: 2048,
   },
+
+  // Substring operation lengths - Flexy-approved for consistent truncation
+  SUBSTRING: {
+    TINY: 10,           // Very short preview (e.g., IDs)
+    SHORT: 50,          // Short preview (e.g., labels)
+    MEDIUM: 100,        // Medium preview (e.g., cache keys)
+    STANDARD: 200,      // Standard preview (e.g., descriptions)
+    LONG: 500,          // Long preview (e.g., code snippets)
+    EXTENDED: 1000,     // Extended content (e.g., error messages)
+    FULL: 5000,         // Near-full content (e.g., large code blocks)
+    MAX: 10000,         // Maximum safe truncation
+  },
   
   // Memory sizes in bytes
   MEMORY: {
