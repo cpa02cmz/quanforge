@@ -6,6 +6,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { backendOptimizationManager as modularManager } from './optimization/modularBackendOptimizationManager';
 import { OptimizationConfig, OptimizationMetrics } from './optimization/optimizationTypes';
+import { apiDeduplicator } from './apiDeduplicator';
 
 // Export the types for backward compatibility
 export type { OptimizationConfig, OptimizationMetrics };
@@ -203,14 +204,17 @@ class LegacyBackendOptimizationManager {
 
   /**
    * Execute with deduplication
+   * Integrates with apiDeduplicator to prevent duplicate in-flight requests
    */
   private async executeWithDeduplication<T>(
     queryFn: () => Promise<T>,
-    _cacheKey?: string
+    cacheKey?: string
   ): Promise<T> {
-    // For now, just execute the query directly
-    // TODO: Integrate with backend optimizer's deduplication
-    return await queryFn();
+    // Generate a unique key for this query if not provided
+    const key = cacheKey || `query_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Use apiDeduplicator to handle request deduplication
+    return await apiDeduplicator.deduplicate<T>(key, queryFn);
   }
 
   /**
