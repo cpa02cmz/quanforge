@@ -9,6 +9,7 @@
 import { IRateLimiter, RateLimitConfig } from '../../types/serviceInterfaces';
 import { createScopedLogger } from '../../utils/logger';
 import { RATE_LIMITING, TIME_CONSTANTS } from '../../constants/config';
+import { COUNT_CONSTANTS } from '../modularConstants';
 
 const logger = createScopedLogger('RateLimiter');
 
@@ -345,7 +346,7 @@ export class RateLimiter implements IRateLimiter {
     };
   }
 
-  getTopUsers(limit: number = 10): Array<{ identifier: string; requests: number; usagePercent: number }> {
+  getTopUsers(limit: number = COUNT_CONSTANTS.PAGINATION.SMALL): Array<{ identifier: string; requests: number; usagePercent: number }> {
     const sorted = Array.from(this.limits.entries())
       .sort(([, a], [, b]) => b.requests - a.requests)
       .slice(0, limit);

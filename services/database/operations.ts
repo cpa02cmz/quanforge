@@ -2,6 +2,7 @@ import { Robot, AuditLog, RobotVersion } from '../../types';
 import { getClient, STORAGE_KEYS, safeParse, trySaveToStorage, generateUUID } from './client';
 import { handleError, getErrorMessage } from '../../utils/errorHandler';
 import { storage } from '../../utils/storage';
+import { COUNT_CONSTANTS } from '../modularConstants';
 
 // Robot operations
 export const getRobots = async (userId: string): Promise<Robot[]> => {
@@ -162,9 +163,9 @@ export const getRobotsByIds = async (ids: string[], userId: string): Promise<Rob
 
 // Pagination support
 export const getRobotsPaginated = async (
-    userId: string, 
-    page: number = 1, 
-    limit: number = 20
+    userId: string,
+    page: number = 1,
+    limit: number = COUNT_CONSTANTS.PAGINATION.DEFAULT
 ): Promise<{ robots: Robot[]; total: number; page: number; totalPages: number }> => {
     try {
         const client = getClient();
