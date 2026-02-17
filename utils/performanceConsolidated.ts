@@ -8,7 +8,8 @@ import { PerformanceWithMemory } from '../types/browser';
 import { TIME_CONSTANTS } from '../constants/config';
 import { createScopedLogger } from './logger';
 
-const logger = createScopedLogger('performance');
+// Lazy logger to avoid circular dependency TDZ issues
+const logger = () => createScopedLogger('performance');
 
 // ========== BROWSER API TYPE EXTENSIONS ==========
 
@@ -114,7 +115,7 @@ class PerformanceCore {
 
     // Log in production for monitoring
     if (import.meta.env.PROD) {
-      logger.log(`Performance Metric [${name}]:`, value);
+      logger().log(`Performance Metric [${name}]:`, value);
     }
 
     // Store critical metrics in localStorage
@@ -143,7 +144,7 @@ class PerformanceCore {
       this.setupFIDObserver();
     } catch (e: unknown) {
       if (import.meta.env.DEV) {
-        logger.warn('Performance monitoring not fully supported:', e);
+        logger().warn('Performance monitoring not fully supported:', e);
       }
     }
   }
@@ -294,7 +295,7 @@ class TimingUtilities {
       }
       
       if (duration > TIME_CONSTANTS.SECOND) {
-        logger.warn(`Slow API call detected: ${name} took ${duration.toFixed(2)}ms`);
+        logger().warn(`Slow API call detected: ${name} took ${duration.toFixed(2)}ms`);
       }
     }
   }
@@ -330,7 +331,7 @@ class TimingUtilities {
       }
       
       if (duration > TIME_CONSTANTS.SECOND / 2) {
-        logger.warn(`Slow DB operation detected: ${name} took ${duration.toFixed(2)}ms, result size: ${resultSize}`);
+        logger().warn(`Slow DB operation detected: ${name} took ${duration.toFixed(2)}ms, result size: ${resultSize}`);
       }
     }
   }
@@ -354,14 +355,14 @@ class TimingUtilities {
       this.core.recordMetric(`edge_${name}_cold_start`, coldStart ? 1 : 0);
       
       if (import.meta.env.DEV && duration > TIME_CONSTANTS.SECOND) {
-        logger.warn(`Slow edge function ${name}: ${duration.toFixed(2)}ms in region ${region}`);
+        logger().warn(`Slow edge function ${name}: ${duration.toFixed(2)}ms in region ${region}`);
       }
       
       return result;
     } catch (error: unknown) {
       const duration = performance.now() - startTime;
       this.core.recordMetric(`edge_${name}_error_duration`, duration);
-      logger.error(`Edge function ${name} failed in region ${region} after ${duration.toFixed(2)}ms:`, error);
+      logger().error(`Edge function ${name} failed in region ${region} after ${duration.toFixed(2)}ms:`, error);
       throw error;
     }
   }
@@ -444,7 +445,7 @@ class MemoryUtilities {
   monitorMemoryUsage(intervalMs: number = TIME_CONSTANTS.SECOND * 30): () => void {
     if (typeof window === 'undefined' || !('performance' in window) || !('memory' in performance)) {
       if (import.meta.env.DEV) {
-        logger.warn('Memory monitoring not supported in this environment');
+        logger().warn('Memory monitoring not supported in this environment');
       }
       return () => {};
     }
@@ -457,7 +458,7 @@ class MemoryUtilities {
         
         if (memory.utilization > 80) {
           if (import.meta.env.DEV) {
-            logger.warn(`High memory usage detected: ${memory.utilization.toFixed(2)}%`);
+            logger().warn(`High memory usage detected: ${memory.utilization.toFixed(2)}%`);
           }
           this.core.recordMetric('high_memory_event', 1);
         }
@@ -487,10 +488,10 @@ class MemoryUtilities {
         globalWithGC.gc();
       }
       
-      logger.warn('Emergency memory cleanup performed');
+      logger().warn('Emergency memory cleanup performed');
       this.core.recordMetric('emergency_cleanup', 1);
     } catch (error: unknown) {
-      logger.warn('Failed to perform emergency cleanup:', error);
+      logger().warn('Failed to perform emergency cleanup:', error);
     }
   }
 
@@ -583,7 +584,7 @@ class EnhancedMonitor {
     message: string,
     metadata: any
   ): void {
-    logger.warn(`Performance Alert [${severity.toUpperCase()}]: ${message}`, { type, metadata });
+    logger().warn(`Performance Alert [${severity.toUpperCase()}]: ${message}`, { type, metadata });
     // In production, this would send to alerting system
   }
 
