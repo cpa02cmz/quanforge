@@ -52,6 +52,8 @@
     "vercel-build": "npm run build:production",
     "bundle-size": "node scripts/bundle-size-monitor.js",
     "bundle-size:check": "node scripts/bundle-size-monitor.js --check",
+    "bundle-size:validate": "node scripts/validate-bundle-size.js",
+    "build:validate": "npm run build && npm run bundle-size:validate",
     "edge-optimize": "npm run build:edge && npm run test:performance",
     "deploy:edge": "vercel --prod",
     "cache:warm": "node scripts/warm-edge-cache.js",
