@@ -1,7 +1,7 @@
-import { chromium, Browser, Page } from 'playwright';
-import { createServer, ViteDevServer } from 'vite';
+import { chromium, Browser } from 'playwright';
+import type { ViteDevServer } from 'vite';
 import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
+import { dirname } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -22,7 +22,7 @@ interface AuditResult {
 async function auditBrowserConsole() {
   console.log('🧛‍♂️ BroCula initiating browser console audit...\n');
   
-  let server: ViteDevServer | null = null;
+  let _server: ViteDevServer | null = null;
   let browser: Browser | null = null;
   const results: AuditResult[] = [];
   
