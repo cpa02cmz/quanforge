@@ -5,6 +5,7 @@
 
 import { OptimizationMetrics, OptimizationConfig, QueryAnalysis } from './optimizationTypes';
 import { BACKEND_OPTIMIZATION_CONFIG } from '../../constants/config';
+import { queryOptimizer } from '../queryOptimizer';
 
 export class RecommendationEngine {
   constructor(private config: OptimizationConfig) {}
@@ -72,15 +73,41 @@ export class RecommendationEngine {
   }
 
   /**
-   * Analyze query patterns
+   * Analyze query patterns using query optimizer metrics
+   * Provides real performance data for optimization recommendations
    */
   private async analyzeQueries(): Promise<QueryAnalysis> {
-    // For now, return basic query analysis
-    // TODO: Implement actual query pattern analysis when available
+    // Get performance analysis from query optimizer
+    const performanceAnalysis = queryOptimizer.getPerformanceAnalysis();
+    
+    // Build recommendations based on actual metrics
+    const recommendations: string[] = [];
+    
+    if (performanceAnalysis.slowQueries.length > 0) {
+      recommendations.push(`${performanceAnalysis.slowQueries.length} slow queries detected. Consider optimizing these queries.`);
+    }
+    
+    if (performanceAnalysis.cacheHitRate < 60) {
+      recommendations.push('Query cache hit rate is low. Consider tuning cache configuration or increasing cache TTL.');
+    }
+    
+    if (performanceAnalysis.averageExecutionTime > 500) {
+      recommendations.push('Average query execution time is high. Consider database optimization or indexing.');
+    }
+    
+    // Always include default recommendation if no specific issues found
+    if (recommendations.length === 0) {
+      recommendations.push('Query performance is acceptable. Continue monitoring for optimization opportunities.');
+    }
+    
     return {
-      slowQueries: [],
-      cacheHitRate: 75, // Default assumed cache hit rate
-      recommendations: ['Consider monitoring slow queries for optimization opportunities']
+      slowQueries: performanceAnalysis.slowQueries.map(q => ({
+        executionTime: q.executionTime,
+        queryHash: q.queryHash,
+        resultCount: q.resultCount
+      })),
+      cacheHitRate: Math.round(performanceAnalysis.cacheHitRate),
+      recommendations
     };
   }
 
