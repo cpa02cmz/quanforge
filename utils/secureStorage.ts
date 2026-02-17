@@ -1,4 +1,7 @@
 import { TIME_CONSTANTS } from '../constants/config';
+import { createScopedLogger } from './logger';
+
+const logger = createScopedLogger('secure-storage');
 
 // Secure Storage Interface
 interface SecureStorageOptions {
@@ -103,7 +106,7 @@ export class WebCryptoEncryption {
       
       return btoa(String.fromCharCode(...combined));
     } catch (error: unknown) {
-      console.error('Encryption failed:', error);
+      logger.error('Encryption failed:', error);
       throw new Error('Failed to encrypt data');
     }
   }
@@ -135,7 +138,7 @@ export class WebCryptoEncryption {
       const decoder = new TextDecoder();
       return decoder.decode(decryptedData);
     } catch (error: unknown) {
-      console.warn('Failed to decrypt data:', error);
+      logger.warn('Failed to decrypt data:', error);
       throw new Error('Failed to decrypt data');
     }
   }
@@ -170,7 +173,7 @@ export class LegacyXORDecryption {
       
       return btoa(String.fromCharCode(...encrypted));
     } catch (error: unknown) {
-      console.warn('Failed to encrypt legacy data:', error);
+      logger.warn('Failed to encrypt legacy data:', error);
       return '';
     }
   }
@@ -195,7 +198,7 @@ export class LegacyXORDecryption {
       
       return new TextDecoder().decode(decrypted);
     } catch (error: unknown) {
-      console.warn('Failed to decrypt legacy data:', error);
+      logger.warn('Failed to decrypt legacy data:', error);
       return '';
     }
   }
@@ -215,7 +218,7 @@ class SimpleCompression {
     try {
       return btoa(text);
     } catch (error: unknown) {
-      console.warn('Failed to compress data:', error);
+      logger.warn('Failed to compress data:', error);
       return text;
     }
   }
@@ -226,7 +229,7 @@ class SimpleCompression {
     try {
       return atob(compressedText);
     } catch (error: unknown) {
-      console.warn('Failed to decompress data:', error);
+      logger.warn('Failed to decompress data:', error);
       return compressedText;
     }
   }
@@ -256,7 +259,7 @@ export class SecureStorage {
   private validateSize(data: string): boolean {
     const size = new Blob([data]).size;
     if (size > this.maxSize) {
-      console.warn(`Data size (${size} bytes) exceeds maximum allowed size (${this.maxSize} bytes)`);
+      logger.warn(`Data size (${size} bytes) exceeds maximum allowed size (${this.maxSize} bytes)`);
       return false;
     }
     return true;
@@ -273,7 +276,7 @@ export class SecureStorage {
     try {
       processedData = JSON.stringify(data);
     } catch (error: unknown) {
-      console.error('Failed to serialize data:', error);
+      logger.error('Failed to serialize data:', error);
       throw new Error('Unable to serialize data for storage');
     }
     
@@ -334,7 +337,7 @@ export class SecureStorage {
             processedData = await WebCryptoEncryption.decrypt(processedData);
           }
         } catch (error: unknown) {
-          console.warn('Failed to decrypt data, returning original:', error);
+          logger.warn('Failed to decrypt data, returning original:', error);
           return item.data as T;
         }
       }
@@ -343,13 +346,13 @@ export class SecureStorage {
         try {
           processedData = SimpleCompression.decompress(processedData);
         } catch (error: unknown) {
-          console.warn('Failed to decompress data, using processed:', error);
+          logger.warn('Failed to decompress data, using processed:', error);
         }
       }
       
       return JSON.parse(processedData);
     } catch (error: unknown) {
-      console.error('Failed to deserialize item:', error);
+      logger.error('Failed to deserialize item:', error);
       return null;
     }
   }
@@ -363,7 +366,7 @@ export class SecureStorage {
       localStorage.setItem(storageKey, serialized);
       return true;
     } catch (error: unknown) {
-      console.error(`Failed to store data for key '${key}':`, error);
+      logger.error(`Failed to store data for key '${key}':`, error);
       return false;
     }
   }
@@ -378,7 +381,7 @@ export class SecureStorage {
       const data = await this.deserializeItem<T>(serialized);
       return data !== null ? data : defaultValue;
     } catch (error: unknown) {
-      console.error(`Failed to retrieve data for key '${key}':`, error);
+      logger.error(`Failed to retrieve data for key '${key}':`, error);
       return defaultValue;
     }
   }
@@ -389,7 +392,7 @@ export class SecureStorage {
       localStorage.removeItem(storageKey);
       return true;
     } catch (error: unknown) {
-      console.error(`Failed to remove data for key '${key}':`, error);
+      logger.error(`Failed to remove data for key '${key}':`, error);
       return false;
     }
   }
@@ -408,7 +411,7 @@ export class SecureStorage {
       keysToRemove.forEach(key => localStorage.removeItem(key));
       return true;
     } catch (error: unknown) {
-      console.error('Failed to clear secure storage:', error);
+      logger.error('Failed to clear secure storage:', error);
       return false;
     }
   }
@@ -521,7 +524,7 @@ export class SecureStorage {
       
       return Math.max(0, size - this.getStats().totalSize);
     } catch (error: unknown) {
-      console.warn('Could not estimate remaining space:', error);
+      logger.warn('Could not estimate remaining space:', error);
       return 0;
     }
   }

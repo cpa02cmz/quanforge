@@ -1,5 +1,8 @@
 import { performance } from 'perf_hooks';
 import { PERFORMANCE_MONITORING, MEMORY } from '../constants/timing';
+import { createScopedLogger } from './logger';
+
+const logger = createScopedLogger('performance-monitor');
 
 // Type definitions for better type safety
 interface PerformanceMemory {
@@ -177,37 +180,35 @@ class PerformanceMonitor {
   logPerformanceReport(): void {
     const report = this.getPerformanceReport();
     
-    console.group('🚀 Performance Report');
-    console.log(`📊 Total Operations: ${report.totalOperations}`);
-    console.log(`⏱️  Average Duration: ${report.averageDuration.toFixed(2)}ms`);
-    console.log(`🐌 Slowest Operation: ${report.slowestOperation.operation} (${report.slowestOperation.duration.toFixed(2)}ms)`);
-    console.log(`🚀 Fastest Operation: ${report.fastestOperation.operation} (${report.fastestOperation.duration.toFixed(2)}ms)`);
+    logger.log('🚀 Performance Report');
+    logger.log(`📊 Total Operations: ${report.totalOperations}`);
+    logger.log(`⏱️  Average Duration: ${report.averageDuration.toFixed(2)}ms`);
+    logger.log(`🐌 Slowest Operation: ${report.slowestOperation.operation} (${report.slowestOperation.duration.toFixed(2)}ms)`);
+    logger.log(`🚀 Fastest Operation: ${report.fastestOperation.operation} (${report.fastestOperation.duration.toFixed(2)}ms)`);
     
     if (report.memoryTrend.length > 0) {
       const currentMemory = report.memoryTrend[report.memoryTrend.length - 1] || 0;
       const memoryMB = (currentMemory / MEMORY.MB).toFixed(2);
-      console.log(`💾 Current Memory Usage: ${memoryMB} MB`);
+      logger.log(`💾 Current Memory Usage: ${memoryMB} MB`);
     }
 
-    console.log('\n📈 Operations by Type:');
+    logger.log('\n📈 Operations by Type:');
     Object.entries(report.operationsByType).forEach(([operation, metrics]) => {
       const avgDuration = metrics.reduce((sum, m) => sum + m.duration, 0) / metrics.length;
       const maxDuration = Math.max(...metrics.map(m => m.duration));
-      console.log(`  ${operation}: ${metrics.length} ops, avg: ${avgDuration.toFixed(2)}ms, max: ${maxDuration.toFixed(2)}ms`);
+      logger.log(`  ${operation}: ${metrics.length} ops, avg: ${avgDuration.toFixed(2)}ms, max: ${maxDuration.toFixed(2)}ms`);
     });
-    
-    console.groupEnd();
 
     // Log warnings for slow operations
     if (report.slowestOperation.duration > PERFORMANCE_MONITORING.SLOW_OPERATION_THRESHOLD) {
-      console.warn(`⚠️  Slow operation detected: ${report.slowestOperation.operation} took ${report.slowestOperation.duration.toFixed(2)}ms`);
+      logger.warn(`⚠️  Slow operation detected: ${report.slowestOperation.operation} took ${report.slowestOperation.duration.toFixed(2)}ms`);
     }
 
     // Log memory warnings
     if (report.memoryTrend.length > 0) {
       const currentMemory = report.memoryTrend[report.memoryTrend.length - 1] || 0;
       if (currentMemory > PERFORMANCE_MONITORING.HIGH_MEMORY_THRESHOLD_MB * MEMORY.MB) {
-        console.warn(`⚠️  High memory usage: ${(currentMemory / MEMORY.MB).toFixed(2)} MB`);
+        logger.warn(`⚠️  High memory usage: ${(currentMemory / MEMORY.MB).toFixed(2)} MB`);
       }
     }
   }
@@ -503,10 +504,10 @@ class Logger {
   private async sendToExternalLogger(logEntry: LogEntry): Promise<void> {
     try {
       // In a real implementation, you would send to a logging service like LogRocket, Sentry, etc.
-      // For now, we'll just log to console to avoid external dependencies
-      console.log('External logging service call:', logEntry);
+      // For now, we'll just log to logger to avoid external dependencies
+      logger.log('External logging service call:', logEntry);
     } catch (e: unknown) {
-      console.warn('Failed to send log to external service:', e);
+      logger.warn('Failed to send log to external service:', e);
     }
   }
 
