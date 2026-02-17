@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { createScopedLogger } from '../utils/logger';
 
 interface HapticPattern {
   /** Pattern of vibration durations in milliseconds */
@@ -69,6 +70,8 @@ interface UseHapticFeedbackOptions {
  * const { trigger, isSupported } = useHapticFeedback({ enabled: false });
  * <button onClick={() => isSupported && trigger(HAPTIC_PATTERNS.MEDIUM)}>Click</button>
  */
+const logger = createScopedLogger('useHapticFeedback');
+
 export function useHapticFeedback(options: UseHapticFeedbackOptions = {}) {
   const { enabled = true, defaultPattern = HAPTIC_PATTERNS['MEDIUM'] } = options;
   const [isSupported, setIsSupported] = useState(false);
@@ -101,7 +104,7 @@ export function useHapticFeedback(options: UseHapticFeedbackOptions = {}) {
         if (predefinedPattern) {
           vibrationPattern = predefinedPattern.pattern;
         } else {
-          console.warn(`[useHapticFeedback] Unknown pattern: ${pattern}`);
+          logger.warn(`[useHapticFeedback] Unknown pattern: ${pattern}`);
           vibrationPattern = defaultPattern?.pattern ?? fallbackPattern;
         }
       } else if (pattern && typeof pattern === 'object' && 'pattern' in pattern) {
