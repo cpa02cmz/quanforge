@@ -7,7 +7,7 @@ import { AI_CONFIG } from "../../constants/config";
 import { importGoogleGenAI, importAIGenerationTypes } from "./aiImports";
 import { SIZE_CONSTANTS } from "../modularConstants";
 
-const logger = createScopedLogger('ai-core');
+const logger = () => createScopedLogger('ai-core');
 
 export interface AICoreConfig {
   currentCode: string | null;
@@ -85,7 +85,7 @@ export class AICore {
       const errorObj = error as Error & { name?: string };
       if (errorObj.name === 'AbortError') throw error;
       
-      logger.error('MQL5 generation failed:', errorObj);
+      logger().error('MQL5 generation failed:', errorObj);
       throw new Error(`AI generation failed: ${errorObj.message}`);
     }
   }
@@ -146,7 +146,7 @@ export class AICore {
       const errorObj = error as Error & { name?: string };
       if (errorObj.name === 'AbortError') throw error;
       
-      logger.error('Strategy analysis failed:', errorObj);
+      logger().error('Strategy analysis failed:', errorObj);
       return {
         riskScore: 0,
         profitability: 0,
@@ -221,7 +221,7 @@ export class AICore {
       // Fallback: try to parse entire text as JSON
       return JSON.parse(text);
     } catch {
-      logger.warn('Failed to extract JSON from response:', text.substring(0, SIZE_CONSTANTS.DISPLAY.STANDARD));
+      logger().warn('Failed to extract JSON from response:', text.substring(0, SIZE_CONSTANTS.DISPLAY.STANDARD));
       return null;
     }
   }
@@ -263,5 +263,13 @@ export class AICore {
   }
 }
 
-// Export singleton instance
-export const aiCore = new AICore();
+// Export lazy singleton instance to avoid TDZ issues
+let _aiCore: AICore | null = null;
+export const getAICore = (): AICore => {
+  if (!_aiCore) {
+    _aiCore = new AICore();
+  }
+  return _aiCore;
+};
+// Backward-compatible export
+export { getAICore as aiCore };

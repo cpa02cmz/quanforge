@@ -2,7 +2,7 @@
 import { createScopedLogger } from "../../utils/logger";
 import { AI_CONFIG, TIME_CONSTANTS } from "../../constants/config";
 
-const logger = createScopedLogger('ai-rate-limiter');
+const logger = () => createScopedLogger('ai-rate-limiter');
 
 export interface RateLimitConfig {
   windowMs: number;
@@ -46,7 +46,7 @@ export class AIRateLimiter {
       this.cleanupExpiredLimits();
     }, TIME_CONSTANTS.MINUTE);
 
-    logger.info('AI Rate Limiter initialized', this.defaultConfig);
+    logger().info('AI Rate Limiter initialized', this.defaultConfig);
   }
 
   async checkRateLimit(userId: string, action: 'generation' | 'analysis' = 'generation'): Promise<RateLimitResult> {
@@ -98,7 +98,7 @@ export class AIRateLimiter {
       // Rate limit exceeded - apply penalty for aggressive violations
       if (userLimit.requests - effectiveMaxRequests > 2) {
         userLimit.penaltyUntil = now + this.defaultConfig.penaltyMs!;
-        logger.warn(`Rate limit penalty applied for user ${userId}`);
+        logger().warn(`Rate limit penalty applied for user ${userId}`);
       }
 
       return {
@@ -122,7 +122,7 @@ export class AIRateLimiter {
 
     this.userLimits.set(userId, userLimit);
 
-    logger.debug('Rate limit check passed', { 
+    logger().debug('Rate limit check passed', { 
       userId, 
       action, 
       remaining: remaining.toString(),
@@ -150,7 +150,7 @@ export class AIRateLimiter {
         userLimit.burstTokens + 2,
         Math.floor(this.defaultConfig.maxRequests * (this.defaultConfig.burstMultiplier! - 1))
       );
-      logger.info(`Rate limit penalty cleared for user ${userId}`);
+      logger().info(`Rate limit penalty cleared for user ${userId}`);
     }
 
     this.userLimits.set(userId, userLimit);
@@ -163,7 +163,7 @@ export class AIRateLimiter {
       if (userLimit) {
         userLimit.penaltyUntil = Date.now() + this.defaultConfig.penaltyMs!;
         this.userLimits.set(userId, userLimit);
-        logger.warn(`Rate limit penalty applied due to 429 error for user ${userId}`);
+        logger().warn(`Rate limit penalty applied due to 429 error for user ${userId}`);
       }
     }
   }
@@ -216,12 +216,12 @@ export class AIRateLimiter {
 
   clearUserLimit(userId: string): void {
     this.userLimits.delete(userId);
-    logger.info(`Rate limit cleared for user ${userId}`);
+    logger().info(`Rate limit cleared for user ${userId}`);
   }
 
   clearAllLimits(): void {
     this.userLimits.clear();
-    logger.info('All rate limits cleared');
+    logger().info('All rate limits cleared');
   }
 
   private cleanupExpiredLimits(): void {
@@ -237,13 +237,13 @@ export class AIRateLimiter {
 
     if (expiredUsers.length > 0) {
       expiredUsers.forEach(userId => this.userLimits.delete(userId));
-      logger.debug(`Cleaned up ${expiredUsers.length} expired rate limits`);
+      logger().debug(`Cleaned up ${expiredUsers.length} expired rate limits`);
     }
   }
 
   updateConfig(config: Partial<RateLimitConfig>): void {
     this.defaultConfig = { ...this.defaultConfig, ...config };
-    logger.info('Rate limit config updated', this.defaultConfig);
+    logger().info('Rate limit config updated', this.defaultConfig);
   }
 
   // Cleanup method
@@ -252,9 +252,17 @@ export class AIRateLimiter {
       clearInterval(this.cleanupInterval);
     }
     this.userLimits.clear();
-    logger.info('AI Rate Limiter destroyed');
+    logger().info('AI Rate Limiter destroyed');
   }
 }
 
-// Export singleton instance
-export const aiRateLimiter = new AIRateLimiter();
+// Export lazy singleton instance to avoid TDZ issues
+let _aiRateLimiter: AIRateLimiter | null = null;
+export const getAIRateLimiter = (): AIRateLimiter => {
+  if (!_aiRateLimiter) {
+    _aiRateLimiter = new AIRateLimiter();
+  }
+  return _aiRateLimiter;
+};
+// Backward-compatible export
+export { getAIRateLimiter as aiRateLimiter };

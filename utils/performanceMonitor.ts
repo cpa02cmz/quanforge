@@ -1,6 +1,14 @@
-import { performance } from 'perf_hooks';
 import { PERFORMANCE_MONITORING, MEMORY } from '../constants/timing';
 import { createScopedLogger } from './logger';
+
+// Use global performance API (browser-compatible)
+// In browsers, performance is available globally
+// In Node.js tests, this will need to be polyfilled
+const perf = typeof globalThis !== 'undefined' && globalThis.performance
+  ? globalThis.performance
+  : typeof window !== 'undefined' && window.performance
+    ? window.performance
+    : { now: () => Date.now() } as Performance;
 
 const logger = createScopedLogger('performance-monitor');
 
@@ -84,11 +92,11 @@ class PerformanceMonitor {
       return () => ({} as PerformanceMetrics);
     }
 
-    const startTime = performance.now();
+    const startTime = perf.now();
     const memoryUsage = this.getMemoryUsage();
 
     return (): PerformanceMetrics => {
-      const endTime = performance.now();
+      const endTime = perf.now();
       const duration = endTime - startTime;
       
       const metric: PerformanceMetrics = {
