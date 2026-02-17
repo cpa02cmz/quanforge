@@ -1,6 +1,7 @@
 import React, { useState, useCallback, memo, useRef, useEffect } from 'react';
 import { logger } from '../utils/logger';
 import { PARTICLE_ANIMATION, COPY_BUTTON_ANIMATION } from '../constants/animations';
+import { useHapticFeedback } from '../hooks/useHapticFeedback';
 
 export interface CopyButtonProps {
   /** The text to copy to clipboard */
@@ -68,6 +69,9 @@ export const CopyButton: React.FC<CopyButtonProps> = memo(({
   const particleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Haptic feedback for tactile confirmation on mobile
+  const { trigger: triggerHaptic } = useHapticFeedback();
+
   // Cleanup timeouts on unmount to prevent memory leaks
   useEffect(() => {
     return () => {
@@ -110,7 +114,10 @@ export const CopyButton: React.FC<CopyButtonProps> = memo(({
       await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       triggerParticleBurst();
-      
+
+      // Trigger haptic feedback for successful copy - adds tactile delight on mobile
+      triggerHaptic('SUCCESS');
+
       if (onCopy) {
         onCopy();
       }
@@ -122,7 +129,7 @@ export const CopyButton: React.FC<CopyButtonProps> = memo(({
     } catch (err) {
       logger.error('Failed to copy:', err);
     }
-  }, [textToCopy, onCopy, triggerParticleBurst]);
+  }, [textToCopy, onCopy, triggerParticleBurst, triggerHaptic]);
 
   const handlePressStart = useCallback(() => {
     setIsPressed(true);
