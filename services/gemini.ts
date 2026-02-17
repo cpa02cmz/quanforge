@@ -6,7 +6,9 @@ import {
   COUNT_CONSTANTS,
   SIZE_CONSTANTS,
   ADJUSTMENT_FACTORS,
-  HTTP_CONSTANTS
+  HTTP_CONSTANTS,
+  SECURITY_PATTERNS,
+  INPUT_VALIDATION
 } from "./modularConstants";
 import { StrategyParams, StrategyAnalysis, Message, MessageRole, AISettings } from "../types";
 import { settingsManager } from "./settingsManager";
@@ -163,15 +165,15 @@ const sanitizePrompt = (prompt: string): string => {
   
   // Check for potential injection patterns
   const suspiciousPatterns = [
-    /eval\s*\(/gi,
-    /function\s*\(/gi,
-    /document\./gi,
-    /window\./gi,
-    /localStorage/gi,
-    /sessionStorage/gi,
-    /cookie/gi,
-    /location\./gi,
-    /navigator\./gi
+    new RegExp(SECURITY_PATTERNS.CODE_INJECTION.EVAL, 'gi'),
+    new RegExp(SECURITY_PATTERNS.CODE_INJECTION.FUNCTION_CONSTRUCTOR, 'gi'),
+    new RegExp(SECURITY_PATTERNS.CODE_INJECTION.DOCUMENT_ACCESS, 'gi'),
+    new RegExp(SECURITY_PATTERNS.CODE_INJECTION.WINDOW_ACCESS, 'gi'),
+    new RegExp(SECURITY_PATTERNS.CODE_INJECTION.LOCAL_STORAGE, 'gi'),
+    new RegExp(SECURITY_PATTERNS.CODE_INJECTION.SESSION_STORAGE, 'gi'),
+    new RegExp(SECURITY_PATTERNS.CODE_INJECTION.COOKIE_ACCESS, 'gi'),
+    new RegExp(SECURITY_PATTERNS.CODE_INJECTION.LOCATION_ACCESS, 'gi'),
+    new RegExp(SECURITY_PATTERNS.CODE_INJECTION.NAVIGATOR_ACCESS, 'gi'),
   ];
   
   const hasSuspiciousContent = suspiciousPatterns.some(pattern => pattern.test(sanitized));
@@ -186,8 +188,8 @@ const sanitizePrompt = (prompt: string): string => {
     throw new Error(`Prompt too long: maximum ${AI_CONFIG.TOKEN_LIMITS.DEFAULT} characters allowed`);
   }
   
-  if (sanitized.length < 10) {
-    throw new Error('Prompt too short: minimum 10 characters required');
+  if (sanitized.length < INPUT_VALIDATION.PROMPT.MIN_LENGTH) {
+    throw new Error(`Prompt too short: minimum ${INPUT_VALIDATION.PROMPT.MIN_LENGTH} characters required`);
   }
   
   // Enhanced rate limiting check
@@ -199,7 +201,7 @@ const sanitizePrompt = (prompt: string): string => {
     const waitTime = Math.ceil(rateLimitResult.retryAfter! / 60);
     throw new Error(
       `Rate limit exceeded: Please wait ${waitTime} minute${waitTime > 1 ? 's' : ''} before sending another request. ` +
-      `Limit: ${10} requests per minute. Reset in ${rateLimitResult.retryAfter} seconds.`
+      `Limit: ${INPUT_VALIDATION.RATE_LIMIT.REQUESTS_PER_MINUTE} requests per minute. Reset in ${rateLimitResult.retryAfter} seconds.`
     );
   }
   
