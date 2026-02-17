@@ -10,7 +10,7 @@ import { handleError } from '../../utils/errorHandler';
 import { createScopedLogger } from '../../utils/logger';
 import { AI_CONFIG } from '../../constants/config';
 
-const logger = createScopedLogger('AI_CORE');
+const logger = () => createScopedLogger('AI_CORE');
 
 export class AICore implements IAICore {
   private config!: AICoreConfig;
@@ -34,14 +34,14 @@ export class AICore implements IAICore {
     await this.loadGoogleGenAI();
     this.isInitialized = true;
     
-    logger.info('AI Core service initialized');
+    logger().info('AI Core service initialized');
   }
 
   async destroy(): Promise<void> {
     this.isInitialized = false;
     this.GoogleGenAI = null;
     this.Type = null;
-    logger.info('AI Core service destroyed');
+    logger().info('AI Core service destroyed');
   }
 
   async isHealthy(): Promise<boolean> {
@@ -54,7 +54,7 @@ export class AICore implements IAICore {
       const result = await this.generateContent('Test', { maxTokens: 10 });
       return result.length > 0;
     } catch (error: unknown) {
-      logger.error('AI Core health check failed:', error);
+      logger().error('AI Core health check failed:', error);
       return false;
     }
   }
@@ -84,7 +84,7 @@ export class AICore implements IAICore {
         const result = await this.generateWithGoogle(prompt, options);
         
         const duration = Date.now() - startTime;
-        logger.info(`Content generation completed in ${duration}ms`);
+        logger().info(`Content generation completed in ${duration}ms`);
         
         return result;
       } else {
@@ -92,7 +92,7 @@ export class AICore implements IAICore {
       }
     } catch (error: unknown) {
       const duration = Date.now() - startTime;
-      logger.error(`Content generation failed after ${duration}ms:`, error);
+      logger().error(`Content generation failed after ${duration}ms:`, error);
       throw handleError(error instanceof Error ? error : new Error(String(error)), 'AIContentGeneration', 'AICore');
     }
   }
@@ -140,7 +140,7 @@ export class AICore implements IAICore {
       // Note: In production environment, this would dynamically load the actual AI library
       // For now, we'll create a mock implementation to demonstrate the architecture
       
-      logger.warn('Google GenAI library not available in build environment - using mock implementation');
+      logger().warn('Google GenAI library not available in build environment - using mock implementation');
       
       // Mock implementation for demonstration
       this.GoogleGenAI = {
@@ -162,9 +162,9 @@ export class AICore implements IAICore {
         }
       };
       
-      logger.info('Mock Google GenAI loaded successfully');
+      logger().info('Mock Google GenAI loaded successfully');
     } catch (error: unknown) {
-      logger.error('Failed to load Google GenAI mock:', error);
+      logger().error('Failed to load Google GenAI mock:', error);
       throw new Error('Failed to initialize AI service');
     }
   }
@@ -244,7 +244,7 @@ export class AICore implements IAICore {
         throw new Error('No response text in conversation result');
       }
     } catch (error: unknown) {
-      logger.error('Generation with history failed:', error);
+      logger().error('Generation with history failed:', error);
       throw handleError(error instanceof Error ? error : new Error(String(error)), 'AIHistoryGeneration', 'AICore');
     }
   }

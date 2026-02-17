@@ -6,7 +6,7 @@ import { createScopedLogger } from '../utils/logger';
 import { storage } from '../utils/storage';
 import { SIZE_CONSTANTS } from './modularConstants';
 
-const logger = createScopedLogger('resilient-ai-service');
+const logger = () => createScopedLogger('resilient-ai-service');
 
 export const aiService = {
   async generateMQL5Code(
@@ -17,7 +17,7 @@ export const aiService = {
     signal?: any
   ): Promise<IntegrationResult<any>> {
     if (isDegraded(IntegrationType.AI_SERVICE)) {
-      logger.warn('AI service is in degraded mode, using fallback if available');
+      logger().warn('AI service is in degraded mode, using fallback if available');
     }
 
     const result = await withIntegrationResilience(
@@ -40,7 +40,7 @@ export const aiService = {
     );
 
     if (!result.success) {
-      logger.error('AI generation failed:', result.error?.message);
+      logger().error('AI generation failed:', result.error?.message);
     }
 
     return result;
