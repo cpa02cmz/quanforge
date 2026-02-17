@@ -186,10 +186,70 @@ export const ProgressBar: React.FC<ProgressBarProps> = memo(({
             className="absolute inset-0 flex items-center justify-center"
             aria-hidden="true"
           >
-            <div className="w-full h-full bg-brand-400/20 animate-pulse rounded-full" />
+            <div className="w-full h-full bg-brand-400/20 animate-pulse rounded-full completion-glow" />
           </div>
         )}
       </div>
+
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes progress-stripe {
+          0% {
+            background-position: 0 0;
+          }
+          100% {
+            background-position: 28px 0;
+          }
+        }
+        
+        @keyframes indeterminate-slide {
+          0% {
+            transform: translateX(-100%);
+          }
+          50% {
+            transform: translateX(0%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+        
+        @keyframes completion-pop {
+          0% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.02);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+        
+        @keyframes completion-glow {
+          0%, 100% {
+            opacity: 0.2;
+            box-shadow: 0 0 20px currentColor;
+          }
+          50% {
+            opacity: 0.4;
+            box-shadow: 0 0 40px currentColor, 0 0 60px currentColor;
+          }
+        }
+        
+        .animate-indeterminate {
+          animation: indeterminate-slide 1.5s ease-in-out infinite;
+        }
+        
+        .completion-glow {
+          animation: completion-glow 2s ease-in-out infinite;
+        }
+        
+        /* Completion celebration burst animation */
+        .progress-complete {
+          animation: completion-pop 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 });
