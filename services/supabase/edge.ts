@@ -13,6 +13,7 @@ import {
 } from './edgeConfig';
 import { createScopedLogger } from '../../utils/logger';
 import { ADJUSTMENT_FACTORS } from '../modularConstants';
+import { ID_GENERATION } from '../../constants/modularConfig';
 
 const logger = createScopedLogger('SupabaseEdge');
 
@@ -222,7 +223,7 @@ class SupabaseEdgeOptimizations {
 
     return new Promise((resolve, reject) => {
       const request: BatchedRequest = {
-        id: `batch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `batch-${Date.now()}-${Math.random().toString(36).substr(2, ID_GENERATION.RANDOM.STANDARD)}`,
         operation,
         resolve,
         reject,

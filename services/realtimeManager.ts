@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Robot } from '../types';
 import { TIMEOUTS, BATCH_SIZES, RETRY } from '../constants';
+import { ID_GENERATION } from '../constants/modularConfig';
 
 interface RealtimeSubscription {
   id: string;
@@ -78,7 +79,7 @@ class RealtimeManager {
     callback: (payload: any) => void,
     filter?: string
   ): string {
-    const subscriptionId = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const subscriptionId = `${ID_GENERATION.PREFIXES.SUBSCRIPTION}${ID_GENERATION.SEPARATOR}${Date.now()}${ID_GENERATION.SEPARATOR}${Math.random().toString(36).substr(2, ID_GENERATION.RANDOM.STANDARD)}`;
     
     const subscription: RealtimeSubscription = {
       id: subscriptionId,

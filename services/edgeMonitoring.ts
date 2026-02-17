@@ -1,5 +1,6 @@
 import { TIMEOUTS } from './constants';
 import { DELAY_CONSTANTS, COUNT_CONSTANTS, THRESHOLD_CONSTANTS, WEB_VITALS, TIME_CONSTANTS } from './modularConstants';
+import { ID_GENERATION } from '../constants/modularConfig';
 
 import { getVercelRegion } from '../types/browser';
 import { createScopedLogger } from '../utils/logger';
@@ -424,7 +425,7 @@ class EdgeMonitoringService {
 
   private createAlert(alertData: Omit<Alert, 'id' | 'timestamp' | 'resolved'>): void {
     const alert: Alert = {
-      id: `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `${ID_GENERATION.PREFIXES.ALERT}${ID_GENERATION.SEPARATOR}${Date.now()}${ID_GENERATION.SEPARATOR}${Math.random().toString(36).substr(2, ID_GENERATION.RANDOM.STANDARD)}`,
       timestamp: Date.now(),
       resolved: false,
       ...alertData

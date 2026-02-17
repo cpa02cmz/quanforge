@@ -3,6 +3,7 @@ import { consolidatedCache } from './consolidatedCacheManager';
 import { MEMORY_LIMITS, PERFORMANCE_THRESHOLDS, UX_THRESHOLDS, TIMEOUTS } from '../constants';
 import { CACHE_TTLS, PERFORMANCE_BUDGETS, API_THRESHOLDS, SCORING, ARRAY_LIMITS } from './constants';
 import { createScopedLogger } from '../utils/logger';
+import { SLICE_LIMITS } from '../constants/modularConfig';
 
 const logger = createScopedLogger('RealTimeMonitoring');
 
@@ -507,7 +508,7 @@ this.isInitialized = true;
     if (!currentMetrics) {
       return {
         vitals: { lcp: 0, fid: 0, cls: 0, fcp: 0, ttfb: 0 },
-        alerts: this.alerts.slice(-10),
+        alerts: this.alerts.slice(-SLICE_LIMITS.HISTORY.STANDARD),
         budgetCompliance: {},
         score: 0
       };
@@ -539,14 +540,14 @@ this.isInitialized = true;
    * Get detailed metrics
    */
   getDetailedMetrics(): PerformanceMetrics[] {
-    return this.metrics.slice(-100); // Last 100 metrics
+    return this.metrics.slice(-SLICE_LIMITS.HISTORY.LARGE); // Last 100 metrics
   }
 
   /**
    * Get alerts
    */
   getAlerts(): PerformanceAlert[] {
-    return this.alerts.slice(-50); // Last 50 alerts
+    return this.alerts.slice(-SLICE_LIMITS.HISTORY.STANDARD); // Last 50 alerts
   }
 
   /**

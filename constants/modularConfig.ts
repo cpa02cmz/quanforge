@@ -1073,6 +1073,90 @@ export const SAFE_REGEX_CONFIG = {
   },
 } as const;
 
+// ========== ID GENERATION CONSTANTS ==========
+export const ID_GENERATION = {
+  // Random string lengths for ID generation
+  RANDOM: {
+    SHORT: 6,      // Short ID suffix (e.g., anon IDs)
+    STANDARD: 9,   // Standard ID suffix (most common)
+    LONG: 12,      // Long ID suffix (database IDs)
+    HASH: 16,      // Hash substring length
+  },
+  
+  // ID prefixes
+  PREFIXES: {
+    ANONYMOUS: 'anon',
+    SESSION: 'session',
+    CONNECTION: 'conn',
+    QUERY: 'query',
+    TASK: 'task',
+    SUBSCRIPTION: 'sub',
+    ALERT: 'alert',
+    BATCH: 'batch',
+    REAL_USER_MONITORING: 'rum',
+  },
+  
+  // Separator used in IDs
+  SEPARATOR: '_',
+} as const;
+
+// ========== SLICE/SPLICE LIMITS ==========
+export const SLICE_LIMITS = {
+  // History/array slicing
+  HISTORY: {
+    TINY: 5,       // Very small history window
+    SMALL: 10,     // Small history window (e.g., recent alerts)
+    STANDARD: 50,  // Standard history window (e.g., alerts)
+    LARGE: 100,    // Large history window (e.g., metrics, access times)
+    XLARGE: 1000,  // Extra large history (e.g., optimization history)
+  },
+  
+  // Score history slicing
+  SCORES: {
+    RECENT: 5,     // Recent scores for trend analysis
+    STANDARD: 10,  // Standard score history
+  },
+  
+  // Metrics slicing
+  METRICS: {
+    LATEST: 2,     // Latest metrics (e.g., web vitals)
+    RECENT: 10,    // Recent metrics
+  },
+  
+  // Region slicing
+  REGIONS: {
+    PRIORITY: 3,   // Priority regions count
+    LOW_PRIORITY: 2, // Low priority regions count
+  },
+} as const;
+
+// ========== SCORE MULTIPLIERS ==========
+export const SCORE_MULTIPLIERS = {
+  // Percentage calculations
+  PERCENTAGE: {
+    TO_PERCENT: 100,     // Convert ratio to percentage
+    FROM_PERCENT: 0.01,  // Convert percentage to ratio
+  },
+  
+  // Error rate calculations
+  ERROR_RATE: {
+    MULTIPLIER: 100,     // Convert error rate to score
+    INVERSE_BASE: 100,   // Base for inverse scoring
+  },
+  
+  // Performance scoring
+  PERFORMANCE: {
+    SCROLL: 10,          // Scroll performance multiplier
+    RATIO_PENALTY: 50,   // Ratio penalty multiplier
+    RATIO_MULTIPLIER: 100, // Full ratio multiplier
+  },
+  
+  // Hash generation
+  HASH: {
+    BASE36: 36,          // Base36 for hash strings
+  },
+} as const;
+
 // Export all configurations as a single object
 export const APP_CONFIG = {
   WEBSOCKET: WEBSOCKET_CONFIG,
@@ -1109,6 +1193,9 @@ export const APP_CONFIG = {
   CONCURRENCY: CONCURRENCY_LIMITS,
   ATTEMPTS: ATTEMPT_LIMITS,
   SAFE_REGEX: SAFE_REGEX_CONFIG,
+  ID_GENERATION,
+  SLICE_LIMITS,
+  SCORE_MULTIPLIERS,
 } as const;
 
 // Default export

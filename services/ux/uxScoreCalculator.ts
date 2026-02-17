@@ -4,6 +4,7 @@
  */
 
 import { UXMetrics, UXScore, UXIssue, UXConfig, MetricThresholds } from './uxTypes';
+import { SLICE_LIMITS, SCORE_MULTIPLIERS } from '../../constants/modularConfig';
 
 export class UXScoreCalculator {
   constructor(private config: UXConfig) {}
@@ -55,8 +56,8 @@ export class UXScoreCalculator {
    * Calculate reliability score based on error rates
    */
   private calculateReliabilityScore(metrics: UXMetrics): number {
-    const errorScore = Math.max(0, 100 - (metrics.errorRate * 100));
-    const crashScore = Math.max(0, 100 - (metrics.crashRate * 100));
+    const errorScore = Math.max(0, SCORE_MULTIPLIERS.ERROR_RATE.INVERSE_BASE - (metrics.errorRate * SCORE_MULTIPLIERS.ERROR_RATE.MULTIPLIER));
+    const crashScore = Math.max(0, SCORE_MULTIPLIERS.ERROR_RATE.INVERSE_BASE - (metrics.crashRate * SCORE_MULTIPLIERS.ERROR_RATE.MULTIPLIER));
     const apiScore = this.scoreMetric(metrics.apiResponseTime, { good: 200, needsImprovement: 1000 });
     
     return Math.round((errorScore + crashScore + apiScore) / 3);
@@ -67,7 +68,7 @@ export class UXScoreCalculator {
    */
   private calculateEngagementScore(metrics: UXMetrics): number {
     const clickScore = this.scoreMetric(metrics.clickDelay, { good: 50, needsImprovement: 200 });
-    const scrollScore = Math.min(100, metrics.scrollPerformance * 10);
+    const scrollScore = Math.min(SCORE_MULTIPLIERS.ERROR_RATE.INVERSE_BASE, metrics.scrollPerformance * SCORE_MULTIPLIERS.PERFORMANCE.SCROLL);
     const inputScore = this.scoreMetric(metrics.inputLag, { good: 16, needsImprovement: 100 });
     
     return Math.round((clickScore + scrollScore + inputScore) / 3);
@@ -82,7 +83,7 @@ export class UXScoreCalculator {
     } else if (value <= thresholds.needsImprovement) {
       // Linear interpolation between good and needs improvement
       const ratio = (value - thresholds.good) / (thresholds.needsImprovement - thresholds.good);
-      return Math.round(100 - (ratio * 50));
+      return Math.round(SCORE_MULTIPLIERS.ERROR_RATE.INVERSE_BASE - (ratio * SCORE_MULTIPLIERS.PERFORMANCE.RATIO_PENALTY));
     } else {
       // For values worse than needs improvement, use logarithmic decay
       const excess = value - thresholds.needsImprovement;
@@ -240,7 +241,7 @@ export class UXScoreCalculator {
   analyzeTrend(scores: UXScore[]): 'improving' | 'stable' | 'declining' | 'insufficient-data' {
     if (scores.length < 3) return 'insufficient-data';
     
-    const recentScores = scores.slice(-5).map(s => s.overall);
+    const recentScores = scores.slice(-SLICE_LIMITS.SCORES.RECENT).map(s => s.overall);
     
     const firstHalf = recentScores.slice(0, Math.floor(recentScores.length / 2));
     const secondHalf = recentScores.slice(Math.floor(recentScores.length / 2));

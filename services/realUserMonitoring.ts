@@ -3,12 +3,13 @@
  * Monitors real user performance and experience metrics
  */
 
-import { 
-  WEB_VITALS_THRESHOLDS, 
+import {
+  WEB_VITALS_THRESHOLDS,
   MONITORING,
-  BATCH_SIZES 
+  BATCH_SIZES
 } from './constants';
 import { createScopedLogger } from '../utils/logger';
+import { ID_GENERATION } from '../constants/modularConfig';
 
 const logger = createScopedLogger('RealUserMonitoring');
 
@@ -447,7 +448,7 @@ class RealUserMonitoring {
    * Generate session ID
    */
   private generateSessionId(): string {
-    return `rum_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `${ID_GENERATION.PREFIXES.REAL_USER_MONITORING}${ID_GENERATION.SEPARATOR}${Date.now()}${ID_GENERATION.SEPARATOR}${Math.random().toString(36).substr(2, ID_GENERATION.RANDOM.STANDARD)}`;
   }
 
   /**

@@ -9,6 +9,7 @@ import { createScopedLogger } from '../utils/logger';
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import { TIMEOUTS, RETRY_CONFIG, STAGGER, TIME_CONSTANTS, POOL_CONFIG, SCORING } from './constants';
 import { THRESHOLD_CONSTANTS, DELAY_CONSTANTS, ATTEMPT_LIMITS } from './modularConstants';
+import { ID_GENERATION, SLICE_LIMITS } from '../constants/modularConfig';
 import { getErrorMessage } from '../utils/errorHandler';
 
 const logger = createScopedLogger('EnhancedConnectionPool');
@@ -489,13 +490,13 @@ class EnhancedSupabaseConnectionPool {
     this.acquireTimes.push(time);
     
     // Keep only last 100 measurements
-    if (this.acquireTimes.length > 100) {
-      this.acquireTimes = this.acquireTimes.slice(-100);
+    if (this.acquireTimes.length > SLICE_LIMITS.HISTORY.LARGE) {
+      this.acquireTimes = this.acquireTimes.slice(-SLICE_LIMITS.HISTORY.LARGE);
     }
   }
 
   private generateConnectionId(): string {
-    return `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `${ID_GENERATION.PREFIXES.CONNECTION}${ID_GENERATION.SEPARATOR}${Date.now()}${ID_GENERATION.SEPARATOR}${Math.random().toString(36).substr(2, ID_GENERATION.RANDOM.STANDARD)}`;
   }
 
   // Public API methods

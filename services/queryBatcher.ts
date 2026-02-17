@@ -7,6 +7,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { createListenerManager, ListenerManager } from '../utils/listenerManager';
 import { BATCH_SIZES, RETRY_CONFIG, STAGGER } from './constants';
 import { createScopedLogger } from '../utils/logger';
+import { ID_GENERATION } from '../constants/modularConfig';
 
 const logger = createScopedLogger('QueryBatcher');
 
@@ -620,7 +621,7 @@ class QueryBatcher {
    * Generate unique query ID
    */
   private generateQueryId(): string {
-    return `query_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `${ID_GENERATION.PREFIXES.QUERY}${ID_GENERATION.SEPARATOR}${Date.now()}${ID_GENERATION.SEPARATOR}${Math.random().toString(36).substr(2, ID_GENERATION.RANDOM.STANDARD)}`;
   }
 
   /**
