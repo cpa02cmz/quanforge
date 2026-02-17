@@ -206,6 +206,7 @@ export const COUNT_CONSTANTS = {
   
   // Batch operations
   BATCH: {
+    TINY: 5,
     SMALL: 10,
     DEFAULT: 20,
     LARGE: 50,

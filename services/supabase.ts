@@ -10,7 +10,7 @@ import { TIMEOUTS, CACHE_LIMITS, BATCH_SIZES, ERROR_CODES, TIME_CONSTANTS } from
 import { getLocalStorage, StorageQuotaError } from '../utils/storage';
 import { createScopedLogger } from '../utils/logger';
 import { STORAGE_KEYS, STORAGE_PREFIXES, RETRY_CONFIGS } from '../constants/modularConfig';
-import { TOKEN_CONSTANTS } from './modularConstants';
+import { TOKEN_CONSTANTS, COUNT_CONSTANTS } from './modularConstants';
 
 const logger = createScopedLogger('Supabase');
 
@@ -569,7 +569,7 @@ if (index !== -1) {
       * Get robots with pagination for better performance with large datasets
       * Optimized with smart caching and query batching
       */
-    async getRobotsPaginated(page: number = 1, limit: number = 20, searchTerm?: string, filterType?: string) {
+    async getRobotsPaginated(page: number = 1, limit: number = COUNT_CONSTANTS.PAGINATION.DEFAULT, searchTerm?: string, filterType?: string) {
       const startTime = performance.now();
       try {
         const settings = settingsManager.getDBSettings();

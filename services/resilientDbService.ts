@@ -6,6 +6,7 @@ import { databaseFallbacks } from './fallbackStrategies';
 import { storage } from '../utils/storage';
 import { createScopedLogger } from '../utils/logger';
 import type { Robot, AuditLog, RobotVersion } from '../types';
+import { COUNT_CONSTANTS } from './modularConstants';
 
 const logger = createScopedLogger('ResilientDb');
 
@@ -144,7 +145,7 @@ export const resilientDb = {
   async getRobotsPaginated(
     userId: string,
     page: number = 1,
-    limit: number = 20
+    limit: number = COUNT_CONSTANTS.PAGINATION.DEFAULT
   ): Promise<IntegrationResult<{ robots: Robot[]; total: number; page: number; totalPages: number }>> {
     const result = await withIntegrationResilience(
       IntegrationType.DATABASE,

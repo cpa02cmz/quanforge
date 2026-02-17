@@ -10,6 +10,7 @@ import { robotCache } from './advancedCache';
 import { createScopedLogger } from '../utils/logger';
 import { STAGGER } from './constants';
 import { BACKEND_OPTIMIZER_CONFIG } from '../constants/modularConfig';
+import { COUNT_CONSTANTS } from './modularConstants';
 
 const logger = createScopedLogger('BackendOptimizer');
 
@@ -155,7 +156,7 @@ class BackendOptimizer {
   async executeBatchOperation<T>(
     client: SupabaseClient,
     operations: Array<() => Promise<T>>,
-    batchSize: number = 5
+    batchSize: number = COUNT_CONSTANTS.BATCH.TINY
   ): Promise<T[]> {
     if (!this.config.enableBatchOptimizations) {
       // Execute all operations sequentially if batch optimization is disabled
