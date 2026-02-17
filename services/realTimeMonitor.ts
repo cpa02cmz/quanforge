@@ -1,6 +1,6 @@
 import { TIMEOUTS, WEB_VITALS_THRESHOLDS, PERFORMANCE_BUDGETS, TIME_CONSTANTS, MONITORING } from './constants';
 import { createScopedLogger } from '../utils/logger';
-import { ARRAY_LIMITS } from '../constants/modularConfig';
+import { ARRAY_LIMITS, ID_GENERATION, SLICE_LIMITS } from '../constants/modularConfig';
 
 const logger = createScopedLogger('RealTimeMonitor');
 
@@ -99,7 +99,7 @@ export class RealTimeMonitor {
   }
 
   private generateSessionId(): string {
-    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `${ID_GENERATION.PREFIXES.SESSION}${ID_GENERATION.SEPARATOR}${Date.now()}${ID_GENERATION.SEPARATOR}${Math.random().toString(36).substr(2, ID_GENERATION.RANDOM.STANDARD)}`;
   }
 
   public startMonitoring(userId?: string): void {
@@ -580,7 +580,7 @@ export class RealTimeMonitor {
     }
 
     // Check other budgets
-    const latestMetrics = this.metrics.slice(-10);
+    const latestMetrics = this.metrics.slice(-SLICE_LIMITS.HISTORY.STANDARD);
     latestMetrics.forEach(metric => {
       Object.entries(this.budget).forEach(([key, threshold]) => {
         const value = metric[key as keyof PerformanceMetrics] as number;

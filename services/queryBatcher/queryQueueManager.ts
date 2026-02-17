@@ -4,6 +4,7 @@
  */
 
 import { BatchQuery, BatchConfig, PendingQuery, QueryBatch } from './queryTypes';
+import { ID_GENERATION } from '../../constants/modularConfig';
 
 export class QueryQueueManager {
   private batchQueue: BatchQuery[] = [];
@@ -172,7 +173,7 @@ export class QueryQueueManager {
    * Generate unique query ID
    */
   private generateQueryId(): string {
-    return `query_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `${ID_GENERATION.PREFIXES.QUERY}${ID_GENERATION.SEPARATOR}${Date.now()}${ID_GENERATION.SEPARATOR}${Math.random().toString(36).substr(2, ID_GENERATION.RANDOM.STANDARD)}`;
   }
 
   /**

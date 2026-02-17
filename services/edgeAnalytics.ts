@@ -7,6 +7,7 @@ import { WindowWithVercel } from '../types/browser';
 import { createScopedLogger } from '../utils/logger';
 import { DELAY_CONSTANTS, SIZE_CONSTANTS } from './modularConstants';
 import { ANALYTICS_CONFIG } from '../constants/config';
+import { ID_GENERATION } from '../constants/modularConfig';
 
 const logger = createScopedLogger('EdgeAnalytics');
 
@@ -150,7 +151,7 @@ class EdgeAnalytics {
   }
 
   private generateSessionId(): string {
-    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `${ID_GENERATION.PREFIXES.SESSION}${ID_GENERATION.SEPARATOR}${Date.now()}${ID_GENERATION.SEPARATOR}${Math.random().toString(36).substr(2, ID_GENERATION.RANDOM.STANDARD)}`;
   }
 
   private setupPerformanceMonitoring(): void {

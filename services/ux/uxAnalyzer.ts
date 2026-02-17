@@ -6,6 +6,7 @@
 import { UXMetrics, UXScore } from './uxTypes';
 import { UXScoreCalculator } from './uxScoreCalculator';
 import { MEMORY_LIMITS, UX_THRESHOLDS, API_RESPONSE_THRESHOLDS, SCORE_CALCULATION } from '../../constants';
+import { SLICE_LIMITS } from '../../constants/modularConfig';
 
 export interface UXInsights {
   healthStatus: 'excellent' | 'good' | 'needs-improvement' | 'poor';
@@ -100,7 +101,7 @@ export class UXAnalyzer {
 
     // Calculate volatility for each metric based on recent scores
     const volatilities = metricScores.map(metric => {
-      const recentScores = this.scoreHistory.slice(-10).map(score => {
+      const recentScores = this.scoreHistory.slice(-SLICE_LIMITS.HISTORY.STANDARD).map(score => {
         switch (metric.name) {
           case 'LCP': return score.lcpScore;
           case 'FID': return score.fidScore;

@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { WEB_VITALS_THRESHOLDS, API_THRESHOLDS, SCORING, MEMORY, MONITORING } from './constants';
 import { createScopedLogger } from '../utils/logger';
+import { SLICE_LIMITS } from '../constants/modularConfig';
 
 const logger = createScopedLogger('RealTimeUXScoring');
 
@@ -603,8 +604,8 @@ class UXPerformanceMonitor {
       return { trend: 'stable', change: 0, period: 'insufficient data' };
     }
 
-    const recent = this.scoreHistory.slice(-10);
-    const older = this.scoreHistory.slice(-20, -10);
+    const recent = this.scoreHistory.slice(-SLICE_LIMITS.HISTORY.STANDARD);
+    const older = this.scoreHistory.slice(-SLICE_LIMITS.HISTORY.STANDARD * 2, -SLICE_LIMITS.HISTORY.STANDARD);
     
     if (older.length === 0) {
       return { trend: 'stable', change: 0, period: 'insufficient historical data' };

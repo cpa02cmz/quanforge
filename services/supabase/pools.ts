@@ -9,7 +9,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { DATABASE_CONFIG } from '../../constants/config';
 import { STAGGER } from '../constants';
 import { createScopedLogger } from '../../utils/logger';
-import { ARRAY_LIMITS } from '../../constants/modularConfig';
+import { ARRAY_LIMITS, ID_GENERATION } from '../../constants/modularConfig';
 
 const logger = createScopedLogger('ConnectionPool');
 
@@ -116,14 +116,14 @@ class SupabaseConnectionPool {
       global: {
         headers: {
           'X-Connection-Pool': 'true',
-          'X-Connection-ID': `pool-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          'X-Connection-ID': `pool-${Date.now()}-${Math.random().toString(36).substr(2, ID_GENERATION.RANDOM.STANDARD)}`,
           ...(region && { 'X-Preferred-Region': region }),
         },
       },
     });
 
     const connection: Connection = {
-      id: `conn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `conn-${Date.now()}-${Math.random().toString(36).substr(2, ID_GENERATION.RANDOM.STANDARD)}`,
       client,
       created: Date.now(),
       lastUsed: Date.now(),
