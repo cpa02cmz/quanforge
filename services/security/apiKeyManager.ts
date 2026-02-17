@@ -1,6 +1,7 @@
 import { SecureStorage } from '../../utils/secureStorage';
 import { createScopedLogger } from '../../utils/logger';
 import { TIME_CONSTANTS } from '../../constants/config';
+import { COUNT_CONSTANTS } from '../modularConstants';
 
 const logger = createScopedLogger('APIKeyManager');
 
@@ -88,9 +89,9 @@ export class APIKeyManager {
         provider: 'google'
       });
 
-      // Keep only last 5 keys
-      if (keys.length > 5) {
-        keys.splice(0, keys.length - 5);
+      // Keep only last keys
+      if (keys.length > COUNT_CONSTANTS.BATCH.TINY) {
+        keys.splice(0, keys.length - COUNT_CONSTANTS.BATCH.TINY);
       }
 
       // Use secure storage with encryption instead of localStorage

@@ -4,6 +4,7 @@ const logger = createScopedLogger('APISecurityManager');
 import { secureStorage } from '../../utils/secureStorage';
 import { getLocalStorage } from '../../utils/storage';
 import { TIME_CONSTANTS } from '../../constants/config';
+import { ARRAY_LIMITS } from '../constants';
 
 export class APISecurityManager {
   private apiKeys = new Map<string, { key: string; type: string; expiresAt: number; rotations: number }>();
@@ -163,9 +164,9 @@ export class APISecurityManager {
       const violations = this.storage.get<any[]>('csp_violations') || [];
       violations.push(violation);
       
-      // Keep only last 100 violations
-      if (violations.length > 100) {
-        violations.splice(0, violations.length - 100);
+      // Keep only last violations
+      if (violations.length > ARRAY_LIMITS.ALERTS_MAX) {
+        violations.splice(0, violations.length - ARRAY_LIMITS.ALERTS_MAX);
       }
       
       this.storage.set('csp_violations', violations);
@@ -200,9 +201,9 @@ export class APISecurityManager {
         priority: 'high'
       });
       
-      // Keep only last 50 alerts
-      if (alerts.length > 50) {
-        alerts.splice(0, alerts.length - 50);
+      // Keep only last alerts
+      if (alerts.length > ARRAY_LIMITS.ALERTS_STANDARD) {
+        alerts.splice(0, alerts.length - ARRAY_LIMITS.ALERTS_STANDARD);
       }
       
       this.storage.set('security_alerts', alerts);

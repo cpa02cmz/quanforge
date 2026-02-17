@@ -8,6 +8,7 @@ const logger = createScopedLogger('AnalyticsCollector');
 
 // import { handleError } from '../../utils/errorHandler';
 import { TIME_CONSTANTS } from '../../constants/config';
+import { ARRAY_LIMITS } from '../constants';
 
 interface OperationMetrics {
   count: number;
@@ -181,7 +182,7 @@ export class AnalyticsCollector implements AnalyticsCollectorInterface {
     const sortedOperations = Object.entries(allMetrics)
       .sort(([, a], [, b]) => b.totalDuration - a.totalDuration);
 
-    for (const [operation, metrics] of sortedOperations.slice(0, 10)) { // Top 10 operations
+    for (const [operation, metrics] of sortedOperations.slice(0, ARRAY_LIMITS.METRICS_STANDARD)) { // Top operations
       const errorRate = metrics.count > 0 ? (metrics.errors / metrics.count * 100).toFixed(1) : '0.0';
       report.push(
         `  ${operation}:`,
@@ -204,7 +205,7 @@ export class AnalyticsCollector implements AnalyticsCollectorInterface {
 
     if (slowOperations.length > 0) {
       report.push('  ⚠️  Slow Operations (>1s average):');
-      for (const [operation, metrics] of slowOperations.slice(0, 3)) {
+      for (const [operation, metrics] of slowOperations.slice(0, ARRAY_LIMITS.METRICS_TINY)) {
         report.push(`    - ${operation}: ${metrics.averageDuration.toFixed(2)}ms average`);
       }
     }
@@ -216,7 +217,7 @@ export class AnalyticsCollector implements AnalyticsCollectorInterface {
 
     if (highErrorOperations.length > 0) {
       report.push('  🚨 High Error Rate Operations (>5%):');
-      for (const [operation, metrics] of highErrorOperations.slice(0, 3)) {
+      for (const [operation, metrics] of highErrorOperations.slice(0, ARRAY_LIMITS.METRICS_TINY)) {
         const errorRate = (metrics.errors / metrics.count * 100).toFixed(1);
         report.push(`    - ${operation}: ${errorRate}% error rate`);
       }

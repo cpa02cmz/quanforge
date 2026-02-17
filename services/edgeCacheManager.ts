@@ -836,7 +836,7 @@ export class EdgeCacheManager<T = any> {
     // Mock implementation - in real scenario, this would fetch from the actual data source
     try {
       // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise(resolve => setTimeout(resolve, EDGE_CACHE_CONSTANTS.CLEANUP.STAGGER_DELAY_MS));
       
       // Return mock data based on key pattern
       if (key.includes('robots')) {

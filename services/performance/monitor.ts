@@ -443,7 +443,7 @@ class PerformanceMonitor {
   }
 
   private getPreviousVitalValue(name: string): number {
-    const vital = this.webVitals.filter(v => v.name === name).slice(-2)[0];
+    const vital = this.webVitals.filter(v => v.name === name).slice(-ARRAY_LIMITS.METRICS_LATEST)[0];
     return vital?.value || 0;
   }
 

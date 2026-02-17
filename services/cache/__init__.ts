@@ -6,6 +6,7 @@
 
 import { createScopedLogger } from '../../utils/logger';
 import { CACHE_CONFIG, TIME_CONSTANTS, EDGE_CONFIG } from '../../constants/config';
+import { ARRAY_LIMITS } from '../constants';
 
 const logger = createScopedLogger('cache');
 
@@ -268,8 +269,8 @@ export abstract class BaseCache<T = any> {
   protected recordAccessTime(time: number): void {
     this.accessTimes.push(time);
     
-    if (this.accessTimes.length > 100) {
-      this.accessTimes = this.accessTimes.slice(-100);
+    if (this.accessTimes.length > ARRAY_LIMITS.ACQUIRE_TIMES) {
+      this.accessTimes = this.accessTimes.slice(-ARRAY_LIMITS.ACQUIRE_TIMES);
     }
   }
 

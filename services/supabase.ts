@@ -340,9 +340,9 @@ class EdgePerformanceTracker {
     const values = this.metrics.get(operation)!;
     values.push(value);
     
-    // Keep only last 100 values
-    if (values.length > 100) {
-      values.splice(0, values.length - 100);
+    // Keep only last values
+    if (values.length > COUNT_CONSTANTS.HISTORY.STANDARD) {
+      values.splice(0, values.length - COUNT_CONSTANTS.HISTORY.STANDARD);
     }
   }
   

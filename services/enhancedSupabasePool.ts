@@ -7,7 +7,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { createScopedLogger } from '../utils/logger';
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
-import { TIMEOUTS, RETRY_CONFIG, STAGGER, TIME_CONSTANTS, POOL_CONFIG, SCORING } from './constants';
+import { TIMEOUTS, RETRY_CONFIG, STAGGER, TIME_CONSTANTS, POOL_CONFIG, SCORING, ARRAY_LIMITS } from './constants';
 import { THRESHOLD_CONSTANTS, DELAY_CONSTANTS, ATTEMPT_LIMITS } from './modularConstants';
 import { ID_GENERATION, SLICE_LIMITS } from '../constants/modularConfig';
 import { getErrorMessage } from '../utils/errorHandler';
@@ -793,13 +793,13 @@ class EnhancedSupabaseConnectionPool {
     const warmupPromises: Promise<void>[] = [];
 
     // Phase 1: Warm current region immediately (parallel)
-    for (const region of priorityRegions.slice(0, 3)) {
+    for (const region of priorityRegions.slice(0, ARRAY_LIMITS.REGION_PRIORITY)) {
       warmupPromises.push(this.warmRegionConnectionEnhanced(region, 'high'));
     }
 
     // Phase 2: Warm other regions (parallel with delay)
     setTimeout(() => {
-      for (const region of priorityRegions.slice(3)) {
+      for (const region of priorityRegions.slice(ARRAY_LIMITS.REGION_PRIORITY)) {
         warmupPromises.push(this.warmRegionConnectionEnhanced(region, 'medium'));
       }
     }, DELAY_CONSTANTS.MEDIUM);
@@ -814,7 +814,7 @@ class EnhancedSupabaseConnectionPool {
     // Phase 4: Warm read replicas
     setTimeout(() => {
       warmupPromises.push(this.warmUpReadReplicasEnhanced());
-    }, 1500); // 1.5s - specific timing for replica warmup
+    }, DELAY_CONSTANTS.EXTENDED); // Use modular delay constant for replica warmup
 
     try {
       await Promise.allSettled(warmupPromises);
@@ -1264,8 +1264,8 @@ class EnhancedSupabaseConnectionPool {
       connections.reduce((sum, conn) => sum + (conn.inUse ? 1 : 0), 0) / connections.length : 0;
     
     return {
-      topRegions: sortedRegions.slice(0, 3),
-      lowPriorityRegions: sortedRegions.slice(-2),
+      topRegions: sortedRegions.slice(0, ARRAY_LIMITS.REGION_PRIORITY),
+      lowPriorityRegions: sortedRegions.slice(-ARRAY_LIMITS.REGION_LOW_PRIORITY),
       peakHours,
       avgUsage
     };
@@ -1296,7 +1296,7 @@ class EnhancedSupabaseConnectionPool {
    */
   async predictiveWarming(): Promise<void> {
     const usagePatterns = this.analyzeUsagePatterns();
-    const predictedRegions = usagePatterns.topRegions.slice(0, 3);
+    const predictedRegions = usagePatterns.topRegions.slice(0, ARRAY_LIMITS.REGION_PRIORITY);
 
     logger.log('Starting predictive connection warming for regions:', predictedRegions);
 
