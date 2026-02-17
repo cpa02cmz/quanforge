@@ -2,12 +2,14 @@ import { createScopedLogger } from '../../utils/logger';
 
 const logger = createScopedLogger('APISecurityManager');
 import { secureStorage } from '../../utils/secureStorage';
+import { getLocalStorage } from '../../utils/storage';
 import { TIME_CONSTANTS } from '../../constants/config';
 
 export class APISecurityManager {
   private apiKeys = new Map<string, { key: string; type: string; expiresAt: number; rotations: number }>();
   private cspViolations: Array<{ timestamp: number; violation: any; severity: string }> = [];
   private csrfTokens = new Map<string, { token: string; expiresAt: number }>();
+  private storage = getLocalStorage({ prefix: 'security_', enableSerialization: true });
 
   constructor(private config: {
     apiKeyRotationInterval: number;
@@ -158,8 +160,7 @@ export class APISecurityManager {
   private storeCSPViolation(violation: any): void {
     // In a real implementation, you'd send this to your security endpoint
     try {
-      const existing = localStorage.getItem('csp_violations') || '[]';
-      const violations = JSON.parse(existing);
+      const violations = this.storage.get<any[]>('csp_violations') || [];
       violations.push(violation);
       
       // Keep only last 100 violations
@@ -167,9 +168,9 @@ export class APISecurityManager {
         violations.splice(0, violations.length - 100);
       }
       
-      localStorage.setItem('csp_violations', JSON.stringify(violations));
+      this.storage.set('csp_violations', violations);
     } catch (error: unknown) {
-      console.error('Failed to store CSP violation:', error);
+      logger.error('Failed to store CSP violation:', error);
     }
   }
 
@@ -191,8 +192,7 @@ export class APISecurityManager {
     
     // Store high-priority alerts
     try {
-      const existing = localStorage.getItem('security_alerts') || '[]';
-      const alerts = JSON.parse(existing);
+      const alerts = this.storage.get<any[]>('security_alerts') || [];
       alerts.push({
         type,
         timestamp: Date.now(),
@@ -205,9 +205,9 @@ export class APISecurityManager {
         alerts.splice(0, alerts.length - 50);
       }
       
-      localStorage.setItem('security_alerts', JSON.stringify(alerts));
+      this.storage.set('security_alerts', alerts);
     } catch (error: unknown) {
-      console.error('Failed to store security alert:', error);
+      logger.error('Failed to store security alert:', error);
     }
   }
 
@@ -317,13 +317,13 @@ export class APISecurityManager {
 
     let highSeverityAlerts = 0;
     try {
-      const alerts = JSON.parse(localStorage.getItem('security_alerts') || '[]');
+      const alerts = this.storage.get<any[]>('security_alerts') || [];
       const recentAlerts = alerts.filter((alert: any) => 
         now - alert.timestamp < TIME_CONSTANTS.HOUR && alert.priority === 'high'
       );
       highSeverityAlerts = recentAlerts.length;
     } catch (error: unknown) {
-      console.error('Failed to get security alerts:', error);
+      logger.error('Failed to get security alerts:', error);
     }
 
     return {
