@@ -1,3 +1,5 @@
+import { COUNT_CONSTANTS } from './modularConstants';
+
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
@@ -180,7 +182,7 @@ export class AdvancedCache {
   }
 
   // Get cache entries sorted by access frequency
-  getHotEntries(limit: number = 10): Array<{ key: string; entry: CacheEntry<any> }> {
+  getHotEntries(limit: number = COUNT_CONSTANTS.PAGINATION.SMALL): Array<{ key: string; entry: CacheEntry<any> }> {
     return Array.from(this.cache.entries())
       .sort((a, b) => b[1].accessCount - a[1].accessCount)
       .slice(0, limit)

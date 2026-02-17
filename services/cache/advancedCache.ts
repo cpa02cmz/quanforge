@@ -6,6 +6,7 @@
 import { BaseCache, BaseCacheEntry, CacheConfig, CompressionUtils, CACHE_CONSTANTS } from './__init__';
 import { createScopedLogger } from '../../utils/logger';
 import { CACHE_CONFIG, TIME_CONSTANTS } from '../../constants/config';
+import { COUNT_CONSTANTS } from '../modularConstants';
 
 const logger = createScopedLogger('advancedCache');
 
@@ -173,7 +174,7 @@ export class AdvancedCache extends BaseCache {
   }
 
   // Get cache entries sorted by access frequency
-  getHotEntries(limit: number = 10): Array<{ key: string; entry: AdvancedCacheEntry<any> }> {
+  getHotEntries(limit: number = COUNT_CONSTANTS.PAGINATION.SMALL): Array<{ key: string; entry: AdvancedCacheEntry<any> }> {
     return Array.from(this.cache.entries())
       .sort((a, b) => b[1].accessCount - a[1].accessCount)
       .slice(0, limit)

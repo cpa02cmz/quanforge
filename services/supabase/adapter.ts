@@ -9,7 +9,7 @@ import { supabaseEdge } from './edge';
 import type { Robot } from '../../types';
 import type { ConnectionConfig, Connection, PoolStats } from './pools';
 import type { EdgeConfig, EdgeMetrics } from './edge';
-import { TOKEN_CONSTANTS } from '../modularConstants';
+import { TOKEN_CONSTANTS, COUNT_CONSTANTS } from '../modularConstants';
 
 /**
  * Legacy adapter that maintains existing API contracts
@@ -125,7 +125,7 @@ const removeAuthListener = (subscription: any) => {
 };
 
 // Database utility functions
-const getRobotsPaginated = async (page: number = 1, limit: number = 10, userId?: string) => {
+const getRobotsPaginated = async (page: number = 1, limit: number = COUNT_CONSTANTS.PAGINATION.SMALL, userId?: string) => {
   const robots = await coreSupabase.getRobots(userId);
   const startIndex = (page - 1) * limit;
   const endIndex = startIndex + limit;
