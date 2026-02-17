@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 interface EmptyStateAction {
@@ -59,16 +59,40 @@ export const EmptyState: React.FC<EmptyStateProps> = memo(({
   tips = [],
   className = ''
 }) => {
+  // Check for reduced motion preference for accessibility
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setPrefersReducedMotion(e.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
   return (
     <div 
       className={`bg-dark-surface border border-dark-border rounded-2xl p-8 md:p-12 text-center ${className}`}
       role="region"
       aria-label="Empty state"
     >
-      {/* Animated Icon Container */}
+      {/* Animated Icon Container with Floating Effect */}
       <div className="relative mx-auto mb-6">
         <div className="absolute inset-0 bg-brand-500/20 rounded-full blur-2xl animate-pulse" aria-hidden="true" />
-        <div className="relative w-24 h-24 bg-gradient-to-br from-brand-500/20 to-brand-600/10 rounded-full flex items-center justify-center mx-auto border border-brand-500/30 group-hover:border-brand-500/50 transition-colors">
+        <div 
+          className={`
+            relative w-24 h-24 bg-gradient-to-br from-brand-500/20 to-brand-600/10 
+            rounded-full flex items-center justify-center mx-auto 
+            border border-brand-500/30 group-hover:border-brand-500/50 
+            transition-colors
+            ${prefersReducedMotion ? '' : 'empty-state-float'}
+          `}
+          style={prefersReducedMotion ? undefined : { animation: 'empty-state-float 4s ease-in-out infinite' }}
+        >
           {icon || <RobotIcon />}
         </div>
       </div>
@@ -146,6 +170,33 @@ export const EmptyState: React.FC<EmptyStateProps> = memo(({
             );
           })}
         </div>
+      )}
+
+      {/* CSS Animations for floating effect */}
+      {!prefersReducedMotion && (
+        <style>{`
+          @keyframes empty-state-float {
+            0%, 100% {
+              transform: translateY(0) scale(1);
+            }
+            25% {
+              transform: translateY(-6px) scale(1.02);
+            }
+            50% {
+              transform: translateY(-3px) scale(1);
+            }
+            75% {
+              transform: translateY(-8px) scale(1.01);
+            }
+          }
+          
+          /* Reduced motion support */
+          @media (prefers-reduced-motion: reduce) {
+            .empty-state-float {
+              animation: none !important;
+            }
+          }
+        `}</style>
       )}
     </div>
   );
