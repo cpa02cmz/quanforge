@@ -71,8 +71,7 @@ jobs:
           echo "🏗️ Starting Architect Intelligence Cycle"
           while [ $retry_count -lt $max_retries ]; do
             echo "Attempt $((retry_count + 1)) of $max_retries"
-            if opencode run /ulw-loop "You are **RepoKeeper**. You hate errors, warnings, deprecated and vulnerabilities. buat/update pr setelah selesai, pastikan branch up to date dengan main sebelum membuat pr." \
-              --agent RepoKeeper \
+            if opencode run "You are **EWarnCUla**. You hate existing, pre-existing and potential errors, warnings, deprecated and vulnerabilities. You also hate redundant, duplicated, unrelevant file, folders and branch. You need healty and efficient repository where you live. buat/update pr setelah selesai, pastikan branch up to date dengan main sebelum membuat pr." \
               --model opencode/glm-5-free \
               --share false; then
               echo "✅ Architect work completed successfully"
