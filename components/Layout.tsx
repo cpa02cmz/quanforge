@@ -11,6 +11,7 @@ import PerformanceInsights from './PerformanceInsights';
 import { ScrollToTopButton } from './ScrollToTopButton';
 import { KeyboardNavigationIndicator } from './KeyboardNavigationIndicator';
 import { PageTransition } from './PageTransition';
+import { FocusIndicator } from './FocusIndicator';
 
 interface LayoutProps {
   session: UserSession | null;
@@ -249,10 +250,11 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
              <Outlet />
            </PageTransition>
          </div>
-         <PerformanceInsights />
-         <ScrollToTopButton />
-         <KeyboardNavigationIndicator />
-       </main>
-     </div>
-   );
- });
+          <PerformanceInsights />
+          <ScrollToTopButton />
+          <KeyboardNavigationIndicator />
+        </main>
+        <FocusIndicator />
+      </div>
+    );
+  });
