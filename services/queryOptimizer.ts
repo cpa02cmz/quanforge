@@ -376,7 +376,7 @@ class QueryOptimizer {
     return {
       averageExecutionTime,
       cacheHitRate: (cacheHits / totalQueries) * 100,
-      slowQueries: slowQueries.sort((a, b) => b.executionTime - a.executionTime).slice(0, 10),
+      slowQueries: slowQueries.sort((a, b) => b.executionTime - a.executionTime).slice(0, COUNT_CONSTANTS.HISTORY.TINY),
       totalQueries,
     };
   }

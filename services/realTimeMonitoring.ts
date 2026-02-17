@@ -530,7 +530,7 @@ this.isInitialized = true;
 
     return {
       vitals: currentMetrics.vitals,
-      alerts: this.alerts.slice(-10),
+      alerts: this.alerts.slice(-ARRAY_LIMITS.ALERTS_RECENT),
       budgetCompliance,
       score: Math.max(0, score)
     };

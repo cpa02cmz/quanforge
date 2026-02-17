@@ -437,7 +437,7 @@ class BackendOptimizer {
     let performanceGain = 0;
     
     // Suggest indexes for slow queries
-    for (const slowQuery of report.topSlowQueries.slice(0, 5)) {
+    for (const slowQuery of report.topSlowQueries.slice(0, COUNT_CONSTANTS.BATCH.TINY)) {
       logger.log('Suggested optimization for slow query:', slowQuery);
       optimizationsApplied++;
       performanceGain += 20; // Estimated 20% improvement per optimization

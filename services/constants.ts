@@ -476,6 +476,10 @@ export const ARRAY_LIMITS = {
   ACQUIRE_TIMES: 100,                            // Connection acquire times
   REGION_PRIORITY: 3,                            // Priority regions count
   REGION_LOW_PRIORITY: 2,                        // Low priority regions
+  
+  // Metrics limits
+  METRICS_LATEST: 2,                             // Latest metrics (e.g., web vitals)
+  METRICS_RECENT: 10,                            // Recent metrics
 } as const;
 
 // ========== WEBSOCKET CONSTANTS ==========

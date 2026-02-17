@@ -5,7 +5,7 @@
 
 import { WindowWithVercel } from '../types/browser';
 import { createScopedLogger } from '../utils/logger';
-import { DELAY_CONSTANTS, SIZE_CONSTANTS } from './modularConstants';
+import { DELAY_CONSTANTS, SIZE_CONSTANTS, COUNT_CONSTANTS } from './modularConstants';
 import { ANALYTICS_CONFIG } from '../constants/config';
 import { ID_GENERATION } from '../constants/modularConfig';
 
@@ -504,9 +504,9 @@ class EdgeAnalytics {
   private recordMetric(metric: EdgeMetrics): void {
     this.metrics.push(metric);
     
-    // Keep only last 100 metrics in memory
-    if (this.metrics.length > 100) {
-      this.metrics = this.metrics.slice(-100);
+    // Keep only last metrics in memory
+    if (this.metrics.length > COUNT_CONSTANTS.HISTORY.STANDARD) {
+      this.metrics = this.metrics.slice(-COUNT_CONSTANTS.HISTORY.STANDARD);
     }
   }
 

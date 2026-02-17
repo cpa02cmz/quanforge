@@ -12,7 +12,7 @@ import {
   TRADING_CONSTANTS,
   VALIDATION_CONFIG
 } from '../constants/config';
-import { SIZE_CONSTANTS, SECURITY_REGIONS, SECURITY_PATTERNS } from './modularConstants';
+import { SIZE_CONSTANTS, SECURITY_REGIONS, SECURITY_PATTERNS, COUNT_CONSTANTS } from './modularConstants';
 
 interface SecurityConfig {
   maxPayloadSize: number;
@@ -1165,7 +1165,7 @@ private validateRobotData(data: any): ValidationResult {
       topViolations: Object.entries(directiveCounts)
         .map(([directive, count]) => ({ directive, count: count as number }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 10)
+        .slice(0, COUNT_CONSTANTS.ALERTS.RECENT)
     };
 
     // Rate Limit Statistics

@@ -613,7 +613,7 @@ class EdgeMonitoringService {
 
     const recentAlerts = alerts
       .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, 10);
+      .slice(0, COUNT_CONSTANTS.ALERTS.RECENT);
 
      return {
        summary,

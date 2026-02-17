@@ -2,6 +2,7 @@
 import { decompressFromUTF16, compressToUTF16 } from 'lz-string';
 import { createScopedLogger } from '../utils/logger';
 import { CACHE_CONFIG, TIME_CONSTANTS } from '../constants/config';
+import { ARRAY_LIMITS } from './constants';
 
 const logger = createScopedLogger('ConsolidatedCacheManager');
 
@@ -455,7 +456,7 @@ export class ConsolidatedCacheManager {
 
     const topTags = Object.entries(tagCounts)
       .sort(([, a], [, b]) => b - a)
-      .slice(0, 10)
+      .slice(0, ARRAY_LIMITS.METRICS_STANDARD)
       .map(([tag, count]) => ({ tag, count }));
 
     const timestamps = entries.map(e => e.timestamp);
@@ -621,9 +622,9 @@ export class ConsolidatedCacheManager {
   private recordAccessTime(time: number): void {
     this.accessTimes.push(time);
     
-    // Keep only last 100 measurements
-    if (this.accessTimes.length > 100) {
-      this.accessTimes = this.accessTimes.slice(-100);
+    // Keep only last measurements
+    if (this.accessTimes.length > ARRAY_LIMITS.ACQUIRE_TIMES) {
+      this.accessTimes = this.accessTimes.slice(-ARRAY_LIMITS.ACQUIRE_TIMES);
     }
   }
 
