@@ -15,6 +15,7 @@ import type {
   AIConfig,
 } from './types';
 import { ConfigValidator } from './validator';
+import { SECURITY_REGIONS, SECURITY_PATTERNS } from '../modularConstants';
 
 class ConfigurationService {
   private static instance: ConfigurationService;
@@ -68,14 +69,11 @@ class ConfigurationService {
       },
       regionBlocking: {
         enabled: this.getEnvBoolean('REGION_BLOCKING_ENABLED', true),
-        blockedRegions: this.getEnvArray('BLOCKED_REGIONS', ['CN', 'RU', 'IR', 'KP']),
+        blockedRegions: this.getEnvArray('BLOCKED_REGIONS', [...SECURITY_REGIONS.BLOCKED]),
       },
       botDetection: {
         enabled: this.getEnvBoolean('BOT_DETECTION_ENABLED', true),
-        suspiciousPatterns: this.getEnvArray('BOT_PATTERNS', [
-          'sqlmap', 'nikto', 'nmap', 'masscan', 'dirb', 'gobuster',
-          'wfuzz', 'burp', 'owasp', 'scanner', 'bot', 'crawler', 'spider'
-        ]),
+        suspiciousPatterns: this.getEnvArray('BOT_PATTERNS', [...SECURITY_PATTERNS.BOT_PATTERNS]),
       },
       apiEndpoints: {
         binanceWebSocket: this.getEnvString('BINANCE_WS_URL', 'wss://stream.binance.com:9443/ws'),

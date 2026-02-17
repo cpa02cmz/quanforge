@@ -12,7 +12,7 @@ import {
   TRADING_CONSTANTS,
   VALIDATION_CONFIG
 } from '../constants/config';
-import { SIZE_CONSTANTS } from './modularConstants';
+import { SIZE_CONSTANTS, SECURITY_REGIONS, SECURITY_PATTERNS } from './modularConstants';
 
 interface SecurityConfig {
   maxPayloadSize: number;
@@ -77,14 +77,11 @@ class SecurityManager {
     },
     regionBlocking: {
       enabled: true,
-      blockedRegions: ['CN', 'RU', 'IR', 'KP'] // Example blocked regions
+      blockedRegions: [...SECURITY_REGIONS.BLOCKED] // Blocked country codes
     },
     botDetection: {
       enabled: true,
-      suspiciousPatterns: [
-        'sqlmap', 'nikto', 'nmap', 'masscan', 'dirb', 'gobuster',
-        'wfuzz', 'burp', 'owasp', 'scanner', 'bot', 'crawler', 'spider'
-      ]
+      suspiciousPatterns: [...SECURITY_PATTERNS.BOT_PATTERNS] // Suspicious bot patterns
     }
   };
   private rateLimitMap = new Map<string, { count: number; resetTime: number }>();

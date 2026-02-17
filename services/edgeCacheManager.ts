@@ -8,7 +8,7 @@ import { createSafeWildcardPattern, ReDoSError } from '../utils/safeRegex';
 import { CACHE_CONFIG, TIME_CONSTANTS, EDGE_CONFIG } from '../constants/config';
 import { STAGGER } from './constants';
 import { createScopedLogger } from '../utils/logger';
-import { ADJUSTMENT_FACTORS, THRESHOLD_CONSTANTS } from './modularConstants';
+import { ADJUSTMENT_FACTORS, THRESHOLD_CONSTANTS, EDGE_CACHE_CONSTANTS } from './modularConstants';
 
 const logger = createScopedLogger('EdgeCacheManager');
 
@@ -65,8 +65,8 @@ export class EdgeCacheManager<T = any> {
   private config: EdgeCacheConfig = {
     memoryMaxSize: CACHE_CONFIG.MAX_CACHE_MEMORY_SIZE * ADJUSTMENT_FACTORS.TTL.INCREASE_MEDIUM, // 15MB - optimized for edge performance
     memoryMaxEntries: CACHE_CONFIG.MAX_CACHE_ENTRIES * ADJUSTMENT_FACTORS.TTL.INCREASE_MEDIUM, // 1500 entries
-    persistentMaxSize: 75 * 1024 * 1024, // 75MB persistent cache
-    persistentMaxEntries: 3000, // Increased entries
+    persistentMaxSize: EDGE_CACHE_CONSTANTS.SIZE.PERSISTENT_MAX, // 75MB persistent cache
+    persistentMaxEntries: EDGE_CACHE_CONSTANTS.SIZE.PERSISTENT_MAX_ENTRIES, // 3000 entries
     defaultTTL: TIME_CONSTANTS.CACHE_LONG_TTL, // 60 minutes - increased for better hit rates
     cleanupInterval: TIME_CONSTANTS.CLEANUP_DEFAULT_INTERVAL, // 60 seconds - balanced cleanup
     compressionThreshold: CACHE_CONFIG.ADVANCED_CACHE_COMPRESSION_THRESHOLD, // 512B - lower threshold for more compression
@@ -1022,7 +1022,7 @@ export class EdgeCacheManager<T = any> {
     if (priority === 'high') baseTTL *= ADJUSTMENT_FACTORS.TTL.INCREASE_MEDIUM;
     if (priority === 'low') baseTTL *= ADJUSTMENT_FACTORS.TTL.DECREASE_MEDIUM;
     
-    return Math.min(Math.max(baseTTL, 5 * 60 * 1000), 2 * 60 * 60 * 1000); // 5min to 2hr range
+    return Math.min(Math.max(baseTTL, EDGE_CACHE_CONSTANTS.TTL.MIN), EDGE_CACHE_CONSTANTS.TTL.MAX); // 5min to 2hr range
   }
 
   /**

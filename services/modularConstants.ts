@@ -806,6 +806,127 @@ export const SAFE_REGEX_CONFIG = {
   },
 } as const;
 
+// ========== EDGE POOL CONFIGURATION (Flexy-approved! No hardcoded values) ==========
+export const EDGE_POOL_CONFIG = {
+  // Health check intervals (ms)
+  HEALTH_CHECK: {
+    INTERVAL_MS: 15000,           // 15 seconds for reduced overhead
+    FAST_INTERVAL_MS: 10000,      // 10 seconds for high reliability
+    SLOW_INTERVAL_MS: 30000,      // 30 seconds for low traffic
+  },
+  
+  // Connection timeouts (ms)
+  TIMEOUT: {
+    CONNECTION_MS: 1500,          // 1.5 seconds for better edge reliability
+    HEALTH_CHECK_MS: 2000,        // 2 seconds for health checks
+    FAST_MS: 800,                 // 0.8 seconds for fast connections
+    STANDARD_MS: 5000,            // 5 seconds standard timeout
+  },
+  
+  // Client cache configuration
+  CACHE: {
+    TTL_MS: 60000,                // 60 seconds - optimized for edge performance
+    MAX_ENTRIES: 100,             // Maximum cached clients
+  },
+  
+  // Retry configuration
+  RETRY: {
+    MAX_ATTEMPTS: 3,
+    BACKOFF_MULTIPLIER: 2,
+  },
+} as const;
+
+// ========== SECURITY REGIONS & PATTERNS (Flexy-approved! No hardcoded values) ==========
+export const SECURITY_REGIONS = {
+  // Blocked regions (ISO country codes)
+  BLOCKED: ['CN', 'RU', 'IR', 'KP'],
+  
+  // High-risk regions requiring additional verification
+  HIGH_RISK: ['BY', 'VE', 'SY', 'AF'],
+  
+  // Trusted regions with relaxed security
+  TRUSTED: ['US', 'CA', 'GB', 'DE', 'FR', 'AU', 'JP', 'SG'],
+} as const;
+
+export const SECURITY_PATTERNS = {
+  // Bot detection patterns
+  BOT_PATTERNS: [
+    'sqlmap', 'nikto', 'nmap', 'masscan', 'dirb', 'gobuster',
+    'wfuzz', 'burp', 'owasp', 'scanner', 'bot', 'crawler', 'spider'
+  ],
+  
+  // Suspicious user agent patterns (regex strings for flexibility)
+  SUSPICIOUS_USER_AGENTS: [
+    'sqlmap', 'nikto', 'nmap', 'masscan', 'dirb', 'gobuster',
+    'wfuzz', 'burp', 'owasp', 'scanner', 'bot', 'crawler', 'spider',
+    'scrape', 'scraping', 'harvest', 'harvester'
+  ],
+  
+  // Code injection patterns (for prompt validation)
+  CODE_INJECTION: {
+    EVAL: 'eval\\s*\\(',
+    FUNCTION_CONSTRUCTOR: 'function\\s*\\(',
+    DOCUMENT_ACCESS: 'document\\.',
+    WINDOW_ACCESS: 'window\\.',
+    LOCAL_STORAGE: 'localStorage',
+    SESSION_STORAGE: 'sessionStorage',
+    COOKIE_ACCESS: 'cookie',
+    LOCATION_ACCESS: 'location\\.',
+    NAVIGATOR_ACCESS: 'navigator\\.',
+  },
+} as const;
+
+// ========== INPUT VALIDATION CONSTANTS (Flexy-approved! No hardcoded values) ==========
+export const INPUT_VALIDATION = {
+  // Prompt length limits
+  PROMPT: {
+    MIN_LENGTH: 10,
+    MAX_LENGTH: 10000,
+    DEFAULT_MAX_TOKENS: 4000,
+  },
+  
+  // Rate limit display
+  RATE_LIMIT: {
+    REQUESTS_PER_MINUTE: 10,
+    DISPLAY_WAIT_TIME_MINUTES: true,
+  },
+  
+  // Security sanitization
+  SANITIZATION: {
+    MAX_LENGTH_MULTIPLIER: 10,    // Multiplier for cache size calculations
+    FORBIDDEN_CHARS: '<>',        // Characters to strip from suspicious content
+  },
+} as const;
+
+// ========== EDGE CACHE CONFIGURATION (Flexy-approved! No hardcoded values) ==========
+export const EDGE_CACHE_CONSTANTS = {
+  // Size limits (bytes)
+  SIZE: {
+    PERSISTENT_MAX: 75 * 1024 * 1024,     // 75MB persistent cache
+    PERSISTENT_MAX_ENTRIES: 3000,         // Maximum entries in persistent cache
+    DEFAULT_MAX: 10 * 1024 * 1024,        // 10MB default cache
+  },
+  
+  // TTL ranges (ms)
+  TTL: {
+    MIN: 5 * 60 * 1000,                   // 5 minutes minimum
+    MAX: 2 * 60 * 60 * 1000,              // 2 hours maximum
+    DEFAULT: 5 * 60 * 1000,               // 5 minutes default
+  },
+  
+  // Compression
+  COMPRESSION: {
+    ENABLED: true,
+    THRESHOLD: 1024,                      // 1KB threshold
+  },
+  
+  // Cleanup
+  CLEANUP: {
+    STAGGER_DELAY_MS: 50,                 // 50ms stagger delay
+    EVICTION_BATCH_SIZE: 100,             // Batch size for eviction
+  },
+} as const;
+
 // ========== DEFAULT EXPORT ==========
 export const ModularConstants = {
   TIME: TIME_CONSTANTS,
@@ -835,6 +956,11 @@ export const ModularConstants = {
   CONCURRENCY: CONCURRENCY_LIMITS,
   ATTEMPTS: ATTEMPT_LIMITS,
   SAFE_REGEX: SAFE_REGEX_CONFIG,
+  EDGE_POOL: EDGE_POOL_CONFIG,
+  REGIONS: SECURITY_REGIONS,
+  PATTERNS: SECURITY_PATTERNS,
+  INPUT: INPUT_VALIDATION,
+  EDGE_CACHE: EDGE_CACHE_CONSTANTS,
 } as const;
 
 export default ModularConstants;

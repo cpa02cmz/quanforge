@@ -1,6 +1,7 @@
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import { settingsManager } from './settingsManager';
-import { BATCH_SIZES, CACHE_TTLS, RETRY_CONFIG, STAGGER } from './constants';
+import { BATCH_SIZES, STAGGER } from './constants';
+import { EDGE_POOL_CONFIG } from './modularConstants';
 import { createScopedLogger } from '../utils/logger';
 
 const logger = createScopedLogger('EdgeSupabasePool');
@@ -22,10 +23,10 @@ class EdgeSupabasePool {
   private static instance: EdgeSupabasePool;
   private clientCache: Map<string, ClientCache> = new Map();
   private config: EdgeClientConfig = {
-    ttl: CACHE_TTLS.ONE_MINUTE, // 60 seconds - optimized for edge performance
-    healthCheckInterval: 15000, // 15 seconds for reduced overhead
-    connectionTimeout: 1500, // 1.5 seconds for better edge reliability
-    maxRetries: RETRY_CONFIG.MAX_ATTEMPTS, // Use modular retry config
+    ttl: EDGE_POOL_CONFIG.CACHE.TTL_MS, // 60 seconds - optimized for edge performance
+    healthCheckInterval: EDGE_POOL_CONFIG.HEALTH_CHECK.INTERVAL_MS, // 15 seconds for reduced overhead
+    connectionTimeout: EDGE_POOL_CONFIG.TIMEOUT.CONNECTION_MS, // 1.5 seconds for better edge reliability
+    maxRetries: EDGE_POOL_CONFIG.RETRY.MAX_ATTEMPTS, // Use modular retry config
   };
   private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
 
