@@ -8,7 +8,7 @@ import { IWorkerManager, WorkerConfig } from '../../types/serviceInterfaces';
 import { createScopedLogger } from '../../utils/logger';
 import { TIMEOUTS } from '../constants';
 
-const logger = createScopedLogger('WorkerManager');
+const logger = () => createScopedLogger('WorkerManager');
 
 export interface WorkerTask {
   id: string;
@@ -53,7 +53,7 @@ export class WorkerManager implements IWorkerManager {
     // Initialize worker pool
     await this.initializeWorkers();
     
-    logger.info('Worker Manager initialized with max workers:', this.config.maxWorkers);
+    logger().info('Worker Manager initialized with max workers:', this.config.maxWorkers);
   }
 
   async destroy(): Promise<void> {
@@ -61,9 +61,9 @@ export class WorkerManager implements IWorkerManager {
     for (const { worker, id } of this.workers) {
       try {
         worker.terminate();
-        logger.info(`Terminated worker: ${id}`);
+        logger().info(`Terminated worker: ${id}`);
       } catch (error: unknown) {
-        logger.error(`Error terminating worker ${id}:`, error);
+        logger().error(`Error terminating worker ${id}:`, error);
       }
     }
     
@@ -71,7 +71,7 @@ export class WorkerManager implements IWorkerManager {
     this.taskQueue = [];
     this.processingTasks.clear();
     
-    logger.info('Worker Manager destroyed');
+    logger().info('Worker Manager destroyed');
   }
 
   async isHealthy(): Promise<boolean> {
@@ -91,7 +91,7 @@ export class WorkerManager implements IWorkerManager {
       const result = await this.executeTask(testTask) as WorkerResult;
       return result.success;
     } catch (error: unknown) {
-      logger.error('Worker Manager health check failed:', error);
+      logger().error('Worker Manager health check failed:', error);
       return false;
     }
   }
@@ -151,12 +151,12 @@ export class WorkerManager implements IWorkerManager {
       this.workers.splice(workerIndex, 1);
       this.stats.active--;
       
-      logger.info(`Terminated worker: ${workerId}`);
+      logger().info(`Terminated worker: ${workerId}`);
       
       // Create new worker to maintain pool size
       await this.createWorker();
     } catch (error: unknown) {
-      logger.error(`Error terminating worker ${workerId}:`, error);
+      logger().error(`Error terminating worker ${workerId}:`, error);
       throw error;
     }
   }
@@ -176,7 +176,7 @@ export class WorkerManager implements IWorkerManager {
       try {
         await this.createWorker();
       } catch (error: unknown) {
-        logger.error(`Failed to initialize worker ${i}:`, error);
+        logger().error(`Failed to initialize worker ${i}:`, error);
       }
     }
   }
@@ -194,7 +194,7 @@ export class WorkerManager implements IWorkerManager {
       };
       
       worker.onerror = (error) => {
-        logger.error(`Worker ${workerId} error:`, error);
+        logger().error(`Worker ${workerId} error:`, error);
         this.handleWorkerError(workerId, error);
       };
       
@@ -206,9 +206,9 @@ export class WorkerManager implements IWorkerManager {
       });
       
       this.stats.active++;
-      logger.info(`Created worker: ${workerId}`);
+      logger().info(`Created worker: ${workerId}`);
     } catch (error: unknown) {
-      logger.error(`Failed to create worker:`, error);
+      logger().error(`Failed to create worker:`, error);
       throw error;
     }
   }
@@ -244,7 +244,7 @@ export class WorkerManager implements IWorkerManager {
     availableWorker.isBusy = true;
     availableWorker.lastUsed = Date.now();
     
-    logger.info(`Assigning task ${task.id} to worker ${availableWorker.id}`);
+    logger().info(`Assigning task ${task.id} to worker ${availableWorker.id}`);
     
     // Send task to worker
     availableWorker.worker.postMessage({
@@ -275,7 +275,7 @@ export class WorkerManager implements IWorkerManager {
           this.stats.failed++;
         }
         
-        logger.info(`Task ${data.taskId} completed in ${duration}ms with worker ${workerId}`);
+        logger().info(`Task ${data.taskId} completed in ${duration}ms with worker ${workerId}`);
       }
     }
     
@@ -316,9 +316,9 @@ export class WorkerManager implements IWorkerManager {
     // Create new worker
     try {
       await this.createWorker();
-      logger.info(`Recreated worker to replace ${failedWorkerId}`);
+      logger().info(`Recreated worker to replace ${failedWorkerId}`);
     } catch (error: unknown) {
-      logger.error(`Failed to recreate worker:`, error);
+      logger().error(`Failed to recreate worker:`, error);
     }
   }
 
@@ -330,7 +330,7 @@ export class WorkerManager implements IWorkerManager {
       // Add workers
       for (let i = currentSize; i < targetSize; i++) {
         this.createWorker().catch(error => {
-          logger.error(`Failed to add worker during pool adjustment:`, error);
+          logger().error(`Failed to add worker during pool adjustment:`, error);
         });
       }
     } else if (currentSize > targetSize) {
@@ -340,7 +340,7 @@ export class WorkerManager implements IWorkerManager {
       
       for (const { id } of toRemove) {
         this.terminateWorker(id).catch(error => {
-          logger.error(`Failed to remove excess worker:`, error);
+          logger().error(`Failed to remove excess worker:`, error);
         });
       }
     }
@@ -373,6 +373,6 @@ export class WorkerManager implements IWorkerManager {
     this.taskQueue = [];
     this.stats.queued = 0;
     
-    logger.info('Queue cleared');
+    logger().info('Queue cleared');
   }
 }

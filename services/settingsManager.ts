@@ -5,7 +5,7 @@ import { getLocalStorage } from "../utils/storage";
 import { createScopedLogger } from "../utils/logger";
 import { STORAGE_KEYS, STORAGE_PREFIXES } from "../constants/modularConfig";
 
-const logger = createScopedLogger('SettingsManager');
+const logger = () => createScopedLogger('SettingsManager');
 
 // Using Flexy's modular storage keys
 const AI_SETTINGS_KEY = STORAGE_KEYS.AI_SETTINGS;
@@ -82,7 +82,7 @@ export const settingsManager = {
             // Merge with defaults to ensure new fields like 'language' exist on old saved data
             return { ...DEFAULT_AI_SETTINGS, ...parsed };
         } catch (e) {
-            logger.error("Failed to load AI settings", e);
+            logger().error("Failed to load AI settings", e);
             return DEFAULT_AI_SETTINGS;
         }
     },
@@ -98,7 +98,7 @@ export const settingsManager = {
             storage.set(AI_SETTINGS_KEY, settingsToSave);
             window.dispatchEvent(new Event('ai-settings-changed'));
         } catch (e) {
-            logger.error("Failed to save AI settings", e);
+            logger().error("Failed to save AI settings", e);
         }
     },
 
@@ -116,7 +116,7 @@ export const settingsManager = {
             const parsed = stored;
             return { ...DEFAULT_DB_SETTINGS, ...parsed };
         } catch (e) {
-            logger.error("Failed to load DB settings", e);
+            logger().error("Failed to load DB settings", e);
             return DEFAULT_DB_SETTINGS;
         }
     },
@@ -127,7 +127,7 @@ export const settingsManager = {
             // Dispatch event to notify Supabase service to re-init
             window.dispatchEvent(new Event('db-settings-changed'));
         } catch (e) {
-            logger.error("Failed to save DB settings", e);
+            logger().error("Failed to save DB settings", e);
         }
     }
 };

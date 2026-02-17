@@ -22,7 +22,7 @@ import { getLocalStorage, getSessionStorage } from "../utils/storage";
 import { LRUCache } from "../utils/cache";
 import { importGoogleGenAI, importAIGenerationTypes } from "./ai/aiImports";
 
-const logger = createScopedLogger('gemini');
+const logger = () => createScopedLogger('gemini');
 
 // Storage instances for session management
 const authStorage = getLocalStorage();
@@ -63,7 +63,7 @@ const getCurrentUserId = (): string | null => {
     }
     return anonymousId;
   } catch (error: unknown) {
-    logger.warn('Failed to get user ID for rate limiting:', error);
+    logger().warn('Failed to get user ID for rate limiting:', error);
     return null;
   }
 };
@@ -178,7 +178,7 @@ const sanitizePrompt = (prompt: string): string => {
   
   const hasSuspiciousContent = suspiciousPatterns.some(pattern => pattern.test(sanitized));
   if (hasSuspiciousContent) {
-    logger.warn('Suspicious content detected in prompt, applying additional sanitization');
+    logger().warn('Suspicious content detected in prompt, applying additional sanitization');
     // Additional sanitization for suspicious content
     return sanitized.replace(/[<>]/g, '').substring(0, AI_CONFIG.CACHE.MAX_ANALYSIS_CACHE_SIZE * 10);
   }
@@ -395,7 +395,7 @@ async function withRetry<T>(
 
         // Only retry on Rate Limits, Server Errors, or Network Issues
         if (isRateLimit || isServerErr || isNetworkErr) {
-            logger.warn(`API Error (${err.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
+            logger().warn(`API Error (${err.status || 'Network'}). Retrying in ${delay}ms... (${retries} left)`);
             // Add jitter to prevent thundering herd
             const jitter = Math.random() * 0.1 * delay;
             const nextDelay = Math.min(delay * ADJUSTMENT_FACTORS.BACKOFF.GENTLE + jitter, maxDelay); // Use gentle backoff multiplier
@@ -623,7 +623,7 @@ FINAL REMINDERS:
             // Early truncation with better buffer management
             if (baseLength > TokenBudgetManager.MAX_CONTEXT_CHARS) {
                 if (import.meta.env.DEV) {
-                    logger.warn("Base context exceeds token budget, truncating code block");
+                    logger().warn("Base context exceeds token budget, truncating code block");
                 }
                 const availableForCode = TokenBudgetManager.MAX_CONTEXT_CHARS - paramsContext.length - prompt.length - footerReminder.length - 1000;
                 codeContext = this.buildCodeContext(currentCode, Math.max(availableForCode, 1000));
@@ -677,14 +677,14 @@ const tokenBudgetManager = new TokenBudgetManager();
 const buildContextPrompt = async (prompt: string, currentCode?: string, strategyParams?: StrategyParams, history: Message[] = []): Promise<string> => {
     try {
         // Try to use Web Worker for better performance
-        if (aiWorkerManager.isWorkerReady()) {
-            return await aiWorkerManager.buildContext(prompt, currentCode, strategyParams, history);
+        if (aiWorkerManager().isWorkerReady()) {
+            return await aiWorkerManager().buildContext(prompt, currentCode, strategyParams, history);
         } else {
             // Fallback to main thread if worker is not available
             return tokenBudgetManager.buildContext(prompt, currentCode, strategyParams, history);
         }
     } catch (error: unknown) {
-        logger.warn('Web Worker context building failed, using fallback:', error);
+        logger().warn('Web Worker context building failed, using fallback:', error);
         // Fallback to main thread
         return tokenBudgetManager.buildContext(prompt, currentCode, strategyParams, history);
     }
@@ -751,7 +751,7 @@ const callOpenAICompatible = async (settings: AISettings, fullPrompt: string, si
         const activeKey = getActiveKey(settings.apiKey);
 
         if (!activeKey && !settings.baseUrl?.includes('localhost')) {
-             logger.warn("API Key is empty for OpenAI Provider");
+             logger().warn("API Key is empty for OpenAI Provider");
         }
 
         const baseUrl = settings.baseUrl ? settings.baseUrl.replace(/\/$/, '') : AI_CONFIG.ENDPOINTS.OPENAI;
@@ -836,7 +836,7 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
      // Check semantic cache first
      const cachedResponse = mql5ResponseCache.get(semanticKey);
      if (cachedResponse) {
-       logger.debug('Semantic cache hit for MQL5 generation');
+       logger().debug('Semantic cache hit for MQL5 generation');
        return cachedResponse;
      }
 
@@ -858,13 +858,13 @@ export const generateMQL5Code = async (prompt: string, currentCode?: string, str
      // Use Web Worker for response processing if available
      let response: { thinking?: string; content: string };
      try {
-         if (aiWorkerManager.isWorkerReady()) {
-             response = await aiWorkerManager.processResponse(rawResponse);
+         if (aiWorkerManager().isWorkerReady()) {
+             response = await aiWorkerManager().processResponse(rawResponse);
          } else {
              response = extractThinking(rawResponse);
          }
      } catch (error: unknown) {
-         logger.warn('Web Worker response processing failed, using fallback:', error);
+         logger().warn('Web Worker response processing failed, using fallback:', error);
          response = extractThinking(rawResponse);
      }
      

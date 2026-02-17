@@ -8,7 +8,7 @@ import { TIME_CONSTANTS } from '../constants/config';
 import { STAGGER, MODULE_PRELOAD } from './constants';
 import { EXTERNAL_RESOURCES } from './modularConstants';
 
-const logger = createScopedLogger('FrontendOptimizer');
+const logger = () => createScopedLogger('FrontendOptimizer');
 
 interface FrontendOptimizationConfig {
   enableResourcePrefetching: boolean;
@@ -244,7 +244,7 @@ class FrontendOptimizer {
     nonCriticalModules.forEach((moduleLoader, index) => {
       setTimeout(() => {
         moduleLoader().catch((error) => {
-          logger.warn(`Failed to preload module ${index}:`, error);
+          logger().warn(`Failed to preload module ${index}:`, error);
         });
       }, MODULE_PRELOAD.BASE_DELAY_MS + index * MODULE_PRELOAD.STAGGER_DELAY_MS);
     });

@@ -1,215 +1,134 @@
 import { chromium } from 'playwright';
-import http from 'http';
-import fs from 'fs';
-import path from 'path';
 import { fileURLToPath } from 'url';
-
+import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Simple static file server
-const createServer = () => {
-  return http.createServer((req, res) => {
-    let filePath = path.join(process.cwd(), 'dist', req.url === '/' ? 'index.html' : req.url);
-    
-    const ext = path.extname(filePath);
-    const contentTypes = {
-      '.html': 'text/html',
-      '.js': 'application/javascript',
-      '.css': 'text/css',
-      '.json': 'application/json',
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.svg': 'image/svg+xml'
-    };
-    
-    const contentType = contentTypes[ext] || 'application/octet-stream';
-    
-    fs.readFile(filePath, (err, content) => {
-      if (err) {
-        if (err.code === 'ENOENT') {
-          // Serve index.html for SPA routing
-          fs.readFile(path.join(process.cwd(), 'dist', 'index.html'), (err, content) => {
-            if (err) {
-              res.writeHead(404);
-              res.end('404 Not Found');
-            } else {
-              res.writeHead(200, { 'Content-Type': 'text/html' });
-              res.end(content);
-            }
-          });
-        } else {
-          res.writeHead(500);
-          res.end('500 Server Error');
-        }
-      } else {
-        res.writeHead(200, { 'Content-Type': contentType });
-        res.end(content);
-      }
-    });
-  });
-};
-
-// Routes to test
-const routes = [
-  { name: 'Home/Dashboard', path: '/' },
-  { name: 'Generator', path: '/generator' },
-  { name: 'About', path: '/about' }
-];
-
+const __dirname = dirname(__filename);
 async function auditBrowserConsole() {
-  console.log('🧛 BroCula Browser Console Audit Starting...\n');
-  
-  // Start server
-  const server = createServer();
-  await new Promise(resolve => server.listen(3456, '127.0.0.1', resolve));
-  console.log('✅ Server started on http://localhost:3456\n');
-  
-  const browser = await chromium.launch({ headless: true });
-  const allErrors = [];
-  const allWarnings = [];
-  
-  try {
-    for (const route of routes) {
-      console.log(`\n📍 Testing route: ${route.name} (${route.path})`);
-      
-      const context = await browser.newContext();
-      const page = await context.newPage();
-      
-      const routeErrors = [];
-      const routeWarnings = [];
-      
-      // Capture console messages
-      page.on('console', msg => {
-        const type = msg.type();
-        const text = msg.text();
-        const location = msg.location ? ` (${msg.location.url}:${msg.location.lineNumber})` : '';
-        
-        if (type === 'error') {
-          // Skip expected errors (e.g., network issues, missing env vars in dev)
-          const isExpected = 
-            text.includes('favicon') ||
-            text.includes('Manifest') ||
-            text.includes('network') && text.includes('Failed to fetch') ||
-            text.includes('Supabase') && text.includes('env') ||
-            text.includes('Redis') && text.includes('env') ||
-            text.includes('Gemini') && text.includes('key') ||
-            text.includes('401') && text.includes('Unauthorized') ||
-            text.includes('WebSocket') && text.includes('connection');
-          
-          if (!isExpected) {
-            routeErrors.push({ text, location, route: route.name });
-          }
-        } else if (type === 'warning') {
-          // Skip expected warnings
-          const isExpected =
-            text.includes('deprecated') ||
-            text.includes('source map') ||
-            text.includes('dev') ||
-            text.includes('HMR');
-          
-          if (!isExpected) {
-            routeWarnings.push({ text, location, route: route.name });
-          }
-        }
-      });
-      
-      // Capture page errors
-      page.on('pageerror', error => {
-        const isExpected = 
-          error.message.includes('favicon') ||
-          error.message.includes('Supabase') ||
-          error.message.includes('Redis');
-        
-        if (!isExpected) {
-          routeErrors.push({ text: error.message, location: '', route: route.name, pageError: true });
-        }
-      });
-      
-      // Navigate to the route
-      await page.goto(`http://127.0.0.1:3456${route.path}`, { 
-        waitUntil: 'networkidle',
-        timeout: 30000 
-      });
-      
-      // Wait a bit for any delayed console messages
-      await page.waitForTimeout(2000);
-      
-      console.log(`   Errors: ${routeErrors.length}, Warnings: ${routeWarnings.length}`);
-      
-      if (routeErrors.length > 0) {
-        routeErrors.forEach(err => {
-          console.log(`   ❌ ERROR: ${err.text.substring(0, 100)}`);
+    console.log('🧛‍♂️ BroCula initiating browser console audit...\n');
+    let _server = null;
+    let browser = null;
+    const results = [];
+    // Routes to test
+    const routes = [
+        { path: '/', name: 'Home/Dashboard' },
+        { path: '/generator', name: 'Generator' },
+        { path: '/about', name: 'About' }
+    ];
+    try {
+        // Start Vite preview server
+        console.log('📦 Starting production build preview server...');
+        const { preview } = await import('vite');
+        const previewServer = await preview({
+            preview: {
+                port: 4173,
+                host: 'localhost'
+            },
+            build: {
+                outDir: 'dist'
+            }
         });
-      }
-      
-      if (routeWarnings.length > 0) {
-        routeWarnings.forEach(warn => {
-          console.log(`   ⚠️  WARNING: ${warn.text.substring(0, 100)}`);
-        });
-      }
-      
-      allErrors.push(...routeErrors);
-      allWarnings.push(...routeWarnings);
-      
-      await context.close();
+        const serverUrl = `http://localhost:4173`;
+        console.log(`✅ Preview server running at ${serverUrl}\n`);
+        // Launch browser
+        console.log('🌐 Launching browser...');
+        browser = await chromium.launch({ headless: true });
+        for (const route of routes) {
+            console.log(`🔍 Auditing route: ${route.name} (${route.path})`);
+            const context = await browser.newContext();
+            const page = await context.newPage();
+            const consoleMessages = [];
+            // Capture all console messages
+            page.on('console', (msg) => {
+                const message = {
+                    type: msg.type(),
+                    text: msg.text(),
+                    location: msg.location().url
+                };
+                consoleMessages.push(message);
+            });
+            // Capture page errors with full stack traces
+            page.on('pageerror', (error) => {
+                const stack = error.stack || '';
+                consoleMessages.push({
+                    type: 'pageerror',
+                    text: `${error.message}\nFULL STACK:\n${stack}`,
+                    location: stack.split('\n')[1] || 'unknown'
+                });
+            });
+            // Navigate to route
+            const url = `${serverUrl}${route.path}`;
+            await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+            // Wait a bit for any delayed console messages
+            await page.waitForTimeout(2000);
+            // Categorize messages
+            const errors = consoleMessages.filter(m => m.type === 'error' || m.type === 'pageerror');
+            const warnings = consoleMessages.filter(m => m.type === 'warning');
+            const logs = consoleMessages.filter(m => m.type === 'log' || m.type === 'info');
+            results.push({
+                route: route.name,
+                errors,
+                warnings,
+                logs
+            });
+            // Display results for this route
+            if (errors.length > 0) {
+                console.log(`  ❌ ${errors.length} error(s) found:`);
+                errors.forEach(e => {
+                    console.log(`     - Message: ${e.text.split('\n')[0]}`);
+                    if (e.text.includes('FULL STACK:')) {
+                        const stackLines = e.text.split('\n').slice(2); // Skip message and 'FULL STACK:'
+                        console.log(`       Stack trace (first 5 lines):`);
+                        stackLines.slice(0, 5).forEach((line) => console.log(`         ${line.trim()}`));
+                    }
+                });
+            }
+            if (warnings.length > 0) {
+                console.log(`  ⚠️  ${warnings.length} warning(s) found:`);
+                warnings.forEach(w => console.log(`     - ${w.text.substring(0, 100)}${w.text.length > 100 ? '...' : ''}`));
+            }
+            if (errors.length === 0 && warnings.length === 0) {
+                console.log(`  ✅ No console errors or warnings`);
+            }
+            if (logs.length > 0) {
+                console.log(`  📝 ${logs.length} log message(s)`);
+            }
+            console.log('');
+            await context.close();
+        }
+        // Print summary
+        console.log('\n' + '='.repeat(60));
+        console.log('🧛‍♂️ BROCULA AUDIT SUMMARY');
+        console.log('='.repeat(60));
+        const totalErrors = results.reduce((sum, r) => sum + r.errors.length, 0);
+        const totalWarnings = results.reduce((sum, r) => sum + r.warnings.length, 0);
+        console.log(`\n📊 Results:`);
+        console.log(`   Total Routes Tested: ${results.length}`);
+        console.log(`   Total Errors: ${totalErrors}`);
+        console.log(`   Total Warnings: ${totalWarnings}`);
+        if (totalErrors === 0 && totalWarnings === 0) {
+            console.log('\n✅ ALL CLEAR - No browser console issues detected!');
+            console.log('🎉 Application is production-ready.\n');
+        }
+        else {
+            console.log('\n⚠️  Issues detected that require attention:\n');
+            results.forEach(r => {
+                if (r.errors.length > 0 || r.warnings.length > 0) {
+                    console.log(`   ${r.route}:`);
+                    console.log(`     Errors: ${r.errors.length}`);
+                    console.log(`     Warnings: ${r.warnings.length}`);
+                }
+            });
+        }
+        // Clean up
+        await browser.close();
+        await previewServer.close();
+        process.exit(totalErrors > 0 ? 1 : 0);
     }
-    
-  } finally {
-    await browser.close();
-    server.close();
-  }
-  
-  console.log('\n' + '='.repeat(60));
-  console.log('📊 BROWSER CONSOLE AUDIT SUMMARY');
-  console.log('='.repeat(60));
-  console.log(`Total Routes Tested: ${routes.length}`);
-  console.log(`Total Errors: ${allErrors.length}`);
-  console.log(`Total Warnings: ${allWarnings.length}`);
-  
-  if (allErrors.length === 0 && allWarnings.length === 0) {
-    console.log('\n✅ Browser console is CLEAN - No errors or warnings found!');
-  } else {
-    if (allErrors.length > 0) {
-      console.log('\n❌ ERRORS FOUND:');
-      allErrors.forEach((err, i) => {
-        console.log(`\n${i + 1}. [${err.route}] ${err.pageError ? '(Page Error)' : ''}`);
-        console.log(`   ${err.text.substring(0, 200)}`);
-      });
+    catch (error) {
+        console.error('❌ Audit failed:', error);
+        if (browser)
+            await browser.close();
+        process.exit(1);
     }
-    
-    if (allWarnings.length > 0) {
-      console.log('\n⚠️  WARNINGS FOUND:');
-      allWarnings.forEach((warn, i) => {
-        console.log(`\n${i + 1}. [${warn.route}]`);
-        console.log(`   ${warn.text.substring(0, 200)}`);
-      });
-    }
-  }
-  
-  // Save report
-  const report = {
-    timestamp: new Date().toISOString(),
-    summary: {
-      routes: routes.length,
-      errors: allErrors.length,
-      warnings: allWarnings.length,
-      status: allErrors.length === 0 && allWarnings.length === 0 ? 'CLEAN' : 'ISSUES_FOUND'
-    },
-    details: {
-      errors: allErrors,
-      warnings: allWarnings
-    }
-  };
-  
-  fs.writeFileSync('browser-audit-report.json', JSON.stringify(report, null, 2));
-  console.log('\n📝 Report saved to browser-audit-report.json');
-  
-  // Exit with error code if issues found
-  process.exit(allErrors.length > 0 ? 1 : 0);
 }
-
-auditBrowserConsole().catch(err => {
-  console.error('Audit failed:', err);
-  process.exit(1);
-});
+auditBrowserConsole();

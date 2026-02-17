@@ -72,12 +72,14 @@ async function auditBrowserConsole() {
         consoleMessages.push(message);
       });
       
-      // Capture page errors
+      // Capture page errors with full stack traces
       page.on('pageerror', (error) => {
+        const stack = error.stack || '';
+        
         consoleMessages.push({
           type: 'pageerror',
-          text: error.message,
-          location: 'page'
+          text: `${error.message}\nFULL STACK:\n${stack}`,
+          location: stack.split('\n')[1] || 'unknown'
         });
       });
       
@@ -109,7 +111,14 @@ async function auditBrowserConsole() {
       // Display results for this route
       if (errors.length > 0) {
         console.log(`  ❌ ${errors.length} error(s) found:`);
-        errors.forEach(e => console.log(`     - ${e.text.substring(0, 100)}${e.text.length > 100 ? '...' : ''}`));
+        errors.forEach(e => {
+          console.log(`     - Message: ${e.text.split('\n')[0]}`);
+          if (e.text.includes('FULL STACK:')) {
+            const stackLines = e.text.split('\n').slice(2); // Skip message and 'FULL STACK:'
+            console.log(`       Stack trace (first 5 lines):`);
+            stackLines.slice(0, 5).forEach((line: string) => console.log(`         ${line.trim()}`));
+          }
+        });
       }
       if (warnings.length > 0) {
         console.log(`  ⚠️  ${warnings.length} warning(s) found:`);
