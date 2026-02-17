@@ -15,6 +15,9 @@ export interface ErrorInfo {
 }
 
 import { ERROR_CONFIG } from '../constants/config';
+import { createScopedLogger } from './logger';
+
+const logger = createScopedLogger('ErrorHandler');
 
 export class ErrorHandler {
   private static instance: ErrorHandler;
@@ -40,7 +43,7 @@ export class ErrorHandler {
         this.errors = JSON.parse(stored);
       }
     } catch (e: unknown) {
-      console.warn('Failed to load stored errors:', e);
+      logger.warn('Failed to load stored errors:', e);
     }
   }
 
@@ -48,7 +51,7 @@ export class ErrorHandler {
     try {
       localStorage.setItem('app_errors', JSON.stringify(this.errors));
     } catch (e: unknown) {
-      console.warn('Failed to store errors:', e);
+      logger.warn('Failed to store errors:', e);
     }
   }
 
@@ -123,7 +126,7 @@ export class ErrorHandler {
         // });
       }
     } catch (e: unknown) {
-      console.warn('Failed to report error:', e);
+      logger.warn('Failed to report error:', e);
     }
   }
 
@@ -215,7 +218,7 @@ export const withErrorHandling = <T extends (...args: unknown[]) => Promise<unkn
     // If fallback is provided, try that instead of re-throwing
     if (fallback) {
       try {
-        console.warn(`Using fallback for ${operation} after ${retries + 1} attempts`);
+        logger.warn(`Using fallback for ${operation} after ${retries + 1} attempts`);
         return await fallback();
       } catch (fallbackError) {
         console.error(`Fallback failed for ${operation}:`, fallbackError);
@@ -342,7 +345,7 @@ export const errorRecovery = {
       // Try to get from cache
       const cached = cacheGetter(cacheKey);
       if (cached !== null) {
-        console.warn(`Operation failed, using cached data for ${cacheKey}`);
+        logger.warn(`Operation failed, using cached data for ${cacheKey}`);
         return cached;
       }
       throw error;
@@ -430,7 +433,7 @@ export const edgeErrorHandler = {
   handleEdgeError: (error: Error, context: ErrorContext): void => {
     if (edgeErrorHandler.isEdgeError(error)) {
       // Fallback to client-side processing
-      console.warn('Edge error, falling back to client:', error);
+      logger.warn('Edge error, falling back to client:', error);
       // Implement fallback logic
       handleError(error, `${context.operation} (edge fallback)`, context.component || 'unknown', {
         ...context.additionalData,

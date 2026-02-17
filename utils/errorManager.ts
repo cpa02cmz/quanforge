@@ -2,6 +2,9 @@ import type { Toast } from '../types/toast';
 import { ERROR_DISPLAY } from '../constants/timing';
 import { TIME_CONSTANTS } from '../constants/config';
 import { ERROR_MANAGEMENT_CONFIG } from '../services/monitoringConfig';
+import { createScopedLogger } from './logger';
+
+const logger = createScopedLogger('ErrorManager');
 
 export enum ErrorSeverity {
   LOW = 'low',
@@ -312,11 +315,11 @@ export class ErrorManager {
         console.error('🟠 HIGH ERROR:', logData, error.stack);
         break;
       case ErrorSeverity.MEDIUM:
-        console.warn('🟡 WARNING:', logData);
+        logger.warn('🟡 WARNING:', logData);
         break;
       case ErrorSeverity.LOW:
       default:
-        console.info('🔵 INFO:', logData);
+        logger.info('🔵 INFO:', logData);
         break;
     }
   }
@@ -614,7 +617,7 @@ export const withErrorHandling = <T extends (...args: unknown[]) => Promise<unkn
     // If fallback is provided, try that instead of re-throwing
     if (fallback) {
       try {
-        console.warn(`Using fallback for ${operation} after ${retries + 1} attempts`);
+        logger.warn(`Using fallback for ${operation} after ${retries + 1} attempts`);
         return await fallback();
       } catch (fallbackError) {
         console.error(`Fallback failed for ${operation}:`, fallbackError);
@@ -757,7 +760,7 @@ export const edgeErrorHandler = {
   handleEdgeError: (error: Error, context: { operation: string; component?: string; additionalData?: Record<string, any> }): void => {
     if (edgeErrorHandler.isEdgeError(error)) {
       // Fallback to client-side processing
-      console.warn('Edge error, falling back to client:', error);
+      logger.warn('Edge error, falling back to client:', error);
       // Implement fallback logic
       handleErrorCompat(error, `${context.operation} (edge fallback)`, context.component || 'unknown', {
         ...context.additionalData,
