@@ -552,13 +552,46 @@ export const secureSettingsStorage = new SecureStorage({
   maxSize: 1024 * 1024 // 1MB for settings
 });
 
+// Auto-cleanup interval ID for proper cleanup
+let cleanupIntervalId: ReturnType<typeof setInterval> | null = null;
+
 // Auto-cleanup expired items periodically
 if (SecureStorage.isAvailable()) {
-  setInterval(() => {
+  cleanupIntervalId = setInterval(() => {
     secureStorage.cleanup();
     secureCacheStorage.cleanup();
     secureSettingsStorage.cleanup();
   }, TIME_CONSTANTS.CACHE_DEFAULT_TTL); // Every 5 minutes
+}
+
+/**
+ * Stop the automatic cleanup interval
+ * Call this during app shutdown or testing to prevent memory leaks
+ */
+export function stopCleanupInterval(): void {
+  if (cleanupIntervalId !== null) {
+    clearInterval(cleanupIntervalId);
+    cleanupIntervalId = null;
+    logger.debug('Cleanup interval stopped');
+  }
+}
+
+/**
+ * Restart the automatic cleanup interval
+ * Useful for testing or after manual cleanup
+ */
+export function startCleanupInterval(): void {
+  // Stop existing interval if running
+  stopCleanupInterval();
+
+  if (SecureStorage.isAvailable()) {
+    cleanupIntervalId = setInterval(() => {
+      secureStorage.cleanup();
+      secureCacheStorage.cleanup();
+      secureSettingsStorage.cleanup();
+    }, TIME_CONSTANTS.CACHE_DEFAULT_TTL);
+    logger.debug('Cleanup interval started');
+  }
 }
 
 // Export types
