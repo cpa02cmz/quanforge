@@ -5,7 +5,7 @@ import { InputValidator, ValidationResult } from './InputValidator';
 import { ThreatDetector } from './ThreatDetector';
 import { RateLimiter } from './rateLimiter';
 import { APISecurityManager } from './APISecurityManager';
-import { SecurityConfig, securityConfig } from '../configurationService';
+import { SecurityConfig, securityConfig } from '../config';
 import { STRING_LIMITS, TIME_CONSTANTS } from '../constants';
 
 /**

@@ -1,4 +1,4 @@
-import { SecurityConfig } from '../configurationService';
+import { SecurityConfig } from '../config';
 import { STRING_LIMITS } from '../constants';
 import { SECURITY_RISK_SCORES } from '../modularConstants';
 
