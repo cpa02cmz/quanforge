@@ -1,4 +1,5 @@
 import { createScopedLogger } from '../../utils/logger';
+import { ERROR_CODES } from '../constants';
 
 const logger = createScopedLogger('ModularSupabase');
 /**
@@ -60,7 +61,7 @@ const trySaveToStorage = (key: string, value: string) => {
     if ((e as Error).name === 'QuotaExceededError' || 
       (e as Error).name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
       (e as { code?: number }).code === 22 ||
-      (e as { code?: number }).code === 1014
+      (e as { code?: number }).code === ERROR_CODES.SUPABASE.CONNECTION_ERROR
     ) {
       throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
     }

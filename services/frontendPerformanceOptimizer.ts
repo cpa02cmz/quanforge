@@ -8,6 +8,7 @@ import { logger } from '../utils/logger';
 import { storage } from '../utils/storage';
 import { TIME_CONSTANTS, CACHE_CONFIG } from '../constants/config';
 import { STAGGER, MODULE_PRELOAD, MEMORY_OPTIMIZATION } from './constants';
+import { EXTERNAL_RESOURCES } from './modularConstants';
 import { WindowWithGC, PerformanceWithMemory } from '../types/browser';
 
 interface PerformanceOptimizerConfig {
@@ -134,7 +135,7 @@ class FrontendPerformanceOptimizer {
    */
   private setupResourcePrefetching(): void {
     const criticalResources = [
-      'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+      EXTERNAL_RESOURCES.FONTS.INTER_FONT_URL,
     ];
 
     criticalResources.forEach((resource) => {
@@ -181,12 +182,12 @@ class FrontendPerformanceOptimizer {
   private setupFontOptimization(): void {
     const fontLinks = [
       {
-        href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+        href: EXTERNAL_RESOURCES.FONTS.INTER_FONT_URL,
         rel: 'preload',
         as: 'style',
       },
       {
-        href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+        href: EXTERNAL_RESOURCES.FONTS.INTER_FONT_URL,
         rel: 'stylesheet',
       },
     ];
@@ -216,12 +217,12 @@ class FrontendPerformanceOptimizer {
    */
   private setupPreconnect(): void {
     const origins = [
-      'https://fonts.googleapis.com',
-      'https://fonts.gstatic.com',
-      'https://*.supabase.co',
-      'https://generativelanguage.googleapis.com',
-      'https://cdn.jsdelivr.net',
-      'https://unpkg.com',
+      EXTERNAL_RESOURCES.FONTS.GOOGLE_FONTS_BASE,
+      EXTERNAL_RESOURCES.FONTS.GOOGLE_FONTS_STATIC,
+      EXTERNAL_RESOURCES.APIs.SUPABASE,
+      EXTERNAL_RESOURCES.APIs.GEMINI,
+      EXTERNAL_RESOURCES.CDN.JSDELIVR,
+      EXTERNAL_RESOURCES.CDN.UNPKG,
     ];
 
     origins.forEach(origin => {

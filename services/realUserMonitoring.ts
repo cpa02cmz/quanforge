@@ -6,7 +6,8 @@
 import {
   WEB_VITALS_THRESHOLDS,
   MONITORING,
-  BATCH_SIZES
+  BATCH_SIZES,
+  SCORING
 } from './constants';
 import { createScopedLogger } from '../utils/logger';
 import { ID_GENERATION } from '../constants/modularConfig';
@@ -517,7 +518,7 @@ class RealUserMonitoring {
       if (value !== undefined) {
         totalMetrics++;
         if (good !== undefined && value <= good) {
-          score += 100;
+          score += SCORING.MAX_SCORE;
         } else if (poor !== undefined && value <= poor) {
           score += 50;
         } else {

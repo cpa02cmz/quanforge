@@ -515,7 +515,7 @@ this.isInitialized = true;
     }
 
     const budgetCompliance: Record<string, boolean> = {};
-    let score = 100;
+    let score = SCORING.MAX_SCORE;
 
     // Check each metric against budget
     Object.entries(currentMetrics.vitals).forEach(([metric, value]) => {

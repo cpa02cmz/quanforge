@@ -12,7 +12,8 @@ import {
   TRADING_CONSTANTS,
   VALIDATION_CONFIG
 } from '../constants/config';
-import { SIZE_CONSTANTS, SECURITY_REGIONS, SECURITY_PATTERNS } from './modularConstants';
+import { SIZE_CONSTANTS, SECURITY_REGIONS, SECURITY_PATTERNS, EXTERNAL_RESOURCES } from './modularConstants';
+import { SCORING } from './constants';
 
 interface SecurityConfig {
   maxPayloadSize: number;
@@ -56,8 +57,8 @@ class SecurityManager {
   private config: SecurityConfig = {
     maxPayloadSize: 5 * 1024 * 1024, // 5MB for better security - defined locally for flexibility
     allowedOrigins: [
-      'https://quanforge.ai',
-      'https://www.quanforge.ai',
+      EXTERNAL_RESOURCES.DOMAINS.PRODUCTION,
+      EXTERNAL_RESOURCES.DOMAINS.PRODUCTION_WWW,
       DEV_SERVER_CONFIG.getDevUrl(),
       DEV_SERVER_CONFIG.getViteUrl()
     ],
@@ -118,7 +119,7 @@ class SecurityManager {
       // Basic structure validation
       if (!data || typeof data !== 'object') {
         errors.push('Invalid data structure');
-        return { isValid: false, errors, riskScore: 100 };
+        return { isValid: false, errors, riskScore: SCORING.MAX_SCORE };
       }
 
       // Type-specific validation
@@ -190,12 +191,12 @@ private validateRobotData(data: any): ValidationResult {
      let riskScore = 0;
      const sanitized: Partial<Robot> = {};
 
-     // Prevent prototype pollution
-     if (this.isPrototypePollution(data)) {
-       errors.push('Prototype pollution detected');
-       riskScore += 100;
-       return { isValid: false, errors, riskScore: 100 };
-     }
+      // Prevent prototype pollution
+      if (this.isPrototypePollution(data)) {
+        errors.push('Prototype pollution detected');
+        riskScore += SCORING.MAX_SCORE;
+        return { isValid: false, errors, riskScore: SCORING.MAX_SCORE };
+      }
 
      // Name validation
      if (data.name) {
@@ -929,7 +930,7 @@ private validateRobotData(data: any): ValidationResult {
      return {
        isMalicious: riskScore > 50,
        threats: Array.from(new Set(threats)), // Remove duplicates
-       riskScore: Math.min(riskScore, 100)
+       riskScore: Math.min(riskScore, SCORING.MAX_SCORE)
      };
    }
 

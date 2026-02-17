@@ -1,7 +1,7 @@
 // Database utilities and helper functions for Supabase operations
 
 import { Robot } from '../../../types';
-import { DATABASE, CACHE_TTLS, SERVICE_CACHE_CONFIG } from '../../constants';
+import { DATABASE, CACHE_TTLS, SERVICE_CACHE_CONFIG, ERROR_CODES } from '../../constants';
 import { STORAGE_KEYS } from '../../../constants/modularConfig';
 import { HTTP_CONSTANTS } from '../../modularConstants';
 
@@ -46,7 +46,7 @@ export const trySaveToStorage = (key: string, value: string): void => {
             error.name === 'QuotaExceededError' ||
             error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
             error.code === 22 ||
-            error.code === 1014
+            error.code === ERROR_CODES.SUPABASE.CONNECTION_ERROR
         ) {
             throw new Error("Browser Storage Full. Please delete some robots or export/clear your database to free up space.");
         }
