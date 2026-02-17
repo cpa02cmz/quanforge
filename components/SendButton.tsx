@@ -1,4 +1,5 @@
 import React, { useState, useCallback, memo, useEffect } from 'react';
+import { useHapticFeedback } from '../hooks/useHapticFeedback';
 
 interface SendButtonProps {
   /** Whether the message is being sent */
@@ -31,6 +32,9 @@ export const SendButton: React.FC<SendButtonProps> = memo(({
   const rippleIdRef = React.useRef(0);
   const rippleTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Haptic feedback for tactile confirmation on mobile
+  const { triggerByName } = useHapticFeedback();
+
   // Cleanup timeout on unmount to prevent memory leaks
   useEffect(() => {
     return () => {
@@ -43,8 +47,10 @@ export const SendButton: React.FC<SendButtonProps> = memo(({
   const handlePressStart = useCallback(() => {
     if (!disabled && !isLoading) {
       setIsPressed(true);
+      // Trigger haptic feedback for immediate tactile response on mobile
+      triggerByName('MEDIUM');
     }
-  }, [disabled, isLoading]);
+  }, [disabled, isLoading, triggerByName]);
 
   const handlePressEnd = useCallback(() => {
     setIsPressed(false);

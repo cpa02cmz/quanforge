@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { KeyboardShortcutHint } from './KeyboardShortcutHint';
+import { useHapticFeedback } from '../hooks/useHapticFeedback';
 
 export interface SaveButtonProps {
   /** Click handler */
@@ -65,8 +66,18 @@ export const SaveButton: React.FC<SaveButtonProps> = memo(({
 
   const isDisabled = disabled || state === 'saving';
 
+  // Haptic feedback for tactile confirmation on mobile
+  const { triggerByName } = useHapticFeedback();
+
   // Determine if we should show the shortcut hint (only in idle state and not disabled)
   const shouldShowHint = showShortcutHint && state === 'idle' && !disabled;
+
+  // Handle click with haptic feedback
+  const handleClick = () => {
+    // Trigger light haptic on press, success haptic will be triggered by parent when state changes
+    triggerByName('MEDIUM');
+    onClick();
+  };
 
   // Get button content based on state
   const getContent = () => {
@@ -132,7 +143,7 @@ export const SaveButton: React.FC<SaveButtonProps> = memo(({
   // Button element
   const buttonElement = (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       disabled={isDisabled}
       className={`
         relative inline-flex items-center justify-center 
