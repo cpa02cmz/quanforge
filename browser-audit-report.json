@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-02-17T02:10:24.726Z",
+  "summary": {
+    "routes": 3,
+    "errors": 0,
+    "warnings": 0,
+    "status": "CLEAN"
+  },
+  "details": {
+    "errors": [],
+    "warnings": []
+  }
+}

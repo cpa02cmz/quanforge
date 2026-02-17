@@ -1,0 +1,49 @@
+{
+  "timestamp": "2026-02-17T02:12:59.531Z",
+  "summary": {
+    "performance": 0,
+    "accessibility": 0,
+    "bestPractices": 0,
+    "seo": 0
+  },
+  "routes": [
+    {
+      "route": "Home/Dashboard",
+      "path": "/",
+      "scores": {
+        "performance": 0,
+        "accessibility": 0,
+        "bestPractices": 0,
+        "seo": 0
+      },
+      "metrics": {
+        "firstContentfulPaint": "N/A",
+        "largestContentfulPaint": "N/A",
+        "timeToInteractive": "N/A",
+        "speedIndex": "N/A",
+        "totalBlockingTime": "N/A",
+        "cumulativeLayoutShift": "N/A"
+      },
+      "opportunities": []
+    },
+    {
+      "route": "Generator",
+      "path": "/generator",
+      "scores": {
+        "performance": 0,
+        "accessibility": 0,
+        "bestPractices": 0,
+        "seo": 0
+      },
+      "metrics": {
+        "firstContentfulPaint": "N/A",
+        "largestContentfulPaint": "N/A",
+        "timeToInteractive": "N/A",
+        "speedIndex": "N/A",
+        "totalBlockingTime": "N/A",
+        "cumulativeLayoutShift": "N/A"
+      },
+      "opportunities": []
+    }
+  ]
+}
