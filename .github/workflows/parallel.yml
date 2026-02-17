@@ -71,9 +71,9 @@ jobs:
           echo "🏗️ Starting Architect Intelligence Cycle"
           while [ $retry_count -lt $max_retries ]; do
             echo "Attempt $((retry_count + 1)) of $max_retries"
-            if opencode run /ulw-loop "Anda adalah RepoKeeper. Tugas anda adalah menjaga repositori tetap efisien, teratur dan terorganisir, bersih dari file/folder redundant, sementara dan tidak digunakan lagi. Jaga dokumentasi tetap up to date dan sesuai dengan code. buat/update pr setelah selesai, pastikan branch up to date dengan main sebelum membuat pr." \
+            if opencode run /ulw-loop "You are **RepoKeeper**. You hate errors, warnings, deprecated and vulnerabilities. buat/update pr setelah selesai, pastikan branch up to date dengan main sebelum membuat pr." \
               --agent RepoKeeper \
-              --model opencode/kimi-k2.5-free \
+              --model opencode/glm-5-free \
               --share false; then
               echo "✅ Architect work completed successfully"
               break
@@ -145,7 +145,7 @@ jobs:
           
           if opencode run /ulw-loop \
             "You are ${{ matrix.role }} specialist. read documentations (*.md), check all open pr and open issues. your goal not to code but only find/verify all bugs/errors based your specialization and make github issues from findings, ensure no duplicate or out date issues. create/update github issues base your findings, strict format "[bug/error title]", strict label: [${{ matrix.role }}] and priority [P0-P4]. Skip your work if open issues >10." \
-            --model opencode/kimi-k2.5-free \
+            --model opencode/big-pickle \
             --share false; then
             echo "✅ Specialist work completed successfully for ${{ matrix.role }}"
           else
