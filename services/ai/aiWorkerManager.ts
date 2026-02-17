@@ -2,7 +2,7 @@
 import { createScopedLogger } from "../../utils/logger";
 import { AI_CONFIG } from "../../constants/config";
 
-const logger = createScopedLogger('ai-worker-manager');
+const logger = () => createScopedLogger('ai-worker-manager');
 
 export interface WorkerTask {
   id: string;
@@ -46,10 +46,10 @@ export class AIWorkerManager {
       this.worker.onmessage = this.handleWorkerMessage.bind(this);
       this.worker.onerror = this.handleWorkerError.bind(this);
       
-      logger.info('AI Worker initialized');
+      logger().info('AI Worker initialized');
       this.workerReady = true;
     } catch (error: unknown) {
-      logger.error('Failed to initialize AI Worker:', error);
+      logger().error('Failed to initialize AI Worker:', error);
       this.status.status = 'error';
       this.status.lastError = error instanceof Error ? error.message : 'Unknown error';
     }
@@ -115,7 +115,7 @@ export class AIWorkerManager {
         data: this.currentTask.data
       });
     } catch (error: unknown) {
-      logger.error('Failed to send task to worker:', error);
+      logger().error('Failed to send task to worker:', error);
       this.handleTaskError(error);
     }
   }
@@ -124,7 +124,7 @@ export class AIWorkerManager {
     const { id, result, error } = event.data;
 
     if (!this.currentTask || this.currentTask.id !== id) {
-      logger.warn('Received message for unknown task:', id);
+      logger().warn('Received message for unknown task:', id);
       return;
     }
 
@@ -209,7 +209,7 @@ export class AIWorkerManager {
 
   // Restart worker
   async restartWorker(): Promise<void> {
-    logger.info('Restarting AI Worker...');
+    logger().info('Restarting AI Worker...');
     
     // Clear current task and queue
     this.clearQueue();
@@ -265,5 +265,13 @@ export class AIWorkerManager {
   }
 }
 
-// Export singleton instance
-export const aiWorkerManager = new AIWorkerManager();
+// Export lazy singleton instance to avoid TDZ issues
+let _aiWorkerManager: AIWorkerManager | null = null;
+export const getAIWorkerManager = (): AIWorkerManager => {
+  if (!_aiWorkerManager) {
+    _aiWorkerManager = new AIWorkerManager();
+  }
+  return _aiWorkerManager;
+};
+// Backward-compatible export
+export { getAIWorkerManager as aiWorkerManager };

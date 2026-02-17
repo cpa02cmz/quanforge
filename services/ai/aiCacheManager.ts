@@ -4,7 +4,7 @@ import { StrategyParams, StrategyAnalysis, AISettings } from "../../types";
 import { AI_CONFIG } from "../../constants/config";
 import { STRING_TRUNCATION } from "../../constants/modularConfig";
 
-const logger = createScopedLogger('ai-cache-manager');
+const logger = () => createScopedLogger('ai-cache-manager');
 
 interface CacheEntry<T> {
   data: T;
@@ -37,7 +37,7 @@ export class AICacheManager {
   };
 
   constructor() {
-    logger.info('AI Cache Manager initialized');
+    logger().info('AI Cache Manager initialized');
   }
 
   getCachedGeneration(
@@ -55,7 +55,7 @@ export class AICacheManager {
       this.stats.totalHits++;
       this.updateHitRate();
       
-      logger.debug('Cache hit for generation key:', key.substring(0, STRING_TRUNCATION.LOG.SHORT));
+      logger().debug('Cache hit for generation key:', key.substring(0, STRING_TRUNCATION.LOG.SHORT));
       return entry.data;
     }
 
@@ -70,7 +70,7 @@ export class AICacheManager {
       this.stats.totalHits++;
       this.updateHitRate();
       
-      logger.debug('Cache hit (short code) for generation');
+      logger().debug('Cache hit (short code) for generation');
       return shortEntry.data;
     }
 
@@ -110,7 +110,7 @@ export class AICacheManager {
     this.generationCache.set(shortKey, entry); // Also cache by short code
     this.updateMemoryStats();
     
-    logger.debug('Cached generation with key:', key.substring(0, STRING_TRUNCATION.LOG.SHORT));
+    logger().debug('Cached generation with key:', key.substring(0, STRING_TRUNCATION.LOG.SHORT));
   }
 
   getCachedAnalysis(
@@ -126,7 +126,7 @@ export class AICacheManager {
       this.stats.totalHits++;
       this.updateHitRate();
       
-      logger.debug('Cache hit for analysis key:', key.substring(0, STRING_TRUNCATION.LOG.SHORT));
+      logger().debug('Cache hit for analysis key:', key.substring(0, STRING_TRUNCATION.LOG.SHORT));
       return entry.data;
     }
 
@@ -141,7 +141,7 @@ export class AICacheManager {
       this.stats.totalHits++;
       this.updateHitRate();
       
-      logger.debug('Cache hit (short code) for analysis');
+      logger().debug('Cache hit (short code) for analysis');
       return shortEntry.data;
     }
 
@@ -179,7 +179,7 @@ export class AICacheManager {
     this.analysisCache.set(shortKey, entry); // Also cache by short code
     this.updateMemoryStats();
     
-    logger.debug('Cached analysis with key:', key.substring(0, STRING_TRUNCATION.LOG.SHORT));
+    logger().debug('Cached analysis with key:', key.substring(0, STRING_TRUNCATION.LOG.SHORT));
   }
 
   private createGenerationCacheKey(
@@ -247,7 +247,7 @@ export class AICacheManager {
     }
 
     this.updateMemoryStats();
-    logger.debug(`Evicted entries from ${cacheType} cache`);
+    logger().debug(`Evicted entries from ${cacheType} cache`);
   }
 
   private performCleanup(): void {
@@ -271,7 +271,7 @@ export class AICacheManager {
 
     if (cleaned > 0) {
       this.updateMemoryStats();
-      logger.debug(`Cleaned up ${cleaned} expired cache entries`);
+      logger().debug(`Cleaned up ${cleaned} expired cache entries`);
     }
   }
 
@@ -321,7 +321,7 @@ export class AICacheManager {
     }
     
     this.updateMemoryStats();
-    logger.info(`Cleared ${type || 'all'} cache`);
+    logger().info(`Cleared ${type || 'all'} cache`);
   }
 
   getStats(): CacheStats {
@@ -338,9 +338,17 @@ export class AICacheManager {
   destroy(): void {
     this.generationCache.clear();
     this.analysisCache.clear();
-    logger.info('AI Cache Manager destroyed');
+    logger().info('AI Cache Manager destroyed');
   }
 }
 
-// Export singleton instance
-export const aiCacheManager = new AICacheManager();
+// Export lazy singleton instance to avoid TDZ issues
+let _aiCacheManager: AICacheManager | null = null;
+export const getAICacheManager = (): AICacheManager => {
+  if (!_aiCacheManager) {
+    _aiCacheManager = new AICacheManager();
+  }
+  return _aiCacheManager;
+};
+// Backward-compatible export
+export { getAICacheManager as aiCacheManager };

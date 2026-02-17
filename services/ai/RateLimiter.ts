@@ -11,7 +11,7 @@ import { createScopedLogger } from '../../utils/logger';
 import { RATE_LIMITING, TIME_CONSTANTS } from '../../constants/config';
 import { COUNT_CONSTANTS } from '../modularConstants';
 
-const logger = createScopedLogger('RateLimiter');
+const logger = () => createScopedLogger('RateLimiter');
 
 export interface RateLimitInfo {
   identifier: string;
@@ -63,7 +63,7 @@ export class RateLimiter implements IRateLimiter {
     // Start cleanup timer
     this.startCleanupTimer();
     
-    logger.info('Rate Limiter initialized');
+    logger().info('Rate Limiter initialized');
   }
 
   async destroy(): Promise<void> {
@@ -72,7 +72,7 @@ export class RateLimiter implements IRateLimiter {
     }
     
     this.limits.clear();
-    logger.info('Rate Limiter destroyed');
+    logger().info('Rate Limiter destroyed');
   }
 
   async isHealthy(): Promise<boolean> {
@@ -81,14 +81,14 @@ export class RateLimiter implements IRateLimiter {
       const testResult = await this.checkRateLimit('health-check-test');
       return testResult.allowed;
     } catch (error: unknown) {
-      logger.error('Rate Limiter health check failed:', error);
+      logger().error('Rate Limiter health check failed:', error);
       return false;
     }
   }
 
   updateConfig(config: Partial<RateLimitConfig>): void {
     this.config = { ...this.config, ...config };
-    logger.info('Rate Limiter configuration updated', this.config);
+    logger().info('Rate Limiter configuration updated', this.config);
   }
 
   getConfig(): RateLimitConfig {
@@ -135,7 +135,7 @@ export class RateLimiter implements IRateLimiter {
       info.requests++;
       info.lastRequest = now;
       
-      logger.debug(`Rate limit check for ${identifier}: ${remaining - 1} remaining`);
+      logger().debug(`Rate limit check for ${identifier}: ${remaining - 1} remaining`);
       
       return {
         allowed: true,
@@ -143,7 +143,7 @@ export class RateLimiter implements IRateLimiter {
         resetTime: info.resetTime,
       };
     } catch (error: unknown) {
-      logger.error(`Rate limit check failed for ${identifier}:`, error);
+      logger().error(`Rate limit check failed for ${identifier}:`, error);
       // On error, allow request to prevent blocking legitimate traffic
       return {
         allowed: true,
@@ -159,7 +159,7 @@ export class RateLimiter implements IRateLimiter {
     if (info) {
       const now = Date.now();
       this.resetWindow(info, now);
-      logger.info(`Rate limit reset for ${identifier}`);
+      logger().info(`Rate limit reset for ${identifier}`);
     }
   }
 
@@ -244,7 +244,7 @@ export class RateLimiter implements IRateLimiter {
     this.stats.activeUsers = this.limits.size;
     
     if (expiredKeys.length > 0) {
-      logger.info(`Cleaned up ${expiredKeys.length} expired rate limit entries`);
+      logger().info(`Cleaned up ${expiredKeys.length} expired rate limit entries`);
     }
   }
 
@@ -371,14 +371,14 @@ export class RateLimiter implements IRateLimiter {
     (info as any).customMaxRequests = maxRequests;
     (info as any).customWindowMs = windowMs || this.config.windowMs;
     
-    logger.info(`Set custom rate limit for ${identifier}: ${maxRequests} requests per ${windowMs || this.config.windowMs}ms`);
+    logger().info(`Set custom rate limit for ${identifier}: ${maxRequests} requests per ${windowMs || this.config.windowMs}ms`);
   }
 
   async resetAllLimits(): Promise<void> {
     const count = this.limits.size;
     this.limits.clear();
     this.stats.activeUsers = 0;
-    logger.info(`Reset all rate limits (${count} entries cleared)`);
+    logger().info(`Reset all rate limits (${count} entries cleared)`);
   }
 
   exportData(): Array<{ identifier: string; data: RateLimitInfo }> {
@@ -394,6 +394,6 @@ export class RateLimiter implements IRateLimiter {
     }
     
     this.stats.activeUsers = this.limits.size;
-    logger.info(`Imported ${entries.length} rate limit entries`);
+    logger().info(`Imported ${entries.length} rate limit entries`);
   }
 }
