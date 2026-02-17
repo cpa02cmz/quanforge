@@ -277,8 +277,16 @@ class AIWorkerManager {
   }
 }
 
-// Singleton instance
-export const aiWorkerManager = new AIWorkerManager();
+// Lazy singleton instance to avoid TDZ issues
+let _aiWorkerManager: AIWorkerManager | null = null;
+export const getAIWorkerManager = (): AIWorkerManager => {
+  if (!_aiWorkerManager) {
+    _aiWorkerManager = new AIWorkerManager();
+  }
+  return _aiWorkerManager;
+};
+// Backward-compatible export
+export { getAIWorkerManager as aiWorkerManager };
 
 // Export class for testing
 export { AIWorkerManager };
