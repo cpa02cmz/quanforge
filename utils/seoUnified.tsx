@@ -4,6 +4,9 @@
  */
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { createScopedLogger } from './logger';
+
+const logger = createScopedLogger('seo');
 
 // ---------- INTERFACES ----------
 
@@ -369,7 +372,7 @@ export const useSEOAnalytics = ({ pageUrl, pageTitle, pageType = 'other', enable
     setTimeout(() => {
       try {
         if (process.env['NODE_ENV'] === 'development') {
-          console.debug('Analytics Event:', eventType, data);
+          logger.debug('Analytics Event:', eventType, data);
         }
         // In production, send to analytics service
       } catch (_error) {
@@ -576,7 +579,7 @@ class SEOMonitorService {
     
     const trackInteraction = () => {
       lastInteractionTime = Date.now();
-      console.debug('User interaction tracked at:', lastInteractionTime);
+      logger.debug('User interaction tracked at:', lastInteractionTime);
     };
 
     // Track various user interactions

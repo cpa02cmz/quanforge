@@ -8,6 +8,10 @@
  * - UI components and graphical objects: 3:1
  */
 
+import { createScopedLogger } from './logger';
+
+const logger = createScopedLogger('color-contrast');
+
 export interface ContrastResult {
   ratio: number;
   passesAA: boolean;
@@ -194,7 +198,7 @@ export function getAccessibleTextColor(
  * Run this in development to verify all combinations meet WCAG standards
  */
 export function auditColorCombinations(): void {
-  console.group('🎨 Color Contrast Audit');
+  logger.log('🎨 Color Contrast Audit');
   
   const combinations = [
     { fg: '#ffffff', bg: '#0f172a', name: 'White on Dark Background', ctx: 'Normal text' },
@@ -220,13 +224,12 @@ export function auditColorCombinations(): void {
     if (result.passesAA) passCount++;
     else failCount++;
     
-    console.log(
+    logger.log(
       `${status} ${name}: ${result.ratio}:1 (${ctx})`
     );
   });
   
-  console.log(`\n📊 Results: ${passCount} passed, ${failCount} failed`);
-  console.groupEnd();
+  logger.log(`\n📊 Results: ${passCount} passed, ${failCount} failed`);
 }
 
 // Run audit in development
