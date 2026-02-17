@@ -7,6 +7,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { settingsManager } from './settingsManager';
 import { createScopedLogger } from '../utils/logger';
 import { TIMEOUTS, RETRY_CONFIG, STAGGER, TIME_CONSTANTS } from './constants';
+import { CONNECTION_POOL_CONFIG } from '../constants/modularConfig';
 
 const logger = createScopedLogger('AdvancedSupabasePool');
 
@@ -58,13 +59,13 @@ class AdvancedSupabasePool {
   private readonly DEFAULT_CONFIG: ConnectionConfig = {
     url: '',
     anonKey: '',
-    maxConnections: 10,
-    minConnections: 2,
-    connectionTimeout: 5000,
-    idleTimeout: 30000,
-    healthCheckInterval: 15000,
-    retryAttempts: 3,
-    retryDelay: 1000,
+    maxConnections: CONNECTION_POOL_CONFIG.STANDARD.MAX_CONNECTIONS,
+    minConnections: CONNECTION_POOL_CONFIG.STANDARD.MIN_CONNECTIONS,
+    connectionTimeout: CONNECTION_POOL_CONFIG.STANDARD.CONNECTION_TIMEOUT_MS,
+    idleTimeout: CONNECTION_POOL_CONFIG.STANDARD.IDLE_TIMEOUT_MS,
+    healthCheckInterval: CONNECTION_POOL_CONFIG.STANDARD.HEALTH_CHECK_INTERVAL_MS,
+    retryAttempts: CONNECTION_POOL_CONFIG.STANDARD.RETRY_ATTEMPTS,
+    retryDelay: CONNECTION_POOL_CONFIG.STANDARD.RETRY_DELAY_MS,
     enableReadReplica: true,
   };
 
