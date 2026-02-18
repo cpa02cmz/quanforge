@@ -425,6 +425,8 @@ export const WEB_VITALS = {
 
 // ========== TRADING CONSTANTS ==========
 export const TRADING_DEFAULTS = {
+  SYMBOL: 'EURUSD',
+  TIMEFRAME: 'H1',
   RISK: {
     MIN_PERCENT: 0.01,
     MAX_PERCENT: 100,

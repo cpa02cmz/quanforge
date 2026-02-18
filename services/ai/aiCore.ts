@@ -5,7 +5,7 @@ import { getActiveKey } from "../../utils/apiKeyUtils";
 import { createScopedLogger } from "../../utils/logger";
 import { AI_CONFIG } from "../../constants/config";
 import { importGoogleGenAI, importAIGenerationTypes } from "./aiImports";
-import { SIZE_CONSTANTS } from "../modularConstants";
+import { SIZE_CONSTANTS, TRADING_DEFAULTS } from "../modularConstants";
 
 const logger = () => createScopedLogger('ai-core');
 
@@ -168,11 +168,11 @@ export class AICore {
     
     prompt += `User wants: ${userPrompt}\n\n`;
     prompt += `Strategy Configuration:\n`;
-    prompt += `- Symbol: ${strategyParams.symbol || 'EURUSD'}\n`;
-    prompt += `- Timeframe: ${strategyParams.timeframe || 'H1'}\n`;
-    prompt += `- Risk: ${strategyParams.riskPercent || 2}%\n`;
-    prompt += `- Stop Loss: ${strategyParams.stopLoss || 50} pips\n`;
-    prompt += `- Take Profit: ${strategyParams.takeProfit || 100} pips\n`;
+    prompt += `- Symbol: ${strategyParams.symbol || TRADING_DEFAULTS.SYMBOL}\n`;
+    prompt += `- Timeframe: ${strategyParams.timeframe || TRADING_DEFAULTS.TIMEFRAME}\n`;
+    prompt += `- Risk: ${strategyParams.riskPercent || TRADING_DEFAULTS.RISK.DEFAULT_PERCENT}%\n`;
+    prompt += `- Stop Loss: ${strategyParams.stopLoss || TRADING_DEFAULTS.STOP_LOSS.DEFAULT_PIPS} pips\n`;
+    prompt += `- Take Profit: ${strategyParams.takeProfit || TRADING_DEFAULTS.TAKE_PROFIT.DEFAULT_PIPS} pips\n`;
     
     if (strategyParams.customInputs && strategyParams.customInputs.length > 0) {
       prompt += `- Custom Inputs: ${JSON.stringify(strategyParams.customInputs, null, 2)}\n`;
