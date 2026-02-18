@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef, memo } from 'react';
 import { marketData as marketService, MarketData } from '../services';
 import { useTranslation } from '../services/i18n';
-import { UI_TIMING } from '../constants';
+import { UI_TIMING, ANIMATION_INTERVALS } from '../constants';
 
 interface MarketTickerProps {
   symbol: string;
@@ -83,7 +83,7 @@ export const MarketTicker: React.FC<MarketTickerProps> = memo(({ symbol }) => {
         const next = prev - 0.1;
         return next <= 0 ? 0 : next;
       });
-    }, 50); // Update every 50ms for smooth fade (500ms total fade duration)
+    }, ANIMATION_INTERVALS.FAST); // Update every 50ms for smooth fade (500ms total fade duration)
 
     return () => clearInterval(fadeInterval);
   }, [flashIntensity]);
