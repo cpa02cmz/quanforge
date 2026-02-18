@@ -1,4 +1,6 @@
 // Environment validation utilities for security
+import { SIZE_CONSTANTS } from '../services/modularConstants';
+
 export interface EnvironmentValidation {
   isValid: boolean;
   warnings: string[];
@@ -73,7 +75,7 @@ export const validateEnvironment = (): EnvironmentValidation => {
     // This is a simplified check - in production, you'd want more sophisticated secret detection
     for (const secret of hardcodedSecrets) {
       if (Object.values(import.meta.env).some(value => value?.includes(secret))) {
-        result.warnings.push(`Potential hardcoded secret detected: ${secret.substring(0, 8)}...`);
+        result.warnings.push(`Potential hardcoded secret detected: ${secret.substring(0, SIZE_CONSTANTS.HASH.PREFIX)}...`);
         result.recommendations.push('Use environment variables instead of hardcoded secrets');
       }
     }
