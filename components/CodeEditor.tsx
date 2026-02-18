@@ -4,6 +4,9 @@ import { useTranslation } from '../services/i18n';
 import { UI_TIMING } from '../constants';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import CodeEditorErrorBoundary from './CodeEditorErrorBoundary';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('CodeEditor');
 
 interface CodeEditorProps {
   code: string;
@@ -152,7 +155,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
   }, []);
 
   const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(code);
+    navigator.clipboard.writeText(code).catch((err: Error) => {
+      logger.error('Failed to copy to clipboard:', err);
+    });
     setCopied(true);
 
     // Trigger particle burst for delightful feedback
