@@ -84,6 +84,7 @@ export default defineConfig({
               return 'ai-core';
             }
             // Chart libraries - split by chart type for optimal loading
+            // Note: Project uses AreaChart and PieChart, not LineChart/BarChart
             if (id.includes('recharts')) {
               // Core utilities
               if (id.includes('util') || id.includes('DataUtils') || id.includes('ChartUtils')) {
@@ -93,17 +94,11 @@ export default defineConfig({
               if (id.includes('animation')) {
                 return 'chart-animation';
               }
-              // Cartesian charts (Line, Area, Bar)
-              if (id.includes('Line')) {
-                return 'chart-line';
-              }
+              // Area charts (used in equity curve)
               if (id.includes('Area')) {
                 return 'chart-area';
               }
-              if (id.includes('Bar')) {
-                return 'chart-bar';
-              }
-              // Pie and radial charts
+              // Pie and radial charts (used in risk profile)
               if (id.includes('Pie') || id.includes('Radial')) {
                 return 'chart-radial';
               }
@@ -146,9 +141,6 @@ export default defineConfig({
             }
             if (id.includes('lodash') || id.includes('underscore')) {
               return 'vendor-lodash';
-            }
-            if (id.includes('zod') || id.includes('yup') || id.includes('joi')) {
-              return 'vendor-validation';
             }
             if (id.includes('date-fns') || id.includes('moment') || id.includes('dayjs')) {
               return 'vendor-dates';
