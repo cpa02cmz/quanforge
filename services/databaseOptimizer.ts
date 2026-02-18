@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Robot } from '../types';
 import { queryOptimizer } from './queryOptimizer';
-import { securityManager } from './securityManager';
+import { securityManager } from './security/SecurityManager';
 import { createScopedLogger } from '../utils/logger';
 import { SIZE_CONSTANTS } from './modularConstants';
 
