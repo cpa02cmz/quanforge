@@ -9,8 +9,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { 
   ServiceFactory, 
   BaseService, 
-  ServiceInitializer,
-  type IService 
+  ServiceInitializer
 } from './ServiceFactory';
 
 // Clear registry before each test
