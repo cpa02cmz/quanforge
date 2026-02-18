@@ -1,4 +1,5 @@
 import React, { useState, useCallback, memo, useRef, useEffect } from 'react';
+import { ANIMATION_DEFAULTS } from '../constants/uiComponentDefaults';
 
 export type ShineDirection = 'left-to-right' | 'right-to-left' | 'top-to-bottom' | 'bottom-to-top';
 
@@ -65,10 +66,10 @@ interface ShineEffectProps {
  */
 export const ShineEffect: React.FC<ShineEffectProps> = memo(({
   children,
-  direction = 'left-to-right',
+  direction = ANIMATION_DEFAULTS.SHINE_EFFECT.DIRECTION,
   enabled = true,
-  duration = 800,
-  shineColor = 'rgba(255, 255, 255, 0.15)',
+  duration = ANIMATION_DEFAULTS.SHINE_EFFECT.DURATION_MS,
+  shineColor = ANIMATION_DEFAULTS.SHINE_EFFECT.COLOR,
   className = '',
   shineClassName = '',
   hoverOnly = true,

@@ -1,5 +1,6 @@
 import React, { useState, useCallback, memo } from 'react';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { ANIMATION_DEFAULTS } from '../constants/uiComponentDefaults';
 
 export type FlipDirection = 'horizontal' | 'vertical';
 export type FlipTrigger = 'hover' | 'click' | 'controlled';
@@ -25,7 +26,7 @@ interface FlipCardProps {
   disabled?: boolean;
   /** Accessible label describing the flip action */
   'aria-label'?: string;
-  /** Duration of the flip animation in ms (default: 600) */
+  /** Duration of the flip animation in ms (default from ANIMATION_DEFAULTS.FLIP_CARD.DURATION_MS) */
   duration?: number;
   /** Whether to show a glow effect on hover */
   showGlow?: boolean;
@@ -89,7 +90,7 @@ export const FlipCard: React.FC<FlipCardProps> = memo(({
   cardClassName = '',
   disabled = false,
   'aria-label': ariaLabel,
-  duration = 600,
+  duration = ANIMATION_DEFAULTS.FLIP_CARD.DURATION_MS,
   showGlow = true
 }) => {
   const [internalFlipped, setInternalFlipped] = useState(false);

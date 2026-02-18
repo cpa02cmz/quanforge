@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { ANIMATION_DEFAULTS } from '../constants/uiComponentDefaults';
 
 export type CheckmarkSize = 'sm' | 'md' | 'lg';
 export type CheckmarkVariant = 'circle' | 'simple' | 'pop';
@@ -70,15 +71,15 @@ interface SuccessCheckmarkProps {
  */
 export const SuccessCheckmark: React.FC<SuccessCheckmarkProps> = memo(({
   show,
-  size = 'md',
-  variant = 'circle',
-  duration = 600,
-  delay = 0,
+  size = ANIMATION_DEFAULTS.SUCCESS_CHECKMARK.SIZE,
+  variant = ANIMATION_DEFAULTS.SUCCESS_CHECKMARK.VARIANT,
+  duration = ANIMATION_DEFAULTS.SUCCESS_CHECKMARK.DURATION_MS,
+  delay = ANIMATION_DEFAULTS.SUCCESS_CHECKMARK.DELAY_MS,
   className = '',
   'aria-label': ariaLabel,
   onComplete,
   autoHide = false,
-  autoHideDelay = 2000
+  autoHideDelay = ANIMATION_DEFAULTS.SUCCESS_CHECKMARK.AUTO_HIDE_DELAY_MS
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
