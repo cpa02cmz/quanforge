@@ -357,6 +357,15 @@ export const VALIDATION_LIMITS = {
     MAX_SIZE: 5 * 1024 * 1024,   // 5MB
     MAX_INPUT_LENGTH: 10000,
   },
+  
+  // Trading strategy defaults
+  STRATEGY: {
+    SYMBOL: 'EURUSD',
+    TIMEFRAME: 'H1',
+    RISK_PERCENT: 2,
+    STOP_LOSS_PIPS: 50,
+    TAKE_PROFIT_PIPS: 100,
+  },
 } as const;
 
 // ========== TOKEN/SESSION CONFIGURATION ==========
@@ -472,6 +481,29 @@ export const AI_CONFIG = {
     GENERATE_CONTENT: 60000,
     PARSE_RESPONSE: 5000,
     HEALTH_CHECK: 2000,
+  },
+
+  // Token estimation
+  TOKEN_ESTIMATION: {
+    WORDS_MULTIPLIER: 1.3,
+    CHARS_MULTIPLIER: 0.5,
+  },
+
+  // Generation parameters
+  GENERATION: {
+    DEFAULT_TEMPERATURE: 0.7,
+    DEFAULT_TOP_P: 0.8,
+    DEFAULT_TOP_K: 40,
+    TEST_MAX_TOKENS: 10,
+    TEST_PROMPT: 'Hello',
+  },
+
+  // Strategy analysis
+  ANALYSIS: {
+    MIN_RISK_SCORE: 1,
+    MAX_RISK_SCORE: 10,
+    MIN_PROFITABILITY_SCORE: 1,
+    MAX_PROFITABILITY_SCORE: 10,
   },
 } as const;
 

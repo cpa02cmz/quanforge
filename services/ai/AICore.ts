@@ -9,6 +9,7 @@ import { settingsManager } from '../settingsManager';
 import { handleError } from '../../utils/errorHandler';
 import { createScopedLogger } from '../../utils/logger';
 import { AI_CONFIG } from '../../constants/config';
+import { AI_CONFIG as MODULAR_AI_CONFIG } from '../../constants/modularConfig';
 
 const logger = () => createScopedLogger('AI_CORE');
 
@@ -23,10 +24,10 @@ export class AICore implements IAICore {
     
     this.config = {
       provider: settings?.provider || 'google',
-      model: settings?.modelName || 'gemini-3-pro-preview',
+      model: settings?.modelName || MODULAR_AI_CONFIG.MODEL.DEFAULT,
       apiKey: settings?.apiKey || '',
       maxTokens: AI_CONFIG.TOKEN_LIMITS.GOOGLE,
-      temperature: 0.7,
+      temperature: MODULAR_AI_CONFIG.GENERATION.DEFAULT_TEMPERATURE,
       systemPrompt: '', // Will be set per operation
     };
 
@@ -103,8 +104,8 @@ export class AICore implements IAICore {
         return { success: false, message: 'No API key configured' };
       }
 
-      const testPrompt = 'Hello';
-      const result = await this.generateContent(testPrompt, { maxTokens: 5 });
+      const testPrompt = MODULAR_AI_CONFIG.GENERATION.TEST_PROMPT;
+      const result = await this.generateContent(testPrompt, { maxTokens: MODULAR_AI_CONFIG.GENERATION.TEST_MAX_TOKENS });
       
       if (result && result.length > 0) {
         return { 
@@ -130,7 +131,10 @@ export class AICore implements IAICore {
     const chars = text.length;
     
     // Average tokens per word and character ratio
-    return Math.ceil(words * 1.3 + chars * 0.5);
+    return Math.ceil(
+      words * MODULAR_AI_CONFIG.TOKEN_ESTIMATION.WORDS_MULTIPLIER + 
+      chars * MODULAR_AI_CONFIG.TOKEN_ESTIMATION.CHARS_MULTIPLIER
+    );
   }
 
   // Private helper methods
@@ -187,8 +191,8 @@ export class AICore implements IAICore {
     const generationConfig = {
       temperature: this.config.temperature,
       maxOutputTokens: options?.maxTokens || this.config.maxTokens,
-      topP: options?.topP || 0.8,
-      topK: options?.topK || 40,
+      topP: options?.topP || MODULAR_AI_CONFIG.GENERATION.DEFAULT_TOP_P,
+      topK: options?.topK || MODULAR_AI_CONFIG.GENERATION.DEFAULT_TOP_K,
     };
 
     // Generate content
@@ -230,8 +234,8 @@ export class AICore implements IAICore {
       const generationConfig = {
         temperature: this.config.temperature,
         maxOutputTokens: options?.maxTokens || this.config.maxTokens,
-        topP: options?.topP || 0.8,
-        topK: options?.topK || 40,
+        topP: options?.topP || MODULAR_AI_CONFIG.GENERATION.DEFAULT_TOP_P,
+        topK: options?.topK || MODULAR_AI_CONFIG.GENERATION.DEFAULT_TOP_K,
       };
 
       const result = await model.generateContent(conversation, generationConfig);
