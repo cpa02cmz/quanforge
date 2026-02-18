@@ -159,6 +159,10 @@ export default defineConfig({
           
           // Enhanced service chunking for edge functions
           if (id.includes('services/')) {
+            // Modular constants - must load first to avoid circular dependencies
+            if (id.includes('modularConstants') || id.includes('constants')) {
+              return 'services-constants';
+            }
             // AI-specific services - isolated for edge optimization
             if (id.includes('gemini') || id.includes('ai') || id.includes('gpt')) {
               return 'services-ai';
