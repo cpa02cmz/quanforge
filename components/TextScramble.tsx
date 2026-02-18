@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, memo, useRef, forwardRef } from 'react';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { TYPING_ANIMATION, LOADING_ANIMATION } from '../constants';
 
 export type ScrambleCharset = 'alphanumeric' | 'binary' | 'matrix' | 'symbols' | 'custom';
 
@@ -85,11 +86,11 @@ const TextScrambleComponent = forwardRef<HTMLSpanElement, TextScrambleProps>(({
   trigger = true,
   charset = 'alphanumeric',
   customChars = '',
-  duration = 1500,
+  duration = LOADING_ANIMATION.SHIMMER_DURATION,
   delay = 0,
-  speed = 50,
+  speed = TYPING_ANIMATION.TYPING_SPEED,
   loop = false,
-  loopInterval = 2000,
+  loopInterval = TYPING_ANIMATION.PAUSE_DURATION,
   className = '',
   onComplete,
   preserveSpaces = true,

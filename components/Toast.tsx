@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { UI_TIMING } from '../constants';
+import { UI_TIMING, TOAST_ANIMATION } from '../constants';
 import { ToastContext, ToastType } from './ToastContext';
 export { ToastContext } from './ToastContext';
 import { getToastAriaLive, getToastLabel } from './toastUtils';
@@ -64,7 +64,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const exitTimer = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
       exitTimersRef.current.delete(`exit-${id}`);
-    }, 300); // Match CSS animation duration
+    }, TOAST_ANIMATION.EXIT_DURATION); // Match CSS animation duration
 
     exitTimersRef.current.set(`exit-${id}`, exitTimer);
   }, []);
@@ -93,7 +93,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Actually remove all after exit animation completes
     const exitTimer = setTimeout(() => {
       setToasts([]);
-    }, 300); // Match CSS animation duration
+    }, TOAST_ANIMATION.EXIT_DURATION); // Match CSS animation duration
 
     exitTimersRef.current.set('exit-all', exitTimer);
   }, []);

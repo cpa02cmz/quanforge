@@ -223,6 +223,43 @@ export const ANIMATION_PERFORMANCE = {
   MAX_CONCURRENT: 10,
 } as const;
 
+/**
+ * CSS Animation Class Durations (for Tailwind classes)
+ * Maps Tailwind duration classes to their millisecond values
+ */
+export const CSS_DURATION = {
+  /** Duration-75: 75ms - micro interactions */
+  '75': 75,
+  /** Duration-100: 100ms - instant feedback */
+  '100': 100,
+  /** Duration-150: 150ms - fast transitions */
+  '150': 150,
+  /** Duration-200: 200ms - quick transitions */
+  '200': 200,
+  /** Duration-300: 300ms - standard smooth animations */
+  '300': 300,
+  /** Duration-500: 500ms - emphasis animations */
+  '500': 500,
+  /** Duration-700: 700ms - dramatic effects */
+  '700': 700,
+  /** Duration-1000: 1000ms - long animations */
+  '1000': 1000,
+} as const;
+
+/**
+ * Common Animation Interval Values
+ */
+export const ANIMATION_INTERVALS = {
+  /** Fast interval for smooth animations (50ms) */
+  FAST: 50,
+  /** Standard interval for animations (100ms) */
+  STANDARD: 100,
+  /** Slow interval for gradual effects (200ms) */
+  SLOW: 200,
+  /** Very slow interval for background effects (500ms) */
+  VERY_SLOW: 500,
+} as const;
+
 // Default export
 export const UI_ANIMATION = {
   TYPING: TYPING_ANIMATION,
@@ -237,6 +274,8 @@ export const UI_ANIMATION = {
   FORM: FORM_ANIMATION,
   PARTICLE: PARTICLE_ANIMATION,
   COPY_BUTTON: COPY_BUTTON_ANIMATION,
+  CSS_DURATION,
+  INTERVALS: ANIMATION_INTERVALS,
   EASING,
   PERFORMANCE: ANIMATION_PERFORMANCE,
 } as const;
