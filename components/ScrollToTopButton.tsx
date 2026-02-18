@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
+import { SCROLL_CONFIG, SCROLL_ANIMATION, UI_DIMENSIONS } from '../constants';
 
 interface ScrollToTopButtonProps {
   /** Scroll threshold in pixels before showing button (default: 300) */
@@ -27,10 +28,10 @@ interface ScrollToTopButtonProps {
  * <ScrollToTopButton threshold={400} />
  */
 export const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = memo(({
-  threshold = 300,
-  scrollDuration = 500,
-  bottomOffset = 24,
-  rightOffset = 24
+  threshold = SCROLL_CONFIG.SCROLL_TO_TOP_THRESHOLD,
+  scrollDuration = SCROLL_ANIMATION.SMOOTH_SCROLL,
+  bottomOffset = UI_DIMENSIONS.SPACE_LG,
+  rightOffset = UI_DIMENSIONS.SPACE_LG
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);

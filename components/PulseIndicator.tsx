@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
+import { LOADING_ANIMATION, FADE_TIMING } from '../constants';
 
 export type PulsePosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'center';
 export type PulseVariant = 'default' | 'primary' | 'success' | 'warning' | 'error';
@@ -114,7 +115,7 @@ export const PulseIndicator: React.FC<PulseIndicatorProps> = memo(({
       const timer = setTimeout(() => {
         setIsVisible(false);
         setIsExiting(false);
-      }, 300);
+      }, FADE_TIMING.STANDARD);
       return () => clearTimeout(timer);
     }
     return undefined;
@@ -123,7 +124,7 @@ export const PulseIndicator: React.FC<PulseIndicatorProps> = memo(({
   // Handle limited pulse count
   useEffect(() => {
     if (pulseCount > 0 && isVisible && !prefersReducedMotion) {
-      const pulseDuration = 2000; // 2 seconds per pulse cycle
+      const pulseDuration = LOADING_ANIMATION.PULSE_DURATION; // 2 seconds per pulse cycle
       
       const checkPulseCompletion = () => {
         pulseCounterRef.current += 1;
@@ -136,7 +137,7 @@ export const PulseIndicator: React.FC<PulseIndicatorProps> = memo(({
             setIsVisible(false);
             setIsExiting(false);
             onPulseComplete?.();
-          }, 300);
+          }, FADE_TIMING.STANDARD);
           
           if (animationRef.current) {
             cancelAnimationFrame(animationRef.current);
