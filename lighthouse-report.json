@@ -1,14 +1,14 @@
 [
   {
     "route": "Home/Dashboard",
-    "score": 82,
+    "score": 84,
     "metrics": {
-      "firstContentfulPaint": 3427.8514000000005,
-      "largestContentfulPaint": 3720.4847999999993,
-      "timeToInteractive": 3720.4847999999993,
-      "totalBlockingTime": 43,
-      "cumulativeLayoutShift": 0.013677252856440517,
-      "speedIndex": 3427.8514000000005
+      "firstContentfulPaint": 3402.2695000000003,
+      "largestContentfulPaint": 3402.2695000000003,
+      "timeToInteractive": 3458.2636250000005,
+      "totalBlockingTime": 13,
+      "cumulativeLayoutShift": 0.00014763873981477242,
+      "speedIndex": 3402.2695000000003
     },
     "opportunities": [
       {
@@ -24,12 +24,12 @@
     "route": "Generator",
     "score": 84,
     "metrics": {
-      "firstContentfulPaint": 3375.2012999999997,
-      "largestContentfulPaint": 3477.224999999999,
-      "timeToInteractive": 3523.0750074999996,
-      "totalBlockingTime": 10,
-      "cumulativeLayoutShift": 0.0003393614845961121,
-      "speedIndex": 3375.2012999999997
+      "firstContentfulPaint": 3393.59235,
+      "largestContentfulPaint": 3393.59235,
+      "timeToInteractive": 3439.8116274999998,
+      "totalBlockingTime": 13.5,
+      "cumulativeLayoutShift": 0.00014763873981477242,
+      "speedIndex": 3393.59235
     },
     "opportunities": [
       {
@@ -43,14 +43,14 @@
   },
   {
     "route": "About",
-    "score": 84,
+    "score": 83,
     "metrics": {
-      "firstContentfulPaint": 3367.9757000000004,
-      "largestContentfulPaint": 3471.4736999999996,
-      "timeToInteractive": 3516.880215,
-      "totalBlockingTime": 11,
-      "cumulativeLayoutShift": 0,
-      "speedIndex": 3367.9757000000004
+      "firstContentfulPaint": 3378.3444500000005,
+      "largestContentfulPaint": 3668.02445,
+      "timeToInteractive": 3668.02445,
+      "totalBlockingTime": 27,
+      "cumulativeLayoutShift": 0.01027565629110816,
+      "speedIndex": 3378.3444500000005
     },
     "opportunities": [
       {
