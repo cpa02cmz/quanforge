@@ -1,32 +1,25 @@
 /**
- * Query Batching System
- * Reduces database round trips by batching multiple queries
+ * Query Batcher - Refactored
+ * Coordinates batch processing using modular components
+ * 
+ * @deprecated Use services/batch/index.ts for direct module access
  */
 
-import { SupabaseClient } from '@supabase/supabase-js';
-import { createListenerManager, ListenerManager } from '../utils/listenerManager';
 import { BATCH_SIZES, RETRY_CONFIG, STAGGER } from './constants';
-import { createScopedLogger } from '../utils/logger';
 import { ID_GENERATION } from '../constants/modularConfig';
+import { createScopedLogger } from '../utils/logger';
+import { createListenerManager } from '../utils/listenerManager';
+import { enhancedConnectionPool } from './enhancedSupabasePool';
+import {
+  QueryQueue,
+  BatchQuery,
+  BatchScheduler,
+  QueryExecutor,
+  BatchStatistics,
+  BatchResult
+} from './batch';
 
 const logger = createScopedLogger('QueryBatcher');
-
-interface BatchQuery {
-  id: string;
-  query: string;
-  params?: any[];
-  table?: string;
-  operation: 'select' | 'insert' | 'update' | 'delete';
-  priority: 'high' | 'medium' | 'low';
-  timestamp: number;
-}
-
-interface BatchResult {
-  id: string;
-  data?: any;
-  error?: any;
-  executionTime: number;
-}
 
 interface BatchConfig {
   maxBatchSize: number;
@@ -37,36 +30,41 @@ interface BatchConfig {
   retryDelay: number;
 }
 
+interface PendingResult {
+  resolve: (result: BatchResult) => void;
+  reject: (error: unknown) => void;
+  startTime: number;
+}
+
 class QueryBatcher {
   private static instance: QueryBatcher;
-  private batchQueue: BatchQuery[] = [];
-  private pendingResults: Map<string, {
-    resolve: (result: BatchResult) => void;
-    reject: (error: any) => void;
-    startTime: number;
-  }> = new Map();
-  private config: BatchConfig = {
-    maxBatchSize: BATCH_SIZES.DATABASE_OPERATIONS,
-    batchTimeout: 50, // 50ms
-    maxWaitTime: STAGGER.DEFAULT_DELAY_MS * 5, // 500ms max wait
-    priorityQueues: true,
-    retryAttempts: RETRY_CONFIG.MAX_ATTEMPTS,
-    retryDelay: RETRY_CONFIG.DELAYS.SHORT
-  };
-  private batchTimer: number | null = null;
-  private stats = {
-    totalBatches: 0,
-    totalQueries: 0,
-    avgBatchSize: 0,
-    avgExecutionTime: 0,
-    cacheHitRate: 0,
-    retryRate: 0
-  };
-  private listenerManager: ListenerManager;
+  private queue: QueryQueue;
+  private scheduler: BatchScheduler;
+  private executor: QueryExecutor;
+  private stats: BatchStatistics;
+  private pendingResults = new Map<string, PendingResult>();
+  private config: BatchConfig;
+  private cleanupManager = createListenerManager();
 
   private constructor() {
-    this.listenerManager = createListenerManager();
-    this.startBatchProcessor();
+    this.config = {
+      maxBatchSize: BATCH_SIZES.DATABASE_OPERATIONS,
+      batchTimeout: 50,
+      maxWaitTime: STAGGER.DEFAULT_DELAY_MS * 5,
+      priorityQueues: true,
+      retryAttempts: RETRY_CONFIG.MAX_ATTEMPTS,
+      retryDelay: RETRY_CONFIG.DELAYS.SHORT
+    };
+
+    this.queue = new QueryQueue({ priorityQueues: this.config.priorityQueues });
+    this.scheduler = new BatchScheduler({
+      batchTimeout: this.config.batchTimeout,
+      maxBatchSize: this.config.maxBatchSize,
+      onProcessBatch: () => this.processBatch(),
+      shouldProcessImmediately: () => this.shouldProcessImmediately()
+    });
+    this.executor = new QueryExecutor();
+    this.stats = new BatchStatistics();
   }
 
   static getInstance(): QueryBatcher {
@@ -79,9 +77,9 @@ class QueryBatcher {
   /**
    * Add a query to the batch queue
    */
-  async addQuery<T = any>(
+  async addQuery<T = unknown>(
     query: string,
-    params: any[] = [],
+    params: unknown[] = [],
     operation: BatchQuery['operation'] = 'select',
     priority: BatchQuery['priority'] = 'medium',
     table?: string
@@ -104,473 +102,42 @@ class QueryBatcher {
         startTime: performance.now()
       });
 
-      this.addToQueue(batchQuery);
-      this.scheduleBatch();
+      this.queue.add(batchQuery);
+      this.scheduler.schedule();
     });
   }
 
   /**
-   * Add query to appropriate queue based on priority
+   * Check if batch should be processed immediately
    */
-  private addToQueue(query: BatchQuery): void {
-    if (this.config.priorityQueues) {
-      // Insert based on priority
-      let insertIndex = this.batchQueue.length;
-      
-      for (let i = 0; i < this.batchQueue.length; i++) {
-        const priorityOrder: Record<string, number> = { high: 3, medium: 2, low: 1 };
-        const currentBatchQuery = this.batchQueue[i];
-        if (!currentBatchQuery) continue;
-        const currentPriority = priorityOrder[currentBatchQuery.priority] || 0;
-        const newPriority = priorityOrder[query.priority] || 0;
-        
-        if (newPriority > currentPriority) {
-          insertIndex = i;
-          break;
-        }
-      }
-      
-      this.batchQueue.splice(insertIndex, 0, query);
-    } else {
-      this.batchQueue.push(query);
-    }
+  private shouldProcessImmediately(): boolean {
+    return this.queue.length >= this.config.maxBatchSize || this.queue.hasHighPriority();
   }
 
   /**
-   * Schedule batch processing
-   */
-  private scheduleBatch(): void {
-    if (this.batchTimer) {
-      return;
-    }
-
-    const shouldProcessImmediately = 
-      this.batchQueue.length >= this.config.maxBatchSize ||
-      this.hasHighPriorityQueries();
-
-    const delay = shouldProcessImmediately ? 0 : this.config.batchTimeout;
-
-    this.batchTimer = window.setTimeout(() => {
-      this.processBatch();
-      this.batchTimer = null;
-    }, delay);
-  }
-
-  /**
-   * Check if there are high priority queries that should be processed immediately
-   */
-  private hasHighPriorityQueries(): boolean {
-    return this.batchQueue.some(query => query.priority === 'high');
-  }
-
-  /**
-   * Process the current batch of queries
+   * Process the current batch
    */
   private async processBatch(): Promise<void> {
-    if (this.batchQueue.length === 0) {
+    if (this.queue.isEmpty()) {
       return;
     }
 
-    const batch = this.batchQueue.splice(0, this.config.maxBatchSize);
+    const batch = this.queue.dequeue(this.config.maxBatchSize);
     const startTime = performance.now();
 
     try {
-      const results = await this.executeBatch(batch);
-      const executionTime = performance.now() - startTime;
-
-      this.updateStats(batch.length, executionTime);
-      this.resolveBatch(results);
-
+      const client = await enhancedConnectionPool.acquire(undefined, true);
+      try {
+        const results = await this.executor.executeBatch(client, batch);
+        this.stats.update(batch.length, performance.now() - startTime);
+        this.resolveBatch(results);
+      } finally {
+        enhancedConnectionPool.release(client);
+      }
     } catch (error: unknown) {
-      console.error('Batch execution failed:', error);
-      await this.handleBatchError(batch, error);
+      logger.error('Batch execution failed:', error);
+      this.handleBatchError(batch, error);
     }
-  }
-
-  /**
-   * Execute a batch of queries
-   */
-  private async executeBatch(batch: BatchQuery[]): Promise<BatchResult[]> {
-    // Group queries by table and operation for optimization
-    const groupedQueries = this.groupQueries(batch);
-    const results: BatchResult[] = [];
-
-    for (const group of groupedQueries) {
-      try {
-        const groupResults = await this.executeQueryGroup(group);
-        results.push(...groupResults);
-      } catch (error: unknown) {
-        // Add error results for all queries in this group
-        const errorResults = group.queries.map(query => ({
-          id: query.id,
-          error,
-          executionTime: 0
-        }));
-        results.push(...errorResults);
-      }
-    }
-
-    return results;
-  }
-
-  /**
-   * Group queries by table and operation for batch optimization
-   */
-  private groupQueries(batch: BatchQuery[]): Array<{
-    table?: string;
-    operation: BatchQuery['operation'];
-    queries: BatchQuery[];
-  }> {
-    const groups = new Map<string, {
-      table?: string;
-      operation: BatchQuery['operation'];
-      queries: BatchQuery[];
-    }>();
-
-    for (const query of batch) {
-      const key = `${query.table || 'no-table'}-${query.operation}`;
-      
-      if (!groups.has(key)) {
-        groups.set(key, {
-          table: query.table,
-          operation: query.operation,
-          queries: []
-        });
-      }
-      
-      groups.get(key)!.queries.push(query);
-    }
-
-    return Array.from(groups.values());
-  }
-
-  /**
-   * Execute a group of related queries
-   */
-  private async executeQueryGroup(group: {
-    table?: string;
-    operation: BatchQuery['operation'];
-    queries: BatchQuery[];
-  }): Promise<BatchResult[]> {
-    const { table: _table, operation, queries } = group;
-    const results: BatchResult[] = [];
-
-    // Get Supabase client
-    const { enhancedConnectionPool } = await import('./enhancedSupabasePool');
-    const client = await enhancedConnectionPool.acquire(undefined, operation === 'select');
-
-    try {
-      switch (operation) {
-        case 'select':
-          results.push(...await this.executeSelectQueries(client, queries));
-          break;
-        case 'insert':
-          results.push(...await this.executeInsertQueries(client, queries));
-          break;
-        case 'update':
-          results.push(...await this.executeUpdateQueries(client, queries));
-          break;
-        case 'delete':
-          results.push(...await this.executeDeleteQueries(client, queries));
-          break;
-        default:
-          throw new Error(`Unsupported operation: ${operation}`);
-      }
-    } finally {
-      enhancedConnectionPool.release(client);
-    }
-
-    return results;
-  }
-
-  /**
-   * Execute SELECT queries (can be optimized with IN clauses)
-   */
-  private async executeSelectQueries(
-    client: SupabaseClient,
-    queries: BatchQuery[]
-  ): Promise<BatchResult[]> {
-    const results: BatchResult[] = [];
-
-    // Try to combine compatible SELECT queries
-    const combinedQueries = this.combineSelectQueries(queries);
-
-    for (const combined of combinedQueries) {
-      const startTime = performance.now();
-      
-      try {
-        // Build query with proper typing
-        let queryBuilder: any = client.from(combined.table!);
-
-        // Apply combined filters using eq operator
-        if (combined.combinedFilters) {
-          for (const filter of combined.combinedFilters) {
-            queryBuilder = queryBuilder.eq(filter.column, filter.value);
-          }
-        }
-
-        // Apply select columns
-        if (combined.selectColumns) {
-          queryBuilder = queryBuilder.select(combined.selectColumns);
-        }
-
-        const { data, error } = await queryBuilder;
-
-        const executionTime = performance.now() - startTime;
-
-        // Distribute results back to original queries
-        for (const originalQuery of combined.originalQueries) {
-          if (error) {
-            results.push({
-              id: originalQuery.id,
-              error,
-              executionTime
-            });
-          } else {
-            // Filter data for this specific query if needed
-            const queryData = this.filterDataForQuery(data, originalQuery);
-            results.push({
-              id: originalQuery.id,
-              data: queryData,
-              executionTime
-            });
-          }
-        }
-      } catch (error: unknown) {
-        const executionTime = performance.now() - startTime;
-        for (const originalQuery of combined.originalQueries) {
-          results.push({
-            id: originalQuery.id,
-            error,
-            executionTime
-          });
-        }
-      }
-    }
-
-    return results;
-  }
-
-  /**
-   * Combine compatible SELECT queries for better performance
-   */
-  private combineSelectQueries(queries: BatchQuery[]): Array<{
-    table: string;
-    originalQueries: BatchQuery[];
-    combinedFilters?: Array<{ column: string; operator: string; value: any }>;
-    selectColumns?: string;
-  }> {
-    const groups = new Map<string, BatchQuery[]>();
-
-    // Group by table and select columns
-    for (const query of queries) {
-      const key = `${query.table || 'unknown'}-${this.extractSelectColumns(query)}`;
-      if (!groups.has(key)) {
-        groups.set(key, []);
-      }
-      groups.get(key)!.push(query);
-    }
-
-    const combined: Array<{
-      table: string;
-      originalQueries: BatchQuery[];
-      combinedFilters?: Array<{ column: string; operator: string; value: any }>;
-      selectColumns?: string;
-    }> = [];
-
-    for (const [groupKey, groupQueries] of groups) {
-      const parts = groupKey.split('-');
-      const tableName = parts[0] || 'unknown';
-      const selectColumns = parts[1];
-      
-      combined.push({
-        table: tableName,
-        originalQueries: groupQueries,
-        selectColumns: selectColumns !== 'undefined' ? selectColumns : undefined,
-        combinedFilters: this.extractFilters(groupQueries)
-      });
-    }
-
-    return combined;
-  }
-
-  /**
-   * Extract select columns from query
-   */
-  private extractSelectColumns(query: BatchQuery): string {
-    // Simple parsing - in real implementation, this would be more sophisticated
-    const match = query.query.match(/select\s+(.+?)\s+from/i);
-    return match && match[1] ? match[1].trim() : '*';
-  }
-
-  /**
-   * Extract filters from queries
-   */
-  private extractFilters(queries: BatchQuery[]): Array<{ column: string; operator: string; value: any }> {
-    const filters: Array<{ column: string; operator: string; value: any }> = [];
-    
-    // This is a simplified implementation
-    // In practice, you'd parse the SQL queries more carefully
-    for (const query of queries) {
-      if (query.params && query.params.length > 0) {
-        // Extract filter information from parameters
-        // This would need to be more sophisticated in practice
-      }
-    }
-
-    return filters;
-  }
-
-  /**
-   * Filter data for specific query
-   */
-  private filterDataForQuery(data: any[], _query: BatchQuery): any[] {
-    // Simple implementation - in practice, this would be more sophisticated
-    return data;
-  }
-
-  /**
-   * Execute INSERT queries
-   */
-  private async executeInsertQueries(
-    client: SupabaseClient,
-    queries: BatchQuery[]
-  ): Promise<BatchResult[]> {
-    const results: BatchResult[] = [];
-
-    for (const query of queries) {
-      const startTime = performance.now();
-      
-      try {
-        const { data, error } = await client
-          .from(query.table!)
-          .insert(query.params?.[0] || {});
-
-        const executionTime = performance.now() - startTime;
-        
-        results.push({
-          id: query.id,
-          data,
-          error,
-          executionTime
-        });
-      } catch (error: unknown) {
-        const executionTime = performance.now() - startTime;
-        results.push({
-          id: query.id,
-          error,
-          executionTime
-        });
-      }
-    }
-
-    return results;
-  }
-
-  /**
-   * Execute UPDATE queries
-   */
-  private async executeUpdateQueries(
-    client: SupabaseClient,
-    queries: BatchQuery[]
-  ): Promise<BatchResult[]> {
-    const results: BatchResult[] = [];
-
-    for (const query of queries) {
-      const startTime = performance.now();
-      
-      try {
-        const [updateData, filterCondition] = query.params || [{}, {}];
-        let queryBuilder = client.from(query.table!).update(updateData);
-
-        // Apply filter conditions
-        for (const [column, value] of Object.entries(filterCondition)) {
-          queryBuilder = queryBuilder.eq(column, value);
-        }
-
-        const { data, error } = await queryBuilder;
-
-        const executionTime = performance.now() - startTime;
-        
-        results.push({
-          id: query.id,
-          data,
-          error,
-          executionTime
-        });
-      } catch (error: unknown) {
-        const executionTime = performance.now() - startTime;
-        results.push({
-          id: query.id,
-          error,
-          executionTime
-        });
-      }
-    }
-
-    return results;
-  }
-
-  /**
-   * Execute DELETE queries
-   */
-  private async executeDeleteQueries(
-    client: SupabaseClient,
-    queries: BatchQuery[]
-  ): Promise<BatchResult[]> {
-    const results: BatchResult[] = [];
-
-    for (const query of queries) {
-      const startTime = performance.now();
-      
-      try {
-        let queryBuilder = client.from(query.table!).delete();
-
-        // Apply filter conditions
-        if (query.params && query.params.length > 0) {
-          const filterCondition = query.params[0];
-          for (const [column, value] of Object.entries(filterCondition)) {
-            queryBuilder = queryBuilder.eq(column, value);
-          }
-        }
-
-        const { data, error } = await queryBuilder;
-
-        const executionTime = performance.now() - startTime;
-        
-        results.push({
-          id: query.id,
-          data,
-          error,
-          executionTime
-        });
-      } catch (error: unknown) {
-        const executionTime = performance.now() - startTime;
-        results.push({
-          id: query.id,
-          error,
-          executionTime
-        });
-      }
-    }
-
-    return results;
-  }
-
-  /**
-   * Handle batch execution errors
-   */
-  private async handleBatchError(batch: BatchQuery[], error: any): Promise<void> {
-    // Retry logic for failed batches
-    for (const query of batch) {
-      const pending = this.pendingResults.get(query.id);
-      if (pending) {
-        pending.reject(error);
-        this.pendingResults.delete(query.id);
-      }
-    }
-
-    this.stats.retryRate++;
   }
 
   /**
@@ -580,155 +147,125 @@ class QueryBatcher {
     for (const result of results) {
       const pending = this.pendingResults.get(result.id);
       if (pending) {
-        // Total time: performance.now() - pending.startTime;
-        
         if (result.error) {
           pending.reject(result.error);
         } else {
           pending.resolve(result);
         }
-        
         this.pendingResults.delete(result.id);
       }
     }
   }
 
   /**
-   * Start the batch processor
+   * Handle batch execution error
    */
-  private startBatchProcessor(): void {
-    // Process any remaining queries every second
-    this.listenerManager.setInterval(() => {
-      if (this.batchQueue.length > 0) {
-        this.processBatch();
+  private handleBatchError(batch: BatchQuery[], error: unknown): void {
+    for (const query of batch) {
+      const pending = this.pendingResults.get(query.id);
+      if (pending) {
+        pending.reject(error);
+        this.pendingResults.delete(query.id);
       }
-    }, STAGGER.DEFAULT_DELAY_MS * 10);
-  }
-
-  /**
-   * Update performance statistics
-   */
-  private updateStats(batchSize: number, executionTime: number): void {
-    this.stats.totalBatches++;
-    this.stats.totalQueries += batchSize;
-    this.stats.avgBatchSize = this.stats.totalQueries / this.stats.totalBatches;
-    this.stats.avgExecutionTime = 
-      (this.stats.avgExecutionTime * (this.stats.totalBatches - 1) + executionTime) / 
-      this.stats.totalBatches;
+    }
+    this.stats.recordRetry();
   }
 
   /**
    * Generate unique query ID
    */
   private generateQueryId(): string {
-    return `${ID_GENERATION.PREFIXES.QUERY}${ID_GENERATION.SEPARATOR}${Date.now()}${ID_GENERATION.SEPARATOR}${Math.random().toString(36).substr(2, ID_GENERATION.RANDOM.STANDARD)}`;
+    return `${ID_GENERATION.PREFIXES.QUERY}${ID_GENERATION.SEPARATOR}${Date.now()}${ID_GENERATION.SEPARATOR}${Math.random().toString(36).substring(2, ID_GENERATION.RANDOM.STANDARD)}`;
   }
 
-  /**
-   * Get performance statistics
-   */
-  getStats() {
-    return { ...this.stats };
-  }
-
-  /**
-   * Configure batcher settings
-   */
+  // Public API methods
+  getStats() { return this.stats.getStats(); }
+  
   configure(config: Partial<BatchConfig>): void {
     this.config = { ...this.config, ...config };
-    logger.log('Query batcher configuration updated:', this.config);
+    logger.log('Configuration updated');
   }
 
-  /**
-   * Clear all pending queries
-   */
   clearQueue(): void {
-    // Reject all pending queries
-    for (const [_id, pending] of this.pendingResults.entries()) {
+    for (const [, pending] of this.pendingResults) {
       pending.reject(new Error('Query queue cleared'));
     }
-    
     this.pendingResults.clear();
-    this.batchQueue = [];
-    
-    if (this.batchTimer) {
-      clearTimeout(this.batchTimer);
-      this.batchTimer = null;
-    }
+    this.queue.clear();
+    this.scheduler.cancel();
   }
 
-  /**
-   * Get current queue status
-   */
   getQueueStatus() {
     return {
-      queueLength: this.batchQueue.length,
+      queueLength: this.queue.length,
       pendingResults: this.pendingResults.size,
-      hasHighPriority: this.hasHighPriorityQueries(),
-      oldestQuery: this.batchQueue.length > 0 && this.batchQueue[0] ? 
-        Date.now() - this.batchQueue[0].timestamp : 0
+      hasHighPriority: this.queue.hasHighPriority(),
+      oldestQuery: Date.now() - this.queue.getOldestTimestamp()
     };
   }
 
-  /**
-   * Destroy the query batcher and clean up all resources
-   * Prevents memory leaks by clearing timers and rejecting pending queries
-   */
   destroy(): void {
     this.clearQueue();
-    this.listenerManager.cleanup();
-    logger.log('QueryBatcher destroyed and resources cleaned up');
+    this.scheduler.destroy();
+    this.cleanupManager.cleanup();
+    logger.log('QueryBatcher destroyed');
   }
 }
 
+// Singleton instance
 export const queryBatcher = QueryBatcher.getInstance();
 
-// Utility functions for common use cases
-export const batchSelect = <T = any>(
+// Utility functions
+export const batchSelect = <T = unknown>(
   table: string,
-  columns: string = '*',
-  filters: Record<string, any> = {},
+  columns = '*',
+  filters: Record<string, unknown> = {},
   priority: BatchQuery['priority'] = 'medium'
 ): Promise<T[]> => {
   const whereClause = Object.keys(filters).length > 0 ? 
     `where ${Object.keys(filters).map(key => `${key} = ?`).join(' and ')}` : '';
-    
-  const query = `select ${columns} from ${table} ${whereClause}`;
-  const params = Object.values(filters);
-
-  return queryBatcher.addQuery<T[]>(query, params, 'select', priority, table);
+  return queryBatcher.addQuery<T[]>(
+    `select ${columns} from ${table} ${whereClause}`,
+    Object.values(filters),
+    'select',
+    priority,
+    table
+  );
 };
 
-export const batchInsert = <T = any>(
+export const batchInsert = <T = unknown>(
   table: string,
   data: Partial<T>,
   priority: BatchQuery['priority'] = 'medium'
-): Promise<T> => {
-  const query = `insert into ${table}`;
-  const params = [data];
+): Promise<T> => queryBatcher.addQuery<T>(
+  `insert into ${table}`,
+  [data],
+  'insert',
+  priority,
+  table
+);
 
-  return queryBatcher.addQuery<T>(query, params, 'insert', priority, table);
-};
-
-export const batchUpdate = <T = any>(
+export const batchUpdate = <T = unknown>(
   table: string,
   data: Partial<T>,
-  filters: Record<string, any>,
+  filters: Record<string, unknown>,
   priority: BatchQuery['priority'] = 'medium'
-): Promise<T[]> => {
-  const query = `update ${table}`;
-  const params = [data, filters];
-
-  return queryBatcher.addQuery<T[]>(query, params, 'update', priority, table);
-};
+): Promise<T[]> => queryBatcher.addQuery<T[]>(
+  `update ${table}`,
+  [data, filters],
+  'update',
+  priority,
+  table
+);
 
 export const batchDelete = (
   table: string,
-  filters: Record<string, any>,
+  filters: Record<string, unknown>,
   priority: BatchQuery['priority'] = 'medium'
-): Promise<void> => {
-  const query = `delete from ${table}`;
-  const params = [filters];
-
-  return queryBatcher.addQuery<void>(query, params, 'delete', priority, table);
-};
+): Promise<void> => queryBatcher.addQuery<void>(
+  `delete from ${table}`,
+  [filters],
+  'delete',
+  priority,
+  table
+);
