@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { TYPING_ANIMATION, FADE_TIMING } from '../constants';
 
 export type TypewriterSpeed = 'slow' | 'normal' | 'fast' | number;
 export type CursorStyle = 'block' | 'line' | 'underline' | 'none';
@@ -91,7 +92,7 @@ export const TypewriterText: React.FC<TypewriterTextProps> = memo(({
   cursorStyle = 'line',
   blinkCursor = true,
   loop = false,
-  loopPause = 2000,
+  loopPause = TYPING_ANIMATION.PAUSE_DURATION,
   deleteBeforeLoop = true,
   deleteSpeed = 'fast',
   className = '',
@@ -110,10 +111,10 @@ export const TypewriterText: React.FC<TypewriterTextProps> = memo(({
   const getSpeedMs = useCallback((type: TypewriterSpeed): number => {
     if (typeof type === 'number') return type;
     switch (type) {
-      case 'slow': return 150;
-      case 'fast': return 30;
+      case 'slow': return TYPING_ANIMATION.MAX_TYPING_SPEED;
+      case 'fast': return TYPING_ANIMATION.DELETE_SPEED;
       case 'normal':
-      default: return 80;
+      default: return TYPING_ANIMATION.TYPING_SPEED;
     }
   }, []);
 
@@ -181,7 +182,7 @@ export const TypewriterText: React.FC<TypewriterTextProps> = memo(({
           // Start typing again after pause
           timeoutRef.current = setTimeout(() => {
             startTyping();
-          }, 500);
+          }, FADE_TIMING.SLOW);
           
           return 0;
         }
