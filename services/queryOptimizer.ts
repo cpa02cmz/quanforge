@@ -3,7 +3,7 @@ import { Robot } from '../types';
 import { MEMORY_LIMITS } from '../constants';
 import { TIME_CONSTANTS } from '../constants/config';
 import { TIMEOUTS } from './constants';
-import { COUNT_CONSTANTS } from './modularConstants';
+import { COUNT_CONSTANTS, SIZE_CONSTANTS } from './modularConstants';
 import { UNIFIED_CACHE_CONFIG } from '../constants/modularConfig';
 import { getErrorMessage, isError } from '../utils/errorHandler';
 
@@ -50,7 +50,7 @@ class QueryOptimizer {
        hash = ((hash << 5) - hash) + char;
        hash = hash & hash; // Convert to 32bit integer
      }
-     return Math.abs(hash).toString(36).substring(0, 16);
+     return Math.abs(hash).toString(36).substring(0, SIZE_CONSTANTS.HASH.SHORT);
    }
 
   // Check and maintain cache size limits - optimized for edge

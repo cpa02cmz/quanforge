@@ -1,6 +1,7 @@
 import { StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
 import { TRADING_CONSTANTS, VALIDATION_CONFIG, RATE_LIMITING } from '../constants/config';
+import { SIZE_CONSTANTS } from '../services/modularConstants';
 
 export interface ValidationError {
   field: string;
@@ -427,8 +428,8 @@ static sanitizeInput(input: string): string {
        .replace(/eval\s*\(/gi, '')
        .replace(/setTimeout\s*\(/gi, '')
        .replace(/setInterval\s*\(/gi, '')
-       // Limit length to prevent DoS
-       .substring(0, 10000);
+        // Limit length to prevent DoS
+        .substring(0, SIZE_CONSTANTS.CODE.MEDIUM);
    }
 
    static validateApiKey(apiKey: string): ValidationError[] {
