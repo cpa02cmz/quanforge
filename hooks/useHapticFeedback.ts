@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createScopedLogger } from '../utils/logger';
+import { HAPTIC_DEFAULTS } from '../constants/uiComponentDefaults';
 
 interface HapticPattern {
   /** Pattern of vibration durations in milliseconds */
@@ -10,27 +11,19 @@ interface HapticPattern {
 
 /**
  * Predefined haptic feedback patterns for consistent UX
+ * Flexy-approved: All values come from modular constants
  */
 export const HAPTIC_PATTERNS: Record<string, HapticPattern> = {
-  /** Light tap for subtle feedback */
-  LIGHT: { pattern: 10, description: 'Light tap for subtle feedback' },
-  /** Medium tap for standard button presses */
-  MEDIUM: { pattern: 20, description: 'Medium tap for button presses' },
-  /** Heavy tap for important actions */
-  HEAVY: { pattern: 30, description: 'Heavy tap for important actions' },
-  /** Success pattern - two quick pulses */
-  SUCCESS: { pattern: [20, 50, 20], description: 'Success feedback' },
-  /** Error pattern - single longer vibration */
-  ERROR: { pattern: 60, description: 'Error or warning feedback' },
-  /** Warning pattern - double pulse */
-  WARNING: { pattern: [30, 50, 30], description: 'Warning feedback' },
-  /** Selection change - very light tick */
-  SELECTION: { pattern: 5, description: 'Selection change feedback' },
-  /** Gesture start - light feedback */
-  GESTURE_START: { pattern: 15, description: 'Gesture initiation feedback' },
-  /** Gesture end - confirming feedback */
-  GESTURE_END: { pattern: [15, 30, 15], description: 'Gesture completion feedback' },
-} as const;
+  LIGHT: { pattern: HAPTIC_DEFAULTS.LIGHT.pattern, description: HAPTIC_DEFAULTS.LIGHT.description },
+  MEDIUM: { pattern: HAPTIC_DEFAULTS.MEDIUM.pattern, description: HAPTIC_DEFAULTS.MEDIUM.description },
+  HEAVY: { pattern: HAPTIC_DEFAULTS.HEAVY.pattern, description: HAPTIC_DEFAULTS.HEAVY.description },
+  SUCCESS: { pattern: [...HAPTIC_DEFAULTS.SUCCESS.pattern], description: HAPTIC_DEFAULTS.SUCCESS.description },
+  ERROR: { pattern: HAPTIC_DEFAULTS.ERROR.pattern, description: HAPTIC_DEFAULTS.ERROR.description },
+  WARNING: { pattern: [...HAPTIC_DEFAULTS.WARNING.pattern], description: HAPTIC_DEFAULTS.WARNING.description },
+  SELECTION: { pattern: HAPTIC_DEFAULTS.SELECTION.pattern, description: HAPTIC_DEFAULTS.SELECTION.description },
+  GESTURE_START: { pattern: HAPTIC_DEFAULTS.GESTURE_START.pattern, description: HAPTIC_DEFAULTS.GESTURE_START.description },
+  GESTURE_END: { pattern: [...HAPTIC_DEFAULTS.GESTURE_END.pattern], description: HAPTIC_DEFAULTS.GESTURE_END.description },
+};
 
 interface UseHapticFeedbackOptions {
   /** Whether haptic feedback is enabled (default: true) */

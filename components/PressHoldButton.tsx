@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useHapticFeedback } from '../hooks/useHapticFeedback';
+import { INTERACTION_DEFAULTS } from '../constants/uiComponentDefaults';
 
 export interface PressHoldButtonProps {
   /** Callback when the hold duration is completed */
@@ -73,16 +74,16 @@ export interface PressHoldButtonProps {
 export const PressHoldButton: React.FC<PressHoldButtonProps> = memo(({
   onConfirm,
   children,
-  holdDuration = 1500,
-  variant = 'danger',
-  size = 'md',
+  holdDuration = INTERACTION_DEFAULTS.PRESS_HOLD.DURATION_MS,
+  variant = INTERACTION_DEFAULTS.PRESS_HOLD.VARIANT,
+  size = INTERACTION_DEFAULTS.PRESS_HOLD.SIZE,
   disabled = false,
   'aria-label': ariaLabel,
   confirmDescription = 'Hold to confirm this action',
   className = '',
   icon,
   showProgress = true,
-  holdingText = 'Hold to confirm...'
+  holdingText = INTERACTION_DEFAULTS.PRESS_HOLD.HOLDING_TEXT
 }) => {
   const [isHolding, setIsHolding] = useState(false);
   const [progress, setProgress] = useState(0);

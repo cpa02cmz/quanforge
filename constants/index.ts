@@ -413,3 +413,19 @@ export {
   // Combined app config
   APP_CONFIG as MODULAR_APP_CONFIG,
 } from './modularConfig';
+
+// Export UI Component Defaults (Flexy's modular system for component defaults)
+export {
+  UI_COMPONENT_DEFAULTS,
+  ANIMATION_DEFAULTS,
+  INTERACTION_DEFAULTS,
+  PROGRESS_DEFAULTS,
+  FORM_DEFAULTS,
+  HAPTIC_DEFAULTS,
+  NAVIGATION_DEFAULTS,
+  MODAL_DEFAULTS,
+  DATA_DISPLAY_DEFAULTS,
+  CHAT_DEFAULTS,
+  MARKET_DATA_DEFAULTS,
+  ACCESSIBILITY_DEFAULTS,
+} from './uiComponentDefaults';

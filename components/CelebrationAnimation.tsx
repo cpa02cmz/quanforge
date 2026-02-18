@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, memo } from 'react';
+import { ANIMATION_DEFAULTS } from '../constants/uiComponentDefaults';
 
 interface Particle {
   id: number;
@@ -26,15 +27,7 @@ interface CelebrationAnimationProps {
   duration?: number;
 }
 
-const COLORS = [
-  '#22c55e', // brand green
-  '#3b82f6', // blue
-  '#f59e0b', // amber
-  '#ec4899', // pink
-  '#8b5cf6', // violet
-  '#06b6d4', // cyan
-  '#f97316', // orange
-];
+const COLORS = ANIMATION_DEFAULTS.CELEBRATION.COLORS;
 
 /**
  * CelebrationAnimation - A delightful particle burst animation for celebrating successes
@@ -53,10 +46,10 @@ const COLORS = [
  */
 export const CelebrationAnimation: React.FC<CelebrationAnimationProps> = memo(({
   trigger,
-  origin = 'center',
+  origin = ANIMATION_DEFAULTS.CELEBRATION.ORIGIN,
   onComplete,
-  particleCount = 30,
-  duration = 1500
+  particleCount = ANIMATION_DEFAULTS.CELEBRATION.PARTICLE_COUNT,
+  duration = ANIMATION_DEFAULTS.CELEBRATION.DURATION_MS
 }) => {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);

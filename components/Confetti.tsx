@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
+import { ANIMATION_DEFAULTS } from '../constants/uiComponentDefaults';
 
 export interface ConfettiPiece {
   id: number;
@@ -74,12 +75,12 @@ interface ParticlePhysics {
 export const Confetti: React.FC<ConfettiProps> = memo(({
   active,
   origin,
-  count = 60,
-  duration = 2500,
-  colors = ['#22c55e', '#4ade80', '#16a34a', '#86efac', '#bbf7d0', '#fcd34d', '#fbbf24'],
+  count = ANIMATION_DEFAULTS.CONFETTI.COUNT,
+  duration = ANIMATION_DEFAULTS.CONFETTI.DURATION_MS,
+  colors = ANIMATION_DEFAULTS.CONFETTI.COLORS,
   onComplete,
-  spread = 360,
-  velocity = 1
+  spread = ANIMATION_DEFAULTS.CONFETTI.SPREAD_DEGREES,
+  velocity = ANIMATION_DEFAULTS.CONFETTI.VELOCITY
 }) => {
   const [pieces, setPieces] = useState<ConfettiPiece[]>([]);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);

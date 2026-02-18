@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, memo } from 'react';
+import { ANIMATION_DEFAULTS } from '../constants/uiComponentDefaults';
 
 export interface GlowCursorProps {
   /** Size of the glow effect in pixels (default: 300) */
@@ -54,9 +55,9 @@ interface CursorPosition {
 export const GlowCursor: React.FC<GlowCursorProps> = memo(({
   size = 300,
   color = 'rgba(34, 197, 94, 0.15)',
-  blur = 100,
+  blur = ANIMATION_DEFAULTS.GLOW_CURSOR.BLUR_PX,
   enabled = true,
-  delay = 50
+  delay = ANIMATION_DEFAULTS.GLOW_CURSOR.DELAY_MS
 }) => {
   const [position, setPosition] = useState<CursorPosition>({ x: -1000, y: -1000 });
   const [targetPosition, setTargetPosition] = useState<CursorPosition>({ x: -1000, y: -1000 });
