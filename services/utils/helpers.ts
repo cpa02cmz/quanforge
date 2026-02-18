@@ -3,7 +3,7 @@
  * Extracted from monolithic supabase.ts for better modularity
  */
 
-import { securityManager } from '../securityManager';
+import { securityManager } from '../security/SecurityManager';
 import { createScopedLogger } from '../../utils/logger';
 
 const logger = createScopedLogger('ServiceHelpers');

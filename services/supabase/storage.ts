@@ -3,7 +3,7 @@
  * Handles localStorage operations with error handling and quota management
  */
 
-import { securityManager } from '../securityManager';
+import { securityManager } from '../security/SecurityManager';
 import { UserSession } from '../../types';
 import { createScopedLogger } from '../../utils/logger';
 import { STORAGE_KEYS } from '../../constants/modularConfig';

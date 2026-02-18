@@ -11,7 +11,7 @@ import { Robot, UserSession } from '../../types';
 import type { APIResponse } from '../../types/common';
 import { handleError } from '../../utils/errorHandler';
 import { settingsManager } from '../settingsManager';
-import { securityManager } from '../securityManager';
+import { securityManager } from '../security/SecurityManager';
 import { databaseCore, DatabaseCoreInterface } from './coreOperations';
 import { connectionManager, ConnectionManagerInterface } from './simpleConnectionManager';
 import { cacheLayer, CacheLayerInterface } from './cacheLayer';

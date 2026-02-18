@@ -1,5 +1,5 @@
 import { UserSession } from '../types';
-import { securityManager } from './securityManager';
+import { securityManager } from './security/SecurityManager';
 import { getLocalStorage, StorageQuotaError } from '../utils/storage';
 import { createScopedLogger } from '../utils/logger';
 import { STORAGE_KEYS, STORAGE_PREFIXES } from '../constants/modularConfig';

@@ -5,7 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { Robot, UserSession } from '../../types';
-import { securityManager } from '../securityManager';
+import { securityManager } from '../security/SecurityManager';
 import { consolidatedCache } from '../consolidatedCacheManager';
 import { createScopedLogger } from '../../utils/logger';
 import { DATABASE, SERVICE_CACHE_CONFIG } from '../constants';
