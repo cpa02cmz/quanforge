@@ -27,7 +27,7 @@ interface CacheEntry<T> {
  * @example
  * ```typescript
  * const cache = new EnhancedCache<ResponseData>(100);
- * cache.set('key', data, 60000); // Cache for 60 seconds
+ * cache.set('key', data, TIME_CONSTANTS.MINUTE); // Cache for 60 seconds
  * const data = cache.get('key');
  * ```
  */

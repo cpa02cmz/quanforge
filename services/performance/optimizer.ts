@@ -474,7 +474,7 @@ class PerformanceOptimizer {
           handleError(error as Error, 'automaticMemoryOptimization');
         }
       }
-    }, 60000); // Check every minute
+    }, TIME_CONSTANTS.MINUTE); // Check every minute
   }
 
   stopAutomaticOptimization(): void {

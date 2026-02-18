@@ -8,6 +8,7 @@ import { IConnectionPool } from '../../types/serviceInterfaces';
 import { edgeConnectionPool } from '../edgeSupabasePool';
 import { createScopedLogger } from '../../utils/logger';
 import { ATTEMPT_LIMITS } from '../modularConstants';
+import { TIME_CONSTANTS } from '../../constants/config';
 
 const logger = createScopedLogger('ConnectionPool');
 
@@ -38,12 +39,12 @@ export class ConnectionPool implements IConnectionPool {
     this.config = {
       maxConnections: 10,
       minConnections: 2,
-      acquireTimeoutMillis: 30000,
-      destroyTimeoutMillis: 5000,
-      idleTimeoutMillis: 30000,
-      reapIntervalMillis: 1000,
-      createTimeoutMillis: 30000,
-      healthCheckInterval: 15000,
+      acquireTimeoutMillis: TIME_CONSTANTS.SECOND * 30,
+      destroyTimeoutMillis: TIME_CONSTANTS.SECOND * 5,
+      idleTimeoutMillis: TIME_CONSTANTS.SECOND * 30,
+      reapIntervalMillis: TIME_CONSTANTS.SECOND,
+      createTimeoutMillis: TIME_CONSTANTS.SECOND * 30,
+      healthCheckInterval: TIME_CONSTANTS.SECOND * 15,
     };
 
     // Initialize edge connection pool

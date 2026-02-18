@@ -8,6 +8,7 @@ import { handleErrorCompat as handleError } from '../../utils/errorManager';
 import { globalCache } from '../unifiedCacheManager';
 import { ARRAY_LIMITS } from '../constants';
 import { HTTP_CONSTANTS } from '../modularConstants';
+import { TIME_CONSTANTS } from '../../constants/config';
 
 // Unified performance interfaces
 export interface CoreWebVital {
@@ -292,7 +293,7 @@ class PerformanceMonitor {
 
   private cacheMetric(key: string, data: any): void {
     try {
-      globalCache.set(`perf:${key}`, data, 60000); // Cache for 1 minute
+      globalCache.set(`perf:${key}`, data, TIME_CONSTANTS.MINUTE); // Cache for 1 minute
     } catch (_error) {
       // Ignore cache errors
     }
