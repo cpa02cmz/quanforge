@@ -1,4 +1,5 @@
 import { TIME_CONSTANTS } from '../constants/config';
+import { SIZE_CONSTANTS } from '../services/modularConstants';
 import { createScopedLogger } from './logger';
 
 const logger = createScopedLogger('secure-storage');
@@ -38,9 +39,9 @@ export class WebCryptoEncryption {
     
     // Generate dynamic key based on domain and user agent
     const domain = window.location.hostname || 'localhost';
-    const userAgent = navigator.userAgent.slice(0, 50);
-    const timestamp = new Date().toISOString().slice(0, 10); // Daily key rotation
-    return btoa(`${domain}_${userAgent}_${timestamp}`).slice(0, 32);
+    const userAgent = navigator.userAgent.slice(0, SIZE_CONSTANTS.STRING.SHORT);
+    const timestamp = new Date().toISOString().slice(0, 10); // Daily key rotation - ISO date format
+    return btoa(`${domain}_${userAgent}_${timestamp}`).slice(0, SIZE_CONSTANTS.HASH.MEDIUM);
   }
   
   private static async deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
@@ -213,7 +214,7 @@ const SimpleEncryption = {
 // Simple compression (basic run-length encoding)
 class SimpleCompression {
   static compress(text: string): string {
-    if (!text || text.length < 100) return text;
+    if (!text || text.length < SIZE_CONSTANTS.STRING.SMALL) return text;
     
     try {
       return btoa(text);
@@ -242,7 +243,7 @@ export class SecureStorage {
   
   constructor(options: SecureStorageOptions = {}) {
     this.namespace = options.namespace || 'qf_secure';
-    this.maxSize = options.maxSize || 4 * 1024 * 1024; // 4MB default
+    this.maxSize = options.maxSize || SIZE_CONSTANTS.MEMORY.FOUR_MB; // 4MB default
     this.defaultOptions = {
       encrypt: true,
       compress: true,
@@ -535,21 +536,21 @@ export const secureStorage = new SecureStorage({
   encrypt: true,
   compress: true,
   namespace: 'qf_app',
-  maxSize: 4 * 1024 * 1024 // 4MB
+  maxSize: SIZE_CONSTANTS.MEMORY.FOUR_MB // 4MB
 });
 
 export const secureCacheStorage = new SecureStorage({
   encrypt: false, // Cache data doesn't need encryption
   compress: true,
   namespace: 'qf_cache',
-  maxSize: 8 * 1024 * 1024 // 8MB for cache
+  maxSize: SIZE_CONSTANTS.MEMORY.EIGHT_MB // 8MB for cache
 });
 
 export const secureSettingsStorage = new SecureStorage({
   encrypt: true,
   compress: false, // Settings are usually small
   namespace: 'qf_settings',
-  maxSize: 1024 * 1024 // 1MB for settings
+  maxSize: SIZE_CONSTANTS.MEMORY.MB // 1MB for settings
 });
 
 // Auto-cleanup interval ID storage for proper cleanup

@@ -1,4 +1,5 @@
 import { TIME_CONSTANTS } from '../constants/config';
+import { SIZE_CONSTANTS } from '../services/modularConstants';
 
 // Synchronous hash using a simple algorithm for browser compatibility
 function simpleHash(str: string): string {
@@ -6,7 +7,7 @@ function simpleHash(str: string): string {
   for (let i = 0; i < str.length; i++) {
     hash = (hash * 33) ^ str.charCodeAt(i);
   }
-  return Math.abs(hash).toString(16).padStart(32, '0').substring(0, 32);
+  return Math.abs(hash).toString(16).padStart(SIZE_CONSTANTS.HASH.MEDIUM, '0').substring(0, SIZE_CONSTANTS.HASH.MEDIUM);
 }
 
 interface RateLimitEntry {
@@ -46,7 +47,7 @@ export class EnhancedRateLimiter {
     
     // Create a hash to prevent key collisions and ensure consistency
     const hash = simpleHash(identifier);
-    return `rate_limit_${hash.substring(0, 16)}`;
+    return `rate_limit_${hash.substring(0, SIZE_CONSTANTS.HASH.SHORT)}`;
   }
 
   private cleanup(): void {
@@ -217,7 +218,7 @@ export function getAIRateLimiter(): EnhancedRateLimiter {
     maxRequests: 10, // 10 AI requests per minute
     keyGenerator: (identifier: string) => {
       const hash = simpleHash(`ai_${identifier}`);
-      return `ai_request_${hash.substring(0, 16)}`;
+      return `ai_request_${hash.substring(0, SIZE_CONSTANTS.HASH.SHORT)}`;
     }
   });
 }

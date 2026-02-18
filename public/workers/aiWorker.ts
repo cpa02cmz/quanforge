@@ -1,6 +1,43 @@
 // Web Worker for AI Processing Optimization
 // Offloads intensive AI context building and processing from main thread
 
+// Flexy's modular constants - defined inline for worker isolation
+const WORKER_CONSTANTS = {
+  // Cache configuration
+  CACHE: {
+    MAX_SIZE: 100,
+    DEFAULT_TTL_MS: 5 * 60 * 1000, // 5 minutes
+  },
+  
+  // Token budget limits
+  TOKEN_BUDGET: {
+    MAX_CONTEXT_CHARS: 100000,
+    MIN_HISTORY_CHARS: 1000,
+  },
+  
+  // String truncation limits
+  TRUNCATION: {
+    CODE_SNIPPET: 100,
+    HASH_SHORT: 500,
+    HASH_LONG: 1000,
+  },
+  
+  // History importance scoring
+  SCORING: {
+    RECENCY_MULTIPLIER: 10,
+    USER_MESSAGE_BONUS: 2,
+    CODE_INDICATOR_BONUS: 1,
+    SHORT_MESSAGE_BONUS: 0.5,
+    SHORT_MESSAGE_THRESHOLD: 300,
+  },
+  
+  // Context budget
+  BUDGET: {
+    SEPARATOR_LENGTH: 2,
+    FOOTER_LENGTH: 1000,
+  }
+} as const;
+
 // Import necessary types and utilities
 type Message = {
   id: string;
@@ -40,8 +77,8 @@ type WorkerResponse = {
 // Enhanced cache with TTL for context building
 class ContextCache {
   private cache = new Map<string, { content: string; timestamp: number; ttl: number }>();
-  private readonly maxSize = 100;
-  private readonly defaultTTL = 5 * 60 * 1000; // 5 minutes
+  private readonly maxSize = WORKER_CONSTANTS.CACHE.MAX_SIZE;
+  private readonly defaultTTL = WORKER_CONSTANTS.CACHE.DEFAULT_TTL_MS;
 
   get(key: string): string | null {
     const entry = this.cache.get(key);
@@ -80,8 +117,8 @@ const contextCache = new ContextCache();
 
 // Token budget manager optimized for worker
 class TokenBudgetManager {
-  private static readonly MAX_CONTEXT_CHARS = 100000;
-  private static readonly MIN_HISTORY_CHARS = 1000;
+  private static readonly MAX_CONTEXT_CHARS = WORKER_CONSTANTS.TOKEN_BUDGET.MAX_CONTEXT_CHARS;
+  private static readonly MIN_HISTORY_CHARS = WORKER_CONSTANTS.TOKEN_BUDGET.MIN_HISTORY_CHARS;
 
   buildParamsContext(strategyParams?: StrategyParams): string {
     if (!strategyParams) return '';
@@ -116,7 +153,7 @@ class TokenBudgetManager {
   buildCodeContext(currentCode?: string, maxLength?: number): string {
     if (!currentCode) return '// No code generated yet\n';
 
-    const cacheKey = `code-${currentCode.substring(0, 100)}-${maxLength || 'full'}`;
+    const cacheKey = `code-${currentCode.substring(0, WORKER_CONSTANTS.TRUNCATION.CODE_SNIPPET)}-${maxLength || 'full'}`;
     const cached = contextCache.get(cacheKey);
     if (cached) return cached;
 
@@ -160,19 +197,19 @@ class TokenBudgetManager {
     // Calculate importance scores
     messageData.forEach(data => {
       const recencyFactor = (data.index + 1) / effectiveHistory.length;
-      data.importance = recencyFactor * 10;
+      data.importance = recencyFactor * WORKER_CONSTANTS.SCORING.RECENCY_MULTIPLIER;
 
       if (data.msg.role === 'user') {
-        data.importance += 2;
+        data.importance += WORKER_CONSTANTS.SCORING.USER_MESSAGE_BONUS;
       }
 
       if (data.content.includes('```') || data.content.includes('function') ||
           data.content.includes('if ') || data.content.includes('for ')) {
-        data.importance += 1;
+        data.importance += WORKER_CONSTANTS.SCORING.CODE_INDICATOR_BONUS;
       }
 
-      if (data.length < 300) {
-        data.importance += 0.5;
+      if (data.length < WORKER_CONSTANTS.SCORING.SHORT_MESSAGE_THRESHOLD) {
+        data.importance += WORKER_CONSTANTS.SCORING.SHORT_MESSAGE_BONUS;
       }
     });
 
@@ -186,7 +223,7 @@ class TokenBudgetManager {
 
     const selectedMessages: typeof messageData = [];
     let usedBudget = 0;
-    const separatorLength = 2;
+    const separatorLength = WORKER_CONSTANTS.BUDGET.SEPARATOR_LENGTH;
 
     for (const data of messageData) {
       const requiredBudget = data.length + (selectedMessages.length > 0 ? separatorLength : 0);
@@ -223,8 +260,8 @@ FINAL REMINDERS:
     const baseLength = paramsContext.length + codeContext.length + prompt.length + footerReminder.length;
 
     if (baseLength > TokenBudgetManager.MAX_CONTEXT_CHARS) {
-      const availableForCode = TokenBudgetManager.MAX_CONTEXT_CHARS - paramsContext.length - prompt.length - footerReminder.length - 1000;
-      codeContext = this.buildCodeContext(currentCode, Math.max(availableForCode, 1000));
+      const availableForCode = TokenBudgetManager.MAX_CONTEXT_CHARS - paramsContext.length - prompt.length - footerReminder.length - WORKER_CONSTANTS.BUDGET.FOOTER_LENGTH;
+      codeContext = this.buildCodeContext(currentCode, Math.max(availableForCode, WORKER_CONSTANTS.TOKEN_BUDGET.MIN_HISTORY_CHARS));
     }
 
     const currentBaseLength = paramsContext.length + codeContext.length + prompt.length + footerReminder.length;
@@ -255,8 +292,8 @@ ${footerReminder}
 
   private createContextCacheKey(prompt: string, currentCode?: string, strategyParams?: StrategyParams, history: Message[] = []): string {
     const paramsHash = strategyParams ? JSON.stringify(strategyParams) : '';
-    const codeHash = currentCode ? currentCode.substring(0, 500) : '';
-    const historyHash = history.map(m => `${m.role}:${m.content.substring(0, 100)}`).join('|');
+    const codeHash = currentCode ? currentCode.substring(0, WORKER_CONSTANTS.TRUNCATION.HASH_SHORT) : '';
+    const historyHash = history.map(m => `${m.role}:${m.content.substring(0, WORKER_CONSTANTS.TRUNCATION.CODE_SNIPPET)}`).join('|');
     return `${prompt.length}:${codeHash}:${paramsHash}:${historyHash}`;
   }
 
