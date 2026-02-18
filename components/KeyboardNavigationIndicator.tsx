@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { TOAST_ANIMATION, FADE_TIMING } from '../constants';
 
 export interface KeyboardNavigationIndicatorProps {
   /** Duration to show the indicator in ms (default: 3000) */
@@ -45,8 +46,8 @@ export interface KeyboardNavigationIndicatorProps {
  * />
  */
 export const KeyboardNavigationIndicator: React.FC<KeyboardNavigationIndicatorProps> = memo(({
-  showDuration = 3000,
-  animationDuration = 300,
+  showDuration = TOAST_ANIMATION.AUTO_DISMISS_DELAY,
+  animationDuration = FADE_TIMING.STANDARD,
   position = 'bottom-center',
   showHints = true,
   className = ''
