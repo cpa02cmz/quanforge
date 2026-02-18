@@ -51,9 +51,53 @@
 
 This section defines standardized patterns for service implementation to ensure consistency across the 167+ service files in the codebase.
 
-### 7.1 Service Export Patterns
+### 7.1 Recommended Pattern: ServiceFactory (Issue #795)
 
-Choose the appropriate pattern based on the service's responsibility:
+**NEW (2026-02-18)**: Use `ServiceFactory` for all new services to ensure consistency.
+
+```typescript
+import { ServiceFactory, BaseService } from './services';
+
+// 1. Define the service interface
+interface ICacheService {
+  get(key: string): Promise<any>;
+  set(key: string, value: any): Promise<void>;
+}
+
+// 2. Implement the service (extending BaseService is optional but recommended)
+class CacheService extends BaseService implements ICacheService {
+  private cache = new Map<string, any>();
+
+  constructor() {
+    super('CacheService');
+  }
+
+  async get(key: string): Promise<any> {
+    return this.cache.get(key);
+  }
+
+  async set(key: string, value: any): Promise<void> {
+    this.cache.set(key, value);
+  }
+}
+
+// 3. Create and export singleton instance using ServiceFactory
+export const cacheService = ServiceFactory.createSingleton(
+  'CacheService',
+  () => new CacheService()
+);
+```
+
+**Benefits**:
+- ✅ Automatic singleton enforcement
+- ✅ Service registry for debugging
+- ✅ Metadata tracking
+- ✅ Consistent lifecycle management
+- ✅ Testable (clearRegistry for isolation)
+
+### 7.2 Legacy Service Export Patterns
+
+These patterns exist in the codebase for backward compatibility. **New services should use ServiceFactory (Section 7.1)**.
 
 #### Pattern A: Class + Singleton (Stateful Services)
 
