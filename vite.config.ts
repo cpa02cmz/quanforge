@@ -161,14 +161,8 @@ export default defineConfig({
             if (id.includes('prismjs')) {
               return 'vendor-prismjs';
             }
-            // web-vitals for performance metrics
-            if (id.includes('web-vitals')) {
-              return 'vendor-web-vitals';
-            }
-            // cookie parsing utilities
-            if (id.includes('cookie')) {
-              return 'vendor-cookie';
-            }
+            // Note: web-vitals and cookie are bundled where they're actually used
+            // (transitive dependencies), so no separate chunks needed
             // Remaining vendor libraries - smaller chunks
             return 'vendor-remaining';
           }
