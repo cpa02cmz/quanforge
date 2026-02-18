@@ -1651,7 +1651,7 @@ private validateRobotData(data: any): ValidationResult {
         default: {
           // For other types, use basic sanitization
           const sanitized = this.sanitizeInput(String(input), type);
-          return sanitized.length > 0 && sanitized.length < 10000;
+          return sanitized.length > 0 && sanitized.length < SIZE_CONSTANTS.STRING.MAX;
         }
      }
    }

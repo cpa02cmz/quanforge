@@ -368,7 +368,7 @@ class AdvancedSupabasePool {
   private startCleanup(): void {
     this.cleanupTimer = setInterval(async () => {
       await this.cleanupIdleConnections();
-    }, 60000); // Every minute
+    }, TIME_CONSTANTS.MINUTE); // Every minute
   }
 
   /**

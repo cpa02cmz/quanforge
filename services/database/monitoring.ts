@@ -1,11 +1,9 @@
 import { createScopedLogger } from '../../utils/logger';
-
-const logger = createScopedLogger('DatabaseMonitoring');
 import { robotCache, queryCache } from './cache';
 import { getClient } from './client';
 import { handleError } from '../../utils/errorHandler';
-import { createScopedLogger } from '../../utils/logger';
 import { HEALTH_CHECK_CONFIG } from '../monitoringConfig';
+import { TIME_CONSTANTS } from '../../constants/config';
 
 const logger = createScopedLogger('DatabaseMonitoring');
 
@@ -176,6 +174,6 @@ if (typeof window !== 'undefined') {
     setInterval(() => {
       const metrics = collectDatabaseMetrics();
       logger.log('Database Metrics:', metrics);
-    }, 60000); // Every minute
+    }, TIME_CONSTANTS.MINUTE); // Every minute
   }
 }

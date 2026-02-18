@@ -9,7 +9,7 @@ import { createScopedLogger } from '../utils/logger';
 import { createDynamicSupabaseClient } from './dynamicSupabaseLoader';
 import { TIMEOUTS, RETRY_CONFIG, STAGGER, TIME_CONSTANTS, POOL_CONFIG, SCORING, ARRAY_LIMITS } from './constants';
 import { THRESHOLD_CONSTANTS, DELAY_CONSTANTS, ATTEMPT_LIMITS } from './modularConstants';
-import { ID_GENERATION, SLICE_LIMITS } from '../constants/modularConfig';
+import { ID_GENERATION, SLICE_LIMITS, CONNECTION_POOL_CONFIG } from '../constants/modularConfig';
 import { getErrorMessage } from '../utils/errorHandler';
 
 const logger = createScopedLogger('EnhancedConnectionPool');
@@ -414,7 +414,7 @@ class EnhancedSupabaseConnectionPool {
     this.cleanupTimer = window.setInterval(() => {
       this.cleanupIdleConnections();
       this.cleanupWaitingQueue();
-    }, 60000); // Run cleanup every minute
+    }, TIME_CONSTANTS.MINUTE); // Run cleanup every minute
     this.timers.add(this.cleanupTimer);
   }
 
@@ -1102,11 +1102,11 @@ class EnhancedSupabaseConnectionPool {
   optimizeForEdge(): void {
     // Update configuration for edge optimization
     this.updateConfig({
-      maxConnections: Math.min(this.config.maxConnections, 6), // Lower max for edge
-      minConnections: Math.max(this.config.minConnections, 1), // Ensure at least 1
-      acquireTimeout: 800, // Faster timeout for edge
-      idleTimeout: 45000, // Faster cleanup for serverless
-      healthCheckInterval: 10000, // More frequent health checks
+      maxConnections: Math.min(this.config.maxConnections, CONNECTION_POOL_CONFIG.EDGE.MAX_CONNECTIONS), // Lower max for edge
+      minConnections: Math.max(this.config.minConnections, CONNECTION_POOL_CONFIG.EDGE.MIN_CONNECTIONS), // Ensure at least 1
+      acquireTimeout: CONNECTION_POOL_CONFIG.EDGE.ACQUIRE_TIMEOUT_MS, // Faster timeout for edge
+      idleTimeout: CONNECTION_POOL_CONFIG.EDGE.IDLE_TIMEOUT_MS, // Faster cleanup for serverless
+      healthCheckInterval: CONNECTION_POOL_CONFIG.EDGE.HEALTH_CHECK_INTERVAL_MS, // More frequent health checks
       connectionWarming: true,
       enableConnectionDraining: true,
       regionAffinity: true
