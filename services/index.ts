@@ -1,5 +1,14 @@
 // Export all services for easier imports
 
+// Service Factory Pattern (Issue #795)
+export { 
+  ServiceFactory, 
+  BaseService, 
+  ServiceInitializer,
+  Service,
+  type IService 
+} from './core/ServiceFactory';
+
 // Core Services with Resilience (Recommended)
 export { aiService } from './resilientAIService';
 export { resilientDb as db, resilientDbUtils as dbUtils } from './resilientDbService';
