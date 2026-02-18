@@ -309,7 +309,7 @@ class AdvancedSupabasePool {
   private startHealthChecks(): void {
     this.healthCheckTimer = setInterval(async () => {
       await this.performPoolHealthChecks();
-    }, 15000); // Every 15 seconds
+    }, CONNECTION_POOL_CONFIG.EDGE.HEALTH_CHECK_INTERVAL_MS); // Use modular config
   }
 
   /**
