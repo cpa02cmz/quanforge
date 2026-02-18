@@ -1,0 +1,65 @@
+[
+  {
+    "route": "Home/Dashboard",
+    "score": 82,
+    "metrics": {
+      "firstContentfulPaint": 3427.8514000000005,
+      "largestContentfulPaint": 3720.4847999999993,
+      "timeToInteractive": 3720.4847999999993,
+      "totalBlockingTime": 43,
+      "cumulativeLayoutShift": 0.013677252856440517,
+      "speedIndex": 3427.8514000000005
+    },
+    "opportunities": [
+      {
+        "title": "Reduce unused JavaScript",
+        "description": "Reduce unused JavaScript and defer loading scripts until they are required to decrease bytes consumed by network activity. [Learn how to reduce unused JavaScript](https://developer.chrome.com/docs/lighthouse/performance/unused-javascript/).",
+        "score": 0,
+        "savings": "Est savings of 81 KiB"
+      }
+    ],
+    "diagnostics": []
+  },
+  {
+    "route": "Generator",
+    "score": 84,
+    "metrics": {
+      "firstContentfulPaint": 3375.2012999999997,
+      "largestContentfulPaint": 3477.224999999999,
+      "timeToInteractive": 3523.0750074999996,
+      "totalBlockingTime": 10,
+      "cumulativeLayoutShift": 0.0003393614845961121,
+      "speedIndex": 3375.2012999999997
+    },
+    "opportunities": [
+      {
+        "title": "Reduce unused JavaScript",
+        "description": "Reduce unused JavaScript and defer loading scripts until they are required to decrease bytes consumed by network activity. [Learn how to reduce unused JavaScript](https://developer.chrome.com/docs/lighthouse/performance/unused-javascript/).",
+        "score": 0,
+        "savings": "Est savings of 81 KiB"
+      }
+    ],
+    "diagnostics": []
+  },
+  {
+    "route": "About",
+    "score": 84,
+    "metrics": {
+      "firstContentfulPaint": 3367.9757000000004,
+      "largestContentfulPaint": 3471.4736999999996,
+      "timeToInteractive": 3516.880215,
+      "totalBlockingTime": 11,
+      "cumulativeLayoutShift": 0,
+      "speedIndex": 3367.9757000000004
+    },
+    "opportunities": [
+      {
+        "title": "Reduce unused JavaScript",
+        "description": "Reduce unused JavaScript and defer loading scripts until they are required to decrease bytes consumed by network activity. [Learn how to reduce unused JavaScript](https://developer.chrome.com/docs/lighthouse/performance/unused-javascript/).",
+        "score": 0,
+        "savings": "Est savings of 83 KiB"
+      }
+    ],
+    "diagnostics": []
+  }
+]

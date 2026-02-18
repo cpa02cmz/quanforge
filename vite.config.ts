@@ -110,6 +110,18 @@ export default defineConfig({
               if (id.includes('Axis') || id.includes('CartesianGrid') || id.includes('Grid')) {
                 return 'chart-axes';
               }
+              // Shape components (lines, curves)
+              if (id.includes('Shape') || id.includes('Curve') || id.includes('Line')) {
+                return 'chart-shapes';
+              }
+              // Polar components
+              if (id.includes('Polar')) {
+                return 'chart-polar';
+              }
+              // Container components
+              if (id.includes('Layer') || id.includes('Surface')) {
+                return 'chart-containers';
+              }
               return 'chart-core';
             }
             // PrismJS - syntax highlighting (split if needed)
@@ -145,6 +157,18 @@ export default defineConfig({
             if (id.includes('date-fns') || id.includes('moment') || id.includes('dayjs')) {
               return 'vendor-dates';
             }
+            // PrismJS - syntax highlighting (split if needed)
+            if (id.includes('prismjs')) {
+              return 'vendor-prismjs';
+            }
+            // web-vitals for performance metrics
+            if (id.includes('web-vitals')) {
+              return 'vendor-web-vitals';
+            }
+            // cookie parsing utilities
+            if (id.includes('cookie')) {
+              return 'vendor-cookie';
+            }
             // Remaining vendor libraries - smaller chunks
             return 'vendor-remaining';
           }
@@ -166,6 +190,14 @@ export default defineConfig({
             // Performance and security services
             if (id.includes('cache') || id.includes('performance') || id.includes('optimization') || id.includes('security') || id.includes('auth') || id.includes('validation')) {
               return 'services-core';
+            }
+            // Market data and trading services
+            if (id.includes('market') || id.includes('trading') || id.includes('quote') || id.includes('tick')) {
+              return 'services-market';
+            }
+            // Analytics and monitoring services
+            if (id.includes('analytic') || id.includes('monitor') || id.includes('metric') || id.includes('track') || id.includes('health') || id.includes('integration')) {
+              return 'services-analytics';
             }
             // All other services
             return 'services-misc';
@@ -195,6 +227,22 @@ export default defineConfig({
             // UI components consolidated
             if (id.includes('Modal') || id.includes('Dialog') || id.includes('Toast') || id.includes('ErrorBoundary') || id.includes('LoadingState')) {
               return 'component-ui';
+            }
+            // Animation and effects components
+            if (id.includes('Confetti') || id.includes('Celebration') || id.includes('Glow') || id.includes('Shine') || id.includes('Pulse') || id.includes('Tilt') || id.includes('Magnetic') || id.includes('Spotlight') || id.includes('Flip') || id.includes('Hover')) {
+              return 'component-effects';
+            }
+            // Input and form components
+            if (id.includes('Input') || id.includes('Button') || id.includes('Form') || id.includes('Password') || id.includes('Numeric') || id.includes('IconButton') || id.includes('Copy') || id.includes('Save') || id.includes('Send') || id.includes('Like')) {
+              return 'component-inputs';
+            }
+            // Text and content components
+            if (id.includes('Text') || id.includes('Typewriter') || id.includes('Scramble') || id.includes('Badge') || id.includes('Breadcrumbs') || id.includes('Empty') || id.includes('Progress') || id.includes('Step') || id.includes('Skeleton') || id.includes('Status') || id.includes('Health')) {
+              return 'component-content';
+            }
+            // Navigation and accessibility components
+            if (id.includes('Keyboard') || id.includes('Focus') || id.includes('Skip') || id.includes('Scroll') || id.includes('PageTransition') || id.includes('BackButton') || id.includes('Lazy') || id.includes('Virtual')) {
+              return 'component-navigation';
             }
             // Core components
             return 'components-core';
@@ -274,13 +322,14 @@ export default defineConfig({
         if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return;
         warn(warning);
       },
-      // Enhanced tree-shaking with aggressive optimizations
-      treeshake: {
-        moduleSideEffects: false,
-        propertyReadSideEffects: false,
-        tryCatchDeoptimization: false,
-        unknownGlobalSideEffects: false
-      }
+    // Enhanced tree-shaking with aggressive optimizations
+    treeshake: {
+      moduleSideEffects: false,
+      propertyReadSideEffects: false,
+      tryCatchDeoptimization: false,
+      unknownGlobalSideEffects: false,
+      preset: 'smallest'
+    }
     },
     minify: 'terser',
     terserOptions: {
@@ -326,10 +375,9 @@ export default defineConfig({
     reportCompressedSize: true,
     cssCodeSplit: true,
     cssMinify: true, // Add CSS minification
-    // Enhanced edge optimization
-    assetsInlineLimit: 256, // Optimized for edge performance
+    // Enhanced edge optimization with modulepreload for critical chunks
     modulePreload: {
-      polyfill: false
+      polyfill: true
     },
     // Additional build optimizations
     emptyOutDir: true,
