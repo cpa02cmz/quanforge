@@ -1,5 +1,5 @@
 
-import { MQL5_SYSTEM_PROMPT, TIMEOUTS, CACHE_TTLS } from "../constants";
+import { MQL5_SYSTEM_PROMPT, CACHE_TTLS } from "../constants";
 import { AI_CONFIG } from "../constants/config";
 import { VALIDATION_LIMITS } from "../constants/modularConfig";
 import {
@@ -21,6 +21,8 @@ import { getAIRateLimiter } from "../utils/enhancedRateLimit";
 import { getLocalStorage, getSessionStorage } from "../utils/storage";
 import { LRUCache } from "../utils/cache";
 import { importGoogleGenAI, importAIGenerationTypes } from "./ai/aiImports";
+import { EnhancedCache } from "./cache/EnhancedCache";
+import { requestDeduplicator } from "./ai/requestDeduplicator";
 
 const logger = () => createScopedLogger('gemini');
 
@@ -67,61 +69,6 @@ const getCurrentUserId = (): string | null => {
     return null;
   }
 };
-
-// Enhanced cache with TTL and size management
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-  ttl: number;
-}
-
-class EnhancedCache<T> {
-  private cache = new Map<string, CacheEntry<T>>();
-  private readonly maxSize: number;
-  
-  constructor(maxSize: number = AI_CONFIG.CACHE.MAX_CACHE_SIZE) {
-    this.maxSize = maxSize;
-  }
-  
-  get(key: string): T | null {
-    const entry = this.cache.get(key);
-    if (!entry) return null;
-    
-    // Check if entry is expired
-    if (Date.now() - entry.timestamp > entry.ttl) {
-      this.cache.delete(key);
-      return null;
-    }
-    
-    return entry.data;
-  }
-  
-  set(key: string, data: T, ttl: number = TIMEOUTS.CACHE_TTL): void { // Default 5 minutes TTL
-    // Remove oldest entries if we're at max size
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      if (firstKey) this.cache.delete(firstKey);
-    }
-    
-    this.cache.set(key, { data, timestamp: Date.now(), ttl });
-  }
-  
-  clear(): void {
-    this.cache.clear();
-  }
-  
-  has(key: string): boolean {
-    return this.cache.has(key);
-  }
-  
-  size(): number {
-    return this.cache.size;
-  }
-  
-  keys(): string[] {
-    return Array.from(this.cache.keys());
-  }
-}
 
 // Enhanced security utilities for input sanitization and validation
 const sanitizePrompt = (prompt: string): string => {
@@ -333,39 +280,6 @@ const createSemanticCacheKey = (prompt: string, currentCode?: string, strategyPa
   
   return createHash(components.join('|'));
 };
-
-// Request deduplication to prevent duplicate API calls
-class RequestDeduplicator {
-  private pendingRequests = new Map<string, Promise<unknown>>();
-
-  async deduplicate<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
-    // If request is already in flight, return the existing promise
-    if (this.pendingRequests.has(key)) {
-      return this.pendingRequests.get(key) as Promise<T>;
-    }
-
-    // Create new request and store the promise
-    const promise = requestFn().finally(() => {
-      // Clean up after request completes (whether success or failure)
-      this.pendingRequests.delete(key);
-    });
-
-    this.pendingRequests.set(key, promise);
-    return promise;
-  }
-
-  // Clear all pending requests (useful for cleanup)
-  clear(): void {
-    this.pendingRequests.clear();
-  }
-
-  // Get count of pending requests
-  get pendingCount(): number {
-    return this.pendingRequests.size;
-  }
-}
-
-const requestDeduplicator = new RequestDeduplicator();
 
 /**
  * Utility: Retry an async operation with exponential backoff.
