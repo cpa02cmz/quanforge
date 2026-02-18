@@ -9,6 +9,7 @@ import { SendButton } from './SendButton';
 import { TypingIndicator } from './TypingIndicator';
 import { TEXT_INPUT_LIMITS, VIRTUAL_SCROLL_CONFIG, CHARACTER_COUNT_CONFIG } from '../constants/uiConfig';
 import { useChatFocusManagement } from '../hooks/useChatFocusManagement';
+import { ScrollToBottomButton } from './ScrollToBottomButton';
 import ChatErrorBoundary from './ChatErrorBoundary';
 
   const logger = createScopedLogger('ChatInterface');
@@ -87,9 +88,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
   const { t, language } = useTranslation();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const memoryMonitorRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cleanupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [newMessageCount, setNewMessageCount] = useState(0);
+  const lastMessageCountRef = useRef(messages.length);
   
   // Focus management for accessibility
   const { inputRef, stopButtonRef, focusInput } = useChatFocusManagement({
@@ -178,13 +183,43 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
     requestAnimationFrame(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     });
+    
+    // Reset scroll button and new message count when manually scrolling to bottom
+    setShowScrollButton(false);
+    setNewMessageCount(0);
+  }, []);
+
+  // Handle scroll events to show/hide scroll to bottom button
+  const handleScroll = useCallback(() => {
+    if (!messagesContainerRef.current) return;
+    
+    const container = messagesContainerRef.current;
+    const scrollHeight = container.scrollHeight;
+    const scrollTop = container.scrollTop;
+    const clientHeight = container.clientHeight;
+    
+    // Show button when user is not at bottom (with 100px threshold)
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    setShowScrollButton(!isNearBottom);
   }, []);
 
   useEffect(() => {
     if (!abortControllerRef.current?.signal.aborted) {
-      scrollToBottom();
+      // Only auto-scroll if user is already near bottom
+      if (!showScrollButton) {
+        scrollToBottom();
+      }
     }
-  }, [messages, isLoading, scrollToBottom]);
+  }, [messages, isLoading, scrollToBottom, showScrollButton]);
+
+  // Track new messages when user has scrolled up
+  useEffect(() => {
+    if (messages.length > lastMessageCountRef.current && showScrollButton) {
+      // User is scrolled up and new message arrived
+      setNewMessageCount(prev => prev + (messages.length - lastMessageCountRef.current));
+    }
+    lastMessageCountRef.current = messages.length;
+  }, [messages.length, showScrollButton]);
 
   const sanitizeInput = (input: string): string => {
     return DOMPurify.sanitize(input, {
@@ -363,7 +398,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
 
       {/* Messages Area */}
       <div 
-        className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar"
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar relative"
         role="log"
         aria-label="Chat messages"
         aria-live="polite"
@@ -419,6 +456,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = React.memo(({ message
             )}
           </div>
         )}
+        
+        {/* Scroll to Bottom Button */}
+        <ScrollToBottomButton
+          isVisible={showScrollButton}
+          newMessageCount={newMessageCount}
+          onClick={scrollToBottom}
+        />
+        
         <div ref={messagesEndRef} />
       </div>
 
