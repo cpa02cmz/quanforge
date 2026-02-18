@@ -6,6 +6,7 @@
 import React from 'react';
 import { PerformanceWithMemory } from '../types/browser';
 import { TIME_CONSTANTS } from '../constants/config';
+import { SIZE_CONSTANTS } from '../services/modularConstants';
 import { createScopedLogger } from './logger';
 
 // Lazy logger to avoid circular dependency TDZ issues
@@ -563,7 +564,7 @@ class EnhancedMonitor {
     return query
       .replace(/(['"])(?:(?=(\\?))\2.)*?\1/g, "'***'")
       .replace(/\b\d+\b/g, '***')
-      .substring(0, 200);
+      .substring(0, SIZE_CONSTANTS.DISPLAY.STANDARD);
   }
 
   private updateQueryMetrics(_executionTime: number, _success: boolean): void {
