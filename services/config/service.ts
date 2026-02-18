@@ -403,3 +403,13 @@ class ConfigurationService {
 
 export const config = ConfigurationService.getInstance();
 export { ConfigurationService };
+
+// Convenience getter functions
+export const securityConfig = () => config.security;
+export const performanceConfig = () => config.performance;
+export const infrastructureConfig = () => config.infrastructure;
+export const monitoringConfig = () => config.monitoring;
+export const featureFlags = () => config.features;
+export const websocketsConfig = () => config.websockets;
+export const databaseConfig = () => config.database;
+export const aiConfig = () => config.ai;
