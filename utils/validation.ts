@@ -2,6 +2,7 @@ import { StrategyParams, BacktestSettings } from '../types';
 import DOMPurify from 'dompurify';
 import { TRADING_CONSTANTS, VALIDATION_CONFIG, RATE_LIMITING } from '../constants/config';
 import { SIZE_CONSTANTS } from '../services/modularConstants';
+import { VALIDATION_LIMITS } from '../constants/modularConfig';
 
 export interface ValidationError {
   field: string;
@@ -327,13 +328,13 @@ if (input && seenNames.has(input.name)) {
          return errors;
        }
 
-       if (message.length > 10000) {
-         errors.push({
-           field: 'message',
-           message: 'Message is too long (max 10,000 characters)'
-         });
-         return errors;
-       }
+        if (message.length > VALIDATION_LIMITS.STRING.TEXT_AREA) {
+          errors.push({
+            field: 'message',
+            message: `Message is too long (max ${VALIDATION_LIMITS.STRING.TEXT_AREA.toLocaleString()} characters)`
+          });
+          return errors;
+        }
 
 // Enhanced XSS prevention using DOMPurify for comprehensive sanitization
         const sanitizedMessage = DOMPurify.sanitize(message, { 

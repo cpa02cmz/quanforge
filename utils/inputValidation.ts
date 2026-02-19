@@ -1,6 +1,7 @@
 import { ValidationError } from './validationTypes';
 import { validateRequired } from './validationHelpers';
 import DOMPurify from 'dompurify';
+import { VALIDATION_LIMITS } from '../constants/modularConfig';
 
 // Chat message validation
 export const validateChatMessage = (content: string): ValidationError[] => {
@@ -22,10 +23,10 @@ export const validateChatMessage = (content: string): ValidationError[] => {
   }
 
   // Check maximum length (prevent token abuse)
-  if (content.length > 10000) {
+  if (content.length > VALIDATION_LIMITS.STRING.TEXT_AREA) {
     errors.push({
       field: 'message',
-      message: 'Message is too long. Maximum 10,000 characters allowed.'
+      message: `Message is too long. Maximum ${VALIDATION_LIMITS.STRING.TEXT_AREA.toLocaleString()} characters allowed.`
     });
   }
 

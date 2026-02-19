@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Message, MessageRole, Robot, StrategyParams, StrategyAnalysis, BacktestSettings, SimulationResult } from '../types';
 import { db } from '../services';
 import { useToast } from '../components/useToast';
-import { DEFAULT_STRATEGY_PARAMS } from '../constants';
+import { DEFAULT_STRATEGY_PARAMS, MODULAR_VALIDATION_LIMITS } from '../constants';
 import { runMonteCarloSimulation } from '../services/simulation';
 import { ValidationService } from '../utils/validation';
 import { createScopedLogger } from '../utils/logger';
@@ -58,7 +58,7 @@ const initialState: GeneratorState = {
   mobileView: 'setup',
   strategyParams: DEFAULT_STRATEGY_PARAMS,
   backtestSettings: {
-    initialDeposit: 10000,
+    initialDeposit: MODULAR_VALIDATION_LIMITS.NUMERIC.INITIAL_DEPOSIT.DEFAULT,
     days: 90,
     leverage: 100
   },

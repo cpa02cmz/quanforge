@@ -1,5 +1,6 @@
 import { TIME_CONSTANTS } from '../constants/config';
 import { SIZE_CONSTANTS } from '../services/modularConstants';
+import { ARRAY_LIMITS } from '../constants/modularConfig';
 import { createScopedLogger } from './logger';
 
 const logger = createScopedLogger('secure-storage');
@@ -510,7 +511,7 @@ export class SecureStorage {
       
       let size = 0;
       try {
-        while (size < 10000) { // Prevent infinite loop
+        while (size < ARRAY_LIMITS.LARGE) { // Prevent infinite loop
           localStorage.setItem(testKey + size, testData);
           size += testData.length;
         }
