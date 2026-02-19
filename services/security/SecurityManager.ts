@@ -316,8 +316,22 @@ class SecurityManager {
   }
 }
 
-// Export singleton instance for backward compatibility
-export const securityManager = SecurityManager.getInstance();
+// Lazy singleton instance for backward compatibility
+// Deferred initialization prevents TDZ (Temporal Dead Zone) errors during module loading
+let securityManagerInstance: SecurityManager | null = null;
+
+export const securityManager: SecurityManager = new Proxy({} as SecurityManager, {
+  get(_target, prop) {
+    if (!securityManagerInstance) {
+      securityManagerInstance = SecurityManager.getInstance();
+    }
+    const value = (securityManagerInstance as unknown as Record<string | symbol, unknown>)[prop];
+    if (typeof value === 'function') {
+      return value.bind(securityManagerInstance);
+    }
+    return value;
+  }
+});
 
 // Also export the class for testing purposes
 export { SecurityManager };

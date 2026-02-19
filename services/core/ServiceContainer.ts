@@ -173,7 +173,7 @@ class ServiceContainer {
 export const serviceContainer = new ServiceContainer();
 
 // Service orchestration for startup/shutdown
-export class ServiceOrchestrator {
+export class ContainerServiceOrchestrator {
   constructor(private container: ServiceContainer) {}
 
   /**
@@ -241,4 +241,4 @@ export class ServiceOrchestrator {
 }
 
 // Global orchestrator instance
-export const serviceOrchestrator = new ServiceOrchestrator(serviceContainer);
+export const containerServiceOrchestrator = new ContainerServiceOrchestrator(serviceContainer);
