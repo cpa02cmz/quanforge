@@ -3,7 +3,8 @@ import { Robot } from '../types';
 import { queryOptimizer } from './queryOptimizer';
 import { securityManager } from './security/SecurityManager';
 import { createScopedLogger } from '../utils/logger';
-import { SIZE_CONSTANTS } from './modularConstants';
+import { SIZE_CONSTANTS, THRESHOLD_CONSTANTS, COUNT_CONSTANTS } from './modularConstants';
+import { ARRAY_LIMITS } from '../constants/modularConfig';
 
 const logger = createScopedLogger('DatabaseOptimizer');
 
@@ -188,8 +189,8 @@ class DatabaseOptimizer {
     });
     
     // Keep only recent history
-    if (this.optimizationHistory.length > 1000) {
-      this.optimizationHistory = this.optimizationHistory.slice(-1000);
+    if (this.optimizationHistory.length > ARRAY_LIMITS.OPTIMIZATION_HISTORY) {
+      this.optimizationHistory = this.optimizationHistory.slice(-ARRAY_LIMITS.OPTIMIZATION_HISTORY);
     }
   }
 
@@ -384,7 +385,7 @@ class DatabaseOptimizer {
       if (!error && slowQueries && slowQueries.length > 0) {
         // Check for queries without indexes
         slowQueries.forEach((query: any) => {
-          if (query.mean_time > 100 && query.calls > 100) { // Slow and frequently called
+          if (query.mean_time > THRESHOLD_CONSTANTS.QUERY.FAST && query.calls > COUNT_CONSTANTS.HISTORY.SMALL) { // Slow and frequently called
             recommendations.push(`Query taking ${query.mean_time.toFixed(2)}ms avg time with ${query.calls} calls may need indexing: ${query.query.substring(0, SIZE_CONSTANTS.STRING.MEDIUM)}...`);
           }
         });
@@ -396,11 +397,11 @@ class DatabaseOptimizer {
     
     // Add general recommendations based on our metrics
     const metrics = this.getOptimizationMetrics();
-    if (metrics.queryResponseTime > 1000) {
+    if (metrics.queryResponseTime > THRESHOLD_CONSTANTS.QUERY.SLOW) {
       recommendations.push('Average query response time is high (>1 second). Consider adding indexes or optimizing queries.');
     }
     
-    if (metrics.cacheHitRate < 30) {
+    if (metrics.cacheHitRate < THRESHOLD_CONSTANTS.CACHE_HIT_RATE.POOR * 100) {
       recommendations.push('Cache hit rate is low (<30%). Consider optimizing cache strategies for frequently accessed data.');
     }
     
@@ -410,8 +411,8 @@ class DatabaseOptimizer {
       const { data: tableStats, error: tableError } = await client
         .from('pg_stat_user_tables')
         .select('relname, n_tup_ins, n_tup_upd, n_tup_del, n_tup_hot_upd')
-        .gt('n_tup_del', 1000) // Tables with significant deletions
-        .limit(10);
+        .gt('n_tup_del', ARRAY_LIMITS.LARGE) // Tables with significant deletions
+        .limit(COUNT_CONSTANTS.BATCH.LARGE);
       
       if (!tableError && tableStats && tableStats.length > 0) {
         tableStats.forEach((table: any) => {
@@ -487,12 +488,12 @@ class DatabaseOptimizer {
       const { data: tables, error: tableError } = await client
         .from('pg_stat_user_tables')
         .select('relname, seq_scan, idx_scan, n_tup_ins, n_tup_upd, n_tup_del')
-        .gt('n_tup_del', 1000);
-      
+        .gt('n_tup_del', ARRAY_LIMITS.LARGE);
+
       if (!tableError && tables) {
         // For each table with significant changes, suggest optimization
         for (const table of tables) {
-          if (table.n_tup_del > 1000) {
+          if (table.n_tup_del > ARRAY_LIMITS.LARGE) {
             // In a real implementation, we would run VACUUM ANALYZE on the table
             logger.log(`Table ${table.relname} has ${table.n_tup_del} deleted tuples, optimization recommended`);
           }
@@ -537,7 +538,7 @@ class DatabaseOptimizer {
       const { data: tables, error: tableError } = await client
         .from('pg_stat_user_tables')
         .select('relname, n_tup_del')
-        .gt('n_tup_del', 5000); // Tables with significant deletions
+        .gt('n_tup_del', COUNT_CONSTANTS.CACHE.MAX); // Tables with significant deletions
 
       if (!tableError && tables) {
         for (const table of tables) {
@@ -577,7 +578,7 @@ class DatabaseOptimizer {
     }> = [];
     
     // Cache-related recommendations
-    if (metrics.cacheHitRate < 30) {
+    if (metrics.cacheHitRate < THRESHOLD_CONSTANTS.CACHE_HIT_RATE.POOR * 100) {
       recommendations.push({
         category: 'cache',
         recommendation: 'Increase cache hit rate by optimizing frequently accessed data',
@@ -585,9 +586,9 @@ class DatabaseOptimizer {
         impact: 'Performance improvement'
       });
     }
-    
+
     // Query performance recommendations
-    if (metrics.queryResponseTime > 500) {
+    if (metrics.queryResponseTime > THRESHOLD_CONSTANTS.QUERY.NORMAL) {
       recommendations.push({
         category: 'query',
         recommendation: 'Optimize slow queries by adding indexes or rewriting',

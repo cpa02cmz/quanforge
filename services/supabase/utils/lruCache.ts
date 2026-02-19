@@ -1,4 +1,5 @@
 // LRU Cache implementation for efficient data caching
+import { ARRAY_LIMITS } from '../../../constants/modularConfig';
 
 export class LRUCache<T> {
   private cache = new Map<string, { value: T; timestamp: number }>();
@@ -46,7 +47,7 @@ export class LRUCache<T> {
     });
 
     // Periodic cleanup
-    if (this.cache.size > 100) {
+    if (this.cache.size > ARRAY_LIMITS.STANDARD) {
       this.cleanup();
     }
   }

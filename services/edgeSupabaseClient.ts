@@ -6,6 +6,8 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { RETRY_CONFIG, TIME_CONSTANTS } from './constants';
 import { createScopedLogger } from '../utils/logger';
+import { ARRAY_LIMITS } from '../constants/modularConfig';
+import { THRESHOLD_CONSTANTS } from './modularConstants';
 
 const logger = createScopedLogger('EdgeSupabaseClient');
 // Commenting out vercelEdgeOptimizer import since it's not being used properly
@@ -423,7 +425,7 @@ class EdgeSupabaseClient {
     });
 
     // Cleanup old cache entries
-    if (this.queryCache.size > 100) {
+    if (this.queryCache.size > ARRAY_LIMITS.STANDARD) {
       this.cleanupCache();
     }
   }
@@ -462,7 +464,7 @@ class EdgeSupabaseClient {
     }
 
     // Log slow queries
-    if (duration > 1000) {
+    if (duration > THRESHOLD_CONSTANTS.QUERY.SLOW) {
       logger.warn(
         `Slow edge query detected: ${table}.${query} took ${duration.toFixed(2)}ms`
       );

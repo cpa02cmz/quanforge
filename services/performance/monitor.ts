@@ -7,7 +7,7 @@
 import { handleErrorCompat as handleError } from '../../utils/errorManager';
 import { globalCache } from '../unifiedCacheManager';
 import { ARRAY_LIMITS } from '../constants';
-import { HTTP_CONSTANTS } from '../modularConstants';
+import { HTTP_CONSTANTS, THRESHOLD_CONSTANTS } from '../modularConstants';
 import { TIME_CONSTANTS } from '../../constants/config';
 
 // Unified performance interfaces
@@ -286,8 +286,8 @@ class PerformanceMonitor {
     categoryMetrics.push(metric);
     
     // Keep only last 100 metrics per category
-    if (categoryMetrics.length > 100) {
-      categoryMetrics.splice(0, categoryMetrics.length - 100);
+    if (categoryMetrics.length > ARRAY_LIMITS.METRICS_STANDARD) {
+      categoryMetrics.splice(0, categoryMetrics.length - ARRAY_LIMITS.METRICS_STANDARD);
     }
   }
 
@@ -346,7 +346,7 @@ class PerformanceMonitor {
 
   getEdgeMetrics(): EdgePerformanceMetrics {
     const recentMetrics = this.edgeMetrics.slice(-ARRAY_LIMITS.METRICS_STANDARD);
-    const coldStarts = recentMetrics.filter(m => m.duration > 1000);
+    const coldStarts = recentMetrics.filter(m => m.duration > THRESHOLD_CONSTANTS.QUERY.SLOW);
     const errors = recentMetrics.filter(m => m.status >= HTTP_CONSTANTS.BAD_REQUEST);
     
     // Calculate region metrics
