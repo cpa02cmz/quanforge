@@ -483,6 +483,7 @@ async getRobots() {
               .from('robots')
               .select('*')
               .eq('is_active', true)
+              .is('deleted_at', null)
               .order('created_at', { ascending: false })
               .limit(CACHE_LIMITS.DEFAULT_QUERY_LIMIT); // Use centralized limit
             
@@ -648,7 +649,8 @@ if (index !== -1) {
           let query = client
             .from('robots')
             .select('*', { count: 'exact', head: false })
-            .eq('is_active', true);
+            .eq('is_active', true)
+            .is('deleted_at', null);
           
           // Apply filters in the most efficient order
           if (filterType && filterType !== 'All') {
