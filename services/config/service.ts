@@ -401,15 +401,30 @@ class ConfigurationService {
   }
 }
 
-export const config = ConfigurationService.getInstance();
+// Lazy singleton instance to prevent TDZ errors during module loading
+let configInstance: ConfigurationService | null = null;
+const getConfig = (): ConfigurationService => {
+  if (!configInstance) {
+    configInstance = ConfigurationService.getInstance();
+  }
+  return configInstance;
+};
+
 export { ConfigurationService };
 
-// Convenience getter functions
-export const securityConfig = () => config.security;
-export const performanceConfig = () => config.performance;
-export const infrastructureConfig = () => config.infrastructure;
-export const monitoringConfig = () => config.monitoring;
-export const featureFlags = () => config.features;
-export const websocketsConfig = () => config.websockets;
-export const databaseConfig = () => config.database;
-export const aiConfig = () => config.ai;
+// Convenience getter functions - use lazy getConfig()
+export const securityConfig = () => getConfig().security;
+export const performanceConfig = () => getConfig().performance;
+export const infrastructureConfig = () => getConfig().infrastructure;
+export const monitoringConfig = () => getConfig().monitoring;
+export const featureFlags = () => getConfig().features;
+export const websocketsConfig = () => getConfig().websockets;
+export const databaseConfig = () => getConfig().database;
+export const aiConfig = () => getConfig().ai;
+
+// Deprecated: Use individual getter functions instead
+export const config = new Proxy({} as ConfigurationService, {
+  get(_target, prop) {
+    return (getConfig() as unknown as Record<string | symbol, unknown>)[prop];
+  }
+});

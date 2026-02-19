@@ -7,6 +7,7 @@
 import { createScopedLogger } from '../../utils/logger';
 import { CACHE_CONFIG, TIME_CONSTANTS, EDGE_CONFIG } from '../../constants/config';
 import { ARRAY_LIMITS } from '../constants';
+import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
 
 const logger = createScopedLogger('cache');
 
@@ -108,8 +109,6 @@ export const CACHE_CONSTANTS = {
 };
 
 // Compression utilities
-import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
-
 export class CompressionUtils {
   static async compress(data: any): Promise<{ compressed: boolean; data: any; size: number }> {
     const jsonString = JSON.stringify(data);
