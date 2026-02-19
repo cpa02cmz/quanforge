@@ -3,12 +3,12 @@
     "route": "Home/Dashboard",
     "score": 84,
     "metrics": {
-      "firstContentfulPaint": 3413.4675,
-      "largestContentfulPaint": 3413.4675,
-      "timeToInteractive": 3530.4236250000004,
+      "firstContentfulPaint": 3402.5104999999985,
+      "largestContentfulPaint": 3402.5104999999994,
+      "timeToInteractive": 3530.662149999999,
       "totalBlockingTime": 10,
-      "cumulativeLayoutShift": 0.00014763873981477242,
-      "speedIndex": 3413.4675
+      "cumulativeLayoutShift": 0.013730402802773836,
+      "speedIndex": 3402.5104999999985
     },
     "opportunities": [
       {
@@ -24,12 +24,12 @@
     "route": "Generator",
     "score": 85,
     "metrics": {
-      "firstContentfulPaint": 3339.4474500000006,
-      "largestContentfulPaint": 3339.4474500000006,
-      "timeToInteractive": 3465.417662500001,
-      "totalBlockingTime": 14.5,
+      "firstContentfulPaint": 3379.2739999999994,
+      "largestContentfulPaint": 3379.2739999999994,
+      "timeToInteractive": 3604.9733,
+      "totalBlockingTime": 31,
       "cumulativeLayoutShift": 0.00014763873981477242,
-      "speedIndex": 3339.4474500000006
+      "speedIndex": 3379.2739999999994
     },
     "opportunities": [
       {
@@ -45,12 +45,12 @@
     "route": "About",
     "score": 85,
     "metrics": {
-      "firstContentfulPaint": 3377.01825,
-      "largestContentfulPaint": 3377.01825,
-      "timeToInteractive": 3496.9672000000005,
-      "totalBlockingTime": 11.5,
-      "cumulativeLayoutShift": 0,
-      "speedIndex": 3377.01825
+      "firstContentfulPaint": 3332.951199999999,
+      "largestContentfulPaint": 3332.951199999999,
+      "timeToInteractive": 3453.42771,
+      "totalBlockingTime": 9.5,
+      "cumulativeLayoutShift": 0.01027565629110816,
+      "speedIndex": 3332.951199999999
     },
     "opportunities": [
       {

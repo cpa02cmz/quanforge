@@ -7,6 +7,7 @@ import {
 } from '../services/integrationWrapper';
 import { CircuitBreakerState } from '../services/integrationResilience';
 import { createScopedLogger } from '../utils/logger';
+import { HEALTH_DASHBOARD_CONFIG } from '../constants/modularConfig';
 
 const logger = createScopedLogger('IntegrationHealthDashboard');
 
@@ -30,7 +31,7 @@ export interface CircuitBreakerDisplay {
   nextAttemptTime?: number;
 }
 
-const REFRESH_INTERVAL = 5000;
+const REFRESH_INTERVAL = HEALTH_DASHBOARD_CONFIG.REFRESH_INTERVAL.FAST;
 
 export const IntegrationHealthDashboard: React.FC = () => {
   const [healthStatuses, setHealthStatuses] = useState<Record<string, HealthStatusDisplay>>({});

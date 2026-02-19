@@ -18,6 +18,7 @@ import { cacheLayer, CacheLayerInterface } from './cacheLayer';
 import { retryLogic, RetryLogicInterface } from './retryLogic';
 import { analyticsCollector, AnalyticsCollectorInterface } from './analyticsCollector';
 import { STORAGE_KEYS } from '../../constants/modularConfig';
+import { TOKEN_CONSTANTS } from '../modularConstants';
 
 // Mock session storage constants - using Flexy's modular config
 const ROBOTS_KEY = STORAGE_KEYS.ROBOTS;
@@ -146,7 +147,7 @@ class ModularSupabase implements ModularSupabaseService {
           },
           access_token: this.generateUUID(),
           refresh_token: this.generateUUID(),
-          expires_in: 3600,
+          expires_in: TOKEN_CONSTANTS.DEFAULT_ACCESS_TOKEN_EXPIRY_S,
           token_type: 'bearer'
         };
         
@@ -187,7 +188,7 @@ class ModularSupabase implements ModularSupabaseService {
           },
           access_token: this.generateUUID(),
           refresh_token: this.generateUUID(),
-          expires_in: 3600,
+          expires_in: TOKEN_CONSTANTS.DEFAULT_ACCESS_TOKEN_EXPIRY_S,
           token_type: 'bearer'
         };
         

@@ -3,6 +3,7 @@ import { securityManager } from './security/SecurityManager';
 import { getLocalStorage, StorageQuotaError } from '../utils/storage';
 import { createScopedLogger } from '../utils/logger';
 import { STORAGE_KEYS, STORAGE_PREFIXES } from '../constants/modularConfig';
+import { TOKEN_CONSTANTS } from './modularConstants';
 
 const logger = createScopedLogger('MockImplementation');
 
@@ -69,7 +70,7 @@ export const mockAuth = {
     const session = {
       user: { id: generateUUID(), email },
       access_token: 'mock-token-' + Date.now(),
-      expires_in: 3600
+      expires_in: TOKEN_CONSTANTS.DEFAULT_ACCESS_TOKEN_EXPIRY_S
     };
     trySaveToStorage(STORAGE_KEY, session);
     authListeners.forEach(cb => cb('SIGNED_IN', session));
@@ -79,7 +80,7 @@ export const mockAuth = {
     const session = {
       user: { id: generateUUID(), email },
       access_token: 'mock-token-' + Date.now(),
-      expires_in: 3600
+      expires_in: TOKEN_CONSTANTS.DEFAULT_ACCESS_TOKEN_EXPIRY_S
     };
     trySaveToStorage(STORAGE_KEY, session);
     authListeners.forEach(cb => cb('SIGNED_IN', session));

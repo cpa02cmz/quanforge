@@ -7,7 +7,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { RETRY_CONFIG, TIME_CONSTANTS } from './constants';
 import { createScopedLogger } from '../utils/logger';
 import { ARRAY_LIMITS } from '../constants/modularConfig';
-import { THRESHOLD_CONSTANTS } from './modularConstants';
+import { THRESHOLD_CONSTANTS, TOKEN_CONSTANTS } from './modularConstants';
 
 const logger = createScopedLogger('EdgeSupabaseClient');
 // Commenting out vercelEdgeOptimizer import since it's not being used properly
@@ -237,7 +237,7 @@ class EdgeSupabaseClient {
       const result = await this.client.storage
         .from(bucket)
         .upload(path, file, {
-          cacheControl: options.cacheControl || '3600',
+          cacheControl: options.cacheControl || String(TOKEN_CONSTANTS.EXPIRY_SECONDS.ONE_HOUR),
           contentType: options.contentType,
           upsert: options.upsert || false,
         });

@@ -404,6 +404,11 @@ export {
   SCORING_WEIGHTS,
   THRESHOLDS,
 
+  // Flexy's latest modular additions
+  ENCRYPTION_CONFIG,
+  PROGRESSIVE_LOADING_CONFIG,
+  HEALTH_DASHBOARD_CONFIG,
+
   // Helper functions
   getConfigValue,
   getTimeout,

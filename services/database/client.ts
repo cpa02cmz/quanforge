@@ -5,6 +5,7 @@ import { ERROR_CODES } from '../../constants';
 import { getErrorCode, getErrorMessage } from '../../utils/errorHandler';
 import { RETRY_CONFIGS, CACHE_SIZES } from '../../constants/modularConfig';
 import { CACHE_TTLS } from '../constants';
+import { TOKEN_CONSTANTS } from '../modularConstants';
 
 // Connection retry configuration - using modular config
 export const RETRY_CONFIG = {
@@ -157,7 +158,7 @@ const createMockClient = () => {
             const session = {
                 user: { id: generateUUID(), email },
                 access_token: 'mock-token-' + Date.now(),
-                expires_in: 3600
+                expires_in: TOKEN_CONSTANTS.DEFAULT_ACCESS_TOKEN_EXPIRY_S
             };
             trySaveToStorage(STORAGE_KEYS.SESSION, JSON.stringify(session));
             authListeners.forEach(cb => cb('SIGNED_IN', session));
@@ -167,7 +168,7 @@ const createMockClient = () => {
             const session = {
                 user: { id: generateUUID(), email },
                 access_token: 'mock-token-' + Date.now(),
-                expires_in: 3600
+                expires_in: TOKEN_CONSTANTS.DEFAULT_ACCESS_TOKEN_EXPIRY_S
             };
             trySaveToStorage(STORAGE_KEYS.SESSION, JSON.stringify(session));
             authListeners.forEach(cb => cb('SIGNED_IN', session));
