@@ -254,7 +254,7 @@ const supabaseAuth = {
         const session = {
             user: { id: generateUUID(), email },
             access_token: 'mock-token-' + Date.now(),
-            expires_in: 3600
+            expires_in: TOKEN_CONSTANTS.DEFAULT_ACCESS_TOKEN_EXPIRY_S
         };
         trySaveToStorage(STORAGE_KEY, JSON.stringify(session));
         authListeners.forEach(cb => cb('SIGNED_IN', session));
@@ -264,7 +264,7 @@ const supabaseAuth = {
         const session = {
             user: { id: generateUUID(), email },
             access_token: 'mock-token-' + Date.now(),
-            expires_in: 3600
+            expires_in: TOKEN_CONSTANTS.DEFAULT_ACCESS_TOKEN_EXPIRY_S
         };
         trySaveToStorage(STORAGE_KEY, JSON.stringify(session));
         authListeners.forEach(cb => cb('SIGNED_IN', session));
