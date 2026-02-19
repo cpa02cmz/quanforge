@@ -9,7 +9,8 @@ import { queryOptimizer } from './queryOptimizer';
 import { robotCache } from './advancedCache';
 import { createScopedLogger } from '../utils/logger';
 import { TIME_CONSTANTS } from '../constants/config';
-import { COUNT_CONSTANTS } from './modularConstants';
+import { COUNT_CONSTANTS, THRESHOLD_CONSTANTS } from './modularConstants';
+import { ARRAY_LIMITS } from '../constants/modularConfig';
 
 const logger = createScopedLogger('PerformanceOptimizer');
 
@@ -289,17 +290,17 @@ class PerformanceOptimizer {
     const optimizations: Array<Promise<any>> = [];
     
     // Database optimization
-    if (this.metrics.database.queryTime > 500 || this.metrics.database.cacheHitRate < 50) {
+    if (this.metrics.database.queryTime > THRESHOLD_CONSTANTS.QUERY.NORMAL || this.metrics.database.cacheHitRate < THRESHOLD_CONSTANTS.CACHE_HIT_RATE.POOR * 100) {
       optimizations.push(this.optimizeDatabase());
     }
-    
+
     // Cache optimization
-    if (this.metrics.cache.hitRate < 70 || this.metrics.cache.evictions > 100) {
+    if (this.metrics.cache.hitRate < THRESHOLD_CONSTANTS.CACHE_HIT_RATE.ACCEPTABLE * 100 || this.metrics.cache.evictions > ARRAY_LIMITS.STANDARD) {
       optimizations.push(this.optimizeCache());
     }
-    
+
     // Edge optimization
-    if (this.metrics.edge.coldStartCount > 5 || this.metrics.edge.averageResponseTime > 1000) {
+    if (this.metrics.edge.coldStartCount > 5 || this.metrics.edge.averageResponseTime > THRESHOLD_CONSTANTS.PERFORMANCE.NEEDS_IMPROVEMENT) {
       optimizations.push(this.optimizeEdge());
     }
     
@@ -383,38 +384,38 @@ class PerformanceOptimizer {
     };
 
     // Analyze database trends
-    if (this.metrics.database.queryTime > 500) {
+    if (this.metrics.database.queryTime > THRESHOLD_CONSTANTS.QUERY.NORMAL) {
       issues.dbIssues.push('High query response time detected');
     }
-    
-    if (this.metrics.database.cacheHitRate < 50) {
+
+    if (this.metrics.database.cacheHitRate < THRESHOLD_CONSTANTS.CACHE_HIT_RATE.POOR * 100) {
       issues.dbIssues.push('Low database cache hit rate');
     }
-    
+
     // Analyze cache trends
-    if (this.metrics.cache.hitRate < 60) {
+    if (this.metrics.cache.hitRate < THRESHOLD_CONSTANTS.CACHE_HIT_RATE.ACCEPTABLE * 100) {
       issues.cacheIssues.push('Low cache hit rate');
     }
-    
-    if (this.metrics.cache.evictions > 100) {
+
+    if (this.metrics.cache.evictions > ARRAY_LIMITS.STANDARD) {
       issues.cacheIssues.push('High cache eviction rate');
     }
-    
+
     // Analyze API trends
-    if (this.metrics.api.responseTime > 1000) {
+    if (this.metrics.api.responseTime > THRESHOLD_CONSTANTS.API.SLOW) {
       issues.apiIssues.push('High API response time');
     }
-    
-    if (this.metrics.api.errorRate > 0.05) {
+
+    if (this.metrics.api.errorRate > THRESHOLD_CONSTANTS.ERROR_RATE.WARNING) {
       issues.apiIssues.push('High API error rate');
     }
-    
+
     // Analyze edge trends
     if (this.metrics.edge.coldStartCount > 10) {
       issues.edgeIssues.push('High edge function cold start count');
     }
-    
-    if (this.metrics.edge.averageResponseTime > 1000) {
+
+    if (this.metrics.edge.averageResponseTime > THRESHOLD_CONSTANTS.PERFORMANCE.NEEDS_IMPROVEMENT) {
       issues.edgeIssues.push('High edge function response time');
     }
     

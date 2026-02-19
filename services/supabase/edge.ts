@@ -13,7 +13,7 @@ import {
 } from './edgeConfig';
 import { createScopedLogger } from '../../utils/logger';
 import { ADJUSTMENT_FACTORS } from '../modularConstants';
-import { ID_GENERATION } from '../../constants/modularConfig';
+import { ID_GENERATION, ARRAY_LIMITS } from '../../constants/modularConfig';
 
 const logger = createScopedLogger('SupabaseEdge');
 
@@ -192,7 +192,7 @@ class SupabaseEdgeOptimizations {
     });
 
     // Cleanup old entries
-    if (this.edgeCache.size > 1000) {
+    if (this.edgeCache.size > ARRAY_LIMITS.LARGE) {
       this.cleanupCache();
     }
   }
