@@ -8,6 +8,7 @@ import { logger } from '../utils/logger';
 import { storage } from '../utils/storage';
 import { TIME_CONSTANTS, CACHE_CONFIG } from '../constants/config';
 import { STAGGER, MODULE_PRELOAD, MEMORY_OPTIMIZATION } from './constants';
+import { PROGRESSIVE_LOADING_CONFIG } from '../constants/modularConfig';
 import { WindowWithGC, PerformanceWithMemory } from '../types/browser';
 
 interface PerformanceOptimizerConfig {
@@ -430,12 +431,12 @@ class FrontendPerformanceOptimizer {
     options?: { batchSize?: number; delay?: number }
   ): Promise<T[]> {
     if (!this.config.enableProgressiveLoading) {
-      const result = await loader(0, 100);
+      const result = await loader(0, PROGRESSIVE_LOADING_CONFIG.LIMITS.INITIAL_LOAD);
       return result.data;
     }
 
-    const batchSize = options?.batchSize || 20;
-    const delay = options?.delay || 100;
+    const batchSize = options?.batchSize || PROGRESSIVE_LOADING_CONFIG.BATCH_SIZE.DEFAULT;
+    const delay = options?.delay || PROGRESSIVE_LOADING_CONFIG.DELAY.DEFAULT;
     let offset = 0;
     let allItems: T[] = [];
     let hasMore = true;

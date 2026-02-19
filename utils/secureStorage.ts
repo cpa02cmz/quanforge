@@ -1,6 +1,6 @@
 import { TIME_CONSTANTS } from '../constants/config';
 import { SIZE_CONSTANTS } from '../services/modularConstants';
-import { ARRAY_LIMITS } from '../constants/modularConfig';
+import { ARRAY_LIMITS, ENCRYPTION_CONFIG } from '../constants/modularConfig';
 import { createScopedLogger } from './logger';
 
 const logger = createScopedLogger('secure-storage');
@@ -25,11 +25,11 @@ interface StorageItem<T = unknown> {
 
 // Production-grade Web Crypto API implementation
 export class WebCryptoEncryption {
-  private static readonly ALGORITHM = 'AES-GCM';
-  private static readonly KEY_LENGTH = 256;
-  private static readonly IV_LENGTH = 12;
-  private static readonly SALT_LENGTH = 32;
-  private static readonly ITERATIONS = 100000;
+  private static readonly ALGORITHM = ENCRYPTION_CONFIG.WEB_CRYPTO.ALGORITHM;
+  private static readonly KEY_LENGTH = ENCRYPTION_CONFIG.WEB_CRYPTO.KEY_LENGTH;
+  private static readonly IV_LENGTH = ENCRYPTION_CONFIG.WEB_CRYPTO.IV_LENGTH;
+  private static readonly SALT_LENGTH = ENCRYPTION_CONFIG.WEB_CRYPTO.SALT_LENGTH;
+  private static readonly ITERATIONS = ENCRYPTION_CONFIG.WEB_CRYPTO.ITERATIONS;
   
   // Dynamic key generation with environment variable support
   private static get BASE_KEY(): string {

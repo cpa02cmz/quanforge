@@ -1189,6 +1189,73 @@ export const SCORE_MULTIPLIERS = {
   },
 } as const;
 
+// ========== ENCRYPTION CONFIGURATION ==========
+export const ENCRYPTION_CONFIG = {
+  // Web Crypto API settings
+  WEB_CRYPTO: {
+    ALGORITHM: 'AES-GCM',
+    KEY_LENGTH: 256,           // bits
+    IV_LENGTH: 12,             // bytes
+    SALT_LENGTH: 32,           // bytes
+    ITERATIONS: 100000,        // PBKDF2 iterations
+  },
+
+  // Key derivation
+  KEY_DERIVATION: {
+    MIN_ITERATIONS: 100000,
+    RECOMMENDED_ITERATIONS: 100000,
+    MAX_ITERATIONS: 500000,
+  },
+
+  // Storage encryption
+  STORAGE: {
+    VERSION: '1.0',
+    KEY_ROTATION_DAYS: 1,      // Daily key rotation
+  },
+} as const;
+
+// ========== PROGRESSIVE LOADING CONFIGURATION ==========
+export const PROGRESSIVE_LOADING_CONFIG = {
+  // Default batch sizes
+  BATCH_SIZE: {
+    MIN: 5,
+    DEFAULT: 20,
+    MAX: 100,
+  },
+
+  // Delay between batches (ms)
+  DELAY: {
+    NONE: 0,
+    MINIMAL: 50,
+    DEFAULT: 100,
+    SMOOTH: 200,
+  },
+
+  // Progressive loading limits
+  LIMITS: {
+    INITIAL_LOAD: 100,         // Items to load initially
+    MAX_ITEMS: 10000,          // Maximum total items
+  },
+} as const;
+
+// ========== HEALTH DASHBOARD CONFIGURATION ==========
+export const HEALTH_DASHBOARD_CONFIG = {
+  // Refresh intervals
+  REFRESH_INTERVAL: {
+    REALTIME: 1000,            // 1 second
+    FAST: 5000,                // 5 seconds
+    NORMAL: 10000,             // 10 seconds
+    SLOW: 30000,               // 30 seconds
+  },
+
+  // Display settings
+  DISPLAY: {
+    MAX_INTEGRATIONS_SHOWN: 50,
+    ERROR_RATE_DECIMALS: 2,
+    LATENCY_DECIMALS: 0,
+  },
+} as const;
+
 // Export all configurations as a single object
 export const APP_CONFIG = {
   WEBSOCKET: WEBSOCKET_CONFIG,
@@ -1228,6 +1295,9 @@ export const APP_CONFIG = {
   ID_GENERATION,
   SLICE_LIMITS,
   SCORE_MULTIPLIERS,
+  ENCRYPTION: ENCRYPTION_CONFIG,
+  PROGRESSIVE_LOADING: PROGRESSIVE_LOADING_CONFIG,
+  HEALTH_DASHBOARD: HEALTH_DASHBOARD_CONFIG,
 } as const;
 
 // Default export
