@@ -1,6 +1,6 @@
 import { useCallback, useReducer } from 'react';
 import { Message, Robot, StrategyParams, StrategyAnalysis, BacktestSettings, SimulationResult } from '../../types';
-import { DEFAULT_STRATEGY_PARAMS } from '../../constants';
+import { DEFAULT_STRATEGY_PARAMS, MODULAR_VALIDATION_LIMITS } from '../../constants';
 
 interface GeneratorState {
   messages: Message[];
@@ -45,7 +45,7 @@ const initialState: GeneratorState = {
   mobileView: 'setup',
   strategyParams: DEFAULT_STRATEGY_PARAMS,
   backtestSettings: {
-    initialDeposit: 10000,
+    initialDeposit: MODULAR_VALIDATION_LIMITS.NUMERIC.INITIAL_DEPOSIT.DEFAULT,
     days: 90,
     leverage: 100
   },
