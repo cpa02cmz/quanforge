@@ -162,7 +162,6 @@ export const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = memo(({
         transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out, box-shadow 0.2s ease-out, border-color 0.2s ease-out'
       }}
       aria-label={`Scroll to top (${Math.round(scrollProgress)}% scrolled)`}
-      title="Scroll to top"
       type="button"
     >
       {/* Progress Ring SVG */}
