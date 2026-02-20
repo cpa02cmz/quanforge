@@ -12,10 +12,9 @@
  */
 
 import { createScopedLogger } from '../../utils/logger';
-import { 
-  DatabaseHealthCheck
-} from '../../types/database';
+import type { DatabaseHealthCheck } from '../../types/database';
 import { TIME_CONSTANTS, COUNT_CONSTANTS } from '../modularConstants';
+import { serviceCleanupCoordinator } from '../../utils/serviceCleanupCoordinator';
 
 const logger = createScopedLogger('DatabaseHealthMonitor');
 
@@ -461,3 +460,10 @@ export class DatabaseHealthMonitor {
 // ============================================================================
 
 export const databaseHealthMonitor = new DatabaseHealthMonitor();
+
+// Register with service cleanup coordinator for proper lifecycle management
+serviceCleanupCoordinator.register('databaseHealthMonitor', {
+  cleanup: () => databaseHealthMonitor.shutdown(),
+  priority: 'medium',
+  description: 'Database health monitoring service'
+});
