@@ -52,6 +52,26 @@ export { circuitBreakerMonitor } from './circuitBreakerMonitor';
 export { fallbackManager, databaseFallbacks, aiServiceFallbacks, marketDataFallbacks, degradedModeManager } from './fallbackStrategies';
 export { integrationHealthMonitor, integrationMetrics } from './integrationHealthMonitor';
 
+// Reliability Module - Bulkhead, Circuit Breaker, Health Monitoring, Dashboard
+export {
+  Bulkhead,
+  BulkheadManager,
+  BulkheadState,
+  bulkheadManager,
+  DEFAULT_BULKHEAD_CONFIGS,
+  type BulkheadConfig,
+  type BulkheadMetrics
+} from './reliability/bulkhead';
+export {
+  ReliabilityDashboard,
+  reliabilityDashboard,
+  type SystemHealthStatus,
+  type IntegrationReliabilityMetrics,
+  type SystemReliabilitySummary,
+  type AlertConfig,
+  type Alert
+} from './reliability/dashboard';
+
 // Flexy's Modular Constants - No more hardcoded values!
 export {
   ModularConstants,
