@@ -56,6 +56,7 @@ class BackendOptimizer {
   private requestCache = new Map<string, RequestDeduplicationEntry>();
   private activeRequests = 0;
   private healthCheckIntervalId: ReturnType<typeof setInterval> | null = null;
+  private deduplicationCleanupIntervalId: ReturnType<typeof setInterval> | null = null;
   private metrics = {
     deduplicatedRequests: 0,
     savedBandwidth: 0,
@@ -84,8 +85,13 @@ class BackendOptimizer {
   }
 
   private setupRequestDeduplication(): void {
+    // Clear existing interval if any
+    if (this.deduplicationCleanupIntervalId) {
+      clearInterval(this.deduplicationCleanupIntervalId);
+    }
+
     // Clean up old entries periodically
-    setInterval(() => {
+    this.deduplicationCleanupIntervalId = setInterval(() => {
       const now = Date.now();
       for (const [key, entry] of this.requestCache.entries()) {
         if (now - entry.timestamp > entry.ttl) {
@@ -378,7 +384,12 @@ class BackendOptimizer {
       clearInterval(this.healthCheckIntervalId);
       this.healthCheckIntervalId = null;
     }
-    
+
+    if (this.deduplicationCleanupIntervalId) {
+      clearInterval(this.deduplicationCleanupIntervalId);
+      this.deduplicationCleanupIntervalId = null;
+    }
+
     this.requestCache.clear();
   }
 
