@@ -16,7 +16,7 @@
 
 import { createScopedLogger } from '../../utils/logger';
 import { gracefulDegradation, DegradationLevel, ServiceHealth } from './gracefulDegradation';
-import { bulkheadManager, BulkheadState } from './bulkhead';
+import { bulkheadManager } from './bulkhead';
 
 const logger = createScopedLogger('service-registry');
 
@@ -201,7 +201,7 @@ export class ServiceReliabilityRegistry {
     if (!registration) return null;
 
     const degradationMetrics = gracefulDegradation.getMetrics(serviceName);
-    const bulkhead = bulkheadManager.get(serviceName);
+    const _bulkhead = bulkheadManager.get(serviceName);
 
     // Calculate reliability score (0-100)
     const reliabilityScore = this.calculateReliabilityScore(serviceName, degradationMetrics);
