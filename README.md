@@ -7,6 +7,7 @@ QuantForge AI is a web-based platform that uses Google's Gemini 3.0/2.5 AI model
 
 ## Features
 
+### Core Features
 - **AI-Powered Code Generation**: Utilizes `gemini-3-pro-preview` for high-reasoning code generation and `gemini-2.5-flash` for rapid strategy analysis.
 - **Interactive Chat**: Refine your trading strategies through a conversational interface.
 - **Visual Strategy Configuration**: Adjust risk, stop loss (in Pips), take profit, and custom inputs via a GUI without touching code.
@@ -17,6 +18,17 @@ QuantForge AI is a web-based platform that uses Google's Gemini 3.0/2.5 AI model
 - **Strategy Analysis**: Automatic risk scoring and profitability assessment with visual charts.
 - **Data Persistence**: Save your robots, including chat history, configuration, and simulation settings using Supabase (or LocalStorage fallback).
 - **Project Lifecycle**: Easily create new projects, duplicate existing ones, and manage versions with automated state resets.
+
+### UI/UX Enhancements
+- **Animated Toggle Switches**: Smooth toggle animations with haptic feedback support
+- **Toast Notification System**: Non-intrusive notifications with clear all functionality
+- **Floating Label Inputs**: Modern input design with animated labels
+- **Confetti Celebrations**: Delightful animations for completed actions
+- **Focus Indicators**: Clear keyboard navigation indicators for accessibility
+- **Screen Reader Support**: ARIA labels and semantic HTML for assistive technologies
+- **Keyboard Shortcuts**: Power-user shortcuts for common actions
+- **Modal Accessibility**: Proper focus trapping and ARIA attributes
+- **Form Field Components**: Consistent form styling with validation states
 
 ## Tech Stack
 
@@ -192,6 +204,16 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Linting
+npm run lint
+npm run lint:fix  # Auto-fix lint issues
+
+# Testing
+npm test           # Run tests with vitest (watch mode)
+npm run test:ui    # Run tests with UI
+npm run test:coverage  # Run tests with coverage report
+npm run test:run   # Run tests once (CI mode)
 ```
 
 ## Deployment
