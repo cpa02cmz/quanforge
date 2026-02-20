@@ -189,7 +189,7 @@ export class ServiceInitializer {
   static register(initFn: () => Promise<void>): void {
     if (this.initialized) {
       // If already initialized, run immediately
-      initFn().catch(console.error);
+      initFn().catch(err => logger.error('Service initialization failed:', err));
     } else {
       this.initQueue.push(initFn);
     }
