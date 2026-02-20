@@ -30,7 +30,7 @@ jobs:
       IFLOW_API_KEY: ${{ secrets.IFLOW_API_KEY }}    
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -50,7 +50,7 @@ jobs:
           git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
       - name: Install Node.js
         continue-on-error: true
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
       - name: Install Dependencies
@@ -113,7 +113,7 @@ jobs:
           - reliability-engineer
           - integration-engineer
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Configure Git
         run: |
@@ -121,7 +121,7 @@ jobs:
           git config --global user.email "${{ matrix.role }}@bank-sampah.sulhi.workers.dev"
       - name: Setup Node & OpenCode
         continue-on-error: true
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
       - name: Install Dependencies
@@ -160,14 +160,14 @@ jobs:
     needs: specialists
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Configure Git
         run: |
           git config --global user.name "IsMan"
           git config --global user.email "IsMan@bank-sampah.sulhi.workers.dev"
       - name: Setup Node & OpenCode
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
       - name: Install Dependencies
@@ -195,14 +195,14 @@ jobs:
     needs: IsMan
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Configure Git
         run: |
           git config --global user.name "Fixer"
           git config --global user.email "fixer@bank-sampah.sulhi.workers.dev"
       - name: Setup Node & OpenCode
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
       - name: Install Dependencies
