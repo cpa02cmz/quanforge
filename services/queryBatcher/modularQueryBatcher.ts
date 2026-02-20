@@ -193,7 +193,7 @@ class QueryBatcher {
     }
     
     // Process remaining queries immediately
-    this.processBatchImmediate().catch(console.error);
+    this.processBatchImmediate().catch(err => logger.error('Failed to process batch during shutdown:', err));
     logger.log('Querybatcher shutting down');
   }
 
@@ -204,7 +204,7 @@ class QueryBatcher {
     const config = this.queueManager.getConfig();
     
     const processBatch = () => {
-      this.processBatchImmediate().catch(console.error);
+      this.processBatchImmediate().catch(err => logger.error('Batch processing failed:', err));
       
       // Schedule next batch processing
       this.batchProcessor = setTimeout(processBatch, config.batchTimeout);

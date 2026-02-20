@@ -29,7 +29,7 @@ class ReadReplicaManager {
 
   constructor() {
     // Initialize asynchronously without blocking
-    this.initializeClients().catch(console.error);
+    this.initializeClients().catch(err => logger.error('Failed to initialize read replica clients:', err));
   }
 
   private async initializeClients() {

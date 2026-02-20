@@ -195,7 +195,7 @@ this.isInitialized = true;
         lineno: event.lineno,
         colno: event.colno,
         stack: event.error?.stack
-      }).catch(err => console.error('Failed to record error:', err));
+      }).catch(err => logger.error('Failed to record error:', err));
     };
     window.addEventListener('error', this.errorHandler);
 
@@ -204,7 +204,7 @@ this.isInitialized = true;
       this.recordError('promise', {
         reason: event.reason,
         stack: event.reason?.stack
-      }).catch(err => console.error('Failed to record rejection:', err));
+      }).catch(err => logger.error('Failed to record rejection:', err));
     };
     window.addEventListener('unhandledrejection', this.rejectionHandler);
   }
