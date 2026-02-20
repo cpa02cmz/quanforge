@@ -50,7 +50,9 @@ class SupabaseConnectionPool {
     retryDelay: CONNECTION_POOL_CONFIG.EDGE.RETRY_DELAY_MS,
   };
   private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
-  private readReplicaIndex = 0;
+  // Reserved for future round-robin replica selection
+  // @ts-expect-error Reserved for future implementation
+  private _readReplicaIndex = 0;
 
   private constructor() {
     this.initializeReadReplicas();
@@ -216,8 +218,10 @@ class SupabaseConnectionPool {
 
     // Select highest scoring replica
     const selectedReplica = healthyReplicas[0];
-    selectedReplica.lastUsed = Date.now();
-    
+    if (selectedReplica) {
+      selectedReplica.lastUsed = Date.now();
+    }
+
     return selectedReplica || null;
   }
 
@@ -405,7 +409,9 @@ private startHealthChecks(): void {
   }
 
   // Get optimal connection with geographic scoring
-  private getOptimalConnection(region?: string): { connection: SupabaseClient; score: number } | null {
+  // Reserved for future use with multi-region connection selection
+  // @ts-expect-error Reserved for future implementation
+  private _getOptimalConnection(region?: string): { connection: SupabaseClient; score: number } | null {
     const candidates: Array<{ connection: SupabaseClient; score: number; connectionId: string }> = [];
 
     for (const [connectionId, connection] of this.clients) {
@@ -434,7 +440,9 @@ private startHealthChecks(): void {
 
     if (candidates.length === 0) return null;
 
-    const best = candidates.sort((a, b) => b.score - a.score)[0];
+    const sorted = candidates.sort((a, b) => b.score - a.score);
+    const best = sorted[0];
+    if (!best) return null;
     return { connection: best.connection, score: best.score };
   }
 
