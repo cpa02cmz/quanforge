@@ -13,13 +13,14 @@
  */
 
 import { createScopedLogger } from '../../utils/logger';
-import { 
+import type { 
   QueryMetrics, 
   DatabasePerformanceSummary,
   RobotFilterDTO,
   PaginationParams
 } from '../../types/database';
 import { COUNT_CONSTANTS, TIME_CONSTANTS } from '../modularConstants';
+import { serviceCleanupCoordinator } from '../../utils/serviceCleanupCoordinator';
 
 const logger = createScopedLogger('DatabaseOptimizer');
 
@@ -504,3 +505,10 @@ export class DatabaseOptimizerService {
 // ============================================================================
 
 export const databaseOptimizer = new DatabaseOptimizerService();
+
+// Register with service cleanup coordinator for proper lifecycle management
+serviceCleanupCoordinator.register('databaseOptimizer', {
+  cleanup: () => databaseOptimizer.shutdown(),
+  priority: 'medium',
+  description: 'Database optimization service'
+});
