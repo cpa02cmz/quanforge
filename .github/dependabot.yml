@@ -36,10 +36,7 @@ updates:
     # Labels to add to PRs
     labels:
       - "dependencies"
-      - "security-engineer"
-    # Reviewers for dependency updates
-    reviewers:
-      - "security-engineer"
+      - "security"
     # Target branch for PRs
     target-branch: "main"
     # Ignore specific packages that require manual updates
@@ -71,9 +68,6 @@ updates:
     labels:
       - "dependencies"
       - "ci"
-      - "devops-engineer"
-    reviewers:
-      - "devops-engineer"
     target-branch: "main"
     groups:
       github-actions:
