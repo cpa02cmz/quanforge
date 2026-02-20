@@ -75,7 +75,6 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = memo(({
         ? `Scroll to bottom, ${newMessageCount} new messages` 
         : 'Scroll to bottom of chat'
       }
-      title="Scroll to latest messages"
       type="button"
     >
       {/* Down arrow icon with bounce animation */}

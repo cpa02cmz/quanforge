@@ -131,7 +131,6 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               animate-fade-in-up
             "
             aria-label={`Dismiss all ${toasts.length} notifications`}
-            title="Dismiss all notifications"
             type="button"
           >
             <span className="flex items-center gap-1.5">
@@ -194,7 +193,6 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               onClick={() => removeToast(toast.id)}
               variant="default"
               aria-label="Close notification"
-              title="Close"
               size="sm"
               className="ml-auto"
             >

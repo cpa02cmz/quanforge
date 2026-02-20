@@ -333,7 +333,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
                         : 'bg-dark-bg text-gray-400 border-dark-border hover:text-white'
                     }`}
                     aria-label={isEditing ? t('editor_done') : t('editor_edit')}
-                    title="Toggle Edit Mode"
                 >
                     {isEditing ? t('editor_done') : t('editor_edit')}
                 </button>
@@ -344,7 +343,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
                     onClick={onRefine}
                     className="flex items-center space-x-1 px-2 py-0.5 bg-purple-900/30 text-purple-300 border border-purple-800 rounded hover:bg-purple-900/50 transition-colors text-xs"
                     aria-label={t('editor_refine')}
-                    title="Auto-optimize logic using AI"
                 >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                     <span>{t('editor_refine')}</span>
@@ -356,7 +354,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
                     onClick={onExplain}
                     className="flex items-center space-x-1 px-2 py-0.5 bg-blue-900/30 text-blue-300 border border-blue-800 rounded hover:bg-blue-900/50 transition-colors text-xs"
                     aria-label={t('editor_explain')}
-                    title="Explain this code in chat"
                 >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
                     <span>{t('editor_explain')}</span>
@@ -371,7 +368,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
                   onClick={() => setFontSize(prev => Math.max(prev - 1, 10))}
                   className="w-6 h-6 flex items-center justify-center bg-dark-bg text-gray-400 hover:text-white rounded text-xs"
                   aria-label="Decrease font size"
-                  title="Decrease font size"
                 >
                   -
                 </button>
@@ -380,7 +376,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
                   onClick={() => setFontSize(prev => Math.min(prev + 1, 24))}
                   className="w-6 h-6 flex items-center justify-center bg-dark-bg text-gray-400 hover:text-white rounded text-xs"
                   aria-label="Increase font size"
-                  title="Increase font size"
                 >
                   +
                 </button>
@@ -395,7 +390,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
                     : 'bg-dark-bg text-gray-400 border-dark-border hover:text-white'
                 }`}
                 aria-label={`Word wrap ${wordWrap ? 'enabled' : 'disabled'}`}
-                title="Toggle word wrap"
               >
                 W
               </button>
@@ -409,7 +403,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
                     : 'hover:bg-white/5 text-gray-400 hover:text-gray-200'
                 }`}
                 aria-label={copied ? t('editor_copied') : t('editor_copy')}
-                title="Copy code to clipboard (Ctrl+C)"
               >
                 {/* Particle burst effect for delightful feedback */}
                 {particles.map((particle) => (
@@ -465,7 +458,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
                 onClick={handleDownload}
                 className="flex items-center space-x-1 px-2 py-1 bg-brand-600/20 text-brand-400 hover:bg-brand-600/30 rounded text-xs transition-colors border border-brand-600/30"
                 aria-label={t('editor_download')}
-                title="Download .mq5 file (Ctrl+S)"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                 <span>{t('editor_download')}</span>

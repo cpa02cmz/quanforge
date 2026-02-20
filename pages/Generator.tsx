@@ -198,18 +198,21 @@ export const Generator: React.FC = memo(() => {
         {/* Header Name Input */}
         <div className="p-4 bg-dark-surface border-b border-dark-border flex items-center shrink-0">
              <button 
-                onClick={handleNewStrategy}
-                className="mr-2 p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors"
-                title="New Strategy"
-            >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
-            </button>
-            <input 
-                value={robotName}
-                onChange={(e) => setRobotName(e.target.value)}
-                className="bg-transparent text-white font-bold text-lg border-none focus:ring-0 outline-none w-full placeholder-gray-500"
-                placeholder={t('gen_placeholder_name')}
-            />
+                 onClick={handleNewStrategy}
+                 className="mr-2 p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors"
+                 aria-label="New Strategy"
+             >
+                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+             </button>
+             <label htmlFor="robot-name" className="sr-only">Robot name</label>
+             <input 
+                 id="robot-name"
+                 value={robotName}
+                 onChange={(e) => setRobotName(e.target.value)}
+                 className="bg-transparent text-white font-bold text-lg border-none focus:ring-0 outline-none w-full placeholder-gray-500"
+                 placeholder={t('gen_placeholder_name')}
+                 aria-label="Robot name"
+             />
              <SaveButton
                 onClick={handleSaveWithState}
                 state={saveState}
@@ -222,13 +225,13 @@ export const Generator: React.FC = memo(() => {
             />
         </div>
         
-        {/* Loading Progress Indicator */}
-        {isLoading && loadingProgress && (
-          <div className="bg-dark-surface border-b border-dark-border py-2 px-4 flex items-center">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-500 mr-2"></div>
-            <span className="text-sm text-gray-300">{loadingProgress.message}</span>
-          </div>
-        )}
+         {/* Loading Progress Indicator */}
+         {isLoading && loadingProgress && (
+           <div className="bg-dark-surface border-b border-dark-border py-2 px-4 flex items-center" role="status" aria-live="polite" aria-busy="true">
+             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-500 mr-2" aria-hidden="true"></div>
+             <span className="text-sm text-gray-300">{loadingProgress.message}</span>
+           </div>
+         )}
 
         {/* Sidebar Tabs */}
         <div className="flex border-b border-dark-border bg-dark-surface shrink-0" role="tablist" aria-label="Sidebar navigation">
