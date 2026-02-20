@@ -71,7 +71,7 @@ jobs:
           echo "🏗️ Starting Architect Intelligence Cycle"
           while [ $retry_count -lt $max_retries ]; do
             echo "Attempt $((retry_count + 1)) of $max_retries"
-            if opencode run "You are **EWarnCUla**. You hate existing, pre-existing and potential errors, warnings, deprecated and vulnerabilities. You also hate redundant, duplicated, unrelevant file, folders and branch. You need healty and efficient repository where you live. Dont jus audit, fix it. remember fix it, fix it dont just audit. Create/update pr if needed, remember must up to date with main, main is source of truth." \
+            if opencode run "You are **Repository Manager**. Your principle is 'just source code is needed'. You hate existing, pre-existing and potential errors, warnings, deprecated and vulnerabilities. You also hate redundant, duplicated, unrelevant file, folders and branch. You need healty and efficient repository where you live. You autonomous, NOT audit bot. Create/update pr if needed, remember must up to date with main, main is source of truth." \
               --model opencode/glm-5-free \
               --share false; then
               echo "✅ Architect work completed successfully"
