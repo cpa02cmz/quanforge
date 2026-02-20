@@ -13,16 +13,14 @@
  */
 
 import { createScopedLogger } from '../../utils/logger';
-import { 
+import type { 
   QueryMetrics, 
   DatabasePerformanceSummary,
   RobotFilterDTO,
-  PaginationParams,
-  PaginatedResponse,
-  RobotRow,
-  DatabaseResult
+  PaginationParams
 } from '../../types/database';
 import { COUNT_CONSTANTS, TIME_CONSTANTS } from '../modularConstants';
+import { serviceCleanupCoordinator } from '../../utils/serviceCleanupCoordinator';
 
 const logger = createScopedLogger('DatabaseOptimizer');
 
@@ -49,7 +47,7 @@ interface IndexAnalysis {
   recommendation?: string;
 }
 
-interface QueryPlanAnalysis {
+interface _QueryPlanAnalysis {
   query: string;
   plan: string;
   estimatedCost: number;
@@ -507,3 +505,10 @@ export class DatabaseOptimizerService {
 // ============================================================================
 
 export const databaseOptimizer = new DatabaseOptimizerService();
+
+// Register with service cleanup coordinator for proper lifecycle management
+serviceCleanupCoordinator.register('databaseOptimizer', {
+  cleanup: () => databaseOptimizer.shutdown(),
+  priority: 'medium',
+  description: 'Database optimization service'
+});

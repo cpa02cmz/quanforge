@@ -3,6 +3,7 @@ import { decompressFromUTF16, compressToUTF16 } from 'lz-string';
 import { createScopedLogger } from '../utils/logger';
 import { CACHE_CONFIG, TIME_CONSTANTS } from '../constants/config';
 import { ARRAY_LIMITS } from './constants';
+import { serviceCleanupCoordinator } from '../utils/serviceCleanupCoordinator';
 
 const logger = createScopedLogger('ConsolidatedCacheManager');
 
@@ -757,6 +758,13 @@ export const consolidatedCache = new ConsolidatedCacheManager({
   enableCompression: true,
   enablePersistence: true,
   syncAcrossTabs: true
+});
+
+// Register with service cleanup coordinator for proper lifecycle management
+serviceCleanupCoordinator.register('consolidatedCache', {
+  cleanup: () => consolidatedCache.destroy(),
+  priority: 'high',
+  description: 'Consolidated multi-strategy cache manager'
 });
 
 // Convenience functions

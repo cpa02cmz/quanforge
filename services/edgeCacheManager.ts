@@ -9,6 +9,7 @@ import { CACHE_CONFIG, TIME_CONSTANTS, EDGE_CONFIG } from '../constants/config';
 import { STAGGER } from './constants';
 import { createScopedLogger } from '../utils/logger';
 import { ADJUSTMENT_FACTORS, THRESHOLD_CONSTANTS, EDGE_CACHE_CONSTANTS } from './modularConstants';
+import { serviceCleanupCoordinator } from '../utils/serviceCleanupCoordinator';
 
 const logger = createScopedLogger('EdgeCacheManager');
 
@@ -1220,3 +1221,10 @@ export class EdgeCacheManager<T = any> {
 
 // Global edge cache manager instance
 export const edgeCacheManager = new EdgeCacheManager();
+
+// Register with service cleanup coordinator for proper lifecycle management
+serviceCleanupCoordinator.register('edgeCacheManager', {
+  cleanup: () => edgeCacheManager.destroy(),
+  priority: 'high',
+  description: 'Edge-optimized multi-layer cache manager'
+});
