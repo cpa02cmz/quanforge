@@ -1,0 +1,81 @@
+# Dependabot Configuration for QuantForge AI
+# Automatically updates dependencies to keep the project secure and up-to-date
+# Documentation: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+
+registries:
+  npm-registry:
+    type: npm-registry
+    url: https://registry.npmjs.org
+
+updates:
+  # Enable version updates for npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    # Limit the number of open PRs to avoid overwhelming maintainers
+    open-pull-requests-limit: 10
+    # Group all minor and patch updates into a single PR
+    groups:
+      minor-and-patch-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    # Commit message configuration
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+    # Labels to add to PRs
+    labels:
+      - "dependencies"
+      - "security-engineer"
+    # Reviewers for dependency updates
+    reviewers:
+      - "security-engineer"
+    # Target branch for PRs
+    target-branch: "main"
+    # Ignore specific packages that require manual updates
+    ignore:
+      # React 19 is the current major version, ignore React 20+ for now
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      # TypeScript minor versions may introduce breaking changes
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # Vite major versions need careful testing
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci(deps)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "ci"
+      - "devops-engineer"
+    reviewers:
+      - "devops-engineer"
+    target-branch: "main"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
