@@ -13,9 +13,7 @@
 
 import { createScopedLogger } from '../../utils/logger';
 import { 
-  DatabaseHealthCheck,
-  QueryMetrics,
-  DatabasePerformanceSummary
+  DatabaseHealthCheck
 } from '../../types/database';
 import { TIME_CONSTANTS, COUNT_CONSTANTS } from '../modularConstants';
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useState, memo } from 'react';
 import { useTranslation } from '../services/i18n';
 
 export interface ConfirmationModalProps {
@@ -13,7 +13,7 @@ export interface ConfirmationModalProps {
     onCancel: () => void;
 }
 
-export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
+const ConfirmationModalBase: React.FC<ConfirmationModalProps> = ({
     isOpen,
     title,
     message,
@@ -251,5 +251,10 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         </div>
     );
 };
+
+/**
+ * Memoized confirmation modal component for user confirmations
+ */
+export const ConfirmationModal = memo(ConfirmationModalBase);
 
 export default ConfirmationModal;

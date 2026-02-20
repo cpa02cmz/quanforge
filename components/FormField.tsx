@@ -1,4 +1,4 @@
-import { forwardRef, ReactNode, useState, useEffect, useRef } from 'react';
+import { forwardRef, ReactNode, useState, useEffect, useRef, memo } from 'react';
 import { FORM_ANIMATION } from '../constants/animations';
 
 export interface FormFieldProps {
@@ -17,7 +17,7 @@ export interface FormFieldProps {
   shakeOnError?: boolean;
 }
 
-export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
+const FormFieldBase = forwardRef<HTMLDivElement, FormFieldProps>(
   ({ label, error, hint, required, disabled, children, htmlFor, className = '', shakeOnError = true }, ref) => {
     const hasError = !!error;
     const hasHint = !!hint && !hasError;
@@ -131,7 +131,13 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
   }
 );
 
-FormField.displayName = 'FormField';
+FormFieldBase.displayName = 'FormField';
+
+/**
+ * Memoized FormField component for form input containers
+ * with label, error, and hint support
+ */
+export const FormField = memo(FormFieldBase);
 
 export interface InputWrapperProps {
   children: ReactNode;

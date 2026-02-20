@@ -17,10 +17,7 @@ import {
   QueryMetrics, 
   DatabasePerformanceSummary,
   RobotFilterDTO,
-  PaginationParams,
-  PaginatedResponse,
-  RobotRow,
-  DatabaseResult
+  PaginationParams
 } from '../../types/database';
 import { COUNT_CONSTANTS, TIME_CONSTANTS } from '../modularConstants';
 
@@ -49,7 +46,7 @@ interface IndexAnalysis {
   recommendation?: string;
 }
 
-interface QueryPlanAnalysis {
+interface _QueryPlanAnalysis {
   query: string;
   plan: string;
   estimatedCost: number;

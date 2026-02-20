@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { frontendPerformanceOptimizer, performanceMonitor } from '../utils/performanceConsolidated';
 import { UI_TIMING, PERFORMANCE_SCORE_THRESHOLDS } from '../constants';
 
@@ -6,7 +6,7 @@ interface PerformanceInsightsProps {
   showInsights?: boolean;
 }
 
-const PerformanceInsights: React.FC<PerformanceInsightsProps> = ({ showInsights = false }) => {
+const PerformanceInsightsBase: React.FC<PerformanceInsightsProps> = ({ showInsights = false }) => {
   const [isVisible, setIsVisible] = useState(showInsights);
   const [metrics, setMetrics] = useState(frontendPerformanceOptimizer.getMetrics());
   const [perfMetrics, setPerfMetrics] = useState(performanceMonitor.getWebVitals());
@@ -158,5 +158,10 @@ const PerformanceInsights: React.FC<PerformanceInsightsProps> = ({ showInsights 
     </div>
   );
 };
+
+/**
+ * Memoized performance insights panel for monitoring app performance
+ */
+const PerformanceInsights = memo(PerformanceInsightsBase);
 
 export default PerformanceInsights;
