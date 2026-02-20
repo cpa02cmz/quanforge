@@ -20,8 +20,6 @@ export interface CopyButtonProps {
   onCopy?: () => void;
   /** Additional CSS classes */
   className?: string;
-  /** Tooltip text (defaults to "Copy") */
-  tooltip?: string;
 }
 
 interface Particle {
@@ -58,7 +56,6 @@ export const CopyButton: React.FC<CopyButtonProps> = memo(({
   successMessage = 'Copied!',
   onCopy,
   className = '',
-  tooltip = 'Copy to clipboard'
 }) => {
   const [copied, setCopied] = useState(false);
   const [particles, setParticles] = useState<Particle[]>([]);
@@ -225,7 +222,6 @@ export const CopyButton: React.FC<CopyButtonProps> = memo(({
           transition: 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease-out, border-color 0.15s ease-out'
         }}
         aria-label={ariaLabel || `Copy "${textToCopy}" to clipboard`}
-        title={copied ? successMessage : tooltip}
         type="button"
         aria-live="polite"
       >

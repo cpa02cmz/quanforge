@@ -118,7 +118,6 @@ export const CustomInputRow = React.memo<CustomInputRowProps>(({
           onKeyDown={handleDeleteKeyDown}
           className="text-gray-500 hover:text-red-400 hover:bg-red-500/10 p-1.5 rounded-md transition-all duration-200 ease-out hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-dark-surface"
           aria-label={`Remove custom input ${index + 1}`}
-          title={`Remove custom input ${index + 1} (Press Delete key to remove)`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

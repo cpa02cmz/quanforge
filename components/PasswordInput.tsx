@@ -195,7 +195,6 @@ export const PasswordInput = memo(forwardRef<HTMLInputElement, PasswordInputProp
             variant="default"
             size="sm"
             aria-label={isVisible ? 'Hide password' : 'Show password'}
-            title={isVisible ? 'Hide password (Ctrl+Shift+L)' : 'Show password (Ctrl+Shift+L)'}
             disabled={disabled}
             withRipple={true}
             className={isVisible ? 'text-brand-400' : ''}

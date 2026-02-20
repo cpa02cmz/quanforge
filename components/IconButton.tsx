@@ -9,8 +9,6 @@ export interface IconButtonProps {
   variant?: 'default' | 'primary' | 'danger' | 'success' | 'info';
   /** Accessible label for screen readers */
   'aria-label': string;
-  /** Title for tooltip */
-  title?: string;
   /** Disabled state */
   disabled?: boolean;
   /** Additional CSS classes */
@@ -37,7 +35,6 @@ export interface IconButtonProps {
  *   onClick={handleDelete}
  *   variant="danger"
  *   aria-label="Delete item"
- *   title="Delete"
  * >
  *   <TrashIcon />
  * </IconButton>
@@ -47,7 +44,6 @@ export const IconButton: React.FC<IconButtonProps> = memo(({
   children,
   variant = 'default',
   'aria-label': ariaLabel,
-  title,
   disabled = false,
   className = '',
   size = 'md',
@@ -215,7 +211,6 @@ export const IconButton: React.FC<IconButtonProps> = memo(({
         transition: 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease-out, background-color 0.15s ease-out'
       }}
       aria-label={ariaLabel}
-      title={title || ariaLabel}
       type="button"
     >
       {/* Ripple effects */}

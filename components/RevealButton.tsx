@@ -320,7 +320,6 @@ export const RevealButton: React.FC<RevealButtonProps> = memo(({
               transition: prefersReducedMotion ? 'none' : undefined
             }}
             aria-label={isRevealed ? `Hide ${description}` : `Reveal ${description}`}
-            title={isRevealed ? 'Hide' : 'Reveal'}
           >
             {/* Eye icon with morphing animation */}
             <svg
@@ -393,7 +392,6 @@ export const RevealButton: React.FC<RevealButtonProps> = memo(({
                 animation: isCopied && !prefersReducedMotion ? 'copy-bounce 0.3s ease-out' : undefined
               }}
               aria-label={isCopied ? 'Copied!' : 'Copy to clipboard'}
-              title={isCopied ? 'Copied!' : 'Copy'}
             >
               {isCopied ? (
                 // Checkmark icon

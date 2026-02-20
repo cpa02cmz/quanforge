@@ -233,7 +233,6 @@ const sanitizeInput = (input: string): string => {
                     onClick={onReset}
                     className="text-xs text-gray-500 hover:text-red-400 transition-colors"
                     aria-label={t('config_reset')}
-                    title={t('config_reset')}
                 >
                     {t('config_reset')}
                 </button>
@@ -242,7 +241,6 @@ const sanitizeInput = (input: string): string => {
                 onClick={importConfig}
                 className="text-xs text-gray-500 hover:text-white transition-colors"
                 aria-label={t('config_import_clipboard')}
-                title={t('config_import_clipboard')}
             >
                 {t('config_import_clipboard')}
             </button>
@@ -250,7 +248,6 @@ const sanitizeInput = (input: string): string => {
                 onClick={copyConfig}
                 className="text-xs text-gray-500 hover:text-white transition-colors"
                 aria-label={t('config_copy')}
-                title={t('config_copy')}
             >
                 {t('config_copy')}
             </button>
