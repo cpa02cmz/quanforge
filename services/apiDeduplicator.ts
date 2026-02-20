@@ -1,5 +1,6 @@
 import { createScopedLogger } from '../utils/logger';
 import { API_CONFIG, TIME_CONSTANTS, CACHE_CONFIG } from '../constants/config';
+import { serviceCleanupCoordinator } from '../utils/serviceCleanupCoordinator';
 
 const logger = createScopedLogger('ApiDeduplicator');
 
@@ -338,7 +339,18 @@ export class ApiDeduplicator {
 }
 
 // Global instance for application-wide deduplication
-export const apiDeduplicator = new ApiDeduplicator();
+const apiDeduplicator = new ApiDeduplicator();
+
+// Register with cleanup coordinator for proper lifecycle management
+if (typeof window !== 'undefined') {
+  serviceCleanupCoordinator.register('apiDeduplicator', {
+    cleanup: () => apiDeduplicator.destroy(),
+    priority: 'medium',
+    description: 'API request deduplication service',
+  });
+}
+
+export { apiDeduplicator };
 
 // Hook for React components to use the deduplicator
 export const useApiDeduplicator = () => {
