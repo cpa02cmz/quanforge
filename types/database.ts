@@ -459,3 +459,230 @@ export function isPaginatedResponse<T>(value: unknown, itemGuard?: (item: unknow
   
   return true;
 }
+
+// ============================================================================
+// DATABASE PERFORMANCE DASHBOARD TYPES
+// ============================================================================
+
+/**
+ * Health status for database monitoring
+ */
+export type DatabaseHealthStatus = 'healthy' | 'degraded' | 'unhealthy' | 'critical';
+
+/**
+ * Alert severity levels
+ */
+export type DatabaseAlertSeverity = 'info' | 'warning' | 'error' | 'critical';
+
+/**
+ * Database connection metrics
+ */
+export interface DatabaseConnectionMetrics {
+  total: number;
+  active: number;
+  idle: number;
+  maxConnections: number;
+  utilizationPercent: number;
+  averageResponseTimeMs: number;
+}
+
+/**
+ * Database query metrics
+ */
+export interface DatabaseQueryMetrics {
+  totalExecuted: number;
+  averageExecutionTimeMs: number;
+  slowQueryCount: number;
+  cacheHitRate: number;
+  queriesPerSecond: number;
+  errorRate: number;
+}
+
+/**
+ * Database storage metrics
+ */
+export interface DatabaseStorageMetrics {
+  mode: 'mock' | 'supabase';
+  totalRecords: number;
+  estimatedSizeBytes: number;
+  indexSizeBytes: number;
+  tableSizeBytes: number;
+}
+
+/**
+ * Complete database health metrics
+ */
+export interface DatabaseHealthMetricsDashboard {
+  status: DatabaseHealthStatus;
+  timestamp: string;
+  uptime: number;
+  connections: DatabaseConnectionMetrics;
+  queries: DatabaseQueryMetrics;
+  storage: DatabaseStorageMetrics;
+  performanceScore: number;
+}
+
+/**
+ * Database alert for monitoring
+ */
+export interface DatabaseDashboardAlert {
+  id: string;
+  severity: DatabaseAlertSeverity;
+  message: string;
+  timestamp: string;
+  metric: string;
+  value: number;
+  threshold: number;
+  resolved: boolean;
+  resolvedAt?: string;
+}
+
+/**
+ * Database performance trend data point
+ */
+export interface DatabasePerformanceTrend {
+  timestamp: string;
+  queryTimeMs: number;
+  connectionCount: number;
+  cacheHitRate: number;
+  errorRate: number;
+  throughput: number;
+}
+
+/**
+ * Database index statistics
+ */
+export interface DatabaseIndexStats {
+  indexName: string;
+  tableName: string;
+  indexSize: number;
+  indexScans: number;
+  tuplesRead: number;
+  tuplesFetched: number;
+  isUnused: boolean;
+  recommendation?: string;
+}
+
+/**
+ * Database table statistics
+ */
+export interface DatabaseTableStats {
+  tableName: string;
+  rowCount: number;
+  tableSize: number;
+  indexSize: number;
+  totalSize: number;
+  sequentialScans: number;
+  indexScans: number;
+  cacheHitRatio: number;
+  lastVacuum: string | null;
+  lastAnalyze: string | null;
+}
+
+/**
+ * Database slow query log entry
+ */
+export interface DatabaseSlowQuery {
+  id: string;
+  query: string;
+  executionTimeMs: number;
+  timestamp: string;
+  tableName: string;
+  operation: 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE';
+  rowsAffected: number;
+  recommendation?: string;
+}
+
+/**
+ * Database backup status
+ */
+export interface DatabaseBackupStatus {
+  lastBackup: string | null;
+  nextBackup: string | null;
+  backupSize: number;
+  backupCount: number;
+  oldestBackup: string | null;
+  isScheduled: boolean;
+  health: 'good' | 'warning' | 'critical';
+}
+
+/**
+ * Database migration status
+ */
+export interface DatabaseMigrationStatus {
+  currentVersion: string;
+  appliedMigrations: string[];
+  pendingMigrations: string[];
+  lastMigration: string | null;
+  migrationCount: number;
+  status: 'up-to-date' | 'pending' | 'failed' | 'unknown';
+}
+
+/**
+ * Complete database dashboard summary
+ */
+export interface DatabaseDashboardSummary {
+  health: DatabaseHealthMetricsDashboard;
+  alerts: DatabaseDashboardAlert[];
+  trends: DatabasePerformanceTrend[];
+  indexes: DatabaseIndexStats[];
+  tables: DatabaseTableStats[];
+  slowQueries: DatabaseSlowQuery[];
+  backup: DatabaseBackupStatus;
+  migrations: DatabaseMigrationStatus;
+  lastUpdated: string;
+}
+
+/**
+ * Database configuration display
+ */
+export interface DatabaseConfigDisplay {
+  mode: 'mock' | 'supabase';
+  connected: boolean;
+  connectionUrl?: string;
+  poolSize: number;
+  maxConnections: number;
+  retryAttempts: number;
+  cacheEnabled: boolean;
+  cacheTTL: number;
+  healthCheckInterval: number;
+}
+
+/**
+ * Database optimization recommendation
+ */
+export interface DatabaseOptimizationRecommendation {
+  id: string;
+  category: 'index' | 'query' | 'configuration' | 'maintenance' | 'security';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  description: string;
+  impact: string;
+  effort: 'low' | 'medium' | 'high';
+  sql?: string;
+  applied: boolean;
+}
+
+/**
+ * Database performance comparison
+ */
+export interface DatabasePerformanceComparison {
+  metric: string;
+  currentValue: number;
+  previousValue: number;
+  change: number;
+  changePercent: number;
+  trend: 'improving' | 'stable' | 'degrading';
+}
+
+/**
+ * Real-time database event
+ */
+export interface DatabaseRealtimeEvent {
+  id: string;
+  type: 'connection' | 'query' | 'error' | 'alert' | 'migration' | 'backup';
+  timestamp: string;
+  message: string;
+  details: Record<string, unknown>;
+  severity: DatabaseAlertSeverity;
+}

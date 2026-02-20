@@ -102,3 +102,35 @@ export {
   type MemoryPressureEvent,
   type CoordinatorMetrics,
 } from '../utils/serviceCleanupCoordinator';
+
+// Database Architect Services - Health, Backup, Migration
+export { 
+  databaseHealthMonitor,
+  DatabaseHealthMonitor,
+  type HealthStatus,
+  type AlertSeverity,
+  type DatabaseHealthMetrics,
+  type DatabaseAlert,
+  type HealthCheckResult,
+  type HealthMonitorConfig,
+} from './databaseHealthMonitor';
+
+export { 
+  databaseBackup,
+  DatabaseBackupManager,
+  type BackupMetadata,
+  type BackupData,
+  type BackupOptions,
+  type RestoreOptions,
+  type RestoreResult,
+  type BackupSchedule,
+} from './databaseBackup';
+
+export { 
+  databaseMigrationValidator,
+  DatabaseMigrationValidator,
+  type MigrationFile,
+  type ValidationRule,
+  type ValidationResult,
+  type MigrationValidationReport,
+} from './databaseMigrationValidator';
