@@ -312,7 +312,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
                   : 'bg-dark-bg text-gray-400 border-dark-border hover:text-white hover:border-gray-500'
               }`}
               aria-label={isFocusMode ? 'Exit Focus Mode' : 'Enter Focus Mode'}
-              title={isFocusMode ? 'Exit Focus Mode (Esc)' : 'Enter Focus Mode (Ctrl+Shift+F)'}
               aria-pressed={isFocusMode}
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

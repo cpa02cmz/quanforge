@@ -158,7 +158,6 @@ const RobotCard: React.FC<RobotCardProps> = memo(({
               variant="subtle"
               size="sm"
               aria-label={`Copy robot name "${robot.name}"`}
-              tooltip="Copy robot name"
             />
 
             <IconButton
