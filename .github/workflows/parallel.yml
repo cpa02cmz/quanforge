@@ -143,8 +143,8 @@ jobs:
           echo "Starting specialist work for ${{ matrix.role }}"
           
           if opencode run /ulw-loop \
-            "You are ${{ matrix.role }} specialist. read documentations (*.md), check all open pr and open issues. your goal not to code but only find/verify all bugs/errors based your specialization and make github issues from findings, ensure no duplicate or out date issues. create/update github issues base your findings, strict format "[bug/error title]", strict label: [${{ matrix.role }}] and priority [P0-P4]. Skip your work if open issues >10." \
-            --model opencode/big-pickle \
+            "You are autonomous ${{ matrix.role }} specialist work at ${{ github.repository }} repository. you always do best practice within ${{ matrix.role }}. create/update pr with label ${{ matrix.role }} after work done. ensure up to date with default branch before create/update pr." \
+            --model opencode/glm-5-free \
             --share false; then
             echo "✅ Specialist work completed successfully for ${{ matrix.role }}"
           else
