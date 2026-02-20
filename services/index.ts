@@ -72,3 +72,13 @@ export {
   DatabaseConstants,
   UiConstants,
 } from './modularConstants';
+
+// Service Cleanup Coordinator - Lifecycle management for services
+export { 
+  serviceCleanupCoordinator,
+  useServiceCleanup,
+  type ServiceCleanupHandler,
+  type CleanupPriority,
+  type MemoryPressureEvent,
+  type CoordinatorMetrics,
+} from '../utils/serviceCleanupCoordinator';

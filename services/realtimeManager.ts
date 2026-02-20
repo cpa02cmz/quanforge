@@ -2,6 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Robot } from '../types';
 import { TIMEOUTS, BATCH_SIZES, RETRY } from '../constants';
 import { ID_GENERATION } from '../constants/modularConfig';
+import { serviceCleanupCoordinator } from '../utils/serviceCleanupCoordinator';
 
 interface RealtimeSubscription {
   id: string;
@@ -400,4 +401,15 @@ class RealtimeManager {
   }
 }
 
-export const realtimeManager = RealtimeManager.getInstance();
+const realtimeManager = RealtimeManager.getInstance();
+
+// Register with cleanup coordinator for proper lifecycle management
+if (typeof window !== 'undefined') {
+  serviceCleanupCoordinator.register('realtimeManager', {
+    cleanup: () => realtimeManager.destroy(),
+    priority: 'high',
+    description: 'Realtime subscriptions and sync manager',
+  });
+}
+
+export { realtimeManager };

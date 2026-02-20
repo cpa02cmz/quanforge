@@ -5,6 +5,7 @@
  */
 
 import { DELAY_CONSTANTS, COUNT_CONSTANTS } from './modularConstants';
+import { serviceCleanupCoordinator } from '../utils/serviceCleanupCoordinator';
 
 interface PendingRequest<T = any> {
   promise: Promise<T>;
@@ -300,12 +301,23 @@ class EdgeRequestCoalescer {
 }
 
 // Global instance for edge usage - optimized for performance
-export const edgeRequestCoalescer = new EdgeRequestCoalescer({
+const edgeRequestCoalescer = new EdgeRequestCoalescer({
   maxWaitTime: Math.floor(DELAY_CONSTANTS.TINY / 2), // 25ms - Reduced for faster response
   maxBatchSize: Math.floor(COUNT_CONSTANTS.BATCH.DEFAULT / 2), // 6 - Reduced for edge efficiency
   enableMetrics: true,
   cleanupInterval: DELAY_CONSTANTS.POLLING.SLOW, // 15 seconds - Faster cleanup
 });
+
+// Register with cleanup coordinator for proper lifecycle management
+if (typeof window !== 'undefined') {
+  serviceCleanupCoordinator.register('edgeRequestCoalescer', {
+    cleanup: () => edgeRequestCoalescer.destroy(),
+    priority: 'medium',
+    description: 'Edge request coalescing service',
+  });
+}
+
+export { edgeRequestCoalescer };
 
 // Export factory function for creating instances
 export const createEdgeRequestCoalescer = (config?: Partial<CoalescerConfig>): EdgeRequestCoalescer => {
