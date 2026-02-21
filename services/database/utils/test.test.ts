@@ -289,6 +289,25 @@ describe('Database Errors', () => {
       expect(error).toBeInstanceOf(DatabaseError);
       expect(error.constraint).toBe('unique');
     });
+
+    it('should create DatabasePermissionError', () => {
+      const error = new DatabasePermissionError('Permission denied', {
+        table: 'robots',
+        operation: 'select',
+      });
+      
+      expect(error).toBeInstanceOf(DatabaseError);
+      expect(error.recoverable).toBe(false);
+      expect(error.code).toBe('DB_PERMISSION_ERROR');
+    });
+
+    it('should create DatabaseQuotaError', () => {
+      const error = new DatabaseQuotaError('Quota exceeded');
+      
+      expect(error).toBeInstanceOf(DatabaseError);
+      expect(error.recoverable).toBe(false);
+      expect(error.code).toBe('DB_QUOTA_ERROR');
+    });
   });
 
   describe('mapSupabaseError', () => {
