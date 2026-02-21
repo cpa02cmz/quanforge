@@ -6,11 +6,23 @@
  * - Request/response interceptors
  * - API versioning support
  * - Client factory pattern
+ * - Response caching
+ * - Metrics collection
+ * - Batch operations
+ * - Health monitoring
+ * - Request deduplication
+ * - Distributed tracing
  * 
  * @module services/api
  * @since 2026-02-20
  * @author API Specialist Agent
  */
+
+// ============= Local Imports for Utility Functions =============
+
+import { apiResponseCache } from './apiResponseCache';
+import { apiRequestInterceptor } from './apiRequestInterceptor';
+import { apiMetricsCollector } from './apiMetricsCollector';
 
 // ============= Response Handler =============
 
@@ -153,11 +165,74 @@ export {
   type TimeSeriesPoint
 } from './apiMetricsCollector';
 
+// ============= Batch Operations =============
+
+export {
+  APIBatchOperations,
+  apiBatchOperations,
+  useAPIBatchOperations,
+  type BatchItem,
+  type BatchResult,
+  type BatchConfig,
+  type BatchStatus,
+  type BatchSummary
+} from './apiBatchOperations';
+
+// ============= Health Monitor =============
+
+export {
+  APIHealthMonitor,
+  apiHealthMonitor,
+  useAPIHealthMonitor,
+  type HealthStatus,
+  type HealthCheckConfig,
+  type HealthCheckResult,
+  type HealthSummary,
+  type HealthAlert,
+  type HealthAlertHandler
+} from './apiHealthMonitor';
+
+// ============= Request Deduplicator =============
+
+export {
+  APIRequestDeduplicator,
+  apiRequestDeduplicator,
+  useAPIRequestDeduplicator,
+  type RequestFingerprint,
+  type DeduplicationConfig,
+  type DeduplicationStats
+} from './apiRequestDeduplicator';
+
+// ============= Tracing =============
+
+export {
+  APITracing,
+  apiTracing,
+  useAPITracing,
+  type SpanKind,
+  type SpanStatus,
+  type TraceContext,
+  type AttributeValue,
+  type SpanEvent,
+  type SpanLink,
+  type Span,
+  type TracingConfig,
+  type TracingStats
+} from './apiTracing';
+
 // ============= Re-export Common Types =============
 
 export { APIResponse } from '../../types/common';
 
 // ============= Utility Functions =============
+
+import { apiResponseCache } from './apiResponseCache';
+import { apiRequestInterceptor } from './apiRequestInterceptor';
+import { apiMetricsCollector } from './apiMetricsCollector';
+import { apiBatchOperations } from './apiBatchOperations';
+import { apiHealthMonitor } from './apiHealthMonitor';
+import { apiRequestDeduplicator } from './apiRequestDeduplicator';
+import { apiTracing } from './apiTracing';
 
 /**
  * Initialize all API services
@@ -175,11 +250,19 @@ export function getAPIServicesHealth(): {
   cache: ReturnType<typeof apiResponseCache.getStats>;
   interceptor: ReturnType<typeof apiRequestInterceptor.getStats>;
   metrics: ReturnType<typeof apiMetricsCollector.getSummary>;
+  batch: ReturnType<typeof apiBatchOperations.getStats>;
+  health: ReturnType<typeof apiHealthMonitor.getSummary>;
+  deduplicator: ReturnType<typeof apiRequestDeduplicator.getStats>;
+  tracing: ReturnType<typeof apiTracing.getStats>;
 } {
   return {
     cache: apiResponseCache.getStats(),
     interceptor: apiRequestInterceptor.getStats(),
-    metrics: apiMetricsCollector.getSummary()
+    metrics: apiMetricsCollector.getSummary(),
+    batch: apiBatchOperations.getStats(),
+    health: apiHealthMonitor.getSummary(),
+    deduplicator: apiRequestDeduplicator.getStats(),
+    tracing: apiTracing.getStats()
   };
 }
 
@@ -191,4 +274,8 @@ export function destroyAPIServices(): void {
   apiResponseCache.destroy();
   apiRequestInterceptor.destroy();
   apiMetricsCollector.destroy();
+  apiBatchOperations.destroy();
+  apiHealthMonitor.destroy();
+  apiRequestDeduplicator.destroy();
+  apiTracing.destroy();
 }
