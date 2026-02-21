@@ -164,11 +164,13 @@ function detectIssues(
   // Check for memory growth
   const memoryMetrics = metrics.filter(m => m.memoryBefore && m.memoryAfter);
   if (memoryMetrics.length > 5) {
-    const firstMemory = memoryMetrics[0].memoryBefore!;
-    const lastMemory = memoryMetrics[memoryMetrics.length - 1].memoryAfter!;
-    const growth = (lastMemory - firstMemory) / firstMemory;
-    if (growth > 0.5) {
-      issues.push(`Memory usage grew by ${Math.round(growth * 100)}% - check for memory leaks`);
+    const firstMetric = memoryMetrics[0];
+    const lastMetric = memoryMetrics[memoryMetrics.length - 1];
+    if (firstMetric?.memoryBefore && lastMetric?.memoryAfter) {
+      const growth = (lastMetric.memoryAfter - firstMetric.memoryBefore) / firstMetric.memoryBefore;
+      if (growth > 0.5) {
+        issues.push(`Memory usage grew by ${Math.round(growth * 100)}% - check for memory leaks`);
+      }
     }
   }
   
@@ -255,16 +257,18 @@ export function useComponentPerformance(
     if (trackMemory) {
       metric.memoryBefore = getMemoryUsage();
       // Memory after will be captured in next render
-      if (metricsRef.current.length > 0) {
-        metricsRef.current[metricsRef.current.length - 1].memoryAfter = getMemoryUsage();
+      const lastMetric = metricsRef.current[metricsRef.current.length - 1];
+      if (lastMetric) {
+        lastMetric.memoryAfter = getMemoryUsage();
       }
     }
     
     // Track changed props
     if (trackProps && prevPropsRef.current) {
+      const lastMetric = metricsRef.current[metricsRef.current.length - 1];
       const lastChanged = getChangedProps(
-        metricsRef.current[metricsRef.current.length - 1]?.changedProps ? 
-          Object.fromEntries(metricsRef.current[metricsRef.current.length - 1].changedProps!.map(p => [p, true])) : 
+        lastMetric?.changedProps ? 
+          Object.fromEntries(lastMetric.changedProps.map(p => [p, true])) : 
           null,
         prevPropsRef.current
       );
