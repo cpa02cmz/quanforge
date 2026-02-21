@@ -2,11 +2,10 @@
  * Tests for Resilience Policy
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   ResiliencePolicy,
   ResiliencePolicyManager,
-  resiliencePolicyManager,
   withResilience,
   ResiliencePattern,
   type ResiliencePolicyConfig

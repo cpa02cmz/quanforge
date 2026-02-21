@@ -254,7 +254,7 @@ export class ErrorBudgetTracker {
     const burnRate = windowHours > 0 ? consumedBudget / windowHours : 0;
 
     // Calculate time to exhaustion
-    const expectedBurnRate = totalBudget / (config.timeWindow / (60 * 60 * 1000));
+    const _expectedBurnRate = totalBudget / (config.timeWindow / (60 * 60 * 1000));
     const timeToExhaustion = burnRate > 0 
       ? (remainingBudget / burnRate) * (60 * 60 * 1000)
       : null;

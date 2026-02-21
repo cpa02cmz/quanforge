@@ -14,8 +14,8 @@
  */
 
 import { createScopedLogger } from '../../utils/logger';
-import { Bulkhead, BulkheadState, bulkheadManager, type BulkheadConfig } from './bulkhead';
-import { gracefulDegradation, DegradationLevel, type FallbackConfig } from './gracefulDegradation';
+import { Bulkhead, BulkheadState, bulkheadManager, type BulkheadConfig as _BulkheadConfig } from './bulkhead';
+import { gracefulDegradation as _gracefulDegradation, DegradationLevel, type FallbackConfig as _FallbackConfig } from './gracefulDegradation';
 
 const logger = createScopedLogger('resilience-policy');
 

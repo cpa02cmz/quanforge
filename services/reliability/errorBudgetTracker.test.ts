@@ -2,13 +2,10 @@
  * Tests for Error Budget Tracker
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   ErrorBudgetTracker,
-  errorBudgetTracker,
   createTrackedService,
-  type SLOConfig,
-  type BudgetAlert
 } from './errorBudgetTracker';
 
 describe('ErrorBudgetTracker', () => {

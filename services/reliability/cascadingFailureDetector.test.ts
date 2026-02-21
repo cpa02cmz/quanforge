@@ -128,8 +128,6 @@ describe('CascadingFailureDetector', () => {
 
   describe('correlations', () => {
     it('should detect correlated failures', () => {
-      const now = Date.now();
-      
       // Record simultaneous failures
       for (let i = 0; i < 5; i++) {
         detector.recordFailure('service-a', 'Error', 'Error');
