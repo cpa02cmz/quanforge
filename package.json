@@ -1,7 +1,7 @@
 {
   "name": "quantforge-ai",
   "private": true,
-  "version": "1.6.0",
+  "version": "1.9.0",
   "type": "module",
   "description": "Advanced MQL5 Trading Robot Generator powered by AI",
   "keywords": [
