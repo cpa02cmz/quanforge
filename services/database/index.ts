@@ -170,3 +170,42 @@ export * from './operations';
 export * from './cacheLayer';
 export * from './client';
 export * from './monitoring';
+
+// Data Integrity
+export {
+  DataIntegrityValidator,
+  dataIntegrityValidator,
+  type IntegrityValidationResult,
+  type IntegrityValidationError,
+  type IntegrityValidationWarning,
+  type ValidationRule,
+  type ValidationContext,
+  type IntegrityStats
+} from './dataIntegrityValidator';
+
+// Query Cache
+export {
+  QueryCacheService,
+  queryCacheService,
+  type CacheEntry,
+  type CacheStats,
+  type CacheConfig,
+  type CacheInvalidationRule,
+  type QueryCacheOptions
+} from './queryCacheService';
+
+// Audit Logger
+export {
+  DatabaseAuditLogger,
+  databaseAuditLogger,
+  type AuditEventType,
+  type AuditSeverity,
+  type AuditEntityType,
+  type AuditEntry,
+  type FieldChange,
+  type AuditMetadata,
+  type AuditFilter,
+  type AuditStats,
+  type AuditConfig,
+  type AuditReport
+} from './databaseAuditLogger';
