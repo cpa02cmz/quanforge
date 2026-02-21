@@ -10,8 +10,8 @@
 
 import { createScopedLogger } from '../../utils/logger';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { TIMEOUTS, ERROR_CODES } from '../../constants';
-import { TIME_CONSTANTS } from '../modularConstants';
+import { TIMEOUTS as _TIMEOUTS, ERROR_CODES as _ERROR_CODES } from '../../constants';
+import { TIME_CONSTANTS as _TIME_CONSTANTS } from '../modularConstants';
 
 const logger = createScopedLogger('TransactionManager');
 
@@ -446,7 +446,7 @@ export class TransactionManager {
     return error.isRetryable;
   }
 
-  private updateMetrics(duration: number, success: boolean, retries: number): void {
+  private updateMetrics(duration: number, success: boolean, _retries: number): void {
     if (success) {
       this.metrics.successfulTransactions++;
     } else {

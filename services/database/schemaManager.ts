@@ -10,7 +10,7 @@
 
 import { createScopedLogger } from '../../utils/logger';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { CACHE_SIZES } from '../../constants/modularConfig';
+import { CACHE_SIZES as _CACHE_SIZES } from '../../constants/modularConfig';
 
 const logger = createScopedLogger('SchemaManager');
 

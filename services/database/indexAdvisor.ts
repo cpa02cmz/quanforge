@@ -11,7 +11,7 @@
 import { createScopedLogger } from '../../utils/logger';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { schemaManager, IndexDefinition } from './schemaManager';
-import { COUNT_CONSTANTS, SIZE_CONSTANTS, THRESHOLD_CONSTANTS } from '../modularConstants';
+import { COUNT_CONSTANTS, SIZE_CONSTANTS } from '../modularConstants';
 
 const logger = createScopedLogger('IndexAdvisor');
 

@@ -16,8 +16,6 @@ import {
   RobotFilterDTO, 
   PaginationParams, 
   PaginatedResponse,
-  CreateRobotDTO,
-  UpdateRobotDTO,
   StrategyType
 } from '../../types/database';
 

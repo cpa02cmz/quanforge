@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TransactionManager, transactionManager } from './transactionManager';
 import { SchemaManager, schemaManager } from './schemaManager';
 import { IndexAdvisor, indexAdvisor } from './indexAdvisor';
-import { QueryBuilder, RobotQueryBuilder, query, robotQuery } from './queryBuilder';
+import { query, robotQuery } from './queryBuilder';
 
 // Mock Supabase client
 const mockClient = {
