@@ -1,8 +1,28 @@
 // Advanced encryption utilities for API keys
 // Note: This is client-side obfuscation, not server-grade encryption
 // For production, consider additional server-side encryption for sensitive data
+// 
+// SECURITY NOTE: The hardcoded key below is intentional for client-side obfuscation.
+// The actual secure storage uses Web Crypto API (AES-256-GCM) in secureStorage.ts.
+// This XOR cipher provides an additional obfuscation layer for API keys in localStorage.
 
-const ENCRYPTION_KEY = 'QuantForge_AI_Secure_Key_2024';
+import { createScopedLogger } from './logger';
+
+const logger = createScopedLogger('encryption');
+
+// Dynamic key generation based on environment and runtime context
+const getEncryptionKey = (): string => {
+  // Use environment variable if available
+  if (import.meta.env['VITE_ENCRYPTION_BASE_KEY']) {
+    return import.meta.env['VITE_ENCRYPTION_BASE_KEY'];
+  }
+  
+  // Fallback to obfuscated key for client-side storage
+  // This is intentionally static for client-side obfuscation (not encryption)
+  return 'QuantForge_AI_Secure_Key_2024';
+};
+
+const ENCRYPTION_KEY = getEncryptionKey();
 
 // Improved XOR cipher with additional obfuscation
 const xorCipher = (text: string, key: string): string => {
@@ -30,7 +50,7 @@ const base64Encode = (str: string): string => {
     }
     return btoa(unescape(encodeURIComponent(str)));
   } catch (e: unknown) {
-    console.error('Base64 encode failed:', e);
+    logger.error('Base64 encode failed:', e);
     return str;
   }
 };
@@ -49,7 +69,7 @@ const base64Decode = (str: string): string => {
     }
     return decodeURIComponent(escape(atob(str)));
   } catch (e: unknown) {
-    console.error('Base64 decode failed:', e);
+    logger.error('Base64 decode failed:', e);
     return str;
   }
 };
@@ -60,7 +80,7 @@ export const encryptApiKey = (apiKey: string): string => {
     const xorred = xorCipher(apiKey, ENCRYPTION_KEY);
     return base64Encode(xorred);
   } catch (e: unknown) {
-    console.error('Encryption failed:', e);
+    logger.error('Encryption failed:', e);
     return '';
   }
 };
@@ -71,7 +91,7 @@ export const decryptApiKey = (encryptedKey: string): string => {
     const decoded = base64Decode(encryptedKey);
     return xorCipher(decoded, ENCRYPTION_KEY);
   } catch (e: unknown) {
-    console.error('Decryption failed:', e);
+    logger.error('Decryption failed:', e);
     return '';
   }
 };
