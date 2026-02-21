@@ -1,5 +1,8 @@
 import DOMPurify from 'dompurify';
+import { createScopedLogger } from '../../utils/logger';
 import { SECURITY_RISK_SCORES } from '../modularConstants';
+
+const logger = createScopedLogger('ThreatDetector');
 
 export class ThreatDetector {
   private wafPatterns: Array<{
@@ -124,7 +127,7 @@ export class ThreatDetector {
         hasXSS = JSON.stringify(sanitizedData) !== JSON.stringify(data);
       }
     } catch (error: unknown) {
-      console.error('XSS prevention error:', error);
+      logger.error('XSS prevention error:', error);
     }
 
     return { hasXSS, sanitizedData };
@@ -159,7 +162,7 @@ export class ThreatDetector {
         hasSQLInjection = JSON.stringify(sanitizedData) !== JSON.stringify(data);
       }
     } catch (error: unknown) {
-      console.error('SQL injection prevention error:', error);
+      logger.error('SQL injection prevention error:', error);
     }
 
     return { hasSQLInjection, sanitizedData };

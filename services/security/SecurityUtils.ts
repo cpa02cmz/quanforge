@@ -1,5 +1,8 @@
 import DOMPurify from 'dompurify';
+import { createScopedLogger } from '../../utils/logger';
 import { STRING_LIMITS } from '../constants';
+
+const logger = createScopedLogger('SecurityUtils');
 
 /**
  * Core security utilities and helper functions
@@ -107,7 +110,7 @@ export class SecurityUtils {
       
       return parsed;
     } catch (error: unknown) {
-      console.error('JSON parsing error:', error instanceof Error ? error.message : String(error));
+      logger.error('JSON parsing error:', error instanceof Error ? error.message : String(error));
       return null;
     }
   }
