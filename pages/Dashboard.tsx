@@ -16,6 +16,8 @@ import { CopyButton } from '../components/CopyButton';
 import { CardSkeletonLoader } from '../components/LoadingState';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { TiltCard } from '../components/TiltCard';
+import { ViewToggle, ViewMode } from '../components/ViewToggle';
+import { SortDropdown, SortOption } from '../components/SortDropdown';
 
 // Debounce utility for search optimization
  
@@ -199,6 +201,110 @@ const RobotCard: React.FC<RobotCardProps> = memo(({
          prevProps.t === nextProps.t;
 });
 
+// List View Card Component - Compact horizontal layout
+const RobotListItem: React.FC<RobotCardProps> = memo(({
+  robot,
+  processingId,
+  onDuplicate,
+  onDelete
+}) => {
+  const handleDelete = useCallback(() => {
+    onDelete(robot.id, robot.name);
+  }, [robot.id, robot.name, onDelete]);
+
+  const handleDuplicate = useCallback(() => {
+    onDuplicate(robot.id);
+  }, [robot.id, onDuplicate]);
+
+  return (
+    <div className="group relative bg-dark-surface border border-dark-border rounded-xl p-4 hover:border-brand-500/50 transition-all animate-fade-in-up">
+      {processingId === robot.id && (
+        <div className="absolute inset-0 bg-dark-surface/80 flex items-center justify-center z-10 rounded-xl backdrop-blur-sm">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-brand-500"></div>
+        </div>
+      )}
+
+      <div className="flex items-center gap-4">
+        {/* Icon */}
+        <div className="p-2 bg-brand-500/10 rounded-lg text-brand-400 group-hover:bg-brand-500 group-hover:text-white transition-colors shrink-0" aria-hidden="true">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-base font-bold text-white truncate" title={robot.name}>
+              {robot.name}
+            </h3>
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border shrink-0
+                ${getStrategyConfig(robot.strategy_type).bgClass}
+                ${getStrategyConfig(robot.strategy_type).textClass}
+                ${getStrategyConfig(robot.strategy_type).borderClass}
+              `}
+              aria-label={getStrategyConfig(robot.strategy_type).ariaLabel}
+            >
+              {getStrategyIcon(robot.strategy_type)}
+              {robot.strategy_type || 'Custom'}
+            </span>
+          </div>
+          <p className="text-sm text-gray-400 truncate">{robot.description || 'No description'}</p>
+        </div>
+
+        {/* Date */}
+        <span className="hidden sm:block text-xs font-mono text-gray-500 shrink-0">
+          {new Date(robot.created_at).toLocaleDateString()}
+        </span>
+
+        {/* Actions */}
+        <div className="flex items-center gap-1 shrink-0">
+          <CopyButton
+            textToCopy={robot.name}
+            variant="subtle"
+            size="sm"
+            aria-label={`Copy robot name "${robot.name}"`}
+          />
+
+          <IconButton
+            onClick={handleDuplicate}
+            variant="primary"
+            aria-label={`Duplicate ${robot.name}`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 01-2-2V4" />
+            </svg>
+          </IconButton>
+
+          <IconButton
+            onClick={handleDelete}
+            variant="danger"
+            aria-label={`Delete ${robot.name}`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </IconButton>
+
+          <Link
+            to={`/generator/${robot.id}`}
+            className="ml-1 px-3 py-1.5 bg-dark-bg border border-dark-border hover:border-brand-500 text-xs font-medium text-gray-300 hover:text-white rounded-md transition-all flex items-center"
+            aria-label={`Edit ${robot.name}`}
+          >
+            Edit
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}, (prevProps, nextProps) => {
+  return prevProps.robot.id === nextProps.robot.id &&
+         prevProps.robot.updated_at === nextProps.robot.updated_at &&
+         prevProps.processingId === nextProps.processingId &&
+         prevProps.t === nextProps.t;
+});
+
 // Animated search input with cycling placeholder suggestions
 interface AnimatedSearchInputProps {
   value: string;
@@ -339,6 +445,10 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
+  
+  // UI State - View and Sort
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
 
   // Debounced search for performance optimization
   const debouncedSetSearchTerm = useMemo(
@@ -413,57 +523,83 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
       }
   }, [t, showToast]);
 
-  // Determine if virtual scrolling should be used (for large lists)
-  // Optimized threshold for better performance with medium-sized lists
-  const shouldUseVirtualScroll = robots.length > 20;
+   // Determine if virtual scrolling should be used (for large lists)
+   // Optimized threshold for better performance with medium-sized lists
+   const shouldUseVirtualScroll = robots.length > 20;
+
+   // Sort function for robots
+   const sortRobots = useCallback((robotsToSort: Robot[], sortOption: SortOption): Robot[] => {
+     const sorted = [...robotsToSort];
+     
+     switch (sortOption) {
+       case 'newest':
+         return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+       case 'oldest':
+         return sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+       case 'name-asc':
+         return sorted.sort((a, b) => a.name.localeCompare(b.name));
+       case 'name-desc':
+         return sorted.sort((a, b) => b.name.localeCompare(a.name));
+       case 'type':
+         return sorted.sort((a, b) => {
+           const typeA = a.strategy_type || 'Custom';
+           const typeB = b.strategy_type || 'Custom';
+           return typeA.localeCompare(typeB);
+         });
+       default:
+         return sorted;
+     }
+   }, []);
 
    // Enhanced Filter Logic with optimized indexing and early termination
-    const filteredRobots = useMemo(() => {
-      const startTime = import.meta.env.DEV ? performance.now() : 0;
-      
-      // Use the performance optimizer to memoize this expensive operation
-      const result = frontendPerformanceOptimizer.memoizeComponent(
-        `filtered_robots_${debouncedSearchTerm}_${filterType}_${robots.length}`,
-        () => {
-          // Pre-calculate normalized debounced search term to avoid repeated operations
-          const normalizedSearchTerm = debouncedSearchTerm.toLowerCase();
-          
-          // Early return if no filters needed
-          if (normalizedSearchTerm === '' && filterType === 'All') {
-            return robots;
-          }
-          
-          // Optimized filtering with early termination
-          return robots.filter(robot => {
-            // Type filter first (faster comparison)
-            if (filterType !== 'All' && (robot.strategy_type || 'Custom') !== filterType) {
-              return false;
-            }
-            
-            // Search filter last (more expensive)
-            if (normalizedSearchTerm !== '') {
-              const robotName = robot.name.toLowerCase();
-              if (!robotName.includes(normalizedSearchTerm)) {
-                return false;
-              }
-            }
-            
-            return true;
-          });
-        },
-        5000 // 5 second TTL for this filter result
-      );
-      
-      // Log performance in development
-      if (import.meta.env.DEV && startTime) {
-        const duration = performance.now() - startTime;
-        if (duration > 10) { // Only log if filtering takes more than 10ms
-          logger.debug(`Filtering ${robots.length} robots took ${duration.toFixed(2)}ms`);
-        }
-      }
-      
-      return result;
-    }, [robots, debouncedSearchTerm, filterType]);
+     const filteredRobots = useMemo(() => {
+       const startTime = import.meta.env.DEV ? performance.now() : 0;
+       
+       // Use the performance optimizer to memoize this expensive operation
+       const result = frontendPerformanceOptimizer.memoizeComponent(
+         `filtered_robots_${debouncedSearchTerm}_${filterType}_${robots.length}_${sortBy}`,
+         () => {
+           // Pre-calculate normalized debounced search term to avoid repeated operations
+           const normalizedSearchTerm = debouncedSearchTerm.toLowerCase();
+           
+           // Early return if no filters needed
+           if (normalizedSearchTerm === '' && filterType === 'All') {
+             return sortRobots(robots, sortBy);
+           }
+           
+           // Optimized filtering with early termination
+           const filtered = robots.filter(robot => {
+             // Type filter first (faster comparison)
+             if (filterType !== 'All' && (robot.strategy_type || 'Custom') !== filterType) {
+               return false;
+             }
+             
+             // Search filter last (more expensive)
+             if (normalizedSearchTerm !== '') {
+               const robotName = robot.name.toLowerCase();
+               if (!robotName.includes(normalizedSearchTerm)) {
+                 return false;
+               }
+             }
+             
+             return true;
+           });
+           
+           return sortRobots(filtered, sortBy);
+         },
+         5000 // 5 second TTL for this filter result
+       );
+       
+       // Log performance in development
+       if (import.meta.env.DEV && startTime) {
+         const duration = performance.now() - startTime;
+         if (duration > 10) { // Only log if filtering takes more than 10ms
+           logger.debug(`Filtering ${robots.length} robots took ${duration.toFixed(2)}ms`);
+         }
+       }
+       
+       return result;
+     }, [robots, debouncedSearchTerm, filterType, sortBy, sortRobots]);
 
   // Derived list of unique strategy types for the dropdown - memoized
   const availableTypes = useMemo(() => 
@@ -498,26 +634,46 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
 
       {/* Search and Filter Toolbar */}
       {robots.length > 0 && (
-          <div className="bg-dark-surface border border-dark-border rounded-xl p-4 mb-6 flex flex-col md:flex-row gap-4">
-              <AnimatedSearchInput
-                value={searchTerm}
-                onChange={setSearchTerm}
-                onDebouncedChange={debouncedSetSearchTerm}
-                t={t}
-              />
-              <div className="w-full md:w-48">
-                  <label htmlFor="robot-filter" className="sr-only">{t('dash_filter_label')}</label>
-                  <select 
-                      id="robot-filter"
-                      value={filterType}
-                      onChange={(e) => setFilterType(e.target.value)}
-                      className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:ring-1 focus:ring-brand-500 outline-none"
-                      aria-label={`Filter robots by strategy type: ${filterType}`}
-                  >
-                      {availableTypes.map(type => (
-                          <option key={type} value={type}>{type}</option>
-                      ))}
-                  </select>
+          <div className="bg-dark-surface border border-dark-border rounded-xl p-4 mb-6">
+              {/* First row: Search and Type filter */}
+              <div className="flex flex-col md:flex-row gap-4 mb-4">
+                  <AnimatedSearchInput
+                    value={searchTerm}
+                    onChange={setSearchTerm}
+                    onDebouncedChange={debouncedSetSearchTerm}
+                    t={t}
+                  />
+                  <div className="w-full md:w-48">
+                      <label htmlFor="robot-filter" className="sr-only">{t('dash_filter_label')}</label>
+                      <select 
+                          id="robot-filter"
+                          value={filterType}
+                          onChange={(e) => setFilterType(e.target.value)}
+                          className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:ring-1 focus:ring-brand-500 outline-none"
+                          aria-label={`Filter robots by strategy type: ${filterType}`}
+                      >
+                          {availableTypes.map(type => (
+                              <option key={type} value={type}>{type}</option>
+                          ))}
+                      </select>
+                  </div>
+              </div>
+              
+              {/* Second row: Sort and View options */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">{filteredRobots.length} robot{filteredRobots.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                      <SortDropdown 
+                        value={sortBy} 
+                        onChange={setSortBy}
+                      />
+                      <ViewToggle 
+                        view={viewMode} 
+                        onViewChange={setViewMode}
+                      />
+                  </div>
               </div>
           </div>
       )}
@@ -557,7 +713,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
               <p className="text-gray-400">Try adjusting your search or filters.</p>
               <button onClick={() => { setSearchTerm(''); setFilterType('All'); }} className="mt-4 text-brand-400 hover:underline">{t('dash_clear_filters')}</button>
           </div>
-      ) : shouldUseVirtualScroll ? (
+       ) : shouldUseVirtualScroll ? (
         <VirtualScrollList
           robots={robots}
           searchTerm={searchTerm}
@@ -568,7 +724,20 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
           onClearFilters={() => { setSearchTerm(''); setFilterType('All'); }}
           t={t}
         />
-      ) : (
+       ) : viewMode === 'list' ? (
+        <div className="space-y-3">
+          {filteredRobots.map((robot) => (
+            <RobotListItem
+              key={robot.id}
+              robot={robot}
+              processingId={processingId}
+              onDuplicate={handleDuplicate}
+              onDelete={handleDeleteRequest}
+              t={t}
+            />
+          ))}
+        </div>
+       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRobots.map((robot) => (
             <RobotCard
@@ -581,7 +750,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({ session }) => {
             />
           ))}
         </div>
-      )}
+       )}
       </div>
 
       {/* Delete Confirmation Modal */}

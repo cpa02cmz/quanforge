@@ -50,8 +50,32 @@ interface ChatInterfaceProps {
   }
 
   const MemoizedMessage = memo(({ msg, formatMessageContent }: { msg: Message, formatMessageContent: (c: string) => React.ReactNode[] }) => {
+    // Format timestamp for display
+    const formatTimestamp = (timestamp: number): string => {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const isToday = date.toDateString() === now.toDateString();
+      
+      const timeString = date.toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+      });
+      
+      if (isToday) {
+        return timeString;
+      }
+      
+      // Show date for older messages
+      const dateString = date.toLocaleDateString([], { 
+        month: 'short', 
+        day: 'numeric' 
+      });
+      return `${dateString}, ${timeString}`;
+    };
+
     return (
-        <div className={`flex ${msg.role === MessageRole.USER ? 'justify-end' : 'justify-start'}`}>
+        <div className={`flex flex-col ${msg.role === MessageRole.USER ? 'items-end' : 'items-start'} group/message`}>
             <div
                 className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-md ${
                     msg.role === MessageRole.USER
@@ -78,6 +102,16 @@ interface ChatInterfaceProps {
                     {formatMessageContent(msg.content)}
                 </div>
             </div>
+            
+            {/* Timestamp - appears on hover for cleaner UI */}
+            <span 
+                className={`text-[10px] text-gray-500 mt-1 px-2 opacity-0 group-hover/message:opacity-100 transition-opacity duration-200 ${
+                  msg.role === MessageRole.USER ? 'text-right' : 'text-left'
+                }`}
+                aria-label={`Message sent at ${formatTimestamp(msg.timestamp)}`}
+            >
+                {formatTimestamp(msg.timestamp)}
+            </span>
         </div>
     );
 });
