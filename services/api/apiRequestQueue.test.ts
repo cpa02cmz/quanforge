@@ -111,17 +111,17 @@ describe('APIRequestQueue', () => {
       
       // Verify queue respects max concurrent
       const slowRequest = () => new Promise(r => setTimeout(r, 100));
-      smallQueue.enqueue(slowRequest);
-      smallQueue.enqueue(slowRequest);
-      smallQueue.enqueue(slowRequest);
-      smallQueue.enqueue(slowRequest);
-      
+      smallQueue.enqueue(slowRequest).catch(() => {});
+      smallQueue.enqueue(slowRequest).catch(() => {});
+      smallQueue.enqueue(slowRequest).catch(() => {});
+      smallQueue.enqueue(slowRequest).catch(() => {});
+
       // Wait a bit for queue to process
       await new Promise(r => setTimeout(r, 50));
-      
+
       // Queue should be managing requests
       expect(smallQueue.getStats().runningCount + smallQueue.getStats().pendingCount).toBeGreaterThan(0);
-      
+
       // Clean up
       smallQueue.cancelAll();
       smallQueue.destroy();
