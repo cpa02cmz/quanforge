@@ -415,7 +415,7 @@ export class APIMiddlewareRegistry {
     const middlewares: RegistryStats['middlewares'] = {};
     let enabledCount = 0;
     
-    for (const [phase, entries] of this.middlewares.entries()) {
+    for (const [_phase, entries] of this.middlewares.entries()) {
       for (const entry of entries) {
         if (entry.config.enabled) {
           enabledCount++;
