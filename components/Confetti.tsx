@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
 import { ANIMATION_DEFAULTS } from '../constants/uiComponentDefaults';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 export interface ConfettiPiece {
   id: number;
@@ -83,24 +84,11 @@ export const Confetti: React.FC<ConfettiProps> = memo(({
   velocity = ANIMATION_DEFAULTS.CONFETTI.VELOCITY
 }) => {
   const [pieces, setPieces] = useState<ConfettiPiece[]>([]);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const animationRef = useRef<number | null>(null);
   const physicsRef = useRef<Map<number, ParticlePhysics>>(new Map());
   const startTimeRef = useRef<number>(0);
   const pieceIdRef = useRef(0);
-
-  // Check for reduced motion preference
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-
-    const handleChange = (e: MediaQueryListEvent) => {
-      setPrefersReducedMotion(e.matches);
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
 
   // Generate confetti pieces
   const generatePieces = useCallback((): ConfettiPiece[] => {

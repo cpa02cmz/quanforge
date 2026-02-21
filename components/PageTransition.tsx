@@ -1,5 +1,6 @@
 import React, { useState, useEffect, memo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 export interface PageTransitionProps {
   children: React.ReactNode;
@@ -42,23 +43,10 @@ export const PageTransition: React.FC<PageTransitionProps> = memo(({
     displayChildren: children,
     prevPath: null
   });
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathHistoryRef = useRef<string[]>([location.pathname]);
-
-  // Check for reduced motion preference
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-
-    const handleChange = (e: MediaQueryListEvent) => {
-      setPrefersReducedMotion(e.matches);
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
 
   // Track navigation direction
   useEffect(() => {
