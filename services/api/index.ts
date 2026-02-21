@@ -12,17 +12,13 @@
  * - Health monitoring
  * - Request deduplication
  * - Distributed tracing
+ * - Unified API facade
+ * - Middleware registry
  * 
  * @module services/api
  * @since 2026-02-20
  * @author API Specialist Agent
  */
-
-// ============= Local Imports for Utility Functions =============
-
-import { apiResponseCache } from './apiResponseCache';
-import { apiRequestInterceptor } from './apiRequestInterceptor';
-import { apiMetricsCollector } from './apiMetricsCollector';
 
 // ============= Response Handler =============
 
@@ -224,6 +220,58 @@ export {
 
 export { APIResponse } from '../../types/common';
 
+// ============= Unified API Facade =============
+
+export {
+  // Types
+  UnifiedAPIConfig,
+  UnifiedRequestOptions,
+  UnifiedAPIStats,
+  UnifiedAPIHealth,
+  
+  // Class and Instance
+  UnifiedAPIFacade,
+  getUnifiedAPIFacade,
+  initializeUnifiedAPIFacade,
+  hasUnifiedAPIFacade,
+  
+  // Convenience Functions
+  unifiedGet,
+  unifiedPost,
+  unifiedPut,
+  unifiedDelete,
+  
+  // React Hook
+  useUnifiedAPI,
+} from './apiUnifiedFacade';
+
+// ============= Middleware Registry =============
+
+export {
+  // Types
+  MiddlewareContext,
+  MiddlewarePhase,
+  MiddlewarePriority,
+  MiddlewareConfig,
+  MiddlewareFunction,
+  MiddlewareResult,
+  RegistryStats,
+  
+  // Class and Instance
+  APIMiddlewareRegistry,
+  getAPIMiddlewareRegistry,
+  initializeAPIMiddlewareRegistry,
+  hasAPIMiddlewareRegistry,
+  
+  // Convenience Functions
+  registerPreRequestMiddleware,
+  registerPostRequestMiddleware,
+  registerErrorMiddleware,
+  
+  // React Hook
+  useAPIMiddleware,
+} from './apiMiddlewareRegistry';
+
 // ============= Utility Functions =============
 
 import { apiResponseCache } from './apiResponseCache';
@@ -233,6 +281,8 @@ import { apiBatchOperations } from './apiBatchOperations';
 import { apiHealthMonitor } from './apiHealthMonitor';
 import { apiRequestDeduplicator } from './apiRequestDeduplicator';
 import { apiTracing } from './apiTracing';
+import { getUnifiedAPIFacade, hasUnifiedAPIFacade } from './apiUnifiedFacade';
+import { getAPIMiddlewareRegistry, hasAPIMiddlewareRegistry } from './apiMiddlewareRegistry';
 
 /**
  * Initialize all API services
@@ -254,6 +304,8 @@ export function getAPIServicesHealth(): {
   health: ReturnType<typeof apiHealthMonitor.getSummary>;
   deduplicator: ReturnType<typeof apiRequestDeduplicator.getStats>;
   tracing: ReturnType<typeof apiTracing.getStats>;
+  unifiedFacade?: ReturnType<typeof getUnifiedAPIFacade>['getStats'] extends () => infer R ? R : never;
+  middlewareRegistry?: ReturnType<typeof getAPIMiddlewareRegistry>['getStats'] extends () => infer R ? R : never;
 } {
   return {
     cache: apiResponseCache.getStats(),
@@ -262,7 +314,9 @@ export function getAPIServicesHealth(): {
     batch: apiBatchOperations.getStats(),
     health: apiHealthMonitor.getSummary(),
     deduplicator: apiRequestDeduplicator.getStats(),
-    tracing: apiTracing.getStats()
+    tracing: apiTracing.getStats(),
+    unifiedFacade: hasUnifiedAPIFacade() ? getUnifiedAPIFacade().getStats() as any : undefined,
+    middlewareRegistry: hasAPIMiddlewareRegistry() ? getAPIMiddlewareRegistry().getStats() as any : undefined,
   };
 }
 
@@ -278,4 +332,10 @@ export function destroyAPIServices(): void {
   apiHealthMonitor.destroy();
   apiRequestDeduplicator.destroy();
   apiTracing.destroy();
+  if (hasUnifiedAPIFacade()) {
+    getUnifiedAPIFacade().destroy();
+  }
+  if (hasAPIMiddlewareRegistry()) {
+    getAPIMiddlewareRegistry().destroy();
+  }
 }
