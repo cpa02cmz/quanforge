@@ -10,6 +10,9 @@
  * - Timeout Manager: Centralized timer management
  * - Graceful Degradation: Fallback mechanisms for critical services
  * - Service Registry: Track and coordinate service reliability
+ * - Error Budget Tracker: SLA/SLO monitoring and error budget management
+ * - Resilience Policy: Unified resilience pattern enforcement
+ * - Cascading Failure Detector: Early detection of systemic failures
  * 
  * @module services/reliability
  */
@@ -68,3 +71,39 @@ export {
   type Incident,
   type SystemReliabilityReport
 } from './serviceRegistry';
+
+// Error Budget Tracker for SLA monitoring
+export {
+  ErrorBudgetTracker,
+  errorBudgetTracker,
+  createTrackedService,
+  type SLOConfig,
+  type ErrorBudgetStatus,
+  type BudgetAlert
+} from './errorBudgetTracker';
+
+// Resilience Policy for unified pattern enforcement
+export {
+  ResiliencePolicy,
+  ResiliencePolicyManager,
+  resiliencePolicyManager,
+  withResilience,
+  ResiliencePattern,
+  DEFAULT_RESILIENCE_CONFIGS,
+  type ResiliencePolicyConfig,
+  type ResilienceEvent,
+  type ResilienceMetrics
+} from './resiliencePolicy';
+
+// Cascading Failure Detector for early warning
+export {
+  CascadingFailureDetector,
+  cascadingFailureDetector,
+  withCascadeDetection,
+  FailureSeverity,
+  type CascadingFailureConfig,
+  type FailureRecord,
+  type CorrelationResult,
+  type CascadePrediction,
+  type CascadeAlert
+} from './cascadingFailureDetector';
