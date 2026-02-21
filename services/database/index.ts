@@ -26,6 +26,9 @@ export { DatabaseHealthMonitor, databaseHealthMonitor } from './DatabaseHealthMo
 // Query Performance
 export { QueryPerformanceAnalyzer, queryPerformanceAnalyzer } from './QueryPerformanceAnalyzer';
 
+// Utilities (Backend Engineer Enhancement)
+export * from './utils';
+
 // Sub-modules
 export * from './operations';
 export * from './cacheLayer';
