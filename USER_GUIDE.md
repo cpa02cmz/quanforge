@@ -454,6 +454,6 @@ Happy trading with QuantForge AI!
 
 ---
 
-**Last Updated**: February 10, 2026  
-**Platform Version**: v1.6 Performance Optimization
-**Documentation Version**: Consolidated User Guide v2.1
+**Last Updated**: February 21, 2026  
+**Platform Version**: v1.9.0
+**Documentation Version**: Consolidated User Guide v2.2
