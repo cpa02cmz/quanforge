@@ -81,6 +81,50 @@ export {
   type BuildResult
 } from './queryBuilder';
 
+// Event Publisher
+export {
+  DatabaseEventPublisher,
+  databaseEventPublisher,
+  type DatabaseEventType,
+  type DatabaseEntity,
+  type DatabaseEvent,
+  type EventMetadata,
+  type EventFilter,
+  type EventSubscription,
+  type EventBuffer,
+  type EventStatistics,
+  type EventCallback,
+  type EventPublisherConfig
+} from './eventPublisher';
+
+// Query Plan Analyzer
+export {
+  QueryPlanAnalyzer,
+  queryPlanAnalyzer,
+  type QueryPlan,
+  type PlanNode,
+  type QueryAnalysis,
+  type QueryIssue,
+  type IssueType,
+  type QuerySuggestion,
+  type SuggestionType,
+  type AnalyzerConfig,
+  type QueryStats
+} from './queryPlanAnalyzer';
+
+// Migration Runner
+export {
+  MigrationRunner,
+  migrationRunner,
+  type MigrationStatus,
+  type Migration,
+  type MigrationResult,
+  type MigrationReport,
+  type MigrationConfig,
+  type MigrationValidator,
+  type ValidationResult
+} from './migrationRunner';
+
 // Sub-modules
 export * from './operations';
 export * from './cacheLayer';
