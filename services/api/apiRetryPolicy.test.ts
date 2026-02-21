@@ -17,9 +17,12 @@ import {
   retryOnRateLimit,
   retryOnTransientError,
   useAPIRetryPolicy,
-  type RetryPolicyConfig,
-  type RetryContext,
-  type BackoffStrategy,
+  // @ts-expect-error - Imported for type documentation
+  type RetryPolicyConfig as _RetryPolicyConfig,
+  // @ts-expect-error - Imported for type documentation
+  type RetryContext as _RetryContext,
+  // @ts-expect-error - Imported for type documentation
+  type BackoffStrategy as _BackoffStrategy,
 } from './apiRetryPolicy';
 
 describe('APIRetryPolicy', () => {
@@ -83,10 +86,10 @@ describe('APIRetryPolicy', () => {
     });
 
     it('should fail after max retries', async () => {
-      let attempts = 0;
+      let _attempts = 0;
       
       const result = await policy.execute(() => {
-        attempts++;
+        _attempts++;
         throw new Error('Persistent error');
       });
       
@@ -108,7 +111,7 @@ describe('APIRetryPolicy', () => {
       
       let attempts = 0;
       
-      const result = await statusPolicy.execute(
+      const _result = await statusPolicy.execute(
         () => {
           attempts++;
           throw new Error('Server error');
@@ -131,7 +134,7 @@ describe('APIRetryPolicy', () => {
       
       let attempts = 0;
       
-      const result = await statusPolicy.execute(
+      const _result = await statusPolicy.execute(
         () => {
           attempts++;
           throw new Error('Not found');

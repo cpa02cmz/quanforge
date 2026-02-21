@@ -15,8 +15,10 @@ import {
   queueLowPriority,
   queueBackground,
   useAPIRequestQueue,
-  type RequestPriority,
-  type QueueStats,
+  // @ts-expect-error - Imported for type documentation
+  type RequestPriority as _RequestPriority,
+  // @ts-expect-error - Imported for type documentation
+  type QueueStats as _QueueStats,
 } from './apiRequestQueue';
 
 describe('APIRequestQueue', () => {

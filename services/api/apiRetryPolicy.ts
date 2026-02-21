@@ -467,7 +467,7 @@ export class APIRetryPolicy {
    * Get retry statistics
    */
   getStats(): RetryStats {
-    const totalSuccessful = this.stats.firstTrySuccess + this.stats.retrySuccess;
+    const _totalSuccessful = this.stats.firstTrySuccess + this.stats.retrySuccess;
     const averageAttempts = this.stats.totalOperations > 0
       ? (this.stats.totalRetryAttempts + this.stats.totalOperations) / this.stats.totalOperations
       : 1;
