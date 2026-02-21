@@ -125,6 +125,46 @@ export {
   type ValidationResult
 } from './migrationRunner';
 
+// Benchmark Service
+export {
+  BenchmarkService,
+  benchmarkService,
+  type BenchmarkResult,
+  type BenchmarkCategory,
+  type BaselineComparison,
+  type RegressionInfo,
+  type BenchmarkSuite,
+  type BenchmarkConfig,
+  type BenchmarkHistory,
+  type BenchmarkReport
+} from './benchmarkService';
+
+// Archiving Service
+export {
+  ArchivingService,
+  archivingService,
+  CREATE_ARCHIVE_TABLE_SQL,
+  type ArchiveConfig,
+  type ArchiveRecord,
+  type ArchiveStats,
+  type ArchiveReport,
+  type ArchiveCandidate,
+  type PurgeResult,
+  type RestoreResult,
+  type ArchiveOperation
+} from './archivingService';
+
+// Seeding Service
+export {
+  SeedingService,
+  seedingService,
+  type SeedingConfig,
+  type SeedUser,
+  type SeedResult,
+  type RobotTemplate,
+  type SeedOperation
+} from './seedingService';
+
 // Sub-modules
 export * from './operations';
 export * from './cacheLayer';
