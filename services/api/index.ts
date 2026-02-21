@@ -18,6 +18,12 @@
  * @author API Specialist Agent
  */
 
+// ============= Local Imports for Utility Functions =============
+
+import { apiResponseCache } from './apiResponseCache';
+import { apiRequestInterceptor } from './apiRequestInterceptor';
+import { apiMetricsCollector } from './apiMetricsCollector';
+
 // ============= Response Handler =============
 
 export {
