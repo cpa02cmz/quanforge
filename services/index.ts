@@ -134,3 +134,31 @@ export {
   type ValidationResult,
   type MigrationValidationReport,
 } from './databaseMigrationValidator';
+
+// Integration Orchestrator - Unified External Integration Management
+export {
+  // Types
+  IntegrationStatus,
+  IntegrationPriority,
+  IntegrationEventType,
+  type IntegrationEvent,
+  type IntegrationEventListener,
+  type IntegrationConfig,
+  type IntegrationHealthCheckResult,
+  type IntegrationStatusInfo,
+  type IntegrationSystemSummary,
+  type IntegrationMetrics,
+  type RecoveryOptions,
+  type InitializationResult,
+  type IntegrationDiagnostic,
+  type OrchestratorConfig,
+  // Orchestrator
+  IntegrationOrchestrator,
+  integrationOrchestrator,
+  // Setup
+  INTEGRATION_NAMES,
+  registerStandardIntegrations,
+  initializeIntegrations,
+  getIntegrationStatusDisplay,
+  getIntegrationDashboardData,
+} from './integration';
