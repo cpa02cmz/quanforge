@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 export type StepStatus = 'pending' | 'current' | 'completed' | 'error';
 
@@ -71,21 +72,8 @@ export const StepIndicator: React.FC<StepIndicatorProps> = memo(({
 }) => {
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [animatingSteps, setAnimatingSteps] = useState<Set<number>>(new Set());
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const stepRefs = useRef<(HTMLButtonElement | HTMLDivElement | null)[]>([]);
-
-  // Check for reduced motion preference
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-    
-    const handleChange = (e: MediaQueryListEvent) => {
-      setPrefersReducedMotion(e.matches);
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
 
   // Track completed steps for animations
   useEffect(() => {

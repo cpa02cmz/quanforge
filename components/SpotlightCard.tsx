@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, memo } from 'react';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 export type SpotlightSize = 'sm' | 'md' | 'lg';
 export type SpotlightIntensity = 'subtle' | 'normal' | 'strong';
@@ -90,24 +91,11 @@ export const SpotlightCard: React.FC<SpotlightCardProps> = memo(({
 }) => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const cardRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number | null>(null);
   const targetPosition = useRef({ x: 0, y: 0 });
   const currentPosition = useRef({ x: 0, y: 0 });
-
-  // Check for reduced motion preference
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-    
-    const handleChange = (e: MediaQueryListEvent) => {
-      setPrefersReducedMotion(e.matches);
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
 
   // Size configurations in pixels
   const sizeConfig = {

@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef, memo } from 'react';
 import { marketData as marketService, MarketData } from '../services';
 import { useTranslation } from '../services/i18n';
 import { UI_TIMING, ANIMATION_INTERVALS } from '../constants';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 interface MarketTickerProps {
   symbol: string;
@@ -24,20 +25,7 @@ export const MarketTicker: React.FC<MarketTickerProps> = memo(({ symbol }) => {
   const prevBidRef = useRef<number>(0);
   const [direction, setDirection] = useState<'up' | 'down' | 'neutral'>('neutral');
   const [flashIntensity, setFlashIntensity] = useState(0);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-
-  // Check for reduced motion preference
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-
-    const handleChange = (e: MediaQueryListEvent) => {
-      setPrefersReducedMotion(e.matches);
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     // Reset data when symbol changes

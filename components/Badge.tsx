@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 export type BadgeVariant = 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info';
 export type BadgeSize = 'sm' | 'md' | 'lg';
@@ -68,23 +69,10 @@ export const Badge: React.FC<BadgeProps> = memo(({
 }) => {
   const [displayValue, setDisplayValue] = useState(children);
   const [isEntering, setIsEntering] = useState(isNew);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const prevValueRef = useRef(children);
   const badgeRef = useRef<HTMLSpanElement>(null);
   const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Fix Issue #616
-
-  // Check for reduced motion preference
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-    
-    const handleChange = (e: MediaQueryListEvent) => {
-      setPrefersReducedMotion(e.matches);
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
 
   // Handle value changes with smooth transition
   useEffect(() => {

@@ -1,4 +1,5 @@
-import React, { useState, useCallback, memo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, memo, useRef } from 'react';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 export interface FloatingLabelInputProps {
   /** Input value */
@@ -91,22 +92,9 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = memo(({
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const inputRef = useRef<HTMLInputElement>(null);
   const uniqueId = id || `floating-input-${Math.random().toString(36).substr(2, 9)}`;
-  
-  // Check for reduced motion preference
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-    
-    const handleChange = (e: MediaQueryListEvent) => {
-      setPrefersReducedMotion(e.matches);
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
 
   // Determine if label should float
   const shouldFloat = isFocused || value.length > 0;

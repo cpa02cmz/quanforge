@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, memo, ReactNode } from 'react';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 export type MagneticButtonVariant = 'default' | 'primary' | 'secondary' | 'ghost' | 'danger';
 export type MagneticButtonSize = 'sm' | 'md' | 'lg';
@@ -104,26 +105,13 @@ export const MagneticButton: React.FC<MagneticButtonProps> = memo(({
   const [isHovered, setIsHovered] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
   const [ripples, setRipples] = useState<Ripple[]>([]);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const animationRef = useRef<number | null>(null);
   const targetPosition = useRef({ x: 0, y: 0 });
   const currentPosition = useRef({ x: 0, y: 0 });
   const rippleIdRef = useRef(0);
   const rippleTimeoutsRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
-
-  // Check for reduced motion preference
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-    
-    const handleChange = (e: MediaQueryListEvent) => {
-      setPrefersReducedMotion(e.matches);
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
 
   // Cleanup timeouts and animation on unmount
   useEffect(() => {

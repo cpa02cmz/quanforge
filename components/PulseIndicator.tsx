@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { LOADING_ANIMATION, FADE_TIMING } from '../constants';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 export type PulsePosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'center';
 export type PulseVariant = 'default' | 'primary' | 'success' | 'warning' | 'error';
@@ -86,22 +87,9 @@ export const PulseIndicator: React.FC<PulseIndicatorProps> = memo(({
   const [isVisible, setIsVisible] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
   const [pulseCompleted, setPulseCompleted] = useState(false);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const animationRef = useRef<number | null>(null);
   const pulseCounterRef = useRef(0);
-
-  // Check for reduced motion preference
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-    
-    const handleChange = (e: MediaQueryListEvent) => {
-      setPrefersReducedMotion(e.matches);
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
 
   // Handle entrance animation with delay
   useEffect(() => {
