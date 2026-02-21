@@ -7,9 +7,15 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { backendOptimizationManager as modularManager } from './optimization/modularBackendOptimizationManager';
 import { OptimizationConfig, OptimizationMetrics } from './optimization/optimizationTypes';
 import { apiDeduplicator } from './apiDeduplicator';
+import type {
+  QueryOptimizationResult,
+  AdvancedInsightsResult,
+} from './common/types';
 
 // Export the types for backward compatibility
 export type { OptimizationConfig, OptimizationMetrics };
+// Re-export the new types for external use
+export type { QueryOptimizationResult, AdvancedInsightsResult };
 
 /**
  * Legacy Backend Optimization Manager Interface
@@ -82,7 +88,7 @@ class LegacyBackendOptimizationManager {
   /**
    * Get query optimization recommendations
    */
-  async getQueryOptimizationRecommendations(client: SupabaseClient): Promise<any> {
+  async getQueryOptimizationRecommendations(client: SupabaseClient): Promise<QueryOptimizationResult> {
     return await modularManager.getQueryOptimizationRecommendations(client);
   }
 
@@ -96,7 +102,7 @@ class LegacyBackendOptimizationManager {
   /**
    * Get advanced optimization insights
    */
-  async getAdvancedOptimizationInsights(client: SupabaseClient): Promise<any> {
+  async getAdvancedOptimizationInsights(client: SupabaseClient): Promise<AdvancedInsightsResult> {
     return await modularManager.getAdvancedOptimizationInsights(client);
   }
 
