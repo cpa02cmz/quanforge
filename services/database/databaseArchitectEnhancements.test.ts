@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
   DataIntegrityValidator,
-  dataIntegrityValidator
+  dataIntegrityValidator as _dataIntegrityValidator
 } from './dataIntegrityValidator';
 import {
   QueryCacheService

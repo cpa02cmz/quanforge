@@ -13,7 +13,7 @@
  */
 
 import { createScopedLogger } from '../../utils/logger';
-import { TIME_CONSTANTS, COUNT_CONSTANTS } from '../modularConstants';
+import { TIME_CONSTANTS } from '../modularConstants';
 
 const logger = createScopedLogger('QueryCacheService');
 
@@ -432,7 +432,6 @@ export class QueryCacheService {
   }
 
   private cleanup(): void {
-    const now = Date.now();
     let evicted = 0;
 
     for (const [key, entry] of this.cache.entries()) {

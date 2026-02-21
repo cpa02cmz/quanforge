@@ -23,7 +23,7 @@ import type {
   AnalysisResultJSON
 } from '../../types/database';
 
-const logger = createScopedLogger('DataIntegrityValidator');
+const _logger = createScopedLogger('DataIntegrityValidator');
 
 // ============================================================================
 // TYPES
@@ -160,7 +160,7 @@ export class DataIntegrityValidator {
     id: string,
     dto: UpdateRobotDTO,
     existingData: RobotRow,
-    context?: ValidationContext
+    _context?: ValidationContext
   ): Promise<IntegrityValidationResult> {
     const startTime = performance.now();
     const errors: IntegrityValidationError[] = [];
@@ -330,7 +330,7 @@ export class DataIntegrityValidator {
     }
 
     // Check for problematic characters
-    if (/[<>\"\'\\]/.test(name)) {
+    if (/[<>"'\\]/.test(name)) {
       warnings.push({
         field: 'name',
         code: 'NAME_SPECIAL_CHARS',
