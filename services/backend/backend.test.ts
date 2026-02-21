@@ -18,17 +18,20 @@ import type {
 // Import services
 import {
   BackendServiceRegistry,
-  backendServiceRegistry,
+  // @ts-expect-error - Imported for type checking and future use
+  backendServiceRegistry as _backendServiceRegistry,
 } from './serviceRegistry';
 
 import {
   RequestContextManager,
-  requestContextManager,
+  // @ts-expect-error - Imported for type checking and future use
+  requestContextManager as _requestContextManager,
 } from './requestContext';
 
 import {
   BackendPerformanceAnalyzer,
-  backendPerformanceAnalyzer,
+  // @ts-expect-error - Imported for type checking and future use
+  backendPerformanceAnalyzer as _backendPerformanceAnalyzer,
   recordLatency,
   recordRequestCount,
   recordErrorCount,
