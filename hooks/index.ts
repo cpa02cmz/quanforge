@@ -23,6 +23,16 @@ export type {
 
 export { useMemoryPressure } from './useMemoryPressure';
 
+// Batch update hooks
+export { useBatchUpdates, useBatchedState, useDebouncedState } from './useBatchUpdates';
+
+// Component render profiling
+export { 
+  useComponentRenderProfiler, 
+  usePerformanceMeasure, 
+  useMountProfiler 
+} from './useComponentRenderProfiler';
+
 // Value transformation hooks
 export { useDebouncedValue, useDebouncedCallback, useThrottledValue } from './useDebouncedValue';
 export type { DebounceOptions, DebouncedValueState } from './useDebouncedValue';
