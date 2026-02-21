@@ -1,0 +1,501 @@
+/**
+ * Backend Services Tests
+ * 
+ * Tests for backend service registry, request context manager,
+ * and performance analyzer.
+ * 
+ * @module services/backend/tests
+ */
+
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+// Import types
+import type {
+  BackendServiceConfig,
+  BackendServiceStatus,
+} from './types';
+
+// Import services
+import {
+  BackendServiceRegistry,
+  // @ts-expect-error - Imported for type checking and future use
+  backendServiceRegistry as _backendServiceRegistry,
+} from './serviceRegistry';
+
+import {
+  RequestContextManager,
+  // @ts-expect-error - Imported for type checking and future use
+  requestContextManager as _requestContextManager,
+} from './requestContext';
+
+import {
+  BackendPerformanceAnalyzer,
+  // @ts-expect-error - Imported for type checking and future use
+  backendPerformanceAnalyzer as _backendPerformanceAnalyzer,
+  recordLatency,
+  recordRequestCount,
+  recordErrorCount,
+} from './performanceAnalyzer';
+
+describe('Backend Service Registry', () => {
+  let registry: BackendServiceRegistry;
+
+  beforeEach(() => {
+    // Create a fresh instance for each test
+    registry = BackendServiceRegistry.getInstance();
+  });
+
+  afterEach(() => {
+    // Clean up after each test
+    registry.destroy();
+  });
+
+  it('should be a singleton', () => {
+    const instance1 = BackendServiceRegistry.getInstance();
+    const instance2 = BackendServiceRegistry.getInstance();
+    expect(instance1).toBe(instance2);
+  });
+
+  it('should register a service', () => {
+    const config: BackendServiceConfig = {
+      name: 'test-service',
+      criticality: 'high',
+      healthCheck: async () => ({
+        status: 'healthy' as BackendServiceStatus,
+        timestamp: Date.now(),
+      }),
+    };
+
+    const id = registry.registerService(config);
+    expect(id).toBeDefined();
+    expect(id).toContain('test-service');
+
+    const service = registry.getServiceByName('test-service');
+    expect(service).toBeDefined();
+    expect(service?.config.name).toBe('test-service');
+    expect(service?.config.criticality).toBe('high');
+  });
+
+  it('should unregister a service', () => {
+    const config: BackendServiceConfig = {
+      name: 'test-service',
+      criticality: 'medium',
+    };
+
+    const id = registry.registerService(config);
+    expect(registry.getService(id)).toBeDefined();
+
+    const result = registry.unregisterService(id);
+    expect(result).toBe(true);
+    expect(registry.getService(id)).toBeUndefined();
+  });
+
+  it('should check service health', async () => {
+    const config: BackendServiceConfig = {
+      name: 'healthy-service',
+      criticality: 'high',
+      healthCheck: async () => ({
+        status: 'healthy' as BackendServiceStatus,
+        message: 'Service is healthy',
+        timestamp: Date.now(),
+      }),
+    };
+
+    const id = registry.registerService(config);
+    const result = await registry.checkServiceHealth(id);
+
+    expect(result).toBeDefined();
+    expect(result?.status).toBe('healthy');
+    expect(result?.latency).toBeDefined();
+  });
+
+  it('should handle health check failures', async () => {
+    const config: BackendServiceConfig = {
+      name: 'failing-service',
+      criticality: 'medium',
+      healthCheck: async () => {
+        throw new Error('Health check failed');
+      },
+    };
+
+    const id = registry.registerService(config);
+    const result = await registry.checkServiceHealth(id);
+
+    expect(result).toBeDefined();
+    expect(result?.status).toBe('degraded'); // First failure should be degraded
+  });
+
+  it('should record requests', () => {
+    const config: BackendServiceConfig = {
+      name: 'test-service',
+      criticality: 'low',
+    };
+
+    registry.registerService(config);
+
+    registry.recordRequest('test-service', true, 100);
+    registry.recordRequest('test-service', true, 150);
+    registry.recordRequest('test-service', false, 200);
+
+    const service = registry.getServiceByName('test-service');
+    expect(service?.totalRequests).toBe(3);
+    expect(service?.successfulRequests).toBe(2);
+    expect(service?.failedRequests).toBe(1);
+    expect(service?.averageResponseTime).toBeGreaterThan(0);
+  });
+
+  it('should get registry statistics', () => {
+    registry.registerService({ name: 'service-a', criticality: 'critical' });
+    registry.registerService({ name: 'service-b', criticality: 'high' });
+    registry.registerService({ name: 'service-c', criticality: 'low' });
+
+    const stats = registry.getStats();
+    expect(stats.totalServices).toBe(3);
+    expect(stats.overallHealth).toBeDefined();
+  });
+
+  it('should get services by status', () => {
+    registry.registerService({ name: 'service-a', criticality: 'high' });
+
+    const healthyServices = registry.getServicesByStatus('healthy');
+    expect(healthyServices.length).toBeGreaterThan(0);
+  });
+
+  it('should get services by criticality', () => {
+    registry.registerService({ name: 'critical-service', criticality: 'critical' });
+    registry.registerService({ name: 'high-service', criticality: 'high' });
+
+    const criticalServices = registry.getServicesByCriticality('critical');
+    expect(criticalServices.length).toBe(1);
+    expect(criticalServices[0].config.name).toBe('critical-service');
+  });
+
+  it('should emit events on status change', async () => {
+    const eventHandler = vi.fn();
+    const unsubscribe = registry.subscribe(eventHandler);
+
+    const config: BackendServiceConfig = {
+      name: 'test-service',
+      criticality: 'medium',
+      healthCheck: async () => ({
+        status: 'healthy' as BackendServiceStatus,
+        timestamp: Date.now(),
+      }),
+    };
+
+    registry.registerService(config);
+
+    // Wait for health check to complete
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    expect(eventHandler).toHaveBeenCalled();
+    unsubscribe();
+  });
+});
+
+describe('Request Context Manager', () => {
+  let manager: RequestContextManager;
+
+  beforeEach(() => {
+    manager = RequestContextManager.getInstance();
+  });
+
+  afterEach(() => {
+    manager.destroy();
+  });
+
+  it('should be a singleton', () => {
+    const instance1 = RequestContextManager.getInstance();
+    const instance2 = RequestContextManager.getInstance();
+    expect(instance1).toBe(instance2);
+  });
+
+  it('should start a request', () => {
+    const context = manager.startRequest({
+      serviceName: 'test-service',
+      operation: 'test-operation',
+    });
+
+    expect(context.id).toBeDefined();
+    expect(context.serviceName).toBe('test-service');
+    expect(context.operation).toBe('test-operation');
+    expect(context.traceId).toBeDefined();
+    expect(context.spanId).toBeDefined();
+  });
+
+  it('should end a request successfully', () => {
+    const context = manager.startRequest({
+      serviceName: 'test-service',
+      operation: 'test-operation',
+    });
+
+    manager.endRequest(context);
+
+    const entry = manager.getRequest(context.id);
+    expect(entry?.status).toBe('success');
+    expect(entry?.duration).toBeDefined();
+  });
+
+  it('should end a request with error', () => {
+    const context = manager.startRequest({
+      serviceName: 'test-service',
+      operation: 'test-operation',
+    });
+
+    const error = new Error('Test error');
+    manager.endRequestWithError(context, error);
+
+    const entry = manager.getRequest(context.id);
+    expect(entry?.status).toBe('error');
+    expect(entry?.error).toBe(error);
+  });
+
+  it('should create nested request contexts', () => {
+    const parentContext = manager.startRequest({
+      serviceName: 'parent-service',
+      operation: 'parent-operation',
+    });
+
+    const childContext = manager.createChildContext(parentContext, {
+      serviceName: 'child-service',
+      operation: 'child-operation',
+    });
+
+    expect(childContext.parentId).toBe(parentContext.id);
+    expect(childContext.traceId).toBe(parentContext.traceId);
+
+    const parentEntry = manager.getRequest(parentContext.id);
+    expect(parentEntry?.children).toContain(childContext.id);
+  });
+
+  it('should get pending requests', () => {
+    manager.startRequest({
+      serviceName: 'test-service',
+      operation: 'test-operation',
+    });
+
+    const pending = manager.getPendingRequests();
+    expect(pending.length).toBe(1);
+  });
+
+  it('should get request statistics', () => {
+    // Create some requests
+    const context1 = manager.startRequest({
+      serviceName: 'test-service',
+      operation: 'op1',
+    });
+    manager.endRequest(context1);
+
+    const context2 = manager.startRequest({
+      serviceName: 'test-service',
+      operation: 'op2',
+    });
+    manager.endRequestWithError(context2, new Error('Test error'));
+
+    const stats = manager.getStats();
+    expect(stats.totalRequests).toBe(2);
+    expect(stats.successfulRequests).toBe(1);
+    expect(stats.failedRequests).toBe(1);
+  });
+
+  it('should wrap async function with context tracking', async () => {
+    const result = await manager.withContext(
+      { serviceName: 'test-service', operation: 'test-op' },
+      async () => {
+        return 'test-result';
+      }
+    );
+
+    expect(result).toBe('test-result');
+
+    const pending = manager.getPendingRequests();
+    expect(pending.length).toBe(0);
+  });
+
+  it('should track failed wrapped functions', async () => {
+    await expect(
+      manager.withContext(
+        { serviceName: 'test-service', operation: 'test-op' },
+        async () => {
+          throw new Error('Test error');
+        }
+      )
+    ).rejects.toThrow('Test error');
+
+    const stats = manager.getStats();
+    expect(stats.failedRequests).toBe(1);
+  });
+});
+
+describe('Backend Performance Analyzer', () => {
+  let analyzer: BackendPerformanceAnalyzer;
+
+  beforeEach(() => {
+    analyzer = BackendPerformanceAnalyzer.getInstance();
+    analyzer.clearAllMetrics();
+  });
+
+  afterEach(() => {
+    analyzer.destroy();
+  });
+
+  it('should be a singleton', () => {
+    const instance1 = BackendPerformanceAnalyzer.getInstance();
+    const instance2 = BackendPerformanceAnalyzer.getInstance();
+    expect(instance1).toBe(instance2);
+  });
+
+  it('should record metrics', () => {
+    analyzer.recordMetric({
+      name: 'latency',
+      value: 100,
+      unit: 'ms',
+      timestamp: Date.now(),
+      service: 'test-service',
+      operation: 'test-op',
+    });
+
+    const metrics = analyzer.getMetrics('test-service');
+    expect(metrics.length).toBe(1);
+    expect(metrics[0].value).toBe(100);
+  });
+
+  it('should analyze service performance', () => {
+    // Record some latency and request count metrics
+    for (let i = 0; i < 10; i++) {
+      analyzer.recordMetric({
+        name: 'latency',
+        value: 100 + i * 10,
+        unit: 'ms',
+        timestamp: Date.now() - i * 1000,
+        service: 'test-service',
+        operation: 'test-op',
+      });
+      
+      analyzer.recordMetric({
+        name: 'request_count',
+        value: 1,
+        unit: 'count',
+        timestamp: Date.now() - i * 1000,
+        service: 'test-service',
+        operation: 'test-op',
+      });
+    }
+
+    const analysis = analyzer.analyzeService('test-service');
+    expect(analysis.serviceName).toBe('test-service');
+    expect(analysis.metrics.requestCount).toBeGreaterThan(0);
+    expect(analysis.score).toBeGreaterThan(0);
+    expect(analysis.score).toBeLessThanOrEqual(100);
+  });
+
+  it('should generate performance report', () => {
+    // Record metrics for multiple services
+    analyzer.recordMetric({
+      name: 'latency',
+      value: 50,
+      unit: 'ms',
+      timestamp: Date.now(),
+      service: 'service-a',
+    });
+
+    analyzer.recordMetric({
+      name: 'latency',
+      value: 200,
+      unit: 'ms',
+      timestamp: Date.now(),
+      service: 'service-b',
+    });
+
+    const report = analyzer.generateReport();
+    expect(report.services.length).toBe(2);
+    expect(report.overallScore).toBeGreaterThan(0);
+    expect(report.summary).toBeDefined();
+  });
+
+  it('should detect bottlenecks', () => {
+    // Record high latency metrics
+    for (let i = 0; i < 10; i++) {
+      analyzer.recordMetric({
+        name: 'latency',
+        value: 3000, // 3 seconds - high latency
+        unit: 'ms',
+        timestamp: Date.now(),
+        service: 'slow-service',
+      });
+    }
+
+    const analysis = analyzer.analyzeService('slow-service');
+    expect(analysis.bottlenecks.length).toBeGreaterThan(0);
+    expect(analysis.bottlenecks.some(b => b.type === 'latency')).toBe(true);
+  });
+
+  it('should generate recommendations', () => {
+    // Record high latency metrics
+    for (let i = 0; i < 10; i++) {
+      analyzer.recordMetric({
+        name: 'latency',
+        value: 500,
+        unit: 'ms',
+        timestamp: Date.now(),
+        service: 'test-service',
+      });
+    }
+
+    const analysis = analyzer.analyzeService('test-service');
+    expect(analysis.recommendations.length).toBeGreaterThan(0);
+  });
+
+  it('should track services', () => {
+    analyzer.recordMetric({
+      name: 'latency',
+      value: 100,
+      unit: 'ms',
+      timestamp: Date.now(),
+      service: 'service-a',
+    });
+
+    analyzer.recordMetric({
+      name: 'latency',
+      value: 100,
+      unit: 'ms',
+      timestamp: Date.now(),
+      service: 'service-b',
+    });
+
+    const services = analyzer.getTrackedServices();
+    expect(services).toContain('service-a');
+    expect(services).toContain('service-b');
+  });
+
+  it('should clear metrics', () => {
+    analyzer.recordMetric({
+      name: 'latency',
+      value: 100,
+      unit: 'ms',
+      timestamp: Date.now(),
+      service: 'test-service',
+    });
+
+    analyzer.clearServiceMetrics('test-service');
+    const metrics = analyzer.getMetrics('test-service');
+    expect(metrics.length).toBe(0);
+  });
+});
+
+describe('Helper Functions', () => {
+  it('should have recordLatency function', () => {
+    expect(recordLatency).toBeDefined();
+    expect(typeof recordLatency).toBe('function');
+  });
+
+  it('should have recordRequestCount function', () => {
+    expect(recordRequestCount).toBeDefined();
+    expect(typeof recordRequestCount).toBe('function');
+  });
+
+  it('should have recordErrorCount function', () => {
+    expect(recordErrorCount).toBeDefined();
+    expect(typeof recordErrorCount).toBe('function');
+  });
+});
