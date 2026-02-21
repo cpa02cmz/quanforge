@@ -58,7 +58,7 @@ export class RetryLogic implements RetryLogicInterface {
     }
 
     // All attempts failed
-    handleError(lastError, operationName, 'retryLogic');
+    handleError(lastError instanceof Error ? lastError : new Error(String(lastError)), operationName, 'retryLogic');
     throw lastError;
   }
 
@@ -78,20 +78,23 @@ export class RetryLogic implements RetryLogicInterface {
   isRetryableError(error: unknown): boolean {
     if (!error) return false;
 
+    // Type the error for property access
+    const err = error as { code?: string | number; status?: number; details?: { code?: string }; message?: string };
+
     // Check for non-retryable error codes
-    const errorCode = error.code || error.status;
-    if (DATABASE_CONFIG.RETRY.NON_RETRYABLE_STATUS_CODES.includes(errorCode)) {
+    const errorCode = err.code || err.status;
+    if (DATABASE_CONFIG.RETRY.NON_RETRYABLE_STATUS_CODES.includes(errorCode as number)) {
       return false;
     }
 
     // Check for non-retryable database error codes
-    const dbErrorCode = error.details?.code || error.message;
-    if (DATABASE_CONFIG.RETRY.NON_RETRYABLE_ERRORS.includes(dbErrorCode)) {
+    const dbErrorCode = err.details?.code || err.message;
+    if (typeof dbErrorCode === 'string' && DATABASE_CONFIG.RETRY.NON_RETRYABLE_ERRORS.includes(dbErrorCode)) {
       return false;
     }
 
     // Check for edge-specific errors
-    if (DATABASE_CONFIG.RETRY.EDGE_SPECIFIC_ERRORS.includes(dbErrorCode)) {
+    if (typeof dbErrorCode === 'string' && DATABASE_CONFIG.RETRY.EDGE_SPECIFIC_ERRORS.includes(dbErrorCode)) {
       return false;
     }
 
@@ -105,19 +108,21 @@ export class RetryLogic implements RetryLogicInterface {
   }
 
   private isNetworkError(error: unknown): boolean {
+    const err = error as { message?: string; type?: string; code?: string };
     return !!(
-      error.message?.toLowerCase().includes('network') ||
-      error.message?.toLowerCase().includes('fetch') ||
-      error.type === 'network' ||
-      error.code === 'NETWORK_ERROR'
+      err.message?.toLowerCase().includes('network') ||
+      err.message?.toLowerCase().includes('fetch') ||
+      err.type === 'network' ||
+      err.code === 'NETWORK_ERROR'
     );
   }
 
   private isTimeoutError(error: unknown): boolean {
+    const err = error as { message?: string; name?: string; code?: string };
     return !!(
-      error.message?.toLowerCase().includes('timeout') ||
-      error.name === 'TimeoutError' ||
-      error.code === 'TIMEOUT'
+      err.message?.toLowerCase().includes('timeout') ||
+      err.name === 'TimeoutError' ||
+      err.code === 'TIMEOUT'
     );
   }
 
