@@ -23,6 +23,36 @@ export type {
 
 export { useMemoryPressure } from './useMemoryPressure';
 
+// Value transformation hooks
+export { useDebouncedValue, useDebouncedCallback, useThrottledValue } from './useDebouncedValue';
+export type { DebounceOptions, DebouncedValueState } from './useDebouncedValue';
+
+// DOM hooks
+export { 
+  useIntersectionObserver, 
+  useIsVisible, 
+  useScrollProgress, 
+  useLazyLoad 
+} from './useIntersectionObserver';
+export type { 
+  IntersectionObserverOptions, 
+  IntersectionObserverResult 
+} from './useIntersectionObserver';
+
+// Keyboard hooks
+export { 
+  useKeyPress, 
+  useKeyboardShortcut, 
+  useKeySequence, 
+  usePressedKeys 
+} from './useKeyPress';
+export type { 
+  KeyPressOptions, 
+  ShortcutOptions, 
+  KeySequenceOptions, 
+  ModifierKey 
+} from './useKeyPress';
+
 // UI hooks
 export { useAnimatedPlaceholder } from './useAnimatedPlaceholder';
 export { useChatFocusManagement } from './useChatFocusManagement';
