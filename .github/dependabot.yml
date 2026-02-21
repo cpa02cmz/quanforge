@@ -23,6 +23,17 @@ updates:
         update-types:
           - "minor"
           - "patch"
+      # Group development dependencies separately for better organization
+      dev-dependencies:
+        patterns:
+          - "@types/*"
+          - "eslint*"
+          - "prettier*"
+          - "vitest*"
+          - "@vitest/*"
+        update-types:
+          - "minor"
+          - "patch"
     # Commit message configuration
     commit-message:
       prefix: "chore(deps)"
