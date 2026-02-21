@@ -701,6 +701,6 @@ For additional support, check the [USER_GUIDE.md](./USER_GUIDE.md) or open an is
 
 ---
 
-**Last Updated**: February 10, 2026  
-**Version**: Current stable release
+**Last Updated**: February 21, 2026  
+**Version**: v1.9.0
 **Maintainers**: QuantForge AI Team
