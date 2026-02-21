@@ -17,6 +17,10 @@
  * - Rate Limiter: Token bucket rate limiting for API calls
  * - Self-Healing Service: Automatic failure recovery
  * - Reliability Orchestrator: Central coordinator for all reliability services
+ * - Service Dependency Graph: Dependency tracking and health propagation
+ * - Adaptive Rate Limiter: Dynamic rate limit adjustment
+ * - Latency Budget Tracker: Latency monitoring and budget enforcement
+ * - Metrics Exporter: Unified metrics collection and export
  * 
  * @module services/reliability
  */
@@ -157,3 +161,53 @@ export {
   type OrchestratedServiceStatus,
   type SystemReliabilitySummary
 } from './orchestrator';
+
+// Service Dependency Graph for dependency tracking
+export {
+  ServiceDependencyGraph,
+  serviceDependencyGraph,
+  DependencyType,
+  registerServiceWithDependencies,
+  analyzeFailureImpact,
+  type DependencyEdge,
+  type ServiceNode,
+  type ImpactAnalysis,
+  type CycleDetectionResult,
+  type HealthPropagationEvent
+} from './dependencyGraph';
+
+// Adaptive Rate Limiter for dynamic rate limiting
+export {
+  AdaptiveRateLimiter,
+  adaptiveRateLimiter,
+  LoadLevel,
+  AdaptationStrategy,
+  registerAdaptiveRateLimiter,
+  updateAdaptiveMetrics,
+  type AdaptiveRateLimiterConfig,
+  type AdaptiveRateLimiterStatus
+} from './adaptiveRateLimiter';
+
+// Latency Budget Tracker for latency monitoring
+export {
+  LatencyBudgetTracker,
+  latencyBudgetTracker,
+  ViolationLevel,
+  recordLatency,
+  registerLatencyBudget,
+  type LatencyBudgetConfig,
+  type LatencyMetrics,
+  type LatencyBudgetEvent,
+  type BudgetViolationSummary
+} from './latencyBudgetTracker';
+
+// Metrics Exporter for observability
+export {
+  ReliabilityMetricsExporter,
+  metricsExporter,
+  exportMetrics,
+  getCurrentMetrics,
+  type ExportFormat,
+  type HealthScore,
+  type UnifiedReliabilityMetrics
+} from './metricsExporter';

@@ -272,6 +272,67 @@ export {
   useAPIMiddleware,
 } from './apiMiddlewareRegistry';
 
+// ============= Request Queue =============
+
+export {
+  // Types
+  RequestPriority,
+  RequestStatus,
+  QueuedRequest,
+  QueueConfig,
+  QueueStats,
+  QueueEvent,
+  QueueEventHandler,
+  
+  // Class and Instance
+  APIRequestQueue,
+  getAPIRequestQueue,
+  initializeAPIRequestQueue,
+  hasAPIRequestQueue,
+  
+  // Convenience Functions
+  queueRequest,
+  queueHighPriority,
+  queueLowPriority,
+  queueBackground,
+  
+  // React Hook
+  useAPIRequestQueue,
+} from './apiRequestQueue';
+
+// ============= Retry Policy =============
+
+export {
+  // Types
+  BackoffStrategy,
+  RetryCondition,
+  RetryContext,
+  RetryPolicyConfig,
+  RetryAttemptResult,
+  RetryStats,
+  CircuitBreakerState,
+  EndpointRetryConfig,
+  
+  // Class and Instance
+  APIRetryPolicy,
+  getAPIRetryPolicy,
+  initializeAPIRetryPolicy,
+  hasAPIRetryPolicy,
+  
+  // Convenience Functions
+  withRetry,
+  createRetryable,
+  
+  // Pre-built Retry Conditions
+  retryOnNetworkError,
+  retryOnServerError,
+  retryOnRateLimit,
+  retryOnTransientError,
+  
+  // React Hook
+  useAPIRetryPolicy,
+} from './apiRetryPolicy';
+
 // ============= Utility Functions =============
 
 import { apiResponseCache } from './apiResponseCache';
@@ -283,6 +344,8 @@ import { apiRequestDeduplicator } from './apiRequestDeduplicator';
 import { apiTracing } from './apiTracing';
 import { getUnifiedAPIFacade, hasUnifiedAPIFacade } from './apiUnifiedFacade';
 import { getAPIMiddlewareRegistry, hasAPIMiddlewareRegistry } from './apiMiddlewareRegistry';
+import { getAPIRequestQueue, hasAPIRequestQueue } from './apiRequestQueue';
+import { getAPIRetryPolicy, hasAPIRetryPolicy } from './apiRetryPolicy';
 
 /**
  * Initialize all API services
@@ -306,6 +369,8 @@ export function getAPIServicesHealth(): {
   tracing: ReturnType<typeof apiTracing.getStats>;
   unifiedFacade?: ReturnType<typeof getUnifiedAPIFacade>['getStats'] extends () => infer R ? R : never;
   middlewareRegistry?: ReturnType<typeof getAPIMiddlewareRegistry>['getStats'] extends () => infer R ? R : never;
+  requestQueue?: ReturnType<typeof getAPIRequestQueue>['getStats'] extends () => infer R ? R : never;
+  retryPolicy?: ReturnType<typeof getAPIRetryPolicy>['getStats'] extends () => infer R ? R : never;
 } {
   return {
     cache: apiResponseCache.getStats(),
@@ -317,6 +382,8 @@ export function getAPIServicesHealth(): {
     tracing: apiTracing.getStats(),
     unifiedFacade: hasUnifiedAPIFacade() ? getUnifiedAPIFacade().getStats() as any : undefined,
     middlewareRegistry: hasAPIMiddlewareRegistry() ? getAPIMiddlewareRegistry().getStats() as any : undefined,
+    requestQueue: hasAPIRequestQueue() ? getAPIRequestQueue().getStats() as any : undefined,
+    retryPolicy: hasAPIRetryPolicy() ? getAPIRetryPolicy().getStats() as any : undefined,
   };
 }
 
@@ -337,5 +404,11 @@ export function destroyAPIServices(): void {
   }
   if (hasAPIMiddlewareRegistry()) {
     getAPIMiddlewareRegistry().destroy();
+  }
+  if (hasAPIRequestQueue()) {
+    getAPIRequestQueue().destroy();
+  }
+  if (hasAPIRetryPolicy()) {
+    getAPIRetryPolicy().destroy();
   }
 }
