@@ -241,11 +241,119 @@ WORKFLOW_EOF
 
 echo "✅ security-audit.yml created"
 
+# Create dependency-update.yml
+echo "Creating dependency-update.yml..."
+cat > .github/workflows/dependency-update.yml << 'WORKFLOW_EOF'
+name: Dependency Update Check
+
+on:
+  schedule:
+    # Run weekly on Mondays at 02:00 UTC
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    name: Check for Outdated Dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Check Outdated Dependencies
+        id: outdated
+        run: |
+          echo "=== Checking for Outdated Dependencies ==="
+          outdated_output=$(npm outdated --json 2>/dev/null || echo "{}")
+          
+          outdated_count=$(echo "$outdated_output" | jq 'length' 2>/dev/null || echo "0")
+          echo "outdated_count=$outdated_count" >> $GITHUB_OUTPUT
+          
+          if [ "$outdated_count" -gt 0 ]; then
+            echo "### Outdated Packages Found: $outdated_count"
+            echo "$outdated_output" | jq -r 'to_entries[] | "- \(.key): \(.value.current) -> \(.value.latest)"' 2>/dev/null || true
+            
+            echo "outdated_list<<EOF" >> $GITHUB_OUTPUT
+            echo "$outdated_output" | jq -r 'to_entries[] | "- \(.key): \(.value.current) -> \(.value.latest)"' 2>/dev/null >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "All dependencies are up to date!"
+          fi
+
+      - name: Run Quality Gates
+        run: |
+          npm run build
+          npm run typecheck
+          npm run lint
+          npm run test:run
+
+      - name: Create Update Issue (if outdated packages found)
+        if: steps.outdated.outputs.outdated_count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          outdated_count="${{ steps.outdated.outputs.outdated_count }}"
+          outdated_list="${{ steps.outdated.outputs.outdated_list }}"
+          
+          existing=$(gh issue list --state open --label chore --json title --jq '.[].title' 2>/dev/null | grep -i "outdated" || echo "")
+          
+          if [ -z "$existing" ]; then
+            gh issue create \
+              --title "Outdated Dependencies Detected ($outdated_count packages)" \
+              --body "## Dependency Update Required
+
+### Outdated Packages
+$outdated_list
+
+### Actions Required
+1. Review each outdated package for breaking changes
+2. Update packages incrementally
+3. Run tests after each update
+4. Check for security vulnerabilities with npm audit
+
+### Quality Gates Status
+- Build: Passed
+- TypeCheck: Passed
+- Lint: Passed
+- Tests: Passed
+
+---
+*This issue was automatically created by the dependency-update workflow.*" \
+              --label "chore,P2,devops-engineer"
+            echo "Created dependency update issue"
+          else
+            echo "Similar issue already exists"
+          fi
+
+      - name: Summary
+        run: |
+          echo "=== Dependency Update Check Complete ==="
+          echo "Outdated packages: ${{ steps.outdated.outputs.outdated_count }}"
+WORKFLOW_EOF
+
+echo "✅ dependency-update.yml created"
+
 echo ""
 echo "=== Workflow Creation Complete ==="
 echo "Files created:"
 echo "  - .github/workflows/branch-cleanup.yml"
 echo "  - .github/workflows/security-audit.yml"
+echo "  - .github/workflows/dependency-update.yml"
 echo ""
 echo "Next steps:"
 echo "  1. Review the workflow files"
