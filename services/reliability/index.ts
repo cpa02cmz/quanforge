@@ -13,6 +13,10 @@
  * - Error Budget Tracker: SLA/SLO monitoring and error budget management
  * - Resilience Policy: Unified resilience pattern enforcement
  * - Cascading Failure Detector: Early detection of systemic failures
+ * - Health Check Scheduler: Periodic health checking for services
+ * - Rate Limiter: Token bucket rate limiting for API calls
+ * - Self-Healing Service: Automatic failure recovery
+ * - Reliability Orchestrator: Central coordinator for all reliability services
  * 
  * @module services/reliability
  */
@@ -34,7 +38,7 @@ export {
   reliabilityDashboard,
   type SystemHealthStatus,
   type IntegrationReliabilityMetrics,
-  type SystemReliabilitySummary,
+  type SystemReliabilitySummary as DashboardSummary,
   type AlertConfig,
   type Alert
 } from './dashboard';
@@ -107,3 +111,49 @@ export {
   type CascadePrediction,
   type CascadeAlert
 } from './cascadingFailureDetector';
+
+// Health Check Scheduler for periodic health checking
+export {
+  HealthCheckScheduler,
+  healthCheckScheduler,
+  registerServiceHealthCheck,
+  type HealthCheckResult,
+  type HealthCheckConfig,
+  type HealthCheckEvent
+} from './healthCheckScheduler';
+
+// Rate Limiter for API rate limiting
+export {
+  TokenBucket,
+  RateLimiterManager,
+  rateLimiterManager,
+  withRateLimit,
+  registerDefaultRateLimiters,
+  DEFAULT_RATE_LIMITER_CONFIGS,
+  type RateLimiterConfig,
+  type RateLimiterStatus
+} from './rateLimiter';
+
+// Self-Healing Service for automatic recovery
+export {
+  SelfHealingService,
+  selfHealingService,
+  withSelfHealing,
+  HealingStrategy,
+  type HealingConfig,
+  type HealingAction,
+  type HealingAttempt,
+  type HealingEvent
+} from './selfHealing';
+
+// Reliability Orchestrator for unified management
+export {
+  ReliabilityOrchestrator,
+  reliabilityOrchestrator,
+  registerReliableService,
+  withOrchestratedReliability,
+  type OrchestratorConfig,
+  type ServiceReliabilityConfig,
+  type OrchestratedServiceStatus,
+  type SystemReliabilitySummary
+} from './orchestrator';
