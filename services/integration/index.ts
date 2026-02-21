@@ -41,3 +41,15 @@ export {
   getIntegrationStatusDisplay,
   getIntegrationDashboardData,
 } from './setup';
+
+// Connection Pool
+export {
+  ConnectionState,
+  DEFAULT_POOL_CONFIG,
+  connectionPoolRegistry,
+  ConnectionPoolManager,
+  type ConnectionPoolConfig,
+  type PooledConnection,
+  type ConnectionFactory,
+  type ConnectionPoolMetrics,
+} from './connectionPool';
