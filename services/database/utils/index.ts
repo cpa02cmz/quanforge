@@ -8,6 +8,8 @@
  * - Data Validation
  * - Audit Trail
  * - Core Database Utilities
+ * - Performance Tracking
+ * - Connection Health Monitoring
  * 
  * @module services/database/utils
  * @author Backend Engineer
@@ -105,3 +107,24 @@ export {
   type AuditQueryOptions,
   type AuditStats,
 } from './auditTrail';
+
+// ============= Performance Tracker =============
+
+export {
+  DatabasePerformanceTracker,
+  dbPerformanceTracker,
+  trackQuery,
+  type QueryMetrics,
+  type QueryStats,
+  type PerformanceTrackerConfig,
+} from './dbPerformanceTracker';
+
+// ============= Connection Health Monitor =============
+
+export {
+  DatabaseHealthMonitor,
+  dbHealthMonitor,
+  HealthStatus as ConnectionHealthStatus,
+  type HealthCheckResult,
+  type HealthMonitorConfig,
+} from './dbHealthMonitor';
