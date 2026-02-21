@@ -27,8 +27,6 @@ import {
   createIntegrationOperation,
 } from './integrationWrapper';
 import {
-  IntegrationHealthMonitor,
-  IntegrationMetrics,
   integrationHealthMonitor,
   integrationMetrics,
 } from './integrationHealthMonitor';
@@ -311,10 +309,10 @@ describe('Integration Resilience System', () => {
       });
 
       // Trigger failures
-      try { await breaker.execute(() => Promise.reject(new Error('fail 1'))); } catch {}
+      try { await breaker.execute(() => Promise.reject(new Error('fail 1'))); } catch { /* expected rejection */ }
       expect(breaker.getState()).toBe(CircuitBreakerState.CLOSED);
-      
-      try { await breaker.execute(() => Promise.reject(new Error('fail 2'))); } catch {}
+
+      try { await breaker.execute(() => Promise.reject(new Error('fail 2'))); } catch { /* expected rejection */ }
       expect(breaker.getState()).toBe(CircuitBreakerState.OPEN);
     });
 
