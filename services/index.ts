@@ -162,3 +162,51 @@ export {
   getIntegrationStatusDisplay,
   getIntegrationDashboardData,
 } from './integration';
+
+// Backend Module - Service Registry, Request Context, Performance Analysis
+export type {
+  // Types
+  BackendServiceStatus,
+  ServiceCriticality,
+  BackendServiceConfig,
+  ServiceHealthResult,
+  RegisteredService,
+  ServiceRegistryStats,
+  RequestContext,
+  RequestEntry,
+  RequestContextOptions,
+  RequestStats,
+  PerformanceMetric,
+  PerformanceAnalysis,
+  PerformanceBottleneck,
+  PerformanceRecommendation,
+  BackendPerformanceReport,
+  BackendHealthDashboard,
+  ServiceHealthDisplay,
+  BackendAlert,
+  BackendEvent,
+  BackendEventListener,
+  BackendManagerConfig,
+} from './backend';
+
+export {
+  // Enums
+  BackendEventType,
+  DEFAULT_BACKEND_CONFIG,
+  // Service Registry
+  BackendServiceRegistry,
+  backendServiceRegistry,
+  registerCommonBackendServices,
+  // Request Context Manager
+  RequestContextManager,
+  requestContextManager,
+  trackRequest,
+  // Performance Analyzer
+  BackendPerformanceAnalyzer,
+  backendPerformanceAnalyzer,
+  recordLatency,
+  recordRequestCount,
+  recordErrorCount,
+  // Initialization
+  initializeBackendServices,
+} from './backend';
