@@ -223,3 +223,26 @@ export type {
   ColorSchemeOptions, 
   ColorSchemeResult 
 } from './usePrefersColorScheme';
+
+// Deferred value hooks (performance optimization)
+export { 
+  useDeferredValue, 
+  useDeferredSearch, 
+  useDeferredList 
+} from './useDeferredValue';
+export type { 
+  DeferredValueOptions, 
+  DeferredValueResult 
+} from './useDeferredValue';
+
+// Idle task scheduling hooks (performance optimization)
+export { 
+  useIdleTask, 
+  useIdleAnalytics, 
+  useIdlePrefetch 
+} from './useIdleTask';
+export type { 
+  IdleTask, 
+  IdleTaskResult,
+  TaskPriority 
+} from './useIdleTask';
