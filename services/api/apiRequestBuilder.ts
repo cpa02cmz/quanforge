@@ -25,7 +25,7 @@ import { StandardizedAPIResponse } from './APIResponseHandler';
 import { getAPIEndpointRegistry } from './apiEndpointRegistry';
 import { getAPIErrorClassifier, APIError } from './apiErrorClassifier';
 
-const logger = createScopedLogger('APIRequestBuilder');
+const _logger = createScopedLogger('APIRequestBuilder');
 
 // ============= Types =============
 
