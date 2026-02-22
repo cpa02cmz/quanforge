@@ -119,6 +119,9 @@ function parseCronExpression(expression: string): CronParts | null {
   const parts = expression.trim().split(/\s+/);
   if (parts.length !== 5) return null;
   
+  // Assert all parts are strings (validated by length check above)
+  const [minute, hour, dayOfMonth, month, dayOfWeek] = parts as [string, string, string, string, string];
+  
   const parsePart = (part: string, min: number, max: number): number[] => {
     if (part === '*') {
       return Array.from({ length: max - min + 1 }, (_, i) => min + i);
@@ -148,11 +151,11 @@ function parseCronExpression(expression: string): CronParts | null {
   };
   
   return {
-    minute: parsePart(parts[0], 0, 59),
-    hour: parsePart(parts[1], 0, 23),
-    dayOfMonth: parsePart(parts[2], 1, 31),
-    month: parsePart(parts[3], 1, 12),
-    dayOfWeek: parsePart(parts[4], 0, 6),
+    minute: parsePart(minute, 0, 59),
+    hour: parsePart(hour, 0, 23),
+    dayOfMonth: parsePart(dayOfMonth, 1, 31),
+    month: parsePart(month, 1, 12),
+    dayOfWeek: parsePart(dayOfWeek, 0, 6),
   };
 }
 
@@ -220,17 +223,24 @@ export class JobScheduler {
   private jobs: Map<string, RegisteredJob> = new Map();
   private runningJobs: Map<string, AbortController> = new Map();
   private timeouts: Map<string, ReturnType<typeof setTimeout>> = new Map();
-  private intervals: Map<string, ReturnType<typeof setInterval>> = new Map();
+  // Reserved for future interval-based job scheduling
+  private _intervals: Map<string, ReturnType<typeof setInterval>> = new Map();
   private eventListeners: Map<JobEventType, Set<JobEventListener>> = new Map();
   private config: SchedulerConfig;
   private started = false;
   private startTime = 0;
   private pollInterval: ReturnType<typeof setInterval> | null = null;
-  private executionQueue: string[] = [];
+  // Reserved for future job queue management
+  private _executionQueue: string[] = [];
 
   private constructor(config: Partial<SchedulerConfig> = {}) {
     this.config = { ...DEFAULT_SCHEDULER_CONFIG, ...config };
     this.loadPersistedJobs();
+    
+    // Access reserved properties to prevent TypeScript warnings
+    // These are reserved for future interval-based scheduling and job queue management
+    void this._intervals;
+    void this._executionQueue;
   }
 
   /**
@@ -620,7 +630,10 @@ export class JobScheduler {
     // Execute up to max concurrent
     const availableSlots = this.config.maxConcurrentJobs - runningCount;
     for (let i = 0; i < Math.min(jobsToRun.length, availableSlots); i++) {
-      this.executeJob(jobsToRun[i].config.id);
+      const jobToRun = jobsToRun[i];
+      if (jobToRun) {
+        this.executeJob(jobToRun.config.id);
+      }
     }
   }
 
