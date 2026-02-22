@@ -487,10 +487,12 @@ const sanitizeInput = (input: string): string => {
          )}
        </div>
 
-       {/* Market Ticker */}
-       <div className="p-4 border-t border-dark-border bg-dark-surface">
-         <MarketTicker symbol={params.symbol} />
-       </div>
-     </div>
-   );
- });
+        {/* Market Ticker */}
+        <div className="p-4 border-t border-dark-border bg-dark-surface">
+          <MarketTicker symbol={params.symbol} />
+        </div>
+      </div>
+    );
+  });
+
+StrategyConfig.displayName = 'StrategyConfig';

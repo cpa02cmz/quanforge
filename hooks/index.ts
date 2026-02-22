@@ -261,3 +261,43 @@ export {
   useIdleCallbackEffect,
   useIdleProcessor,
 } from './useIdleCallback';
+
+// Online status hooks (network connectivity)
+export {
+  useOnlineStatus,
+  useIsOnline,
+  useIsOffline,
+} from './useOnlineStatus';
+export type {
+  OnlineStatusState,
+  OnlineStatusOptions,
+} from './useOnlineStatus';
+
+// Previous value hooks (change detection)
+export {
+  usePrevious,
+  usePreviousWithEquals,
+  useValueHistory,
+  useChangeDetector,
+  useTransition,
+} from './usePrevious';
+
+// Toggle hooks (boolean state management)
+export {
+  useToggle,
+  useToggleState,
+  useToggles,
+  useToggleWithTimeout,
+} from './useToggle';
+export type { ToggleState } from './useToggle';
+
+// Local storage hooks (persistent state)
+export {
+  useLocalStorage,
+  useLocalStorageState,
+  useMultipleLocalStorage,
+} from './useLocalStorage';
+export type {
+  UseLocalStorageOptions,
+  UseLocalStorageReturn,
+} from './useLocalStorage';

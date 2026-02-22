@@ -254,7 +254,9 @@ export const Layout: React.FC<LayoutProps> = memo(({ session }) => {
           <ScrollToTopButton />
           <KeyboardNavigationIndicator />
         </main>
-        <FocusIndicator />
-      </div>
-    );
-  });
+          <FocusIndicator />
+       </div>
+     );
+   });
+
+Layout.displayName = 'Layout';
