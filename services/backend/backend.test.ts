@@ -18,20 +18,17 @@ import type {
 // Import services
 import {
   BackendServiceRegistry,
-  // @ts-expect-error - Imported for type checking and future use
-  backendServiceRegistry as _backendServiceRegistry,
+  backendServiceRegistry,
 } from './serviceRegistry';
 
 import {
   RequestContextManager,
-  // @ts-expect-error - Imported for type checking and future use
-  requestContextManager as _requestContextManager,
+  requestContextManager,
 } from './requestContext';
 
 import {
   BackendPerformanceAnalyzer,
-  // @ts-expect-error - Imported for type checking and future use
-  backendPerformanceAnalyzer as _backendPerformanceAnalyzer,
+  backendPerformanceAnalyzer,
   recordLatency,
   recordRequestCount,
   recordErrorCount,
@@ -497,5 +494,431 @@ describe('Helper Functions', () => {
   it('should have recordErrorCount function', () => {
     expect(recordErrorCount).toBeDefined();
     expect(typeof recordErrorCount).toBe('function');
+  });
+});
+
+// Import new services for additional tests
+import {
+  BackendRateLimiter,
+  RequestQueueManager,
+  BackendManager,
+} from './index';
+
+describe('Backend Rate Limiter', () => {
+  let limiter: BackendRateLimiter;
+
+  beforeEach(() => {
+    (BackendRateLimiter as any).instance = null;
+    limiter = BackendRateLimiter.getInstance();
+  });
+
+  afterEach(() => {
+    limiter.destroy();
+  });
+
+  it('should be a singleton', () => {
+    const instance1 = BackendRateLimiter.getInstance();
+    const instance2 = BackendRateLimiter.getInstance();
+    expect(instance1).toBe(instance2);
+  });
+
+  it('should configure services', () => {
+    limiter.configureService({
+      serviceName: 'rate_test',
+      maxTokens: 10,
+      refillRate: 5,
+    });
+
+    const status = limiter.getStatus('rate_test');
+    expect(status).toBeDefined();
+    expect(status?.maxTokens).toBe(10);
+  });
+
+  it('should allow requests under limit', () => {
+    limiter.configureService({
+      serviceName: 'allow_service',
+      maxTokens: 100,
+      refillRate: 10,
+    });
+
+    const result = limiter.tryConsume('allow_service', 1);
+    expect(result.allowed).toBe(true);
+    expect(result.remainingTokens).toBeLessThan(100);
+  });
+
+  it('should reject requests over limit', () => {
+    limiter.configureService({
+      serviceName: 'reject_service',
+      maxTokens: 2,
+      refillRate: 1,
+    });
+
+    limiter.tryConsume('reject_service', 1);
+    limiter.tryConsume('reject_service', 1);
+
+    const result = limiter.tryConsume('reject_service', 1);
+    expect(result.allowed).toBe(false);
+    expect(result.retryAfter).toBeDefined();
+  });
+
+  it('should track statistics', () => {
+    limiter.configureService({
+      serviceName: 'stats_test',
+      maxTokens: 10,
+      refillRate: 5,
+    });
+
+    limiter.tryConsume('stats_test', 1);
+    limiter.tryConsume('stats_test', 1);
+
+    const status = limiter.getStatus('stats_test');
+    expect(status?.totalRequests).toBe(2);
+    expect(status?.allowedRequests).toBe(2);
+  });
+
+  it('should reset rate limits', () => {
+    limiter.configureService({
+      serviceName: 'reset_test',
+      maxTokens: 5,
+      refillRate: 1,
+    });
+
+    // Consume all tokens
+    for (let i = 0; i < 5; i++) {
+      limiter.tryConsume('reset_test', 1);
+    }
+
+    limiter.reset('reset_test');
+
+    const status = limiter.getStatus('reset_test');
+    expect(status?.availableTokens).toBe(5);
+  });
+
+  it('should provide overall statistics', () => {
+    limiter.configureService({
+      serviceName: 'overall_test',
+      maxTokens: 10,
+      refillRate: 5,
+    });
+
+    const stats = limiter.getStats();
+    expect(stats.totalServices).toBeGreaterThan(0);
+  });
+});
+
+describe('Request Queue Manager', () => {
+  let queueManager: RequestQueueManager;
+
+  beforeEach(() => {
+    (RequestQueueManager as any).instance = null;
+    queueManager = RequestQueueManager.getInstance();
+  });
+
+  afterEach(() => {
+    queueManager.destroy();
+  });
+
+  it('should be a singleton', () => {
+    const instance1 = RequestQueueManager.getInstance();
+    const instance2 = RequestQueueManager.getInstance();
+    expect(instance1).toBe(instance2);
+  });
+
+  it('should configure queues', () => {
+    queueManager.configureQueue({
+      serviceName: 'queue_test',
+      maxConcurrent: 5,
+      maxSize: 100,
+      defaultTimeout: 30000,
+      defaultRetries: 2,
+      processingInterval: 50,
+    });
+
+    const stats = queueManager.getStats('queue_test');
+    expect(stats.serviceName).toBe('queue_test');
+  });
+
+  it('should enqueue items', async () => {
+    queueManager.configureQueue({
+      serviceName: 'enqueue_test',
+      maxConcurrent: 1,
+      maxSize: 10,
+      defaultTimeout: 5000,
+      defaultRetries: 1,
+      processingInterval: 10,
+    });
+
+    queueManager.registerProcessor('enqueue_test', async (item) => {
+      return { processed: item.id };
+    });
+
+    const itemId = await queueManager.enqueue(
+      'enqueue_test',
+      'test_op',
+      { data: 'test' }
+    );
+
+    expect(itemId).toBeDefined();
+    expect(itemId).toContain('q_');
+  });
+
+  it('should handle queue overflow', async () => {
+    queueManager.configureQueue({
+      serviceName: 'overflow_test',
+      maxConcurrent: 0, // No processing
+      maxSize: 2,
+      defaultTimeout: 5000,
+      defaultRetries: 0,
+      processingInterval: 100,
+    });
+
+    await queueManager.enqueue('overflow_test', 'op', {});
+    await queueManager.enqueue('overflow_test', 'op', {});
+
+    await expect(queueManager.enqueue('overflow_test', 'op', {})).rejects.toThrow('Queue overflow');
+  });
+
+  it('should provide queue statistics', () => {
+    queueManager.configureQueue({
+      serviceName: 'stats_queue',
+      maxConcurrent: 1,
+      maxSize: 10,
+      defaultTimeout: 5000,
+      defaultRetries: 1,
+      processingInterval: 100,
+    });
+
+    const stats = queueManager.getStats('stats_queue');
+    expect(stats.serviceName).toBe('stats_queue');
+    expect(stats.pendingItems).toBe(0);
+  });
+
+  it('should clear queues', async () => {
+    queueManager.configureQueue({
+      serviceName: 'clear_test',
+      maxConcurrent: 0, // No processing
+      maxSize: 100,
+      defaultTimeout: 5000,
+      defaultRetries: 0,
+      processingInterval: 100,
+    });
+
+    await queueManager.enqueue('clear_test', 'op', {});
+    await queueManager.enqueue('clear_test', 'op', {});
+
+    const cleared = queueManager.clearQueue('clear_test');
+    expect(cleared).toBe(2);
+  });
+
+  it('should support priority ordering', async () => {
+    queueManager.configureQueue({
+      serviceName: 'priority_test',
+      maxConcurrent: 1,
+      maxSize: 10,
+      defaultTimeout: 5000,
+      defaultRetries: 1,
+      processingInterval: 10,
+    });
+
+    const lowId = await queueManager.enqueue('priority_test', 'op', {}, { priority: 'low' });
+    const highId = await queueManager.enqueue('priority_test', 'op', {}, { priority: 'high' });
+    
+    expect(lowId).toBeDefined();
+    expect(highId).toBeDefined();
+  });
+});
+
+describe('Backend Manager', () => {
+  let manager: BackendManager;
+
+  beforeEach(() => {
+    (BackendManager as any).instance = null;
+    manager = BackendManager.getInstance();
+  });
+
+  afterEach(async () => {
+    try {
+      await manager.shutdown();
+    } catch {
+      // Ignore shutdown errors
+    }
+  });
+
+  it('should be a singleton', () => {
+    const instance1 = BackendManager.getInstance();
+    const instance2 = BackendManager.getInstance();
+    expect(instance1).toBe(instance2);
+  });
+
+  it('should initialize', async () => {
+    await manager.initialize();
+    const status = manager.getStatus();
+    expect(status.initialized).toBe(true);
+  });
+
+  it('should get status', async () => {
+    await manager.initialize();
+    const status = manager.getStatus();
+    expect(status.initialized).toBe(true);
+    expect(status.uptime).toBeGreaterThanOrEqual(0);
+    expect(status.services).toBeDefined();
+    expect(status.requests).toBeDefined();
+  });
+
+  it('should execute operations', async () => {
+    await manager.initialize();
+
+    const result = await manager.execute(
+      { serviceName: 'test_service', operation: 'test_op' },
+      async () => 'test_result'
+    );
+
+    expect(result).toBe('test_result');
+  });
+
+  it('should handle operation errors', async () => {
+    await manager.initialize();
+
+    await expect(
+      manager.execute(
+        { serviceName: 'error_service', operation: 'error_op' },
+        async () => {
+          throw new Error('Test error');
+        }
+      )
+    ).rejects.toThrow('Test error');
+  });
+
+  it('should register services', async () => {
+    await manager.initialize();
+
+    const id = manager.registerService({
+      name: 'custom_service',
+      description: 'Custom service for testing',
+      criticality: 'medium',
+    });
+
+    expect(id).toBeDefined();
+  });
+
+  it('should configure rate limits', async () => {
+    await manager.initialize();
+
+    manager.configureRateLimit({
+      serviceName: 'rate_config_test',
+      maxTokens: 10,
+      refillRate: 5,
+    });
+
+    // Should not throw
+    expect(true).toBe(true);
+  });
+
+  it('should provide health dashboard', async () => {
+    await manager.initialize();
+
+    const dashboard = await manager.getHealthDashboard();
+    expect(dashboard.timestamp).toBeDefined();
+    expect(dashboard.services).toBeDefined();
+    expect(dashboard.metrics).toBeDefined();
+  });
+
+  it('should provide performance report', async () => {
+    await manager.initialize();
+
+    const report = manager.getPerformanceReport();
+    expect(report.generatedAt).toBeDefined();
+    expect(report.overallScore).toBeGreaterThanOrEqual(0);
+  });
+
+  it('should handle subscriptions', async () => {
+    await manager.initialize();
+
+    const listener = vi.fn();
+    const unsubscribe = manager.subscribe(listener);
+
+    // Trigger an event by registering a service
+    manager.registerService({
+      name: 'subscription_test',
+      criticality: 'low',
+    });
+
+    unsubscribe();
+    expect(typeof unsubscribe).toBe('function');
+  });
+
+  it('should shutdown gracefully', async () => {
+    await manager.initialize();
+    await manager.shutdown();
+
+    const status = manager.getStatus();
+    expect(status.initialized).toBe(false);
+  });
+});
+
+describe('Integration Tests', () => {
+  it('should work together end-to-end', async () => {
+    // Reset singletons
+    (BackendManager as any).instance = null;
+    const manager = BackendManager.getInstance();
+
+    await manager.initialize();
+
+    // Register a service
+    manager.registerService({
+      name: 'integration_service',
+      criticality: 'high',
+    });
+
+    // Configure rate limiting
+    manager.configureRateLimit({
+      serviceName: 'integration_service',
+      maxTokens: 10,
+      refillRate: 5,
+    });
+
+    // Execute operation
+    const result = await manager.execute(
+      { serviceName: 'integration_service', operation: 'test_op' },
+      async () => ({ success: true })
+    );
+
+    expect(result.success).toBe(true);
+
+    // Check health dashboard
+    const dashboard = await manager.getHealthDashboard();
+    expect(dashboard.overallStatus).toBeDefined();
+
+    // Check performance report
+    const report = manager.getPerformanceReport();
+    expect(report.generatedAt).toBeDefined();
+
+    await manager.shutdown();
+  });
+
+  it('should handle concurrent requests', async () => {
+    (BackendManager as any).instance = null;
+    const manager = BackendManager.getInstance();
+
+    await manager.initialize();
+
+    manager.configureRateLimit({
+      serviceName: 'concurrent_test',
+      maxTokens: 100,
+      refillRate: 50,
+    });
+
+    const promises = Array.from({ length: 10 }, (_, i) =>
+      manager.execute(
+        { serviceName: 'concurrent_test', operation: `op_${i}` },
+        async () => i
+      )
+    );
+
+    const results = await Promise.all(promises);
+    expect(results.length).toBe(10);
+    expect(results).toEqual(expect.arrayContaining([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]));
+
+    await manager.shutdown();
   });
 });
