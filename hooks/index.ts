@@ -37,6 +37,27 @@ export {
 export { useDebouncedValue, useDebouncedCallback, useThrottledValue } from './useDebouncedValue';
 export type { DebounceOptions, DebouncedValueState } from './useDebouncedValue';
 
+// Stable reference hooks (performance optimization)
+export { 
+  useStableMemo, 
+  useStableCallback, 
+  useStableObject, 
+  useStableArray,
+  useCombineProps 
+} from './useStableMemo';
+export type { StableMemoOptions } from './useStableMemo';
+
+// Optimized reducer hooks (performance optimization)
+export { 
+  useOptimizedReducer, 
+  useBatchDispatch, 
+  useDebouncedDispatch 
+} from './useOptimizedReducer';
+export type { 
+  OptimizedAction, 
+  OptimizedReducerOptions 
+} from './useOptimizedReducer';
+
 // DOM hooks
 export { 
   useIntersectionObserver, 
