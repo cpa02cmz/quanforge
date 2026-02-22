@@ -21,6 +21,8 @@
  * - Adaptive Rate Limiter: Dynamic rate limit adjustment
  * - Latency Budget Tracker: Latency monitoring and budget enforcement
  * - Metrics Exporter: Unified metrics collection and export
+ * - FetchWithReliability: Reliable fetch with timeout, retry, and circuit breaker
+ * - ReliabilityMiddleware: Middleware for API call reliability
  * 
  * @module services/reliability
  */
@@ -211,3 +213,38 @@ export {
   type HealthScore,
   type UnifiedReliabilityMetrics
 } from './metricsExporter';
+
+// FetchWithReliability for reliable HTTP requests
+export {
+  FetchWithReliability,
+  fetchWithReliability,
+  reliableFetch,
+  reliableFetchJson,
+  fetchWithTimeout,
+  createReliableFetch,
+  calculateDelay,
+  isRetryableError,
+  generateCacheKey,
+  DEFAULT_RETRY_CONFIG,
+  DEFAULT_TIMEOUT_CONFIG,
+  type RetryConfig,
+  type TimeoutConfig,
+  type FetchReliabilityConfig,
+  type FetchMetrics
+} from './fetchWithReliability';
+
+// ReliabilityMiddleware for API call patterns
+export {
+  ReliabilityMiddleware,
+  reliabilityMiddleware,
+  fetchWithMiddleware,
+  fetchJsonWithMiddleware,
+  type RequestContext,
+  type ResponseContext,
+  type MiddlewareFunction,
+  type ErrorNormalizerConfig,
+  type LoggingConfig,
+  type ReliabilityMiddlewareConfig,
+  type NormalizedError,
+  type MiddlewarePerformanceMetrics
+} from './reliabilityMiddleware';
