@@ -406,9 +406,181 @@ If migrating from previous architecture with REST API endpoints:
 
 ---
 
+---
+
+## New Service Modules (v2.0+)
+
+### API Module (`services/api/`)
+
+Comprehensive API layer with 17+ service modules:
+
+| Service | Purpose |
+|---------|---------|
+| `apiUnifiedFacade` | Single entry point for all API operations |
+| `apiResponseHandler` | Standardized response formatting |
+| `apiRequestQueue` | Priority-based request queuing |
+| `apiRetryPolicy` | Configurable retry logic |
+| `apiHealthMonitor` | Endpoint health monitoring |
+| `apiMetricsCollector` | Performance metrics collection |
+| `apiBatchOperations` | Batch request handling |
+| `apiRequestDeduplicator` | Request deduplication |
+| `apiTracing` | Distributed tracing |
+| `apiMiddlewareRegistry` | Composable middleware system |
+| `apiEndpointRegistry` | Endpoint configuration |
+| `apiErrorClassifier` | Error categorization |
+| `apiRequestBuilder` | Fluent request builder |
+| `apiVersioning` | API version management |
+| `apiClientFactory` | Client instance creation |
+| `apiInterceptors` | Request/response interceptors |
+| `apiResponseCache` | Response caching |
+
+**Usage**:
+```typescript
+import { 
+  getUnifiedAPIFacade,
+  withRetry,
+  apiSuccess 
+} from './services/api';
+
+// Unified API access
+const api = getUnifiedAPIFacade();
+const result = await api.request('/endpoint', { method: 'GET' });
+
+// Retry wrapper
+const data = await withRetry(() => fetchData(), { maxAttempts: 3 });
+```
+
+---
+
+### Database Module (`services/database/`)
+
+Enhanced database services with 30+ modules:
+
+| Service | Purpose |
+|---------|---------|
+| `modularSupabase` | Core Supabase operations |
+| `DatabaseHealthMonitor` | Real-time health monitoring |
+| `QueryPerformanceAnalyzer` | Query optimization |
+| `queryPlanCache` | Query plan caching |
+| `failoverManager` | Multi-endpoint failover |
+| `retentionPolicyManager` | Data lifecycle management |
+| `migrationRunner` | Schema migrations |
+| `schemaManager` | Schema management |
+| `transactionManager` | Transaction handling |
+| `connectionManager` | Connection pooling |
+| `indexAdvisor` | Index recommendations |
+
+**Usage**:
+```typescript
+import { 
+  modularSupabase,
+  queryPlanCache,
+  failoverManager 
+} from './services/database';
+
+// Core operations
+const robots = await modularSupabase.getRobots();
+
+// Query caching
+const cachedPlan = queryPlanCache.get('user_query');
+
+// Failover configuration
+failoverManager.configure({
+  endpoints: [...],
+  strategy: 'graceful'
+});
+```
+
+---
+
+### Reliability Module (`services/reliability/`)
+
+Fault tolerance and resilience services:
+
+| Service | Purpose |
+|---------|---------|
+| `circuitBreaker` | Circuit breaker pattern |
+| `bulkhead` | Resource isolation |
+| `gracefulDegradation` | Fallback chains |
+| `selfHealing` | Automatic recovery |
+| `healthCheckScheduler` | Periodic health checks |
+| `errorBudgetTracker` | SLA monitoring |
+| `cascadingFailureDetector` | Failure cascade detection |
+| `timeoutManager` | Timer cleanup |
+| `resiliencePolicy` | Configurable policies |
+| `orchestrator` | Reliability coordination |
+
+**Usage**:
+```typescript
+import { 
+  CircuitBreaker,
+  Bulkhead,
+  gracefulDegradation 
+} from './services/reliability';
+
+// Circuit breaker
+const breaker = new CircuitBreaker({ failureThreshold: 5 });
+const result = await breaker.execute(() => operation());
+
+// Bulkhead isolation
+const bulkhead = new Bulkhead({ maxConcurrentCalls: 10 });
+const isolated = await bulkhead.execute(() => operation());
+```
+
+---
+
+### Integration Module (`services/integration/`)
+
+External integration management:
+
+| Service | Purpose |
+|---------|---------|
+| `orchestrator` | Integration coordination |
+| `connectionPool` | Connection management |
+| `eventAggregator` | Event handling |
+| `syncManager` | Data synchronization |
+| `types` | Type definitions |
+
+**Usage**:
+```typescript
+import { IntegrationOrchestrator } from './services/integration';
+
+const orchestrator = IntegrationOrchestrator.getInstance();
+orchestrator.register({
+  name: 'external_api',
+  priority: 'high',
+  healthCheck: async () => ({ healthy: true })
+});
+```
+
+---
+
+### Cache Module (`services/cache/`)
+
+Multi-tier caching system:
+
+| Service | Purpose |
+|---------|---------|
+| `advancedCache` | Multi-tier cache manager |
+| `cacheLayer` | Cache layer abstraction |
+| `compressionCache` | Compressed caching |
+| `edgeCacheCompression` | Edge-optimized compression |
+
+**Usage**:
+```typescript
+import { advancedCache } from './services/cache';
+
+await advancedCache.set('key', data, { ttl: 3600 });
+const cached = await advancedCache.get('key');
+```
+
+---
+
 ## References
 
 - **Architecture**: `blueprint.md`
+- **API Reference**: `docs/api/API_REFERENCE.md`
+- **Hooks Reference**: `docs/HOOKS_REFERENCE.md`
 - **Type Definitions**: `types.ts`
 - **Coding Standards**: `../coding_standard.md`
 - **Task Tracker**: `task.md`

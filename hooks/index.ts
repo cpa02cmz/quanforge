@@ -119,3 +119,107 @@ export type {
   UseEnhancedLazyLoadOptions,
   UseLazyLoadReturn 
 } from './useEnhancedLazyLoad';
+
+// Media query hooks (UI/UX enhancement)
+export { 
+  useMediaQuery, 
+  useMinWidth, 
+  useMaxWidth, 
+  useBreakpointRange, 
+  useBreakpoint,
+  usePrefersHighContrast,
+  usePrefersReducedData,
+  useHoverCapability,
+  usePointerCapability,
+  useOrientation,
+  useHDRSupport,
+  useMediaQueries,
+  BREAKPOINTS,
+} from './useMediaQuery';
+export type { 
+  MediaQueryOptions, 
+  MediaQueryResult,
+  Breakpoint,
+} from './useMediaQuery';
+
+// Window size hooks (UI/UX enhancement)
+export { 
+  useWindowSize, 
+  useWindowWidth, 
+  useWindowHeight,
+  useIsAboveWidth,
+  useIsBelowWidth,
+  useAspectRatio,
+  useWindowSizeThrottled,
+} from './useWindowSize';
+export type { 
+  WindowSize, 
+  WindowSizeOptions, 
+  WindowSizeResult 
+} from './useWindowSize';
+
+// Scroll position hooks (UI/UX enhancement)
+export { 
+  useScrollPosition, 
+  useScrollY, 
+  useScrollProgress as useScrollProgressDetailed,
+  useScrollDirection,
+  useHasScrolled,
+  useElementInView,
+  useScrollToTop,
+  useLockBodyScroll,
+} from './useScrollPosition';
+export type { 
+  ScrollPosition, 
+  ScrollDirection, 
+  ScrollPositionOptions, 
+  ScrollPositionResult 
+} from './useScrollPosition';
+
+// Copy to clipboard hooks (UI/UX enhancement)
+export { 
+  useCopyToClipboard, 
+  useClipboardHistory, 
+  useCopyFormatted,
+} from './useCopyToClipboard';
+export type { 
+  CopyToClipboardOptions, 
+  CopyToClipboardResult 
+} from './useCopyToClipboard';
+
+// Click outside hooks (UI/UX enhancement)
+export { 
+  useClickOutside, 
+  useEscapeKey, 
+  useDropdown,
+  useLongPress,
+} from './useClickOutside';
+export type { ClickOutsideOptions } from './useClickOutside';
+
+// Element size hooks (UI/UX enhancement)
+export { 
+  useElementSize, 
+  useElementWidth, 
+  useElementHeight,
+  useElementOverflow,
+  useElementViewportPosition,
+} from './useElementSize';
+export type { 
+  ElementSize, 
+  ElementSizeOptions, 
+  ElementSizeResult 
+} from './useElementSize';
+
+// Color scheme hooks (UI/UX enhancement)
+export { 
+  usePrefersColorScheme, 
+  useColorSchemeWithOverride,
+  usePrefersHighContrast as usePrefersHighContrastHook,
+  usePrefersReducedTransparency,
+  useAccessibilityPreferences,
+} from './usePrefersColorScheme';
+export type { 
+  ColorScheme, 
+  ColorSchemeOptions, 
+  ColorSchemeResult 
+} from './usePrefersColorScheme';
