@@ -17,6 +17,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.0] - 2026-02-22
+
+### ⚡ Performance Optimization Utilities
+- **useIdleCallback Hook**: Schedule non-critical work during browser idle periods
+  - Wraps `requestIdleCallback` with React lifecycle management
+  - Fallback to `setTimeout` for unsupported browsers
+  - Automatic cleanup on unmount
+  - `useIdleCallbackEffect` for declarative idle work
+  - `useIdleProcessor` for chunked array processing
+
+- **useLazyComponent Hook**: Intersection Observer-based lazy loading
+  - Configurable root margin for preloading
+  - Placeholder support during loading
+  - `createLazyComponent` factory function
+  - `LazyComponentWrapper` component
+  - `usePreloadComponents` for idle-time preloading
+
+- **Performance Metrics Collector Service**: Comprehensive Web Vitals tracking
+  - Web Vitals collection (LCP, FID, CLS, TTFB, FCP)
+  - Custom metrics tracking
+  - Performance budget monitoring
+  - Memory usage tracking
+  - API call timing
+  - Component render timing
+  - Batching and reporting
+
+### 🧪 Major Testing Expansion
+- **Test Suite Growth**: 174 new tests added (672 → 846 total)
+- **Test Files**: 35 test files (up from 29)
+- **Test Coverage**: 100% pass rate maintained (846/846)
+- **Test Performance**: 22.03s execution time
+- **New Test Categories**:
+  - Performance utilities tests
+  - Idle callback hook tests
+  - Lazy component hook tests
+  - Metrics collector tests
+  - Accordion component tests
+  - Progress ring component tests
+
+### 📊 Quality Metrics Update
+- **Tests**: 846/846 passing (100%)
+- **Build Time**: ~23s average
+- **TypeScript Errors**: 0
+- **Lint Errors**: 0 (675 any-type warnings only)
+- **Production Vulnerabilities**: 0
+- **Console Statements**: 0 in production code (52+ consecutive runs)
+- **TODO/FIXME Comments**: 0 (all resolved)
+
+### 📦 Bundle Status
+- **Total Chunks**: 40+ granular chunks for optimal loading
+- **Largest Bundle**: ai-web-runtime (252 KB) - Google GenAI library
+- **All Chunks**: Under 300KB threshold
+- **Code Splitting**: Effective granular chunking maintained
+
+### 📖 Documentation Updates
+- **CHANGELOG.md**: Updated with v2.1.0 release notes
+- **PROJECT_STATUS.md**: Updated with current test counts and metrics
+- **DOCUMENTATION_INDEX.md**: Updated with current date and metrics
+- **docs/technical-writer.md**: Added session log for documentation maintenance
+
+---
+
 ## [2.0.0] - 2026-02-21
 
 ### 🧪 Major Testing Expansion
