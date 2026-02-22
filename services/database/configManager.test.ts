@@ -242,7 +242,7 @@ describe('DatabaseConfigManager', () => {
     });
 
     it('should rollback to previous configuration', () => {
-      const originalHost = manager.get('connection.host');
+      const _originalHost = manager.get('connection.host');
       
       manager.update({
         connection: {

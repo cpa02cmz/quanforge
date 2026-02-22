@@ -16,7 +16,6 @@
  */
 
 import { createScopedLogger } from '../../utils/logger';
-import { TIME_CONSTANTS } from '../modularConstants';
 import { serviceCleanupCoordinator } from '../../utils/serviceCleanupCoordinator';
 
 const logger = createScopedLogger('QueryExecutionPlanner');
