@@ -295,3 +295,26 @@ export {
   type ConnectionStats,
   type LeakReport
 } from './connectionLeakDetector';
+
+// Metrics Aggregator
+export {
+  MetricsAggregator,
+  metricsAggregator,
+  type DatabaseMetrics,
+  type MetricThreshold,
+  type Alert,
+  type MetricsConfig,
+  type MetricsReport
+} from './metricsAggregator';
+
+// Health Orchestrator
+export {
+  HealthOrchestrator,
+  healthOrchestrator,
+  type HealthLevel,
+  type ServiceHealth,
+  type HealthOrchestratorStatus,
+  type HealthCheckResult,
+  type HealthEvent,
+  type HealthConfig
+} from './healthOrchestrator';
