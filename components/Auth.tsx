@@ -108,6 +108,8 @@ const AuthComponent: React.FC = memo(() => {
   );
 });
 
+AuthComponent.displayName = 'AuthComponent';
+
 // Export as named export for backward compatibility and lazy loading
 export const Auth = AuthComponent;
 export default AuthComponent;

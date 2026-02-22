@@ -118,3 +118,5 @@ class ErrorBoundaryClass extends Component<Props, State> {
 export const ErrorBoundary: React.FC<Props> = memo((props) => {
   return <ErrorBoundaryClass {...props} />;
 });
+
+ErrorBoundary.displayName = 'ErrorBoundary';

@@ -180,11 +180,13 @@ export const BacktestPanel: React.FC<BacktestPanelProps> = React.memo(({
                                         t={undefined}
                                     />
                                 </Suspense>
-                            </div>
-                        </div>
-                    </>
-                )}
-            </div>
-        </div>
-    );
+                             </div>
+                         </div>
+                     </>
+                 )}
+             </div>
+         </div>
+     );
 });
+
+BacktestPanel.displayName = 'BacktestPanel';
