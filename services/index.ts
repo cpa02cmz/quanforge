@@ -210,3 +210,73 @@ export {
   // Initialization
   initializeBackendServices,
 } from './backend';
+
+// Scheduler Module - Background Job Scheduling
+export type {
+  JobStatus,
+  JobPriority,
+  RetryStrategy,
+  ScheduleType,
+  JobExecutionContext,
+  JobExecutionResult,
+  JobHandler,
+  RetryConfig,
+  ScheduleConfig,
+  JobConfig,
+  RegisteredJob,
+  SchedulerStats,
+  SchedulerConfig,
+  JobEvent,
+  JobEventListener,
+  CronParts,
+} from './scheduler';
+
+export {
+  // Enums and Constants
+  JobEventType,
+  DEFAULT_SCHEDULER_CONFIG,
+  DEFAULT_RETRY_CONFIG,
+  // Job Scheduler
+  JobScheduler,
+  jobScheduler,
+  scheduleJob,
+  executeJobNow,
+  // Initialization
+  initializeScheduler,
+  getSchedulerHealth,
+} from './scheduler';
+
+// Message Queue Module - Asynchronous Message Processing
+export type {
+  MessageStatus,
+  MessagePriority,
+  QueueType,
+  MessageHandler,
+  MessageContext,
+  MessageResult,
+  QueueMessage,
+  QueueConfig,
+  ConsumerConfig,
+  RegisteredConsumer,
+  QueueStats,
+  MessageQueueStats,
+  QueueEvent,
+  QueueEventListener,
+  PublishOptions,
+} from './queue';
+
+export {
+  // Enums and Constants
+  QueueEventType,
+  DEFAULT_QUEUE_CONFIG,
+  DEFAULT_CONSUMER_CONFIG,
+  // Message Queue
+  MessageQueue,
+  messageQueue,
+  createQueue,
+  publish,
+  consume,
+  // Initialization
+  initializeMessageQueue,
+  getMessageQueueHealth,
+} from './queue';
