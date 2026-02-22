@@ -540,7 +540,7 @@ export class RetentionPolicyManager {
     });
 
     try {
-      const cutoffDate = new Date(Date.now() - policy.retentionDays * TIME_CONSTANTS.DAY);
+      const _cutoffDate = new Date(Date.now() - policy.retentionDays * TIME_CONSTANTS.DAY);
 
       // Simulate batch processing
       let processed = 0;
@@ -618,7 +618,7 @@ export class RetentionPolicyManager {
     return execution;
   }
 
-  private calculateNextRun(schedule: string): string {
+  private calculateNextRun(_schedule: string): string {
     // Simple cron parser - in real implementation would use proper cron library
     // For now, schedule next run for tomorrow
     const next = new Date(Date.now() + TIME_CONSTANTS.DAY);

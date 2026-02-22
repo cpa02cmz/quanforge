@@ -411,7 +411,7 @@ export class QueryPlanCache {
         keyToEvict = this.accessOrder[0];
         break;
 
-      case 'lfu':
+      case 'lfu': {
         let minAccess = Infinity;
         for (const [key, entry] of this.cache) {
           if (entry.accessCount < minAccess) {
@@ -420,6 +420,7 @@ export class QueryPlanCache {
           }
         }
         break;
+      }
 
       case 'fifo':
         keyToEvict = this.accessOrder[0];

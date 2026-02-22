@@ -561,7 +561,7 @@ export class FailoverManager {
     }
   }
 
-  private async gracefulShutdown(endpointId: string): Promise<void> {
+  private async gracefulShutdown(_endpointId: string): Promise<void> {
     const timeout = this.config.gracefulTimeoutMs;
     const startTime = Date.now();
 
