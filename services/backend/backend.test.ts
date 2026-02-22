@@ -18,17 +18,14 @@ import type {
 // Import services
 import {
   BackendServiceRegistry,
-  backendServiceRegistry,
 } from './serviceRegistry';
 
 import {
   RequestContextManager,
-  requestContextManager,
 } from './requestContext';
 
 import {
   BackendPerformanceAnalyzer,
-  backendPerformanceAnalyzer,
   recordLatency,
   recordRequestCount,
   recordErrorCount,
