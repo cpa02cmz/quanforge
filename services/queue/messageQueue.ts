@@ -436,8 +436,8 @@ export class MessageQueue {
       throughput: this.calculateThroughput(queueName),
       averageWaitTime: this.calculateAverageWaitTime(messages),
       averageProcessingTime: this.calculateAverageProcessingTime(queueName),
-      oldestMessage: messages.length > 0 ? messages[0].createdAt : undefined,
-      newestMessage: messages.length > 0 ? messages[messages.length - 1].createdAt : undefined,
+      oldestMessage: messages.length > 0 ? messages[0]?.createdAt : undefined,
+      newestMessage: messages.length > 0 ? messages[messages.length - 1]?.createdAt : undefined,
     };
   }
 
@@ -602,10 +602,10 @@ export class MessageQueue {
    */
   private getNextMessage(
     queue: { config: QueueConfig; messages: QueueMessage[] },
-    consumer: RegisteredConsumer
+    _consumer: RegisteredConsumer
   ): QueueMessage | undefined {
     const now = Date.now();
-    const _prefetch = consumer.config.prefetch || 1;
+    // Note: _consumer.config.prefetch is available for batch processing (future enhancement)
 
     // Find available messages
     const available = queue.messages.filter(m => {
@@ -654,7 +654,7 @@ export class MessageQueue {
     };
 
     try {
-      const _result = await consumer.config.handler(message, context);
+      await consumer.config.handler(message, context);
       const processingTime = Date.now() - startTime;
 
       if (consumer.config.autoAck) {
@@ -674,7 +674,8 @@ export class MessageQueue {
       });
 
     } catch (error) {
-      const _processingTime = Date.now() - startTime;
+      // Processing time tracked for metrics (future enhancement)
+      void (Date.now() - startTime);
       const errorMsg = error instanceof Error ? error.message : String(error);
 
       message.lastError = errorMsg;
