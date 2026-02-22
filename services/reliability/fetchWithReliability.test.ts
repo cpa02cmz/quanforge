@@ -82,7 +82,7 @@ describe('FetchWithReliability', () => {
       abortError.name = 'AbortError';
       mockFetch.mockRejectedValue(abortError);
 
-      try { await instance.fetch('https://api.example.com/test'); } catch {}
+      try { await instance.fetch('https://api.example.com/test'); } catch { /* intentionally ignored - testing error handling */ }
 
       const metrics = instance.getMetrics();
       
