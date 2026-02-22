@@ -252,4 +252,6 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     );
 };
 
+ConfirmationModal.displayName = 'ConfirmationModal';
+
 export default ConfirmationModal;

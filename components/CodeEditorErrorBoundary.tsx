@@ -54,6 +54,9 @@ class CodeEditorErrorBoundary extends React.Component<CodeEditorErrorBoundaryPro
   }
 }
 
+// TypeScript: Use type assertion for displayName on class component
+(CodeEditorErrorBoundary as React.ComponentType<CodeEditorErrorBoundaryProps> & { displayName?: string }).displayName = 'CodeEditorErrorBoundary';
+
 const CodeEditorErrorFallback: React.FC<{ error?: Error; reset: () => void }> = ({ error, reset }) => (
   <div className="flex flex-col items-center justify-center p-6 bg-yellow-50 border border-yellow-200 rounded-lg min-h-[300px]">
     <div className="text-center">
@@ -83,5 +86,7 @@ const CodeEditorErrorFallback: React.FC<{ error?: Error; reset: () => void }> = 
     </div>
   </div>
 );
+
+CodeEditorErrorFallback.displayName = 'CodeEditorErrorFallback';
 
 export default CodeEditorErrorBoundary;

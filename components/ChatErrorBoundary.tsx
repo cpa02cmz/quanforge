@@ -50,6 +50,9 @@ class ChatErrorBoundary extends React.Component<ChatErrorBoundaryProps, ChatErro
   }
 }
 
+// TypeScript: Use type assertion for displayName on class component
+(ChatErrorBoundary as React.ComponentType<ChatErrorBoundaryProps> & { displayName?: string }).displayName = 'ChatErrorBoundary';
+
 const ChatErrorFallback: React.FC<{ error?: Error; reset: () => void }> = ({ error, reset }) => (
   <div className="flex flex-col items-center justify-center p-6 bg-red-50 border border-red-200 rounded-lg min-h-[200px]">
     <div className="text-center">
@@ -66,5 +69,7 @@ const ChatErrorFallback: React.FC<{ error?: Error; reset: () => void }> = ({ err
     </div>
   </div>
 );
+
+ChatErrorFallback.displayName = 'ChatErrorFallback';
 
 export default ChatErrorBoundary;

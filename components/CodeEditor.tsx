@@ -577,6 +577,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({ code, readOnl
   );
 });
 
+CodeEditor.displayName = 'CodeEditor';
+
 // Export wrapped version with error boundary protection
 const CodeEditorWithErrorBoundary: React.FC<CodeEditorProps> = (props) => {
   return (
@@ -585,5 +587,7 @@ const CodeEditorWithErrorBoundary: React.FC<CodeEditorProps> = (props) => {
     </CodeEditorErrorBoundary>
   );
 };
+
+CodeEditorWithErrorBoundary.displayName = 'CodeEditorWithErrorBoundary';
 
 export default CodeEditorWithErrorBoundary;

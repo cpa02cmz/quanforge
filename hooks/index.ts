@@ -108,3 +108,14 @@ export type {
 // Business logic hooks
 export { useDashboardStats } from './useDashboardStats';
 export { useGeneratorLogic } from './useGeneratorLogic';
+
+// Enhanced lazy loading hooks
+export { 
+  useEnhancedLazyLoad, 
+  useLazyImageEnhanced, 
+  useLazyComponentEnhanced 
+} from './useEnhancedLazyLoad';
+export type { 
+  UseEnhancedLazyLoadOptions,
+  UseLazyLoadReturn 
+} from './useEnhancedLazyLoad';
