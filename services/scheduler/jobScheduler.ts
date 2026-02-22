@@ -148,11 +148,11 @@ function parseCronExpression(expression: string): CronParts | null {
   };
   
   return {
-    minute: parsePart(parts[0], 0, 59),
-    hour: parsePart(parts[1], 0, 23),
-    dayOfMonth: parsePart(parts[2], 1, 31),
-    month: parsePart(parts[3], 1, 12),
-    dayOfWeek: parsePart(parts[4], 0, 6),
+    minute: parsePart(parts[0]!, 0, 59),
+    hour: parsePart(parts[1]!, 0, 23),
+    dayOfMonth: parsePart(parts[2]!, 1, 31),
+    month: parsePart(parts[3]!, 1, 12),
+    dayOfWeek: parsePart(parts[4]!, 0, 6),
   };
 }
 
@@ -220,13 +220,11 @@ export class JobScheduler {
   private jobs: Map<string, RegisteredJob> = new Map();
   private runningJobs: Map<string, AbortController> = new Map();
   private timeouts: Map<string, ReturnType<typeof setTimeout>> = new Map();
-  private intervals: Map<string, ReturnType<typeof setInterval>> = new Map();
   private eventListeners: Map<JobEventType, Set<JobEventListener>> = new Map();
   private config: SchedulerConfig;
   private started = false;
   private startTime = 0;
   private pollInterval: ReturnType<typeof setInterval> | null = null;
-  private executionQueue: string[] = [];
 
   private constructor(config: Partial<SchedulerConfig> = {}) {
     this.config = { ...DEFAULT_SCHEDULER_CONFIG, ...config };
@@ -620,7 +618,10 @@ export class JobScheduler {
     // Execute up to max concurrent
     const availableSlots = this.config.maxConcurrentJobs - runningCount;
     for (let i = 0; i < Math.min(jobsToRun.length, availableSlots); i++) {
-      this.executeJob(jobsToRun[i].config.id);
+      const jobToRun = jobsToRun[i];
+      if (jobToRun) {
+        this.executeJob(jobToRun.config.id);
+      }
     }
   }
 
