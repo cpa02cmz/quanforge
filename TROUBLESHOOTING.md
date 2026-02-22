@@ -816,6 +816,6 @@ This troubleshooting guide covers the most common issues. For additional help, d
 
 ---
 
-**Last Updated**: February 21, 2026  
-**Version**: v1.9.0
+**Last Updated**: February 22, 2026  
+**Version**: v2.1.0
 **Maintainers**: QuantForge AI Team
