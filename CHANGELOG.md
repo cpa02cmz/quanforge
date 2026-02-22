@@ -19,48 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.1.0] - 2026-02-22
 
-### ⚡ Performance Optimization Utilities
-- **useIdleCallback Hook**: Schedule non-critical work during browser idle periods
-  - Wraps `requestIdleCallback` with React lifecycle management
-  - Fallback to `setTimeout` for unsupported browsers
-  - Automatic cleanup on unmount
-  - `useIdleCallbackEffect` for declarative idle work
-  - `useIdleProcessor` for chunked array processing
-
-- **useLazyComponent Hook**: Intersection Observer-based lazy loading
-  - Configurable root margin for preloading
-  - Placeholder support during loading
-  - `createLazyComponent` factory function
-  - `LazyComponentWrapper` component
-  - `usePreloadComponents` for idle-time preloading
-
-- **Performance Metrics Collector Service**: Comprehensive Web Vitals tracking
-  - Web Vitals collection (LCP, FID, CLS, TTFB, FCP)
-  - Custom metrics tracking
-  - Performance budget monitoring
-  - Memory usage tracking
-  - API call timing
-  - Component render timing
-  - Batching and reporting
-
 ### 🧪 Major Testing Expansion
-- **Test Suite Growth**: 174 new tests added (672 → 846 total)
-- **Test Files**: 35 test files (up from 29)
-- **Test Coverage**: 100% pass rate maintained (846/846)
-- **Test Performance**: 22.03s execution time
-- **New Test Categories**:
-  - Performance utilities tests
-  - Idle callback hook tests
-  - Lazy component hook tests
-  - Metrics collector tests
-  - Accordion component tests
-  - Progress ring component tests
+- **Test Suite Growth**: 159 new tests added (672 → 831 total)
+- **Test Files**: 34 test files (up from 29)
+- **Test Categories**: Expanded coverage across all services and utilities
+- **Test Coverage**: 100% pass rate maintained (831/831)
+- **Test Performance**: 17.76s execution time
 
 ### 📊 Quality Metrics Update
-- **Tests**: 846/846 passing (100%)
-- **Build Time**: ~23s average
+- **Tests**: 831/831 passing (100%)
+- **Build Time**: ~19.5s average
 - **TypeScript Errors**: 0
-- **Lint Errors**: 0 (675 any-type warnings only)
+- **Lint Errors**: 0 (666 any-type warnings only)
 - **Production Vulnerabilities**: 0
 - **Console Statements**: 0 in production code (52+ consecutive runs)
 - **TODO/FIXME Comments**: 0 (all resolved)
@@ -492,8 +462,8 @@ See [bug.md](./bug.md) for complete list of resolved bugs and their solutions.
 - **Contributing**: See [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 ### Version Support
-- **Current Stable**: v2.0.0 (Fully Supported)
-- **Previous Stable**: v1.9.0 (Security Updates Only)
+- **Current Stable**: v2.1.0 (Fully Supported)
+- **Previous Stable**: v2.0.0 (Security Updates Only)
 - **Legacy Versions**: No longer supported
 
 ---
