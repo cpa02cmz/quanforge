@@ -426,6 +426,43 @@ export {
   useAPIRequestBuilder,
 } from './apiRequestBuilder';
 
+// ============= Event Bus =============
+
+export {
+  // Types
+  APIEventType,
+  APIEvent,
+  RequestStartPayload,
+  RequestProgressPayload,
+  RequestCompletePayload,
+  RequestErrorPayload,
+  RequestCancelPayload,
+  RequestRetryPayload,
+  CacheHitPayload,
+  CacheMissPayload,
+  RateLimitHitPayload,
+  CircuitBreakerPayload,
+  HealthStatusChangePayload,
+  ErrorClassifiedPayload,
+  APIEventHandler,
+  EventSubscriptionOptions,
+  EventBusStats,
+  EventBusConfig,
+  
+  // Class and Instance
+  APIEventBus,
+  getAPIEventBus,
+  initializeAPIEventBus,
+  hasAPIEventBus,
+  
+  // Convenience Functions
+  emitAPIEvent,
+  onAPIEvent,
+  
+  // React Hook
+  useAPIEventBus,
+} from './apiEventBus';
+
 // ============= Utility Functions =============
 
 import { apiResponseCache } from './apiResponseCache';
@@ -441,6 +478,7 @@ import { getAPIRequestQueue, hasAPIRequestQueue } from './apiRequestQueue';
 import { getAPIRetryPolicy, hasAPIRetryPolicy } from './apiRetryPolicy';
 import { getAPIEndpointRegistry, hasAPIEndpointRegistry } from './apiEndpointRegistry';
 import { getAPIErrorClassifier, hasAPIErrorClassifier } from './apiErrorClassifier';
+import { getAPIEventBus, hasAPIEventBus } from './apiEventBus';
 
 /**
  * Initialize all API services
@@ -468,6 +506,7 @@ export function getAPIServicesHealth(): {
   retryPolicy?: ReturnType<typeof getAPIRetryPolicy>['getStats'] extends () => infer R ? R : never;
   endpointRegistry?: ReturnType<typeof getAPIEndpointRegistry>['getStats'] extends () => infer R ? R : never;
   errorClassifier?: ReturnType<typeof getAPIErrorClassifier>['getStats'] extends () => infer R ? R : never;
+  eventBus?: ReturnType<typeof getAPIEventBus>['getStats'] extends () => infer R ? R : never;
 } {
   return {
     cache: apiResponseCache.getStats(),
@@ -483,6 +522,7 @@ export function getAPIServicesHealth(): {
     retryPolicy: hasAPIRetryPolicy() ? getAPIRetryPolicy().getStats() as any : undefined,
     endpointRegistry: hasAPIEndpointRegistry() ? getAPIEndpointRegistry().getStats() as any : undefined,
     errorClassifier: hasAPIErrorClassifier() ? getAPIErrorClassifier().getStats() as any : undefined,
+    eventBus: hasAPIEventBus() ? getAPIEventBus().getStats() as any : undefined,
   };
 }
 
@@ -515,5 +555,8 @@ export function destroyAPIServices(): void {
   }
   if (hasAPIErrorClassifier()) {
     getAPIErrorClassifier().destroy();
+  }
+  if (hasAPIEventBus()) {
+    getAPIEventBus().destroy();
   }
 }
