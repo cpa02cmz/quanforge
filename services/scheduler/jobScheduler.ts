@@ -54,20 +54,22 @@ function calculateNextExecution(schedule: ScheduleConfig, lastExecution?: number
     
     case 'interval':
       if (!schedule.interval) return undefined;
-      const base = lastExecution || now;
-      let next = base + schedule.interval;
-      
-      // Handle end date
-      if (schedule.endDate && next > schedule.endDate) {
-        return undefined;
+      {
+        const base = lastExecution || now;
+        let next = base + schedule.interval;
+        
+        // Handle end date
+        if (schedule.endDate && next > schedule.endDate) {
+          return undefined;
+        }
+        
+        // Handle skip missed
+        if (schedule.skipMissed && next < now) {
+          next = now + schedule.interval;
+        }
+        
+        return next;
       }
-      
-      // Handle skip missed
-      if (schedule.skipMissed && next < now) {
-        next = now + schedule.interval;
-      }
-      
-      return next;
     
     case 'cron':
       if (!schedule.cronExpression) return undefined;
@@ -87,7 +89,7 @@ function calculateNextExecution(schedule: ScheduleConfig, lastExecution?: number
 function calculateNextCronExecution(
   expression: string, 
   fromTime: number, 
-  timezone?: string
+  _timezone?: string
 ): number {
   const parts = parseCronExpression(expression);
   if (!parts) return fromTime;
@@ -126,7 +128,7 @@ function parseCronExpression(expression: string): CronParts | null {
     const ranges = part.split(',');
     
     for (const range of ranges) {
-      let [start, end, step] = range.split(/[\/-]/);
+      let [start, end, step] = range.split(/[/\--]/);
       start = start || '*';
       end = end || start;
       step = step || '1';
@@ -183,8 +185,10 @@ function calculateRetryDelay(
       return config.initialDelay * attempt;
     
     case 'exponential':
-      const delay = config.initialDelay * Math.pow(config.backoffMultiplier, attempt - 1);
-      return Math.min(delay, config.maxDelay);
+      {
+        const delay = config.initialDelay * Math.pow(config.backoffMultiplier, attempt - 1);
+        return Math.min(delay, config.maxDelay);
+      }
     
     default:
       return 0;

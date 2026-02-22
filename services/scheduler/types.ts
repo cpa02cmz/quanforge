@@ -72,7 +72,7 @@ export interface JobExecutionResult<T = unknown> {
 /**
  * Job handler function type
  */
-export type JobHandler<T = unknown, R = unknown> = (
+export type JobHandler<R = unknown> = (
   context: JobExecutionContext
 ) => Promise<R> | R;
 

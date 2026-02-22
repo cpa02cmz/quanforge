@@ -15,9 +15,7 @@
 
 import { createScopedLogger } from '../../utils/logger';
 import {
-  MessageStatus,
   MessagePriority,
-  QueueType,
   MessageHandler,
   QueueMessage,
   QueueConfig,
@@ -29,7 +27,6 @@ import {
   QueueEventType,
   QueueEventListener,
   MessageContext,
-  MessageResult,
   PublishOptions,
   DEFAULT_QUEUE_CONFIG,
   DEFAULT_CONSUMER_CONFIG,
@@ -579,7 +576,7 @@ export class MessageQueue {
   private async processMessages(): Promise<void> {
     if (!this.started) return;
 
-    for (const [consumerId, consumer] of this.consumers) {
+    for (const [_consumerId, consumer] of this.consumers) {
       if (consumer.status !== 'running') continue;
 
       const queue = this.queues.get(consumer.config.queueName);
@@ -608,7 +605,7 @@ export class MessageQueue {
     consumer: RegisteredConsumer
   ): QueueMessage | undefined {
     const now = Date.now();
-    const prefetch = consumer.config.prefetch || 1;
+    const _prefetch = consumer.config.prefetch || 1;
 
     // Find available messages
     const available = queue.messages.filter(m => {
@@ -657,7 +654,7 @@ export class MessageQueue {
     };
 
     try {
-      const result = await consumer.config.handler(message, context);
+      const _result = await consumer.config.handler(message, context);
       const processingTime = Date.now() - startTime;
 
       if (consumer.config.autoAck) {
@@ -677,7 +674,7 @@ export class MessageQueue {
       });
 
     } catch (error) {
-      const processingTime = Date.now() - startTime;
+      const _processingTime = Date.now() - startTime;
       const errorMsg = error instanceof Error ? error.message : String(error);
 
       message.lastError = errorMsg;
