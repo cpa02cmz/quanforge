@@ -245,3 +245,53 @@ export {
   type RetentionConfig,
   type RetentionReport
 } from './retentionPolicyManager';
+
+// Backup Service
+export {
+  BackupService,
+  backupService,
+  type BackupType,
+  type BackupStatus,
+  type BackupTrigger,
+  type BackupConfig,
+  type BackupMetadata,
+  type VerificationResult,
+  type RecoveryPoint,
+  type BackupSchedule,
+  type BackupReport
+} from './backupService';
+
+// Query Diagnostics
+export {
+  QueryDiagnostics,
+  queryDiagnostics,
+  type QueryState,
+  type DiagnosticSeverity,
+  type ResourceType,
+  type QueryTrace,
+  type QueryPlanSummary,
+  type ResourceUsage,
+  type QueryWarning,
+  type QueryMetadata,
+  type DiagnosticAlert,
+  type DiagnosticsConfig,
+  type AlertThresholds,
+  type DiagnosticsReport,
+  type QueryAnalysisResult,
+  type QueryOptimization
+} from './queryDiagnostics';
+
+// Connection Leak Detector
+export {
+  ConnectionLeakDetector,
+  connectionLeakDetector,
+  type ConnectionState,
+  type LeakSeverity,
+  type ConnectionInfo,
+  type LeakDetectionResult,
+  type PoolHealthStatus,
+  type LeakDetectorConfig,
+  type LeakAlert,
+  type ConnectionStats,
+  type LeakReport
+} from './connectionLeakDetector';
