@@ -246,3 +246,18 @@ export type {
   IdleTaskResult,
   TaskPriority 
 } from './useIdleTask';
+
+// Swipe gesture hooks (UI/UX enhancement)
+export { useSwipeGesture } from './useSwipeGesture';
+export type { 
+  SwipeGestureOptions, 
+  SwipeGestureState, 
+  SwipeGestureHandlers 
+} from './useSwipeGesture';
+
+// Idle callback hooks (performance optimization)
+export {
+  useIdleCallback,
+  useIdleCallbackEffect,
+  useIdleProcessor,
+} from './useIdleCallback';
