@@ -248,3 +248,22 @@ export {
   type NormalizedError,
   type MiddlewarePerformanceMetrics
 } from './reliabilityMiddleware';
+
+// Backpressure Manager for system overload protection
+export {
+  BackpressureManager,
+  PressureLevel,
+  LoadSheddingStrategy,
+  shouldAcceptRequest,
+  getBackpressureRateFactor,
+  withBackpressure,
+  type ResourceMetrics,
+  type PressureThresholds,
+  type BackpressureConfig,
+  type BackpressureStatus,
+  type PressureEvent,
+  type PressureEventListener
+} from './backpressureManager';
+
+// Re-export the singleton getter for backward compatibility
+export { backpressureManager as backpressureManagerInstance } from './backpressureManager';
