@@ -5,6 +5,9 @@
  * - Service Registry: Centralized service management and health checking
  * - Request Context Manager: Distributed tracing and request lifecycle tracking
  * - Performance Analyzer: Performance analysis and optimization recommendations
+ * - Rate Limiter: Token bucket rate limiting for services
+ * - Request Queue Manager: Priority-based request queuing
+ * - Backend Manager: Unified orchestrator for all backend services
  * 
  * @module services/backend
  * @author Backend Engineer
@@ -49,8 +52,34 @@ export type {
   BackendManagerConfig,
 } from './types';
 
+// Rate Limiter Types
+export type {
+  RateLimitStatus,
+  RateLimitConfig,
+  RateLimitResult,
+} from './rateLimiter';
+
+// Request Queue Types
+export type {
+  QueuePriority,
+  QueueStatus,
+  QueueItem,
+  QueueConfig,
+  QueueStats,
+  QueueOptions,
+} from './requestQueue';
+
+// Backend Manager Types
+export type {
+  BackendManagerOptions,
+  BackendManagerStatus,
+  BackendOperationContext,
+} from './manager';
+
 // Enums and Constants
 export { BackendEventType, DEFAULT_BACKEND_CONFIG } from './types';
+export { DEFAULT_RATE_LIMITS } from './rateLimiter';
+export { DEFAULT_QUEUE_CONFIGS } from './requestQueue';
 
 // Service Registry
 export {
@@ -75,16 +104,61 @@ export {
   recordErrorCount,
 } from './performanceAnalyzer';
 
+// Rate Limiter
+export {
+  BackendRateLimiter,
+  backendRateLimiter,
+  checkRateLimit,
+  waitForRateLimit,
+} from './rateLimiter';
+
+// Request Queue Manager
+export {
+  RequestQueueManager,
+  requestQueueManager,
+  enqueue,
+  enqueueAndWait,
+} from './requestQueue';
+
+// Backend Manager
+export {
+  BackendManager,
+  backendManager,
+  executeBackendOperation,
+  getBackendHealth,
+  getBackendStatus,
+} from './manager';
+
+// Import for use in this module
+import { backendManager } from './manager';
+
 /**
  * Initialize backend services
  * 
  * Call this function to set up all backend services with default configurations.
  */
-export function initializeBackendServices(): void {
+export async function initializeBackendServices(): Promise<void> {
+  // Initialize the backend manager (which initializes all subsystems)
+  await backendManager.initialize();
+  
   // Register common services
   registerCommonBackendServices();
   
   // Log initialization
   const logger = createScopedLogger('Backend');
   logger.log('Backend services initialized');
+}
+
+/**
+ * Shutdown backend services
+ * 
+ * Call this function to gracefully shut down all backend services.
+ */
+export async function shutdownBackendServices(): Promise<void> {
+  const logger = createScopedLogger('Backend');
+  logger.log('Shutting down backend services...');
+  
+  await backendManager.shutdown();
+  
+  logger.log('Backend services shut down');
 }
