@@ -295,3 +295,77 @@ export {
   type ConnectionStats,
   type LeakReport
 } from './connectionLeakDetector';
+
+// Metrics Aggregator
+export {
+  MetricsAggregator,
+  metricsAggregator,
+  type DatabaseMetrics,
+  type MetricThreshold,
+  type Alert,
+  type MetricsConfig,
+  type MetricsReport
+} from './metricsAggregator';
+
+// Health Orchestrator
+export {
+  HealthOrchestrator,
+  healthOrchestrator,
+  type HealthLevel,
+  type ServiceHealth,
+  type HealthOrchestratorStatus,
+  type HealthCheckResult,
+  type HealthEvent,
+  type HealthConfig
+} from './healthOrchestrator';
+
+// Resource Governor
+export {
+  ResourceGovernor,
+  resourceGovernor,
+  type ResourceType,
+  type ThrottleAction,
+  type PriorityLevel,
+  type ResourceQuota,
+  type ResourceUsage,
+  type ThrottleConfig,
+  type OperationRequest,
+  type GovernorConfig,
+  type GovernorStatus,
+  type ResourceEvent
+} from './resourceGovernor';
+
+// Query Execution Planner
+export {
+  QueryExecutionPlanner,
+  queryExecutionPlanner,
+  type ExecutionStrategy,
+  type OptimizationLevel,
+  type QueryComplexity,
+  type QueryPlan as ExecutionQueryPlan,
+  type ExecutionStep,
+  type OptimizationSuggestion,
+  type PlanStatistics,
+  type PlannerConfig,
+  type QueryFeatures
+} from './queryExecutionPlanner';
+
+// Configuration Manager
+export {
+  DatabaseConfigManager,
+  databaseConfigManager,
+  type ConfigSource,
+  type ValidationSeverity,
+  type DatabaseConfig,
+  type ConnectionConfig,
+  type PoolConfig as DatabasePoolConfig,
+  type CacheConfig as DatabaseCacheConfig,
+  type MonitoringConfig,
+  type SecurityConfig,
+  type PerformanceConfig,
+  type ConfigValidationResult,
+  type ConfigValidationIssue,
+  type ConfigChangeEvent,
+  type ConfigHistory,
+  type ConfigManagerOptions
+} from './configManager';
