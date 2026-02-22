@@ -71,6 +71,19 @@ export { useModalAccessibility } from './useModalAccessibility';
 export { useReducedMotion } from './useReducedMotion';
 export { useToast } from './useToast';
 
+// Focus management hooks
+export { 
+  useFocusVisible, 
+  useFocusWithin, 
+  useFocusTrap, 
+  useAutoFocus 
+} from './useFocusVisible';
+export type { 
+  FocusVisibleOptions, 
+  FocusVisibleResult, 
+  InputModality 
+} from './useFocusVisible';
+
 // Business logic hooks
 export { useDashboardStats } from './useDashboardStats';
 export { useGeneratorLogic } from './useGeneratorLogic';
