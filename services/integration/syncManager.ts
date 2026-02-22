@@ -613,10 +613,11 @@ export class IntegrationSyncManager {
         return source;
       case ConflictResolution.TARGET_WINS:
         return target;
-      case ConflictResolution.LATEST_WINS:
+      case ConflictResolution.LATEST_WINS: {
         const sourceTime = (source as { updatedAt?: string })?.updatedAt;
         const targetTime = (target as { updatedAt?: string })?.updatedAt;
         return (!targetTime || (sourceTime && sourceTime > targetTime)) ? source : target;
+      }
       case ConflictResolution.MERGE:
         return { ...(target as object), ...(source as object) };
       case ConflictResolution.CUSTOM:
