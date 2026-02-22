@@ -92,6 +92,35 @@ export { useModalAccessibility } from './useModalAccessibility';
 export { useReducedMotion } from './useReducedMotion';
 export { useToast } from './useToast';
 
+// Motion preferences hooks (UI/UX enhancement)
+export {
+  MotionPreferencesProvider,
+  useMotionPreferences,
+  useAnimation,
+  useReducedMotionEnhanced,
+} from './useMotionPreferences';
+export type {
+  MotionLevel,
+  AnimationType,
+  MotionSettings,
+  MotionPreferences,
+  MotionPreferencesContextValue,
+} from './useMotionPreferences';
+
+// Scroll-triggered animation hooks (UI/UX enhancement)
+export {
+  useScrollTriggeredAnimation,
+  useStaggeredScrollAnimation,
+  ScrollAnimationContainer,
+} from './useScrollTriggeredAnimation';
+export type {
+  ScrollAnimationEffect,
+  ScrollAnimationState,
+  ScrollAnimationOptions,
+  ScrollAnimationResult,
+  ScrollAnimationContainerProps,
+} from './useScrollTriggeredAnimation';
+
 // Focus management hooks
 export { 
   useFocusVisible, 
