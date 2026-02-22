@@ -209,3 +209,39 @@ export {
   type AuditConfig,
   type AuditReport
 } from './databaseAuditLogger';
+
+// Query Plan Cache
+export {
+  QueryPlanCache,
+  queryPlanCache,
+  type CachedQueryPlan,
+  type CacheEntry as QueryPlanCacheEntry,
+  type CacheStats as QueryPlanCacheStats,
+  type CacheConfig as QueryPlanCacheConfig
+} from './queryPlanCache';
+
+// Failover Manager
+export {
+  FailoverManager,
+  failoverManager,
+  type FailoverState,
+  type FailoverStrategy,
+  type DatabaseEndpoint,
+  type FailoverConfig,
+  type FailoverEvent,
+  type FailoverStatus
+} from './failoverManager';
+
+// Retention Policy Manager
+export {
+  RetentionPolicyManager,
+  retentionPolicyManager,
+  type RetentionAction,
+  type RetentionPolicyStatus,
+  type RetentionPolicy,
+  type RetentionExecution,
+  type RetentionExecutionDetail,
+  type RetentionStats,
+  type RetentionConfig,
+  type RetentionReport
+} from './retentionPolicyManager';
