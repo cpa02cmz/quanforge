@@ -13,6 +13,10 @@
  * @module services/performance/metricsCollector
  */
 
+import { createScopedLogger } from '../../utils/logger';
+
+const logger = createScopedLogger('PerformanceMetrics');
+
 /**
  * Performance metric types
  */
@@ -463,7 +467,7 @@ class PerformanceMetricsCollector {
    */
   private debugLog(message: string, ...args: unknown[]): void {
     if (this.config.debug) {
-      console.log(`[PerformanceMetrics] ${message}`, ...args);
+      logger.debug(message, ...args);
     }
   }
 }

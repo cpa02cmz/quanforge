@@ -22,6 +22,9 @@ import React, {
   ComponentType,
   LazyExoticComponent
 } from 'react';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('useLazyComponent');
 
 /**
  * Options for lazy component loading
@@ -107,7 +110,7 @@ export function useLazyComponent(
 
   const debugLog = useCallback((message: string, ...args: unknown[]) => {
     if (mergedOptions.debug) {
-      console.log(`[useLazyComponent] ${message}`, ...args);
+      logger.debug(message, ...args);
     }
   }, [mergedOptions.debug]);
 

@@ -13,6 +13,9 @@
  */
 
 import { useCallback, useRef, useEffect, useState } from 'react';
+import { createScopedLogger } from '../utils/logger';
+
+const logger = createScopedLogger('useBatchUpdates');
 
 /**
  * Configuration options for batch updates
@@ -99,7 +102,7 @@ export function useBatchUpdates<T>(
   // Log debug messages
   const debugLog = useCallback((message: string, ...args: unknown[]) => {
     if (mergedConfig.debug) {
-      console.log(`[useBatchUpdates] ${message}`, ...args);
+      logger.debug(message, ...args);
     }
   }, [mergedConfig.debug]);
 

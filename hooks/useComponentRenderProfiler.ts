@@ -13,6 +13,7 @@
  */
 
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
+import { createScopedLogger } from '../utils/logger';
 
 /**
  * Performance metric for a single render
@@ -179,6 +180,9 @@ export function useComponentRenderProfiler(
   const prevPropsRef = useRef<Record<string, unknown> | null>(null);
   const marksRef = useRef<Map<string, number>>(new Map());
   const issueLoggedRef = useRef(false);
+  
+  // Logger
+  const logger = useMemo(() => createScopedLogger(componentName), [componentName]);
 
   // Calculate statistics
   const stats = useMemo((): PerformanceStats => {
@@ -252,10 +256,10 @@ export function useComponentRenderProfiler(
       marksRef.current.delete(label);
       
       if (mergedConfig.logRenders) {
-        console.log(`[${componentName}] ${label}: ${duration.toFixed(2)}ms`);
+        logger.debug(`${label}: ${duration.toFixed(2)}ms`);
       }
     }
-  }, [isEnabled, componentName, mergedConfig.logRenders]);
+  }, [isEnabled, logger, mergedConfig.logRenders]);
 
   // Get history
   const getHistory = useCallback(() => {
@@ -293,16 +297,16 @@ export function useComponentRenderProfiler(
 
     // Log render
     if (mergedConfig.logRenders) {
-      console.log(
-        `[${componentName}] Render #${metrics.length + 1}: ${duration.toFixed(2)}ms`,
+      logger.debug(
+        `Render #${metrics.length + 1}: ${duration.toFixed(2)}ms`,
         changedProps.length > 0 ? `Changed props: ${changedProps.join(', ')}` : ''
       );
     }
 
     // Warn on slow renders
     if (duration > mergedConfig.warnThreshold) {
-      console.warn(
-        `[${componentName}] Slow render: ${duration.toFixed(2)}ms (threshold: ${mergedConfig.warnThreshold}ms)`
+      logger.warn(
+        `Slow render: ${duration.toFixed(2)}ms (threshold: ${mergedConfig.warnThreshold}ms)`
       );
     }
 
@@ -326,7 +330,7 @@ export function useComponentRenderProfiler(
           mergedConfig.onPerformanceIssue(stats, issue);
           
           if (mergedConfig.logRenders) {
-            console.warn(`[${componentName}] Performance issue detected: ${issue}`);
+            logger.warn(`Performance issue detected: ${issue}`);
           }
         }
       }
@@ -372,6 +376,7 @@ export function useComponentRenderProfiler(
  */
 export function usePerformanceMeasure(name: string) {
   const isEnabled = typeof window !== 'undefined' && process.env['NODE_ENV'] === 'development';
+  const logger = useMemo(() => createScopedLogger(name), [name]);
   
   const measure = useCallback(<T,>(fn: () => T): T => {
     if (!isEnabled) return fn();
@@ -382,10 +387,10 @@ export function usePerformanceMeasure(name: string) {
     } finally {
       const duration = performance.now() - startTime;
       if (duration > 1) {
-        console.log(`[${name}] Took ${duration.toFixed(2)}ms`);
+        logger.debug(`Took ${duration.toFixed(2)}ms`);
       }
     }
-  }, [name, isEnabled]);
+  }, [logger, isEnabled]);
 
   const measureAsync = useCallback(async <T,>(fn: () => Promise<T>): Promise<T> => {
     if (!isEnabled) return fn();
@@ -395,9 +400,9 @@ export function usePerformanceMeasure(name: string) {
       return await fn();
     } finally {
       const duration = performance.now() - startTime;
-      console.log(`[${name}] Took ${duration.toFixed(2)}ms`);
+      logger.debug(`Took ${duration.toFixed(2)}ms`);
     }
-  }, [name, isEnabled]);
+  }, [logger, isEnabled]);
 
   return { measure, measureAsync };
 }
@@ -408,18 +413,19 @@ export function usePerformanceMeasure(name: string) {
 export function useMountProfiler(name: string) {
   const isEnabled = typeof window !== 'undefined' && process.env['NODE_ENV'] === 'development';
   const mountTimeRef = useRef<number>(0);
+  const logger = useMemo(() => createScopedLogger(name), [name]);
 
   useEffect(() => {
     if (!isEnabled) return;
     
     mountTimeRef.current = performance.now();
-    console.log(`[${name}] Mounted`);
+    logger.debug('Mounted');
     
     return () => {
       const mountDuration = performance.now() - mountTimeRef.current;
-      console.log(`[${name}] Unmounted after ${(mountDuration / 1000).toFixed(2)}s`);
+      logger.debug(`Unmounted after ${(mountDuration / 1000).toFixed(2)}s`);
     };
-  }, [name, isEnabled]);
+  }, [logger, isEnabled]);
 }
 
 export default useComponentRenderProfiler;
