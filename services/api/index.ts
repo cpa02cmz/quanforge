@@ -14,6 +14,11 @@
  * - Distributed tracing
  * - Unified API facade
  * - Middleware registry
+ * - Request queue
+ * - Retry policy
+ * - Endpoint registry
+ * - Error classification
+ * - Request builder
  * 
  * @module services/api
  * @since 2026-02-20
@@ -333,6 +338,94 @@ export {
   useAPIRetryPolicy,
 } from './apiRetryPolicy';
 
+// ============= Endpoint Registry =============
+
+export {
+  // Types
+  HTTPMethod,
+  EndpointCategory,
+  EndpointConfig,
+  ResolvedEndpoint,
+  EndpointHealth,
+  RegistryStats as EndpointRegistryStats,
+  BaseURLConfig,
+  
+  // Class and Instance
+  APIEndpointRegistry,
+  getAPIEndpointRegistry,
+  initializeAPIEndpointRegistry,
+  hasAPIEndpointRegistry,
+  
+  // Convenience Functions
+  resolveEndpoint,
+  getEndpoint,
+  registerEndpoint,
+  
+  // React Hook
+  useAPIEndpointRegistry,
+} from './apiEndpointRegistry';
+
+// ============= Error Classifier =============
+
+export {
+  // Types
+  ErrorCategory,
+  ErrorSeverity,
+  ErrorRecovery,
+  APIErrorInfo,
+  ErrorStats,
+  
+  // Error Classes
+  APIError,
+  NetworkError,
+  TimeoutError,
+  AuthError,
+  RateLimitError,
+  ValidationError,
+  NotFoundError,
+  ServerError,
+  CancellationError,
+  ConflictError,
+  
+  // Class and Instance
+  APIErrorClassifier,
+  getAPIErrorClassifier,
+  initializeAPIErrorClassifier,
+  hasAPIErrorClassifier,
+  
+  // Convenience Functions
+  classifyError,
+  isErrorRetryable,
+  getErrorRetryDelay,
+  
+  // React Hook
+  useAPIErrorClassifier,
+} from './apiErrorClassifier';
+
+// ============= Request Builder =============
+
+export {
+  // Types
+  RequestBody,
+  ProgressEvent,
+  ProgressCallback,
+  RequestBuilderOptions,
+  
+  // Class
+  APIRequestBuilder,
+  
+  // Factory Functions
+  request,
+  getRequest,
+  postRequest,
+  putRequest,
+  patchRequest,
+  deleteRequest,
+  
+  // React Hook
+  useAPIRequestBuilder,
+} from './apiRequestBuilder';
+
 // ============= Utility Functions =============
 
 import { apiResponseCache } from './apiResponseCache';
@@ -346,6 +439,8 @@ import { getUnifiedAPIFacade, hasUnifiedAPIFacade } from './apiUnifiedFacade';
 import { getAPIMiddlewareRegistry, hasAPIMiddlewareRegistry } from './apiMiddlewareRegistry';
 import { getAPIRequestQueue, hasAPIRequestQueue } from './apiRequestQueue';
 import { getAPIRetryPolicy, hasAPIRetryPolicy } from './apiRetryPolicy';
+import { getAPIEndpointRegistry, hasAPIEndpointRegistry } from './apiEndpointRegistry';
+import { getAPIErrorClassifier, hasAPIErrorClassifier } from './apiErrorClassifier';
 
 /**
  * Initialize all API services
@@ -371,6 +466,8 @@ export function getAPIServicesHealth(): {
   middlewareRegistry?: ReturnType<typeof getAPIMiddlewareRegistry>['getStats'] extends () => infer R ? R : never;
   requestQueue?: ReturnType<typeof getAPIRequestQueue>['getStats'] extends () => infer R ? R : never;
   retryPolicy?: ReturnType<typeof getAPIRetryPolicy>['getStats'] extends () => infer R ? R : never;
+  endpointRegistry?: ReturnType<typeof getAPIEndpointRegistry>['getStats'] extends () => infer R ? R : never;
+  errorClassifier?: ReturnType<typeof getAPIErrorClassifier>['getStats'] extends () => infer R ? R : never;
 } {
   return {
     cache: apiResponseCache.getStats(),
@@ -384,6 +481,8 @@ export function getAPIServicesHealth(): {
     middlewareRegistry: hasAPIMiddlewareRegistry() ? getAPIMiddlewareRegistry().getStats() as any : undefined,
     requestQueue: hasAPIRequestQueue() ? getAPIRequestQueue().getStats() as any : undefined,
     retryPolicy: hasAPIRetryPolicy() ? getAPIRetryPolicy().getStats() as any : undefined,
+    endpointRegistry: hasAPIEndpointRegistry() ? getAPIEndpointRegistry().getStats() as any : undefined,
+    errorClassifier: hasAPIErrorClassifier() ? getAPIErrorClassifier().getStats() as any : undefined,
   };
 }
 
@@ -410,5 +509,11 @@ export function destroyAPIServices(): void {
   }
   if (hasAPIRetryPolicy()) {
     getAPIRetryPolicy().destroy();
+  }
+  if (hasAPIEndpointRegistry()) {
+    getAPIEndpointRegistry().destroy();
+  }
+  if (hasAPIErrorClassifier()) {
+    getAPIErrorClassifier().destroy();
   }
 }
