@@ -7,6 +7,11 @@
  * - Market Data (Twelve Data / Simulated)
  * - Cache
  * - External APIs
+ * 
+ * Additional features:
+ * - Integration Testing Utilities
+ * - Data Synchronization
+ * - Event Aggregation
  */
 
 // Types
@@ -53,3 +58,46 @@ export {
   type ConnectionFactory,
   type ConnectionPoolMetrics,
 } from './connectionPool';
+
+// Testing Utilities
+export {
+  BaseMockAdapter,
+  MockDatabaseAdapter,
+  MockAIServiceAdapter,
+  MockMarketDataAdapter,
+  MockCacheAdapter,
+  IntegrationTestHarness,
+  waitFor,
+  createDeferred,
+  createTestHarness,
+  createTestIntegrationConfig,
+  type MockAdapter,
+  type MockBehavior,
+  type MockIntegrationState,
+} from './testing';
+
+// Sync Manager
+export {
+  SyncDirection,
+  ConflictResolution,
+  SyncStatus,
+  IntegrationSyncManager,
+  integrationSyncManager,
+  type SyncConfig,
+  type SyncResult,
+  type SyncMetrics,
+  type DeltaRecord,
+} from './syncManager';
+
+// Event Aggregator
+export {
+  AggregationType,
+  EventSeverity,
+  IntegrationEventAggregator,
+  integrationEventAggregator,
+  type AggregatedEvent,
+  type AggregatedMetrics,
+  type CorrelationRule,
+  type EventPattern,
+  type EventAggregatorConfig,
+} from './eventAggregator';
