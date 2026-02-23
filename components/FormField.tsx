@@ -1,4 +1,4 @@
-import { forwardRef, ReactNode, useState, useEffect, useRef } from 'react';
+import { forwardRef, ReactNode, useState, useEffect, useRef, memo } from 'react';
 import { FORM_ANIMATION } from '../constants/animations';
 
 export interface FormFieldProps {
@@ -17,7 +17,17 @@ export interface FormFieldProps {
   shakeOnError?: boolean;
 }
 
-export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
+/**
+ * FormField - A form field wrapper with label, error, and hint support
+ * 
+ * Features:
+ * - Animated error shake effect
+ * - Reduced motion support
+ * - Accessible error announcements
+ * - Focus-within styling
+ * - React.memo for performance
+ */
+export const FormField = memo(forwardRef<HTMLDivElement, FormFieldProps>(
   ({ label, error, hint, required, disabled, children, htmlFor, className = '', shakeOnError = true }, ref) => {
     const hasError = !!error;
     const hasHint = !!hint && !hasError;
@@ -129,7 +139,7 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
       </div>
     );
   }
-);
+));
 
 FormField.displayName = 'FormField';
 
@@ -144,7 +154,11 @@ export interface InputWrapperProps {
   disableFocusEffects?: boolean;
 }
 
-export const InputWrapper = forwardRef<HTMLDivElement, InputWrapperProps>(
+/**
+ * InputWrapper - A wrapper for form inputs with focus and error styling
+ * Uses React.memo for performance optimization
+ */
+export const InputWrapper = memo(forwardRef<HTMLDivElement, InputWrapperProps>(
   ({ children, error = false, className = '', disableFocusEffects = false }, ref) => {
     return (
       <div
@@ -168,7 +182,7 @@ export const InputWrapper = forwardRef<HTMLDivElement, InputWrapperProps>(
       </div>
     );
   }
-);
+));
 
 InputWrapper.displayName = 'InputWrapper';
 
@@ -178,7 +192,11 @@ export interface FormHelperTextProps {
   className?: string;
 }
 
-export const FormHelperText = forwardRef<HTMLParagraphElement, FormHelperTextProps>(
+/**
+ * FormHelperText - Helper text for form fields
+ * Uses React.memo for performance optimization
+ */
+export const FormHelperText = memo(forwardRef<HTMLParagraphElement, FormHelperTextProps>(
   ({ children, error = false, className = '' }, ref) => {
     return (
       <p 
@@ -191,7 +209,7 @@ export const FormHelperText = forwardRef<HTMLParagraphElement, FormHelperTextPro
       </p>
     );
   }
-);
+));
 
 FormHelperText.displayName = 'FormHelperText';
 
@@ -203,7 +221,11 @@ export interface FormLabelProps {
   className?: string;
 }
 
-export const FormLabel = forwardRef<HTMLLabelElement, FormLabelProps>(
+/**
+ * FormLabel - Label component for form fields
+ * Uses React.memo for performance optimization
+ */
+export const FormLabel = memo(forwardRef<HTMLLabelElement, FormLabelProps>(
   ({ children, htmlFor, required = false, disabled = false, className = '' }, ref) => {
     return (
       <label
@@ -223,6 +245,6 @@ export const FormLabel = forwardRef<HTMLLabelElement, FormLabelProps>(
       </label>
     );
   }
-);
+));
 
 FormLabel.displayName = 'FormLabel';
