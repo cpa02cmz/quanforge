@@ -21,9 +21,9 @@ const logger = createScopedLogger('LoadBalancer');
 // ============= Types =============
 
 /**
- * Load balancing strategy
+ * Backend load balancing strategy
  */
-export type LoadBalancingStrategy = 
+export type BackendLoadBalancingStrategy = 
   | 'round_robin' 
   | 'least_connections' 
   | 'weighted' 
@@ -51,7 +51,7 @@ export interface BackendInstance {
  */
 export interface LoadBalancerConfig {
   serviceName: string;
-  strategy: LoadBalancingStrategy;
+  strategy: BackendLoadBalancingStrategy;
   healthCheckInterval: number;
   healthCheckTimeout: number;
   unhealthyThreshold: number;
@@ -564,7 +564,7 @@ export class BackendLoadBalancer {
   private selectInstanceByStrategy(
     serviceName: string,
     instances: BackendInstance[],
-    strategy: LoadBalancingStrategy
+    strategy: BackendLoadBalancingStrategy
   ): BackendInstance {
     switch (strategy) {
       case 'round_robin':
