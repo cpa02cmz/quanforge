@@ -297,7 +297,7 @@ class DevOpsHealthMonitor {
 
     // Check for stale branches
     const branchesResult = this.runCommand('git branch -r --sort=-committerdate | head -10', true);
-    const branches = branchesResult.output.split('\n').filter(b => b.trim());
+    const _branches = branchesResult.output.split('\n').filter(b => b.trim());
     
     // Check default branch
     const defaultBranch = this.runCommand('git remote show origin 2>/dev/null | grep "HEAD branch" | cut -d: -f2', true);
