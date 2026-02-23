@@ -323,11 +323,11 @@ export {
 export {
   ResourceGovernor,
   resourceGovernor,
-  type ResourceType,
+  type ResourceType as GovernorResourceType,
   type ThrottleAction,
   type PriorityLevel,
   type ResourceQuota,
-  type ResourceUsage,
+  type ResourceUsage as GovernorResourceUsage,
   type ThrottleConfig,
   type OperationRequest,
   type GovernorConfig,
@@ -369,3 +369,29 @@ export {
   type ConfigHistory,
   type ConfigManagerOptions
 } from './configManager';
+
+// User Usage Tracker
+export {
+  UserUsageTracker,
+  userUsageTracker,
+  type UsageType,
+  type UsageRecord,
+  type UserQuota,
+  type UsageStats,
+  type QuotaExceededResult,
+  type UsageTrackerConfig
+} from './userUsageTracker';
+
+// Database Health Dashboard
+export {
+  DatabaseHealthDashboard,
+  databaseHealthDashboard,
+  type HealthStatus as DashboardHealthStatus,
+  type AlertSeverity,
+  type HealthMetric,
+  type DashboardAlert,
+  type ServiceHealthSummary,
+  type DashboardWidget,
+  type HealthDashboardData,
+  type DashboardConfig
+} from './databaseHealthDashboard';
