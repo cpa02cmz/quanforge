@@ -499,6 +499,7 @@ import {
   BackendRateLimiter,
   RequestQueueManager,
   BackendManager,
+  BackendLoadBalancer,
 } from './index';
 
 describe('Backend Rate Limiter', () => {
@@ -917,5 +918,545 @@ describe('Integration Tests', () => {
     expect(results).toEqual(expect.arrayContaining([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]));
 
     await manager.shutdown();
+  });
+});
+
+describe('Backend Load Balancer', () => {
+  let loadBalancer: BackendLoadBalancer;
+
+  beforeEach(() => {
+    (BackendLoadBalancer as any).instance = null;
+    loadBalancer = BackendLoadBalancer.getInstance();
+  });
+
+  afterEach(() => {
+    loadBalancer.destroy();
+  });
+
+  it('should be a singleton', () => {
+    const instance1 = BackendLoadBalancer.getInstance();
+    const instance2 = BackendLoadBalancer.getInstance();
+    expect(instance1).toBe(instance2);
+  });
+
+  it('should configure a service', () => {
+    loadBalancer.configureService({
+      serviceName: 'test_service',
+      strategy: 'round_robin',
+      healthCheckInterval: 30000,
+      healthCheckTimeout: 10000,
+      unhealthyThreshold: 3,
+      healthyThreshold: 2,
+      enableSessionAffinity: false,
+      sessionAffinityTTL: 0,
+    });
+
+    const stats = loadBalancer.getStats('test_service');
+    expect(stats.serviceName).toBe('test_service');
+  });
+
+  it('should add instances', () => {
+    loadBalancer.configureService({
+      serviceName: 'instance_test',
+      strategy: 'round_robin',
+      healthCheckInterval: 30000,
+      healthCheckTimeout: 10000,
+      unhealthyThreshold: 3,
+      healthyThreshold: 2,
+      enableSessionAffinity: false,
+      sessionAffinityTTL: 0,
+    });
+
+    const id = loadBalancer.addInstance('instance_test', {
+      id: 'inst_1',
+      host: 'localhost',
+      port: 3000,
+      weight: 1,
+      maxConnections: 10,
+    });
+
+    expect(id).toBe('inst_1');
+    const instances = loadBalancer.getInstances('instance_test');
+    expect(instances.length).toBe(1);
+  });
+
+  it('should remove instances', () => {
+    loadBalancer.configureService({
+      serviceName: 'remove_test',
+      strategy: 'round_robin',
+      healthCheckInterval: 30000,
+      healthCheckTimeout: 10000,
+      unhealthyThreshold: 3,
+      healthyThreshold: 2,
+      enableSessionAffinity: false,
+      sessionAffinityTTL: 0,
+    });
+
+    loadBalancer.addInstance('remove_test', {
+      id: 'inst_1',
+      host: 'localhost',
+      port: 3000,
+      weight: 1,
+      maxConnections: 10,
+    });
+
+    const result = loadBalancer.removeInstance('remove_test', 'inst_1');
+    expect(result).toBe(true);
+
+    const instances = loadBalancer.getInstances('remove_test');
+    expect(instances.length).toBe(0);
+  });
+
+  it('should get next instance with round-robin', () => {
+    loadBalancer.configureService({
+      serviceName: 'rr_test',
+      strategy: 'round_robin',
+      healthCheckInterval: 30000,
+      healthCheckTimeout: 10000,
+      unhealthyThreshold: 3,
+      healthyThreshold: 2,
+      enableSessionAffinity: false,
+      sessionAffinityTTL: 0,
+    });
+
+    // Add instances and set them as healthy
+    loadBalancer.addInstance('rr_test', {
+      id: 'inst_1',
+      host: 'localhost',
+      port: 3001,
+      weight: 1,
+      maxConnections: 10,
+    });
+    loadBalancer.addInstance('rr_test', {
+      id: 'inst_2',
+      host: 'localhost',
+      port: 3002,
+      weight: 1,
+      maxConnections: 10,
+    });
+
+    // Mark instances as healthy
+    const instances = loadBalancer.getInstances('rr_test');
+    instances.forEach(i => i.status = 'healthy');
+
+    // Get next instance twice - should round-robin
+    const result1 = loadBalancer.getNextInstance('rr_test');
+    const result2 = loadBalancer.getNextInstance('rr_test');
+
+    expect(result1.instance).toBeDefined();
+    expect(result2.instance).toBeDefined();
+    // With round-robin, instances should alternate
+    expect(result1.instance?.id).not.toBe(result2.instance?.id);
+  });
+
+  it('should get next instance with least-connections', () => {
+    loadBalancer.configureService({
+      serviceName: 'lc_test',
+      strategy: 'least_connections',
+      healthCheckInterval: 30000,
+      healthCheckTimeout: 10000,
+      unhealthyThreshold: 3,
+      healthyThreshold: 2,
+      enableSessionAffinity: false,
+      sessionAffinityTTL: 0,
+    });
+
+    loadBalancer.addInstance('lc_test', {
+      id: 'inst_1',
+      host: 'localhost',
+      port: 3001,
+      weight: 1,
+      maxConnections: 10,
+    });
+    loadBalancer.addInstance('lc_test', {
+      id: 'inst_2',
+      host: 'localhost',
+      port: 3002,
+      weight: 1,
+      maxConnections: 10,
+    });
+
+    // Mark instances as healthy
+    const instances = loadBalancer.getInstances('lc_test');
+    instances.forEach(i => i.status = 'healthy');
+
+    // Set different connection counts
+    instances[0]!.currentConnections = 5;
+    instances[1]!.currentConnections = 2;
+
+    const result = loadBalancer.getNextInstance('lc_test');
+    expect(result.instance?.id).toBe('inst_2');
+  });
+
+  it('should handle session affinity', () => {
+    loadBalancer.configureService({
+      serviceName: 'affinity_test',
+      strategy: 'round_robin',
+      healthCheckInterval: 30000,
+      healthCheckTimeout: 10000,
+      unhealthyThreshold: 3,
+      healthyThreshold: 2,
+      enableSessionAffinity: true,
+      sessionAffinityTTL: 300000,
+    });
+
+    loadBalancer.addInstance('affinity_test', {
+      id: 'inst_1',
+      host: 'localhost',
+      port: 3001,
+      weight: 1,
+      maxConnections: 10,
+    });
+
+    // Mark as healthy
+    const instances = loadBalancer.getInstances('affinity_test');
+    instances[0]!.status = 'healthy';
+
+    const result1 = loadBalancer.getNextInstance('affinity_test', 'session_123');
+    const result2 = loadBalancer.getNextInstance('affinity_test', 'session_123');
+
+    // Should return same instance due to session affinity
+    expect(result1.instance?.id).toBe(result2.instance?.id);
+  });
+
+  it('should acquire and release connections', () => {
+    loadBalancer.configureService({
+      serviceName: 'conn_test',
+      strategy: 'round_robin',
+      healthCheckInterval: 30000,
+      healthCheckTimeout: 10000,
+      unhealthyThreshold: 3,
+      healthyThreshold: 2,
+      enableSessionAffinity: false,
+      sessionAffinityTTL: 0,
+    });
+
+    loadBalancer.addInstance('conn_test', {
+      id: 'inst_1',
+      host: 'localhost',
+      port: 3001,
+      weight: 1,
+      maxConnections: 10,
+    });
+
+    // Mark as healthy
+    const instances = loadBalancer.getInstances('conn_test');
+    instances[0]!.status = 'healthy';
+
+    // Acquire connection
+    const acquired = loadBalancer.acquireConnection('conn_test', 'inst_1');
+    expect(acquired).toBe(true);
+
+    const instance = loadBalancer.getInstance('conn_test', 'inst_1');
+    expect(instance?.currentConnections).toBe(1);
+
+    // Release connection
+    loadBalancer.releaseConnection('conn_test', 'inst_1');
+    expect(instance?.currentConnections).toBe(0);
+  });
+
+  it('should record request results', () => {
+    loadBalancer.configureService({
+      serviceName: 'record_test',
+      strategy: 'round_robin',
+      healthCheckInterval: 30000,
+      healthCheckTimeout: 10000,
+      unhealthyThreshold: 3,
+      healthyThreshold: 2,
+      enableSessionAffinity: false,
+      sessionAffinityTTL: 0,
+    });
+
+    loadBalancer.addInstance('record_test', {
+      id: 'inst_1',
+      host: 'localhost',
+      port: 3001,
+      weight: 1,
+      maxConnections: 10,
+    });
+
+    // Mark as healthy
+    const instances = loadBalancer.getInstances('record_test');
+    instances[0]!.status = 'healthy';
+
+    // Record some requests
+    loadBalancer.recordRequest('record_test', 'inst_1', true, 100);
+    loadBalancer.recordRequest('record_test', 'inst_1', true, 150);
+    loadBalancer.recordRequest('record_test', 'inst_1', false, 200);
+
+    const stats = loadBalancer.getStats('record_test');
+    expect(stats.totalRequests).toBe(3);
+    expect(stats.successfulRequests).toBe(2);
+    expect(stats.failedRequests).toBe(1);
+  });
+
+  it('should return no instance when pool is empty', () => {
+    loadBalancer.configureService({
+      serviceName: 'empty_test',
+      strategy: 'round_robin',
+      healthCheckInterval: 30000,
+      healthCheckTimeout: 10000,
+      unhealthyThreshold: 3,
+      healthyThreshold: 2,
+      enableSessionAffinity: false,
+      sessionAffinityTTL: 0,
+    });
+
+    const result = loadBalancer.getNextInstance('empty_test');
+    expect(result.instance).toBeNull();
+    expect(result.reason).toContain('No instances');
+  });
+
+  it('should return no instance when all instances unhealthy', () => {
+    loadBalancer.configureService({
+      serviceName: 'unhealthy_test',
+      strategy: 'round_robin',
+      healthCheckInterval: 30000,
+      healthCheckTimeout: 10000,
+      unhealthyThreshold: 3,
+      healthyThreshold: 2,
+      enableSessionAffinity: false,
+      sessionAffinityTTL: 0,
+    });
+
+    loadBalancer.addInstance('unhealthy_test', {
+      id: 'inst_1',
+      host: 'localhost',
+      port: 3001,
+      weight: 1,
+      maxConnections: 10,
+    });
+
+    // Instance is unhealthy by default
+    const result = loadBalancer.getNextInstance('unhealthy_test');
+    expect(result.instance).toBeNull();
+    expect(result.reason).toContain('No healthy instances');
+  });
+
+  it('should provide statistics', () => {
+    loadBalancer.configureService({
+      serviceName: 'stats_test',
+      strategy: 'round_robin',
+      healthCheckInterval: 30000,
+      healthCheckTimeout: 10000,
+      unhealthyThreshold: 3,
+      healthyThreshold: 2,
+      enableSessionAffinity: false,
+      sessionAffinityTTL: 0,
+    });
+
+    loadBalancer.addInstance('stats_test', {
+      id: 'inst_1',
+      host: 'localhost',
+      port: 3001,
+      weight: 1,
+      maxConnections: 10,
+    });
+
+    const stats = loadBalancer.getStats('stats_test');
+    expect(stats.serviceName).toBe('stats_test');
+    expect(stats.totalInstances).toBe(1);
+  });
+
+  it('should support weighted load balancing', () => {
+    loadBalancer.configureService({
+      serviceName: 'weighted_test',
+      strategy: 'weighted',
+      healthCheckInterval: 30000,
+      healthCheckTimeout: 10000,
+      unhealthyThreshold: 3,
+      healthyThreshold: 2,
+      enableSessionAffinity: false,
+      sessionAffinityTTL: 0,
+    });
+
+    loadBalancer.addInstance('weighted_test', {
+      id: 'inst_1',
+      host: 'localhost',
+      port: 3001,
+      weight: 1,
+      maxConnections: 10,
+    });
+    loadBalancer.addInstance('weighted_test', {
+      id: 'inst_2',
+      host: 'localhost',
+      port: 3002,
+      weight: 9, // Higher weight
+      maxConnections: 10,
+    });
+
+    // Mark as healthy
+    const instances = loadBalancer.getInstances('weighted_test');
+    instances.forEach(i => i.status = 'healthy');
+
+    // Get many instances to see distribution
+    const results: string[] = [];
+    for (let i = 0; i < 100; i++) {
+      const result = loadBalancer.getNextInstance('weighted_test');
+      if (result.instance) {
+        results.push(result.instance.id);
+      }
+    }
+
+    // inst_2 should be selected more often due to higher weight
+    const inst2Count = results.filter(id => id === 'inst_2').length;
+    expect(inst2Count).toBeGreaterThan(50); // Should be ~90% of requests
+  });
+
+  it('should support random load balancing', () => {
+    loadBalancer.configureService({
+      serviceName: 'random_test',
+      strategy: 'random',
+      healthCheckInterval: 30000,
+      healthCheckTimeout: 10000,
+      unhealthyThreshold: 3,
+      healthyThreshold: 2,
+      enableSessionAffinity: false,
+      sessionAffinityTTL: 0,
+    });
+
+    loadBalancer.addInstance('random_test', {
+      id: 'inst_1',
+      host: 'localhost',
+      port: 3001,
+      weight: 1,
+      maxConnections: 10,
+    });
+    loadBalancer.addInstance('random_test', {
+      id: 'inst_2',
+      host: 'localhost',
+      port: 3002,
+      weight: 1,
+      maxConnections: 10,
+    });
+
+    // Mark as healthy
+    const instances = loadBalancer.getInstances('random_test');
+    instances.forEach(i => i.status = 'healthy');
+
+    const result = loadBalancer.getNextInstance('random_test');
+    expect(result.instance).toBeDefined();
+    expect(['inst_1', 'inst_2']).toContain(result.instance?.id);
+  });
+
+  it('should emit events', async () => {
+    loadBalancer.configureService({
+      serviceName: 'event_test',
+      strategy: 'round_robin',
+      healthCheckInterval: 30000,
+      healthCheckTimeout: 10000,
+      unhealthyThreshold: 3,
+      healthyThreshold: 2,
+      enableSessionAffinity: false,
+      sessionAffinityTTL: 0,
+    });
+
+    const eventHandler = vi.fn();
+    loadBalancer.subscribe(eventHandler);
+
+    loadBalancer.addInstance('event_test', {
+      id: 'inst_1',
+      host: 'localhost',
+      port: 3001,
+      weight: 1,
+      maxConnections: 10,
+    });
+
+    expect(eventHandler).toHaveBeenCalled();
+  });
+});
+
+describe('Load Balancer Integration Tests', () => {
+  it('should work with Backend Manager', async () => {
+    (BackendLoadBalancer as any).instance = null;
+    const lb = BackendLoadBalancer.getInstance();
+    (BackendManager as any).instance = null;
+    const manager = BackendManager.getInstance();
+
+    await manager.initialize();
+
+    // Configure load balancer for a service
+    lb.configureService({
+      serviceName: 'integration_service',
+      strategy: 'least_connections',
+      healthCheckInterval: 30000,
+      healthCheckTimeout: 10000,
+      unhealthyThreshold: 3,
+      healthyThreshold: 2,
+      enableSessionAffinity: false,
+      sessionAffinityTTL: 0,
+    });
+
+    // Add instances
+    lb.addInstance('integration_service', {
+      id: 'inst_1',
+      host: 'localhost',
+      port: 3001,
+      weight: 1,
+      maxConnections: 10,
+    });
+    lb.addInstance('integration_service', {
+      id: 'inst_2',
+      host: 'localhost',
+      port: 3002,
+      weight: 1,
+      maxConnections: 10,
+    });
+
+    // Mark as healthy
+    const instances = lb.getInstances('integration_service');
+    instances.forEach(i => i.status = 'healthy');
+
+    // Get next instance
+    const result = lb.getNextInstance('integration_service');
+    expect(result.instance).toBeDefined();
+
+    await manager.shutdown();
+    lb.destroy();
+  });
+
+  it('should handle failover scenario', async () => {
+    (BackendLoadBalancer as any).instance = null;
+    const lb = BackendLoadBalancer.getInstance();
+
+    lb.configureService({
+      serviceName: 'failover_test',
+      strategy: 'round_robin',
+      healthCheckInterval: 30000,
+      healthCheckTimeout: 10000,
+      unhealthyThreshold: 3,
+      healthyThreshold: 2,
+      enableSessionAffinity: false,
+      sessionAffinityTTL: 0,
+    });
+
+    // Add two instances
+    lb.addInstance('failover_test', {
+      id: 'inst_1',
+      host: 'localhost',
+      port: 3001,
+      weight: 1,
+      maxConnections: 10,
+    });
+    lb.addInstance('failover_test', {
+      id: 'inst_2',
+      host: 'localhost',
+      port: 3002,
+      weight: 1,
+      maxConnections: 10,
+    });
+
+    // Mark inst_1 as unhealthy, inst_2 as healthy
+    const instances = lb.getInstances('failover_test');
+    instances[0]!.status = 'unhealthy';
+    instances[1]!.status = 'healthy';
+
+    // All requests should go to inst_2
+    for (let i = 0; i < 10; i++) {
+      const result = lb.getNextInstance('failover_test');
+      expect(result.instance?.id).toBe('inst_2');
+    }
+
+    lb.destroy();
   });
 });
