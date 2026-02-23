@@ -330,3 +330,49 @@ export type {
   UseLocalStorageOptions,
   UseLocalStorageReturn,
 } from './useLocalStorage';
+
+// Form validation hooks (frontend engineering)
+export {
+  useFormValidation,
+  required,
+  minLength,
+  maxLength,
+  email,
+  pattern,
+  range,
+  custom,
+} from './useFormValidation';
+export type {
+  ValidationRule,
+  FieldConfig,
+  FieldState,
+  FormState,
+  FormOptions,
+} from './useFormValidation';
+
+// Async operation hooks (frontend engineering)
+export {
+  useAsyncOperation,
+  useAsyncOperations,
+  usePolling,
+} from './useAsyncOperation';
+export type {
+  AsyncState,
+  AsyncOptions,
+  AsyncOperation,
+} from './useAsyncOperation';
+
+// Container query hooks (responsive design)
+export {
+  useContainerQuery,
+  useContainerWidth,
+  useResponsiveColumns,
+  useContainerOrientation,
+} from './useContainerQuery';
+export type {
+  ContainerSize,
+  ContainerBreakpoint,
+  ContainerBreakpoints,
+  ContainerQueryOptions,
+  ContainerQueryResult,
+} from './useContainerQuery';
