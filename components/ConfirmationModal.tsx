@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useState, memo } from 'react';
 import { useTranslation } from '../services/i18n';
 
 export interface ConfirmationModalProps {
@@ -13,7 +13,17 @@ export interface ConfirmationModalProps {
     onCancel: () => void;
 }
 
-export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
+/**
+ * ConfirmationModal - A modal dialog for confirming destructive actions
+ * 
+ * Features:
+ * - Focus trap for accessibility
+ * - Keyboard navigation (Escape to cancel)
+ * - Shake animation when blocked
+ * - Multiple variants (danger, warning, info)
+ * - React.memo for performance optimization
+ */
+export const ConfirmationModal: React.FC<ConfirmationModalProps> = memo(({
     isOpen,
     title,
     message,
@@ -250,7 +260,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             `}</style>
         </div>
     );
-};
+});
 
 ConfirmationModal.displayName = 'ConfirmationModal';
 
