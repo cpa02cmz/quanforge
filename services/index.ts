@@ -240,7 +240,6 @@ export {
 
 // Load Balancer Types
 export type {
-  LoadBalancingStrategy,
   BackendInstance,
   LoadBalancerConfig,
   LoadBalancerStats,
