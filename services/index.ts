@@ -207,8 +207,25 @@ export {
   recordLatency,
   recordRequestCount,
   recordErrorCount,
+  // Load Balancer
+  BackendLoadBalancer,
+  backendLoadBalancer,
+  getNextBackendInstance,
+  acquireBackendConnection,
+  releaseBackendConnection,
+  recordBackendRequest,
+  DEFAULT_LOAD_BALANCER_CONFIGS,
   // Initialization
   initializeBackendServices,
+} from './backend';
+
+// Load Balancer Types
+export type {
+  LoadBalancingStrategy,
+  BackendInstance,
+  LoadBalancerConfig,
+  LoadBalancerStats,
+  LoadBalancerResult,
 } from './backend';
 
 // Scheduler Module - Background Job Scheduling

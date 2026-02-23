@@ -129,6 +129,26 @@ export {
   getBackendStatus,
 } from './manager';
 
+// Load Balancer
+export {
+  BackendLoadBalancer,
+  backendLoadBalancer,
+  getNextBackendInstance,
+  acquireBackendConnection,
+  releaseBackendConnection,
+  recordBackendRequest,
+  DEFAULT_LOAD_BALANCER_CONFIGS,
+} from './loadBalancer';
+
+// Load Balancer Types
+export type {
+  LoadBalancingStrategy,
+  BackendInstance,
+  LoadBalancerConfig,
+  LoadBalancerStats,
+  LoadBalancerResult,
+} from './loadBalancer';
+
 // Import for use in this module
 import { backendManager } from './manager';
 
