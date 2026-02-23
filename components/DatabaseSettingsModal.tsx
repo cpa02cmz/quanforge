@@ -353,3 +353,5 @@ return (
         </div>
     );
 });
+
+DatabaseSettingsModal.displayName = 'DatabaseSettingsModal';

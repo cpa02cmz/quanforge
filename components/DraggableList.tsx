@@ -468,4 +468,7 @@ export function DraggableList<T extends DraggableItem>({
 // Memoized version for better performance
 export const DraggableListMemo = memo(DraggableList) as typeof DraggableList;
 
+DraggableList.displayName = 'DraggableList';
+DraggableListMemo.displayName = 'DraggableListMemo';
+
 export default DraggableList;

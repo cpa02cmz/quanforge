@@ -258,3 +258,5 @@ const RobotCard: React.FC<RobotCardProps> = React.memo(({
     </div>
   );
 });
+
+VirtualScrollList.displayName = 'VirtualScrollList';

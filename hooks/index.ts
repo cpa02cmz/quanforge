@@ -409,3 +409,11 @@ export type {
   ContainerQueryOptions,
   ContainerQueryResult,
 } from './useContainerQuery';
+
+// Optimized resize hooks (performance optimization)
+export { useOptimizedResize } from './useOptimizedResize';
+export type {
+  ResizeMode,
+  ResizeOptions,
+  ResizeResult,
+} from './useOptimizedResize';
