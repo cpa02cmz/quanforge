@@ -2,8 +2,8 @@
 
 > Comprehensive API documentation for QuanForge AI services layer
 
-**Last Updated**: 2026-02-22  
-**Version**: 2.2.0
+**Last Updated**: 2026-02-23  
+**Version**: 2.6.0
 
 ---
 
@@ -783,6 +783,6 @@ try {
 
 ---
 
-**Documentation Version**: 1.0.0  
+**Documentation Version**: 1.1.0  
 **Author**: Technical Writer Agent  
-**Last Updated**: 2026-02-22
+**Last Updated**: 2026-02-23

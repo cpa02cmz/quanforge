@@ -2,8 +2,8 @@
 
 > Comprehensive documentation for all React hooks in QuanForge AI
 
-**Last Updated**: 2026-02-22  
-**Version**: 2.2.0
+**Last Updated**: 2026-02-23  
+**Version**: 2.6.0
 
 ---
 
@@ -15,8 +15,9 @@
 4. [UI/UX Hooks](#uiux-hooks)
 5. [Accessibility Hooks](#accessibility-hooks)
 6. [Data Management Hooks](#data-management-hooks)
-7. [Utility Hooks](#utility-hooks)
-8. [Best Practices](#best-practices)
+7. [Integration Health Hooks](#integration-health-hooks)
+8. [Utility Hooks](#utility-hooks)
+9. [Best Practices](#best-practices)
 
 ---
 
@@ -714,6 +715,238 @@ function MyComponent(props) {
   useComponentRenderProfiler('MyComponent', props);
   
   // Component logic
+}
+```
+
+---
+
+## Integration Health Hooks
+
+### useIntegrationHealth
+
+**File**: `hooks/useIntegrationHealth.ts`
+
+Comprehensive hook for accessing all integration health state.
+
+```typescript
+import { useIntegrationHealth } from './hooks';
+
+function IntegrationDashboard() {
+  const {
+    systemSummary,
+    integrations,
+    isLoading,
+    error,
+    alerts,
+    isConnected,
+    refresh,
+    getIntegrationStatus,
+    recoverIntegration
+  } = useIntegrationHealth({
+    refreshInterval: 5000,
+    includeAlerts: true,
+    subscribeToEvents: true
+  });
+  
+  return (
+    <div>
+      {isLoading && <Spinner />}
+      {error && <ErrorMessage error={error} />}
+      {systemSummary && (
+        <div>
+          <h2>System Health: {systemSummary.overallStatus}</h2>
+          <p>Healthy: {systemSummary.healthyCount}/{systemSummary.totalIntegrations}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+**Options**:
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `refreshInterval` | `number` | `0` | Auto-refresh interval in ms (0 = disabled) |
+| `filterTypes` | `IntegrationType[]` | - | Filter by integration types |
+| `filterStatus` | `IntegrationStatus[]` | - | Filter by status |
+| `includeAlerts` | `boolean` | `true` | Include alert notifications |
+| `subscribeToEvents` | `boolean` | `true` | Auto-subscribe to events |
+
+**Returns**:
+| Property | Type | Description |
+|----------|------|-------------|
+| `systemSummary` | `IntegrationSystemSummary \| null` | System-wide summary |
+| `integrations` | `Record<string, IntegrationStatusInfo>` | All integration statuses |
+| `isLoading` | `boolean` | Loading state |
+| `error` | `string \| null` | Error state |
+| `alerts` | `AlertEvent[]` | Active alerts |
+| `isConnected` | `boolean` | Connection status |
+| `refresh` | `() => Promise<void>` | Manual refresh |
+| `getIntegrationStatus` | `(name: string) => IntegrationStatusInfo \| undefined` | Get specific status |
+| `recoverIntegration` | `(name: string) => Promise<boolean>` | Attempt recovery |
+
+---
+
+### useSingleIntegrationHealth
+
+**File**: `hooks/useIntegrationHealth.ts`
+
+Hook for monitoring a single integration's health.
+
+```typescript
+import { useSingleIntegrationHealth } from './hooks';
+
+function DatabaseStatus() {
+  const {
+    status,
+    metrics,
+    isLoading,
+    error,
+    isHealthy,
+    isDegraded,
+    isUnhealthy,
+    uptimePercentage,
+    errorRate,
+    circuitBreakerState
+  } = useSingleIntegrationHealth('database');
+  
+  return (
+    <div className={isHealthy ? 'healthy' : 'unhealthy'}>
+      <h3>Database</h3>
+      <p>Status: {status?.status}</p>
+      <p>Uptime: {uptimePercentage.toFixed(2)}%</p>
+      <p>Error Rate: {(errorRate * 100).toFixed(2)}%</p>
+    </div>
+  );
+}
+```
+
+**Returns**:
+| Property | Type | Description |
+|----------|------|-------------|
+| `status` | `IntegrationStatusInfo \| null` | Integration status |
+| `metrics` | `IntegrationMetrics \| null` | Performance metrics |
+| `isLoading` | `boolean` | Loading state |
+| `error` | `string \| null` | Error state |
+| `isHealthy` | `boolean` | Is status healthy |
+| `isDegraded` | `boolean` | Is status degraded |
+| `isUnhealthy` | `boolean` | Is status unhealthy |
+| `uptimePercentage` | `number` | Uptime percentage |
+| `errorRate` | `number` | Error rate (0-1) |
+| `lastHealthCheck` | `Date \| null` | Last check timestamp |
+| `circuitBreakerState` | `CircuitBreakerState` | Circuit breaker state |
+
+---
+
+### useIntegrationAlerts
+
+**File**: `hooks/useIntegrationHealth.ts`
+
+Hook for accessing and managing integration alerts.
+
+```typescript
+import { useIntegrationAlerts } from './hooks';
+
+function AlertsPanel() {
+  const {
+    alerts,
+    unreadCount,
+    acknowledgeAlert,
+    clearAllAlerts,
+    markAllAsRead
+  } = useIntegrationAlerts();
+  
+  return (
+    <div>
+      <h3>Alerts ({unreadCount} unread)</h3>
+      {alerts.map(alert => (
+        <Alert
+          key={alert.id}
+          alert={alert}
+          onAcknowledge={() => acknowledgeAlert(alert.id)}
+        />
+      ))}
+      <button onClick={clearAllAlerts}>Clear All</button>
+    </div>
+  );
+}
+```
+
+**Returns**:
+| Property | Type | Description |
+|----------|------|-------------|
+| `alerts` | `AlertEvent[]` | All alerts |
+| `unreadCount` | `number` | Number of unread alerts |
+| `acknowledgeAlert` | `(id: string) => void` | Acknowledge an alert |
+| `clearAllAlerts` | `() => void` | Clear all alerts |
+| `markAllAsRead` | `() => void` | Mark all as read |
+
+---
+
+### useIntegrationMetrics
+
+**File**: `hooks/useIntegrationHealth.ts`
+
+Hook for accessing Prometheus/JSON metrics.
+
+```typescript
+import { useIntegrationMetrics } from './hooks';
+
+function MetricsExport() {
+  const {
+    prometheusMetrics,
+    jsonMetrics,
+    snapshot,
+    isLoading,
+    refresh
+  } = useIntegrationMetrics({ autoRefresh: true });
+  
+  return (
+    <div>
+      <h3>Prometheus Format</h3>
+      <pre>{prometheusMetrics}</pre>
+      
+      <h3>JSON Format</h3>
+      <pre>{JSON.stringify(jsonMetrics, null, 2)}</pre>
+      
+      <button onClick={refresh}>Refresh Metrics</button>
+    </div>
+  );
+}
+```
+
+---
+
+### useServiceDiscovery
+
+**File**: `hooks/useIntegrationHealth.ts`
+
+Hook for service discovery from React components.
+
+```typescript
+import { useServiceDiscovery } from './hooks';
+
+function ServiceSelector() {
+  const {
+    services,
+    isLoading,
+    error,
+    discoverServices,
+    getService,
+    getServicesByCapability
+  } = useServiceDiscovery();
+  
+  const aiServices = getServicesByCapability('ai-generation');
+  
+  return (
+    <select>
+      {aiServices.map(service => (
+        <option key={service.id} value={service.id}>
+          {service.name} (v{service.version})
+        </option>
+      ))}
+    </select>
+  );
 }
 ```
 

@@ -17,6 +17,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.6.0] - 2026-02-23
+
+### 🔗 Integration Layer Enhancement
+- **Service Discovery**: Dynamic service registration with capability-based discovery
+  - Multiple load balancing strategies (round-robin, weighted, least connections, priority-based)
+  - Service health tracking via heartbeats
+  - Capability-based service discovery
+  - Tag-based filtering
+  - Automatic cleanup of stale services
+
+- **Metrics Exporter**: Prometheus-compatible metrics export system
+  - Real-time metrics streaming
+  - JSON metrics export
+  - Alert threshold monitoring with cooldowns
+  - Historical snapshot retention
+  - Comprehensive integration metrics
+
+- **React Hooks for Integration Health**: Real-time integration monitoring from components
+  - `useIntegrationHealth`: Access all integration health state
+  - `useSingleIntegrationHealth`: Monitor a single integration
+  - `useIntegrationAlerts`: Access and manage alerts
+  - `useIntegrationSystemSummary`: System-wide summary
+  - `useIntegrationMetrics`: Prometheus/JSON metrics access
+  - `useServiceDiscovery`: Service discovery from React components
+
+### 📊 Quality Metrics Update
+- **Tests**: 1268/1268 passing (100%)
+- **Build Time**: ~13.72s average
+- **TypeScript Errors**: 0
+- **Lint Errors**: 0 (684 any-type warnings only)
+- **Production Vulnerabilities**: 0
+- **Console Statements**: 0 in production code (60+ consecutive runs)
+- **TODO/FIXME Comments**: 0 (all resolved)
+
+### 📦 Bundle Status
+- **Total Chunks**: 50+ granular chunks for optimal loading
+- **Largest Bundle**: ai-web-runtime (252 KB) - Google GenAI library
+- **All Chunks**: Under 300KB threshold
+- **Code Splitting**: Effective granular chunking maintained
+
+### 📖 Documentation Updates
+- **CHANGELOG.md**: Added v2.6.0 release notes
+- **docs/HOOKS_REFERENCE.md**: Added Integration Health hooks documentation
+- **docs/api/API_REFERENCE.md**: Added Service Discovery and Metrics Exporter documentation
+- **PROJECT_STATUS.md**: Updated with current metrics
+
+---
+
+## [2.5.0] - 2026-02-23
+
+### 🧪 Testing Expansion
+- **Test Suite Growth**: 160 new tests added (1108 → 1268 total)
+- **Test Files**: 53 test files (up from 48)
+- **Test Coverage**: 100% pass rate maintained (1268/1268)
+- **Test Performance**: 21.40s execution time
+
+### 📊 Quality Metrics Update
+- **Tests**: 1268/1268 passing (100%)
+- **Build Time**: ~16.47s average
+- **TypeScript Errors**: 0
+- **Lint Errors**: 0 (684 any-type warnings only)
+- **Production Vulnerabilities**: 0
+- **Console Statements**: 0 in production code (59+ consecutive runs)
+- **TODO/FIXME Comments**: 0 (all resolved)
+
+### 📖 Documentation Updates
+- **CHANGELOG.md**: Updated with v2.5.0 release notes
+- **PROJECT_STATUS.md**: Updated with current test counts and metrics
+- **DOCUMENTATION_INDEX.md**: Updated with current date and metrics
+- **USER_GUIDE.md**: Updated version reference (v2.1 → v2.5)
+
+---
+
 ## [2.4.0] - 2026-02-22
 
 ### 🧪 Testing Expansion
