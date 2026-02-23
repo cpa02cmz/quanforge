@@ -161,6 +161,25 @@ export {
   initializeIntegrations,
   getIntegrationStatusDisplay,
   getIntegrationDashboardData,
+  // Service Discovery
+  LoadBalancingStrategy,
+  ServiceDiscoveryManager,
+  serviceDiscovery,
+  type ServiceCapability,
+  type ServiceInstance,
+  type ServiceQueryOptions,
+  type ServiceDiscoveryResult,
+  type ServiceDiscoveryConfig,
+  // Metrics Exporter
+  PrometheusMetricType,
+  IntegrationMetricsExporter,
+  integrationMetricsExporter,
+  type PrometheusMetric,
+  type MetricsExporterConfig,
+  type AlertThreshold,
+  type AlertEvent,
+  type MetricsSnapshot,
+  type MetricsSubscriber,
 } from './integration';
 
 // Backend Module - Service Registry, Request Context, Performance Analysis
