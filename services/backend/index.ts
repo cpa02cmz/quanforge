@@ -8,6 +8,9 @@
  * - Rate Limiter: Token bucket rate limiting for services
  * - Request Queue Manager: Priority-based request queuing
  * - Backend Manager: Unified orchestrator for all backend services
+ * - Telemetry Exporter: OpenTelemetry-compatible metrics and tracing
+ * - Health Aggregator: Unified health reporting across services
+ * - Circuit Breaker Coordinator: Centralized circuit breaker management
  * 
  * @module services/backend
  * @author Backend Engineer
@@ -76,10 +79,43 @@ export type {
   BackendOperationContext,
 } from './manager';
 
+// Telemetry Exporter Types
+export type {
+  TelemetryMetricType,
+  TelemetryMetric,
+  TelemetrySpan,
+  TelemetryEvent,
+  TelemetryLog,
+  TelemetryConfig,
+  TelemetryExportData,
+} from './telemetryExporter';
+
+// Health Aggregator Types
+export type {
+  HealthLevel,
+  ServiceHealthInfo,
+  AggregatedHealthReport,
+  HealthRecommendation,
+  HealthAlert,
+  HealthTrends,
+  HealthThresholds,
+} from './healthAggregator';
+
+// Circuit Breaker Coordinator Types
+export type {
+  CircuitState as CircuitBreakerState,
+  CircuitBreakerConfig,
+  CircuitBreakerStatus,
+  CircuitBreakerEvent,
+} from './circuitBreakerCoordinator';
+
 // Enums and Constants
 export { BackendEventType, DEFAULT_BACKEND_CONFIG } from './types';
 export { DEFAULT_RATE_LIMITS } from './rateLimiter';
 export { DEFAULT_QUEUE_CONFIGS } from './requestQueue';
+export { DEFAULT_TELEMETRY_CONFIG } from './telemetryExporter';
+export { DEFAULT_HEALTH_THRESHOLDS } from './healthAggregator';
+export { DEFAULT_CIRCUIT_CONFIGS } from './circuitBreakerCoordinator';
 
 // Service Registry
 export {
@@ -129,8 +165,37 @@ export {
   getBackendStatus,
 } from './manager';
 
+// Telemetry Exporter
+export {
+  BackendTelemetryExporter,
+  backendTelemetryExporter,
+  recordBackendMetric,
+  timeOperation,
+  createTelemetryLogger,
+} from './telemetryExporter';
+
+// Health Aggregator
+export {
+  BackendHealthAggregator,
+  backendHealthAggregator,
+  getBackendHealthReport,
+  isBackendHealthy,
+} from './healthAggregator';
+
+// Circuit Breaker Coordinator
+export {
+  CircuitBreakerCoordinator,
+  circuitBreakerCoordinator,
+  executeWithCircuitBreaker,
+  getCircuitBreakerStatus,
+  isCircuitOpen,
+} from './circuitBreakerCoordinator';
+
 // Import for use in this module
 import { backendManager } from './manager';
+import { backendTelemetryExporter } from './telemetryExporter';
+import { backendHealthAggregator } from './healthAggregator';
+import { circuitBreakerCoordinator } from './circuitBreakerCoordinator';
 
 /**
  * Initialize backend services
@@ -161,4 +226,23 @@ export async function shutdownBackendServices(): Promise<void> {
   await backendManager.shutdown();
   
   logger.log('Backend services shut down');
+}
+
+/**
+ * Get comprehensive backend status
+ * 
+ * Returns a unified status object with all backend service information.
+ */
+export function getComprehensiveBackendStatus(): {
+  manager: ReturnType<typeof backendManager.getStatus>;
+  telemetry: ReturnType<typeof backendTelemetryExporter.getStats>;
+  health: ReturnType<typeof backendHealthAggregator.getAggregatedHealth>;
+  circuitBreakers: ReturnType<typeof circuitBreakerCoordinator.getStats>;
+} {
+  return {
+    manager: backendManager.getStatus(),
+    telemetry: backendTelemetryExporter.getStats(),
+    health: backendHealthAggregator.getAggregatedHealth(),
+    circuitBreakers: circuitBreakerCoordinator.getStats(),
+  };
 }
