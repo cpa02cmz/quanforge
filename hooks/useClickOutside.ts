@@ -14,7 +14,7 @@
  * @module hooks/useClickOutside
  */
 
-import { useEffect, useRef, RefObject } from 'react';
+import { useEffect, useRef, RefObject, useState, useCallback } from 'react';
 
 // ========== TYPES ==========
 
@@ -257,8 +257,5 @@ export function useLongPress(
 
   return { ref, isLongPress };
 }
-
-// Need useState for useDropdown
-import { useState, useCallback } from 'react';
 
 export default useClickOutside;
