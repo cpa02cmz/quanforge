@@ -92,6 +92,39 @@ export { useModalAccessibility } from './useModalAccessibility';
 export { useReducedMotion } from './useReducedMotion';
 export { useToast } from './useToast';
 
+// Visual feedback hooks (UI/UX enhancement)
+export { useVisualFeedback, useButtonFeedback } from './useVisualFeedback';
+export type {
+  FeedbackState,
+  VisualFeedbackOptions,
+  VisualFeedbackResult,
+} from './useVisualFeedback';
+
+// Interactive states hooks (UI/UX enhancement)
+export {
+  useInteractiveStates,
+  useHover,
+  usePress,
+} from './useInteractiveStates';
+export type {
+  InteractiveState,
+  InteractiveStatesOptions,
+  InteractiveStatesResult,
+} from './useInteractiveStates';
+
+// Screen reader announcement hooks (UI/UX enhancement)
+export {
+  useAnnounce,
+  useAnnounceOnce,
+  useAnnounceValue,
+  useAnnounceError,
+} from './useAnnounce';
+export type {
+  AnnouncementPriority,
+  AnnouncementOptions,
+  AnnounceResult,
+} from './useAnnounce';
+
 // Motion preferences hooks (UI/UX enhancement)
 export {
   MotionPreferencesProvider,
