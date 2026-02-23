@@ -454,4 +454,8 @@ export const PerformanceDashboard = memo(({
   );
 });
 
+PerformanceDashboard.displayName = 'PerformanceDashboard';
+MetricCard.displayName = 'MetricCard';
+MemoryMeter.displayName = 'MemoryMeter';
+
 export default PerformanceDashboard;

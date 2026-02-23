@@ -469,3 +469,5 @@ return (
         </div>
     );
 });
+
+AISettingsModal.displayName = 'AISettingsModal';

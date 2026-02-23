@@ -82,6 +82,8 @@ export const ShortcutDiscoveryProvider: React.FC<{ children: React.ReactNode }> 
   );
 };
 
+ShortcutDiscoveryProvider.displayName = 'ShortcutDiscoveryProvider';
+
 /**
  * Hook to access shortcut discovery mode state
  */

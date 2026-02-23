@@ -362,4 +362,6 @@ export const IntegrationHealthDashboard: React.FC = () => {
   );
 };
 
+IntegrationHealthDashboard.displayName = 'IntegrationHealthDashboard';
+
 export default IntegrationHealthDashboard;
